@@ -3,8 +3,16 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "bin": {
+    "qin": "index.ts"
+  },
+  "scripts": {
+    "qin": "bun run index.ts",
+    "test": "bun test"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "fast-check": "^4.4.0"
   },
   "peerDependencies": {
     "typescript": "^5"
