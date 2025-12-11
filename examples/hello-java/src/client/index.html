@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qin 全栈示例</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 Qin 全栈示例</h1>
+      <p class="subtitle">Java 后端 + 原生前端</p>
+    </header>
+
+    <section class="card">
+      <h2>📡 获取服务器时间</h2>
+      <button id="getTimeBtn" class="btn btn-primary">获取时间</button>
+      <div id="timeResult" class="result"></div>
+    </section>
+
+    <section class="card">
+      <h2>👋 问候接口</h2>
+      <div class="input-group">
+        <input type="text" id="nameInput" placeholder="输入你的名字" value="世界">
+        <button id="greetBtn" class="btn btn-success">发送问候</button>
+      </div>
+      <div id="greetResult" class="result"></div>
+    </section>
+
+    <section class="card">
+      <h2>👥 用户列表</h2>
+      <button id="getUsersBtn" class="btn btn-info">获取用户</button>
+      <ul id="usersList" class="users-list"></ul>
+    </section>
+
+    <footer>
+      <p>由 <strong>Qin</strong> 构建 - Java 的 Vite</p>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
