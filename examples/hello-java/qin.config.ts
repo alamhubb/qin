@@ -1,9 +1,18 @@
-import type { QinConfig } from "qin";
+import type { QinConfig } from "../../src/types";
 
-// Qin configuration - most settings use sensible defaults
+// Qin configuration for hello-java example
 const config: QinConfig = {
-  // Main class for `qin run` (optional, defaults to "Main")
-  mainClass: "Hello",
+  // Entry point Java file
+  entry: "src/Hello.java",
+  
+  // Maven dependencies (optional)
+  dependencies: [],
+  
+  // Output configuration
+  output: {
+    dir: "dist",
+    jarName: "hello.jar",
+  },
 };
 
 export default config;

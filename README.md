@@ -1,150 +1,140 @@
-# Qin - Cross-language Build System
+# Qin - Java-Vite Build Tool
 
-Qin 是一个基于 Bun 的跨语言构建和包管理系统，让你可以像使用原生 JavaScript 模块一样使用 Java 代码。
+Qin 是一个基于 Bun + Coursier + JDK 的现代化 Java 构建工具，定位为 "Java 的 Vite"。
 
 ## 特性
 
-- 🚀 **直接运行 Java** - `qin hello.java` 一键编译运行
-- 📦 **npm 风格包管理** - `qin add package@version`
-- 🔄 **Java → WASM** - 将 Java 编译为 WebAssembly
-- 🔌 **Bun Plugin** - 直接 `import { MyClass } from "./MyClass.java"`
-- 📝 **TypeScript 支持** - 自动生成类型定义
+- 🚀 **零 XML 配置** - 使用 TypeScript 配置文件，告别繁琐的 pom.xml
+- ⚡ **极速启动** - 利用 Bun 的高性能和 Coursier 的快速依赖解析
+- 📦 **一键运行** - `qin run` 编译并运行 Java 程序
+- 🎁 **Fat Jar 打包** - `qin build` 生成包含所有依赖的可执行 JAR
+- 🎨 **美观输出** - 彩色终端输出，清晰的进度显示
 
 ## 安装
 
 ```bash
+# 克隆项目
+git clone <repo-url>
+cd qin
+
+# 安装依赖
 bun install
+
+# 链接 CLI（可选）
+bun link
 ```
+
+### 前置要求
+
+- [Bun](https://bun.sh/) - JavaScript 运行时
+- [Coursier](https://get-coursier.io/) - Maven 依赖解析器
+- [JDK 17+](https://adoptium.net/) - Java 开发工具包
 
 ## 快速开始
 
-### 运行 Java 文件
+### 初始化项目
 
 ```bash
-# 直接运行 Java 文件
-qin src/hello.java
-
-# 带参数运行
-qin src/hello.java arg1 arg2
+qin init
 ```
 
-### 包管理
+这会创建：
+- `qin.config.ts` - 项目配置文件
+- `src/Main.java` - Hello World 示例
+
+### 编译运行
 
 ```bash
-# 添加依赖
-qin add lodash@4.17.21
-
-# 添加开发依赖
-qin add -D typescript
-
-# 安装所有依赖
-qin install
-
-# 列出依赖
-qin list
+qin run
 ```
 
-### Java 构建命令
+### 构建 Fat Jar
 
 ```bash
-# 编译所有 Java 文件
-qin java compile
+qin build
+```
 
-# 运行指定主类
-qin java run MainClass
+生成的 JAR 文件位于 `dist/app.jar`，可以直接运行：
 
-# 编译并运行
-qin java build
+```bash
+java -jar dist/app.jar
+```
 
-# 编译为 WASM
-qin java wasm src/Hello.java
+## 配置文件
+
+`qin.config.ts`:
+
+```typescript
+import type { QinConfig } from "qin";
+
+export default {
+  // 入口文件
+  entry: "src/Main.java",
+  
+  // Maven 依赖
+  dependencies: [
+    "com.google.guava:guava:32.1.3-jre",
+    "org.slf4j:slf4j-api:2.0.9",
+  ],
+  
+  // 输出配置
+  output: {
+    dir: "dist",
+    jarName: "app.jar",
+  },
+} satisfies QinConfig;
 ```
 
 ## 项目结构
 
 ```
 my-project/
+├── qin.config.ts      # 项目配置
 ├── src/
-│   └── Hello.java
-├── package.json          # 依赖配置
-└── qin.config.ts         # Qin 配置
+│   └── Main.java      # 源代码
+├── .qin/
+│   ├── classes/       # 编译输出
+│   └── temp/          # 构建临时目录
+└── dist/
+    └── app.jar        # Fat Jar 输出
 ```
 
-### qin.config.ts
+## CLI 命令
 
-```typescript
-import type { QinConfig } from "qin";
-
-// Most settings use sensible defaults, only configure what you need
-const config: QinConfig = {
-  // Java version (default: "17")
-  javaVersion: "17",
-  // Main class for `qin run` (default: "Main")
-  mainClass: "Main",
-};
-
-export default config;
+```bash
+qin init              # 初始化新项目
+qin run [args...]     # 编译并运行
+qin build [--debug]   # 构建 Fat Jar
+qin --help            # 显示帮助
 ```
 
-默认路径（无需配置）：
-- 源码目录: `src/`
-- 编译输出: `.qin/classes/`
-- WASM 输出: `.qin/wasm/`
+## API 使用
 
-## 在 TypeScript 中使用 Java
+Qin 也可以作为库使用：
 
 ```typescript
-// 使用 Bun Plugin 直接导入 Java 类
-import { Hello } from "./Hello.java";
+import { 
+  ConfigLoader, 
+  DependencyResolver, 
+  JavaRunner, 
+  FatJarBuilder 
+} from "./src/qin";
 
-// 调用静态方法
-const result = await Hello.add(1, 2);
-console.log(result); // 3
+// 加载配置
+const loader = new ConfigLoader();
+const config = await loader.load();
 
-// 调用实例方法
-const greeting = await Hello.greet("World");
-console.log(greeting); // "Hello, World!"
-```
+// 解析依赖
+const resolver = new DependencyResolver();
+const classpath = await resolver.resolve(config.dependencies || []);
 
-## API
+// 编译运行
+const runner = new JavaRunner(config, classpath);
+await runner.compileAndRun();
 
-### JavaBuilder
-
-```typescript
-import { JavaBuilder } from "qin";
-
-const builder = new JavaBuilder({
-  srcDir: "src",
-  outDir: "build/classes",
-  mainClass: "Main",
-});
-
-await builder.compile();
-await builder.run("Main", ["arg1"]);
-```
-
-### QinPackageManager
-
-```typescript
-import { QinPackageManager } from "qin";
-
-const pm = new QinPackageManager();
-await pm.add("lodash@4.17.21");
-await pm.install();
-pm.list();
-```
-
-### WasmBridge
-
-```typescript
-import { WasmBridge } from "qin";
-
-const bridge = new WasmBridge({
-  wasmOutDir: "build/wasm",
-});
-
-const result = await bridge.compileClass("src/Hello.java");
-console.log(result.wasmPath);
+// 构建 Fat Jar
+const builder = new FatJarBuilder(config);
+const result = await builder.build();
 ```
 
 ## 开发
@@ -154,8 +144,18 @@ console.log(result.wasmPath);
 bun test
 
 # 运行 CLI
-bun run qin --help
+bun run src/cli.ts --help
 ```
+
+## 与 Maven 对比
+
+| 特性 | Maven | Qin |
+|------|-------|-----|
+| 配置格式 | XML (pom.xml) | TypeScript |
+| 启动速度 | 慢 | 快 |
+| 依赖解析 | Maven | Coursier |
+| Fat Jar | 需要插件 | 内置 |
+| 学习曲线 | 陡峭 | 平缓 |
 
 ## License
 

@@ -1,16 +1,23 @@
 {
-  "name": "hello-java",
-  "version": "1.0.0",
-  "description": "A simple Java project managed by Qin",
-  "main": "build/wasm/Hello.js",
-  "types": "build/wasm/Hello.d.ts",
+  "name": "my-app",
+  "type": "module",
   "scripts": {
-    "build": "qin java compile",
-    "start": "qin java run Hello",
-    "dev": "qin src/Hello.java"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch src/index.ts",
+    "dev:client": "vite",
+    "build": "tsc && vite build",
+    "start": "node dist/index.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "hono": "^4.10.8",
+    "hono-rpc": "../../hono-rpc"
+  },
   "devDependencies": {
-    "qin": "workspace:*"
+    "@types/node": "^20.11.17",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.0.3"
   }
 }

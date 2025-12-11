@@ -1,10 +1,12 @@
 {
   "name": "qin",
+  "version": "0.1.0",
+  "description": "Java-Vite: A modern Java build tool with zero XML configuration",
   "module": "index.ts",
   "type": "module",
   "private": true,
   "bin": {
-    "qin": "index.ts"
+    "qin": "src/cli.ts"
   },
   "scripts": {
     "qin": "bun run index.ts",
@@ -16,5 +18,9 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2"
   }
 }
