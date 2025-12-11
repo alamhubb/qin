@@ -1,23 +1,10 @@
 {
-  "name": "my-app",
-  "type": "module",
+  "name": "qin-hello-java",
+  "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "tsx watch src/index.ts",
-    "dev:client": "vite",
-    "build": "tsc && vite build",
-    "start": "node dist/index.js"
-  },
-  "dependencies": {
-    "@hono/node-server": "^1.19.6",
-    "hono": "^4.10.8",
-    "hono-rpc": "../../hono-rpc"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.17",
-    "concurrently": "^9.1.2",
-    "tsx": "^4.7.1",
-    "typescript": "^5.8.3",
-    "vite": "^6.0.3"
+    "dev": "bun run ../../src/cli.ts dev",
+    "run": "bun run ../../src/cli.ts run",
+    "build": "bun run ../../src/cli.ts build",
+    "start": "java -jar dist/hello-app.jar"
   }
 }
