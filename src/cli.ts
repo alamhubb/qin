@@ -9,6 +9,7 @@ import chalk from "chalk";
 import { ConfigLoader } from "./core/config-loader";
 import { EnvironmentChecker } from "./core/environment";
 import { DependencyResolver } from "./core/dependency-resolver";
+import { WorkspaceLoader } from "./core/workspace-loader";
 import { JavaRunner } from "./core/java-runner";
 import { FatJarBuilder } from "./core/fat-jar-builder";
 import { initProject } from "./commands/init";
@@ -72,7 +73,11 @@ program
       console.log(chalk.blue("→ Loading configuration..."));
       const configLoader = new ConfigLoader();
       const config = await configLoader.load();
-      const hasDependencies = config.dependencies && config.dependencies.length > 0;
+      const hasDependencies = config.dependencies && Object.keys(config.dependencies).length > 0;
+
+      // Load workspace packages if configured
+      const workspaceLoader = new WorkspaceLoader();
+      const localPackages = await workspaceLoader.loadPackages(config);
 
       // Check environment
       const envStatus = await envChecker.checkAll();
@@ -89,8 +94,8 @@ program
       if (hasDependencies) {
         console.log(chalk.blue("→ Resolving dependencies..."));
         const csCommand = await ensureCoursier();
-        const resolver = new DependencyResolver(csCommand, config.repositories);
-        classpath = await resolver.resolve(config.dependencies || []);
+        const resolver = new DependencyResolver(csCommand, config.repositories, localPackages);
+        classpath = await resolver.resolveFromObject(config.dependencies || {});
       }
 
       // Compile and run
@@ -116,7 +121,11 @@ program
       console.log(chalk.blue("→ Loading configuration..."));
       const configLoader = new ConfigLoader();
       const config = await configLoader.load();
-      const hasDependencies = config.dependencies && config.dependencies.length > 0;
+      const hasDependencies = config.dependencies && Object.keys(config.dependencies).length > 0;
+
+      // Load workspace packages if configured
+      const workspaceLoader = new WorkspaceLoader();
+      const localPackages = await workspaceLoader.loadPackages(config);
 
       // Check environment
       const envStatus = await envChecker.checkAll();
@@ -170,7 +179,11 @@ program
       console.log(chalk.blue("→ 加载配置..."));
       const configLoader = new ConfigLoader();
       const config = await configLoader.load();
-      const hasDependencies = config.dependencies && config.dependencies.length > 0;
+      const hasDependencies = config.dependencies && Object.keys(config.dependencies).length > 0;
+
+      // Load workspace packages if configured
+      const workspaceLoader = new WorkspaceLoader();
+      const localPackages = await workspaceLoader.loadPackages(config);
 
       // Check environment
       const envStatus = await envChecker.checkAll();
@@ -185,8 +198,8 @@ program
       if (hasDependencies) {
         console.log(chalk.blue("→ 解析依赖..."));
         const csCommand = await ensureCoursier();
-        const resolver = new DependencyResolver(csCommand, config.repositories);
-        classpath = await resolver.resolve(config.dependencies || []);
+        const resolver = new DependencyResolver(csCommand, config.repositories, localPackages);
+        classpath = await resolver.resolveFromObject(config.dependencies || {});
       }
 
       // Compile Java
@@ -237,12 +250,16 @@ program
       console.log(chalk.blue("→ 加载配置..."));
       const configLoader = new ConfigLoader();
       const config = await configLoader.load();
-      const hasDependencies = config.dependencies && config.dependencies.length > 0;
+      const hasDependencies = config.dependencies && Object.keys(config.dependencies).length > 0;
 
       if (!hasDependencies) {
         console.log(chalk.green("✓ 无依赖需要同步"));
         return;
       }
+
+      // Load workspace packages if configured
+      const workspaceLoader = new WorkspaceLoader();
+      const localPackages = await workspaceLoader.loadPackages(config);
 
       // Ensure Coursier is available
       console.log(chalk.blue("→ 检查环境..."));
@@ -250,8 +267,8 @@ program
 
       // Resolve and cache dependencies
       console.log(chalk.blue("→ 同步依赖..."));
-      const resolver = new DependencyResolver(csCommand, config.repositories);
-      const classpath = await resolver.resolve(config.dependencies || []);
+      const resolver = new DependencyResolver(csCommand, config.repositories, localPackages);
+      const classpath = await resolver.resolveFromObject(config.dependencies || {});
 
       // Save classpath to cache file
       const { mkdir, writeFile } = await import("fs/promises");

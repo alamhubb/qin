@@ -1,0 +1,24 @@
+{
+  "name": "vite-project",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx ./node_modules/vite/bin/vite.js",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.10.8",
+    "hono-class": "../hono-class"
+  },
+  "devDependencies": {
+    "@hono/vite-build": "^1.8.0",
+    "@hono/vite-dev-server": "^0.23.0",
+    "@hono/vite-ssg": "^0.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.7"
+  }
+}

@@ -1,10 +1,12 @@
 /**
  * Frontend Plugin for Qin
  * Integrates Vite for frontend development and building
+ * 自动检测前端目录：client/, src/client/
  */
 
 import { join } from "path";
 import { mkdir, cp, access, writeFile } from "fs/promises";
+import { existsSync } from "fs";
 import chalk from "chalk";
 import type { QinConfig, FrontendConfig } from "../types";
 
@@ -18,26 +20,55 @@ export class FrontendPlugin {
   private frontendConfig: FrontendConfig;
   private cwd: string;
   private debug: boolean;
+  private detectedSrcDir: string | null = null;
 
   constructor(config: QinConfig, options: FrontendPluginOptions = {}) {
     this.config = config;
-    this.frontendConfig = config.frontend || { enabled: false };
+    this.frontendConfig = config.frontend || {};
     this.cwd = options.cwd || process.cwd();
     this.debug = options.debug || false;
+    
+    // 自动检测前端目录
+    this.detectedSrcDir = this.detectFrontendDir();
   }
 
   /**
-   * Check if frontend is enabled
+   * 自动检测前端目录
+   * 检测顺序：配置值 > client/ > src/client/
+   */
+  private detectFrontendDir(): string | null {
+    // 如果配置了 srcDir，直接使用
+    if (this.frontendConfig.srcDir) {
+      const configuredDir = join(this.cwd, this.frontendConfig.srcDir);
+      if (existsSync(configuredDir)) {
+        return this.frontendConfig.srcDir;
+      }
+    }
+    
+    // 自动检测
+    const candidates = ["client", "src/client"];
+    for (const dir of candidates) {
+      const fullPath = join(this.cwd, dir);
+      if (existsSync(fullPath)) {
+        return dir;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Check if frontend is enabled (auto-detect)
    */
   isEnabled(): boolean {
-    return this.frontendConfig.enabled === true;
+    return this.detectedSrcDir !== null;
   }
 
   /**
    * Get frontend source directory
    */
   getSrcDir(): string {
-    return join(this.cwd, this.frontendConfig.srcDir || "client");
+    return join(this.cwd, this.detectedSrcDir || "client");
   }
 
   /**
@@ -51,12 +82,7 @@ export class FrontendPlugin {
    * Check if frontend source directory exists
    */
   async hasFrontend(): Promise<boolean> {
-    try {
-      await access(this.getSrcDir());
-      return true;
-    } catch {
-      return false;
-    }
+    return this.isEnabled();
   }
 
   /**
@@ -180,25 +206,14 @@ export default defineConfig({
 
   /**
    * Start Vite dev server
+   * 注意：如果后端（如 Spring Boot）已经能服务静态文件，则不需要启动 Vite
+   * 返回 null 表示不启动独立的前端服务器
    */
   async startDevServer(): Promise<{ port: number; stop: () => void } | null> {
-    if (!this.isEnabled() || !(await this.hasFrontend())) {
-      return null;
-    }
-
-    const port = this.frontendConfig.devPort || 5173;
-    console.log(chalk.blue(`→ 启动前端开发服务器 (端口 ${port})...`));
-
-    const proc = Bun.spawn(["npx", "vite", "--port", String(port)], {
-      cwd: this.getSrcDir(),
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-
-    return {
-      port,
-      stop: () => proc.kill(),
-    };
+    // 默认不启动 Vite 开发服务器
+    // 因为 Spring Boot 等后端框架可以直接服务静态文件
+    // 如果需要 Vite 的热更新功能，可以手动运行 npx vite
+    return null;
   }
 
   /**

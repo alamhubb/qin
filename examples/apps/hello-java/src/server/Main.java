@@ -1,14 +1,10 @@
 package server;
 
+import base.Utils;  // 使用 java-base 包
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +15,7 @@ import java.util.*;
 
 /**
  * Qin 示例 - Spring Boot HTTP 服务器
- * 使用标准 Spring Web 注解
+ * 使用 java-base 共享库
  */
 @SpringBootApplication
 @RestController
@@ -46,9 +42,11 @@ public class Main {
     @PostMapping("/api/greet")
     public Map<String, Object> greet(@RequestBody(required = false) GreetRequest request) {
         String name = (request != null && request.name != null) ? request.name : "世界";
+        // 使用 java-base 的 Utils 类
+        String greeting = Utils.greet(name);
         return Map.of(
-            "message", "后端返回: 你好, " + name + "!",
-            "timestamp", System.currentTimeMillis()
+            "message", "后端返回: " + greeting,
+            "timestamp", Utils.timestamp()
         );
     }
 
@@ -79,12 +77,10 @@ public class Main {
     }
 
     private String readStaticFile(String filename) throws IOException {
-        // 尝试从 src/client 读取（开发模式）
         Path devPath = Paths.get("src/client", filename);
         if (Files.exists(devPath)) {
             return Files.readString(devPath);
         }
-        // 尝试从 dist/static 读取（生产模式）
         Path prodPath = Paths.get("dist/static", filename);
         if (Files.exists(prodPath)) {
             return Files.readString(prodPath);
@@ -92,7 +88,6 @@ public class Main {
         return "File not found: " + filename;
     }
 
-    // 请求体类
     static class GreetRequest {
         public String name;
     }

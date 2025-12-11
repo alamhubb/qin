@@ -4,6 +4,7 @@
  */
 
 import { join } from "path";
+import { existsSync, readdirSync, statSync } from "fs";
 import type { QinConfig, ParsedEntry, ValidationResult } from "../types";
 
 export class ConfigLoader {
@@ -23,12 +24,18 @@ export class ConfigLoader {
       const module = await import(configPath);
       const config = module.default as QinConfig;
       
-      const validation = this.validate(config);
+      // Auto-detect entry if not specified
+      const resolvedConfig = {
+        ...config,
+        entry: config.entry || this.findEntry(),
+      };
+      
+      const validation = this.validate(resolvedConfig);
       if (!validation.valid) {
         throw new Error(`Invalid configuration: ${validation.errors.join(", ")}`);
       }
       
-      return this.applyDefaults(config);
+      return this.applyDefaults(resolvedConfig);
     } catch (error) {
       if (error instanceof Error && error.message.includes("Cannot find module")) {
         throw new Error(
@@ -37,6 +44,50 @@ export class ConfigLoader {
       }
       throw error;
     }
+  }
+
+  /**
+   * Auto-detect entry file
+   * Search order:
+   * 1. src/Main.java
+   * 2. src/server/Main.java
+   * 3. src/{subdir}/Main.java (any subdirectory)
+   */
+  findEntry(): string {
+    const candidates = [
+      "src/Main.java",
+      "src/server/Main.java",
+    ];
+
+    // Check fixed paths first
+    for (const candidate of candidates) {
+      if (existsSync(join(this.cwd, candidate))) {
+        return candidate;
+      }
+    }
+
+    // Search src/*/Main.java
+    const srcDir = join(this.cwd, "src");
+    if (existsSync(srcDir)) {
+      try {
+        const entries = readdirSync(srcDir);
+        for (const entry of entries) {
+          const subDir = join(srcDir, entry);
+          if (statSync(subDir).isDirectory()) {
+            const mainJava = join(subDir, "Main.java");
+            if (existsSync(mainJava)) {
+              return `src/${entry}/Main.java`;
+            }
+          }
+        }
+      } catch {
+        // Ignore errors
+      }
+    }
+
+    throw new Error(
+      "No entry file found. Please specify 'entry' in qin.config.ts or create src/Main.java"
+    );
   }
 
   /**
@@ -56,8 +107,8 @@ export class ConfigLoader {
       errors.push("'entry' must be a .java file");
     }
 
-    if (config.dependencies && !Array.isArray(config.dependencies)) {
-      errors.push("'dependencies' must be an array");
+    if (config.dependencies && typeof config.dependencies !== "object") {
+      errors.push("'dependencies' must be an object");
     }
 
     return {
@@ -70,15 +121,21 @@ export class ConfigLoader {
    * Apply default values to configuration
    */
   private applyDefaults(config: QinConfig): QinConfig {
+    const entry = config.entry!;
+    // jarName: 优先使用配置值，否则根据 name 生成，最后使用 app.jar
+    const jarName = config.output?.jarName 
+      || (config.name ? `${config.name}.jar` : "app.jar");
+    
     return {
       ...config,
+      entry,
       output: {
         dir: config.output?.dir || "dist",
-        jarName: config.output?.jarName || "app.jar",
+        jarName,
       },
       java: {
         version: config.java?.version || "17",
-        sourceDir: config.java?.sourceDir || this.parseEntry(config.entry).srcDir,
+        sourceDir: config.java?.sourceDir || this.parseEntry(entry).srcDir,
       },
     };
   }

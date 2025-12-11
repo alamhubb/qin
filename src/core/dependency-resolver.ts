@@ -1,37 +1,115 @@
 /**
  * Dependency Resolver for Qin
  * Uses Coursier to resolve Maven dependencies
+ * Supports local workspace packages
  */
 
-import type { ResolveResult, RepositoryConfig } from "../types";
+import semver from "semver";
+import type { ResolveResult, Repository } from "../types";
+import type { WorkspacePackage } from "./workspace-loader";
 
-// 阿里云 Maven 镜像
-const ALIYUN_MIRROR = "https://maven.aliyun.com/repository/public";
-
-// 默认仓库
+// 默认仓库（阿里云镜像优先）
 const DEFAULT_REPOS = [
-  ALIYUN_MIRROR,  // 国内镜像优先
-  "https://repo1.maven.org/maven2",  // Maven Central 备用
+  "https://maven.aliyun.com/repository/public",
+  "https://repo1.maven.org/maven2",
 ];
 
 export class DependencyResolver {
   private csCommand: string;
   private repositories: string[];
+  private localPackages: Map<string, WorkspacePackage>;
 
-  constructor(csCommand: string = "cs", repoConfig?: RepositoryConfig) {
+  constructor(
+    csCommand: string = "cs", 
+    repos?: Repository[],
+    localPackages?: Map<string, WorkspacePackage>
+  ) {
     this.csCommand = csCommand;
+    this.localPackages = localPackages || new Map();
     
-    // 配置仓库
-    if (repoConfig?.urls && repoConfig.urls.length > 0) {
-      // 使用自定义仓库
-      this.repositories = repoConfig.urls;
-    } else if (repoConfig?.useChinaMirror === false) {
-      // 明确禁用国内镜像
-      this.repositories = ["https://repo1.maven.org/maven2"];
+    // 解析仓库配置
+    if (repos && repos.length > 0) {
+      this.repositories = repos.map(repo => 
+        typeof repo === "string" ? repo : repo.url
+      );
     } else {
       // 默认使用阿里云镜像
       this.repositories = DEFAULT_REPOS;
     }
+  }
+
+  /**
+   * Resolve dependencies (object format) and return classpath
+   * Supports both Maven dependencies and local packages
+   * 
+   * 本地包版本规则：
+   * - "*" 匹配任意版本
+   * - "1.0.0" 精确匹配版本
+   */
+  async resolveFromObject(deps: Record<string, string>): Promise<string> {
+    if (!deps || Object.keys(deps).length === 0) {
+      return "";
+    }
+
+    const mavenDeps: string[] = [];
+    const localPaths: string[] = [];
+
+    for (const [name, version] of Object.entries(deps)) {
+      // Check if it's a local package
+      if (this.localPackages.has(name)) {
+        const pkg = this.localPackages.get(name)!;
+        
+        // 版本校验
+        if (version !== "*") {
+          const pkgVersion = pkg.config.version || "0.0.0";
+          if (!this.checkVersionMatch(version, pkgVersion)) {
+            throw new Error(
+              `本地包 "${name}" 版本不匹配: 需要 ${version}, 实际 ${pkgVersion}`
+            );
+          }
+        }
+        
+        localPaths.push(pkg.classesDir);
+      } else {
+        // Maven dependency: convert to groupId:artifactId:version format
+        mavenDeps.push(`${name}:${version}`);
+      }
+    }
+
+    // Resolve Maven dependencies
+    let mavenClasspath = "";
+    if (mavenDeps.length > 0) {
+      mavenClasspath = await this.resolve(mavenDeps);
+    }
+
+    // Combine local and Maven classpaths
+    const allPaths = [...localPaths];
+    if (mavenClasspath) {
+      allPaths.push(...this.parseClasspath(mavenClasspath));
+    }
+
+    return this.buildClasspath(allPaths);
+  }
+
+  /**
+   * 检查版本是否匹配
+   * 使用 semver 库支持完整的 npm 版本语法
+   * 
+   * 支持的语法：
+   * - "*" 或 "x" - 任意版本
+   * - "1.0.0" - 精确匹配
+   * - "^1.0.0" - 兼容版本 (>=1.0.0 <2.0.0)
+   * - "~1.0.0" - 补丁版本 (>=1.0.0 <1.1.0)
+   * - ">=1.0.0" - 大于等于
+   * - "1.0.0 - 2.0.0" - 范围
+   * - "1.x" 或 "1.*" - 主版本匹配
+   */
+  private checkVersionMatch(required: string, actual: string): boolean {
+    // 清理版本号（移除可能的 v 前缀）
+    const cleanActual = semver.clean(actual) || actual;
+    
+    // 使用 semver.satisfies 检查版本是否满足范围
+    return semver.satisfies(cleanActual, required);
   }
 
   /**

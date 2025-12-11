@@ -38,7 +38,9 @@ export class FatJarBuilder {
 
       // 2. Resolve and extract dependencies
       const resolver = new DependencyResolver("cs", this.config.repositories);
-      const jarPaths = await resolver.getJarPaths(this.config.dependencies || []);
+      const deps = this.config.dependencies || {};
+      const depStrings = Object.entries(deps).map(([name, version]) => `${name}:${version}`);
+      const jarPaths = await resolver.getJarPaths(depStrings);
       
       if (jarPaths.length > 0) {
         await this.extractJars(jarPaths);

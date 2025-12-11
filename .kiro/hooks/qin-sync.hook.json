@@ -1,0 +1,12 @@
+{
+  "name": "qin-sync",
+  "description": "自动同步 Qin 项目依赖 - 当 qin.config.ts 保存时触发",
+  "trigger": {
+    "type": "onFileSave",
+    "pattern": "**/qin.config.ts"
+  },
+  "action": {
+    "type": "command",
+    "command": "bun run src/cli.ts sync"
+  }
+}
