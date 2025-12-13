@@ -2,9 +2,13 @@
  * Dependency Resolver for Qin
  * Uses Coursier to resolve Maven dependencies
  * Supports local workspace packages
+ * 
+ * JAR 包下载到项目的 repository/ 目录（类似 node_modules）
  */
 
 import semver from "semver";
+import { join, basename } from "path";
+import { existsSync, mkdirSync, copyFileSync } from "fs";
 import type { ResolveResult, Repository } from "../types";
 import type { WorkspacePackage } from "./workspace-loader";
 
@@ -14,18 +18,40 @@ const DEFAULT_REPOS = [
   "https://repo1.maven.org/maven2",
 ];
 
+/**
+ * 获取全局 repository 目录
+ * ~/.qin/repository (类似 Maven 的 ~/.m2/repository)
+ */
+function getGlobalRepoDir(): string {
+  const home = process.env.HOME || process.env.USERPROFILE || "";
+  return join(home, ".qin", "repository");
+}
+
 export class DependencyResolver {
   private csCommand: string;
   private repositories: string[];
   private localPackages: Map<string, WorkspacePackage>;
+  private projectRoot: string;
+  private repoDir: string;
+  private useLocalRep: boolean;
 
   constructor(
     csCommand: string = "cs", 
     repos?: Repository[],
-    localPackages?: Map<string, WorkspacePackage>
+    localPackages?: Map<string, WorkspacePackage>,
+    projectRoot: string = process.cwd(),
+    localRep: boolean = false
   ) {
     this.csCommand = csCommand;
     this.localPackages = localPackages || new Map();
+    this.projectRoot = projectRoot;
+    this.useLocalRep = localRep;
+    
+    // localRep: true -> 项目本地 ./repository
+    // localRep: false -> 全局 ~/.qin/repository
+    this.repoDir = localRep 
+      ? join(projectRoot, "repository")
+      : getGlobalRepoDir();
     
     // 解析仓库配置
     if (repos && repos.length > 0) {
@@ -130,6 +156,7 @@ export class DependencyResolver {
 
   /**
    * Resolve dependencies and return detailed result
+   * JAR 包会被复制到项目的 repository/ 目录
    */
   async resolveWithDetails(deps: string[]): Promise<ResolveResult> {
     if (!deps || deps.length === 0) {
@@ -175,12 +202,15 @@ export class DependencyResolver {
       }
 
       const classpath = stdout.trim();
-      const jarPaths = this.parseClasspath(classpath);
+      const globalJarPaths = this.parseClasspath(classpath);
+
+      // 复制 JAR 到项目的 repository/ 目录
+      const localJarPaths = this.copyToRepository(globalJarPaths);
 
       return {
         success: true,
-        classpath,
-        jarPaths,
+        classpath: this.buildClasspath(localJarPaths),
+        jarPaths: localJarPaths,
       };
     } catch (error) {
       return {
@@ -188,6 +218,78 @@ export class DependencyResolver {
         error: error instanceof Error ? error.message : "Unknown error during dependency resolution",
       };
     }
+  }
+
+  /**
+   * 复制 JAR 文件到项目的 repository/ 目录
+   * 按 Maven 风格组织：org/springframework/boot/spring-boot-starter-web-3.2.0.jar
+   */
+  private copyToRepository(globalPaths: string[]): string[] {
+    // 确保 repository 目录存在
+    if (!existsSync(this.repoDir)) {
+      mkdirSync(this.repoDir, { recursive: true });
+    }
+
+    const localPaths: string[] = [];
+
+    for (const globalPath of globalPaths) {
+      if (!globalPath.endsWith(".jar")) continue;
+
+      // 从路径中提取 groupId（Maven 缓存路径格式）
+      // 例如: ~/.cache/coursier/v1/https/repo1.maven.org/maven2/org/springframework/boot/spring-boot-starter-web/3.2.0/spring-boot-starter-web-3.2.0.jar
+      const groupPath = this.extractGroupPath(globalPath);
+      const jarName = basename(globalPath);
+      
+      // 创建目录结构：repository/org/springframework/boot/
+      const targetDir = join(this.repoDir, groupPath);
+      if (!existsSync(targetDir)) {
+        mkdirSync(targetDir, { recursive: true });
+      }
+
+      const localPath = join(targetDir, jarName);
+
+      // 如果本地不存在，复制过来
+      if (!existsSync(localPath)) {
+        copyFileSync(globalPath, localPath);
+      }
+
+      localPaths.push(localPath);
+    }
+
+    return localPaths;
+  }
+
+  /**
+   * 从 Maven 缓存路径提取 groupId 路径
+   * 输入: .../org/springframework/boot/spring-boot-starter-web/3.2.0/xxx.jar
+   * 输出: org/springframework/boot
+   */
+  private extractGroupPath(jarPath: string): string {
+    // 标准化路径分隔符
+    const normalized = jarPath.replace(/\\/g, "/");
+    
+    // 查找 maven2/ 或 public/ 后面的路径
+    const patterns = ["/maven2/", "/public/", "/repository/"];
+    
+    for (const pattern of patterns) {
+      const idx = normalized.indexOf(pattern);
+      if (idx !== -1) {
+        // 获取 pattern 后面的路径
+        const afterPattern = normalized.substring(idx + pattern.length);
+        // 路径格式: org/springframework/boot/spring-boot-starter-web/3.2.0/xxx.jar
+        // 我们需要: org/springframework/boot
+        const parts = afterPattern.split("/");
+        // 移除最后3个部分（artifactId/version/filename）
+        if (parts.length >= 4) {
+          return parts.slice(0, -3).join("/");
+        }
+      }
+    }
+
+    // 回退：从 JAR 名称猜测
+    const jarName = basename(jarPath, ".jar");
+    // spring-boot-starter-web-3.2.0 -> 无法确定 groupId，放在根目录
+    return "";
   }
 
   /**

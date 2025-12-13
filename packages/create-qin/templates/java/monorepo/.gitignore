@@ -1,0 +1,17 @@
+# Qin
+.cache/
+build/
+dist/
+repository/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/

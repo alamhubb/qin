@@ -126,15 +126,15 @@ describe("ConfigLoader", () => {
       expect(result.errors).toContain("'entry' must be a .java file");
     });
 
-    test("rejects non-array dependencies", () => {
+    test("rejects non-object dependencies", () => {
       const loader = new ConfigLoader();
       const result = loader.validate({
         entry: "src/Main.java",
-        dependencies: "not-an-array" as any,
+        dependencies: "not-an-object" as any,
       });
       
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain("'dependencies' must be an array");
+      expect(result.errors).toContain("'dependencies' must be an object");
     });
   });
 });

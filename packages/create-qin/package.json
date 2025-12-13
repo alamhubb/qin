@@ -1,0 +1,30 @@
+{
+  "name": "create-qin",
+  "version": "0.0.1",
+  "description": "Create a new Qin project",
+  "type": "module",
+  "bin": {
+    "create-qin": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "dev": "bun run src/index.ts"
+  },
+  "keywords": [
+    "qin",
+    "create",
+    "scaffold",
+    "java",
+    "typescript",
+    "bun"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "qin-plugin-spring",
+  "version": "0.1.0",
+  "description": "Spring Boot support for Qin (auto DevTools, actuator, yml config)",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "keywords": [
+    "qin",
+    "qin-plugin",
+    "spring",
+    "spring-boot",
+    "devtools",
+    "yaml"
+  ],
+  "dependencies": {
+    "yaml": "^2.3.4"
+  },
+  "license": "MIT"
+}

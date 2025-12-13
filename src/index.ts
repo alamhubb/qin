@@ -1,9 +1,36 @@
 // Qin - Cross-language Build System
 // Main exports for use as a library
 
+// Core types and config
+export { defineConfig } from "./types";
+export type { QinConfig, QinPlugin, PluginContext, ClientConfig, Repository } from "./types";
+
+// Plugin system
+export {
+  PluginManager,
+  definePlugin,
+  type LanguageSupport,
+  type CompileContext,
+  type RunContext,
+  type TestContext,
+  type BuildContext,
+  type CompileResult,
+  type BuildResult,
+  type TestResult,
+} from "./core/plugin-system";
+
+// Plugin detector (auto-detection)
+export {
+  PluginDetector,
+  autoConfigurePlugins,
+  describeDetection,
+  type DetectionResult,
+} from "./core/plugin-detector";
+
+// Java utilities
 export { JavaBuilder, type JavaBuildConfig } from "./java/builder";
 export { QinPackageManager, parseDependency, type QinDependency, type DependencyValidationResult } from "./java/package-manager";
-export { loadQinConfig, mergeConfig, loadPackageJson, savePackageJson, type QinConfig, type PackageJson } from "./java/config";
+export { loadQinConfig, mergeConfig, loadPackageJson, savePackageJson, type PackageJson } from "./java/config";
 export { 
   ClassFileParser, 
   getPublicMethods, 

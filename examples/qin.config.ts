@@ -1,17 +1,12 @@
-import type { QinConfig } from "../src/types.ts";
+import { defineConfig } from "../src/types";
 
 /**
  * Qin Workspace 配置
- * Monorepo 多项目管理（不需要 entry）
+ * Monorepo 多项目管理
  */
-const config: QinConfig = {
+export default defineConfig({
   name: "qin-examples",
 
   // 多项目配置
-  packages: [
-    "apps/*",
-    "packages/*",
-  ],
-};
-
-export default config;
+  packages: ["apps/*", "packages/*"],
+});

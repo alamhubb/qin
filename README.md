@@ -1,161 +1,129 @@
-# Qin - Java-Vite Build Tool
+# Qin
 
-Qin 是一个基于 Bun + Coursier + JDK 的现代化 Java 构建工具，定位为 "Java 的 Vite"。
+> 基于 Bun 的新一代跨语言构建工具，以 TypeScript 取代 XML，引领 Java 进入全栈时代。
 
-## 特性
+> A next-generation cross-language build tool powered by Bun. Replace XML with TypeScript, and lead Java into the full-stack era.
 
-- 🚀 **零 XML 配置** - 使用 TypeScript 配置文件，告别繁琐的 pom.xml
-- ⚡ **极速启动** - 利用 Bun 的高性能和 Coursier 的快速依赖解析
-- 📦 **一键运行** - `qin run` 编译并运行 Java 程序
-- 🎁 **Fat Jar 打包** - `qin build` 生成包含所有依赖的可执行 JAR
-- 🎨 **美观输出** - 彩色终端输出，清晰的进度显示
+## 愿景
 
-## 安装
+**告别 pom.xml，让 Java 开发像前端一样简单。**
 
-```bash
-# 克隆项目
-git clone <repo-url>
-cd qin
+我们相信 Java 开发者不应该被繁琐的 XML 配置所困扰。Qin 的目标是成为下一代 Maven，用现代化的开发体验重新定义 Java 项目管理。
 
-# 安装依赖
-bun install
+## 核心特性
 
-# 链接 CLI（可选）
-bun link
-```
-
-### 前置要求
-
-- [Bun](https://bun.sh/) - JavaScript 运行时
-- [Coursier](https://get-coursier.io/) - Maven 依赖解析器
-- [JDK 17+](https://adoptium.net/) - Java 开发工具包
+- 🚀 **零 XML 配置** - 使用 TypeScript 配置文件，类型安全，IDE 友好
+- ⚡ **极速启动** - 基于 Bun 运行时，毫秒级响应
+- 📦 **Monorepo 支持** - 原生多项目管理，本地包自动解析
+- 🔗 **npm 风格依赖** - `"group:artifact": "^1.0.0"` 语法，支持 semver
+- 🎨 **前端集成** - Spring Boot + 前端一体化开发
+- 🎁 **Fat Jar 打包** - 一键生成可执行 JAR
 
 ## 快速开始
 
-### 初始化项目
-
 ```bash
+# 安装
+bun install
+
+# 初始化项目
 qin init
-```
 
-这会创建：
-- `qin.config.ts` - 项目配置文件
-- `src/Main.java` - Hello World 示例
+# 开发模式
+qin dev
 
-### 编译运行
-
-```bash
-qin run
-```
-
-### 构建 Fat Jar
-
-```bash
+# 构建
 qin build
 ```
 
-生成的 JAR 文件位于 `dist/app.jar`，可以直接运行：
-
-```bash
-java -jar dist/app.jar
-```
-
-## 配置文件
+## 配置示例
 
 `qin.config.ts`:
 
 ```typescript
 import type { QinConfig } from "qin";
 
-export default {
-  // 入口文件
-  entry: "src/Main.java",
+const config: QinConfig = {
+  name: "my-app",
   
-  // Maven 依赖
-  dependencies: [
-    "com.google.guava:guava:32.1.3-jre",
-    "org.slf4j:slf4j-api:2.0.9",
-  ],
-  
-  // 输出配置
-  output: {
-    dir: "dist",
-    jarName: "app.jar",
+  // 依赖配置（npm 风格）
+  dependencies: {
+    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "my-local-lib": "^1.0.0",  // 本地包
   },
-} satisfies QinConfig;
+  
+  // Maven 仓库（默认阿里云镜像）
+  repositories: [
+    "https://maven.aliyun.com/repository/public",
+  ],
+};
+
+export default config;
 ```
 
-## 项目结构
+## Monorepo 多项目
 
 ```
-my-project/
-├── qin.config.ts      # 项目配置
-├── src/
-│   └── Main.java      # 源代码
-├── .qin/
-│   ├── classes/       # 编译输出
-│   └── temp/          # 构建临时目录
-└── dist/
-    └── app.jar        # Fat Jar 输出
+my-workspace/
+├── qin.config.ts          # workspace 配置
+├── apps/
+│   └── web-app/           # 主应用
+│       └── qin.config.ts
+└── packages/
+    └── shared-lib/        # 共享库
+        └── qin.config.ts
+```
+
+Workspace 配置：
+
+```typescript
+const config: QinConfig = {
+  name: "my-workspace",
+  packages: ["apps/*", "packages/*"],
+};
 ```
 
 ## CLI 命令
 
-```bash
-qin init              # 初始化新项目
-qin run [args...]     # 编译并运行
-qin build [--debug]   # 构建 Fat Jar
-qin --help            # 显示帮助
-```
-
-## API 使用
-
-Qin 也可以作为库使用：
-
-```typescript
-import { 
-  ConfigLoader, 
-  DependencyResolver, 
-  JavaRunner, 
-  FatJarBuilder 
-} from "./src/qin";
-
-// 加载配置
-const loader = new ConfigLoader();
-const config = await loader.load();
-
-// 解析依赖
-const resolver = new DependencyResolver();
-const classpath = await resolver.resolve(config.dependencies || []);
-
-// 编译运行
-const runner = new JavaRunner(config, classpath);
-await runner.compileAndRun();
-
-// 构建 Fat Jar
-const builder = new FatJarBuilder(config);
-const result = await builder.build();
-```
-
-## 开发
-
-```bash
-# 运行测试
-bun test
-
-# 运行 CLI
-bun run src/cli.ts --help
-```
+| 命令 | 说明 |
+|------|------|
+| `qin init` | 初始化新项目 |
+| `qin dev` | 启动开发服务器 |
+| `qin run` | 编译并运行 |
+| `qin build` | 构建 Fat Jar |
+| `qin sync` | 同步依赖 |
 
 ## 与 Maven 对比
 
 | 特性 | Maven | Qin |
 |------|-------|-----|
-| 配置格式 | XML (pom.xml) | TypeScript |
+| 配置格式 | XML | TypeScript |
+| 类型检查 | ❌ | ✅ |
 | 启动速度 | 慢 | 快 |
-| 依赖解析 | Maven | Coursier |
-| Fat Jar | 需要插件 | 内置 |
+| Monorepo | 复杂 | 原生支持 |
+| 前端集成 | 需要插件 | 内置 |
 | 学习曲线 | 陡峭 | 平缓 |
+
+## 技术栈
+
+- **运行时**: [Bun](https://bun.sh/) - 高性能 JavaScript 运行时
+- **依赖解析**: [Coursier](https://get-coursier.io/) - 快速 Maven 依赖解析
+- **配置加载**: [c12](https://github.com/unjs/c12) - 支持多格式配置
+- **版本匹配**: [semver](https://github.com/npm/node-semver) - npm 语义化版本
+- **Glob 匹配**: [tinyglobby](https://github.com/SuperchupuDev/tinyglobby) - 轻量 glob 库
+
+## 开发
+
+```bash
+# 安装依赖
+bun install
+
+# 运行测试
+bun test
+
+# 运行示例
+cd examples/apps/hello-java
+bun run ../../../src/cli.ts dev
+```
 
 ## License
 

@@ -1,12 +1,10 @@
-import type { QinConfig } from "../../../src/types.ts";
+import { defineConfig } from "../../../src/types";
 
 /**
  * Java Base 共享库配置
  * 提供通用工具类
  */
-const config: QinConfig = {
+export default defineConfig({
   name: "java-base",
   version: "0.0.1",
-};
-
-export default config;
+});

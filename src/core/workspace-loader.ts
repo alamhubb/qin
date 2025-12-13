@@ -3,8 +3,9 @@
  * Handles monorepo/multi-project configurations
  */
 
-import { join, dirname, resolve } from "path";
-import { existsSync, readdirSync, statSync } from "fs";
+import { join, dirname } from "path";
+import { findUp } from "find-up";
+import { glob } from "tinyglobby";
 import type { QinConfig } from "../types";
 
 export interface WorkspacePackage {
@@ -31,26 +32,41 @@ export class WorkspaceLoader {
 
   /**
    * Find workspace root by looking for qin.config.ts with packages field
+   * 使用 find-up 库向上查找
    */
   async findWorkspaceRoot(): Promise<string | null> {
-    let dir = this.cwd;
-    const root = resolve("/");
+    // 先找到所有 qin.config.ts 文件
+    const configPath = await findUp("qin.config.ts", { cwd: this.cwd });
+    
+    if (!configPath) {
+      return null;
+    }
 
-    while (dir !== root) {
-      const configPath = join(dir, "qin.config.ts");
-      if (existsSync(configPath)) {
-        try {
-          const module = await import(configPath);
-          const config = module.default as QinConfig;
-          if (config.packages && config.packages.length > 0) {
-            this.workspaceRoot = dir;
-            return dir;
-          }
-        } catch {
-          // Continue searching
+    // 从找到的配置文件开始，向上查找有 packages 字段的配置
+    let dir = dirname(configPath);
+    
+    while (dir) {
+      const configFile = join(dir, "qin.config.ts");
+      try {
+        const module = await import(configFile);
+        const config = module.default as QinConfig;
+        if (config.packages && config.packages.length > 0) {
+          this.workspaceRoot = dir;
+          return dir;
         }
+      } catch {
+        // Continue searching
       }
-      dir = dirname(dir);
+      
+      // 向上一级
+      const parentDir = dirname(dir);
+      if (parentDir === dir) break; // 到达根目录
+      
+      // 检查父目录是否有 qin.config.ts
+      const parentConfig = await findUp("qin.config.ts", { cwd: parentDir });
+      if (!parentConfig || dirname(parentConfig) === dir) break;
+      
+      dir = dirname(parentConfig);
     }
 
     return null;
@@ -93,49 +109,21 @@ export class WorkspaceLoader {
       return this.packages;
     }
 
-    for (const pattern of rootConfig.packages) {
-      const packagePaths = this.resolveGlob(pattern, baseDir);
-      
-      for (const pkgPath of packagePaths) {
-        await this.loadPackage(pkgPath);
-      }
+    // 使用 tinyglobby 查找所有匹配的 qin.config.ts 文件
+    const patterns = rootConfig.packages.map(p => `${p}/qin.config.ts`);
+    const configFiles = await glob(patterns, {
+      cwd: baseDir,
+      absolute: true,
+      onlyFiles: true,
+    });
+
+    // 加载每个找到的包
+    for (const configFile of configFiles) {
+      const pkgPath = dirname(configFile);
+      await this.loadPackage(pkgPath);
     }
 
     return this.packages;
-  }
-
-  /**
-   * Resolve glob pattern to actual paths
-   */
-  private resolveGlob(pattern: string, baseDir: string): string[] {
-    const paths: string[] = [];
-    
-    if (pattern.includes("*")) {
-      // Handle glob pattern like "packages/*"
-      const [dirPart] = pattern.split("*");
-      const basePath = join(baseDir, dirPart);
-      
-      if (existsSync(basePath)) {
-        const entries = readdirSync(basePath);
-        for (const entry of entries) {
-          const fullPath = join(basePath, entry);
-          if (statSync(fullPath).isDirectory()) {
-            // Check if it has qin.config.ts
-            if (existsSync(join(fullPath, "qin.config.ts"))) {
-              paths.push(fullPath);
-            }
-          }
-        }
-      }
-    } else {
-      // Direct path
-      const fullPath = join(baseDir, pattern);
-      if (existsSync(fullPath) && existsSync(join(fullPath, "qin.config.ts"))) {
-        paths.push(fullPath);
-      }
-    }
-
-    return paths;
   }
 
   /**
@@ -153,7 +141,7 @@ export class WorkspaceLoader {
           name: config.name,
           path: pkgPath,
           config,
-          classesDir: join(pkgPath, ".qin", "classes"),
+          classesDir: join(pkgPath, "build", "classes"),
         });
       }
     } catch (error) {

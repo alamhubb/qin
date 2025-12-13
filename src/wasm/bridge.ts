@@ -51,7 +51,7 @@ export interface FieldInfo {
 }
 
 const DEFAULT_CONFIG: WasmBridgeConfig = {
-  cacheDir: ".qin/cache",
+  cacheDir: ".cache",
   wasmOutDir: "build/wasm",
   classOutDir: "build/classes",
   debug: false,

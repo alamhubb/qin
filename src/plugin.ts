@@ -30,9 +30,9 @@ export interface JavaPluginConfig {
  * Create the Bun plugin for .java file loading
  */
 export function javaPlugin(config: JavaPluginConfig = {}): BunPlugin {
-  const cacheDir = config.cacheDir ?? ".qin/cache";
-  const wasmOutDir = config.wasmOutDir ?? ".qin/wasm";
-  const classOutDir = config.classOutDir ?? ".qin/classes";
+  const cacheDir = config.cacheDir ?? ".cache";
+  const wasmOutDir = config.wasmOutDir ?? ".cache/wasm";
+  const classOutDir = config.classOutDir ?? "build/classes";
   const debug = config.debug ?? false;
 
   return {

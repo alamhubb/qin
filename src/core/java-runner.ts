@@ -1,13 +1,16 @@
 /**
  * Java Runner for Qin
  * Compiles and runs Java programs
+ * Handles resource files (application.yml, etc.)
  */
 
-import { join } from "path";
-import { mkdir } from "fs/promises";
+import { join, relative } from "path";
+import { mkdir, cp, readdir, stat } from "fs/promises";
+import { existsSync } from "fs";
 import type { QinConfig, CompileResult, ParsedEntry } from "../types";
 import { ConfigLoader } from "./config-loader";
 import { getClasspathSeparator } from "./dependency-resolver";
+import { formatJavacOutput } from "./error-formatter";
 
 export class JavaRunner {
   private config: QinConfig;
@@ -19,11 +22,11 @@ export class JavaRunner {
     this.config = config;
     this.classpath = classpath;
     this.cwd = cwd || process.cwd();
-    this.outputDir = join(this.cwd, ".qin", "classes");
+    this.outputDir = join(this.cwd, "build", "classes");
   }
 
   /**
-   * Compile Java source files
+   * Compile Java source files and copy resources
    */
   async compile(): Promise<CompileResult> {
     // Ensure output directory exists
@@ -45,6 +48,9 @@ export class JavaRunner {
       };
     }
 
+    // Copy resource files to output directory
+    await this.copyResources(parsed.srcDir);
+
     // Build javac command
     const args = this.buildCompileArgs(javaFiles);
 
@@ -59,9 +65,11 @@ export class JavaRunner {
       await proc.exited;
 
       if (proc.exitCode !== 0) {
+        // 格式化错误输出
+        const formattedError = formatJavacOutput(stderr.trim(), this.cwd);
         return {
           success: false,
-          error: stderr.trim() || "Compilation failed",
+          error: formattedError || "Compilation failed",
           compiledFiles: 0,
           outputDir: this.outputDir,
         };
@@ -79,6 +87,46 @@ export class JavaRunner {
         compiledFiles: 0,
         outputDir: this.outputDir,
       };
+    }
+  }
+
+  /**
+   * Copy resource files to output directory
+   * Searches for resources in multiple locations:
+   * 1. src/resources/
+   * 2. src/main/resources/ (Maven style)
+   * 3. {srcDir}/resources/ (relative to source)
+   */
+  private async copyResources(srcDir: string): Promise<void> {
+    const resourceDirs = [
+      join(this.cwd, "src", "resources"),
+      join(this.cwd, "src", "main", "resources"),
+      join(this.cwd, srcDir, "resources"),
+    ];
+
+    for (const resourceDir of resourceDirs) {
+      if (existsSync(resourceDir)) {
+        await this.copyDir(resourceDir, this.outputDir);
+      }
+    }
+  }
+
+  /**
+   * Recursively copy directory contents
+   */
+  private async copyDir(src: string, dest: string): Promise<void> {
+    const entries = await readdir(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const srcPath = join(src, entry.name);
+      const destPath = join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        await mkdir(destPath, { recursive: true });
+        await this.copyDir(srcPath, destPath);
+      } else {
+        await cp(srcPath, destPath, { force: true });
+      }
     }
   }
 

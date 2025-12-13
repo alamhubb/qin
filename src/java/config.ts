@@ -43,9 +43,9 @@ export interface PackageJson {
 const DEFAULT_PATHS = {
   srcDir: "src",
   entryFile: "src/main.java",
-  outDir: ".qin/classes",
-  wasmOutDir: ".qin/wasm",
-  cacheDir: ".qin/cache",
+  outDir: "build/classes",
+  wasmOutDir: ".cache/wasm",
+  cacheDir: ".cache",
 };
 
 // Default user-configurable options

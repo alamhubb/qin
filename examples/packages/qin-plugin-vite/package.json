@@ -1,0 +1,35 @@
+{
+  "name": "qin-plugin-vite",
+  "version": "0.0.1",
+  "description": "Vite plugin for Qin - enables frontend development with HMR",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "qin",
+    "vite",
+    "plugin",
+    "frontend"
+  ],
+  "license": "MIT"
+}
