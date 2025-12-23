@@ -23,7 +23,7 @@ public class QinConfig {
     /** 后端服务器端口，默认 8080 */
     private int port = 8080;
 
-    /** 使用项目本地 repository（./repository） */
+    /** 使用项目本地 libs（./libs），默认 false 使用全局 ~/.qin/libs */
     private boolean localRep = false;
 
     /** 前端配置 */

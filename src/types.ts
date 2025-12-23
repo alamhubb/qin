@@ -107,11 +107,11 @@ export interface QinConfig {
   port?: number;
 
   /**
-   * 使用项目本地 repository（./repository）
-   * 默认 false，使用全局 ~/.qin/repository
+   * 使用项目本地 libs（./libs）
+   * 默认 false，使用全局 ~/.qin/libs
    * 
    * @example
-   * localRep: true  // 依赖安装到 ./repository
+   * localRep: true  // 依赖安装到 ./libs
    */
   localRep?: boolean;
 

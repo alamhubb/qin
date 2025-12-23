@@ -3,7 +3,7 @@
  * Uses Coursier to resolve Maven dependencies
  * Supports local workspace packages
  * 
- * JAR 包下载到项目的 repository/ 目录（类似 node_modules）
+ * JAR 包下载到项目的 libs/ 目录（类似 node_modules）
  */
 
 import semver from "semver";
@@ -19,12 +19,12 @@ const DEFAULT_REPOS = [
 ];
 
 /**
- * 获取全局 repository 目录
- * ~/.qin/repository (类似 Maven 的 ~/.m2/repository)
+ * 获取全局 libs 目录
+ * ~/.qin/libs
  */
 function getGlobalRepoDir(): string {
   const home = process.env.HOME || process.env.USERPROFILE || "";
-  return join(home, ".qin", "repository");
+  return join(home, ".qin", "libs");
 }
 
 export class DependencyResolver {
@@ -47,10 +47,10 @@ export class DependencyResolver {
     this.projectRoot = projectRoot;
     this.useLocalRep = localRep;
     
-    // localRep: true -> 项目本地 ./repository
-    // localRep: false -> 全局 ~/.qin/repository
+    // localRep: true -> 项目本地 ./libs
+    // localRep: false -> 全局 ~/.qin/libs
     this.repoDir = localRep 
-      ? join(projectRoot, "repository")
+      ? join(projectRoot, "libs")
       : getGlobalRepoDir();
     
     // 解析仓库配置

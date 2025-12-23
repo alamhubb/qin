@@ -82,6 +82,28 @@ const config: QinConfig = {
 };
 ```
 
+## 依赖存储
+
+Qin 支持两种依赖存储模式：
+
+```ts
+// 全局存储（默认）- 依赖存放在 ~/.qin/libs/
+export default defineConfig({
+  dependencies: { ... },
+});
+
+// 本地存储 - 依赖存放在项目 ./libs/ 目录（类似 node_modules）
+export default defineConfig({
+  localRep: true,  // 启用本地存储
+  dependencies: { ... },
+});
+```
+
+| 模式 | 存储位置 | 特点 |
+|------|---------|------|
+| 全局（默认） | `~/.qin/libs/` | 多项目共享，节省空间 |
+| 本地 | `./libs/` | 项目内可见，便于调试 |
+
 ## CLI 命令
 
 | 命令 | 说明 |

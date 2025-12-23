@@ -78,7 +78,11 @@ export default defineConfig({
 
 ## 依赖存储
 
+Qin 采用类似 pnpm 的存储策略，支持全局缓存和本地可见两种模式。
+
 ### 全局存储（默认）
+
+默认情况下，所有依赖存储在全局目录，多个项目共享：
 
 ```
 ~/.qin/repository/
@@ -88,22 +92,57 @@ export default defineConfig({
             └── spring-boot-3.2.0.jar
 ```
 
-### 本地存储
+优点：
+- 节省磁盘空间（多项目共享）
+- 下载一次，到处使用
+
+### 本地存储（localRep）
+
+如果你希望在项目内直接看到依赖（类似 `node_modules`），可以启用本地存储：
 
 ```ts
 export default defineConfig({
-  localRep: true,  // 启用本地存储
+  localRep: true,  // 依赖安装到项目本地 ./repository
 });
 ```
 
+启用后，项目结构：
+
 ```
 my-app/
-└── repository/
-    └── org/
-        └── springframework/
-            └── boot/
-                └── spring-boot-3.2.0.jar
+├── qin.config.ts
+├── src/
+│   └── server/
+│       └── Main.java
+├── repository/              # 本地依赖目录（类似 node_modules）
+│   └── org/
+│       └── springframework/
+│           └── boot/
+│               └── spring-boot-3.2.0.jar
+└── .qin/
+    └── classes/             # 编译输出
 ```
+
+优点：
+- 依赖在项目内可见，方便查看源码
+- 项目自包含，便于打包分发
+- 离线开发更方便
+
+::: tip 何时使用 localRep？
+- 需要查看/调试依赖源码时
+- 项目需要离线运行时
+- 团队协作需要锁定依赖版本时
+:::
+
+### 存储对比
+
+| 特性 | 全局存储 (默认) | 本地存储 (localRep: true) |
+|------|----------------|--------------------------|
+| 存储位置 | `~/.qin/repository/` | `./repository/` |
+| 磁盘占用 | 低（共享） | 高（每项目独立） |
+| 依赖可见 | ❌ 需要去全局目录查看 | ✅ 项目内直接可见 |
+| 离线支持 | 需要先下载 | 项目自包含 |
+| 类似于 | Maven `~/.m2/repository` | npm `node_modules` |
 
 ## 同步依赖
 

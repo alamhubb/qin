@@ -33,7 +33,7 @@ public class DependencyResolver {
         this.useLocalRep = localRep;
         
         this.repoDir = localRep 
-            ? Paths.get(projectRoot, "repository").toString()
+            ? Paths.get(projectRoot, "libs").toString()
             : getGlobalRepoDir();
 
         if (repos != null && !repos.isEmpty()) {
@@ -47,7 +47,7 @@ public class DependencyResolver {
 
     private static String getGlobalRepoDir() {
         String home = System.getProperty("user.home");
-        return Paths.get(home, ".qin", "repository").toString();
+        return Paths.get(home, ".qin", "libs").toString();
     }
 
     /**
