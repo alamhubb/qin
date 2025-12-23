@@ -1,0 +1,35 @@
+{
+  "name": "qin-plugin-graalvm",
+  "version": "0.1.0",
+  "description": "GraalVM runtime support for Qin build tool",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "dev": "bun build ./src/index.ts --outdir ./dist --target node --watch"
+  },
+  "keywords": [
+    "qin",
+    "qin-plugin",
+    "graalvm",
+    "polyglot",
+    "build-tool"
+  ],
+  "peerDependencies": {
+    "qin": ">=0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "license": "MIT"
+}
