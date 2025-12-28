@@ -3,30 +3,40 @@ package com.qin.types;
 import java.util.Map;
 
 /**
- * 前端配置（内置 Vite 支持）
+ * 前端配置 (Java 25 Record) - 内置 Vite 支持
+ * 
+ * @param root   前端源码目录
+ * @param port   前端开发服务器端口
+ * @param proxy  API 代理配置
+ * @param outDir 构建输出目录
  */
-public class ClientConfig {
-    /** 前端源码目录，默认 "src/client" */
-    private String root = "src/client";
-    
-    /** 前端开发服务器端口，默认 5173 */
-    private int port = 5173;
-    
-    /** API 代理配置 */
-    private Map<String, String> proxy;
-    
-    /** 构建输出目录，默认 "dist/static" */
-    private String outDir = "dist/static";
+public record ClientConfig(
+        String root,
+        int port,
+        Map<String, String> proxy,
+        String outDir) {
 
-    public String getRoot() { return root; }
-    public void setRoot(String root) { this.root = root; }
+    /**
+     * Compact Constructor with defaults
+     */
+    public ClientConfig {
+        root = root != null && !root.isBlank() ? root : "src/client";
+        port = port > 0 ? port : 5173;
+        proxy = proxy != null ? Map.copyOf(proxy) : Map.of();
+        outDir = outDir != null && !outDir.isBlank() ? outDir : "dist/static";
+    }
 
-    public int getPort() { return port; }
-    public void setPort(int port) { this.port = port; }
+    /**
+     * 默认构造器
+     */
+    public ClientConfig() {
+        this(null, 0, null, null);
+    }
 
-    public Map<String, String> getProxy() { return proxy; }
-    public void setProxy(Map<String, String> proxy) { this.proxy = proxy; }
-
-    public String getOutDir() { return outDir; }
-    public void setOutDir(String outDir) { this.outDir = outDir; }
+    /**
+     * 只指定根目录
+     */
+    public ClientConfig(String root) {
+        this(root, 0, null, null);
+    }
 }

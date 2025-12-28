@@ -37,7 +37,7 @@ public class WorkspaceLoader {
             if (Files.exists(configPath)) {
                 String content = Files.readString(configPath);
                 QinConfig config = gson.fromJson(content, QinConfig.class);
-                if (config.getPackages() != null && !config.getPackages().isEmpty()) {
+                if (config.packages() != null && !config.packages().isEmpty()) {
                     workspaceRoot = current.toString();
                     return workspaceRoot;
                 }
@@ -53,7 +53,7 @@ public class WorkspaceLoader {
      */
     public Map<String, WorkspacePackage> loadPackages(QinConfig projectConfig) throws IOException {
         // Check if current config has packages
-        if (projectConfig.getPackages() != null && !projectConfig.getPackages().isEmpty()) {
+        if (projectConfig.packages() != null && !projectConfig.packages().isEmpty()) {
             workspaceRoot = cwd;
             return loadPackagesFromRoot(projectConfig, cwd);
         }
@@ -73,11 +73,11 @@ public class WorkspaceLoader {
     }
 
     private Map<String, WorkspacePackage> loadPackagesFromRoot(QinConfig rootConfig, String rootDir) throws IOException {
-        if (rootConfig.getPackages() == null || rootConfig.getPackages().isEmpty()) {
+        if (rootConfig.packages() == null || rootConfig.packages().isEmpty()) {
             return packages;
         }
 
-        for (String pattern : rootConfig.getPackages()) {
+        for (String pattern : rootConfig.packages()) {
             // Simple glob matching
             Path basePath = Paths.get(rootDir);
             
@@ -115,10 +115,10 @@ public class WorkspaceLoader {
                 String content = Files.readString(configPath);
                 QinConfig config = gson.fromJson(content, QinConfig.class);
 
-                if (config.getName() != null) {
+                if (config.name() != null) {
                     String classesDir = Paths.get(pkgPath, "build", "classes").toString();
-                    packages.put(config.getName(), new WorkspacePackage(
-                        config.getName(),
+                    packages.put(config.name(), new WorkspacePackage(
+                        config.name(),
                         pkgPath,
                         config,
                         classesDir

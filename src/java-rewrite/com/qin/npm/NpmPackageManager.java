@@ -281,7 +281,7 @@ public class NpmPackageManager {
             TarEntry entry;
             while ((entry = tis.getNextEntry()) != null) {
                 // npm 包的内容在 package/ 目录下
-                String name = entry.getName();
+                String name = entry.name();
                 if (name.startsWith("package/")) {
                     name = name.substring("package/".length());
                 }

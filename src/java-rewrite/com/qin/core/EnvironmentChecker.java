@@ -20,9 +20,9 @@ public class EnvironmentChecker {
         String home = System.getProperty("user.home");
         this.qinHome = Paths.get(home, ".qin").toString();
         this.isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-        this.csPath = isWindows 
-            ? Paths.get(qinHome, "bin", "cs.exe").toString()
-            : Paths.get(qinHome, "bin", "cs").toString();
+        this.csPath = isWindows
+                ? Paths.get(qinHome, "bin", "cs.exe").toString()
+                : Paths.get(qinHome, "bin", "cs").toString();
     }
 
     public String getCoursierCommand() {
@@ -92,12 +92,12 @@ public class EnvironmentChecker {
 
     private boolean installCoursierUnix(Path binDir) throws Exception {
         String arch = System.getProperty("os.arch").contains("aarch64") ? "aarch64" : "x86_64";
-        String os = System.getProperty("os.name").toLowerCase().contains("mac") 
-            ? "apple-darwin" : "pc-linux";
+        String os = System.getProperty("os.name").toLowerCase().contains("mac")
+                ? "apple-darwin"
+                : "pc-linux";
         String url = String.format(
-            "https://github.com/coursier/launchers/raw/master/cs-%s-%s.gz",
-            arch, os
-        );
+                "https://github.com/coursier/launchers/raw/master/cs-%s-%s.gz",
+                arch, os);
 
         System.out.println("  下载 Coursier...");
         Path gzPath = Paths.get(qinHome, "cs.gz");
@@ -106,7 +106,7 @@ public class EnvironmentChecker {
         // Decompress
         Path csFile = Paths.get(csPath);
         try (GZIPInputStream gis = new GZIPInputStream(Files.newInputStream(gzPath));
-             OutputStream os2 = Files.newOutputStream(csFile)) {
+                OutputStream os2 = Files.newOutputStream(csFile)) {
             gis.transferTo(os2);
         }
         Files.deleteIfExists(gzPath);
@@ -158,44 +158,44 @@ public class EnvironmentChecker {
         if ("coursier".equals(tool)) {
             if (isWindows) {
                 return """
-                    To install Coursier on Windows:
-                      1. Download from: https://get-coursier.io/docs/cli-installation
-                      2. Or use Scoop: scoop install coursier
-                      3. Or use Chocolatey: choco install coursier
-                    """;
+                        To install Coursier on Windows:
+                          1. Download from: https://get-coursier.io/docs/cli-installation
+                          2. Or use Scoop: scoop install coursier
+                          3. Or use Chocolatey: choco install coursier
+                        """;
             } else if (isMac) {
                 return """
-                    To install Coursier on macOS:
-                      brew install coursier/formulas/coursier
-                    """;
+                        To install Coursier on macOS:
+                          brew install coursier/formulas/coursier
+                        """;
             } else {
                 return """
-                    To install Coursier on Linux:
-                      curl -fL https://github.com/coursier/launchers/raw/master/cs-x86_64-pc-linux.gz | gzip -d > cs
-                      chmod +x cs
-                      ./cs setup
-                    """;
+                        To install Coursier on Linux:
+                          curl -fL https://github.com/coursier/launchers/raw/master/cs-x86_64-pc-linux.gz | gzip -d > cs
+                          chmod +x cs
+                          ./cs setup
+                        """;
             }
         }
 
         if ("javac".equals(tool)) {
             if (isWindows) {
                 return """
-                    To install JDK on Windows:
-                      1. Download from: https://adoptium.net/
-                      2. Or use Scoop: scoop install temurin17-jdk
-                    """;
+                        To install JDK on Windows:
+                          1. Download from: https://adoptium.net/
+                          2. Or use Scoop: scoop install temurin17-jdk
+                        """;
             } else if (isMac) {
                 return """
-                    To install JDK on macOS:
-                      brew install openjdk@17
-                    """;
+                        To install JDK on macOS:
+                          brew install openjdk@17
+                        """;
             } else {
                 return """
-                    To install JDK on Linux:
-                      sudo apt install openjdk-17-jdk  # Debian/Ubuntu
-                      sudo dnf install java-17-openjdk-devel  # Fedora
-                    """;
+                        To install JDK on Linux:
+                          sudo apt install openjdk-17-jdk  # Debian/Ubuntu
+                          sudo dnf install java-17-openjdk-devel  # Fedora
+                        """;
             }
         }
 

@@ -12,7 +12,8 @@ public class PluginManager {
     private final List<QinPlugin> plugins = new ArrayList<>();
     private final Map<String, QinPlugin> languagePlugins = new HashMap<>();
 
-    public PluginManager() {}
+    public PluginManager() {
+    }
 
     public PluginManager(List<QinPlugin> plugins) {
         if (plugins != null) {

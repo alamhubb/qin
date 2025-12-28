@@ -10,8 +10,8 @@ import java.util.*;
 import java.util.regex.*;
 
 /**
- * Configuration Loader for Qin
- * 加载配置文件，支持多种格式
+ * Configuration Loader for Qin (Java 25)
+ * 加载配置文件，QinConfig 现在是不可变 Record
  */
 public class ConfigLoader {
     private final String cwd;
@@ -44,21 +44,20 @@ public class ConfigLoader {
 
         if (detection.getLanguages().isEmpty() && detection.getFeatures().isEmpty()) {
             throw new IOException(
-                "No project detected. Create src/Main.java or create qin.config.json"
-            );
+                    "No project detected. Create src/Main.java or create qin.config.json");
         }
 
-        // 零配置模式
-        QinConfig config = new QinConfig();
-        config.setEntry(detection.getEntry());
-        
-        if (detection.getClientDir() != null) {
-            ClientConfig client = new ClientConfig();
-            client.setRoot(detection.getClientDir());
-            config.setClient(client);
-        }
+        // 零配置模式 - 使用简化构造器
+        return applyDefaults(new QinConfig(
+                detectProjectName(),
+                "1.0.0"));
+    }
 
-        return applyDefaults(config);
+    /**
+     * Auto-detect project name from directory
+     */
+    private String detectProjectName() {
+        return Paths.get(cwd).getFileName().toString();
     }
 
     /**
@@ -66,10 +65,11 @@ public class ConfigLoader {
      */
     public String findEntry() {
         String[] candidates = {
-            "src/Main.java",
-            "src/server/Main.java",
-            "src/App.java",
-            "src/Application.java"
+                "src/main/java/com/subhuti/Main.java",
+                "src/Main.java",
+                "src/server/Main.java",
+                "src/App.java",
+                "src/Application.java"
         };
 
         for (String candidate : candidates) {
@@ -109,7 +109,7 @@ public class ConfigLoader {
             return ValidationResult.failure(errors);
         }
 
-        if (config.getEntry() != null && !config.getEntry().endsWith(".java")) {
+        if (config.entry() != null && !config.entry().endsWith(".java")) {
             errors.add("'entry' must be a .java file");
         }
 
@@ -118,39 +118,39 @@ public class ConfigLoader {
 
     /**
      * Apply default values to configuration
+     * 因为 Record 不可变，所以返回新的 QinConfig 实例
      */
     private QinConfig applyDefaults(QinConfig config) {
-        if (config.getEntry() == null) {
-            config.setEntry(findEntry());
+        // 如果已经有完整配置，直接返回
+        if (config.entry() != null && config.output() != null && config.java() != null) {
+            return config;
         }
 
-        // Output defaults
-        if (config.getOutput() == null) {
-            config.setOutput(new OutputConfig());
-        }
-        if (config.getOutput().getDir() == null) {
-            config.getOutput().setDir("dist");
-        }
-        if (config.getOutput().getJarName() == null) {
-            String jarName = config.getName() != null ? config.getName() + ".jar" : "app.jar";
-            config.getOutput().setJarName(jarName);
-        }
+        // 构建带默认值的新 config
+        String entry = config.entry() != null ? config.entry() : findEntry();
+        OutputConfig output = config.output() != null ? config.output() : new OutputConfig();
+        JavaConfig java = config.java() != null ? config.java() : new JavaConfig("25");
 
-        // Java defaults
-        if (config.getEntry() != null) {
-            if (config.getJava() == null) {
-                config.setJava(new JavaConfig());
-            }
-            if (config.getJava().getVersion() == null) {
-                config.getJava().setVersion("17");
-            }
-            if (config.getJava().getSourceDir() == null) {
-                ParsedEntry parsed = parseEntry(config.getEntry());
-                config.getJava().setSourceDir(parsed.getSrcDir());
-            }
-        }
-
-        return config;
+        // 创建新的不可变配置
+        return new QinConfig(
+                config.name(),
+                config.version(),
+                config.description(),
+                config.scope(),
+                config.port(),
+                config.localRep(),
+                config.client(),
+                config.plugins(),
+                entry,
+                config.dependencies(),
+                config.devDependencies(),
+                config.packages(),
+                output,
+                java,
+                config.graalvm(),
+                config.frontend(),
+                config.scripts(),
+                config.repositories());
     }
 
     /**
@@ -158,12 +158,12 @@ public class ConfigLoader {
      */
     public ParsedEntry parseEntry(String entry) {
         if (entry == null) {
-            return new ParsedEntry("src", "Main", "src/Main.java");
+            return new ParsedEntry("src/main/java", "Main", "src/main/java/Main.java");
         }
 
         String normalized = entry.replace("\\", "/");
         int lastSlash = normalized.lastIndexOf("/");
-        
+
         String fileName = lastSlash >= 0 ? normalized.substring(lastSlash + 1) : normalized;
         String srcDir = lastSlash >= 0 ? normalized.substring(0, lastSlash) : ".";
         String simpleClassName = fileName.replace(".java", "");

@@ -101,13 +101,13 @@ public class QinCli {
 
         // Resolve dependencies
         String classpath = "";
-        Map<String, String> deps = config.getDependencies();
+        Map<String, String> deps = config.dependencies();
         if (deps != null && !deps.isEmpty()) {
             System.out.println(blue("→ Resolving dependencies..."));
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
-                csCommand, config.getRepositories(), null,
-                System.getProperty("user.dir"), config.isLocalRep()
+                csCommand, config.repositories(), null,
+                System.getProperty("user.dir"), config.localRep()
             );
             classpath = resolver.resolveFromObject(deps);
         }
@@ -166,13 +166,13 @@ public class QinCli {
 
         // Resolve dependencies
         String classpath = "";
-        Map<String, String> deps = config.getDependencies();
+        Map<String, String> deps = config.dependencies();
         if (deps != null && !deps.isEmpty()) {
             System.out.println(blue("→ Resolving dependencies..."));
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
-                csCommand, config.getRepositories(), null,
-                System.getProperty("user.dir"), config.isLocalRep()
+                csCommand, config.repositories(), null,
+                System.getProperty("user.dir"), config.localRep()
             );
             classpath = resolver.resolveFromObject(deps);
         }
@@ -209,13 +209,13 @@ public class QinCli {
 
         // Resolve dependencies
         String classpath = "";
-        Map<String, String> deps = config.getDependencies();
+        Map<String, String> deps = config.dependencies();
         if (deps != null && !deps.isEmpty()) {
             System.out.println(blue("→ Resolving dependencies..."));
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
-                csCommand, config.getRepositories(), null,
-                System.getProperty("user.dir"), config.isLocalRep()
+                csCommand, config.repositories(), null,
+                System.getProperty("user.dir"), config.localRep()
             );
             classpath = resolver.resolveFromObject(deps);
         }
@@ -249,7 +249,7 @@ public class QinCli {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
-        Map<String, String> deps = config.getDependencies();
+        Map<String, String> deps = config.dependencies();
         if (deps == null || deps.isEmpty()) {
             System.out.println(green("✓ No dependencies to sync"));
             return;
@@ -260,8 +260,8 @@ public class QinCli {
 
         System.out.println(blue("→ Syncing dependencies..."));
         DependencyResolver resolver = new DependencyResolver(
-            csCommand, config.getRepositories(), null,
-            System.getProperty("user.dir"), config.isLocalRep()
+            csCommand, config.repositories(), null,
+            System.getProperty("user.dir"), config.localRep()
         );
         
         ResolveResult result = resolver.resolveWithDetails(
@@ -278,7 +278,7 @@ public class QinCli {
         Path cacheDir = Paths.get(System.getProperty("user.dir"), "build", ".cache");
         Files.createDirectories(cacheDir);
         
-        List<String> jarPaths = result.getJarPaths();
+        List<String> jarPaths = result.jarPaths();
         String json = "{\n  \"classpath\": [\n    \"" + 
             String.join("\",\n    \"", jarPaths) + "\"\n  ]\n}";
         Files.writeString(cacheDir.resolve("classpath.json"), json);
@@ -314,12 +314,12 @@ public class QinCli {
         // Compile main source first
         System.out.println(blue("→ Compiling source code..."));
         String classpath = "";
-        Map<String, String> deps = config.getDependencies();
+        Map<String, String> deps = config.dependencies();
         if (deps != null && !deps.isEmpty()) {
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
-                csCommand, config.getRepositories(), null,
-                System.getProperty("user.dir"), config.isLocalRep()
+                csCommand, config.repositories(), null,
+                System.getProperty("user.dir"), config.localRep()
             );
             classpath = resolver.resolveFromObject(deps);
         }

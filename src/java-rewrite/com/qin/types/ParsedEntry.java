@@ -1,25 +1,39 @@
 package com.qin.types;
 
 /**
- * Parsed entry point information
+ * Parsed entry point information (Java 25 Record)
+ * 
+ * @param srcDir    Source directory path
+ * @param className Class name (fully qualified)
+ * @param filePath  Full file path
  */
-public class ParsedEntry {
-    /** Source directory path */
-    private final String srcDir;
-    
-    /** Class name without .java extension */
-    private final String className;
-    
-    /** Full file path */
-    private final String filePath;
+public record ParsedEntry(
+        String srcDir,
+        String className,
+        String filePath) {
 
-    public ParsedEntry(String srcDir, String className, String filePath) {
-        this.srcDir = srcDir;
-        this.className = className;
-        this.filePath = filePath;
+    /**
+     * Compact Constructor with validation
+     */
+    public ParsedEntry {
+        if (srcDir == null || srcDir.isBlank()) {
+            srcDir = "src/main/java";
+        }
+        if (className == null || className.isBlank()) {
+            className = "Main";
+        }
     }
 
-    public String getSrcDir() { return srcDir; }
-    public String getClassName() { return className; }
-    public String getFilePath() { return filePath; }
+    // Compatibility getters
+    public String getSrcDir() {
+        return srcDir;
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
 }

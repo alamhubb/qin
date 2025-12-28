@@ -36,8 +36,8 @@ public class JavaRunner {
             Files.createDirectories(Paths.get(outputDir));
 
             ConfigLoader configLoader = new ConfigLoader(cwd);
-            ParsedEntry parsed = configLoader.parseEntry(config.getEntry());
-            Path srcDir = Paths.get(cwd, parsed.getSrcDir());
+            ParsedEntry parsed = configLoader.parseEntry(config.entry());
+            Path srcDir = Paths.get(cwd, parsed.srcDir());
 
             List<String> javaFiles = findJavaFiles(srcDir);
             if (javaFiles.isEmpty()) {
@@ -45,7 +45,7 @@ public class JavaRunner {
             }
 
             // Copy resources
-            copyResources(parsed.getSrcDir());
+            copyResources(parsed.srcDir());
 
             // Build javac command
             List<String> args = buildCompileArgs(javaFiles);
@@ -73,7 +73,7 @@ public class JavaRunner {
      */
     public void run(List<String> args) throws Exception {
         ConfigLoader configLoader = new ConfigLoader(cwd);
-        ParsedEntry parsed = configLoader.parseEntry(config.getEntry());
+        ParsedEntry parsed = configLoader.parseEntry(config.entry());
 
         String fullClasspath = buildFullClasspath();
 
@@ -81,7 +81,7 @@ public class JavaRunner {
         javaArgs.add("java");
         javaArgs.add("-cp");
         javaArgs.add(fullClasspath);
-        javaArgs.add(parsed.getClassName());
+        javaArgs.add(parsed.className());
         if (args != null) {
             javaArgs.addAll(args);
         }

@@ -2,118 +2,145 @@ package com.qin.types;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Qin - Java-Vite Build Tool
- * Main configuration interface for qin.config.ts
+ * Qin Build Tool - Java 25 版本
+ * 主配置记录（使用 Java 25 Record + Flexible Constructor Bodies）
+ * 
+ * @param name            项目名称
+ * @param version         项目版本
+ * @param description     项目描述
+ * @param scope           依赖作用域（默认 COMPILE）
+ * @param port            后端服务器端口（默认 8080）
+ * @param localRep        是否使用项目本地 libs（默认 false）
+ * @param client          前端配置
+ * @param plugins         插件列表
+ * @param entry           Java 入口文件路径
+ * @param dependencies    运行时依赖
+ * @param devDependencies 开发依赖
+ * @param packages        Monorepo 多项目配置
+ * @param output          输出配置
+ * @param java            Java 特定配置
+ * @param graalvm         GraalVM 配置
+ * @param frontend        前端配置
+ * @param scripts         自定义脚本
+ * @param repositories    Maven 仓库列表
  */
-public class QinConfig {
-    /** Project name */
-    private String name;
-    
-    /** Project version */
-    private String version;
-    
-    /** Project description */
-    private String description;
+public record QinConfig(
+        String name,
+        String version,
+        String description,
+        DependencyScope scope,
+        int port,
+        boolean localRep,
+        ClientConfig client,
+        List<QinPlugin> plugins,
+        String entry,
+        Map<String, String> dependencies,
+        Map<String, String> devDependencies,
+        List<String> packages,
+        OutputConfig output,
+        JavaConfig java,
+        GraalVMConfig graalvm,
+        FrontendConfig frontend,
+        Map<String, String> scripts,
+        List<Repository> repositories) {
 
-    /** 当前包被其他项目引用时的默认 scope */
-    private DependencyScope scope = DependencyScope.COMPILE;
+    /**
+     * Compact Constructor with Flexible Constructor Bodies (JEP 513)
+     * 允许在调用父构造器前进行验证和初始化
+     */
+    public QinConfig {
+        // ✨ Java 25 新特性：Flexible Constructor Bodies
+        // 可以在 super() 调用前进行验证和参数处理
 
-    /** 后端服务器端口，默认 8080 */
-    private int port = 8080;
+        // 验证必需字段
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Project name cannot be null or blank");
+        }
 
-    /** 使用项目本地 libs（./libs），默认 false 使用全局 ~/.qin/libs */
-    private boolean localRep = false;
+        if (version == null || version.isBlank()) {
+            throw new IllegalArgumentException("Project version cannot be null or blank");
+        }
 
-    /** 前端配置 */
-    private ClientConfig client;
-    
-    /** 插件列表 */
-    private List<QinPlugin> plugins;
-    
-    /** Java 入口文件路径 */
-    private String entry;
-    
-    /** 依赖配置 */
-    private Map<String, String> dependencies;
+        // 提供默认值
+        scope = scope != null ? scope : DependencyScope.COMPILE;
+        port = port > 0 ? port : 8080;
 
-    /** 开发依赖 */
-    private Map<String, String> devDependencies;
-    
-    /** Monorepo 多项目配置 */
-    private List<String> packages;
-    
-    /** Output configuration */
-    private OutputConfig output;
-    
-    /** Java-specific configuration */
-    private JavaConfig java;
+        // 确保集合不可变
+        dependencies = dependencies != null ? Map.copyOf(dependencies) : Map.of();
+        devDependencies = devDependencies != null ? Map.copyOf(devDependencies) : Map.of();
+        packages = packages != null ? List.copyOf(packages) : List.of();
+        plugins = plugins != null ? List.copyOf(plugins) : List.of();
+        scripts = scripts != null ? Map.copyOf(scripts) : Map.of();
+        repositories = repositories != null ? List.copyOf(repositories) : List.of();
+    }
 
-    /** GraalVM 配置 */
-    private GraalVMConfig graalvm;
-    
-    /** Frontend configuration */
-    private FrontendConfig frontend;
-    
-    /** Custom scripts */
-    private Map<String, String> scripts;
-    
-    /** Maven 仓库配置 */
-    private List<Repository> repositories;
+    /**
+     * 简化构造器 - 只需必需参数
+     */
+    public QinConfig(String name, String version) {
+        this(
+                name,
+                version,
+                null, // description
+                DependencyScope.COMPILE, // scope (默认值)
+                8080, // port (默认值)
+                false, // localRep
+                null, // client
+                null, // plugins
+                null, // entry
+                null, // dependencies
+                null, // devDependencies
+                null, // packages
+                null, // output
+                null, // java
+                null, // graalvm
+                null, // frontend
+                null, // scripts
+                null // repositories
+        );
+    }
 
-    // Getters and Setters
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    /**
+     * 判断是否包含指定依赖
+     */
+    public boolean hasDependency(String artifact) {
+        return dependencies.containsKey(artifact) ||
+                devDependencies.containsKey(artifact);
+    }
 
-    public String getVersion() { return version; }
-    public void setVersion(String version) { this.version = version; }
+    /**
+     * 获取依赖版本
+     */
+    public String getDependencyVersion(String artifact) {
+        String version = dependencies.get(artifact);
+        return version != null ? version : devDependencies.get(artifact);
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    /**
+     * 是否为 Monorepo 项目
+     */
+    public boolean isMonorepo() {
+        return packages != null && !packages.isEmpty();
+    }
 
-    public DependencyScope getScope() { return scope; }
-    public void setScope(DependencyScope scope) { this.scope = scope; }
+    /**
+     * 获取有效的仓库列表（如果为空则使用默认仓库）
+     */
+    public List<Repository> effectiveRepositories() {
+        if (repositories == null || repositories.isEmpty()) {
+            return List.of(
+                    new Repository("aliyun", "https://maven.aliyun.com/repository/public"),
+                    new Repository("central", "https://repo1.maven.org/maven2"));
+        }
+        return repositories;
+    }
 
-    public int getPort() { return port; }
-    public void setPort(int port) { this.port = port; }
-
-    public boolean isLocalRep() { return localRep; }
-    public void setLocalRep(boolean localRep) { this.localRep = localRep; }
-
-    public ClientConfig getClient() { return client; }
-    public void setClient(ClientConfig client) { this.client = client; }
-
-    public List<QinPlugin> getPlugins() { return plugins; }
-    public void setPlugins(List<QinPlugin> plugins) { this.plugins = plugins; }
-
-    public String getEntry() { return entry; }
-    public void setEntry(String entry) { this.entry = entry; }
-
-    public Map<String, String> getDependencies() { return dependencies; }
-    public void setDependencies(Map<String, String> dependencies) { this.dependencies = dependencies; }
-
-    public Map<String, String> getDevDependencies() { return devDependencies; }
-    public void setDevDependencies(Map<String, String> devDependencies) { this.devDependencies = devDependencies; }
-
-    public List<String> getPackages() { return packages; }
-    public void setPackages(List<String> packages) { this.packages = packages; }
-
-    public OutputConfig getOutput() { return output; }
-    public void setOutput(OutputConfig output) { this.output = output; }
-
-    public JavaConfig getJava() { return java; }
-    public void setJava(JavaConfig java) { this.java = java; }
-
-    public GraalVMConfig getGraalvm() { return graalvm; }
-    public void setGraalvm(GraalVMConfig graalvm) { this.graalvm = graalvm; }
-
-    public FrontendConfig getFrontend() { return frontend; }
-    public void setFrontend(FrontendConfig frontend) { this.frontend = frontend; }
-
-    public Map<String, String> getScripts() { return scripts; }
-    public void setScripts(Map<String, String> scripts) { this.scripts = scripts; }
-
-    public List<Repository> getRepositories() { return repositories; }
-    public void setRepositories(List<Repository> repositories) { this.repositories = repositories; }
+    @Override
+    public String toString() {
+        return String.format("QinConfig[name=%s, version=%s, dependencies=%d, devDependencies=%d]",
+                name, version, dependencies.size(), devDependencies.size());
+    }
 }

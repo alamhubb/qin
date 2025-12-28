@@ -1,7 +1,7 @@
 {
   "name": "qin",
   "version": "0.1.0",
-  "description": "基于 Bun 的新一代跨语言构建工具",
+  "description": "纯Java实现的新一代构建工具 (Pure Java build tool)",
   "module": "index.ts",
   "type": "module",
   "private": true,

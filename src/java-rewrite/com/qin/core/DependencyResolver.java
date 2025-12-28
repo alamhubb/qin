@@ -13,9 +13,8 @@ import java.util.stream.*;
  */
 public class DependencyResolver {
     private static final List<String> DEFAULT_REPOS = Arrays.asList(
-        "https://maven.aliyun.com/repository/public",
-        "https://repo1.maven.org/maven2"
-    );
+            "https://maven.aliyun.com/repository/public",
+            "https://repo1.maven.org/maven2");
 
     private final String csCommand;
     private final List<String> repositories;
@@ -25,21 +24,21 @@ public class DependencyResolver {
     private final boolean useLocalRep;
 
     public DependencyResolver(String csCommand, List<Repository> repos,
-                              Map<String, WorkspacePackage> localPackages,
-                              String projectRoot, boolean localRep) {
+            Map<String, WorkspacePackage> localPackages,
+            String projectRoot, boolean localRep) {
         this.csCommand = csCommand != null ? csCommand : "cs";
         this.localPackages = localPackages != null ? localPackages : new HashMap<>();
         this.projectRoot = projectRoot;
         this.useLocalRep = localRep;
-        
-        this.repoDir = localRep 
-            ? Paths.get(projectRoot, "libs").toString()
-            : getGlobalRepoDir();
+
+        this.repoDir = localRep
+                ? Paths.get(projectRoot, "libs").toString()
+                : getGlobalRepoDir();
 
         if (repos != null && !repos.isEmpty()) {
             this.repositories = repos.stream()
-                .map(Repository::getUrl)
-                .collect(Collectors.toList());
+                    .map(Repository::url)
+                    .collect(Collectors.toList());
         } else {
             this.repositories = DEFAULT_REPOS;
         }
@@ -68,13 +67,13 @@ public class DependencyResolver {
             if (localPackages.containsKey(name)) {
                 WorkspacePackage pkg = localPackages.get(name);
                 if (!"*".equals(version)) {
-                    String pkgVersion = pkg.getConfig().getVersion();
-                    if (pkgVersion == null) pkgVersion = "0.0.0";
+                    String pkgVersion = pkg.getConfig().version();
+                    if (pkgVersion == null)
+                        pkgVersion = "0.0.0";
                     if (!checkVersionMatch(version, pkgVersion)) {
                         throw new IOException(
-                            String.format("本地包 \"%s\" 版本不匹配: 需要 %s, 实际 %s",
-                                name, version, pkgVersion)
-                        );
+                                String.format("本地包 \"%s\" 版本不匹配: 需要 %s, 实际 %s",
+                                        name, version, pkgVersion));
                     }
                 }
                 localPaths.add(pkg.getClassesDir());
@@ -109,7 +108,7 @@ public class DependencyResolver {
             throw new IOException(result.getError());
         }
 
-        return result.getClasspath();
+        return result.classpath();
     }
 
     /**
@@ -124,8 +123,7 @@ public class DependencyResolver {
         for (String dep : deps) {
             if (!isValidDependency(dep)) {
                 return ResolveResult.failure(
-                    String.format("Invalid dependency format: \"%s\". Expected: groupId:artifactId:version", dep)
-                );
+                        String.format("Invalid dependency format: \"%s\". Expected: groupId:artifactId:version", dep));
             }
         }
 
@@ -151,8 +149,7 @@ public class DependencyResolver {
 
             if (exitCode != 0) {
                 return ResolveResult.failure(
-                    stderr.isEmpty() ? "Coursier failed to resolve dependencies" : stderr.trim()
-                );
+                        stderr.isEmpty() ? "Coursier failed to resolve dependencies" : stderr.trim());
             }
 
             String classpath = stdout.trim();
@@ -172,7 +169,8 @@ public class DependencyResolver {
         List<String> localPaths = new ArrayList<>();
 
         for (String globalPath : globalPaths) {
-            if (!globalPath.endsWith(".jar")) continue;
+            if (!globalPath.endsWith(".jar"))
+                continue;
 
             String groupPath = extractGroupPath(globalPath);
             String jarName = Paths.get(globalPath).getFileName().toString();
@@ -193,7 +191,7 @@ public class DependencyResolver {
 
     private String extractGroupPath(String jarPath) {
         String normalized = jarPath.replace("\\", "/");
-        String[] patterns = {"/maven2/", "/public/", "/repository/"};
+        String[] patterns = { "/maven2/", "/public/", "/repository/" };
 
         for (String pattern : patterns) {
             int idx = normalized.indexOf(pattern);
@@ -215,7 +213,8 @@ public class DependencyResolver {
     }
 
     private boolean checkVersionMatch(String required, String actual) {
-        if ("*".equals(required)) return true;
+        if ("*".equals(required))
+            return true;
         // 简化版本匹配，完整实现需要 semver 库
         if (required.startsWith("^") || required.startsWith("~")) {
             String base = required.substring(1);
@@ -233,8 +232,8 @@ public class DependencyResolver {
             return new ArrayList<>();
         }
         return Arrays.stream(classpath.split(getClasspathSeparator()))
-            .filter(p -> !p.isEmpty())
-            .collect(Collectors.toList());
+                .filter(p -> !p.isEmpty())
+                .collect(Collectors.toList());
     }
 
     public static String buildClasspath(List<String> paths) {

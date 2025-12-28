@@ -30,7 +30,7 @@ public class FatJarBuilder {
         this.debug = debug;
         this.cwd = cwd;
         this.tempDir = Paths.get(cwd, "build", "temp").toString();
-        this.outputDir = Paths.get(cwd, config.getOutput() != null ? config.getOutput().getDir() : "dist").toString();
+        this.outputDir = Paths.get(cwd, config.output() != null ? config.output().dir() : "dist").toString();
     }
 
     /**
@@ -53,12 +53,12 @@ public class FatJarBuilder {
 
             // Generate manifest
             ConfigLoader configLoader = new ConfigLoader(cwd);
-            ParsedEntry parsed = configLoader.parseEntry(config.getEntry());
-            generateManifest(parsed.getClassName());
+            ParsedEntry parsed = configLoader.parseEntry(config.entry());
+            generateManifest(parsed.className());
 
             // Package JAR
-            String jarName = config.getOutput() != null && config.getOutput().getJarName() != null
-                ? config.getOutput().getJarName() : "app.jar";
+            String jarName = config.output() != null && config.output().jarName() != null
+                ? config.output().jarName() : "app.jar";
             String outputPath = Paths.get(outputDir, jarName).toString();
             packageJar(outputPath);
 
@@ -151,20 +151,20 @@ public class FatJarBuilder {
         }
 
         // Fallback to real-time resolution
-        if (config.getDependencies() == null || config.getDependencies().isEmpty()) {
+        if (config.dependencies() == null || config.dependencies().isEmpty()) {
             return new ArrayList<>();
         }
 
         DependencyResolver resolver = new DependencyResolver(
-            "cs", config.getRepositories(), null, cwd, config.isLocalRep()
+            "cs", config.repositories(), null, cwd, config.localRep()
         );
         
-        List<String> deps = config.getDependencies().entrySet().stream()
+        List<String> deps = config.dependencies().entrySet().stream()
             .map(e -> e.getKey() + ":" + e.getValue())
             .collect(Collectors.toList());
 
         ResolveResult result = resolver.resolveWithDetails(deps);
-        return result.isSuccess() ? result.getJarPaths() : new ArrayList<>();
+        return result.isSuccess() ? result.jarPaths() : new ArrayList<>();
     }
 
     private void extractJars(List<String> jarPaths) throws Exception {
@@ -195,8 +195,8 @@ public class FatJarBuilder {
 
     private void compileSource() throws Exception {
         ConfigLoader configLoader = new ConfigLoader(cwd);
-        ParsedEntry parsed = configLoader.parseEntry(config.getEntry());
-        Path srcDir = Paths.get(cwd, parsed.getSrcDir());
+        ParsedEntry parsed = configLoader.parseEntry(config.entry());
+        Path srcDir = Paths.get(cwd, parsed.srcDir());
 
         List<String> javaFiles;
         try (Stream<Path> walk = Files.walk(srcDir)) {
@@ -234,7 +234,7 @@ public class FatJarBuilder {
         }
 
         // Copy resources
-        copyResources(parsed.getSrcDir());
+        copyResources(parsed.srcDir());
     }
 
     private void copyResources(String srcDir) throws IOException {

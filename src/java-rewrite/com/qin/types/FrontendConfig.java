@@ -1,24 +1,30 @@
 package com.qin.types;
 
 /**
- * 前端配置
+ * 前端配置 (Java 25 Record)
+ * 
+ * @param srcDir  前端源码目录
+ * @param outDir  构建输出目录
+ * @param devPort Vite 开发服务器端口
  */
-public class FrontendConfig {
-    /** 前端源码目录 */
-    private String srcDir;
-    
-    /** 构建输出目录，默认 "dist/static" */
-    private String outDir = "dist/static";
-    
-    /** Vite 开发服务器端口，默认 5173 */
-    private int devPort = 5173;
+public record FrontendConfig(
+        String srcDir,
+        String outDir,
+        int devPort) {
 
-    public String getSrcDir() { return srcDir; }
-    public void setSrcDir(String srcDir) { this.srcDir = srcDir; }
+    /**
+     * Compact Constructor with defaults
+     */
+    public FrontendConfig {
+        srcDir = srcDir != null && !srcDir.isBlank() ? srcDir : "frontend";
+        outDir = outDir != null && !outDir.isBlank() ? outDir : "dist/static";
+        devPort = devPort > 0 ? devPort : 5173;
+    }
 
-    public String getOutDir() { return outDir; }
-    public void setOutDir(String outDir) { this.outDir = outDir; }
-
-    public int getDevPort() { return devPort; }
-    public void setDevPort(int devPort) { this.devPort = devPort; }
+    /**
+     * 默认构造器
+     */
+    public FrontendConfig() {
+        this(null, null, 0);
+    }
 }
