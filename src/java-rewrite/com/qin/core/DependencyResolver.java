@@ -172,13 +172,25 @@ public class DependencyResolver {
             if (!globalPath.endsWith(".jar"))
                 continue;
 
-            String groupPath = extractGroupPath(globalPath);
+            // 提取包信息：groupId, artifactId 和 version
+            PackageInfo pkgInfo = extractPackageInfo(globalPath);
+            if (pkgInfo == null) {
+                // 如果解析失败，使用原有逻辑
+                localPaths.add(globalPath);
+                continue;
+            }
+
             String jarName = Paths.get(globalPath).getFileName().toString();
 
-            Path targetDir = repoDirPath.resolve(groupPath);
-            Files.createDirectories(targetDir);
+            // 新结构：libs/groupId/artifactId/artifactId-version/xxx.jar
+            // 例如：libs/org.junit.jupiter/junit-jupiter/junit-jupiter-5.10.1/junit-jupiter-5.10.1.jar
+            // 说明：groupId 使用 . 不展开，artifactId 作为子目录，版本再作为子目录
+            Path groupDir = repoDirPath.resolve(pkgInfo.groupId);
+            Path artifactDir = groupDir.resolve(pkgInfo.artifactId);
+            Path versionDir = artifactDir.resolve(pkgInfo.artifactId + "-" + pkgInfo.version);
+            Files.createDirectories(versionDir);
 
-            Path localPath = targetDir.resolve(jarName);
+            Path localPath = versionDir.resolve(jarName);
             if (!Files.exists(localPath)) {
                 Files.copy(Paths.get(globalPath), localPath);
             }
@@ -189,7 +201,30 @@ public class DependencyResolver {
         return localPaths;
     }
 
-    private String extractGroupPath(String jarPath) {
+    /**
+     * 包信息
+     */
+    private static class PackageInfo {
+        final String groupId; // com.github.ben-manes.caffeine (. 不展开)
+        final String artifactId; // caffeine (作为子目录)
+        final String version; // 3.1.8
+
+        PackageInfo(String groupId, String artifactId, String version) {
+            this.groupId = groupId;
+            this.artifactId = artifactId;
+            this.version = version;
+        }
+    }
+
+    /**
+     * 从 Maven 路径中提取包信息
+     * 
+     * 例如：
+     * - .../com/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar
+     * - 提取：groupId=com.github.ben-manes.caffeine, artifactId=caffeine,
+     * version=3.1.8
+     */
+    private PackageInfo extractPackageInfo(String jarPath) {
         String normalized = jarPath.replace("\\", "/");
         String[] patterns = { "/maven2/", "/public/", "/repository/" };
 
@@ -198,13 +233,27 @@ public class DependencyResolver {
             if (idx != -1) {
                 String afterPattern = normalized.substring(idx + pattern.length());
                 String[] parts = afterPattern.split("/");
+
+                // Maven 路径格式：groupId/artifactId/version/artifactId-version.jar
+                // 例如：com/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar
+                // parts = ["com", "github", "ben-manes", "caffeine", "caffeine", "3.1.8",
+                // "caffeine-3.1.8.jar"]
+
                 if (parts.length >= 4) {
-                    return String.join("/", Arrays.copyOf(parts, parts.length - 3));
+                    // 最后一个是 jar 文件名，倒数第二个是版本，倒数第三个是 artifactId
+                    String version = parts[parts.length - 2];
+                    String artifactId = parts[parts.length - 3];
+
+                    // groupId 是从开始到 artifactId 之前的所有部分
+                    String[] groupParts = Arrays.copyOf(parts, parts.length - 3);
+                    String groupId = String.join(".", groupParts);
+
+                    return new PackageInfo(groupId, artifactId, version);
                 }
             }
         }
 
-        return "";
+        return null;
     }
 
     private boolean isValidDependency(String dep) {
