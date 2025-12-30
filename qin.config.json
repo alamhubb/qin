@@ -1,0 +1,30 @@
+{
+    "name": "com.qin:qin",
+    "version": "0.1.0",
+    "description": "Qin - Java-Vite Build Tool with zero XML configuration",
+    "entry": "src/java-rewrite/com/qin/cli/QinCli.java",
+    "dependencies": {
+        "com.google.code.gson:gson": "2.10.1",
+        "io.get-coursier:coursier_2.13": "2.1.10"
+    },
+    "java": {
+        "version": "25",
+        "sourceDir": "src/java-rewrite",
+        "outputDir": ".qin/classes",
+        "encoding": "UTF-8"
+    },
+    "output": {
+        "dir": "build",
+        "jarName": "qin.jar"
+    },
+    "repositories": [
+        {
+            "id": "aliyun",
+            "url": "https://maven.aliyun.com/repository/public"
+        },
+        {
+            "id": "central",
+            "url": "https://repo1.maven.org/maven2"
+        }
+    ]
+}
