@@ -51,7 +51,7 @@ public class LocalProjectResolver {
 
             ProjectInfo project = localProjects.get(fullName);
             if (project != null) {
-                // 本地项目:使用build/classes路径
+                // 本地项目:使用.qin/classes路径
                 localClasspaths.add(project.buildClassesPath.toString());
             } else {
                 // 远程依赖:需要下载
@@ -131,7 +131,7 @@ public class LocalProjectResolver {
 
                         // 就近优先:如果已存在,不覆盖
                         if (!projects.containsKey(fullName)) {
-                            Path buildPath = sibling.resolve("build/classes");
+                            Path buildPath = sibling.resolve(".qin/classes");
                             projects.put(fullName, new ProjectInfo(
                                     fullName,
                                     sibling,
@@ -161,7 +161,7 @@ public class LocalProjectResolver {
     public static class ProjectInfo {
         public final String fullName; // "com.slime:slime-token"
         public final Path projectDir; // 项目根目录
-        public final Path buildClassesPath; // build/classes路径
+        public final Path buildClassesPath; // .qin/classes路径
 
         public ProjectInfo(String fullName, Path projectDir, Path buildClassesPath) {
             this.fullName = fullName;
