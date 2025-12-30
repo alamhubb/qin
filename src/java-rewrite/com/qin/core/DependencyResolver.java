@@ -26,7 +26,27 @@ public class DependencyResolver {
     public DependencyResolver(String csCommand, List<Repository> repos,
             Map<String, WorkspacePackage> localPackages,
             String projectRoot, boolean localRep) {
-        this.csCommand = csCommand != null ? csCommand : "cs";
+        // 如果没有提供csCommand,使用内嵌的coursier.jar
+        if (csCommand == null || csCommand.isEmpty()) {
+            // 1. 首先尝试提取内嵌的coursier.jar
+            Path embeddedJar = extractEmbeddedCoursier();
+            if (embeddedJar != null) {
+                this.csCommand = "java -jar " + embeddedJar.toString();
+            } else {
+                // 2. 其次尝试qin安装目录的lib/coursier.jar
+                String qinDir = getQinInstallDir();
+                Path libJar = Paths.get(qinDir, "lib", "coursier.jar");
+                if (Files.exists(libJar)) {
+                    this.csCommand = "java -jar " + libJar.toString();
+                } else {
+                    // 3. 最后fallback到系统cs命令
+                    this.csCommand = "cs";
+                }
+            }
+        } else {
+            this.csCommand = csCommand;
+        }
+
         this.localPackages = localPackages != null ? localPackages : new HashMap<>();
         this.projectRoot = projectRoot;
         this.useLocalRep = localRep;
@@ -42,6 +62,65 @@ public class DependencyResolver {
         } else {
             this.repositories = DEFAULT_REPOS;
         }
+    }
+
+    /**
+     * 获取qin的安装目录
+     */
+    private static String getQinInstallDir() {
+        // 尝试从环境变量或系统属性获取qin目录
+        String qinDir = System.getProperty("qin.home");
+        if (qinDir != null) {
+            return qinDir;
+        }
+
+        // Fallback: 获取当前jar所在目录
+        try {
+            String jarPath = DependencyResolver.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI()
+                    .getPath();
+            // 如果在.qin/classes中,返回上两级
+            if (jarPath.contains(".qin")) {
+                return Paths.get(jarPath).getParent().getParent().toString();
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+
+        // 最后fallback: 当前目录
+        return System.getProperty("user.dir");
+    }
+
+    /**
+     * 提取内嵌的coursier.jar到临时目录
+     */
+    private static Path extractEmbeddedCoursier() {
+        try {
+            // 首先尝试从classpath中的lib/coursier.jar加载
+            InputStream is = DependencyResolver.class.getResourceAsStream("/lib/coursier.jar");
+            if (is == null) {
+                // 尝试相对路径
+                is = DependencyResolver.class.getClassLoader().getResourceAsStream("lib/coursier.jar");
+            }
+
+            if (is != null) {
+                // 提取到临时目录
+                Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"), ".qin");
+                Files.createDirectories(tempDir);
+                Path coursierJar = tempDir.resolve("coursier.jar");
+
+                Files.copy(is, coursierJar, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                is.close();
+
+                return coursierJar;
+            }
+        } catch (Exception e) {
+            // Ignore and fallback
+        }
+        return null;
     }
 
     private static String getGlobalRepoDir() {

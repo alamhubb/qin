@@ -16,8 +16,8 @@ import java.util.zip.*;
 public class NpmPackageManager {
     // npm 镜像源
     private static final String[] NPM_REGISTRIES = {
-        "https://registry.npmmirror.com",  // 淘宝镜像（国内快）
-        "https://registry.npmjs.org"        // 官方源
+            "https://registry.npmmirror.com", // 淘宝镜像（国内快）
+            "https://registry.npmjs.org" // 官方源
     };
 
     private final String projectRoot;
@@ -44,7 +44,7 @@ public class NpmPackageManager {
     public boolean install(String packageName, String version) {
         try {
             System.out.println("📦 Installing " + packageName + "@" + version + "...");
-            
+
             // 1. 获取包信息
             JsonObject pkgInfo = fetchPackageInfo(packageName, version);
             if (pkgInfo == null) {
@@ -54,7 +54,7 @@ public class NpmPackageManager {
 
             String resolvedVersion = pkgInfo.get("version").getAsString();
             String tarballUrl = pkgInfo.getAsJsonObject("dist").get("tarball").getAsString();
-            
+
             System.out.println("  → Resolved version: " + resolvedVersion);
 
             // 2. 下载并解压
@@ -76,8 +76,9 @@ public class NpmPackageManager {
             System.out.println("  ✓ Installed " + packageName + "@" + resolvedVersion);
 
             // 3. 安装依赖
-            JsonObject deps = pkgInfo.has("dependencies") 
-                ? pkgInfo.getAsJsonObject("dependencies") : null;
+            JsonObject deps = pkgInfo.has("dependencies")
+                    ? pkgInfo.getAsJsonObject("dependencies")
+                    : null;
             if (deps != null && deps.size() > 0) {
                 System.out.println("  → Installing dependencies...");
                 for (String depName : deps.keySet()) {
@@ -105,9 +106,9 @@ public class NpmPackageManager {
             }
 
             JsonObject pkgJson = JsonParser.parseString(Files.readString(pkgJsonPath)).getAsJsonObject();
-            
+
             int count = 0;
-            
+
             // 安装 dependencies
             if (pkgJson.has("dependencies")) {
                 JsonObject deps = pkgJson.getAsJsonObject("dependencies");
@@ -136,7 +137,6 @@ public class NpmPackageManager {
         }
     }
 
-
     /**
      * 获取包信息
      */
@@ -149,7 +149,7 @@ public class NpmPackageManager {
             if (allVersions == null || !allVersions.has("versions")) {
                 return null;
             }
-            
+
             JsonObject versions = allVersions.getAsJsonObject("versions");
             resolvedVersion = findMatchingVersion(versions.keySet(), version);
             if (resolvedVersion == null) {
@@ -169,28 +169,28 @@ public class NpmPackageManager {
         if (range.equals("latest") || range.equals("*")) {
             // 返回最新版本
             return versions.stream()
-                .filter(v -> !v.contains("-")) // 排除预发布版本
-                .max(this::compareVersions)
-                .orElse(null);
+                    .filter(v -> !v.contains("-")) // 排除预发布版本
+                    .max(this::compareVersions)
+                    .orElse(null);
         }
 
         String prefix = range.substring(1); // 去掉 ^ 或 ~
         String[] parts = prefix.split("\\.");
-        
+
         if (range.startsWith("^")) {
             // ^1.2.3 匹配 >=1.2.3 <2.0.0
             String major = parts[0];
             return versions.stream()
-                .filter(v -> v.startsWith(major + ".") && !v.contains("-"))
-                .max(this::compareVersions)
-                .orElse(null);
+                    .filter(v -> v.startsWith(major + ".") && !v.contains("-"))
+                    .max(this::compareVersions)
+                    .orElse(null);
         } else if (range.startsWith("~")) {
             // ~1.2.3 匹配 >=1.2.3 <1.3.0
             String majorMinor = parts[0] + "." + (parts.length > 1 ? parts[1] : "0");
             return versions.stream()
-                .filter(v -> v.startsWith(majorMinor + ".") && !v.contains("-"))
-                .max(this::compareVersions)
-                .orElse(null);
+                    .filter(v -> v.startsWith(majorMinor + ".") && !v.contains("-"))
+                    .max(this::compareVersions)
+                    .orElse(null);
         }
 
         // 精确匹配
@@ -203,11 +203,12 @@ public class NpmPackageManager {
     private int compareVersions(String v1, String v2) {
         String[] p1 = v1.split("\\.");
         String[] p2 = v2.split("\\.");
-        
+
         for (int i = 0; i < Math.max(p1.length, p2.length); i++) {
             int n1 = i < p1.length ? parseVersionPart(p1[i]) : 0;
             int n2 = i < p2.length ? parseVersionPart(p2[i]) : 0;
-            if (n1 != n2) return n1 - n2;
+            if (n1 != n2)
+                return n1 - n2;
         }
         return 0;
     }
@@ -252,16 +253,16 @@ public class NpmPackageManager {
 
         // 处理重定向
         int status = conn.getResponseCode();
-        if (status == HttpURLConnection.HTTP_MOVED_TEMP || 
-            status == HttpURLConnection.HTTP_MOVED_PERM ||
-            status == HttpURLConnection.HTTP_SEE_OTHER) {
+        if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
+                status == HttpURLConnection.HTTP_MOVED_PERM ||
+                status == HttpURLConnection.HTTP_SEE_OTHER) {
             String newUrl = conn.getHeaderField("Location");
             conn = (HttpURLConnection) new URL(newUrl).openConnection();
             conn.setRequestProperty("User-Agent", "Qin-Package-Manager/1.0");
         }
 
         try (InputStream in = conn.getInputStream();
-             OutputStream out = Files.newOutputStream(target)) {
+                OutputStream out = Files.newOutputStream(target)) {
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = in.read(buffer)) != -1) {
@@ -275,20 +276,21 @@ public class NpmPackageManager {
      */
     private void extractTgz(Path tgzFile, Path targetDir) throws Exception {
         try (InputStream fis = Files.newInputStream(tgzFile);
-             GZIPInputStream gzis = new GZIPInputStream(fis);
-             TarInputStream tis = new TarInputStream(gzis)) {
-            
+                GZIPInputStream gzis = new GZIPInputStream(fis);
+                TarInputStream tis = new TarInputStream(gzis)) {
+
             TarEntry entry;
             while ((entry = tis.getNextEntry()) != null) {
                 // npm 包的内容在 package/ 目录下
-                String name = entry.name();
+                String name = entry.getName();
                 if (name.startsWith("package/")) {
                     name = name.substring("package/".length());
                 }
-                if (name.isEmpty()) continue;
+                if (name.isEmpty())
+                    continue;
 
                 Path entryPath = targetDir.resolve(name);
-                
+
                 if (entry.isDirectory()) {
                     Files.createDirectories(entryPath);
                 } else {
@@ -331,12 +333,16 @@ public class NpmPackageManager {
     }
 
     private void deleteDir(Path dir) throws IOException {
-        if (!Files.exists(dir)) return;
+        if (!Files.exists(dir))
+            return;
         Files.walk(dir)
-            .sorted(Comparator.reverseOrder())
-            .forEach(p -> {
-                try { Files.delete(p); } catch (IOException e) { }
-            });
+                .sorted(Comparator.reverseOrder())
+                .forEach(p -> {
+                    try {
+                        Files.delete(p);
+                    } catch (IOException e) {
+                    }
+                });
     }
 
     /**
@@ -363,19 +369,21 @@ public class NpmPackageManager {
         System.out.println("\nInstalled packages:");
         try {
             Files.list(nmDir)
-                .filter(Files::isDirectory)
-                .filter(p -> !p.getFileName().toString().startsWith("."))
-                .forEach(p -> {
-                    try {
-                        Path pkgJson = p.resolve("package.json");
-                        if (Files.exists(pkgJson)) {
-                            JsonObject pkg = JsonParser.parseString(Files.readString(pkgJson)).getAsJsonObject();
-                            String name = pkg.has("name") ? pkg.get("name").getAsString() : p.getFileName().toString();
-                            String version = pkg.has("version") ? pkg.get("version").getAsString() : "unknown";
-                            System.out.println("  " + name + "@" + version);
+                    .filter(Files::isDirectory)
+                    .filter(p -> !p.getFileName().toString().startsWith("."))
+                    .forEach(p -> {
+                        try {
+                            Path pkgJson = p.resolve("package.json");
+                            if (Files.exists(pkgJson)) {
+                                JsonObject pkg = JsonParser.parseString(Files.readString(pkgJson)).getAsJsonObject();
+                                String name = pkg.has("name") ? pkg.get("name").getAsString()
+                                        : p.getFileName().toString();
+                                String version = pkg.has("version") ? pkg.get("version").getAsString() : "unknown";
+                                System.out.println("  " + name + "@" + version);
+                            }
+                        } catch (Exception e) {
                         }
-                    } catch (Exception e) { }
-                });
+                    });
         } catch (IOException e) {
             System.err.println("Error listing packages: " + e.getMessage());
         }
@@ -396,7 +404,7 @@ public class NpmPackageManager {
         // 解析参数
         String projectDir = System.getProperty("user.dir");
         List<String> cmdArgs = new ArrayList<>();
-        
+
         for (int i = 0; i < args.length; i++) {
             if ("--dir".equals(args[i]) && i + 1 < args.length) {
                 projectDir = args[++i];
@@ -408,7 +416,7 @@ public class NpmPackageManager {
         }
 
         NpmPackageManager npm = new NpmPackageManager(projectDir);
-        
+
         if (cmdArgs.isEmpty()) {
             npm.installAll();
             return;
