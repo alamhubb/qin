@@ -333,16 +333,16 @@ public class QinCli {
             }
         }
 
-        // Save classpath cache to .qin/classpath.json
-        Path qinDir = Paths.get(System.getProperty("user.dir"), ".qin");
-        Files.createDirectories(qinDir);
+        // Save classpath cache to .qin/cache/classpath.json
+        Path cacheDir = com.qin.core.QinPaths.getCacheDir(System.getProperty("user.dir"));
+        Files.createDirectories(cacheDir);
 
         String classpath = String.join(sep, classpaths);
         String json = buildClasspathJson(classpath);
-        Files.writeString(qinDir.resolve("classpath.json"), json);
+        Files.writeString(com.qin.core.QinPaths.getClasspathCache(System.getProperty("user.dir")), json);
 
         System.out.println(green("✓ Dependencies synced (" + localCount + " local, " + remoteCount + " remote)"));
-        System.out.println(gray("  Cache: .qin/classpath.json"));
+        System.out.println(gray("  Cache: " + com.qin.core.QinPaths.CLASSPATH_CACHE));
 
         return classpath;
     }
@@ -353,9 +353,9 @@ public class QinCli {
      * @return classpath 字符串
      */
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
-        Path qinDir = Paths.get(System.getProperty("user.dir"), ".qin");
-        Path cacheFile = qinDir.resolve("classpath.json");
-        Path configFile = Paths.get(System.getProperty("user.dir"), "qin.config.json");
+        String cwd = System.getProperty("user.dir");
+        Path cacheFile = com.qin.core.QinPaths.getClasspathCache(cwd);
+        Path configFile = Paths.get(cwd, "qin.config.json");
 
         // 检查缓存是否有效
         if (Files.exists(cacheFile) && Files.exists(configFile)) {
@@ -365,7 +365,8 @@ public class QinCli {
                     String json = Files.readString(cacheFile);
                     String classpath = parseClasspathFromJson(json);
                     if (!classpath.isEmpty()) {
-                        System.out.println(blue("→ Using cached dependencies (.qin/classpath.json)"));
+                        System.out.println(
+                                blue("→ Using cached dependencies (" + com.qin.core.QinPaths.CLASSPATH_CACHE + ")"));
                         return classpath;
                     }
                 }

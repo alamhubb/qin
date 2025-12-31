@@ -265,9 +265,9 @@ Qin 在每个项目的 `.qin/classpath.json` 中缓存依赖解析结果：
 {
   "classpath": [
     "D:/project/subhuti-java/build/classes",
-    "C:/Users/.m2/repository/org/slf4j/slf4j-api/2.0.9/slf4j-api-2.0.9.jar"
+    "C:/Users/qinky/.qin/libs/com.google.code.gson/gson-2.10.1/gson-2.10.1.jar"
   ],
-  "lastUpdated": "2025-12-30T07:10:32.258758100Z"
+  "lastUpdated": "2025-12-30T07:10:32Z"
 }
 ```
 
@@ -440,6 +440,8 @@ try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
 
 ## 📦 项目结构
 
+### 用户项目结构
+
 ```
 my-project/
 ├── qin.config.json          # Qin 配置
@@ -448,13 +450,35 @@ my-project/
 │   │   └── com/myapp/
 │   │       └── Main.java
 │   └── test/java/           # 测试
-│       └── com/myapp/
-│           └── MainTest.java
-├── target/
-│   └── classes/             # 编译输出
+├── build/
+│   └── classes/             # 编译输出 (OUTPUT_DIR)
+├── .qin/                    # Qin 配置目录
+│   ├── classpath.json       # 依赖缓存 (CLASSPATH_CACHE)
+│   └── libs/                # 本地依赖链接 (LIBS_DIR)
+│       └── com.google.code.gson/
+│           └── gson-2.10.1/ -> ~/.qin/libs/.../
 └── dist/
     └── my-app.jar           # Fat JAR
 ```
+
+### 全局目录结构
+
+```
+~/.qin/
+└── libs/                    # 全局依赖缓存 (GLOBAL_LIBS_DIR)
+    └── com.google.code.gson/
+        └── gson-2.10.1/
+            └── gson-2.10.1.jar
+```
+
+### 路径常量配置 (QinPaths.java)
+
+| 常量 | 值 | 说明 |
+|------|-----|------|
+| OUTPUT_DIR | `build/classes` | 编译输出目录 |
+| QIN_DIR | `.qin` | Qin配置目录 |
+| CLASSPATH_CACHE | `.qin/classpath.json` | 依赖缓存文件 |
+| LIBS_DIR | `.qin/libs` | 依赖库目录 |
 
 ## 🔧 开发
 
@@ -474,6 +498,109 @@ qin/
 ├── lib/
 │   └── gson-2.10.1.jar      # 唯一依赖
 └── build-java.bat           # 构建脚本
+```
+
+### 核心模块架构
+
+#### 1. **路径管理** - `QinPaths.java`
+**功能**: 统一管理所有路径常量
+```java
+public static final String OUTPUT_DIR = "build/classes";
+public static final String LIBS_DIR = ".qin/libs";
+```
+**为什么需要**: 避免硬编码，统一路径配置，方便维护和修改
+
+#### 2. **编译系统** - 职责分离设计
+
+##### ClasspathBuilder - classpath构建
+**功能**: 构建编译和运行时的classpath
+- `buildCompileClasspath()` - 编译时classpath（包含本地项目+远程依赖）
+- `buildRuntimeClasspath()` - 运行时classpath
+
+**为什么需要**: classpath构建逻辑复杂（本地项目发现、依赖解析），独立出来提高可维护性
+
+##### Compiler - 编译逻辑
+**功能**: Java源文件编译
+- `compile()` - 使用javax.tools API编译
+- `filterModifiedFiles()` - 增量编译（只编译修改的文件）
+- `findJavaFiles()` - 查找Java文件
+
+**为什么需要**: 封装复杂的编译逻辑，支持增量编译提升性能
+
+##### ResourceCopier - 资源复制
+**功能**: 复制资源文件到输出目录
+- 查找多个可能的资源目录（`src/resources`, `src/main/resources`）
+- 递归复制目录
+
+**为什么需要**: 资源文件处理是独立的功能，与编译逻辑分离
+
+##### Runner - 程序运行
+**功能**: 运行编译后的Java程序
+- `run()` - 运行指定类
+- `runFile()` - 运行指定Java文件
+- `javaFilePathToClassName()` - 路径转类名
+
+**为什么需要**: 运行逻辑独立，支持多种运行方式
+
+##### JavaRunner - 门面协调器
+**功能**: 协调上述4个类，提供统一接口
+```java
+public CompileResult compile() {
+    // 1. 编译依赖
+    // 2. 查找Java文件
+    // 3. 复制资源
+    // 4. 增量编译
+}
+```
+**为什么需要**: 保持简单的调用接口，隐藏内部复杂性
+
+#### 3. **依赖管理**
+
+##### LocalProjectResolver - 本地项目发现
+**功能**: 自动发现本地项目依赖
+- 向上查找所有qin.config.json
+- 匹配groupId:artifactId
+- 就近优先
+
+**为什么需要**: Monorepo支持，避免发布到Maven仓库
+
+##### DependencyResolver - 远程依赖解析
+**功能**: 使用Coursier解析Maven依赖
+- 下载jar到~/.qin/libs
+- 缓存依赖解析结果
+
+**为什么需要**: 自动下载和管理远程依赖
+
+#### 4. **配置系统** - `types/`
+
+使用Java 25 Records定义配置类型：
+```java
+public record QinConfig(
+    String name,
+    String version,
+    Map<String, String> dependencies
+) {}
+```
+**为什么需要**: 不可变配置，类型安全，代码简洁
+
+#### 5. **CLI系统** - `QinCli.java`
+
+**功能**: 命令行入口，解析命令和参数
+```
+qin compile → CompileCommand
+qin run     → RunCommand
+qin build   → BuildCommand
+```
+**为什么需要**: 统一的命令行接口，用户友好
+
+---
+
+### 设计原则
+
+1. **职责单一**: 每个类只负责一件事
+2. **依赖注入**: 通过构造函数传递依赖
+3. **面向接口**: 使用抽象类型，便于测试和扩展
+4. **常量管理**: 所有路径通过QinPaths统一管理
 ```
 
 ### 编译

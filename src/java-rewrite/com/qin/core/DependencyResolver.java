@@ -51,9 +51,11 @@ public class DependencyResolver {
         this.projectRoot = projectRoot;
         this.useLocalRep = localRep;
 
+        // 全局libs目录：~/.qin/libs（所有项目共享）
+        // 本地libs目录：.qin/libs（创建符号链接指向全局）
         this.repoDir = localRep
-                ? Paths.get(projectRoot, "libs").toString()
-                : getGlobalRepoDir();
+                ? QinPaths.getLocalLibsDir(projectRoot).toString()
+                : QinPaths.getGlobalLibsDir().toString();
 
         if (repos != null && !repos.isEmpty()) {
             this.repositories = repos.stream()

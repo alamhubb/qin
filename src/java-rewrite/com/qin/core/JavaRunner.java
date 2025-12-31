@@ -19,6 +19,7 @@ public class JavaRunner {
     private final String cwd;
     private final String outputDir;
 
+    private final ClasspathBuilder classpathBuilder;
     private final DependencyGraphBuilder graphBuilder;
     private final IncrementalCompilationChecker incrementalChecker;
 
@@ -30,7 +31,9 @@ public class JavaRunner {
         this.config = config;
         this.classpath = classpath;
         this.cwd = cwd;
-        this.outputDir = Paths.get(cwd, "build", "classes").toString();
+        this.outputDir = QinPaths.getOutputDir(cwd).toString();
+
+        this.classpathBuilder = new ClasspathBuilder(cwd, outputDir, classpath, config);
         this.graphBuilder = new DependencyGraphBuilder();
         this.incrementalChecker = new IncrementalCompilationChecker();
     }
@@ -58,7 +61,8 @@ public class JavaRunner {
             }
 
             // 复制资源文件
-            copyResources(parsed.srcDir());
+            ResourceCopier resourceCopier = new ResourceCopier(cwd, parsed.srcDir(), outputDir);
+            resourceCopier.copyResources();
 
             // 检查哪些文件需要编译（增量编译）
             List<String> modifiedFiles = filterModifiedFiles(allJavaFiles, srcDir.toString());
@@ -312,52 +316,11 @@ public class JavaRunner {
      * Build classpath for compilation including local and remote dependencies
      */
     private String buildCompileClasspath() {
-        List<String> cpParts = new ArrayList<>();
-
-        // Add current project's output directory (for incremental compilation)
-        // 添加当前项目的输出目录，这样编译时可以找到已编译的类
-        if (outputDir != null && !outputDir.isEmpty()) {
-            Path outputPath = Paths.get(outputDir);
-            if (Files.exists(outputPath)) {
-                cpParts.add(outputDir);
-            }
-        }
-
-        // Add local project dependencies using auto-discovery
-        Map<String, String> deps = config.dependencies();
-        if (deps != null && !deps.isEmpty()) {
-            LocalProjectResolver localResolver = new LocalProjectResolver(cwd);
-            LocalProjectResolver.ResolutionResult result = localResolver.resolveDependencies(deps);
-
-            // 添加本地classpath
-            if (result.localClasspath != null && !result.localClasspath.isEmpty()) {
-                cpParts.add(result.localClasspath);
-            }
-
-            // 对于远程依赖,如果提供了classpath参数,说明已经通过DependencyResolver解析过了
-            // 这里我们只添加本地的,远程的由上层(compileProject)通过DependencyResolver解析
-        }
-
-        // Add resolved remote dependencies (from Maven/Coursier)
-        // 这个classpath参数由调用方传入,已经包含了远程依赖
-        if (classpath != null && !classpath.isEmpty()) {
-            cpParts.add(classpath);
-        }
-
-        if (cpParts.isEmpty()) {
-            return "";
-        }
-
-        String sep = DependencyResolver.getClasspathSeparator();
-        return String.join(sep, cpParts);
+        return classpathBuilder.buildCompileClasspath();
     }
 
     private String buildFullClasspath() {
-        String sep = DependencyResolver.getClasspathSeparator();
-        if (classpath != null && !classpath.isEmpty()) {
-            return outputDir + sep + classpath;
-        }
-        return outputDir;
+        return classpathBuilder.buildRuntimeClasspath();
     }
 
     private List<String> findJavaFiles(Path dir) throws IOException {
@@ -370,39 +333,6 @@ public class JavaRunner {
                     .filter(p -> p.toString().endsWith(".java"))
                     .map(Path::toString)
                     .collect(Collectors.toList());
-        }
-    }
-
-    private void copyResources(String srcDir) throws IOException {
-        String[] resourceDirs = {
-                Paths.get(cwd, "src", "resources").toString(),
-                Paths.get(cwd, "src", "main", "resources").toString(),
-                Paths.get(cwd, srcDir, "resources").toString()
-        };
-
-        for (String resourceDir : resourceDirs) {
-            Path resPath = Paths.get(resourceDir);
-            if (Files.exists(resPath)) {
-                copyDir(resPath, Paths.get(outputDir));
-            }
-        }
-    }
-
-    private void copyDir(Path src, Path dest) throws IOException {
-        try (Stream<Path> walk = Files.walk(src)) {
-            walk.forEach(source -> {
-                try {
-                    Path target = dest.resolve(src.relativize(source));
-                    if (Files.isDirectory(source)) {
-                        Files.createDirectories(target);
-                    } else {
-                        Files.createDirectories(target.getParent());
-                        Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                    }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
         }
     }
 

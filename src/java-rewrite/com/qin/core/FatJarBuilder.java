@@ -58,7 +58,8 @@ public class FatJarBuilder {
 
             // Package JAR
             String jarName = config.output() != null && config.output().jarName() != null
-                ? config.output().jarName() : "app.jar";
+                    ? config.output().jarName()
+                    : "app.jar";
             String outputPath = Paths.get(outputDir, jarName).toString();
             packageJar(outputPath);
 
@@ -135,7 +136,7 @@ public class FatJarBuilder {
 
     private List<String> resolveDependencies() throws IOException {
         // Check for cached classpath
-        Path classpathCache = Paths.get(cwd, "build", ".cache", "classpath.json");
+        Path classpathCache = QinPaths.getClasspathCache(cwd);
         if (Files.exists(classpathCache)) {
             String content = Files.readString(classpathCache);
             // Simple JSON parsing
@@ -144,9 +145,9 @@ public class FatJarBuilder {
             if (start >= 0 && end > start) {
                 String arrayContent = content.substring(start + 1, end);
                 return Arrays.stream(arrayContent.split(","))
-                    .map(s -> s.trim().replace("\"", ""))
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
+                        .map(s -> s.trim().replace("\"", ""))
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
             }
         }
 
@@ -156,12 +157,11 @@ public class FatJarBuilder {
         }
 
         DependencyResolver resolver = new DependencyResolver(
-            "cs", config.repositories(), null, cwd, config.localRep()
-        );
-        
+                "cs", config.repositories(), null, cwd, config.localRep());
+
         List<String> deps = config.dependencies().entrySet().stream()
-            .map(e -> e.getKey() + ":" + e.getValue())
-            .collect(Collectors.toList());
+                .map(e -> e.getKey() + ":" + e.getValue())
+                .collect(Collectors.toList());
 
         ResolveResult result = resolver.resolveWithDetails(deps);
         return result.isSuccess() ? result.jarPaths() : new ArrayList<>();
@@ -181,7 +181,8 @@ public class FatJarBuilder {
 
     private void cleanSignatures() throws IOException {
         Path metaInf = Paths.get(tempDir, "META-INF");
-        if (!Files.exists(metaInf)) return;
+        if (!Files.exists(metaInf))
+            return;
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(metaInf)) {
             for (Path file : stream) {
@@ -201,9 +202,9 @@ public class FatJarBuilder {
         List<String> javaFiles;
         try (Stream<Path> walk = Files.walk(srcDir)) {
             javaFiles = walk
-                .filter(p -> p.toString().endsWith(".java"))
-                .map(Path::toString)
-                .collect(Collectors.toList());
+                    .filter(p -> p.toString().endsWith(".java"))
+                    .map(Path::toString)
+                    .collect(Collectors.toList());
         }
 
         if (javaFiles.isEmpty()) {
@@ -239,9 +240,9 @@ public class FatJarBuilder {
 
     private void copyResources(String srcDir) throws IOException {
         String[] resourceDirs = {
-            Paths.get(cwd, "src", "resources").toString(),
-            Paths.get(cwd, "src", "main", "resources").toString(),
-            Paths.get(cwd, srcDir, "resources").toString()
+                Paths.get(cwd, "src", "resources").toString(),
+                Paths.get(cwd, "src", "main", "resources").toString(),
+                Paths.get(cwd, srcDir, "resources").toString()
         };
 
         for (String resourceDir : resourceDirs) {
@@ -257,9 +258,8 @@ public class FatJarBuilder {
         Files.createDirectories(metaInf);
 
         String content = String.format(
-            "Manifest-Version: 1.0\nMain-Class: %s\nCreated-By: Qin (Java-Vite Build Tool)\n",
-            mainClass
-        );
+                "Manifest-Version: 1.0\nMain-Class: %s\nCreated-By: Qin (Java-Vite Build Tool)\n",
+                mainClass);
 
         Files.writeString(metaInf.resolve("MANIFEST.MF"), content);
     }
@@ -270,8 +270,7 @@ public class FatJarBuilder {
         String manifestPath = Paths.get(tempDir, "META-INF", "MANIFEST.MF").toString();
 
         ProcessBuilder pb = new ProcessBuilder(
-            jarCommand, "-cvfm", outputPath, manifestPath, "-C", tempDir, "."
-        );
+                jarCommand, "-cvfm", outputPath, manifestPath, "-C", tempDir, ".");
         pb.directory(new File(cwd));
         Process proc = pb.start();
         int exitCode = proc.waitFor();
@@ -287,7 +286,8 @@ public class FatJarBuilder {
     }
 
     private boolean hasClasses(Path dir) throws IOException {
-        if (!Files.exists(dir)) return false;
+        if (!Files.exists(dir))
+            return false;
         try (Stream<Path> walk = Files.walk(dir)) {
             return walk.anyMatch(p -> p.toString().endsWith(".class"));
         }
@@ -312,16 +312,17 @@ public class FatJarBuilder {
     }
 
     private void deleteDir(Path dir) throws IOException {
-        if (!Files.exists(dir)) return;
+        if (!Files.exists(dir))
+            return;
         try (Stream<Path> walk = Files.walk(dir)) {
             walk.sorted(Comparator.reverseOrder())
-                .forEach(p -> {
-                    try {
-                        Files.delete(p);
-                    } catch (IOException e) {
-                        // Ignore
-                    }
-                });
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException e) {
+                            // Ignore
+                        }
+                    });
         }
     }
 
