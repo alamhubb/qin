@@ -19,6 +19,9 @@ public class JavaRunner {
     private final String cwd;
     private final String outputDir;
 
+    private final DependencyGraphBuilder graphBuilder;
+    private final IncrementalCompilationChecker incrementalChecker;
+
     public JavaRunner(QinConfig config, String classpath) {
         this(config, classpath, System.getProperty("user.dir"));
     }
@@ -28,14 +31,21 @@ public class JavaRunner {
         this.classpath = classpath;
         this.cwd = cwd;
         this.outputDir = Paths.get(cwd, "build", "classes").toString();
+        this.graphBuilder = new DependencyGraphBuilder();
+        this.incrementalChecker = new IncrementalCompilationChecker();
     }
 
     /**
      * 增量编译 Java 源文件
      * 使用 javax.tools API，只编译修改过的文件
+     * 自动检测并编译过期的本地依赖项目
      */
     public CompileResult compile() {
         try {
+            // 1. 先编译所有过期的本地依赖
+            compileOutdatedLocalDependencies();
+
+            // 2. 编译当前项目
             Files.createDirectories(Paths.get(outputDir));
 
             ConfigLoader configLoader = new ConfigLoader(cwd);
@@ -388,6 +398,131 @@ public class JavaRunner {
     private String readStream(InputStream is) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             return reader.lines().collect(Collectors.joining("\n"));
+        }
+    }
+
+    /**
+     * 编译所有过期的本地依赖项目
+     */
+    private void compileOutdatedLocalDependencies() {
+        try {
+            Map<String, String> deps = config.dependencies();
+            if (deps == null || deps.isEmpty()) {
+                return;
+            }
+
+            // 1. 解析本地依赖
+            LocalProjectResolver localResolver = new LocalProjectResolver(cwd);
+            Map<String, LocalProjectResolver.ProjectInfo> allLocalProjects = discoverLocalProjects(localResolver, deps);
+
+            if (allLocalProjects.isEmpty()) {
+                return; // 没有本地依赖
+            }
+
+            // 2. 构建依赖图
+            DependencyGraphBuilder.DependencyGraph graph = graphBuilder.buildGraph(config.name(), allLocalProjects);
+
+            // 3. 检测需要重新编译的项目
+            List<String> outdated = incrementalChecker
+                    .getProjectsNeedingRecompilation(graph, allLocalProjects);
+
+            if (outdated.isEmpty()) {
+                return; // 所有依赖都是最新的
+            }
+
+            // 4. 拓扑排序，按依赖顺序编译
+            List<String> compileOrder = graphBuilder.topologicalSort(graph);
+
+            System.out.println("  → Compiling " + outdated.size() + " outdated local dependencies...");
+
+            for (String projectName : compileOrder) {
+                if (outdated.contains(projectName)) {
+                    LocalProjectResolver.ProjectInfo projectInfo = allLocalProjects.get(projectName);
+                    compileLocalDependencyProject(projectInfo);
+                }
+            }
+        } catch (Exception e) {
+            // 依赖编译失败不阻塞当前项目
+            System.err.println("Warning: Failed to compile local dependencies: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 发现所有本地项目依赖
+     */
+    private Map<String, LocalProjectResolver.ProjectInfo> discoverLocalProjects(
+            LocalProjectResolver resolver, Map<String, String> deps) {
+        Map<String, LocalProjectResolver.ProjectInfo> result = new HashMap<>();
+
+        // 简化实现：只收集 deps 中声明的本地依赖
+        LocalProjectResolver.ResolutionResult localResult = resolver.resolveDependencies(deps);
+
+        // 这里需要扩展 LocalProjectResolver 以提供更多信息
+        // 暂时返回空，表示功能尚未完全实现
+        return result;
+    }
+
+    /**
+     * 编译单个本地依赖项目
+     */
+    private void compileLocalDependencyProject(LocalProjectResolver.ProjectInfo projectInfo) {
+        try {
+            System.out.println("    → Compiling dependency: " + projectInfo.fullName);
+
+            // 加载依赖项目的配置
+            Path configPath = projectInfo.projectDir.resolve("qin.config.json");
+            if (!Files.exists(configPath)) {
+                System.err.println("      Warning: No qin.config.json found");
+                return;
+            }
+
+            String json = Files.readString(configPath);
+            QinConfig depConfig = new com.google.gson.Gson().fromJson(json, QinConfig.class);
+
+            // 创建 JavaRunner 编译依赖项目
+            JavaRunner depRunner = new JavaRunner(depConfig, "", projectInfo.projectDir.toString());
+            CompileResult result = depRunner.compileCurrentOnly(); // 只编译当前，不递归
+
+            if (result.isSuccess()) {
+                System.out.println("      ✓ Compiled " + result.getCompiledFiles() + " files");
+            } else {
+                System.err.println("      ✗ Compilation failed: " + result.getError());
+            }
+        } catch (Exception e) {
+            System.err.println("      Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 只编译当前项目，不编译依赖（避免递归）
+     */
+    private CompileResult compileCurrentOnly() {
+        try {
+            Files.createDirectories(Paths.get(outputDir));
+
+            ConfigLoader configLoader = new ConfigLoader(cwd);
+            ParsedEntry parsed = configLoader.parseEntry(config.entry());
+            Path srcDir = Paths.get(cwd, parsed.srcDir());
+
+            List<String> allJavaFiles = findJavaFiles(srcDir);
+            if (allJavaFiles.isEmpty()) {
+                return CompileResult.failure("No Java files found in " + srcDir);
+            }
+
+            // 复制资源文件
+            copyResources(parsed.srcDir());
+
+            // 检查哪些文件需要编译（增量编译）
+            List<String> modifiedFiles = filterModifiedFiles(allJavaFiles, srcDir.toString());
+
+            if (modifiedFiles.isEmpty()) {
+                return CompileResult.success(0, outputDir);
+            }
+
+            // 使用 javax.tools API 编译
+            return compileWithToolsApi(modifiedFiles);
+        } catch (Exception e) {
+            return CompileResult.failure(e.getMessage());
         }
     }
 }

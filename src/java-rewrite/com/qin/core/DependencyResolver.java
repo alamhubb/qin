@@ -213,22 +213,54 @@ public class DependencyResolver {
             args.addAll(deps);
             args.add("--classpath");
 
+            // 添加缓存配置
+            String cacheDir = System.getProperty("user.home") + "/.cache/coursier";
+            args.add("--cache");
+            args.add(cacheDir);
+
+            // 启用并行下载
+            args.add("--parallel");
+            args.add("8");
+
+            // 添加仓库
             for (String repo : repositories) {
                 args.add("-r");
                 args.add(repo);
             }
 
+            // 设置进度模式
+            args.add("--progress");
+            args.add("--ttl");
+            args.add("24h"); // 缓存有效期 24 小时
+
             ProcessBuilder pb = new ProcessBuilder(args);
             pb.redirectErrorStream(false);
             Process proc = pb.start();
 
+            // 异步读取进度信息
+            Thread progressThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(proc.getErrorStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // 显示下载进度
+                        if (line.contains("Downloading") || line.contains("Downloaded")) {
+                            System.out.println("  " + line);
+                        }
+                    }
+                } catch (IOException e) {
+                    // Ignore
+                }
+            });
+            progressThread.setDaemon(true);
+            progressThread.start();
+
             String stdout = readStream(proc.getInputStream());
-            String stderr = readStream(proc.getErrorStream());
             int exitCode = proc.waitFor();
 
             if (exitCode != 0) {
                 return ResolveResult.failure(
-                        stderr.isEmpty() ? "Coursier failed to resolve dependencies" : stderr.trim());
+                        "Coursier failed to resolve dependencies");
             }
 
             String classpath = stdout.trim();
