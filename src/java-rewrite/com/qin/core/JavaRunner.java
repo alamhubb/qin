@@ -139,6 +139,8 @@ public class JavaRunner {
             options.add("UTF-8");
 
             String fullCp = buildCompileClasspath();
+            System.out.println("  [DEBUG] Compile classpath: "
+                    + (fullCp != null ? fullCp.substring(0, Math.min(200, fullCp.length())) + "..." : "null"));
             if (fullCp != null && !fullCp.isEmpty()) {
                 options.add("-cp");
                 options.add(fullCp);
