@@ -6,6 +6,7 @@ out
 dist
 *.tgz
 .qin
+lib
 
 # code coverage
 coverage
