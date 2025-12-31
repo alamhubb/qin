@@ -39,8 +39,8 @@ public class JavaRunner {
     }
 
     /**
-     * 增量编译 Java 源文件
-     * 使用 javax.tools API，只编译修改过的文件
+     * 编译 Java 源文件
+     * 使用 javax.tools API，javac 自动处理增量编译
      * 自动检测并编译过期的本地依赖项目
      */
     public CompileResult compile() {
@@ -51,9 +51,9 @@ public class JavaRunner {
             // 2. 编译当前项目
             Files.createDirectories(Paths.get(outputDir));
 
-            ConfigLoader configLoader = new ConfigLoader(cwd);
-            ParsedEntry parsed = configLoader.parseEntry(config.entry());
-            Path srcDir = Paths.get(cwd, parsed.srcDir());
+            // 使用 sourceDir 配置（默认 src）
+            String srcDirStr = getSourceDir();
+            Path srcDir = Paths.get(cwd, srcDirStr);
 
             List<String> allJavaFiles = findJavaFiles(srcDir);
             if (allJavaFiles.isEmpty()) {
@@ -61,65 +61,36 @@ public class JavaRunner {
             }
 
             // 复制资源文件
-            ResourceCopier resourceCopier = new ResourceCopier(cwd, parsed.srcDir(), outputDir);
+            ResourceCopier resourceCopier = new ResourceCopier(cwd, srcDirStr, outputDir);
             resourceCopier.copyResources();
 
-            // 检查哪些文件需要编译（增量编译）
-            List<String> modifiedFiles = filterModifiedFiles(allJavaFiles, srcDir.toString());
+            System.out.println("  → Compiling " + allJavaFiles.size() + " files (javac handles incremental)...");
 
-            if (modifiedFiles.isEmpty()) {
-                System.out.println("  ✓ No changes detected, skip compilation");
-                return CompileResult.success(0, outputDir);
-            }
-
-            System.out.println("  → Compiling " + modifiedFiles.size() + " of " + allJavaFiles.size() + " files...");
-
-            // 使用 javax.tools API 编译
-            return compileWithToolsApi(modifiedFiles);
+            // 使用 javax.tools API 编译（javac 自动增量编译）
+            return compileWithToolsApi(allJavaFiles);
         } catch (Exception e) {
             return CompileResult.failure(e.getMessage());
         }
     }
 
     /**
-     * 过滤出需要编译的文件（.java 比 .class 新的文件）
+     * 获取源码目录
+     * 优先使用 java.sourceDir 配置，否则自动检测
      */
-    private List<String> filterModifiedFiles(List<String> javaFiles, String srcDir) {
-        return javaFiles.stream()
-                .filter(javaFile -> isModified(javaFile, srcDir))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 检查 Java 文件是否被修改（需要重新编译）
-     */
-    private boolean isModified(String javaFilePath, String srcDir) {
-        try {
-            Path javaFile = Paths.get(javaFilePath);
-
-            // 计算对应的 .class 文件路径
-            String relativePath = javaFilePath;
-            if (javaFilePath.startsWith(srcDir)) {
-                relativePath = javaFilePath.substring(srcDir.length());
-                if (relativePath.startsWith("/") || relativePath.startsWith("\\")) {
-                    relativePath = relativePath.substring(1);
-                }
-            }
-            String classRelativePath = relativePath.replace(".java", ".class");
-            Path classFile = Paths.get(outputDir, classRelativePath);
-
-            // .class 不存在，需要编译
-            if (!Files.exists(classFile)) {
-                return true;
-            }
-
-            // 比较修改时间
-            FileTime javaTime = Files.getLastModifiedTime(javaFile);
-            FileTime classTime = Files.getLastModifiedTime(classFile);
-            return javaTime.compareTo(classTime) > 0;
-        } catch (IOException e) {
-            return true; // 出错时默认需要编译
+    private String getSourceDir() {
+        // 1. 优先使用配置
+        if (config.java() != null && config.java().sourceDir() != null) {
+            return config.java().sourceDir();
         }
+
+        // 2. 自动检测：src/main/java > src > .
+        if (Files.isDirectory(Paths.get(cwd, "src/main/java"))) {
+            return "src/main/java";
+        }
+        if (Files.isDirectory(Paths.get(cwd, "src"))) {
+            return "src";
+        }
+        return ".";
     }
 
     /**
@@ -441,9 +412,9 @@ public class JavaRunner {
         try {
             Files.createDirectories(Paths.get(outputDir));
 
-            ConfigLoader configLoader = new ConfigLoader(cwd);
-            ParsedEntry parsed = configLoader.parseEntry(config.entry());
-            Path srcDir = Paths.get(cwd, parsed.srcDir());
+            // 使用 sourceDir 配置（默认 src）
+            String srcDirStr = getSourceDir();
+            Path srcDir = Paths.get(cwd, srcDirStr);
 
             List<String> allJavaFiles = findJavaFiles(srcDir);
             if (allJavaFiles.isEmpty()) {
@@ -451,17 +422,11 @@ public class JavaRunner {
             }
 
             // 复制资源文件
-            copyResources(parsed.srcDir());
+            ResourceCopier resourceCopier = new ResourceCopier(cwd, srcDirStr, outputDir);
+            resourceCopier.copyResources();
 
-            // 检查哪些文件需要编译（增量编译）
-            List<String> modifiedFiles = filterModifiedFiles(allJavaFiles, srcDir.toString());
-
-            if (modifiedFiles.isEmpty()) {
-                return CompileResult.success(0, outputDir);
-            }
-
-            // 使用 javax.tools API 编译
-            return compileWithToolsApi(modifiedFiles);
+            // 使用 javax.tools API 编译（javac 自动增量编译）
+            return compileWithToolsApi(allJavaFiles);
         } catch (Exception e) {
             return CompileResult.failure(e.getMessage());
         }

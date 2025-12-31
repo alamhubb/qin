@@ -333,8 +333,8 @@ public class QinCli {
             }
         }
 
-        // Save classpath cache to .qin/cache/classpath.json
-        Path cacheDir = com.qin.core.QinPaths.getCacheDir(System.getProperty("user.dir"));
+        // Save classpath cache to .qin/classpath.json
+        Path cacheDir = com.qin.core.QinPaths.getQinDir(System.getProperty("user.dir"));
         Files.createDirectories(cacheDir);
 
         String classpath = String.join(sep, classpaths);
