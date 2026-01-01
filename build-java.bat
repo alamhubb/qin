@@ -50,11 +50,15 @@ echo [4/7] Compiling commands...
 javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\commands\*.java
 if errorlevel 1 goto :error
 
-echo [5/7] Compiling CLI...
+echo [5/7] Compiling core plugins...
+javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\plugins\*.java
+if errorlevel 1 goto :error
+
+echo [6/7] Compiling CLI...
 javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\cli\*.java
 if errorlevel 1 goto :error
 
-echo [6/7] Compiling plugins...
+echo [7/7] Compiling extra plugins...
 if errorlevel 1 goto :error
 
 javac -d .qin\classes -cp ".qin\classes" packages\qin-plugin-graalvm\src\java\com\qin\plugins\*.java
@@ -63,7 +67,7 @@ if errorlevel 1 goto :error
 javac -d .qin\classes -cp ".qin\classes" packages\qin-plugin-graalvm-js\src\java\com\qin\plugins\*.java
 if errorlevel 1 goto :error
 
-echo [7/7] Compiling create-qin...
+echo [8/8] Compiling create-qin...
 javac -d .qin\classes -cp ".qin\classes" packages\create-qin\src\java\com\qin\create\*.java
 if errorlevel 1 goto :error
 

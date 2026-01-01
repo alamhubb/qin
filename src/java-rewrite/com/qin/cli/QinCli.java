@@ -2,6 +2,7 @@ package com.qin.cli;
 
 import com.qin.core.*;
 import com.qin.types.*;
+import com.qin.plugins.*;
 
 import java.io.*;
 import java.nio.file.*;
@@ -87,6 +88,40 @@ public class QinCli {
     }
 
     private static void runProject(String[] args) throws Exception {
+        // 检查是否指定了文件
+        if (args.length > 0 && !args[0].startsWith("-")) {
+            String file = args[0];
+            Path filePath = Paths.get(file);
+            if (!filePath.isAbsolute()) {
+                filePath = Paths.get(System.getProperty("user.dir")).resolve(file);
+            }
+
+            // 使用插件系统自动检测文件类型
+            RunnerPlugin plugin = PluginRegistry.getInstance().getPlugin(filePath);
+
+            if (plugin != null) {
+                // 找到对应插件，使用插件运行
+                System.out.println(blue("→ Running with " + plugin.name() + " plugin..."));
+                String[] runArgs = Arrays.copyOfRange(args, 1, args.length);
+                plugin.run(filePath, runArgs, Paths.get(System.getProperty("user.dir")));
+                System.out.println(green("✓ Done!"));
+                return;
+            }
+
+            // 如果不是已知文件类型，检查是否是 .java
+            if (!file.endsWith(".java")) {
+                String ext = file.contains(".") ? file.substring(file.lastIndexOf('.')) : "无后缀";
+                System.err.println(red("Error: 不支持的文件类型: " + ext));
+                System.err.println("  支持的类型: " + PluginRegistry.getInstance().getSupportedExtensions());
+                System.exit(1);
+            }
+        }
+
+        // 原有的 Java 项目运行逻辑
+        runJavaProject(args);
+    }
+
+    private static void runJavaProject(String[] args) throws Exception {
         System.out.println(blue("→ Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
@@ -105,22 +140,19 @@ public class QinCli {
 
         if (args.length > 0 && args[0].endsWith(".java")) {
             javaFile = args[0];
-            // 验证文件存在
             Path javaFilePath = Paths.get(System.getProperty("user.dir"), javaFile);
             if (!Files.exists(javaFilePath)) {
                 System.err.println(red("Error: Java file not found: " + javaFile));
                 System.exit(1);
             }
-            // 剩余参数作为运行时参数
             for (int i = 1; i < args.length; i++) {
                 runArgs.add(args[i]);
             }
         } else {
-            // 没有指定 .java 文件，所有参数作为运行时参数
             runArgs = Arrays.asList(args);
         }
 
-        // Resolve dependencies（检查缓存，必要时调用 sync）
+        // Resolve dependencies
         String classpath = "";
         Map<String, String> deps = config.dependencies();
         if (deps != null && !deps.isEmpty()) {
@@ -132,10 +164,8 @@ public class QinCli {
         JavaRunner runner = new JavaRunner(config, classpath);
 
         if (javaFile != null) {
-            // 运行指定的 .java 文件
             runner.compileAndRunFile(javaFile, runArgs);
         } else {
-            // 运行配置文件中的入口
             runner.compileAndRun(runArgs);
         }
 
