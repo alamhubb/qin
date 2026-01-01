@@ -5,10 +5,21 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * Workspace 扫描器
- * 扫描 monorepo 中的所有包，收集 monorepo 入口配置
+ * Workspace 扫描器（增强版）
+ * 
+ * 改进：
+ * 1. 不依赖 npm workspaces 配置，直接递归扫描所有包含 package.json 的目录
+ * 2. 默认 monorepoEntry 为 "./src/index.ts"（如果未配置）
+ * 3. 自动查找项目根目录（通过 .git, qin.config.json, package.json 等标志）
  */
 public class WorkspaceScanner {
+
+    // 默认的源码入口
+    private static final String DEFAULT_MONOREPO_ENTRY = "./src/index.ts";
+
+    // 需要排除的目录
+    private static final Set<String> EXCLUDED_DIRS = Set.of(
+            "node_modules", ".git", ".qin", "dist", "build", ".cache", ".vscode");
 
     /**
      * 包信息
@@ -20,157 +31,114 @@ public class WorkspaceScanner {
     }
 
     /**
-     * 从指定目录开始扫描所有 workspace 包
+     * 从指定目录开始扫描所有包
      * 
-     * @param startDir 起始目录
+     * @param startDir 起始目录（通常是命令执行的目录）
      * @return 包名到包信息的映射
      */
     public Map<String, PackageInfo> scan(Path startDir) {
         Map<String, PackageInfo> packages = new LinkedHashMap<>();
 
-        // 向上查找所有 workspace root
-        List<Path> workspaceRoots = findAllWorkspaceRoots(startDir);
+        // 1. 查找项目根目录
+        Path projectRoot = findProjectRoot(startDir);
 
-        // 从近到远收集所有包（就近优先）
-        for (Path wsRoot : workspaceRoots) {
-            collectWorkspacePackages(wsRoot, packages);
-        }
+        // 2. 从项目根目录递归扫描所有包
+        scanPackagesRecursive(projectRoot, packages);
 
         return packages;
     }
 
     /**
-     * 向上查找所有包含 workspaces 配置的 package.json
+     * 查找项目根目录
+     * 优先级：
+     * 1. IDE 环境变量（VSCODE_CWD, IDEA_INITIAL_DIRECTORY）
+     * 2. 向上查找，取最上层的 .vscode / .idea / qin.config.json / package.json
      */
-    private List<Path> findAllWorkspaceRoots(Path startDir) {
-        List<Path> roots = new ArrayList<>();
-        Path currentDir = startDir.toAbsolutePath().normalize();
-
-        while (currentDir != null && currentDir.getParent() != null) {
-            Path pkgPath = currentDir.resolve("package.json");
-
-            if (Files.exists(pkgPath)) {
-                try {
-                    String content = Files.readString(pkgPath);
-                    if (hasWorkspacesField(content)) {
-                        roots.add(currentDir);
-                    }
-                } catch (IOException e) {
-                    // 忽略读取错误
-                }
+    public Path findProjectRoot(Path startDir) {
+        // 1. 优先使用 IDE 环境变量
+        String vscodeCwd = System.getenv("VSCODE_CWD");
+        if (vscodeCwd != null && !vscodeCwd.isEmpty()) {
+            Path vscodePath = Path.of(vscodeCwd);
+            if (Files.exists(vscodePath)) {
+                return vscodePath;
             }
-
-            currentDir = currentDir.getParent();
         }
 
-        return roots;
+        String ideaDir = System.getenv("IDEA_INITIAL_DIRECTORY");
+        if (ideaDir != null && !ideaDir.isEmpty()) {
+            Path ideaPath = Path.of(ideaDir);
+            if (Files.exists(ideaPath)) {
+                return ideaPath;
+            }
+        }
+
+        // 2. 向上查找，记录所有匹配，最后取最上层的
+        Path current = startDir.toAbsolutePath().normalize();
+        Path topMostMatch = null; // 最上层的匹配（路径最短）
+
+        while (current != null && current.getParent() != null) {
+            // 检查是否是项目标志
+            boolean isProjectRoot = Files.exists(current.resolve(".vscode")) ||
+                    Files.exists(current.resolve(".idea")) ||
+                    Files.exists(current.resolve("qin.config.json")) ||
+                    Files.exists(current.resolve("package.json"));
+
+            if (isProjectRoot) {
+                topMostMatch = current; // 继续向上找，取最上层的
+            }
+
+            current = current.getParent();
+        }
+
+        // 返回最上层的匹配
+        if (topMostMatch != null) {
+            return topMostMatch;
+        }
+
+        // 都找不到，返回起始目录
+        return startDir.toAbsolutePath().normalize();
     }
 
     /**
-     * 收集单个 workspace 的所有包
+     * 递归扫描目录，收集所有包含 package.json 且有 name 字段的包
      */
-    private void collectWorkspacePackages(Path wsRoot, Map<String, PackageInfo> packages) {
-        Path rootPkgPath = wsRoot.resolve("package.json");
-        if (!Files.exists(rootPkgPath))
+    private void scanPackagesRecursive(Path dir, Map<String, PackageInfo> packages) {
+        if (!Files.exists(dir) || !Files.isDirectory(dir)) {
             return;
+        }
 
-        try {
-            String content = Files.readString(rootPkgPath);
-            List<String> patterns = parseWorkspacesPatterns(content);
+        Path pkgPath = dir.resolve("package.json");
 
-            for (String pattern : patterns) {
-                List<Path> dirs = findMatchingDirs(wsRoot, pattern);
+        // 如果当前目录有 package.json，检查是否是一个包
+        if (Files.exists(pkgPath)) {
+            try {
+                String content = Files.readString(pkgPath);
+                String name = parseJsonField(content, "name");
 
-                for (Path dir : dirs) {
-                    Path pkgPath = dir.resolve("package.json");
+                if (name != null && !packages.containsKey(name)) {
+                    // 获取 monorepo 入口，如果没有配置则使用默认值
+                    String monorepo = parseJsonField(content, "monorepo");
+                    String entry = (monorepo != null) ? monorepo : DEFAULT_MONOREPO_ENTRY;
 
-                    if (Files.exists(pkgPath)) {
-                        try {
-                            String pkgContent = Files.readString(pkgPath);
-                            String name = parseJsonField(pkgContent, "name");
-                            String monorepo = parseJsonField(pkgContent, "monorepo");
-
-                            if (name != null && !packages.containsKey(name)) {
-                                packages.put(name, new PackageInfo(name, dir, monorepo));
-                            }
-
-                            // 如果这个包也是 workspace，递归收集
-                            if (hasWorkspacesField(pkgContent)) {
-                                collectWorkspacePackages(dir, packages);
-                            }
-
-                        } catch (IOException e) {
-                            // 忽略
-                        }
+                    // 只有当 src/index.ts 存在时才添加（或者明确配置了 monorepo）
+                    Path entryPath = dir.resolve(entry.replace("./", ""));
+                    if (monorepo != null || Files.exists(entryPath)) {
+                        packages.put(name, new PackageInfo(name, dir, entry));
                     }
                 }
+            } catch (IOException e) {
+                // 忽略读取错误
             }
+        }
 
+        // 递归扫描子目录
+        try (var stream = Files.list(dir)) {
+            stream.filter(Files::isDirectory)
+                    .filter(p -> !EXCLUDED_DIRS.contains(p.getFileName().toString()))
+                    .forEach(subDir -> scanPackagesRecursive(subDir, packages));
         } catch (IOException e) {
             // 忽略
         }
-    }
-
-    /**
-     * 检查 JSON 内容是否包含 workspaces 字段
-     */
-    private boolean hasWorkspacesField(String json) {
-        return json.contains("\"workspaces\"");
-    }
-
-    /**
-     * 解析 workspaces 模式列表
-     */
-    private List<String> parseWorkspacesPatterns(String json) {
-        List<String> patterns = new ArrayList<>();
-
-        // 简单解析：查找 "workspaces": [...] 或 "workspaces": { "packages": [...] }
-        int idx = json.indexOf("\"workspaces\"");
-        if (idx == -1)
-            return patterns;
-
-        int colonIdx = json.indexOf(':', idx);
-        if (colonIdx == -1)
-            return patterns;
-
-        // 找到 [ 开始
-        int bracketStart = json.indexOf('[', colonIdx);
-        if (bracketStart == -1) {
-            // 可能是对象格式 { "packages": [...] }
-            int braceStart = json.indexOf('{', colonIdx);
-            if (braceStart != -1) {
-                int packagesIdx = json.indexOf("\"packages\"", braceStart);
-                if (packagesIdx != -1) {
-                    bracketStart = json.indexOf('[', packagesIdx);
-                }
-            }
-        }
-
-        if (bracketStart == -1)
-            return patterns;
-
-        int bracketEnd = json.indexOf(']', bracketStart);
-        if (bracketEnd == -1)
-            return patterns;
-
-        String arrayContent = json.substring(bracketStart + 1, bracketEnd);
-
-        // 解析数组中的字符串
-        int i = 0;
-        while (i < arrayContent.length()) {
-            int quoteStart = arrayContent.indexOf('"', i);
-            if (quoteStart == -1)
-                break;
-
-            int quoteEnd = arrayContent.indexOf('"', quoteStart + 1);
-            if (quoteEnd == -1)
-                break;
-
-            patterns.add(arrayContent.substring(quoteStart + 1, quoteEnd));
-            i = quoteEnd + 1;
-        }
-
-        return patterns;
     }
 
     /**
@@ -205,58 +173,5 @@ public class WorkspaceScanner {
         }
 
         return null;
-    }
-
-    /**
-     * 查找匹配模式的目录
-     */
-    private List<Path> findMatchingDirs(Path root, String pattern) {
-        List<Path> dirs = new ArrayList<>();
-
-        if (pattern.endsWith("/*")) {
-            // packages/* 模式
-            Path baseDir = root.resolve(pattern.substring(0, pattern.length() - 2));
-
-            if (Files.exists(baseDir) && Files.isDirectory(baseDir)) {
-                try (var stream = Files.list(baseDir)) {
-                    stream.filter(Files::isDirectory)
-                            .filter(p -> !p.getFileName().toString().equals("node_modules"))
-                            .forEach(dirs::add);
-                } catch (IOException e) {
-                    // 忽略
-                }
-            }
-        } else if (pattern.endsWith("/**")) {
-            // packages/** 递归模式
-            Path baseDir = root.resolve(pattern.substring(0, pattern.length() - 3));
-            findDirsRecursive(baseDir, dirs);
-        } else {
-            // 具体目录
-            Path dir = root.resolve(pattern);
-            if (Files.exists(dir) && Files.isDirectory(dir)) {
-                dirs.add(dir);
-            }
-        }
-
-        return dirs;
-    }
-
-    /**
-     * 递归查找目录
-     */
-    private void findDirsRecursive(Path dir, List<Path> result) {
-        if (!Files.exists(dir) || !Files.isDirectory(dir))
-            return;
-
-        try (var stream = Files.list(dir)) {
-            stream.filter(Files::isDirectory)
-                    .filter(p -> !p.getFileName().toString().equals("node_modules"))
-                    .forEach(subDir -> {
-                        result.add(subDir);
-                        findDirsRecursive(subDir, result);
-                    });
-        } catch (IOException e) {
-            // 忽略
-        }
     }
 }

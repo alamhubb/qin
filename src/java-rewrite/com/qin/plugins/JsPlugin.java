@@ -27,34 +27,44 @@ public class JsPlugin implements RunnerPlugin {
 
     @Override
     public void run(Path file, String[] args, Path workDir) throws Exception {
-        // 确保 loader.mjs 存在
-        Path loaderPath = ensureLoader(workDir);
-
         // 扫描 workspace 并生成配置
         WorkspaceScanner scanner = new WorkspaceScanner();
+
+        // 查找项目根目录
+        Path projectRoot = scanner.findProjectRoot(workDir);
+
+        // 调试信息
+        System.out.println("[qin] 工作目录: " + workDir);
+        System.out.println("[qin] 项目根目录: " + projectRoot);
+        String vscodeCwd = System.getenv("VSCODE_CWD");
+        if (vscodeCwd != null) {
+            System.out.println("[qin] VS Code 工作区: " + vscodeCwd);
+        }
+
         Map<String, WorkspaceScanner.PackageInfo> packages = scanner.scan(workDir);
+        System.out.println("[qin] 发现 " + packages.size() + " 个包");
 
-        // 生成 monorepo-config.json
-        Path configPath = generateConfig(workDir, packages);
+        // 确保 loader.mjs 存在（使用项目根目录）
+        Path loaderPath = ensureLoader(projectRoot);
 
-        // 构建命令 - 使用 npx 调用 tsx
+        // 生成 monorepo-config.json（使用项目根目录）
+        Path configPath = generateConfig(projectRoot, packages);
+
+        // 构建命令 - 使用 npx 运行 tsx
         List<String> command = new ArrayList<>();
 
-        // Windows 需要通过 cmd /c 调用 npx
+        // Windows 需要通过 cmd.exe 运行
         boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
         if (isWindows) {
-            command.add("cmd");
+            command.add("cmd.exe");
             command.add("/c");
         }
 
         command.add("npx");
         command.add("tsx");
         command.add("--import");
-
-        // Windows 路径需要转换为 file:// URL 格式
-        String loaderUrl = loaderPath.toUri().toString();
-        command.add(loaderUrl);
-
+        // Node.js --import 需要 file:// URL 格式
+        command.add(loaderPath.toAbsolutePath().toUri().toString());
         command.add(file.toAbsolutePath().toString());
         command.addAll(Arrays.asList(args));
 
@@ -64,8 +74,7 @@ public class JsPlugin implements RunnerPlugin {
         pb.directory(workDir.toFile());
         pb.environment().put("QIN_MONOREPO_CONFIG", configPath.toAbsolutePath().toString());
 
-        System.out.println("[qin] Running: npx tsx --import " + loaderUrl + " " + file.getFileName() + " "
-                + String.join(" ", args));
+        System.out.println("[qin] Running: " + String.join(" ", command.subList(isWindows ? 2 : 0, command.size())));
 
         Process process = pb.start();
         int exitCode = process.waitFor();
@@ -85,9 +94,9 @@ public class JsPlugin implements RunnerPlugin {
         Path loaderPath = qinDir.resolve("loader.mjs");
         Path hooksPath = qinDir.resolve("hooks.mjs");
 
-        // 始终更新文件以确保最新
-        Files.writeString(loaderPath, getEmbeddedLoaderCode());
+        // 先写入 hooks，因为 loader 需要 hooks 的路径
         Files.writeString(hooksPath, getEmbeddedHooksCode());
+        Files.writeString(loaderPath, getEmbeddedLoaderCode(hooksPath));
 
         return loaderPath;
     }
@@ -145,18 +154,18 @@ public class JsPlugin implements RunnerPlugin {
     /**
      * 内嵌的 ESM Loader 入口代码
      */
-    private String getEmbeddedLoaderCode() {
+    private String getEmbeddedLoaderCode(Path hooksPath) {
+        String hooksUrl = hooksPath.toAbsolutePath().toUri().toString();
         return """
                 /**
                  * Qin Monorepo ESM Loader
                  * 拦截模块解析，将 workspace 包的入口重定向到源码
                  */
                 import { register } from 'node:module';
-                import { pathToFileURL } from 'node:url';
 
-                // 注册 hooks
-                register('./hooks.mjs', pathToFileURL(import.meta.url));
-                """;
+                // 注册 hooks - 使用绝对 URL
+                register('%s');
+                """.formatted(hooksUrl);
     }
 
     /**
