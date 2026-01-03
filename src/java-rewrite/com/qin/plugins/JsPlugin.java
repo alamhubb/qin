@@ -41,7 +41,7 @@ public class JsPlugin implements RunnerPlugin {
             System.out.println("[qin] VS Code 工作区: " + vscodeCwd);
         }
 
-        Map<String, WorkspaceScanner.PackageInfo> packages = scanner.scan(workDir);
+        Map<String, WorkspaceScanner.PackageInfo> packages = scanner.scan(projectRoot);
         System.out.println("[qin] 发现 " + packages.size() + " 个包");
 
         // 确保 loader.mjs 存在（使用项目根目录）

@@ -1,0 +1,14 @@
+{
+    "name": "com.qin:qin-bsp-server",
+    "version": "0.1.0",
+    "description": "Qin BSP Server - Build Server Protocol for Qin",
+    "entry": "src/com/qin/bsp/BspServer.java",
+    "dependencies": {
+        "com.google.code.gson:gson": "2.10.1"
+    },
+    "java": {
+        "version": "25",
+        "sourceDir": "src",
+        "outputDir": "build/classes"
+    }
+}
