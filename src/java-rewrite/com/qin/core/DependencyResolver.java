@@ -161,8 +161,10 @@ public class DependencyResolver {
                 localPaths.add(pkg.getClassesDir());
             } else {
                 // 支持 Qin 分隔符，转换为 Maven 格式
+                System.out.println("[DEBUG] 原始 name: " + name);
                 String mavenCoordinate = QinConstants.toMavenCoordinate(name) +
                         QinConstants.MAVEN_COORDINATE_SEPARATOR + version;
+                System.out.println("[DEBUG] 转换后: " + mavenCoordinate);
                 mavenDeps.add(mavenCoordinate);
             }
         }
@@ -318,14 +320,15 @@ public class DependencyResolver {
                 Files.copy(Path.of(globalPath), globalJarPath);
             }
 
-            // 2. 在项目 libs/ 创建符号链接（链接整个包目录）
-            Path projectSymlink = projectLibsDir.resolve(coordinate);
-            if (!Files.exists(projectSymlink)) {
+            // 2. 在项目 libs/ 创建 Junction（链接整个包目录）
+            // Junction 不需要管理员权限，比 Symlink 更可靠
+            Path projectJunction = projectLibsDir.resolve(coordinate);
+            if (!Files.exists(projectJunction)) {
                 try {
-                    Files.createSymbolicLink(projectSymlink, globalPackageDir);
+                    createJunction(projectJunction, globalPackageDir);
                 } catch (IOException e) {
-                    // Windows 符号链接可能失败，忽略（不影响编译）
-                    System.err.println("Warning: Failed to create symlink for " + coordinate + ": " + e.getMessage());
+                    // Junction 创建失败，打印错误但不影响编译
+                    System.err.println("Warning: Failed to create junction for " + coordinate + ": " + e.getMessage());
                 }
             }
 
@@ -427,6 +430,40 @@ public class DependencyResolver {
     private String readStream(InputStream is) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             return reader.lines().collect(Collectors.joining("\n"));
+        }
+    }
+
+    /**
+     * 在 Windows 上创建 Junction（目录联接）
+     * Junction 不需要管理员权限，比 Symlink 更可靠
+     * 
+     * @param link   要创建的 Junction 路径
+     * @param target 目标目录路径
+     */
+    private void createJunction(Path link, Path target) throws IOException {
+        if (!System.getProperty("os.name").toLowerCase().contains("win")) {
+            // 非 Windows 系统使用 symlink
+            Files.createSymbolicLink(link, target);
+            return;
+        }
+
+        // Windows: 使用 cmd mklink /J 创建 Junction
+        ProcessBuilder pb = new ProcessBuilder(
+                "cmd", "/c", "mklink", "/J",
+                link.toAbsolutePath().toString(),
+                target.toAbsolutePath().toString());
+        pb.redirectErrorStream(true);
+
+        try {
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                String output = readStream(process.getInputStream());
+                throw new IOException("mklink /J failed (exit " + exitCode + "): " + output);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Junction creation interrupted", e);
         }
     }
 }

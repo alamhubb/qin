@@ -10,11 +10,13 @@ import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 
 /**
  * 项目启动监听器
- * 自动检测 Qin 项目并打开工具窗口
+ * 自动检测 Qin 项目并执行 sync
  */
 public class DebugStartup implements ProjectActivity {
 
@@ -36,6 +38,29 @@ public class DebugStartup implements ProjectActivity {
         Path configPath = Paths.get(basePath, "qin.config.json");
         if (Files.exists(configPath)) {
             logger.info("检测到 Qin 项目");
+
+            // 在后台线程执行 sync
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                try {
+                    logger.info("开始自动同步依赖...");
+                    runQinSync(basePath, logger);
+                    logger.info("依赖同步完成");
+
+                    // 刷新项目，让 IDEA 重新加载库配置
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        try {
+                            // 通知 IDEA 刷新项目模型
+                            com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
+                            logger.info("项目模型已刷新");
+                        } catch (Exception e) {
+                            logger.error("刷新项目失败: " + e.getMessage());
+                        }
+                    });
+                } catch (Exception e) {
+                    logger.error("自动同步失败: " + e.getMessage());
+                }
+            });
+
             // 自动打开 Qin 工具窗口
             ApplicationManager.getApplication().invokeLater(() -> {
                 ToolWindowManager manager = ToolWindowManager.getInstance(project);
@@ -48,5 +73,30 @@ public class DebugStartup implements ProjectActivity {
         }
 
         return Unit.INSTANCE;
+    }
+
+    /**
+     * 执行 qin sync 命令
+     */
+    private void runQinSync(String projectPath, QinLogger logger) throws IOException, InterruptedException {
+        ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "qin", "sync");
+        pb.directory(new File(projectPath));
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+
+        // 读取输出
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                logger.info("[sync] " + line);
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            logger.error("qin sync 退出码: " + exitCode);
+        }
     }
 }

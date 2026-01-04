@@ -347,19 +347,12 @@ public class QinCli {
                     csCommand, config.repositories(), null,
                     System.getProperty("user.dir"), config.localRep());
 
-            ResolveResult result = resolver.resolveWithDetails(
-                    localResult.remoteDependencies.entrySet().stream()
-                            .map(e -> e.getKey() + ":" + e.getValue())
-                            .toList());
+            String remoteClasspath = resolver.resolveFromObject(localResult.remoteDependencies);
 
-            if (!result.isSuccess()) {
-                throw new Exception(result.getError());
-            }
-
-            List<String> jarPaths = result.jarPaths();
-            remoteCount = jarPaths.size();
-            if (!jarPaths.isEmpty()) {
-                classpaths.add(String.join(sep, jarPaths));
+            if (!remoteClasspath.isEmpty()) {
+                String[] jarPaths = remoteClasspath.split(sep);
+                remoteCount = jarPaths.length;
+                classpaths.add(remoteClasspath);
             }
         }
 
@@ -370,6 +363,19 @@ public class QinCli {
         String classpath = String.join(sep, classpaths);
         String json = buildClasspathJson(classpath);
         Files.writeString(com.qin.core.QinPaths.getClasspathCache(System.getProperty("user.dir")), json);
+
+        // 生成 IDEA 库配置文件（.idea/libraries/*.xml）
+        if (!classpath.isEmpty()) {
+            try {
+                System.out.println(blue("→ Generating IDEA library configs..."));
+                IdeaLibraryGenerator ideaGen = new IdeaLibraryGenerator(System.getProperty("user.dir"));
+                ideaGen.cleanLibraryConfigs(); // 清理旧配置
+                int libCount = ideaGen.generateLibraryConfigs(classpath);
+                System.out.println(green("  ✓ Generated " + libCount + " library configs in .idea/libraries/"));
+            } catch (IOException e) {
+                System.err.println(yellow("  Warning: Failed to generate IDEA configs: " + e.getMessage()));
+            }
+        }
 
         System.out.println(green("✓ Dependencies synced (" + localCount + " local, " + remoteCount + " remote)"));
         System.out.println(gray("  Cache: " + com.qin.core.QinPaths.CLASSPATH_CACHE));
@@ -395,9 +401,16 @@ public class QinCli {
                     String json = Files.readString(cacheFile);
                     String classpath = parseClasspathFromJson(json);
                     if (!classpath.isEmpty()) {
-                        System.out.println(
-                                blue("→ Using cached dependencies (" + com.qin.core.QinPaths.CLASSPATH_CACHE + ")"));
-                        return classpath;
+                        // 验证所有 jar 文件是否存在
+                        if (validateClasspathFiles(classpath)) {
+                            System.out.println(
+                                    blue("→ Using cached dependencies (" + com.qin.core.QinPaths.CLASSPATH_CACHE
+                                            + ")"));
+                            return classpath;
+                        } else {
+                            System.out.println(
+                                    yellow("→ Cache invalid (some jars missing), re-syncing..."));
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -407,6 +420,25 @@ public class QinCli {
 
         // 缓存无效，执行同步
         return syncDependenciesCore(config);
+    }
+
+    /**
+     * 验证 classpath 中的所有文件是否存在
+     */
+    private static boolean validateClasspathFiles(String classpath) {
+        if (classpath == null || classpath.isEmpty()) {
+            return true;
+        }
+        String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String[] paths = classpath.split(sep);
+        for (String path : paths) {
+            if (path.isEmpty())
+                continue;
+            if (!Files.exists(Paths.get(path))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void runTests(String[] args) throws Exception {

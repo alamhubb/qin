@@ -4,13 +4,13 @@
     "description": "Qin - Java-Vite Build Tool with zero XML configuration",
     "entry": "src/java-rewrite/com/qin/cli/QinCli.java",
     "dependencies": {
-        "com.google.code.gson:gson": "2.10.1",
-        "io.get-coursier:coursier_2.13": "2.1.10"
+        "com.google.code.gson@gson": "2.10.1",
+        "io.get-coursier@coursier_2.13": "2.1.10"
     },
     "java": {
         "version": "25",
         "sourceDir": "src/java-rewrite",
-        "outputDir": ".qin/classes",
+        "outputDir": "build/classes",
         "encoding": "UTF-8"
     },
     "output": {
