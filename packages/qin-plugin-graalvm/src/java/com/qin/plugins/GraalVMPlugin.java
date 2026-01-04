@@ -1,5 +1,6 @@
 package com.qin.plugins;
 
+import com.qin.types.QinPlugin;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -32,13 +33,6 @@ public class GraalVMPlugin implements QinPlugin {
         return "qin-plugin-graalvm";
     }
 
-    @Override
-    public Map<String, Object> config(Map<String, Object> config) {
-        Map<String, Object> newConfig = new HashMap<>(config);
-        newConfig.put("_graalvm", detectionResult);
-        return newConfig;
-    }
-
     /**
      * 获取 GraalVM 信息
      */
@@ -51,7 +45,8 @@ public class GraalVMPlugin implements QinPlugin {
      */
     public boolean isComponentInstalled(String name) {
         GraalVMInfo info = detectionResult.getInfo();
-        if (info == null) return false;
+        if (info == null)
+            return false;
         return info.getComponents().contains(name);
     }
 
@@ -128,12 +123,12 @@ public class GraalVMPlugin implements QinPlugin {
                 GraalVMDetectionResult result = new GraalVMDetectionResult();
                 result.setFound(true);
                 result.setDetectedBy("gu");
-                
+
                 GraalVMInfo info = new GraalVMInfo();
                 info.setVersion(parseGuVersion(output));
                 info.setComponents(getInstalledComponentsFromGu());
                 result.setInfo(info);
-                
+
                 return result;
             }
         } catch (Exception e) {
@@ -170,8 +165,10 @@ public class GraalVMPlugin implements QinPlugin {
         info.setHome(home);
         info.setVersion(version);
         info.setComponents(components);
-        if (Files.exists(javaPath)) info.setJavaPath(javaPath.toString());
-        if (Files.exists(nodePath)) info.setNodePath(nodePath.toString());
+        if (Files.exists(javaPath))
+            info.setJavaPath(javaPath.toString());
+        if (Files.exists(nodePath))
+            info.setNodePath(nodePath.toString());
         info.setGuPath(guPath.toString());
 
         GraalVMDetectionResult result = new GraalVMDetectionResult();
@@ -195,8 +192,8 @@ public class GraalVMPlugin implements QinPlugin {
 
     private static String parseGuVersion(String output) {
         java.util.regex.Matcher matcher = java.util.regex.Pattern
-            .compile("(\\d+\\.\\d+(?:\\.\\d+)?)")
-            .matcher(output);
+                .compile("(\\d+\\.\\d+(?:\\.\\d+)?)")
+                .matcher(output);
         return matcher.find() ? matcher.group(1) : "unknown";
     }
 
@@ -275,11 +272,21 @@ class GraalVMPluginOptions {
     private String home;
     private boolean autoInstall = false;
 
-    public String getHome() { return home; }
-    public void setHome(String home) { this.home = home; }
+    public String getHome() {
+        return home;
+    }
 
-    public boolean isAutoInstall() { return autoInstall; }
-    public void setAutoInstall(boolean autoInstall) { this.autoInstall = autoInstall; }
+    public void setHome(String home) {
+        this.home = home;
+    }
+
+    public boolean isAutoInstall() {
+        return autoInstall;
+    }
+
+    public void setAutoInstall(boolean autoInstall) {
+        this.autoInstall = autoInstall;
+    }
 }
 
 /**
@@ -293,23 +300,53 @@ class GraalVMInfo {
     private String javaPath;
     private String guPath;
 
-    public String getHome() { return home; }
-    public void setHome(String home) { this.home = home; }
+    public String getHome() {
+        return home;
+    }
 
-    public String getVersion() { return version; }
-    public void setVersion(String version) { this.version = version; }
+    public void setHome(String home) {
+        this.home = home;
+    }
 
-    public List<String> getComponents() { return components; }
-    public void setComponents(List<String> components) { this.components = components; }
+    public String getVersion() {
+        return version;
+    }
 
-    public String getNodePath() { return nodePath; }
-    public void setNodePath(String nodePath) { this.nodePath = nodePath; }
+    public void setVersion(String version) {
+        this.version = version;
+    }
 
-    public String getJavaPath() { return javaPath; }
-    public void setJavaPath(String javaPath) { this.javaPath = javaPath; }
+    public List<String> getComponents() {
+        return components;
+    }
 
-    public String getGuPath() { return guPath; }
-    public void setGuPath(String guPath) { this.guPath = guPath; }
+    public void setComponents(List<String> components) {
+        this.components = components;
+    }
+
+    public String getNodePath() {
+        return nodePath;
+    }
+
+    public void setNodePath(String nodePath) {
+        this.nodePath = nodePath;
+    }
+
+    public String getJavaPath() {
+        return javaPath;
+    }
+
+    public void setJavaPath(String javaPath) {
+        this.javaPath = javaPath;
+    }
+
+    public String getGuPath() {
+        return guPath;
+    }
+
+    public void setGuPath(String guPath) {
+        this.guPath = guPath;
+    }
 }
 
 /**
@@ -321,17 +358,37 @@ class GraalVMDetectionResult {
     private GraalVMInfo info;
     private String error;
 
-    public boolean isFound() { return found; }
-    public void setFound(boolean found) { this.found = found; }
+    public boolean isFound() {
+        return found;
+    }
 
-    public String getDetectedBy() { return detectedBy; }
-    public void setDetectedBy(String detectedBy) { this.detectedBy = detectedBy; }
+    public void setFound(boolean found) {
+        this.found = found;
+    }
 
-    public GraalVMInfo getInfo() { return info; }
-    public void setInfo(GraalVMInfo info) { this.info = info; }
+    public String getDetectedBy() {
+        return detectedBy;
+    }
 
-    public String getError() { return error; }
-    public void setError(String error) { this.error = error; }
+    public void setDetectedBy(String detectedBy) {
+        this.detectedBy = detectedBy;
+    }
+
+    public GraalVMInfo getInfo() {
+        return info;
+    }
+
+    public void setInfo(GraalVMInfo info) {
+        this.info = info;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
 }
 
 /**
@@ -349,21 +406,20 @@ class GraalVMNotFoundError extends RuntimeException {
     public String getInstallGuide() {
         boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
         return String.format("""
-            GraalVM 安装指南:
-            
-            1. 下载 GraalVM:
-               https://www.graalvm.org/downloads/
-            
-            2. 设置环境变量:
-               %s
-               %s
-            
-            3. 验证安装:
-               gu --version
-            """,
-            isWindows ? "set GRAALVM_HOME=C:\\path\\to\\graalvm" : "export GRAALVM_HOME=/path/to/graalvm",
-            isWindows ? "set PATH=%GRAALVM_HOME%\\bin;%PATH%" : "export PATH=$GRAALVM_HOME/bin:$PATH"
-        );
+                GraalVM 安装指南:
+
+                1. 下载 GraalVM:
+                   https://www.graalvm.org/downloads/
+
+                2. 设置环境变量:
+                   %s
+                   %s
+
+                3. 验证安装:
+                   gu --version
+                """,
+                isWindows ? "set GRAALVM_HOME=C:\\path\\to\\graalvm" : "export GRAALVM_HOME=/path/to/graalvm",
+                isWindows ? "set PATH=%GRAALVM_HOME%\\bin;%PATH%" : "export PATH=$GRAALVM_HOME/bin:$PATH");
     }
 }
 
@@ -378,7 +434,9 @@ class ComponentNotInstalledError extends RuntimeException {
         this.componentName = componentName;
     }
 
-    public String getComponentName() { return componentName; }
+    public String getComponentName() {
+        return componentName;
+    }
 
     public String getInstallCommand() {
         return "gu install " + componentName;

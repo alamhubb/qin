@@ -38,6 +38,10 @@ echo [1/7] Compiling types...
 javac -d .qin\classes src\java-rewrite\com\qin\types\*.java
 if errorlevel 1 goto :error
 
+echo [1.5/7] Compiling constants...
+javac -d .qin\classes -cp ".qin\classes" src\java-rewrite\com\qin\constants\*.java
+if errorlevel 1 goto :error
+
 echo [2/7] Compiling core modules...
 javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\core\*.java
 if errorlevel 1 goto :error
@@ -61,11 +65,12 @@ if errorlevel 1 goto :error
 echo [7/7] Compiling extra plugins...
 if errorlevel 1 goto :error
 
-javac -d .qin\classes -cp ".qin\classes" packages\qin-plugin-graalvm\src\java\com\qin\plugins\*.java
-if errorlevel 1 goto :error
+REM TODO: GraalVM 插件接口需要更新，暂时跳过
+REM javac -d .qin\classes -cp ".qin\classes" packages\qin-plugin-graalvm\src\java\com\qin\plugins\*.java
+REM if errorlevel 1 goto :error
 
-javac -d .qin\classes -cp ".qin\classes" packages\qin-plugin-graalvm-js\src\java\com\qin\plugins\*.java
-if errorlevel 1 goto :error
+REM javac -d .qin\classes -cp ".qin\classes" packages\qin-plugin-graalvm-js\src\java\com\qin\plugins\*.java
+REM if errorlevel 1 goto :error
 
 echo [8/8] Compiling create-qin...
 javac -d .qin\classes -cp ".qin\classes" packages\create-qin\src\java\com\qin\create\*.java

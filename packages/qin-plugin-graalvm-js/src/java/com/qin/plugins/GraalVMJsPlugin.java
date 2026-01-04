@@ -1,5 +1,10 @@
 package com.qin.plugins;
 
+import com.qin.types.QinPlugin;
+import com.qin.types.LanguageSupport;
+import com.qin.types.CompileContext;
+import com.qin.types.CompileResult;
+import com.qin.types.RunContext;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -79,23 +84,53 @@ class GraalVMJsPluginOptions {
     private boolean javaInterop = false;
     private GraalVMPluginOptions graalvm;
 
-    public String getEntry() { return entry; }
-    public void setEntry(String entry) { this.entry = entry; }
+    public String getEntry() {
+        return entry;
+    }
 
-    public boolean isHotReloadEnabled() { return hotReloadEnabled; }
-    public void setHotReloadEnabled(boolean enabled) { this.hotReloadEnabled = enabled; }
+    public void setEntry(String entry) {
+        this.entry = entry;
+    }
 
-    public HotReloadOptions getHotReloadOptions() { return hotReloadOptions; }
-    public void setHotReloadOptions(HotReloadOptions options) { this.hotReloadOptions = options; }
+    public boolean isHotReloadEnabled() {
+        return hotReloadEnabled;
+    }
 
-    public List<String> getNodeArgs() { return nodeArgs; }
-    public void setNodeArgs(List<String> nodeArgs) { this.nodeArgs = nodeArgs; }
+    public void setHotReloadEnabled(boolean enabled) {
+        this.hotReloadEnabled = enabled;
+    }
 
-    public boolean isJavaInterop() { return javaInterop; }
-    public void setJavaInterop(boolean javaInterop) { this.javaInterop = javaInterop; }
+    public HotReloadOptions getHotReloadOptions() {
+        return hotReloadOptions;
+    }
 
-    public GraalVMPluginOptions getGraalvm() { return graalvm; }
-    public void setGraalvm(GraalVMPluginOptions graalvm) { this.graalvm = graalvm; }
+    public void setHotReloadOptions(HotReloadOptions options) {
+        this.hotReloadOptions = options;
+    }
+
+    public List<String> getNodeArgs() {
+        return nodeArgs;
+    }
+
+    public void setNodeArgs(List<String> nodeArgs) {
+        this.nodeArgs = nodeArgs;
+    }
+
+    public boolean isJavaInterop() {
+        return javaInterop;
+    }
+
+    public void setJavaInterop(boolean javaInterop) {
+        this.javaInterop = javaInterop;
+    }
+
+    public GraalVMPluginOptions getGraalvm() {
+        return graalvm;
+    }
+
+    public void setGraalvm(GraalVMPluginOptions graalvm) {
+        this.graalvm = graalvm;
+    }
 }
 
 /**
@@ -110,8 +145,7 @@ class GraalVMJsLanguageSupport implements LanguageSupport {
 
         // 检测 GraalVM
         GraalVMDetectionResult detection = GraalVMPlugin.detectGraalVM(
-            options.getGraalvm() != null ? options.getGraalvm().getHome() : null
-        );
+                options.getGraalvm() != null ? options.getGraalvm().getHome() : null);
         if (detection.isFound()) {
             this.graalvmInfo = detection.getInfo();
         }
@@ -274,9 +308,9 @@ class JsHotReloadManager {
     private ScheduledFuture<?> debounceTask;
 
     public JsHotReloadManager(String nodePath, String entry, String cwd,
-                               Map<String, String> env, List<String> args,
-                               boolean javaInterop, List<String> nodeArgs,
-                               int debounce, boolean verbose) {
+            Map<String, String> env, List<String> args,
+            boolean javaInterop, List<String> nodeArgs,
+            int debounce, boolean verbose) {
         this.nodePath = nodePath;
         this.entry = entry;
         this.cwd = cwd != null ? cwd : System.getProperty("user.dir");
@@ -372,9 +406,9 @@ class JsHotReloadManager {
         }
 
         watchDir.register(watchService,
-            StandardWatchEventKinds.ENTRY_CREATE,
-            StandardWatchEventKinds.ENTRY_DELETE,
-            StandardWatchEventKinds.ENTRY_MODIFY);
+                StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_DELETE,
+                StandardWatchEventKinds.ENTRY_MODIFY);
 
         running = true;
         final Path finalWatchDir = watchDir;
@@ -383,7 +417,8 @@ class JsHotReloadManager {
             while (running) {
                 try {
                     WatchKey key = watchService.poll(100, TimeUnit.MILLISECONDS);
-                    if (key == null) continue;
+                    if (key == null)
+                        continue;
 
                     for (WatchEvent<?> event : key.pollEvents()) {
                         if (event.kind() == StandardWatchEventKinds.OVERFLOW) {

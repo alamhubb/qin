@@ -67,84 +67,51 @@ public class LocalProjectResolver {
 
     /**
      * 发现所有本地项目
+     * 
+     * 新策略：
+     * 1. 向上查找 workspace root
+     * 2. 从 workspace root 递归向下扫描所有项目
+     * 3. 按距离排序（近的优先）
+     * 
      * 返回Map: fullName -> ProjectInfo
      */
     private Map<String, ProjectInfo> discoverLocalProjects() {
-        // 使用LinkedHashMap保持插入顺序(近->远)
+        // 使用 LinkedHashMap 保持插入顺序（近 -> 远）
         Map<String, ProjectInfo> projects = new LinkedHashMap<>();
 
-        // 1. 向上查找所有包含qin.config.json的根目录
-        List<Path> projectRoots = findAllProjectRoots();
+        // 1. 向上查找 workspace root
+        Path workspaceRoot = findWorkspaceRoot(startDir);
 
-        // 2. 从近到远遍历,收集同级项目
-        for (Path root : projectRoots) {
-            collectSiblingProjects(root, projects);
+        // 2. 从 workspace root 递归向下扫描所有项目
+        List<Path> projectPaths = new ArrayList<>();
+        scanProjects(workspaceRoot, projectPaths, 0, MAX_SCAN_DEPTH);
+
+        // 3. 按距离排序（近的优先）
+        projectPaths.sort(Comparator.comparingInt(p -> startDir.toAbsolutePath().normalize()
+                .relativize(p.toAbsolutePath().normalize())
+                .getNameCount()));
+
+        // 4. 加载项目信息（就近优先，已存在的不覆盖）
+        for (Path projectPath : projectPaths) {
+            try {
+                Path configPath = projectPath.resolve("qin.config.json");
+                QinConfig config = loadConfig(configPath);
+                String fullName = config.name(); // "com.slime:slime-token"
+
+                // 就近优先: 如果已存在，不覆盖
+                if (!projects.containsKey(fullName)) {
+                    Path buildPath = projectPath.resolve("build/classes");
+                    projects.put(fullName, new ProjectInfo(
+                            fullName,
+                            projectPath,
+                            buildPath));
+                }
+            } catch (Exception e) {
+                // 忽略无法解析的配置
+            }
         }
 
         return projects;
-    }
-
-    /**
-     * 从当前目录向上查找所有包含qin.config.json的目录
-     * 返回从近到远的列表
-     */
-    private List<Path> findAllProjectRoots() {
-        List<Path> roots = new ArrayList<>();
-        Path current = startDir;
-
-        // 向上遍历直到文件系统根目录
-        while (current != null) {
-            Path configPath = current.resolve("qin.config.json");
-            if (Files.exists(configPath)) {
-                roots.add(current);
-            }
-            current = current.getParent();
-        }
-
-        return roots;
-    }
-
-    /**
-     * 收集某个项目目录的所有同级项目
-     * 
-     * @param projectRoot 项目根目录
-     * @param projects    结果map(就近优先,已存在的不覆盖)
-     */
-    private void collectSiblingProjects(Path projectRoot, Map<String, ProjectInfo> projects) {
-        Path parent = projectRoot.getParent();
-        if (parent == null)
-            return;
-
-        try (DirectoryStream<Path> siblings = Files.newDirectoryStream(parent, Files::isDirectory)) {
-            for (Path sibling : siblings) {
-                // 跳过特殊目录
-                String dirName = sibling.getFileName().toString();
-                if (dirName.equals("node_modules") || dirName.startsWith(".")) {
-                    continue;
-                }
-
-                Path configPath = sibling.resolve("qin.config.json");
-                if (Files.exists(configPath)) {
-                    try {
-                        QinConfig config = loadConfig(configPath);
-                        String fullName = config.name(); // "com.slime:slime-token"
-
-                        // 就近优先:如果已存在,不覆盖
-                        if (!projects.containsKey(fullName)) {
-                            Path buildPath = sibling.resolve("build/classes");
-                            projects.put(fullName, new ProjectInfo(
-                                    fullName,
-                                    sibling,
-                                    buildPath));
-                        }
-                    } catch (Exception e) {
-                        // 忽略无法解析的配置
-                    }
-                }
-            }
-        } catch (IOException e) {
-            // 忽略目录遍历错误
-        }
     }
 
     /**
@@ -153,6 +120,94 @@ public class LocalProjectResolver {
     private QinConfig loadConfig(Path configPath) throws IOException {
         String json = Files.readString(configPath);
         return gson.fromJson(json, QinConfig.class);
+    }
+
+    // ==================== 新增：workspace 扫描逻辑 ====================
+
+    // 项目根目录标志
+    private static final Set<String> PROJECT_ROOT_MARKERS = Set.of(".idea", ".vscode", ".git");
+
+    // 最大扫描深度
+    private static final int MAX_SCAN_DEPTH = 20;
+
+    /**
+     * 向上查找 workspace root
+     * 
+     * 优先级：
+     * 1. IDEA 环境变量（IDEA_INITIAL_DIRECTORY）
+     * 2. VSCode 环境变量（VSCODE_CWD）
+     * 3. 向上查找，取最远的 .idea/.vscode/.git
+     */
+    private Path findWorkspaceRoot(Path startDir) {
+        // 1. 优先使用 IDEA 环境变量
+        String ideaDir = System.getenv("IDEA_INITIAL_DIRECTORY");
+        if (ideaDir != null && !ideaDir.isEmpty()) {
+            Path ideaPath = Path.of(ideaDir);
+            if (Files.exists(ideaPath)) {
+                return ideaPath;
+            }
+        }
+
+        // 2. 其次使用 VSCode 环境变量
+        String vscodeCwd = System.getenv("VSCODE_CWD");
+        if (vscodeCwd != null && !vscodeCwd.isEmpty()) {
+            Path vscodePath = Path.of(vscodeCwd);
+            if (Files.exists(vscodePath)) {
+                return vscodePath;
+            }
+        }
+
+        // 2. 向上查找，取最远的（最顶层的）
+        Path current = startDir.toAbsolutePath().normalize();
+        Path topMost = startDir; // 默认使用起始目录
+
+        while (current != null && current.getParent() != null) {
+            // 检查是否有项目标志
+            final Path finalCurrent = current; // lambda 需要 final
+            boolean isProjectRoot = PROJECT_ROOT_MARKERS.stream()
+                    .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker))) ||
+                    Files.exists(current.resolve("qin.config.json"));
+
+            if (isProjectRoot) {
+                topMost = current; // 继续向上，取最顶层的
+            }
+
+            current = current.getParent();
+        }
+
+        return topMost;
+    }
+
+    /**
+     * 递归扫描目录查找 qin.config.json
+     */
+    private void scanProjects(Path dir, List<Path> projects, int depth, int maxDepth) {
+        if (depth >= maxDepth || !Files.exists(dir)) {
+            return;
+        }
+
+        // 先检查当前目录是否有配置文件
+        if (Files.exists(dir.resolve("qin.config.json")) && !projects.contains(dir)) {
+            projects.add(dir);
+        }
+
+        // 扫描子目录
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
+            for (Path subDir : stream) {
+                String dirName = subDir.getFileName().toString();
+
+                // 排除特殊目录
+                if (dirName.equals("node_modules") || dirName.equals(".git") ||
+                        dirName.equals("build") || dirName.equals("dist") ||
+                        dirName.startsWith(".")) {
+                    continue;
+                }
+
+                scanProjects(subDir, projects, depth + 1, maxDepth);
+            }
+        } catch (IOException e) {
+            // 忽略目录遍历错误
+        }
     }
 
     /**
