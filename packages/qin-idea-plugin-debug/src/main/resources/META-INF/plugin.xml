@@ -1,0 +1,19 @@
+<idea-plugin>
+    <id>com.qin.idea</id>
+    <name>Qin Build Tool</name>
+    <version>0.1.0</version>
+    <vendor>Qin</vendor>
+    
+    <description>Qin 构建工具 IDEA 插件，支持一键 Sync/Compile/Run</description>
+    
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity 
+            implementation="com.qin.debug.DebugStartup"/>
+        <toolWindow id="Qin" 
+                    anchor="right"
+                    factoryClass="com.qin.debug.QinToolWindowFactory"/>
+    </extensions>
+</idea-plugin>
