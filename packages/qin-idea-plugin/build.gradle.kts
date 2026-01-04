@@ -15,7 +15,7 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity("2024.3")
+        intellijIdeaUltimate("2025.1")
         bundledPlugin("com.intellij.java")
         instrumentationTools()
     }
@@ -24,8 +24,8 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "243"
-            untilBuild = "243.*"
+            sinceBuild = "251"
+            untilBuild = "253.*"
         }
     }
 }
