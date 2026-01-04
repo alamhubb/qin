@@ -1,6 +1,7 @@
 package com.qin.core;
 
 import com.qin.types.*;
+import com.qin.constants.QinConstants;
 
 import java.io.*;
 import java.nio.file.*;
@@ -159,7 +160,10 @@ public class DependencyResolver {
                 }
                 localPaths.add(pkg.getClassesDir());
             } else {
-                mavenDeps.add(name + ":" + version);
+                // 支持 Qin 分隔符，转换为 Maven 格式
+                String mavenCoordinate = QinConstants.toMavenCoordinate(name) +
+                        QinConstants.MAVEN_COORDINATE_SEPARATOR + version;
+                mavenDeps.add(mavenCoordinate);
             }
         }
 
@@ -276,10 +280,15 @@ public class DependencyResolver {
     }
 
     private List<String> copyToRepository(List<String> globalPaths) throws IOException {
-        Path repoDirPath = Paths.get(repoDir);
-        Files.createDirectories(repoDirPath);
+        // 全局存储目录
+        Path globalLibsDir = QinPaths.getGlobalLibsDir();
+        Files.createDirectories(globalLibsDir);
 
-        List<String> localPaths = new ArrayList<>();
+        // 项目根目录的 libs 符号链接目录
+        Path projectLibsDir = Paths.get(projectRoot, "libs");
+        Files.createDirectories(projectLibsDir);
+
+        List<String> classpathEntries = new ArrayList<>();
 
         for (String globalPath : globalPaths) {
             if (!globalPath.endsWith(".jar"))
@@ -288,30 +297,43 @@ public class DependencyResolver {
             // 提取包信息：groupId, artifactId 和 version
             PackageInfo pkgInfo = extractPackageInfo(globalPath);
             if (pkgInfo == null) {
-                // 如果解析失败，使用原有逻辑
-                localPaths.add(globalPath);
+                // 如果解析失败，直接使用 Coursier 下载的路径
+                classpathEntries.add(globalPath);
                 continue;
             }
 
-            String jarName = Paths.get(globalPath).getFileName().toString();
+            String jarName = Path.of(globalPath).getFileName().toString();
 
-            // 新结构：libs/groupId/artifactId/artifactId-version/xxx.jar
-            // 例如：libs/org.junit.jupiter/junit-jupiter/junit-jupiter-5.10.1/junit-jupiter-5.10.1.jar
-            // 说明：groupId 使用 . 不展开，artifactId 作为子目录，版本再作为子目录
-            Path groupDir = repoDirPath.resolve(pkgInfo.groupId);
-            Path artifactDir = groupDir.resolve(pkgInfo.artifactId);
-            Path versionDir = artifactDir.resolve(pkgInfo.artifactId + "-" + pkgInfo.version);
-            Files.createDirectories(versionDir);
+            // 坐标：com.google.code.gson@gson
+            String coordinate = pkgInfo.groupId + QinConstants.QIN_COORDINATE_SEPARATOR + pkgInfo.artifactId;
+            String coordinateWithVersion = coordinate + QinConstants.VERSION_SEPARATOR + pkgInfo.version;
 
-            Path localPath = versionDir.resolve(jarName);
-            if (!Files.exists(localPath)) {
-                Files.copy(Paths.get(globalPath), localPath);
+            // 1. 复制到全局存储
+            Path globalPackageDir = globalLibsDir.resolve(coordinate);
+            Path globalVersionDir = globalPackageDir.resolve(coordinateWithVersion);
+            Files.createDirectories(globalVersionDir);
+
+            Path globalJarPath = globalVersionDir.resolve(coordinateWithVersion + ".jar");
+            if (!Files.exists(globalJarPath)) {
+                Files.copy(Path.of(globalPath), globalJarPath);
             }
 
-            localPaths.add(localPath.toString());
+            // 2. 在项目 libs/ 创建符号链接（链接整个包目录）
+            Path projectSymlink = projectLibsDir.resolve(coordinate);
+            if (!Files.exists(projectSymlink)) {
+                try {
+                    Files.createSymbolicLink(projectSymlink, globalPackageDir);
+                } catch (IOException e) {
+                    // Windows 符号链接可能失败，忽略（不影响编译）
+                    System.err.println("Warning: Failed to create symlink for " + coordinate + ": " + e.getMessage());
+                }
+            }
+
+            // 3. Classpath 使用全局真实路径
+            classpathEntries.add(globalJarPath.toString());
         }
 
-        return localPaths;
+        return classpathEntries;
     }
 
     /**

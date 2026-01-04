@@ -42,6 +42,11 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         btnPanel.add(runBtn);
         btnPanel.add(clearBtn);
 
+        // BSP Classpath 按钮
+        JButton classpathBtn = new JButton("Classpath");
+        classpathBtn.addActionListener(e -> showClasspath(project));
+        btnPanel.add(classpathBtn);
+
         // 项目信息 + 输出区域
         outputArea = new JTextArea();
         outputArea.setEditable(false);
@@ -91,7 +96,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
         new Thread(() -> {
             try {
-                ProcessBuilder pb = new ProcessBuilder("qin", cmd);
+                ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "qin", cmd);
                 pb.directory(new File(basePath));
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
@@ -108,6 +113,43 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
                 int exitCode = process.waitFor();
                 appendOutput("\n[Exit: " + exitCode + "]");
+
+            } catch (Exception e) {
+                appendOutput("Error: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private void showClasspath(Project project) {
+        String basePath = project.getBasePath();
+        if (basePath == null)
+            return;
+
+        appendOutput("\n=== Classpath (via BSP) ===");
+
+        new Thread(() -> {
+            try {
+                BspClient client = new BspClient(basePath);
+                var targets = client.getBuildTargets();
+
+                if (targets.isEmpty()) {
+                    appendOutput("No build targets found");
+                    return;
+                }
+
+                // 获取第一个 target 的 classpath
+                String targetUri = targets.get(0).getAsJsonObject()
+                        .get("id").getAsJsonObject()
+                        .get("uri").getAsString();
+
+                var classpath = client.getClasspath(targetUri);
+
+                if (classpath.isEmpty()) {
+                    appendOutput("No classpath entries found");
+                } else {
+                    appendOutput("Entries: " + classpath.size());
+                    classpath.forEach(entry -> appendOutput("  " + entry.getAsString()));
+                }
 
             } catch (Exception e) {
                 appendOutput("Error: " + e.getMessage());
