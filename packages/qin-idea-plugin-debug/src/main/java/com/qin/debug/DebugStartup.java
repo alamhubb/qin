@@ -22,13 +22,9 @@ import java.util.*;
  */
 public class DebugStartup implements ProjectActivity {
 
-    // 排除的目录
-    private static final Set<String> EXCLUDED_DIRS = Set.of(
-            "node_modules", ".git", ".qin", "dist", "build", ".cache",
-            ".vscode", ".idea", "out", "target");
-
-    // 配置文件名常量
-    private static final String CONFIG_FILE = "qin.config.json";
+    // 使用常量类
+    private static final Set<String> EXCLUDED_DIRS = QinConstants.EXCLUDED_DIRS;
+    private static final String CONFIG_FILE = QinConstants.CONFIG_FILE;
 
     @Nullable
     @Override
@@ -61,7 +57,7 @@ public class DebugStartup implements ProjectActivity {
                 for (Path projectPath : qinProjects) {
                     String relativePath = Paths.get(basePath).relativize(projectPath).toString();
                     if (relativePath.isEmpty()) {
-                        relativePath = ".";
+                        relativePath = QinConstants.CURRENT_DIR;
                     }
                     logger.info("同步项目: " + relativePath);
 
@@ -126,7 +122,7 @@ public class DebugStartup implements ProjectActivity {
         if (Files.exists(workspaceRoot.resolve(CONFIG_FILE))) {
             projects.add(workspaceRoot);
         }
-        scanForQinProjects(workspaceRoot, projects, 0, 5);
+        scanForQinProjects(workspaceRoot, projects, 0, QinConstants.MAX_SCAN_DEPTH);
 
         return projects;
     }
@@ -141,9 +137,9 @@ public class DebugStartup implements ProjectActivity {
 
         while (current != null && current.getParent() != null) {
             // 检查是否有项目标志
-            boolean isProjectRoot = Files.exists(current.resolve(".idea")) ||
-                    Files.exists(current.resolve(".vscode")) ||
-                    Files.exists(current.resolve(".git")) ||
+            final Path finalCurrent = current; // lambda 需要 final
+            boolean isProjectRoot = QinConstants.PROJECT_ROOT_MARKERS.stream()
+                    .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker))) ||
                     Files.exists(current.resolve(CONFIG_FILE));
 
             if (isProjectRoot) {
@@ -169,7 +165,7 @@ public class DebugStartup implements ProjectActivity {
                 String dirName = subDir.getFileName().toString();
 
                 // 跳过排除的目录
-                if (EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(".")) {
+                if (EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
                     continue;
                 }
 
@@ -194,7 +190,7 @@ public class DebugStartup implements ProjectActivity {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
             for (Path subDir : stream) {
                 String dirName = subDir.getFileName().toString();
-                if (!EXCLUDED_DIRS.contains(dirName) && !dirName.startsWith(".")) {
+                if (!EXCLUDED_DIRS.contains(dirName) && !dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
                     if (Files.exists(subDir.resolve(CONFIG_FILE))) {
                         return true;
                     }
@@ -210,7 +206,8 @@ public class DebugStartup implements ProjectActivity {
      * 执行 qin sync 命令
      */
     private void runQinSync(String projectPath, QinLogger logger) throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "qin", "sync");
+        ProcessBuilder pb = new ProcessBuilder(QinConstants.CMD_PREFIX, QinConstants.CMD_FLAG, QinConstants.QIN_CMD,
+                "sync");
         pb.directory(new File(projectPath));
         pb.redirectErrorStream(true);
 

@@ -18,8 +18,8 @@ public class QinLogger {
     public QinLogger(String projectName) {
         String userHome = System.getProperty("user.home");
         String timestamp = LocalDateTime.now().format(FILE_FMT);
-        Path logDir = Paths.get(userHome, ".qin-idea", projectName, "logs");
-        this.logFile = logDir.resolve(timestamp + ".log");
+        Path logDir = Paths.get(userHome, QinConstants.LOG_DIR_NAME, projectName, QinConstants.LOG_SUBDIR);
+        this.logFile = logDir.resolve(timestamp + QinConstants.LOG_FILE_EXT);
 
         try {
             Files.createDirectories(logDir);

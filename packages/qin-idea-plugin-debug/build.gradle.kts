@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.qin"
-version = "0.0.7"
+version = "0.1.1"
 
 repositories {
     mavenCentral()

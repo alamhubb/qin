@@ -5,10 +5,15 @@
 ## [Unreleased]
 
 ### 新增
+- **IDEA 树形界面** - 类似 Gradle 的树形项目管理界面
+  - 📦 自动扫描并展示所有 Qin 项目
+  - 📁 每个项目显示 Tasks 和 Dependencies
+  - 双击任务节点直接执行命令
+  - 🔄 刷新按钮同步所有项目
 - **IDEA 插件自动同步** - 打开项目时自动执行 `qin sync`
 - **IDEA 库配置生成** - 自动生成 `.idea/libraries/*.xml`，IDEA 自动识别依赖
 - **IDEA 编译输出配置** - 自动配置 IDEA 使用 `build/classes` 目录
-- **Monorepo 支持增强** - IDEA 插件自动扫描所有子项目（最多 3 层深度）
+- **Monorepo 支持增强** - IDEA 插件自动扫描所有子项目（最多 5 层深度）
 - **缓存文件验证** - 使用缓存前验证所有 jar 文件是否存在
 - 内置 Vite 前端支持（`client` 配置）
 - 插件系统（`QinPlugin` 接口）
