@@ -393,6 +393,89 @@ private static String syncDependenciesCore(QinConfig config) {
 }
 ```
 
+### 6. IDEA 集成
+
+Qin 提供 IntelliJ IDEA 插件，实现 IDE 无缝集成：
+
+**自动功能：**
+- ✅ **自动同步** - 打开项目时自动执行 `qin sync`
+- ✅ **库配置生成** - 自动生成 `.idea/libraries/*.xml`
+- ✅ **编译输出配置** - 自动使用 `build/classes`（与 qin 一致）
+- ✅ **Monorepo 支持** - 自动扫描所有子项目
+
+**安装：**
+```bash
+# 构建插件
+cd packages/qin-idea-plugin-debug
+./gradlew buildPlugin
+
+# 安装：IDEA → Settings → Plugins → ⚙️ → Install from Disk
+# 选择 build/distributions/qin-idea-plugin-debug-x.x.x.zip
+```
+
+**工作原理：**
+```
+IDEA 打开项目
+     ↓
+向上查找 workspace root（.idea/.vscode/.git）
+     ↓
+向下递归扫描所有 qin.config.json（最多 5 层）
+     ↓
+为每个项目执行 qin sync
+     ↓
+生成 .idea/libraries/*.xml
+     ↓
+更新 .iml 文件（添加库引用 + 配置输出路径）
+     ↓
+刷新 IDEA 项目模型
+```
+
+### 7. Monorepo 支持
+
+Qin 原生支持 Monorepo（单仓库多项目）模式：
+
+**目录结构：**
+```
+workspace/
+├── .git/
+├── .idea/             # IDEA 项目标志
+├── project-a/
+│   └── qin.config.json
+├── project-b/
+│   └── qin.config.json
+├── packages/
+│   ├── lib-1/
+│   │   └── qin.config.json
+│   └── lib-2/
+│       └── qin.config.json
+└── apps/
+    └── app-1/
+        └── qin.config.json
+```
+
+**本地依赖解析策略：**
+1. 从当前目录向上查找所有 `qin.config.json`
+2. 扫描同级目录的其他项目
+3. 就近优先：近的项目覆盖远的同名项目
+
+**IDEA 插件扫描策略：**
+1. 向上找到 workspace root（最顶层的 `.idea`/`.vscode`/`.git` 目录）
+2. 从 workspace root 向下递归扫描所有 `qin.config.json`
+3. 为每个发现的项目自动执行 sync
+
+**配置示例：**
+```json
+// project-a/qin.config.json
+{
+  "name": "com.example:project-a",
+  "version": "1.0.0",
+  "dependencies": {
+    "com.example:lib-1": "1.0.0",  // 自动使用本地 ../packages/lib-1
+    "com.example:lib-2": "1.0.0"   // 自动使用本地 ../packages/lib-2
+  }
+}
+```
+
 ## 🎯 Java 25 特性展示
 
 ### 1. Flexible Constructor Bodies

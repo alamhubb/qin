@@ -34,6 +34,13 @@ public final class QinPaths {
      */
     public static final String OUTPUT_DIR = "build/classes";
 
+    // ==================== 配置文件 ====================
+
+    /**
+     * 配置文件名
+     */
+    public static final String CONFIG_FILE = "qin.config.json";
+
     // ==================== Qin配置目录 ====================
 
     /**

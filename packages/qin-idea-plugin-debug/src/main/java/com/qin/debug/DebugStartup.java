@@ -13,12 +13,22 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.*;
 
 /**
  * 项目启动监听器
  * 自动检测 Qin 项目并执行 sync
+ * 支持 Monorepo：自动扫描所有子项目
  */
 public class DebugStartup implements ProjectActivity {
+
+    // 排除的目录
+    private static final Set<String> EXCLUDED_DIRS = Set.of(
+            "node_modules", ".git", ".qin", "dist", "build", ".cache",
+            ".vscode", ".idea", "out", "target");
+
+    // 配置文件名常量
+    private static final String CONFIG_FILE = "qin.config.json";
 
     @Nullable
     @Override
@@ -34,45 +44,166 @@ public class DebugStartup implements ProjectActivity {
         logger.info("项目打开: " + project.getName());
         logger.info("路径: " + basePath);
 
-        // 检测是否为 Qin 项目
-        Path configPath = Paths.get(basePath, "qin.config.json");
-        if (Files.exists(configPath)) {
-            logger.info("检测到 Qin 项目");
+        // 在后台线程扫描和执行 sync
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            try {
+                // 发现所有 Qin 项目（包括当前目录和子目录）
+                List<Path> qinProjects = discoverQinProjects(Paths.get(basePath));
 
-            // 在后台线程执行 sync
-            ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                try {
-                    logger.info("开始自动同步依赖...");
-                    runQinSync(basePath, logger);
-                    logger.info("依赖同步完成");
-
-                    // 刷新项目，让 IDEA 重新加载库配置
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        try {
-                            // 通知 IDEA 刷新项目模型
-                            com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
-                            logger.info("项目模型已刷新");
-                        } catch (Exception e) {
-                            logger.error("刷新项目失败: " + e.getMessage());
-                        }
-                    });
-                } catch (Exception e) {
-                    logger.error("自动同步失败: " + e.getMessage());
+                if (qinProjects.isEmpty()) {
+                    logger.info("未检测到 Qin 项目");
+                    return;
                 }
-            });
 
-            // 自动打开 Qin 工具窗口
-            ApplicationManager.getApplication().invokeLater(() -> {
-                ToolWindowManager manager = ToolWindowManager.getInstance(project);
-                ToolWindow toolWindow = manager.getToolWindow("Qin");
-                if (toolWindow != null) {
-                    toolWindow.show();
-                    logger.info("已打开 Qin 工具窗口");
+                logger.info("检测到 " + qinProjects.size() + " 个 Qin 项目");
+
+                // 为每个项目执行 sync
+                for (Path projectPath : qinProjects) {
+                    String relativePath = Paths.get(basePath).relativize(projectPath).toString();
+                    if (relativePath.isEmpty()) {
+                        relativePath = ".";
+                    }
+                    logger.info("同步项目: " + relativePath);
+
+                    try {
+                        runQinSync(projectPath.toString(), logger);
+                    } catch (Exception e) {
+                        logger.error("同步失败 [" + relativePath + "]: " + e.getMessage());
+                    }
                 }
-            });
-        }
+
+                logger.info("所有项目同步完成");
+
+                // 刷新项目，让 IDEA 重新加载库配置
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    try {
+                        com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
+                        logger.info("项目模型已刷新");
+                    } catch (Exception e) {
+                        logger.error("刷新项目失败: " + e.getMessage());
+                    }
+                });
+            } catch (Exception e) {
+                logger.error("自动同步失败: " + e.getMessage());
+            }
+        });
+
+        // 自动打开 Qin 工具窗口（如果有任何 Qin 项目）
+        ApplicationManager.getApplication().invokeLater(() -> {
+            // 检查是否有 qin.config.json（在根目录或子目录）
+            try {
+                boolean hasQinProject = Files.exists(Paths.get(basePath, CONFIG_FILE)) ||
+                        hasQinProjectInSubdirs(Paths.get(basePath));
+
+                if (hasQinProject) {
+                    ToolWindowManager manager = ToolWindowManager.getInstance(project);
+                    ToolWindow toolWindow = manager.getToolWindow("Qin");
+                    if (toolWindow != null) {
+                        toolWindow.show();
+                    }
+                }
+            } catch (Exception e) {
+                // 忽略
+            }
+        });
 
         return Unit.INSTANCE;
+    }
+
+    /**
+     * 发现所有 Qin 项目
+     * 策略：
+     * 1. 从 IDEA 打开的目录开始向上查找 workspace root（包含 .idea/.vscode 的最顶层目录）
+     * 2. 从 workspace root 向下递归扫描所有 qin.config.json
+     */
+    private List<Path> discoverQinProjects(Path ideaProjectDir) {
+        List<Path> projects = new ArrayList<>();
+
+        // 1. 向上查找 workspace root
+        Path workspaceRoot = findWorkspaceRoot(ideaProjectDir);
+
+        // 2. 从 workspace root 向下扫描所有 qin.config.json
+        if (Files.exists(workspaceRoot.resolve(CONFIG_FILE))) {
+            projects.add(workspaceRoot);
+        }
+        scanForQinProjects(workspaceRoot, projects, 0, 5);
+
+        return projects;
+    }
+
+    /**
+     * 向上查找 workspace root
+     * 标志：.idea, .vscode, .git（取最顶层的）
+     */
+    private Path findWorkspaceRoot(Path startDir) {
+        Path current = startDir.toAbsolutePath().normalize();
+        Path topMost = startDir; // 默认使用起始目录
+
+        while (current != null && current.getParent() != null) {
+            // 检查是否有项目标志
+            boolean isProjectRoot = Files.exists(current.resolve(".idea")) ||
+                    Files.exists(current.resolve(".vscode")) ||
+                    Files.exists(current.resolve(".git")) ||
+                    Files.exists(current.resolve(CONFIG_FILE));
+
+            if (isProjectRoot) {
+                topMost = current; // 继续向上，取最顶层的
+            }
+
+            current = current.getParent();
+        }
+
+        return topMost;
+    }
+
+    /**
+     * 递归扫描目录查找 qin.config.json
+     */
+    private void scanForQinProjects(Path dir, List<Path> projects, int depth, int maxDepth) {
+        if (depth >= maxDepth) {
+            return;
+        }
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
+            for (Path subDir : stream) {
+                String dirName = subDir.getFileName().toString();
+
+                // 跳过排除的目录
+                if (EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(".")) {
+                    continue;
+                }
+
+                // 检查是否有 qin.config.json
+                Path configPath = subDir.resolve(CONFIG_FILE);
+                if (Files.exists(configPath) && !projects.contains(subDir)) {
+                    projects.add(subDir);
+                }
+
+                // 继续递归
+                scanForQinProjects(subDir, projects, depth + 1, maxDepth);
+            }
+        } catch (IOException e) {
+            // 忽略目录遍历错误
+        }
+    }
+
+    /**
+     * 检查子目录中是否有 Qin 项目（快速检查，只看一层）
+     */
+    private boolean hasQinProjectInSubdirs(Path dir) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
+            for (Path subDir : stream) {
+                String dirName = subDir.getFileName().toString();
+                if (!EXCLUDED_DIRS.contains(dirName) && !dirName.startsWith(".")) {
+                    if (Files.exists(subDir.resolve(CONFIG_FILE))) {
+                        return true;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            // 忽略
+        }
+        return false;
     }
 
     /**
