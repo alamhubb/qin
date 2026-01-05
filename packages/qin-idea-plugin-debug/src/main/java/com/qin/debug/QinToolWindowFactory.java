@@ -1,4 +1,4 @@
-package com.qin.debug;
+﻿package com.qin.debug;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
@@ -56,11 +56,11 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         tree.setShowsRootHandles(true);
         tree.setCellRenderer(new QinTreeCellRenderer());
 
-        // 双击监听器
+        // 单击监听器（改为单击触发，提升体验）
         tree.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) {
+                if (e.getClickCount() == 1) { // 改为单击
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                     if (node != null && node.getUserObject() instanceof TaskNode) {
                         TaskNode task = (TaskNode) node.getUserObject();
@@ -200,15 +200,24 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                     DebugStartup.generateImlFile(Paths.get(task.projectPath), logger, true, ideaDir); // 手动 sync：强制覆盖并注册
                     appendLog("[生成 .iml 文件完成]");
 
-                    // ✨ 触发 IDEA 刷新项目结构
+                    // ✨ 触发 IDEA 完整刷新（包括索引重建）
                     ApplicationManager.getApplication().invokeLater(() -> {
-                        // 刷新虚拟文件系统（让 IDEA 识别到文件变化）
-                        VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
-
-                        // 触发项目结构重新加载
-                        ProjectRootManager.getInstance(project).incModificationCount();
-
-                        appendLog("[✓] IDEA 项目刷新完成，依赖已生效");
+                        try {
+                            appendLog("[开始刷新 IDEA...]");
+                            
+                            // 1. 刷新虚拟文件系统（启用监听器）
+                            VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
+                            
+                            // 2. 触发项目结构重新加载
+                            ProjectRootManager.getInstance(project).incModificationCount();
+                            
+                            // 3. 等待索引重建
+                            Thread.sleep(500);
+                            
+                            appendLog("[✓] IDEA 刷新完成，索引已更新");
+                        } catch (Exception ex) {
+                            appendLog("[!] 刷新失败: " + ex.getMessage());
+                        }
                     });
                 }
 
