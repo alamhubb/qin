@@ -85,8 +85,8 @@ public class DependencyResolver {
                     .getLocation()
                     .toURI()
                     .getPath();
-            // 如果在.qin/classes中,返回上两级
-            if (jarPath.contains(".qin")) {
+            // 如果在 build/classes 中,返回上两级
+            if (jarPath.contains("build")) {
                 return Paths.get(jarPath).getParent().getParent().toString();
             }
         } catch (Exception e) {

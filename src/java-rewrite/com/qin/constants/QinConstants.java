@@ -77,6 +77,16 @@ public class QinConstants {
     public static final String QIN_DIR = ".qin";
 
     /**
+     * 构建输出目录
+     */
+    public static final String BUILD_DIR = "build";
+
+    /**
+     * 编译输出目录（相对于项目根目录）
+     */
+    public static final String BUILD_CLASSES_DIR = "build/classes";
+
+    /**
      * 日志子目录名
      */
     public static final String LOG_SUBDIR = "logs";

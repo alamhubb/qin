@@ -690,8 +690,8 @@ public class QinCli {
      */
     private static String extractArtifactIdFromPath(String path) {
         // 路径格式: .../groupId/artifactId/version/artifactId-version.jar
-        // 或: .../.qin/classes
-        if (path.contains(".qin") || path.contains("classes")) {
+        // 或: .../build/classes
+        if (path.contains("build") || path.contains("classes")) {
             // 本地项目，使用目录名
             Path p = Paths.get(path);
             if (p.getParent() != null && p.getParent().getParent() != null) {

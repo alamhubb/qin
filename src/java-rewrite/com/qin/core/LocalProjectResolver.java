@@ -74,7 +74,7 @@ public class LocalProjectResolver {
 
             ProjectInfo project = localProjects.get(fullName);
             if (project != null) {
-                // 本地项目:使用.qin/classes路径
+                // 本地项目:使用 build/classes 路径
                 localClasspaths.add(project.buildClassesPath.toString());
             } else {
                 // 远程依赖:需要下载

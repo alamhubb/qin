@@ -1,5 +1,7 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -21,7 +23,7 @@ public class IncrementalCompilationChecker {
     public boolean needsRecompilation(Path projectDir) {
         try {
             Path srcDir = projectDir.resolve("src");
-            Path classesDir = projectDir.resolve(".qin/classes");
+            Path classesDir = projectDir.resolve(QinConstants.BUILD_CLASSES_DIR);
 
             // 如果没有 classes 目录，肯定需要编译
             if (!Files.exists(classesDir)) {
