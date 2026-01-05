@@ -2,7 +2,10 @@ package com.qin.debug;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectRootManager;
+import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.content.Content;
@@ -196,6 +199,17 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                     Path ideaDir = Paths.get(project.getBasePath(), ".idea");
                     DebugStartup.generateImlFile(Paths.get(task.projectPath), logger, true, ideaDir); // 手动 sync：强制覆盖并注册
                     appendLog("[生成 .iml 文件完成]");
+
+                    // ✨ 触发 IDEA 刷新项目结构
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        // 刷新虚拟文件系统（让 IDEA 识别到文件变化）
+                        VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
+
+                        // 触发项目结构重新加载
+                        ProjectRootManager.getInstance(project).incModificationCount();
+
+                        appendLog("[✓] IDEA 项目刷新完成，依赖已生效");
+                    });
                 }
 
             } catch (Exception e) {
