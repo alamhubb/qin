@@ -3,6 +3,7 @@ package com.qin.cli;
 import com.qin.core.*;
 import com.qin.types.*;
 import com.qin.plugins.*;
+import com.qin.constants.QinConstants;
 
 import java.io.*;
 import java.nio.file.*;
@@ -240,7 +241,7 @@ public class QinCli {
     }
 
     private static void compileProject(String[] args) throws Exception {
-        String outputDir = "build/classes";
+        String outputDir = QinConstants.BUILD_CLASSES_DIR;
         for (int i = 0; i < args.length - 1; i++) {
             if ("-o".equals(args[i]) || "--output".equals(args[i])) {
                 outputDir = args[i + 1];

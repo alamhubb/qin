@@ -3,6 +3,7 @@ package com.qin.bsp;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.qin.bsp.model.*;
+import com.qin.constants.QinConstants;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -158,7 +159,7 @@ public class BspHandler {
                 "target", Map.of("uri", targetUri),
                 "options", options,
                 "classpath", cpUris,
-                "classDirectory", Paths.get(workDir, "build/classes").toUri().toString());
+                "classDirectory", Paths.get(workDir, QinConstants.BUILD_CLASSES_DIR).toUri().toString());
         return Map.of("items", List.of(item));
     }
 

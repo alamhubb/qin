@@ -1,4 +1,4 @@
-# Qin 项目清理计划
+﻿# Qin 项目清理计划
 
 ## 目标
 删除已经在 Java 中实现的 TypeScript/Bun/Node.js 代码，保持纯 Java 25 实现。
@@ -106,7 +106,7 @@
    ./build-java.bat
    
    # 运行测试
-   java -cp ".qin/classes;lib/gson-2.10.1.jar" com.qin.cli.QinCli help
+   java -cp "build/classes;lib/gson-2.10.1.jar" com.qin.cli.QinCli help
    ```
 
 ## ✅ Java 版本功能清单

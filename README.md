@@ -1,4 +1,4 @@
-# Qin - Java 25 构建工具
+﻿# Qin - Java 25 构建工具
 
 > 纯 Java 25 实现的新一代构建工具，以 JSON 配置取代 XML，引领 Java 进入现代化时代。
 
@@ -142,7 +142,7 @@ function qin { java -cp "D:\path\to\qin\.qin\classes;D:\path\to\qin\lib\gson-2.1
 **Linux/macOS (Bash)**:
 ```bash
 # 添加到 ~/.bashrc or ~/.zshrc
-alias qin='java -cp "/path/to/qin/.qin/classes:/path/to/qin/lib/gson-2.10.1.jar" com.qin.cli.QinCli'
+alias qin='java -cp "/path/to/qin/build/classes:/path/to/qin/lib/gson-2.10.1.jar" com.qin.cli.QinCli'
 ```
 
 然后就可以直接使用：
@@ -692,7 +692,7 @@ qin build   → BuildCommand
 # 编译 Qin 本身
 .\build-java.bat
 
-# 输出：.qin/classes/
+# 输出：build/classes/
 ```
 
 ### 测试

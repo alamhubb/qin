@@ -1,5 +1,7 @@
 package com.qin.bsp.model;
 
+import com.qin.constants.QinConstants;
+
 import java.util.Map;
 
 /**
@@ -16,7 +18,7 @@ public class QinProjectInfo {
     public static class JavaConfig {
         public String version = "25";
         public String sourceDir = "src";
-        public String outputDir = "build/classes";
+        public String outputDir = QinConstants.BUILD_CLASSES_DIR;
     }
 
     public String getSourceDir() {

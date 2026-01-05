@@ -18,7 +18,7 @@ public class QinDefaults {
     // === Java 配置 ===
     public static final String DEFAULT_JAVA_VERSION = "21";
     public static final String DEFAULT_SOURCE_DIR = "src";
-    public static final String DEFAULT_OUTPUT_DIR = "build/classes";
+    // 输出目录常量已移至 QinConstants.BUILD_CLASSES_DIR
     public static final String DEFAULT_ENCODING = "UTF-8";
 
     // === 输出配置 ===

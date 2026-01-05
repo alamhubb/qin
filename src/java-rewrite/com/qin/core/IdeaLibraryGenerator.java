@@ -1,5 +1,7 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -130,14 +132,15 @@ public class IdeaLibraryGenerator {
                     "inherit-compiler-output=\"false\"");
 
             // 在 <exclude-output /> 后添加输出路径配置
-            String outputConfig = "\n    <output url=\"file://$MODULE_DIR$/build/classes\" />" +
+            String outputConfig = "\n    <output url=\"file://$MODULE_DIR$/" + QinConstants.BUILD_CLASSES_DIR + "\" />"
+                    +
                     "\n    <output-test url=\"file://$MODULE_DIR$/build/test-classes\" />";
             imlContent = imlContent.replace(
                     "<exclude-output />",
                     "<exclude-output />" + outputConfig);
         } else if (imlContent.contains("inherit-compiler-output=\"false\"")) {
             // 已经使用自定义输出路径，检查是否需要更新
-            if (!imlContent.contains("$MODULE_DIR$/build/classes")) {
+            if (!imlContent.contains("$MODULE_DIR$/" + QinConstants.BUILD_CLASSES_DIR)) {
                 // 移除旧的 output 配置
                 imlContent = imlContent.replaceAll(
                         "\\s*<output url=\"[^\"]+\" />\\s*",
@@ -147,7 +150,8 @@ public class IdeaLibraryGenerator {
                         "\n");
 
                 // 添加新的输出路径配置
-                String outputConfig = "\n    <output url=\"file://$MODULE_DIR$/build/classes\" />" +
+                String outputConfig = "\n    <output url=\"file://$MODULE_DIR$/" + QinConstants.BUILD_CLASSES_DIR
+                        + "\" />" +
                         "\n    <output-test url=\"file://$MODULE_DIR$/build/test-classes\" />";
                 imlContent = imlContent.replace(
                         "<exclude-output />",

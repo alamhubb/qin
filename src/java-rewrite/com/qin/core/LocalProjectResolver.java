@@ -123,7 +123,7 @@ public class LocalProjectResolver {
 
                 // 就近优先: 如果已存在，不覆盖
                 if (!projects.containsKey(fullName)) {
-                    Path buildPath = projectPath.resolve("build/classes");
+                    Path buildPath = projectPath.resolve(QinConstants.BUILD_CLASSES_DIR);
                     projects.put(fullName, new ProjectInfo(
                             fullName,
                             projectPath,

@@ -1,5 +1,7 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -27,12 +29,7 @@ public final class QinPaths {
     } // 工具类，禁止实例化
 
     // ==================== 编译输出目录 ====================
-
-    /**
-     * 编译输出目录 (相对于项目根目录)
-     * 遵循行业标准: build/classes
-     */
-    public static final String OUTPUT_DIR = "build/classes";
+    // 输出目录常量已移至 QinConstants.BUILD_CLASSES_DIR
 
     // ==================== 配置文件 ====================
 
@@ -68,7 +65,7 @@ public final class QinPaths {
      * 获取绝对输出目录路径
      */
     public static Path getOutputDir(String projectRoot) {
-        return Paths.get(projectRoot, OUTPUT_DIR);
+        return Paths.get(projectRoot, QinConstants.BUILD_CLASSES_DIR);
     }
 
     /**
