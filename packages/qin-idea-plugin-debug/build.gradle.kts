@@ -6,8 +6,8 @@ plugins {
 group = "com.qin"
 version = "0.1.12"
 
-// qin-cli 编译输出目录
-val qinCliClasses = file("../../.qin/classes")
+// qin-cli 编译输出目录（使用 qin.config.json 配置的 build/classes）
+val qinCliClasses = file("../../build/classes")
 
 repositories {
     mavenCentral()
