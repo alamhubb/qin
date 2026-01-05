@@ -35,31 +35,31 @@ SET CP=.qin\classes;%DEPS_CP%
 
 echo.
 echo [1/7] Compiling types...
-javac -d .qin\classes src\java-rewrite\com\qin\types\*.java
+javac --release 21 -d .qin\classes src\java-rewrite\com\qin\types\*.java
 if errorlevel 1 goto :error
 
 echo [1.5/7] Compiling constants...
-javac -d .qin\classes -cp ".qin\classes" src\java-rewrite\com\qin\constants\*.java
+javac --release 21 -d .qin\classes -cp ".qin\classes" src\java-rewrite\com\qin\constants\*.java
 if errorlevel 1 goto :error
 
 echo [2/7] Compiling core modules...
-javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\core\*.java
+javac --release 21 -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\core\*.java
 if errorlevel 1 goto :error
 
 echo [3/7] Compiling java utilities...
-javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\java\*.java
+javac --release 21 -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\java\*.java
 if errorlevel 1 goto :error
 
 echo [4/7] Compiling commands...
-javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\commands\*.java
+javac --release 21 -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\commands\*.java
 if errorlevel 1 goto :error
 
 echo [5/7] Compiling core plugins...
-javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\plugins\*.java
+javac --release 21 -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\plugins\*.java
 if errorlevel 1 goto :error
 
 echo [6/7] Compiling CLI...
-javac -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\cli\*.java
+javac --release 21 -d .qin\classes -cp "%CP%" src\java-rewrite\com\qin\cli\*.java
 if errorlevel 1 goto :error
 
 echo [7/7] Compiling extra plugins...
@@ -73,7 +73,7 @@ REM javac -d .qin\classes -cp ".qin\classes" packages\qin-plugin-graalvm-js\src\
 REM if errorlevel 1 goto :error
 
 echo [8/8] Compiling create-qin...
-javac -d .qin\classes -cp ".qin\classes" packages\create-qin\src\java\com\qin\create\*.java
+javac --release 21 -d .qin\classes -cp ".qin\classes" packages\create-qin\src\java\com\qin\create\*.java
 if errorlevel 1 goto :error
 
 REM Copy dependencies into .qin/classes for packaging

@@ -1,6 +1,7 @@
 package com.qin.core;
 
 import com.google.gson.Gson;
+import com.qin.constants.QinConstants;
 import com.qin.types.QinConfig;
 
 import java.io.IOException;
@@ -25,6 +26,28 @@ public class LocalProjectResolver {
     public LocalProjectResolver(String workingDir) {
         this.startDir = Paths.get(workingDir).toAbsolutePath();
         this.gson = new Gson();
+    }
+
+    // ==================== 公开的静态方法 ====================
+
+    /**
+     * 扫描工作目录下的所有 Qin 项目路径
+     * 供 IDEA 插件等外部调用
+     * 
+     * @param workingDir 工作目录
+     * @return 所有发现的 Qin 项目路径列表
+     */
+    public static List<Path> scanAllProjects(String workingDir) {
+        LocalProjectResolver resolver = new LocalProjectResolver(workingDir);
+        List<Path> projects = new ArrayList<>();
+
+        // 向上查找 workspace root
+        Path workspaceRoot = resolver.findWorkspaceRoot(resolver.startDir);
+
+        // 从 workspace root 向下扫描
+        resolver.scanProjects(workspaceRoot, projects, 0, QinConstants.MAX_SCAN_DEPTH);
+
+        return projects;
     }
 
     /**
@@ -84,7 +107,7 @@ public class LocalProjectResolver {
 
         // 2. 从 workspace root 递归向下扫描所有项目
         List<Path> projectPaths = new ArrayList<>();
-        scanProjects(workspaceRoot, projectPaths, 0, MAX_SCAN_DEPTH);
+        scanProjects(workspaceRoot, projectPaths, 0, QinConstants.MAX_SCAN_DEPTH);
 
         // 3. 按距离排序（近的优先）
         projectPaths.sort(Comparator.comparingInt(p -> startDir.toAbsolutePath().normalize()
@@ -122,13 +145,8 @@ public class LocalProjectResolver {
         return gson.fromJson(json, QinConfig.class);
     }
 
-    // ==================== 新增：workspace 扫描逻辑 ====================
-
-    // 项目根目录标志
-    private static final Set<String> PROJECT_ROOT_MARKERS = Set.of(".idea", ".vscode", ".git");
-
-    // 最大扫描深度
-    private static final int MAX_SCAN_DEPTH = 20;
+    // ==================== workspace 扫描逻辑 ====================
+    // 使用 QinConstants.PROJECT_ROOT_MARKERS 和 QinConstants.MAX_SCAN_DEPTH
 
     /**
      * 向上查找 workspace root
@@ -138,7 +156,7 @@ public class LocalProjectResolver {
      * 2. VSCode 环境变量（VSCODE_CWD）
      * 3. 向上查找，取最远的 .idea/.vscode/.git
      */
-    private Path findWorkspaceRoot(Path startDir) {
+    public Path findWorkspaceRoot(Path startDir) {
         // 1. 优先使用 IDEA 环境变量
         String ideaDir = System.getenv("IDEA_INITIAL_DIRECTORY");
         if (ideaDir != null && !ideaDir.isEmpty()) {
@@ -164,7 +182,7 @@ public class LocalProjectResolver {
         while (current != null && current.getParent() != null) {
             // 检查是否有项目标志
             final Path finalCurrent = current; // lambda 需要 final
-            boolean isProjectRoot = PROJECT_ROOT_MARKERS.stream()
+            boolean isProjectRoot = QinConstants.PROJECT_ROOT_MARKERS.stream()
                     .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker))) ||
                     Files.exists(current.resolve("qin.config.json"));
 
@@ -181,7 +199,7 @@ public class LocalProjectResolver {
     /**
      * 递归扫描目录查找 qin.config.json
      */
-    private void scanProjects(Path dir, List<Path> projects, int depth, int maxDepth) {
+    public void scanProjects(Path dir, List<Path> projects, int depth, int maxDepth) {
         if (depth >= maxDepth || !Files.exists(dir)) {
             return;
         }

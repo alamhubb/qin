@@ -44,6 +44,80 @@ public class QinConstants {
         return mavenCoordinate.replace(MAVEN_COORDINATE_SEPARATOR, QIN_COORDINATE_SEPARATOR);
     }
 
+    // ==================== 扫描配置 ====================
+
+    /**
+     * 配置文件名
+     */
+    public static final String CONFIG_FILE = "qin.config.json";
+
+    /**
+     * 最大扫描深度
+     */
+    public static final int MAX_SCAN_DEPTH = 20;
+
+    /**
+     * 排除的目录（扫描时跳过）
+     */
+    public static final java.util.Set<String> EXCLUDED_DIRS = java.util.Set.of(
+            "node_modules", ".git", ".qin", "dist", "build", ".cache",
+            ".vscode", ".idea", "out", "target", "libs");
+
+    /**
+     * 项目根目录标志
+     */
+    public static final java.util.Set<String> PROJECT_ROOT_MARKERS = java.util.Set.of(
+            ".idea", ".vscode", ".git");
+
+    // ==================== 目录和文件常量 ====================
+
+    /**
+     * Qin 缓存目录名
+     */
+    public static final String QIN_DIR = ".qin";
+
+    /**
+     * 日志子目录名
+     */
+    public static final String LOG_SUBDIR = "logs";
+
+    /**
+     * 日志文件扩展名
+     */
+    public static final String LOG_FILE_EXT = ".log";
+
+    /**
+     * Qin CLI 命令名
+     */
+    public static final String QIN_CMD = "qin";
+
+    /**
+     * 字符编码
+     */
+    public static final String CHARSET_UTF8 = "UTF-8";
+
+    /**
+     * 隐藏文件/目录前缀
+     */
+    public static final String HIDDEN_PREFIX = ".";
+
+    /**
+     * 当前目录符号
+     */
+    public static final String CURRENT_DIR = ".";
+
+    // ==================== 命令相关（跨平台）====================
+
+    /**
+     * 命令前缀（Windows）
+     */
+    public static final String CMD_PREFIX = "cmd";
+
+    /**
+     * 命令参数（Windows）
+     */
+    public static final String CMD_FLAG = "/c";
+
     private QinConstants() {
         // 工具类，禁止实例化
     }

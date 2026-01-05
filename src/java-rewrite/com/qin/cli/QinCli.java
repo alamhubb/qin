@@ -361,6 +361,10 @@ public class QinCli {
         Files.createDirectories(cacheDir);
 
         String classpath = String.join(sep, classpaths);
+
+        // 按配置中的依赖顺序排序 classpath
+        classpath = sortClasspathByConfigOrder(classpath, deps);
+
         String json = buildClasspathJson(classpath);
         Files.writeString(com.qin.core.QinPaths.getClasspathCache(System.getProperty("user.dir")), json);
 
@@ -625,5 +629,92 @@ public class QinCli {
         sb.append("  \"lastUpdated\": \"").append(java.time.Instant.now()).append("\"\n");
         sb.append("}\n");
         return sb.toString();
+    }
+
+    /**
+     * 按配置中的依赖顺序排序 classpath
+     * 
+     * @param classpath 原始 classpath（分号/冒号分隔）
+     * @param deps      配置中的依赖（保持插入顺序）
+     * @return 排序后的 classpath
+     */
+    private static String sortClasspathByConfigOrder(String classpath, Map<String, String> deps) {
+        if (classpath == null || classpath.isEmpty() || deps == null || deps.isEmpty()) {
+            return classpath;
+        }
+
+        String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String[] paths = classpath.split(sep.equals(";") ? ";" : ":");
+
+        // 创建 artifactId 到顺序的映射
+        Map<String, Integer> orderMap = new LinkedHashMap<>();
+        int order = 0;
+        for (String depKey : deps.keySet()) {
+            // depKey 格式: groupId@artifactId 或 groupId:artifactId
+            String artifactId = extractArtifactId(depKey);
+            orderMap.put(artifactId.toLowerCase(), order++);
+        }
+
+        // 按配置顺序排序
+        List<String> sortedPaths = new ArrayList<>(Arrays.asList(paths));
+        sortedPaths.sort((a, b) -> {
+            String artifactA = extractArtifactIdFromPath(a).toLowerCase();
+            String artifactB = extractArtifactIdFromPath(b).toLowerCase();
+
+            int orderA = orderMap.getOrDefault(artifactA, Integer.MAX_VALUE);
+            int orderB = orderMap.getOrDefault(artifactB, Integer.MAX_VALUE);
+
+            if (orderA != orderB) {
+                return Integer.compare(orderA, orderB);
+            }
+            // 如果都不在配置中，按字母顺序
+            return a.compareToIgnoreCase(b);
+        });
+
+        return String.join(sep, sortedPaths);
+    }
+
+    /**
+     * 从依赖 key 中提取 artifactId
+     */
+    private static String extractArtifactId(String depKey) {
+        // 格式: groupId@artifactId 或 groupId:artifactId
+        int sepIndex = depKey.lastIndexOf('@');
+        if (sepIndex < 0)
+            sepIndex = depKey.lastIndexOf(':');
+        return sepIndex >= 0 ? depKey.substring(sepIndex + 1) : depKey;
+    }
+
+    /**
+     * 从 jar 路径中提取 artifactId
+     */
+    private static String extractArtifactIdFromPath(String path) {
+        // 路径格式: .../groupId/artifactId/version/artifactId-version.jar
+        // 或: .../.qin/classes
+        if (path.contains(".qin") || path.contains("classes")) {
+            // 本地项目，使用目录名
+            Path p = Paths.get(path);
+            if (p.getParent() != null && p.getParent().getParent() != null) {
+                return p.getParent().getParent().getFileName().toString();
+            }
+            return p.getFileName().toString();
+        }
+
+        // Maven jar 路径
+        String fileName = Paths.get(path).getFileName().toString();
+        // 移除 .jar 和版本号
+        if (fileName.endsWith(".jar")) {
+            fileName = fileName.substring(0, fileName.length() - 4);
+        }
+        // 尝试提取 artifactId（在最后一个 - 之前，如果后面是版本号）
+        int lastDash = fileName.lastIndexOf('-');
+        if (lastDash > 0) {
+            String suffix = fileName.substring(lastDash + 1);
+            // 检查是否是版本号（以数字开头）
+            if (!suffix.isEmpty() && Character.isDigit(suffix.charAt(0))) {
+                return fileName.substring(0, lastDash);
+            }
+        }
+        return fileName;
     }
 }

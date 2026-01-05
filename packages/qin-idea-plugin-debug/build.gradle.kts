@@ -4,7 +4,10 @@ plugins {
 }
 
 group = "com.qin"
-version = "0.1.1"
+version = "0.1.12"
+
+// qin-cli 编译输出目录
+val qinCliClasses = file("../../.qin/classes")
 
 repositories {
     mavenCentral()
@@ -14,6 +17,9 @@ repositories {
 }
 
 dependencies {
+    // 依赖 qin-cli 核心库（编译和运行时）
+    implementation(files(qinCliClasses))
+    
     implementation("com.google.code.gson:gson:2.10.1")
     intellijPlatform {
         intellijIdeaUltimate("2025.1")
@@ -35,5 +41,14 @@ tasks {
     withType<JavaCompile> {
         sourceCompatibility = "21"
         targetCompatibility = "21"
+    }
+    
+    // 将 qin-cli 的类打包进插件 JAR
+    withType<Jar> {
+        from(qinCliClasses) {
+            include("com/qin/core/**")
+            include("com/qin/constants/**")
+            include("com/qin/types/**")
+        }
     }
 }

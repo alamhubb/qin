@@ -17,14 +17,13 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
+// 别名：使用 qin-cli 的通用常量
+import static com.qin.constants.QinConstants.*;
+
 /**
  * Qin 工具窗口工厂 - 树形界面
  */
 public class QinToolWindowFactory implements ToolWindowFactory {
-
-    // 使用常量类
-    private static final String CONFIG_FILE = QinConstants.CONFIG_FILE;
-    private static final Set<String> EXCLUDED_DIRS = QinConstants.EXCLUDED_DIRS;
 
     private Project project;
     private Tree tree;
@@ -107,7 +106,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         }
 
         // 扫描子目录
-        scanQinProjects(Paths.get(basePath), projects, 0, QinConstants.MAX_SCAN_DEPTH);
+        scanQinProjects(Paths.get(basePath), projects, 0, com.qin.constants.QinConstants.MAX_SCAN_DEPTH);
 
         if (projects.isEmpty()) {
             DefaultMutableTreeNode emptyNode = new DefaultMutableTreeNode(
@@ -139,7 +138,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         DefaultMutableTreeNode projectTreeNode = new DefaultMutableTreeNode(projectNode);
 
         // Tasks 节点
-        DefaultMutableTreeNode tasksNode = new DefaultMutableTreeNode(QinConstants.NODE_TASKS);
+        DefaultMutableTreeNode tasksNode = new DefaultMutableTreeNode(com.qin.debug.QinConstants.NODE_TASKS);
         tasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("sync", "Sync dependencies", projectPath.toString())));
         tasksNode.add(new DefaultMutableTreeNode(
@@ -154,7 +153,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
         // Dependencies 节点
         if (config != null && config.dependencies != null && !config.dependencies.isEmpty()) {
-            DefaultMutableTreeNode depsNode = new DefaultMutableTreeNode(QinConstants.NODE_DEPENDENCIES);
+            DefaultMutableTreeNode depsNode = new DefaultMutableTreeNode(com.qin.debug.QinConstants.NODE_DEPENDENCIES);
             config.dependencies.forEach((name, version) -> {
                 depsNode.add(new DefaultMutableTreeNode(name + ":" + version));
             });
@@ -173,14 +172,14 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
         new Thread(() -> {
             try {
-                ProcessBuilder pb = new ProcessBuilder(QinConstants.CMD_PREFIX, QinConstants.CMD_FLAG,
-                        QinConstants.QIN_CMD, task.command);
+                ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG,
+                        QIN_CMD, task.command);
                 pb.directory(new File(task.projectPath));
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
 
                 try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream(), QinConstants.CHARSET_UTF8))) {
+                        new InputStreamReader(process.getInputStream(), CHARSET_UTF8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         final String output = line;
@@ -190,6 +189,14 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
                 int exitCode = process.waitFor();
                 appendLog("\n[Exit: " + exitCode + "]\n");
+
+                // 如果是 sync 命令且成功，生成 .iml 文件
+                if ("sync".equals(task.command) && exitCode == 0) {
+                    QinLogger logger = new QinLogger(task.projectPath);
+                    Path ideaDir = Paths.get(project.getBasePath(), ".idea");
+                    DebugStartup.generateImlFile(Paths.get(task.projectPath), logger, true, ideaDir); // 手动 sync：强制覆盖并注册
+                    appendLog("[生成 .iml 文件完成]");
+                }
 
             } catch (Exception e) {
                 appendLog("Error: " + e.getMessage());
@@ -216,7 +223,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 String dirName = subDir.getFileName().toString();
 
                 // 只排除子目录，不影响当前目录的检测
-                if (EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
+                if (EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(HIDDEN_PREFIX)) {
                     continue;
                 }
 
@@ -313,9 +320,9 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 setIcon(AllIcons.Nodes.Module);
             } else if (userObject instanceof TaskNode) {
                 setIcon(AllIcons.Actions.Execute);
-            } else if (QinConstants.NODE_TASKS.equals(userObject)) {
+            } else if (com.qin.debug.QinConstants.NODE_TASKS.equals(userObject)) {
                 setIcon(AllIcons.Nodes.Folder);
-            } else if (QinConstants.NODE_DEPENDENCIES.equals(userObject)) {
+            } else if (com.qin.debug.QinConstants.NODE_DEPENDENCIES.equals(userObject)) {
                 setIcon(AllIcons.Nodes.PpLib);
             } else if (userObject instanceof String && ((String) userObject).contains(":")) {
                 // 依赖项

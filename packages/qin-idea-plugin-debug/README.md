@@ -1,145 +1,127 @@
 # Qin IDEA Plugin
 
-> IntelliJ IDEA 插件，为 Qin 构建工具提供 IDE 集成支持。
+IntelliJ IDEA 插件，为 Qin 项目提供完整的 IDE 支持。
 
 ## 功能特性
 
-### 1. 树形项目管理（类似 Gradle）
-- **📦 项目树**：自动扫描并显示所有 Qin 项目
-- **📁 任务分组**：sync、compile、run、build、clean
-- **📚 依赖展示**：显示项目的所有依赖
-- **双击执行**：双击任务节点立即执行
-- **🔄 刷新按钮**：点击左上角刷新图标同步所有项目
+### 🔧 自动项目配置
 
-### 2. 自动依赖同步
-- **项目打开时自动执行 `qin sync`**
-- 自动发现 Monorepo 中的所有子项目
-- 为每个子项目同步依赖
-
-### 3. IDEA 集成
-- **自动生成 `.idea/libraries/*.xml`**：让 IDEA 识别项目依赖
-- **配置编译输出路径**：自动设置为 `build/classes`（与 qin 一致）
-- **更新 `.iml` 文件**：自动添加库引用
-
-### 4. Monorepo 支持
-- **智能扫描策略**：
-  1. 从 IDEA 打开的目录向上查找 workspace root
-  2. 从 workspace root 向下递归扫描所有 `qin.config.json`
-  3. 在树形界面中展示所有项目
-
-## 设计架构
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    DebugStartup.java                     │
-│                  (ProjectActivity 实现)                   │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  1. 项目打开时触发                                        │
-│     ↓                                                   │
-│  2. findWorkspaceRoot() - 向上查找 workspace root        │
-│     ↓                                                   │
-│  3. scanForQinProjects() - 向下扫描所有 qin.config.json   │
-│     ↓                                                   │
-│  4. runQinSync() - 为每个项目执行 qin sync               │
-│     ↓                                                   │
-│  5. VirtualFileManager.refresh() - 刷新 IDEA 项目模型    │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-### 核心类说明
-
-| 类 | 功能 |
+| 功能 | 说明 |
 |---|---|
-| `DebugStartup` | 项目启动监听器，自动检测 Qin 项目并执行 sync |
-| `QinToolWindowFactory` | Qin 工具窗口面板，提供 Sync/Compile/Run 按钮 |
-| `QinLogger` | 日志记录器，按项目和时间组织日志文件 |
+| **自动识别 Qin 项目** | 扫描并识别所有包含 `qin.config.json` 的项目 |
+| **自动执行 qin sync** | 打开项目时自动解析依赖 |
+| **生成 .iml 模块文件** | 自动配置 IDEA 模块，无需手动设置 |
+| **注册模块** | 自动更新 `modules.xml`，IDEA 立即识别 |
 
-### 扫描策略实现
+### 📁 源代码支持
 
-```java
-// 1. 向上查找 workspace root（取最顶层）
-private Path findWorkspaceRoot(Path startDir) {
-    Path current = startDir;
-    Path topMost = startDir;
-    
-    while (current != null) {
-        // 标志：.idea, .vscode, .git, qin.config.json
-        if (isProjectRoot(current)) {
-            topMost = current; // 继续向上，取最顶层
-        }
-        current = current.getParent();
-    }
-    return topMost;
-}
+| 功能 | 说明 |
+|---|---|
+| **蓝色源代码目录** | 自动标记 `src/main/java` 或 `src` 为源代码目录 |
+| **正确的输出目录** | 从 `qin.config.json` 读取配置 |
+| **排除目录** | 自动排除 `.qin`、`build`、`libs` 等目录 |
 
-// 2. 向下递归扫描（最多 5 层深度）
-private void scanForQinProjects(Path dir, List<Path> projects, int depth, int maxDepth) {
-    if (depth >= maxDepth) return;
-    
-    for (Path subDir : Files.list(dir)) {
-        if (Files.exists(subDir.resolve("qin.config.json"))) {
-            projects.add(subDir);
-        }
-        scanForQinProjects(subDir, projects, depth + 1, maxDepth);
-    }
+### 📦 依赖管理
+
+| 功能 | 说明 |
+|---|---|
+| **自动配置依赖** | 读取 `.qin/classpath.json` 配置库依赖 |
+| **源码跳转** | 点击依赖类型时跳转到源码（非 .class 文件） |
+| **支持本地模块** | 识别本地项目依赖 |
+| **支持 JAR 依赖** | 配置 Maven 仓库下载的 JAR 文件 |
+
+### ☕ JDK 配置
+
+| 功能 | 说明 |
+|---|---|
+| **自动配置 Project SDK** | 自动选择已注册的 JDK |
+| **自动添加 JDK** | 如果没有已注册的 JDK，从 JAVA_HOME 自动添加 |
+
+### 🛠️ 工具窗口
+
+插件提供 **Qin** 工具窗口，支持：
+- 查看项目任务和依赖树
+- 手动执行 Sync、Compile、Run 命令
+- 查看项目配置信息
+
+## 安装方法
+
+1. 打开 IDEA → **Settings** → **Plugins**
+2. 点击齿轮图标 → **Install Plugin from Disk**
+3. 选择 `qin-idea-plugin-debug-x.x.x.zip`
+4. 重启 IDEA
+
+## 使用方法
+
+### 打开 Qin 项目
+
+直接用 IDEA 打开包含 `qin.config.json` 的目录，插件会自动：
+1. 检测项目
+2. 执行 `qin sync`
+3. 配置模块和依赖
+4. 设置 Project SDK
+
+### 手动操作
+
+通过 **View → Tool Windows → Qin** 打开工具窗口：
+- **Sync**: 重新解析依赖
+- **Compile**: 编译项目
+- **Run**: 运行项目
+
+## 配置文件
+
+### qin.config.json
+
+```json
+{
+  "name": "com.example:my-project",
+  "version": "1.0.0",
+  "entry": "com.example.Main",
+  "java": {
+    "version": "21",
+    "sourceDir": "src/main/java",
+    "outputDir": "build/classes"
+  },
+  "dependencies": {
+    "com.google.code.gson:gson": "2.10.1"
+  }
 }
 ```
 
-## 安装
+### .qin/classpath.json
 
-1. 在 IDEA 中打开 **Settings → Plugins → ⚙️ → Install Plugin from Disk**
-2. 选择 `build/distributions/qin-idea-plugin-debug-x.x.x.zip`
-3. 重启 IDEA
+由 `qin sync` 自动生成，包含解析后的依赖路径：
 
-## 构建
-
-```bash
-cd packages/qin-idea-plugin-debug
-./gradlew buildPlugin
+```json
+{
+  "classpath": [
+    "D:/path/to/dependency.jar",
+    "D:/path/to/local-module/build/classes"
+  ],
+  "lastUpdated": "2026-01-05T12:00:00Z"
+}
 ```
-
-输出：`build/distributions/qin-idea-plugin-debug-x.x.x.zip`
-
-## 配置
-
-插件会自动检测包含 `qin.config.json` 的项目，无需额外配置。
-
-### 常量配置
-
-| 常量 | 值 | 说明 |
-|---|---|---|
-| `CONFIG_FILE` | `qin.config.json` | 配置文件名 |
-| `EXCLUDED_DIRS` | `node_modules, .git, build, ...` | 扫描时排除的目录 |
-| 扫描深度 | 5 层 | 向下递归扫描的最大深度 |
-
-## 日志
-
-日志文件保存在：`~/.qin/logs/{项目名}/{日期}.log`
 
 ## 版本历史
 
-### 0.0.9 (当前)
-- **树形界面**：完全重写工具窗口，类似 Gradle 界面
-- **项目树展示**：自动扫描并显示所有 Qin 项目
-- **任务管理**：每个项目下显示 Tasks 和 Dependencies
-- **双击执行**：双击任务节点直接执行命令
-- **刷新按钮**：左上角刷新图标同步所有项目
+| 版本 | 更新内容 |
+|---|---|
+| 0.1.12 | 自动添加 JDK（从 JAVA_HOME） |
+| 0.1.11 | 依赖源码跳转 |
+| 0.1.10 | BSP 内嵌逻辑，读取 qin.config.json |
+| 0.1.5 | 自动创建 modules.xml |
+| 0.1.4 | 自动注册模块 |
+| 0.1.3 | 日志记录 |
+| 0.1.2 | Java 21 兼容 |
+| 0.1.1 | 初始版本 |
 
-### 0.0.8
-- 修复 Monorepo 工具窗口显示
-- 列出所有发现的子项目
+## 技术实现
 
-### 0.0.7
-- 增强 Monorepo 支持：向上找 workspace root，向下扫描所有子项目
-- 常量化配置文件名
+- 使用 IntelliJ Platform SDK
+- 内嵌 BSP (Build Server Protocol) 逻辑
+- 与 qin-cli 共享常量和配置解析
 
-### 0.0.6
-- 自动同步依赖
-- 自动生成 IDEA 库配置
-- 配置编译输出路径为 `build/classes`
+## 相关项目
 
-### 0.0.5
-- 初始版本
-- Qin 工具窗口面板
+- **qin-cli**: Qin 命令行工具
+- **qin-bsp-server**: BSP 服务器（可供其他 IDE 使用）
