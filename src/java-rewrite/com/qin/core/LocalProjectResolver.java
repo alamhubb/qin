@@ -104,10 +104,16 @@ public class LocalProjectResolver {
 
         // 1. 向上查找 workspace root
         Path workspaceRoot = findWorkspaceRoot(startDir);
+        System.err.println("[DEBUG] Workspace root: " + workspaceRoot);
 
         // 2. 从 workspace root 递归向下扫描所有项目
         List<Path> projectPaths = new ArrayList<>();
         scanProjects(workspaceRoot, projectPaths, 0, QinConstants.MAX_SCAN_DEPTH);
+
+        System.err.println("[DEBUG] Found " + projectPaths.size() + " project paths:");
+        for (Path p : projectPaths) {
+            System.err.println("[DEBUG]   - " + p);
+        }
 
         // 3. 按距离排序（近的优先）
         projectPaths.sort(Comparator.comparingInt(p -> startDir.toAbsolutePath().normalize()
@@ -128,9 +134,10 @@ public class LocalProjectResolver {
                             fullName,
                             projectPath,
                             buildPath));
+                    System.err.println("[DEBUG] Added project: " + fullName + " -> " + buildPath);
                 }
             } catch (Exception e) {
-                // 忽略无法解析的配置
+                System.err.println("[DEBUG] Failed to load config from " + projectPath + ": " + e.getMessage());
             }
         }
 
@@ -205,7 +212,7 @@ public class LocalProjectResolver {
         }
 
         // 先检查当前目录是否有配置文件
-        if (Files.exists(dir.resolve("qin.config.json")) && !projects.contains(dir)) {
+        if (Files.exists(dir.resolve(QinConstants.CONFIG_FILE)) && !projects.contains(dir)) {
             projects.add(dir);
         }
 
@@ -214,10 +221,9 @@ public class LocalProjectResolver {
             for (Path subDir : stream) {
                 String dirName = subDir.getFileName().toString();
 
-                // 排除特殊目录
-                if (dirName.equals("node_modules") || dirName.equals(".git") ||
-                        dirName.equals("build") || dirName.equals("dist") ||
-                        dirName.startsWith(".")) {
+                // 使用常量排除特殊目录
+                if (QinConstants.EXCLUDED_DIRS.contains(dirName) ||
+                        dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
                     continue;
                 }
 
