@@ -1,11 +1,16 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 plugins {
     id("java")
     kotlin("jvm") version "2.3.0"
     id("org.jetbrains.intellij.platform") version "2.10.5"
 }
 
+val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm"))
+
 group = "com.qin"
-version = "0.0.1"
+version = "0.0.1-$buildTime"
 
 // qin-cli 编译输出目录（使用 qin.config.json 配置的 build/classes）
 val qinCliClasses = file("../../build/classes")
