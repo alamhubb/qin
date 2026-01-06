@@ -77,4 +77,8 @@ tasks {
             include("com/qin/types/**")
         }
     }
+
+    intellijPlatform {
+        buildSearchableOptions = false
+    }
 }
