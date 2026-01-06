@@ -313,7 +313,7 @@ public class DebugStartup implements ProjectActivity {
                 logger.info("[iml]   .iml 已存在，跳过生成");
             } else {
                 // 使用 BSP 处理器获取项目信息
-                com.qin.debug.bsp.BspHandler bspHandler = new com.qin.debug.bsp.BspHandler(projectPath.toString());
+                com.qin.bsp.BspHandler bspHandler = new com.qin.bsp.BspHandler(projectPath.toString());
 
                 // 获取源代码目录（优先从 qin.config.json）
                 String sourceDir = bspHandler.getSourceDir();

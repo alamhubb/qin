@@ -1,4 +1,4 @@
-﻿package com.qin.debug;
+package com.qin.debug;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;

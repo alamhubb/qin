@@ -6,27 +6,20 @@
     <output-test url="file://$MODULE_DIR$/build/test-classes" />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/java-rewrite" isTestSource="false" />
-          <excludeFolder url="file://$MODULE_DIR$/.qin" />
           <excludeFolder url="file://$MODULE_DIR$/out" />
-          <excludeFolder url="file://$MODULE_DIR$/libs" />
-          <excludeFolder url="file://$MODULE_DIR$/node_modules" />
-          <excludeFolder url="file://$MODULE_DIR$/dist" />
-          <excludeFolder url="file://$MODULE_DIR$/target" />
+          <excludeFolder url="file://$MODULE_DIR$/.qin" />
           <excludeFolder url="file://$MODULE_DIR$/build" />
+          <excludeFolder url="file://$MODULE_DIR$/target" />
+          <excludeFolder url="file://$MODULE_DIR$/dist" />
+          <excludeFolder url="file://$MODULE_DIR$/node_modules" />
+          <excludeFolder url="file://$MODULE_DIR$/libs" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/com.google.code.gson@gson/com.google.code.gson@gson-2.10.1/com.google.code.gson@gson-2.10.1.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier_2.13/io.get-coursier@coursier_2.13-2.1.10/io.get-coursier@coursier_2.13-2.1.10.jar!/" />
+          <root url="jar://C:/Users/qinky/.qin/libs/com.github.luben@zstd-jni/com.github.luben@zstd-jni-1.5.5-10/com.github.luben@zstd-jni-1.5.5-10.jar!/" />
         </CLASSES>
       </library>
     </orderEntry>
@@ -40,112 +33,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.scala-lang@scala-library/org.scala-lang@scala-library-2.13.13/org.scala-lang@scala-library-2.13.13.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-core_2.13/io.get-coursier@coursier-core_2.13-2.1.10/io.get-coursier@coursier-core_2.13-2.1.10.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-cache_2.13/io.get-coursier@coursier-cache_2.13-2.1.10/io.get-coursier@coursier-cache_2.13-2.1.10.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-proxy-setup/io.get-coursier@coursier-proxy-setup-2.1.10/io.get-coursier@coursier-proxy-setup-2.1.10.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.github.alexarchambault@concurrent-reference-hash-map/io.github.alexarchambault@concurrent-reference-hash-map-1.1.0/io.github.alexarchambault@concurrent-reference-hash-map-1.1.0.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.scala-lang.modules@scala-xml_2.13/org.scala-lang.modules@scala-xml_2.13-2.3.0/org.scala-lang.modules@scala-xml_2.13-2.3.0.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-util_2.13/io.get-coursier@coursier-util_2.13-2.1.10/io.get-coursier@coursier-util_2.13-2.1.10.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier.jniutils@windows-jni-utils/io.get-coursier.jniutils@windows-jni-utils-0.3.3/io.get-coursier.jniutils@windows-jni-utils-0.3.3.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-archiver/org.codehaus.plexus@plexus-archiver-4.9.0/org.codehaus.plexus@plexus-archiver-4.9.0.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-container-default/org.codehaus.plexus@plexus-container-default-2.1.1/org.codehaus.plexus@plexus-container-default-2.1.1.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.virtuslab.scala-cli@config_2.13/org.virtuslab.scala-cli@config_2.13-0.2.1/org.virtuslab.scala-cli@config_2.13-0.2.1.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/io.github.alexarchambault.windows-ansi@windows-ansi/io.github.alexarchambault.windows-ansi@windows-ansi-0.0.5/io.github.alexarchambault.windows-ansi@windows-ansi-0.0.5.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.scala-lang.modules@scala-collection-compat_2.13/org.scala-lang.modules@scala-collection-compat_2.13-2.12.0/org.scala-lang.modules@scala-collection-compat_2.13-2.12.0.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/javax.inject@javax.inject/javax.inject@javax.inject-1/javax.inject@javax.inject-1.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-utils/org.codehaus.plexus@plexus-utils-4.0.0/org.codehaus.plexus@plexus-utils-4.0.0.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-io/org.codehaus.plexus@plexus-io-3.4.1/org.codehaus.plexus@plexus-io-3.4.1.jar!/" />
+          <root url="jar://C:/Users/qinky/.qin/libs/com.google.code.gson@gson/com.google.code.gson@gson-2.10.1/com.google.code.gson@gson-2.10.1.jar!/" />
         </CLASSES>
       </library>
     </orderEntry>
@@ -159,42 +47,70 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier.jniutils@windows-jni-utils/io.get-coursier.jniutils@windows-jni-utils-0.3.3/io.get-coursier.jniutils@windows-jni-utils-0.3.3.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-cache_2.13/io.get-coursier@coursier-cache_2.13-2.1.10/io.get-coursier@coursier-cache_2.13-2.1.10.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-core_2.13/io.get-coursier@coursier-core_2.13-2.1.10/io.get-coursier@coursier-core_2.13-2.1.10.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-proxy-setup/io.get-coursier@coursier-proxy-setup-2.1.10/io.get-coursier@coursier-proxy-setup-2.1.10.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier-util_2.13/io.get-coursier@coursier-util_2.13-2.1.10/io.get-coursier@coursier-util_2.13-2.1.10.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.get-coursier@coursier_2.13/io.get-coursier@coursier_2.13-2.1.10/io.get-coursier@coursier_2.13-2.1.10.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.github.alexarchambault.windows-ansi@windows-ansi/io.github.alexarchambault.windows-ansi@windows-ansi-0.0.5/io.github.alexarchambault.windows-ansi@windows-ansi-0.0.5.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/io.github.alexarchambault@concurrent-reference-hash-map/io.github.alexarchambault@concurrent-reference-hash-map-1.1.0/io.github.alexarchambault@concurrent-reference-hash-map-1.1.0.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/javax.inject@javax.inject/javax.inject@javax.inject-1/javax.inject@javax.inject-1.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="jar://C:/Users/qinky/.qin/libs/org.apache.commons@commons-compress/org.apache.commons@commons-compress-1.24.0/org.apache.commons@commons-compress-1.24.0.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.slf4j@slf4j-api/org.slf4j@slf4j-api-1.7.36/org.slf4j@slf4j-api-1.7.36.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.iq80.snappy@snappy/org.iq80.snappy@snappy-0.4/org.iq80.snappy@snappy-0.4.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.tukaani@xz/org.tukaani@xz-1.9/org.tukaani@xz-1.9.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/com.github.luben@zstd-jni/com.github.luben@zstd-jni-1.5.5-10/com.github.luben@zstd-jni-1.5.5-10.jar!/" />
-        </CLASSES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-classworlds/org.codehaus.plexus@plexus-classworlds-2.6.0/org.codehaus.plexus@plexus-classworlds-2.6.0.jar!/" />
         </CLASSES>
       </library>
     </orderEntry>
@@ -208,7 +124,91 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-archiver/org.codehaus.plexus@plexus-archiver-4.9.0/org.codehaus.plexus@plexus-archiver-4.9.0.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-classworlds/org.codehaus.plexus@plexus-classworlds-2.6.0/org.codehaus.plexus@plexus-classworlds-2.6.0.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-container-default/org.codehaus.plexus@plexus-container-default-2.1.1/org.codehaus.plexus@plexus-container-default-2.1.1.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-io/org.codehaus.plexus@plexus-io-3.4.1/org.codehaus.plexus@plexus-io-3.4.1.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.codehaus.plexus@plexus-utils/org.codehaus.plexus@plexus-utils-4.0.0/org.codehaus.plexus@plexus-utils-4.0.0.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="jar://C:/Users/qinky/.qin/libs/org.fusesource.jansi@jansi/org.fusesource.jansi@jansi-1.18/org.fusesource.jansi@jansi-1.18.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.iq80.snappy@snappy/org.iq80.snappy@snappy-0.4/org.iq80.snappy@snappy-0.4.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.scala-lang.modules@scala-collection-compat_2.13/org.scala-lang.modules@scala-collection-compat_2.13-2.12.0/org.scala-lang.modules@scala-collection-compat_2.13-2.12.0.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.scala-lang.modules@scala-xml_2.13/org.scala-lang.modules@scala-xml_2.13-2.3.0/org.scala-lang.modules@scala-xml_2.13-2.3.0.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.scala-lang@scala-library/org.scala-lang@scala-library-2.13.13/org.scala-lang@scala-library-2.13.13.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.slf4j@slf4j-api/org.slf4j@slf4j-api-1.7.36/org.slf4j@slf4j-api-1.7.36.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.tukaani@xz/org.tukaani@xz-1.9/org.tukaani@xz-1.9.jar!/" />
+        </CLASSES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.virtuslab.scala-cli@config_2.13/org.virtuslab.scala-cli@config_2.13-0.2.1/org.virtuslab.scala-cli@config_2.13-0.2.1.jar!/" />
         </CLASSES>
       </library>
     </orderEntry>

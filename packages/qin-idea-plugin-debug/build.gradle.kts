@@ -1,15 +1,17 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform") version "2.2.1"
+    kotlin("jvm") version "2.3.0"
+    id("org.jetbrains.intellij.platform") version "2.10.5"
 }
 
 group = "com.qin"
-version = "0.1.12"
+version = "0.0.1"
 
 // qin-cli 编译输出目录（使用 qin.config.json 配置的 build/classes）
 val qinCliClasses = file("../../build/classes")
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
@@ -22,16 +24,20 @@ dependencies {
     
     implementation("com.google.code.gson:gson:2.10.1")
     intellijPlatform {
-        intellijIdeaUltimate("2025.1")
+        intellijIdeaUltimate("2025.3.1")
         bundledPlugin("com.intellij.java")
-        instrumentationTools()
     }
+}
+
+kotlin {
+    // 注释掉 jvmToolchain 以避免 GraalVM 版本解析问题
+    jvmToolchain(25)
 }
 
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "251"
+            sinceBuild = "253"
             untilBuild = "253.*"
         }
     }
@@ -41,6 +47,21 @@ tasks {
     withType<JavaCompile> {
         sourceCompatibility = "21"
         targetCompatibility = "21"
+    }
+
+    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
+    }
+
+    runIde {
+        jvmArgs = listOf(
+            "-Dfile.encoding=UTF-8",
+            "-Dconsole.encoding=UTF-8",
+            "-Dsun.stdout.encoding=UTF-8",
+            "-Dsun.stderr.encoding=UTF-8"
+        )
     }
     
     // 将 qin-cli 的类打包进插件 JAR

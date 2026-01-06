@@ -79,6 +79,41 @@ public class BspHandler {
         }
     }
 
+    // ==================== 公共方法供 IDEA 插件使用 ====================
+
+    /**
+     * 获取源代码目录
+     */
+    public String getSourceDir() {
+        if (project == null) {
+            loadProject();
+        }
+        return project.getSourceDir();
+    }
+
+    /**
+     * 获取输出目录
+     */
+    public String getOutputDir() {
+        if (project == null) {
+            loadProject();
+        }
+        if (project.java != null && project.java.outputDir != null) {
+            return project.java.outputDir;
+        }
+        return QinConstants.BUILD_CLASSES_DIR;
+    }
+
+    /**
+     * 获取 classpath
+     */
+    public List<String> getClasspath() {
+        if (classpath == null) {
+            loadClasspath();
+        }
+        return classpath;
+    }
+
     private Object handleBuildTargets() {
         String uri = Paths.get(workDir).toUri().toString();
         Map<String, Object> target = new HashMap<>();
