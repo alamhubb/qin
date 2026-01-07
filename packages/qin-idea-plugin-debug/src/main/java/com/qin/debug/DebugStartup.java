@@ -1,4 +1,4 @@
-﻿package com.qin.debug;
+package com.qin.debug;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
@@ -154,7 +154,7 @@ public class DebugStartup implements ProjectActivity {
     /**
      * 执行 qin sync 命令
      */
-    private void runQinSync(String projectPath, QinLogger logger) throws IOException, InterruptedException {
+    private void runQinSync(String projectPath) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD,
                 "sync");
         pb.directory(new File(projectPath));
@@ -181,25 +181,32 @@ public class DebugStartup implements ProjectActivity {
      * 自动配置 Project SDK
      * 检测系统 JDK 并设置为项目 SDK
      */
-    private static void configureProjectSdk(Project project, QinLogger logger) {
+    private static void configureProjectSdk(Project project) {
         try {
+            QinLogger.info("[SDK] ========== 开始配置 Project SDK ==========");
+
             // 获取当前 Project SDK
             com.intellij.openapi.projectRoots.ProjectJdkTable jdkTable = com.intellij.openapi.projectRoots.ProjectJdkTable
                     .getInstance();
             com.intellij.openapi.projectRoots.Sdk[] allJdks = jdkTable.getAllJdks();
+            QinLogger.info("[SDK] 步骤1: 获取 JDK 表，发现 " + allJdks.length + " 个已注册的 JDK");
+            for (com.intellij.openapi.projectRoots.Sdk sdk : allJdks) {
+                QinLogger.info("[SDK]   - " + sdk.getName() + " (" + sdk.getHomePath() + ")");
+            }
 
             // 获取项目的 SDK 配置
             com.intellij.openapi.roots.ProjectRootManager rootManager = com.intellij.openapi.roots.ProjectRootManager
                     .getInstance(project);
             com.intellij.openapi.projectRoots.Sdk currentSdk = rootManager.getProjectSdk();
+            QinLogger.info("[SDK] 步骤2: 获取当前 Project SDK = " + (currentSdk != null ? currentSdk.getName() : "null"));
 
             if (currentSdk != null) {
-                QinLogger.info("[SDK] 已配置 Project SDK: " + currentSdk.getName());
+                QinLogger.info("[SDK] 已配置 Project SDK: " + currentSdk.getName() + "，无需重新配置");
                 return;
             }
 
             // 没有 SDK，尝试查找合适的 JDK
-            QinLogger.info("[SDK] 未配置 Project SDK，尝试自动配置...");
+            QinLogger.info("[SDK] 步骤3: 未配置 Project SDK，尝试自动配置...");
 
             // 优先查找已注册的 JDK
             com.intellij.openapi.projectRoots.Sdk bestSdk = null;
@@ -212,6 +219,7 @@ public class DebugStartup implements ProjectActivity {
                     if (versionStr != null) {
                         // 简单解析版本号
                         int version = parseJavaVersion(versionStr);
+                        QinLogger.info("[SDK]   检查 JDK: " + sdk.getName() + " (版本: " + version + ")");
                         if (version > bestVersion) {
                             bestVersion = version;
                             bestSdk = sdk;
@@ -222,16 +230,17 @@ public class DebugStartup implements ProjectActivity {
 
             if (bestSdk != null) {
                 final com.intellij.openapi.projectRoots.Sdk sdkToSet = bestSdk;
-                // 设置 Project SDK
-                ApplicationManager.getApplication().runWriteAction(() -> {
-                    rootManager.setProjectSdk(sdkToSet);
-                });
-                QinLogger.info("[SDK] 已自动配置 Project SDK: " + bestSdk.getName());
+                final String sdkName = bestSdk.getName();
+                QinLogger.info("[SDK] 步骤4: 选择最佳 JDK: " + sdkName + " (版本: " + bestVersion + ")");
+
+                // 设置 Project SDK（使用公用方法）
+                QinLogger.info("[SDK] 步骤5: 开始设置 Project SDK...");
+                applyAndPersistSdk(project, rootManager, sdkToSet);
             } else {
                 // 没有找到已注册的 JDK，尝试从 JAVA_HOME 自动添加
                 String javaHome = System.getenv("JAVA_HOME");
                 if (javaHome != null && !javaHome.isEmpty() && Files.exists(Paths.get(javaHome))) {
-                    QinLogger.info("[SDK] 正在从 JAVA_HOME 添加 JDK: " + javaHome);
+                    QinLogger.info("[SDK] 步骤4: 没有已注册的 JDK，尝试从 JAVA_HOME 添加: " + javaHome);
 
                     // 创建新的 JDK
                     com.intellij.openapi.projectRoots.JavaSdk javaSdkType = com.intellij.openapi.projectRoots.JavaSdk
@@ -244,21 +253,201 @@ public class DebugStartup implements ProjectActivity {
                     com.intellij.openapi.projectRoots.Sdk newSdk = javaSdkType.createJdk(sdkName, javaHome, false);
 
                     if (newSdk != null) {
-                        // 添加到 JDK 表
+                        // 先添加到 JDK 表
                         ApplicationManager.getApplication().runWriteAction(() -> {
                             jdkTable.addJdk(newSdk);
-                            rootManager.setProjectSdk(newSdk);
                         });
-                        QinLogger.info("[SDK] 已自动添加并配置 JDK: " + sdkName);
+                        QinLogger.info("[SDK]   已添加 JDK 到 JDK 表: " + sdkName);
+
+                        // 设置 Project SDK（使用公用方法）
+                        applyAndPersistSdk(project, rootManager, newSdk);
                     } else {
-                        QinLogger.error("[SDK] 无法创建 JDK，请手动配置");
+                        QinLogger.error("[SDK] ✗ 无法创建 JDK，请手动配置");
                     }
                 } else {
-                    QinLogger.info("[SDK] 未找到 JAVA_HOME，请手动配置 Project SDK");
+                    QinLogger.info("[SDK] 未找到 JAVA_HOME 或路径不存在，请手动配置 Project SDK");
+                    QinLogger.info("[SDK]   JAVA_HOME = " + (javaHome != null ? javaHome : "null"));
                 }
             }
+
+            // 刷新项目结构，让 IDEA UI 更新
+            QinLogger.info("[SDK] 步骤6: 刷新项目结构...");
+            refreshProjectStructure(project);
+
+            QinLogger.info("[SDK] ========== Project SDK 配置完成 ==========");
         } catch (Exception e) {
             QinLogger.error("[SDK] 配置失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 刷新项目结构
+     * 让 IDEA 重新加载项目配置
+     */
+    private static void refreshProjectStructure(Project project) {
+        try {
+            String basePath = project.getBasePath();
+
+            // 1. 先刷新 misc.xml 文件，确保 IDEA 能看到我们的修改
+            if (basePath != null) {
+                Path miscXmlPath = Paths.get(basePath, ".idea", "misc.xml");
+                com.intellij.openapi.vfs.VirtualFile miscVf = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
+                        .refreshAndFindFileByPath(miscXmlPath.toString().replace('\\', '/'));
+                if (miscVf != null) {
+                    miscVf.refresh(false, false);
+                    QinLogger.info("[SDK]   已刷新 misc.xml VirtualFile");
+                }
+            }
+
+            // 2. 刷新整个虚拟文件系统
+            com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
+            QinLogger.info("[SDK]   VirtualFileManager 刷新完成");
+
+            // 3. 刷新项目模型
+            ApplicationManager.getApplication().invokeLater(() -> {
+                try {
+                    // 触发项目重新同步
+                    com.intellij.openapi.project.DumbService dumbService = com.intellij.openapi.project.DumbService
+                            .getInstance(project);
+
+                    dumbService.runWhenSmart(() -> {
+                        QinLogger.info("[SDK]   项目索引重建完成");
+
+                        // 再次验证 SDK 设置
+                        com.intellij.openapi.roots.ProjectRootManager rootManager = com.intellij.openapi.roots.ProjectRootManager
+                                .getInstance(project);
+                        com.intellij.openapi.projectRoots.Sdk sdk = rootManager.getProjectSdk();
+                        QinLogger.info("[SDK]   刷新后 Project SDK = " + (sdk != null ? sdk.getName() : "null"));
+                    });
+                } catch (Exception e) {
+                    QinLogger.error("[SDK]   刷新项目模型失败: " + e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            QinLogger.error("[SDK]   刷新失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 保存项目设置到磁盘
+     * 必须在 write action 外部调用
+     */
+    private static void saveProjectToDisk(Project project) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            try {
+                project.save();
+                QinLogger.info("[SDK]   项目设置已保存到磁盘");
+            } catch (Exception e) {
+                QinLogger.error("[SDK]   保存项目设置失败: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 应用并持久化 SDK 设置
+     * 这是设置 Project SDK 的统一方法
+     * 
+     * @param project     项目
+     * @param rootManager 项目根管理器
+     * @param sdk         要设置的 SDK
+     */
+    private static void applyAndPersistSdk(Project project,
+            com.intellij.openapi.roots.ProjectRootManager rootManager,
+            com.intellij.openapi.projectRoots.Sdk sdk) {
+        String sdkName = sdk.getName();
+        QinLogger.info("[SDK]   应用 SDK: " + sdkName);
+
+        // 1. 使用 IDEA API 设置内存中的值
+        ApplicationManager.getApplication().runWriteAction(() -> {
+            rootManager.setProjectSdk(sdk);
+        });
+        QinLogger.info("[SDK]   内存中已设置 SDK");
+
+        // 2. 直接修改 misc.xml 确保持久化
+        String basePath = project.getBasePath();
+        if (basePath != null) {
+            Path miscXml = Paths.get(basePath, ".idea", "misc.xml");
+            updateMiscXmlWithSdk(miscXml, sdkName);
+        }
+
+        // 3. 刷新 IDEA
+        refreshProjectStructure(project);
+
+        // 4. 验证
+        com.intellij.openapi.projectRoots.Sdk afterSdk = rootManager.getProjectSdk();
+        if (afterSdk != null && afterSdk.getName().equals(sdkName)) {
+            QinLogger.info("[SDK] ✓ SDK 设置成功: " + sdkName);
+        } else {
+            QinLogger.info("[SDK]   misc.xml 已更新，可能需要重新打开项目");
+        }
+    }
+
+    /**
+     * 直接修改 misc.xml 文件设置 Project SDK
+     * 这是最可靠的方式，确保 SDK 设置被持久化
+     */
+    private static void updateMiscXmlWithSdk(Path miscXml, String sdkName) {
+        try {
+            QinLogger.info("[SDK]   修改 misc.xml: " + miscXml);
+
+            String content;
+            if (Files.exists(miscXml)) {
+                content = Files.readString(miscXml);
+            } else {
+                // 创建新的 misc.xml
+                content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                        "<project version=\"4\">\n" +
+                        "</project>";
+                Files.createDirectories(miscXml.getParent());
+            }
+
+            // 检查是否已有 ProjectRootManager 组件
+            if (content.contains("<component name=\"ProjectRootManager\"")) {
+                // 更新现有组件
+                if (content.contains("project-jdk-name=")) {
+                    // 替换现有的 project-jdk-name
+                    content = content.replaceAll("project-jdk-name=\"[^\"]*\"",
+                            "project-jdk-name=\"" + sdkName + "\"");
+                    QinLogger.info("[SDK]   更新了 project-jdk-name 属性");
+                } else {
+                    // 添加 project-jdk-name 属性
+                    content = content.replace("<component name=\"ProjectRootManager\"",
+                            "<component name=\"ProjectRootManager\" project-jdk-name=\"" + sdkName
+                                    + "\" project-jdk-type=\"JavaSDK\"");
+                    QinLogger.info("[SDK]   添加了 project-jdk-name 属性");
+                }
+
+                // 确保 project-jdk-type 存在
+                if (!content.contains("project-jdk-type=")) {
+                    content = content.replace("project-jdk-name=\"" + sdkName + "\"",
+                            "project-jdk-name=\"" + sdkName + "\" project-jdk-type=\"JavaSDK\"");
+                }
+            } else {
+                // 添加新的 ProjectRootManager 组件
+                String component = "  <component name=\"ProjectRootManager\" version=\"2\" " +
+                        "project-jdk-name=\"" + sdkName + "\" project-jdk-type=\"JavaSDK\">\n" +
+                        "    <output url=\"file://$PROJECT_DIR$/out\" />\n" +
+                        "  </component>\n";
+                content = content.replace("</project>", component + "</project>");
+                QinLogger.info("[SDK]   添加了 ProjectRootManager 组件");
+            }
+
+            // 写回文件
+            Files.writeString(miscXml, content);
+            QinLogger.info("[SDK]   misc.xml 已更新，project-jdk-name=\"" + sdkName + "\"");
+
+            // 验证写入
+            String verify = Files.readString(miscXml);
+            if (verify.contains("project-jdk-name=\"" + sdkName + "\"")) {
+                QinLogger.info("[SDK] ✓ misc.xml 写入验证成功");
+            } else {
+                QinLogger.error("[SDK] ✗ misc.xml 写入验证失败");
+            }
+            // 注意：刷新 IDEA 需要在调用处使用 refreshProjectStructure(project)
+        } catch (Exception e) {
+            QinLogger.error("[SDK]   修改 misc.xml 失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -290,8 +479,8 @@ public class DebugStartup implements ProjectActivity {
      * 
      * @param forceOverwrite true=强制覆盖（手动 sync），false=已存在跳过（自动启动）
      */
-    public static void generateImlFile(Path projectPath, QinLogger logger, boolean forceOverwrite) {
-        generateImlFile(projectPath, logger, forceOverwrite, null);
+    public static void generateImlFile(Path projectPath, boolean forceOverwrite) {
+        generateImlFile(projectPath, forceOverwrite, null);
     }
 
     /**
@@ -301,7 +490,7 @@ public class DebugStartup implements ProjectActivity {
      * @param forceOverwrite true=强制覆盖（手动 sync），false=已存在跳过（自动启动）
      * @param ideaDir        IDEA 项目的 .idea 目录路径（用于注册模块）
      */
-    public static void generateImlFile(Path projectPath, QinLogger logger, boolean forceOverwrite, Path ideaDir) {
+    public static void generateImlFile(Path projectPath, boolean forceOverwrite, Path ideaDir) {
         try {
             // 获取项目名称
             String projectName = projectPath.getFileName().toString();
@@ -412,7 +601,7 @@ public class DebugStartup implements ProjectActivity {
 
             // 注册模块到 modules.xml
             if (ideaDir != null) {
-                registerModuleToIdeaProject(imlPath, ideaDir, logger);
+                registerModuleToIdeaProject(imlPath, ideaDir);
             }
 
         } catch (Exception e) {
@@ -423,7 +612,7 @@ public class DebugStartup implements ProjectActivity {
     /**
      * 注册模块到 IDEA 的 modules.xml
      */
-    private static void registerModuleToIdeaProject(Path imlPath, Path ideaDir, QinLogger logger) {
+    private static void registerModuleToIdeaProject(Path imlPath, Path ideaDir) {
         try {
             Path modulesXml = ideaDir.resolve("modules.xml");
 

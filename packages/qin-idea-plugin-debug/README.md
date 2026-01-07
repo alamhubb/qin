@@ -192,3 +192,78 @@ IntelliJ IDEA 插件，为 Qin 项目提供完整的 IDE 支持。
 
 - **qin-cli**: Qin 命令行工具
 - **qin-bsp-server**: BSP 服务器（可供其他 IDE 使用）
+
+## 开发注意事项
+
+### ⚠️ UTF-8 BOM 问题
+
+**问题描述**：如果 Java 源文件以 UTF-8 BOM（字节顺序标记，`EF BB BF`）开头，Java 编译器会报错：
+
+```
+错误: 非法字符: '\ufeff'
+```
+
+**产生原因**：
+- 某些编辑器（如 Windows 记事本）保存时会自动添加 BOM
+- PowerShell 的 `Out-File` 命令默认使用 UTF-8 with BOM
+- 某些工具在修改文件时可能会添加/保留 BOM
+
+**解决方法**：
+
+1. **手动移除**：在 IDEA 中打开文件，选择 **File → Save with Encoding → UTF-8 (without BOM)**
+
+2. **使用 RemoveBOM 工具**：
+   ```bash
+   # 在插件目录下有 RemoveBOM.java
+   javac RemoveBOM.java
+   java RemoveBOM src/main/java/com/qin/debug/DebugStartup.java
+   ```
+
+3. **检查文件是否有 BOM**：
+   ```powershell
+   $bytes = [System.IO.File]::ReadAllBytes((Get-Item 'DebugStartup.java').FullName)
+   ($bytes[0..2] | ForEach-Object { $_.ToString('X2') }) -join ' '
+   # 如果输出 "EF BB BF"，则有 BOM
+   ```
+
+**预防措施**：
+- 使用 IDEA 编辑 Java 文件（IDEA 默认保存为 UTF-8 无 BOM）
+- 避免使用 PowerShell 的 `Out-File` 直接写入 Java 文件
+- 如果必须用脚本生成文件，使用 `[System.Text.UTF8Encoding]::new($false)` 或 Java/Python 等能控制 BOM 的工具
+
+### 🔄 重构方法签名的注意事项
+
+**问题描述**：当修改方法签名（如移除参数）时，需要同时更新：
+1. 方法定义
+2. 所有调用点
+
+**检查方法**：
+```bash
+# 搜索方法签名
+grep -rn "方法名" src/
+
+# 搜索特定参数
+grep -rn "QinLogger logger" src/
+```
+
+**经验教训**：
+- `QinLogger` 从实例模式改为静态单例时，需要修改：
+  - `QinLogger.init(basePath)` 替代 `new QinLogger(basePath)`
+  - `QinLogger.info()` 替代 `logger.info()`
+  - 移除所有方法签名中的 `QinLogger logger` 参数
+  - 移除所有方法调用中的 `logger` 参数
+
+### 📝 QinLogger 使用方法
+
+```java
+// 初始化（项目打开时调用一次）
+QinLogger.init(basePath);
+
+// 静态调用
+QinLogger.info("消息");
+QinLogger.error("错误消息");
+QinLogger.error("错误消息", exception);
+```
+
+日志文件路径：`{项目根目录}/.qin/logs/{yyyy-MM-dd-HH}.log`
+

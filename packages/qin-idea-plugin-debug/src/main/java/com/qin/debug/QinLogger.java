@@ -67,7 +67,9 @@ public class QinLogger {
         }
 
         String time = LocalDateTime.now().format(TIME_FMT);
-        String line = String.format("[%s] [%s] %s%n", time, level, msg);
+        // 移除 ANSI 颜色控制码（如 \u001b[32m）
+        String cleanMsg = msg.replaceAll("\\u001B\\[[;\\d]*m", "");
+        String line = String.format("[%s] [%s] %s%n", time, level, cleanMsg);
         try {
             Files.writeString(logFile, line,
                     StandardCharsets.UTF_8,

@@ -195,25 +195,24 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
                 // 如果是 sync 命令且成功，生成 .iml 文件
                 if ("sync".equals(task.command) && exitCode == 0) {
-                    QinLogger logger = new QinLogger(task.projectPath);
                     Path ideaDir = Paths.get(project.getBasePath(), ".idea");
-                    DebugStartup.generateImlFile(Paths.get(task.projectPath), logger, true, ideaDir); // 手动 sync：强制覆盖并注册
+                    DebugStartup.generateImlFile(Paths.get(task.projectPath), true, ideaDir); // 手动 sync：强制覆盖并注册
                     appendLog("[生成 .iml 文件完成]");
 
                     // ✨ 触发 IDEA 完整刷新（包括索引重建）
                     ApplicationManager.getApplication().invokeLater(() -> {
                         try {
                             appendLog("[开始刷新 IDEA...]");
-                            
+
                             // 1. 刷新虚拟文件系统（启用监听器）
                             VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
-                            
+
                             // 2. 触发项目结构重新加载
                             ProjectRootManager.getInstance(project).incModificationCount();
-                            
+
                             // 3. 等待索引重建
                             Thread.sleep(500);
-                            
+
                             appendLog("[✓] IDEA 刷新完成，索引已更新");
                         } catch (Exception ex) {
                             appendLog("[!] 刷新失败: " + ex.getMessage());
