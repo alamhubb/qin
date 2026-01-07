@@ -35,7 +35,7 @@ dependencies {
 }
 
 kotlin {
-    // 注释掉 jvmToolchain 以避免 GraalVM 版本解析问题
+    // 使用 Java 25（系统安装版本），但编译输出为 Java 21 兼容
     jvmToolchain(25)
 }
 
@@ -68,17 +68,29 @@ tasks {
             "-Dsun.stderr.encoding=UTF-8"
         )
     }
-    
+
     // 将 qin-cli 的类打包进插件 JAR
     withType<Jar> {
         from(qinCliClasses) {
             include("com/qin/core/**")
             include("com/qin/constants/**")
             include("com/qin/types/**")
+            include("com/qin/bsp/**")  // BspHandler 等
         }
     }
 
     intellijPlatform {
         buildSearchableOptions = false
+    }
+    
+    // 在 buildPlugin 前清空 distributions 目录（只保留最新版本）
+    named("buildPlugin") {
+        doFirst {
+            val distDir = file("build/distributions")
+            if (distDir.exists()) {
+                distDir.listFiles()?.forEach { it.delete() }
+                println("✓ 已清空 build/distributions/")
+            }
+        }
     }
 }

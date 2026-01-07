@@ -64,10 +64,21 @@ public class QinConstants {
             ".vscode", ".idea", "out", "target", "libs");
 
     /**
-     * 项目根目录标志
+     * 项目根目录标志（用于扫描时识别）
      */
     public static final java.util.Set<String> PROJECT_ROOT_MARKERS = java.util.Set.of(
             ".idea", ".vscode", ".git");
+
+    /**
+     * 工作区根目录标志（用于向上查找根目录）
+     * 优先级: .idea > qin.config.json > package.json > .git
+     */
+    public static final java.util.List<String> WORKSPACE_ROOT_MARKERS = java.util.List.of(
+            ".idea", // IDEA 项目
+            "qin.config.json", // Qin 项目
+            "package.json", // JS/TS 项目
+            ".git" // Git 仓库根
+    );
 
     // ==================== 目录和文件常量 ====================
 

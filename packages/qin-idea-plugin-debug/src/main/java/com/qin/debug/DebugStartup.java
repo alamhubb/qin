@@ -1,4 +1,4 @@
-package com.qin.debug;
+﻿package com.qin.debug;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
@@ -34,10 +34,15 @@ public class DebugStartup implements ProjectActivity {
         if (basePath == null)
             return Unit.INSTANCE;
 
-        // 记录日志
-        QinLogger logger = new QinLogger(basePath);
-        logger.info("项目打开: " + project.getName());
-        logger.info("路径: " + basePath);
+        // 初始化静态日志器
+        QinLogger.init(basePath);
+        QinLogger.info("[STARTUP] Qin 插件启动 - " + project.getName());
+        QinLogger.info("[STARTUP] 项目路径: " + basePath);
+
+        // 立即配置 Project SDK（在 EDT 线程中）
+        ApplicationManager.getApplication().invokeLater(() -> {
+            configureProjectSdk(project);
+        });
 
         // 在后台线程扫描和执行 sync
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
@@ -46,13 +51,13 @@ public class DebugStartup implements ProjectActivity {
                 List<Path> qinProjects = discoverQinProjects(Paths.get(basePath));
 
                 if (qinProjects.isEmpty()) {
-                    logger.info("未检测到 Qin 项目");
+                    QinLogger.info("未检测到 Qin 项目");
                     return;
                 }
 
-                logger.info("检测到 " + qinProjects.size() + " 个 Qin 项目:");
+                QinLogger.info("检测到 " + qinProjects.size() + " 个 Qin 项目:");
                 for (Path p : qinProjects) {
-                    logger.info("  - " + p.toString());
+                    QinLogger.info("  - " + p.toString());
                 }
 
                 // 1. 先为所有项目生成 .iml（快速，让 IDEA 立即识别源代码）
@@ -67,33 +72,33 @@ public class DebugStartup implements ProjectActivity {
                     if (relativePath.isEmpty()) {
                         relativePath = CURRENT_DIR;
                     }
-                    logger.info("同步项目: " + relativePath);
+                    QinLogger.info("同步项目: " + relativePath);
 
                     try {
                         runQinSync(projectPath.toString(), logger);
                         // sync 完成后，重新生成 .iml（此时会读取 classpath.json 添加依赖）
                         generateImlFile(projectPath, logger, true, ideaDir); // 强制更新以添加依赖
                     } catch (Exception e) {
-                        logger.error("同步失败 [" + relativePath + "]: " + e.getMessage());
+                        QinLogger.error("同步失败 [" + relativePath + "]: " + e.getMessage());
                     }
                 }
 
-                logger.info("所有项目同步完成");
+                QinLogger.info("所有项目同步完成");
 
                 // 刷新项目，让 IDEA 重新加载库配置
                 ApplicationManager.getApplication().invokeLater(() -> {
                     try {
                         com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
-                        logger.info("项目模型已刷新");
+                        QinLogger.info("项目模型已刷新");
 
                         // 自动配置 Project SDK
                         configureProjectSdk(project, logger);
                     } catch (Exception e) {
-                        logger.error("刷新项目失败: " + e.getMessage());
+                        QinLogger.error("刷新项目失败: " + e.getMessage());
                     }
                 });
             } catch (Exception e) {
-                logger.error("自动同步失败: " + e.getMessage());
+                QinLogger.error("自动同步失败: " + e.getMessage());
             }
         });
 
@@ -162,13 +167,13 @@ public class DebugStartup implements ProjectActivity {
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                logger.info("[sync] " + line);
+                QinLogger.info("[sync] " + line);
             }
         }
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            logger.error("qin sync 退出码: " + exitCode);
+            QinLogger.error("qin sync 退出码: " + exitCode);
         }
     }
 
@@ -189,12 +194,12 @@ public class DebugStartup implements ProjectActivity {
             com.intellij.openapi.projectRoots.Sdk currentSdk = rootManager.getProjectSdk();
 
             if (currentSdk != null) {
-                logger.info("[SDK] 已配置 Project SDK: " + currentSdk.getName());
+                QinLogger.info("[SDK] 已配置 Project SDK: " + currentSdk.getName());
                 return;
             }
 
             // 没有 SDK，尝试查找合适的 JDK
-            logger.info("[SDK] 未配置 Project SDK，尝试自动配置...");
+            QinLogger.info("[SDK] 未配置 Project SDK，尝试自动配置...");
 
             // 优先查找已注册的 JDK
             com.intellij.openapi.projectRoots.Sdk bestSdk = null;
@@ -221,12 +226,12 @@ public class DebugStartup implements ProjectActivity {
                 ApplicationManager.getApplication().runWriteAction(() -> {
                     rootManager.setProjectSdk(sdkToSet);
                 });
-                logger.info("[SDK] 已自动配置 Project SDK: " + bestSdk.getName());
+                QinLogger.info("[SDK] 已自动配置 Project SDK: " + bestSdk.getName());
             } else {
                 // 没有找到已注册的 JDK，尝试从 JAVA_HOME 自动添加
                 String javaHome = System.getenv("JAVA_HOME");
                 if (javaHome != null && !javaHome.isEmpty() && Files.exists(Paths.get(javaHome))) {
-                    logger.info("[SDK] 正在从 JAVA_HOME 添加 JDK: " + javaHome);
+                    QinLogger.info("[SDK] 正在从 JAVA_HOME 添加 JDK: " + javaHome);
 
                     // 创建新的 JDK
                     com.intellij.openapi.projectRoots.JavaSdk javaSdkType = com.intellij.openapi.projectRoots.JavaSdk
@@ -244,16 +249,16 @@ public class DebugStartup implements ProjectActivity {
                             jdkTable.addJdk(newSdk);
                             rootManager.setProjectSdk(newSdk);
                         });
-                        logger.info("[SDK] 已自动添加并配置 JDK: " + sdkName);
+                        QinLogger.info("[SDK] 已自动添加并配置 JDK: " + sdkName);
                     } else {
-                        logger.error("[SDK] 无法创建 JDK，请手动配置");
+                        QinLogger.error("[SDK] 无法创建 JDK，请手动配置");
                     }
                 } else {
-                    logger.info("[SDK] 未找到 JAVA_HOME，请手动配置 Project SDK");
+                    QinLogger.info("[SDK] 未找到 JAVA_HOME，请手动配置 Project SDK");
                 }
             }
         } catch (Exception e) {
-            logger.error("[SDK] 配置失败: " + e.getMessage());
+            QinLogger.error("[SDK] 配置失败: " + e.getMessage());
         }
     }
 
@@ -302,15 +307,15 @@ public class DebugStartup implements ProjectActivity {
             String projectName = projectPath.getFileName().toString();
             Path imlPath = projectPath.resolve(projectName + ".iml");
 
-            logger.info("[iml] 处理项目: " + projectPath);
-            logger.info("[iml]   iml 路径: " + imlPath);
-            logger.info("[iml]   forceOverwrite: " + forceOverwrite);
+            QinLogger.info("[iml] 处理项目: " + projectPath);
+            QinLogger.info("[iml]   iml 路径: " + imlPath);
+            QinLogger.info("[iml]   forceOverwrite: " + forceOverwrite);
 
             // 如果已存在且不强制覆盖，跳过生成但仍注册
             boolean needGenerate = !Files.exists(imlPath) || forceOverwrite;
 
             if (!needGenerate) {
-                logger.info("[iml]   .iml 已存在，跳过生成");
+                QinLogger.info("[iml]   .iml 已存在，跳过生成");
             } else {
                 // 使用 BSP 处理器获取项目信息
                 com.qin.bsp.BspHandler bspHandler = new com.qin.bsp.BspHandler(projectPath.toString());
@@ -322,16 +327,16 @@ public class DebugStartup implements ProjectActivity {
                     // 回退到自动检测
                     sourceDir = detectSourceDir(projectPath);
                 }
-                logger.info("[iml]   sourceDir: " + sourceDir);
+                QinLogger.info("[iml]   sourceDir: " + sourceDir);
 
                 if (sourceDir == null) {
-                    logger.info("[iml]   未找到源代码目录");
+                    QinLogger.info("[iml]   未找到源代码目录");
                     return;
                 }
 
                 // 获取输出目录
                 String outputDir = bspHandler.getOutputDir();
-                logger.info("[iml]   outputDir: " + outputDir);
+                QinLogger.info("[iml]   outputDir: " + outputDir);
 
                 // 生成排除目录 XML
                 StringBuilder excludeFolders = new StringBuilder();
@@ -357,7 +362,7 @@ public class DebugStartup implements ProjectActivity {
                                 .append("        </CLASSES>\n")
                                 .append("      </library>\n")
                                 .append("    </orderEntry>\n");
-                        logger.info("[iml]   添加 JAR 依赖: " + entryPath);
+                        QinLogger.info("[iml]   添加 JAR 依赖: " + entryPath);
                     } else {
                         // 本地类目录 - 计算对应的源码目录
                         String sourcePath = computeSourcePath(entryPath);
@@ -373,9 +378,9 @@ public class DebugStartup implements ProjectActivity {
                             dependencyEntries.append("        <SOURCES>\n")
                                     .append("          <root url=\"file://").append(sourcePath).append("\" />\n")
                                     .append("        </SOURCES>\n");
-                            logger.info("[iml]   添加本地类路径: " + entryPath + " (源码: " + sourcePath + ")");
+                            QinLogger.info("[iml]   添加本地类路径: " + entryPath + " (源码: " + sourcePath + ")");
                         } else {
-                            logger.info("[iml]   添加本地类路径: " + entryPath + " (无源码)");
+                            QinLogger.info("[iml]   添加本地类路径: " + entryPath + " (无源码)");
                         }
 
                         dependencyEntries.append("      </library>\n")
@@ -402,7 +407,7 @@ public class DebugStartup implements ProjectActivity {
                         sourceDir, excludeFolders.toString(), dependencyEntries.toString());
 
                 Files.writeString(imlPath, imlContent);
-                logger.info("生成 .iml 文件: " + projectName + ".iml（通过 BSP）");
+                QinLogger.info("生成 .iml 文件: " + projectName + ".iml（通过 BSP）");
             }
 
             // 注册模块到 modules.xml
@@ -411,7 +416,7 @@ public class DebugStartup implements ProjectActivity {
             }
 
         } catch (Exception e) {
-            logger.error("生成 .iml 失败: " + e.getMessage());
+            QinLogger.error("生成 .iml 失败: " + e.getMessage());
         }
     }
 
@@ -430,7 +435,7 @@ public class DebugStartup implements ProjectActivity {
             String content;
             if (!Files.exists(modulesXml)) {
                 // modules.xml 不存在，创建新的
-                logger.info("[iml]   modules.xml 不存在，创建新文件");
+                QinLogger.info("[iml]   modules.xml 不存在，创建新文件");
                 content = """
                         <?xml version="1.0" encoding="UTF-8"?>
                         <project version="4">
@@ -446,7 +451,7 @@ public class DebugStartup implements ProjectActivity {
 
             // 检查是否已经注册
             if (content.contains(moduleEntry)) {
-                logger.info("[iml]   模块已在 modules.xml 中注册");
+                QinLogger.info("[iml]   模块已在 modules.xml 中注册");
                 return;
             }
 
@@ -459,10 +464,10 @@ public class DebugStartup implements ProjectActivity {
             String newContent = content.replace("    </modules>", newModule + "\n    </modules>");
 
             Files.writeString(modulesXml, newContent);
-            logger.info("[iml]   已注册模块到 modules.xml: " + moduleEntry);
+            QinLogger.info("[iml]   已注册模块到 modules.xml: " + moduleEntry);
 
         } catch (Exception e) {
-            logger.error("[iml]   注册模块失败: " + e.getMessage());
+            QinLogger.error("[iml]   注册模块失败: " + e.getMessage());
         }
     }
 
