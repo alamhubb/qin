@@ -1,0 +1,31 @@
+#!/bin/sh
+# pre-commit hook: 检查 Java 文件是否有 BOM
+
+# 获取待提交的 Java 文件
+files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.java$')
+
+if [ -z "$files" ]; then
+    exit 0
+fi
+
+found_bom=0
+for file in $files; do
+    # 检查文件前3字节是否是 BOM
+    if [ -f "$file" ]; then
+        head_bytes=$(head -c 3 "$file" | od -An -tx1 | tr -d ' \n')
+        if [ "$head_bytes" = "efbbbf" ]; then
+            echo "ERROR: $file has UTF-8 BOM"
+            found_bom=1
+        fi
+    fi
+done
+
+if [ $found_bom -eq 1 ]; then
+    echo ""
+    echo "请使用以下命令移除 BOM:"
+    echo "  java RemoveBOM <file>"
+    echo ""
+    exit 1
+fi
+
+exit 0

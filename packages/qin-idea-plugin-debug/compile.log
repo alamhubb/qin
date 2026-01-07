@@ -1,0 +1,157 @@
+﻿Following 1 plugins could not be created: plugins\fullLine\lib\modules\intellij.fullLine.yaml.jar
+> Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :compileKotlin NO-SOURCE
+
+> Task :compileJava FAILED
+.\gradlew : D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug
+\src\main\java\com\qin\debug\DebugStartup.java:1: 閿欒: 闈炴硶瀛楃: '\ufeff'
+所在位置 行:1 字符: 1
++ .\gradlew compileJava --console=plain 2>&1 | Out-File -FilePath compi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (D:\project\qkyp...炴硶瀛楃: '\ufeff' 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+锘縫ackage com.qin.debug;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:1: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+锘縫ackage com.qin.debug;
+         ^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:3: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import com.intellij.openapi.application.ApplicationManager;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:4: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import com.intellij.openapi.project.Project;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:5: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import com.intellij.openapi.startup.ProjectActivity;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:6: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import com.intellij.openapi.wm.ToolWindow;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:7: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import com.intellij.openapi.wm.ToolWindowManager;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:8: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import kotlin.Unit;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:9: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import kotlin.coroutines.Continuation;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:10: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import org.jetbrains.annotations.NotNull;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:11: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import org.jetbrains.annotations.Nullable;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:13: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import java.io.*;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:14: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import java.nio.charset.StandardCharsets;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:15: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import java.nio.file.*;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:16: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import java.util.*;
+^
+D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\ja
+va\com\qin\debug\DebugStartup.java:19: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+import static com.qin.constants.QinConstants.*;
+^
+16 涓敊璇?
+
+[Incubating] Problems report is available at: file:///D:/project/qkyproject/slime-java/qin/packages/qin-idea-plugin-debug/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:1: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  锘縫ackage com.qin.debug;
+           ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:3: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import com.intellij.openapi.application.ApplicationManager;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:4: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import com.intellij.openapi.project.Project;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:5: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import com.intellij.openapi.startup.ProjectActivity;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:6: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import com.intellij.openapi.wm.ToolWindow;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:7: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import com.intellij.openapi.wm.ToolWindowManager;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:8: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import kotlin.Unit;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:9: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import kotlin.coroutines.Continuation;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:10: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import org.jetbrains.annotations.NotNull;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:11: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import org.jetbrains.annotations.Nullable;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:13: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import java.io.*;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:14: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import java.nio.charset.StandardCharsets;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:15: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import java.nio.file.*;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:16: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import java.util.*;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:19: 閿欒: 闇€瑕?class銆乮nterface銆乪num 鎴?record
+  import static com.qin.constants.QinConstants.*;
+  ^
+  D:\project\qkyproject\slime-java\qin\packages\qin-idea-plugin-debug\src\main\
+java\com\qin\debug\DebugStartup.java:1: 閿欒: 闈炴硶瀛楃: '\ufeff'
+  锘縫ackage com.qin.debug;
+  ^
+  16 涓敊璇?
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 27s
+1 actionable task: 1 executed
