@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.QinConfig;
 import java.nio.file.Path;
 import java.util.*;
@@ -170,7 +171,7 @@ public class DependencyGraphBuilder {
      * 加载项目配置
      */
     private QinConfig loadConfig(Path projectDir) throws Exception {
-        Path configPath = projectDir.resolve("qin.config.json");
+        Path configPath = projectDir.resolve(QinConstants.CONFIG_FILE);
         String json = java.nio.file.Files.readString(configPath);
         return new com.google.gson.Gson().fromJson(json, QinConfig.class);
     }

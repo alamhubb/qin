@@ -411,7 +411,7 @@ public class DependencyResolver {
     }
 
     public static String getClasspathSeparator() {
-        return System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        return QinConstants.getClasspathSeparator();
     }
 
     public static List<String> parseClasspath(String classpath) {
@@ -441,7 +441,7 @@ public class DependencyResolver {
      * @param target 目标目录路径
      */
     private void createJunction(Path link, Path target) throws IOException {
-        if (!System.getProperty("os.name").toLowerCase().contains("win")) {
+        if (!QinConstants.isWindows()) {
             // 非 Windows 系统使用 symlink
             Files.createSymbolicLink(link, target);
             return;

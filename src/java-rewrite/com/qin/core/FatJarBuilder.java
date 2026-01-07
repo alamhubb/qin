@@ -92,7 +92,7 @@ public class FatJarBuilder {
         // Try JAVA_HOME
         String javaHome = System.getenv("JAVA_HOME");
         if (javaHome != null) {
-            String jarPath = Paths.get(javaHome, "bin", isWindows() ? "jar.exe" : "jar").toString();
+            String jarPath = Paths.get(javaHome, "bin", QinConstants.isWindows() ? "jar.exe" : "jar").toString();
             if (Files.exists(Paths.get(jarPath))) {
                 jarCommand = jarPath;
                 return;
@@ -102,7 +102,7 @@ public class FatJarBuilder {
         // Try to get java.home from java command
         String javaHomeFromCmd = getJavaHome();
         if (javaHomeFromCmd != null) {
-            String jarPath = Paths.get(javaHomeFromCmd, "bin", isWindows() ? "jar.exe" : "jar").toString();
+            String jarPath = Paths.get(javaHomeFromCmd, "bin", QinConstants.isWindows() ? "jar.exe" : "jar").toString();
             if (Files.exists(Paths.get(jarPath))) {
                 jarCommand = jarPath;
                 return;
@@ -249,7 +249,7 @@ public class FatJarBuilder {
         args.add("-d");
         args.add(tempDir);
         args.add("-encoding");
-        args.add("UTF-8");
+        args.add(QinConstants.CHARSET_UTF8);
 
         // 构建 classpath：tempDir + 所有依赖 JAR
         List<String> cpParts = new ArrayList<>();
@@ -257,7 +257,7 @@ public class FatJarBuilder {
         cpParts.addAll(jarPaths);
 
         if (!cpParts.isEmpty()) {
-            String separator = isWindows() ? ";" : ":";
+            String separator = QinConstants.getClasspathSeparator();
             args.add("-cp");
             args.add(String.join(separator, cpParts));
         }
@@ -335,14 +335,6 @@ public class FatJarBuilder {
         deleteDir(Paths.get(tempDir));
     }
 
-    private boolean hasClasses(Path dir) throws IOException {
-        if (!Files.exists(dir))
-            return false;
-        try (Stream<Path> walk = Files.walk(dir)) {
-            return walk.anyMatch(p -> p.toString().endsWith(".class"));
-        }
-    }
-
     private void copyDir(Path src, Path dest) throws IOException {
         try (Stream<Path> walk = Files.walk(src)) {
             walk.forEach(source -> {
@@ -386,10 +378,6 @@ public class FatJarBuilder {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    private boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
     private String readStream(InputStream is) throws IOException {

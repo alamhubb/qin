@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.*;
 
 import javax.tools.*;
@@ -84,8 +85,8 @@ public class JavaRunner {
         }
 
         // 2. 自动检测：src/main/java > src > .
-        if (Files.isDirectory(Paths.get(cwd, "src/main/java"))) {
-            return "src/main/java";
+        if (Files.isDirectory(Paths.get(cwd, QinConstants.DEFAULT_SOURCE_DIR))) {
+            return QinConstants.DEFAULT_SOURCE_DIR;
         }
         if (Files.isDirectory(Paths.get(cwd, "src"))) {
             return "src";
@@ -111,7 +112,7 @@ public class JavaRunner {
             options.add("-d");
             options.add(outputDir);
             options.add("-encoding");
-            options.add("UTF-8");
+            options.add(QinConstants.CHARSET_UTF8);
 
             String fullCp = buildCompileClasspath();
             System.out.println("  [DEBUG] Compile classpath: "
@@ -247,8 +248,8 @@ public class JavaRunner {
 
         // 常见的源码目录前缀
         String[] srcPrefixes = {
-                "src/main/java/",
-                "src/test/java/",
+                QinConstants.DEFAULT_SOURCE_DIR + "/",
+                QinConstants.DEFAULT_TEST_DIR + "/",
                 "src/"
         };
 
@@ -270,7 +271,7 @@ public class JavaRunner {
         args.add("-d");
         args.add(outputDir);
         args.add("-encoding");
-        args.add("UTF-8");
+        args.add(QinConstants.CHARSET_UTF8);
 
         // Build full classpath including localDependencies
         String fullCp = buildCompileClasspath();
@@ -382,9 +383,9 @@ public class JavaRunner {
             System.out.println("    → Compiling dependency: " + projectInfo.fullName);
 
             // 加载依赖项目的配置
-            Path configPath = projectInfo.projectDir.resolve("qin.config.json");
+            Path configPath = projectInfo.projectDir.resolve(QinConstants.CONFIG_FILE);
             if (!Files.exists(configPath)) {
-                System.err.println("      Warning: No qin.config.json found");
+                System.err.println("      Warning: No " + QinConstants.CONFIG_FILE + " found");
                 return;
             }
 

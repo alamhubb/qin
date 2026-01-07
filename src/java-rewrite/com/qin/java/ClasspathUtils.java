@@ -1,5 +1,7 @@
 package com.qin.java;
 
+import com.qin.constants.QinConstants;
+
 import java.util.*;
 import java.util.stream.*;
 
@@ -7,19 +9,19 @@ import java.util.stream.*;
  * Classpath utilities
  */
 public class ClasspathUtils {
-    
+
     /**
      * Get platform-specific classpath separator
      */
     public static String getClasspathSeparator() {
-        return isWindows() ? ";" : ":";
+        return QinConstants.getClasspathSeparator();
     }
 
     /**
      * Check if running on Windows
      */
     public static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().contains("win");
+        return QinConstants.isWindows();
     }
 
     /**
@@ -59,8 +61,8 @@ public class ClasspathUtils {
             return new ArrayList<>();
         }
         return Arrays.stream(classpath.split(getClasspathSeparator()))
-            .filter(p -> !p.isEmpty())
-            .collect(Collectors.toList());
+                .filter(p -> !p.isEmpty())
+                .collect(Collectors.toList());
     }
 
     /**

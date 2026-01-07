@@ -1,5 +1,6 @@
 package com.qin.bsp;
 
+import com.qin.constants.QinConstants;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.qin.bsp.model.*;
@@ -55,7 +56,7 @@ public class BspHandler {
 
     private void loadProject() {
         try {
-            Path configPath = Paths.get(workDir, "qin.config.json");
+            Path configPath = Paths.get(workDir, QinConstants.CONFIG_FILE);
             String json = Files.readString(configPath);
             project = gson.fromJson(json, QinProjectInfo.class);
         } catch (IOException e) {

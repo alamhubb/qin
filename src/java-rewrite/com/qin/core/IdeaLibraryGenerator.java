@@ -35,7 +35,7 @@ public class IdeaLibraryGenerator {
         Files.createDirectories(librariesDir);
 
         // 解析 classpath
-        String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String sep = QinConstants.getClasspathSeparator();
         String[] jarPaths = classpath.split(sep);
 
         generatedLibraryNames.clear();

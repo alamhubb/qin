@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -31,7 +32,7 @@ public class ConfigLoader {
      */
     public QinConfig load() throws IOException {
         // 尝试加载 JSON 配置
-        Path jsonConfig = Paths.get(cwd, "qin.config.json");
+        Path jsonConfig = Paths.get(cwd, QinConstants.CONFIG_FILE);
         if (Files.exists(jsonConfig)) {
             String content = Files.readString(jsonConfig);
             QinConfig config = gson.fromJson(content, QinConfig.class);
@@ -158,7 +159,8 @@ public class ConfigLoader {
      */
     public ParsedEntry parseEntry(String entry) {
         if (entry == null) {
-            return new ParsedEntry("src/main/java", "Main", "src/main/java/Main.java");
+            return new ParsedEntry(QinConstants.DEFAULT_SOURCE_DIR, QinConstants.DEFAULT_MAIN_CLASS,
+                    QinConstants.DEFAULT_SOURCE_DIR + "/Main.java");
         }
 
         String normalized = entry.replace("\\", "/");

@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.CompileResult;
 
 import javax.tools.*;
@@ -45,7 +46,7 @@ public class Compiler {
             options.add("-d");
             options.add(outputDir);
             options.add("-encoding");
-            options.add("UTF-8");
+            options.add(QinConstants.CHARSET_UTF8);
 
             String fullCp = classpathBuilder.buildCompileClasspath();
             System.out.println("  [DEBUG] Compile classpath: " + fullCp);

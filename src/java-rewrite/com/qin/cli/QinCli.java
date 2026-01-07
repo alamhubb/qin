@@ -71,7 +71,7 @@ public class QinCli {
         }
 
         // Create qin.config.json
-        Path configFile = cwd.resolve("qin.config.json");
+        Path configFile = cwd.resolve(QinConstants.CONFIG_FILE);
         if (!Files.exists(configFile)) {
             String projectName = cwd.getFileName().toString();
             Files.writeString(configFile, String.format("""
@@ -323,7 +323,7 @@ public class QinCli {
         Map<String, String> deps = config.dependencies();
 
         System.out.println(blue("→ Syncing dependencies..."));
-        String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String sep = QinConstants.getClasspathSeparator();
         List<String> classpaths = new ArrayList<>();
 
         // 1. 先用 LocalProjectResolver 解析本地依赖
@@ -396,7 +396,7 @@ public class QinCli {
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
         String cwd = System.getProperty("user.dir");
         Path cacheFile = com.qin.core.QinPaths.getClasspathCache(cwd);
-        Path configFile = Paths.get(cwd, "qin.config.json");
+        Path configFile = Paths.get(cwd, QinConstants.CONFIG_FILE);
 
         // 检查缓存是否有效
         if (Files.exists(cacheFile) && Files.exists(configFile)) {
@@ -434,7 +434,7 @@ public class QinCli {
         if (classpath == null || classpath.isEmpty()) {
             return true;
         }
-        String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String sep = QinConstants.getClasspathSeparator();
         String[] paths = classpath.split(sep);
         for (String path : paths) {
             if (path.isEmpty())
@@ -603,7 +603,7 @@ public class QinCli {
                 pos = quote2 + 1;
             }
 
-            String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+            String sep = QinConstants.getClasspathSeparator();
             return String.join(sep, paths);
         } catch (Exception e) {
             return "";
@@ -614,7 +614,7 @@ public class QinCli {
      * 构建 .qin/classpath.json 格式
      */
     private static String buildClasspathJson(String classpath) {
-        String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String sep = QinConstants.getClasspathSeparator();
         String[] paths = classpath.split(sep.equals(";") ? ";" : ":");
 
         StringBuilder sb = new StringBuilder();
@@ -644,7 +644,7 @@ public class QinCli {
             return classpath;
         }
 
-        String sep = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String sep = QinConstants.getClasspathSeparator();
         String[] paths = classpath.split(sep.equals(";") ? ";" : ":");
 
         // 创建 artifactId 到顺序的映射

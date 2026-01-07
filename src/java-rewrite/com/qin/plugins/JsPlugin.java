@@ -1,5 +1,7 @@
 package com.qin.plugins;
 
+import com.qin.constants.QinConstants;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -54,7 +56,7 @@ public class JsPlugin implements RunnerPlugin {
         List<String> command = new ArrayList<>();
 
         // Windows 需要通过 cmd.exe 运行
-        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+        boolean isWindows = QinConstants.isWindows();
         if (isWindows) {
             command.add("cmd.exe");
             command.add("/c");

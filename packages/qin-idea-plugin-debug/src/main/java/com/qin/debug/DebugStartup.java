@@ -665,9 +665,9 @@ public class DebugStartup implements ProjectActivity {
      */
     private static String detectSourceDir(Path projectPath) {
         // 优先检测标准 Maven 结构
-        Path mavenSrc = projectPath.resolve("src/main/java");
+        Path mavenSrc = projectPath.resolve(DEFAULT_SOURCE_DIR);
         if (Files.exists(mavenSrc)) {
-            return "src/main/java";
+            return DEFAULT_SOURCE_DIR;
         }
         // 其次检测简单结构
         Path simpleSrc = projectPath.resolve("src");
@@ -698,7 +698,7 @@ public class DebugStartup implements ProjectActivity {
                 Path projectRoot = current.getParent();
 
                 // 检查 src/main/java
-                Path mavenSrc = projectRoot.resolve("src/main/java");
+                Path mavenSrc = projectRoot.resolve(DEFAULT_SOURCE_DIR);
                 if (Files.exists(mavenSrc)) {
                     return mavenSrc.toString().replace("\\", "/");
                 }

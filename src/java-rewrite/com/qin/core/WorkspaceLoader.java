@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.QinConfig;
 import com.google.gson.Gson;
 
@@ -33,7 +34,7 @@ public class WorkspaceLoader {
         Path current = Paths.get(cwd);
 
         while (current != null) {
-            Path configPath = current.resolve("qin.config.json");
+            Path configPath = current.resolve(QinConstants.CONFIG_FILE);
             if (Files.exists(configPath)) {
                 String content = Files.readString(configPath);
                 QinConfig config = gson.fromJson(content, QinConfig.class);
@@ -65,14 +66,15 @@ public class WorkspaceLoader {
         }
 
         // Load workspace root config
-        Path configPath = Paths.get(root, "qin.config.json");
+        Path configPath = Paths.get(root, QinConstants.CONFIG_FILE);
         String content = Files.readString(configPath);
         QinConfig rootConfig = gson.fromJson(content, QinConfig.class);
 
         return loadPackagesFromRoot(rootConfig, root);
     }
 
-    private Map<String, WorkspacePackage> loadPackagesFromRoot(QinConfig rootConfig, String rootDir) throws IOException {
+    private Map<String, WorkspacePackage> loadPackagesFromRoot(QinConfig rootConfig, String rootDir)
+            throws IOException {
         if (rootConfig.packages() == null || rootConfig.packages().isEmpty()) {
             return packages;
         }
@@ -80,12 +82,12 @@ public class WorkspaceLoader {
         for (String pattern : rootConfig.packages()) {
             // Simple glob matching
             Path basePath = Paths.get(rootDir);
-            
+
             if (pattern.endsWith("/*")) {
                 // Match all subdirectories
                 String baseDir = pattern.substring(0, pattern.length() - 2);
                 Path searchDir = basePath.resolve(baseDir);
-                
+
                 if (Files.exists(searchDir) && Files.isDirectory(searchDir)) {
                     try (DirectoryStream<Path> stream = Files.newDirectoryStream(searchDir)) {
                         for (Path entry : stream) {
@@ -108,7 +110,7 @@ public class WorkspaceLoader {
     }
 
     private void loadPackage(String pkgPath) {
-        Path configPath = Paths.get(pkgPath, "qin.config.json");
+        Path configPath = Paths.get(pkgPath, QinConstants.CONFIG_FILE);
 
         try {
             if (Files.exists(configPath)) {
@@ -118,11 +120,10 @@ public class WorkspaceLoader {
                 if (config.name() != null) {
                     String classesDir = Paths.get(pkgPath, "build", "classes").toString();
                     packages.put(config.name(), new WorkspacePackage(
-                        config.name(),
-                        pkgPath,
-                        config,
-                        classesDir
-                    ));
+                            config.name(),
+                            pkgPath,
+                            config,
+                            classesDir));
                 }
             }
         } catch (IOException e) {

@@ -86,7 +86,7 @@ public class LocalProjectResolver {
             }
         }
 
-        String separator = System.getProperty("os.name").toLowerCase().contains("win") ? ";" : ":";
+        String separator = QinConstants.getClasspathSeparator();
         String localClasspath = localClasspaths.isEmpty() ? "" : String.join(separator, localClasspaths);
 
         return new ResolutionResult(localClasspath, remoteDependencies);
@@ -127,7 +127,7 @@ public class LocalProjectResolver {
         // 4. 加载项目信息（就近优先，已存在的不覆盖）
         for (Path projectPath : projectPaths) {
             try {
-                Path configPath = projectPath.resolve("qin.config.json");
+                Path configPath = projectPath.resolve(QinConstants.CONFIG_FILE);
                 QinConfig config = loadConfig(configPath);
                 String fullName = config.name(); // "com.slime:slime-token"
 
@@ -193,9 +193,8 @@ public class LocalProjectResolver {
         while (current != null && current.getParent() != null) {
             // 检查是否有项目标志
             final Path finalCurrent = current; // lambda 需要 final
-            boolean isProjectRoot = QinConstants.PROJECT_ROOT_MARKERS.stream()
-                    .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker))) ||
-                    Files.exists(current.resolve("qin.config.json"));
+            boolean isProjectRoot = QinConstants.WORKSPACE_ROOT_MARKERS.stream()
+                    .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker)));
 
             if (isProjectRoot) {
                 topMost = current; // 继续向上，取最顶层的

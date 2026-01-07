@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.EnvironmentStatus;
 
 import java.io.*;
@@ -19,7 +20,7 @@ public class EnvironmentChecker {
     public EnvironmentChecker() {
         String home = System.getProperty("user.home");
         this.qinHome = Paths.get(home, ".qin").toString();
-        this.isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+        this.isWindows = QinConstants.isWindows();
         this.csPath = isWindows
                 ? Paths.get(qinHome, "bin", "cs.exe").toString()
                 : Paths.get(qinHome, "bin", "cs").toString();
@@ -92,7 +93,7 @@ public class EnvironmentChecker {
 
     private boolean installCoursierUnix(Path binDir) throws Exception {
         String arch = System.getProperty("os.arch").contains("aarch64") ? "aarch64" : "x86_64";
-        String os = System.getProperty("os.name").toLowerCase().contains("mac")
+        String os = QinConstants.isMac()
                 ? "apple-darwin"
                 : "pc-linux";
         String url = String.format(
@@ -153,7 +154,7 @@ public class EnvironmentChecker {
      * Get installation guide
      */
     public String getInstallGuide(String tool) {
-        boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+        boolean isMac = QinConstants.isMac();
 
         if ("coursier".equals(tool)) {
             if (isWindows) {

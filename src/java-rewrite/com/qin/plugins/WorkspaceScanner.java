@@ -1,5 +1,7 @@
 package com.qin.plugins;
 
+import com.qin.constants.QinConstants;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -80,7 +82,7 @@ public class WorkspaceScanner {
             // 检查是否是项目标志
             boolean isProjectRoot = Files.exists(current.resolve(".vscode")) ||
                     Files.exists(current.resolve(".idea")) ||
-                    Files.exists(current.resolve("qin.config.json")) ||
+                    Files.exists(current.resolve(QinConstants.CONFIG_FILE)) ||
                     Files.exists(current.resolve("package.json"));
 
             if (isProjectRoot) {
