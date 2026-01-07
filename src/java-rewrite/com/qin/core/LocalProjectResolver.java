@@ -76,9 +76,13 @@ public class LocalProjectResolver {
             if (project != null) {
                 // 本地项目:使用 build/classes 路径
                 localClasspaths.add(project.buildClassesPath.toString());
+                System.err.println("[DEBUG] Matched local: " + fullName + " -> " + project.buildClassesPath);
             } else {
                 // 远程依赖:需要下载
                 remoteDependencies.put(fullName, version);
+                System.err.println("[DEBUG] Not found locally: " + fullName + " (available: " +
+                        localProjects.keySet().stream().filter(k -> k.contains("subhuti")).findFirst().orElse("none")
+                        + ")");
             }
         }
 

@@ -44,9 +44,15 @@ public class ClasspathBuilder {
 
         // Add local project dependencies using auto-discovery
         Map<String, String> deps = config.dependencies();
+        System.err.println("[DEBUG] Config dependencies: " + (deps != null ? deps.keySet() : "null"));
         if (deps != null && !deps.isEmpty()) {
             LocalProjectResolver localResolver = new LocalProjectResolver(cwd);
             LocalProjectResolver.ResolutionResult result = localResolver.resolveDependencies(deps);
+
+            System.err.println("[DEBUG] Local classpath resolved: " +
+                    (result.localClasspath != null
+                            ? result.localClasspath.substring(0, Math.min(200, result.localClasspath.length()))
+                            : "empty"));
 
             // 添加本地classpath
             if (result.localClasspath != null && !result.localClasspath.isEmpty()) {

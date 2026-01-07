@@ -48,8 +48,7 @@ public class Compiler {
             options.add("UTF-8");
 
             String fullCp = classpathBuilder.buildCompileClasspath();
-            System.out.println("  [DEBUG] Compile classpath: "
-                    + (fullCp != null ? fullCp.substring(0, Math.min(200, fullCp.length())) + "..." : "null"));
+            System.out.println("  [DEBUG] Compile classpath: " + fullCp);
             if (fullCp != null && !fullCp.isEmpty()) {
                 options.add("-cp");
                 options.add(fullCp);
