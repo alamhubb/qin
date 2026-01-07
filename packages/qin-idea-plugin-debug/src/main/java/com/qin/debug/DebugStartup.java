@@ -63,21 +63,21 @@ public class DebugStartup implements ProjectActivity {
                 // 1. 先为所有项目生成 .iml（快速，让 IDEA 立即识别源代码）
                 Path ideaDir = Paths.get(basePath, ".idea");
                 for (Path projectPath : qinProjects) {
-                    generateImlFile(projectPath, logger, false, ideaDir); // 启动时：已存在就跳过，但会注册模块
+                    generateImlFile(projectPath, false, ideaDir); // 启动时：已存在就跳过，但会注册模块
                 }
 
                 // 2. 再为每个项目执行 sync（可能较慢）
                 for (Path projectPath : qinProjects) {
                     String relativePath = Paths.get(basePath).relativize(projectPath).toString();
                     if (relativePath.isEmpty()) {
-                        relativePath = CURRENT_DIR;
+                        relativePath = ".";
                     }
                     QinLogger.info("同步项目: " + relativePath);
 
                     try {
-                        runQinSync(projectPath.toString(), logger);
+                        runQinSync(projectPath.toString());
                         // sync 完成后，重新生成 .iml（此时会读取 classpath.json 添加依赖）
-                        generateImlFile(projectPath, logger, true, ideaDir); // 强制更新以添加依赖
+                        generateImlFile(projectPath, true, ideaDir); // 强制更新以添加依赖
                     } catch (Exception e) {
                         QinLogger.error("同步失败 [" + relativePath + "]: " + e.getMessage());
                     }
@@ -92,7 +92,7 @@ public class DebugStartup implements ProjectActivity {
                         QinLogger.info("项目模型已刷新");
 
                         // 自动配置 Project SDK
-                        configureProjectSdk(project, logger);
+                        // SDK 配置已在启动时处理
                     } catch (Exception e) {
                         QinLogger.error("刷新项目失败: " + e.getMessage());
                     }
