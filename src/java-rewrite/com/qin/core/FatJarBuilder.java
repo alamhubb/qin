@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.*;
 
 import java.io.*;
@@ -38,25 +39,32 @@ public class FatJarBuilder {
      */
     public BuildResult build() {
         try {
+            System.out.println("  [1/6] Initializing...");
             initJarCommand();
             createTempDir();
 
             // Resolve dependencies
+            System.out.println("  [2/6] Resolving dependencies...");
             List<String> jarPaths = resolveDependencies();
             if (!jarPaths.isEmpty()) {
+                System.out.println("  [3/6] Extracting " + jarPaths.size() + " JARs...");
                 extractJars(jarPaths);
                 cleanSignatures();
+                cleanModuleInfo(); // 删除 module-info.class，禁用模块系统（Fat JAR 标准做法）
             }
 
-            // Compile source
-            compileSource();
+            // Compile source with classpath
+            System.out.println("  [4/6] Compiling source...");
+            compileSourceWithClasspath(jarPaths);
 
             // Generate manifest
+            System.out.println("  [5/6] Generating manifest...");
             ConfigLoader configLoader = new ConfigLoader(cwd);
             ParsedEntry parsed = configLoader.parseEntry(config.entry());
             generateManifest(parsed.className());
 
             // Package JAR
+            System.out.println("  [6/6] Packaging JAR...");
             String jarName = config.output() != null && config.output().jarName() != null
                     ? config.output().jarName()
                     : "app.jar";
@@ -139,15 +147,22 @@ public class FatJarBuilder {
         Path classpathCache = QinPaths.getClasspathCache(cwd);
         if (Files.exists(classpathCache)) {
             String content = Files.readString(classpathCache);
+            // 移除换行符，确保正确解析
+            content = content.replace("\n", "").replace("\r", "");
             // Simple JSON parsing
             int start = content.indexOf("[");
             int end = content.lastIndexOf("]");
             if (start >= 0 && end > start) {
                 String arrayContent = content.substring(start + 1, end);
-                return Arrays.stream(arrayContent.split(","))
+                List<String> result = Arrays.stream(arrayContent.split(","))
                         .map(s -> s.trim().replace("\"", ""))
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
+                if (debug) {
+                    System.out.println("[FatJar] Resolved " + result.size() + " dependencies from cache:");
+                    result.forEach(p -> System.out.println("[FatJar]   - " + p));
+                }
+                return result;
             }
         }
 
@@ -194,10 +209,28 @@ public class FatJarBuilder {
         }
     }
 
-    private void compileSource() throws Exception {
+    /**
+     * 删除 module-info.class 文件
+     * 这是创建 Fat JAR 的标准做法（Maven Shade Plugin / Gradle Shadow 都这样做）
+     * 删除后，模块化 JAR 变成普通 JAR，不会触发 Java 模块系统检查
+     */
+    private void cleanModuleInfo() throws IOException {
+        Path moduleInfo = Paths.get(tempDir, "module-info.class");
+        if (Files.exists(moduleInfo)) {
+            Files.delete(moduleInfo);
+            if (debug) {
+                System.out.println("[FatJar] Removed module-info.class");
+            }
+        }
+    }
+
+    private void compileSourceWithClasspath(List<String> jarPaths) throws Exception {
         ConfigLoader configLoader = new ConfigLoader(cwd);
         ParsedEntry parsed = configLoader.parseEntry(config.entry());
-        Path srcDir = Paths.get(cwd, parsed.srcDir());
+
+        // 使用 QinConstants.getSourceDir() 统一获取源代码目录
+        String sourceDirPath = QinConstants.getSourceDir(config.java());
+        Path srcDir = Paths.get(cwd, sourceDirPath);
 
         List<String> javaFiles;
         try (Stream<Path> walk = Files.walk(srcDir)) {
@@ -215,11 +248,23 @@ public class FatJarBuilder {
         args.add("javac");
         args.add("-d");
         args.add(tempDir);
+        args.add("-encoding");
+        args.add("UTF-8");
 
-        // Add temp dir to classpath for dependencies
-        if (hasClasses(Paths.get(tempDir))) {
+        // 构建 classpath：tempDir + 所有依赖 JAR
+        List<String> cpParts = new ArrayList<>();
+        cpParts.add(tempDir);
+        cpParts.addAll(jarPaths);
+
+        if (!cpParts.isEmpty()) {
+            String separator = isWindows() ? ";" : ":";
             args.add("-cp");
-            args.add(tempDir);
+            args.add(String.join(separator, cpParts));
+        }
+
+        if (debug) {
+            System.out.println(
+                    "[FatJar] Compiling " + javaFiles.size() + " files with " + jarPaths.size() + " JAR dependencies");
         }
 
         args.addAll(javaFiles);
@@ -269,15 +314,20 @@ public class FatJarBuilder {
 
         String manifestPath = Paths.get(tempDir, "META-INF", "MANIFEST.MF").toString();
 
+        // 使用 -cfm 而不是 -cvfm，避免产生大量输出导致缓冲区满
         ProcessBuilder pb = new ProcessBuilder(
-                jarCommand, "-cvfm", outputPath, manifestPath, "-C", tempDir, ".");
+                jarCommand, "-cfm", outputPath, manifestPath, "-C", tempDir, ".");
         pb.directory(new File(cwd));
+        pb.redirectErrorStream(true); // 合并 stderr 到 stdout
         Process proc = pb.start();
+
+        // 消费输出，避免缓冲区满导致卡住
+        proc.getInputStream().transferTo(OutputStream.nullOutputStream());
+
         int exitCode = proc.waitFor();
 
         if (exitCode != 0) {
-            String stderr = readStream(proc.getErrorStream());
-            throw new Exception("Failed to create JAR: " + stderr);
+            throw new Exception("Failed to create JAR (exit code: " + exitCode + ")");
         }
     }
 

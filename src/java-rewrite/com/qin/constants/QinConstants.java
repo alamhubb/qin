@@ -139,6 +139,90 @@ public class QinConstants {
      */
     public static final String CMD_FLAG = "/c";
 
+    // ==================== 默认值常量 ====================
+
+    /**
+     * 默认源代码目录
+     */
+    public static final String DEFAULT_SOURCE_DIR = "src/main/java";
+
+    /**
+     * 默认测试目录
+     */
+    public static final String DEFAULT_TEST_DIR = "src/test/java";
+
+    /**
+     * 默认 JAR 名称
+     */
+    public static final String DEFAULT_JAR_NAME = "app.jar";
+
+    /**
+     * 默认入口类
+     */
+    public static final String DEFAULT_MAIN_CLASS = "Main";
+
+    // ==================== 配置获取工具方法 ====================
+
+    /**
+     * 获取源代码目录（安全获取，带默认值）
+     * 
+     * 【重要】所有需要获取源代码目录的地方都应该使用这个方法，
+     * 不要直接使用 parsed.srcDir() 或其他方式。
+     * 
+     * @param javaConfig Java 配置对象（可能为 null）
+     * @return 源代码目录路径
+     */
+    public static String getSourceDir(com.qin.types.JavaConfig javaConfig) {
+        if (javaConfig != null && javaConfig.sourceDir() != null && !javaConfig.sourceDir().isEmpty()) {
+            return javaConfig.sourceDir();
+        }
+        return DEFAULT_SOURCE_DIR;
+    }
+
+    /**
+     * 获取测试目录（安全获取，带默认值）
+     */
+    public static String getTestDir(com.qin.types.JavaConfig javaConfig) {
+        if (javaConfig != null && javaConfig.testDir() != null && !javaConfig.testDir().isEmpty()) {
+            return javaConfig.testDir();
+        }
+        return DEFAULT_TEST_DIR;
+    }
+
+    /**
+     * 获取输出目录（安全获取，带默认值）
+     */
+    public static String getOutputDir(com.qin.types.JavaConfig javaConfig) {
+        if (javaConfig != null && javaConfig.outputDir() != null && !javaConfig.outputDir().isEmpty()) {
+            return javaConfig.outputDir();
+        }
+        return BUILD_CLASSES_DIR; // 使用已有常量
+    }
+
+    /**
+     * 获取 JAR 名称（安全获取，带默认值）
+     */
+    public static String getJarName(com.qin.types.OutputConfig outputConfig) {
+        if (outputConfig != null && outputConfig.jarName() != null && !outputConfig.jarName().isEmpty()) {
+            return outputConfig.jarName();
+        }
+        return DEFAULT_JAR_NAME;
+    }
+
+    /**
+     * 判断是否为 Windows 系统
+     */
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    /**
+     * 获取类路径分隔符（Windows 用 ; ，其他用 :）
+     */
+    public static String getClasspathSeparator() {
+        return isWindows() ? ";" : ":";
+    }
+
     private QinConstants() {
         // 工具类，禁止实例化
     }
