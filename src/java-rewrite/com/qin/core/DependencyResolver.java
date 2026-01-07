@@ -94,7 +94,7 @@ public class DependencyResolver {
         }
 
         // 最后fallback: 当前目录
-        return System.getProperty("user.dir");
+        return QinConstants.getCwd();
     }
 
     /**
@@ -127,7 +127,7 @@ public class DependencyResolver {
     }
 
     private static String getGlobalRepoDir() {
-        String home = System.getProperty("user.home");
+        String home = QinConstants.getHomeDir();
         return Paths.get(home, ".qin", "libs").toString();
     }
 
@@ -222,7 +222,7 @@ public class DependencyResolver {
             args.add("--classpath");
 
             // 添加缓存配置
-            String cacheDir = System.getProperty("user.home") + "/.cache/coursier";
+            String cacheDir = QinConstants.getHomeDir() + "/.cache/coursier";
             args.add("--cache");
             args.add(cacheDir);
 

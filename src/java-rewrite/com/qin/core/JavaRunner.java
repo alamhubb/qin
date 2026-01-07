@@ -25,7 +25,7 @@ public class JavaRunner {
     private final IncrementalCompilationChecker incrementalChecker;
 
     public JavaRunner(QinConfig config, String classpath) {
-        this(config, classpath, System.getProperty("user.dir"));
+        this(config, classpath, QinConstants.getCwd());
     }
 
     public JavaRunner(QinConfig config, String classpath, String cwd) {

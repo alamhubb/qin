@@ -12,7 +12,7 @@ import java.util.*;
 public class InitCommand {
 
     public static void execute() throws IOException {
-        execute(System.getProperty("user.dir"));
+        execute(QinConstants.getCwd());
     }
 
     public static void execute(String projectDir) throws IOException {
@@ -82,7 +82,7 @@ public class InitCommand {
      */
     public static void executeInteractive() throws IOException {
         Scanner scanner = new Scanner(System.in);
-        Path cwd = Paths.get(System.getProperty("user.dir"));
+        Path cwd = Paths.get(QinConstants.getCwd());
         String defaultName = cwd.getFileName().toString();
 
         System.out.print("Project name (" + defaultName + "): ");

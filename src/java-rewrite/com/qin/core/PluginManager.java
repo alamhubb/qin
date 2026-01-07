@@ -1,5 +1,6 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.*;
 
 import java.util.*;
@@ -136,6 +137,6 @@ public class PluginManager {
      * Create plugin context
      */
     public PluginContext createContext(QinConfig config, boolean isDev) {
-        return new PluginContext(System.getProperty("user.dir"), config, isDev);
+        return new PluginContext(QinConstants.getCwd(), config, isDev);
     }
 }

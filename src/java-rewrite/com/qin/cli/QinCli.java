@@ -53,7 +53,7 @@ public class QinCli {
     private static void initProject() throws IOException {
         System.out.println(blue("→ Initializing new Qin project..."));
 
-        Path cwd = Paths.get(System.getProperty("user.dir"));
+        Path cwd = Paths.get(QinConstants.getCwd());
 
         // Create directories
         Files.createDirectories(cwd.resolve("src"));
@@ -94,7 +94,7 @@ public class QinCli {
             String file = args[0];
             Path filePath = Paths.get(file);
             if (!filePath.isAbsolute()) {
-                filePath = Paths.get(System.getProperty("user.dir")).resolve(file);
+                filePath = Paths.get(QinConstants.getCwd()).resolve(file);
             }
 
             // 使用插件系统自动检测文件类型
@@ -104,7 +104,7 @@ public class QinCli {
                 // 找到对应插件，使用插件运行
                 System.out.println(blue("→ Running with " + plugin.name() + " plugin..."));
                 String[] runArgs = Arrays.copyOfRange(args, 1, args.length);
-                plugin.run(filePath, runArgs, Paths.get(System.getProperty("user.dir")));
+                plugin.run(filePath, runArgs, Paths.get(QinConstants.getCwd()));
                 System.out.println(green("✓ Done!"));
                 return;
             }
@@ -141,7 +141,7 @@ public class QinCli {
 
         if (args.length > 0 && args[0].endsWith(".java")) {
             javaFile = args[0];
-            Path javaFilePath = Paths.get(System.getProperty("user.dir"), javaFile);
+            Path javaFilePath = Paths.get(QinConstants.getCwd(), javaFile);
             if (!Files.exists(javaFilePath)) {
                 System.err.println(red("Error: Java file not found: " + javaFile));
                 System.exit(1);
@@ -225,7 +225,7 @@ public class QinCli {
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
                     csCommand, config.repositories(), null,
-                    System.getProperty("user.dir"), config.localRep());
+                    QinConstants.getCwd(), config.localRep());
             classpath = resolver.resolveFromObject(deps);
         }
 
@@ -264,7 +264,7 @@ public class QinCli {
         Map<String, String> deps = config.dependencies();
         if (deps != null && !deps.isEmpty()) {
             // 1. 先尝试本地解析
-            LocalProjectResolver localResolver = new LocalProjectResolver(System.getProperty("user.dir"));
+            LocalProjectResolver localResolver = new LocalProjectResolver(QinConstants.getCwd());
             LocalProjectResolver.ResolutionResult localResult = localResolver.resolveDependencies(deps);
 
             // 2. 对于未在本地找到的依赖,从Maven下载
@@ -273,7 +273,7 @@ public class QinCli {
                 String csCommand = ensureCoursier();
                 DependencyResolver resolver = new DependencyResolver(
                         csCommand, config.repositories(), null,
-                        System.getProperty("user.dir"), config.localRep());
+                        QinConstants.getCwd(), config.localRep());
                 classpath = resolver.resolveFromObject(localResult.remoteDependencies);
             }
         }
@@ -291,7 +291,7 @@ public class QinCli {
     }
 
     private static void cleanProject() throws IOException {
-        Path buildDir = Paths.get(System.getProperty("user.dir"), "build");
+        Path buildDir = Paths.get(QinConstants.getCwd(), "build");
 
         if (Files.exists(buildDir)) {
             System.out.println(blue("→ Cleaning build directory..."));
@@ -327,7 +327,7 @@ public class QinCli {
         List<String> classpaths = new ArrayList<>();
 
         // 1. 先用 LocalProjectResolver 解析本地依赖
-        LocalProjectResolver localResolver = new LocalProjectResolver(System.getProperty("user.dir"));
+        LocalProjectResolver localResolver = new LocalProjectResolver(QinConstants.getCwd());
         LocalProjectResolver.ResolutionResult localResult = localResolver.resolveDependencies(deps);
 
         int localCount = 0;
@@ -346,7 +346,7 @@ public class QinCli {
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
                     csCommand, config.repositories(), null,
-                    System.getProperty("user.dir"), config.localRep());
+                    QinConstants.getCwd(), config.localRep());
 
             String remoteClasspath = resolver.resolveFromObject(localResult.remoteDependencies);
 
@@ -358,7 +358,7 @@ public class QinCli {
         }
 
         // Save classpath cache to .qin/classpath.json
-        Path cacheDir = com.qin.core.QinPaths.getQinDir(System.getProperty("user.dir"));
+        Path cacheDir = com.qin.core.QinPaths.getQinDir(QinConstants.getCwd());
         Files.createDirectories(cacheDir);
 
         String classpath = String.join(sep, classpaths);
@@ -367,13 +367,13 @@ public class QinCli {
         classpath = sortClasspathByConfigOrder(classpath, deps);
 
         String json = buildClasspathJson(classpath);
-        Files.writeString(com.qin.core.QinPaths.getClasspathCache(System.getProperty("user.dir")), json);
+        Files.writeString(com.qin.core.QinPaths.getClasspathCache(QinConstants.getCwd()), json);
 
         // 生成 IDEA 库配置文件（.idea/libraries/*.xml）
         if (!classpath.isEmpty()) {
             try {
                 System.out.println(blue("→ Generating IDEA library configs..."));
-                IdeaLibraryGenerator ideaGen = new IdeaLibraryGenerator(System.getProperty("user.dir"));
+                IdeaLibraryGenerator ideaGen = new IdeaLibraryGenerator(QinConstants.getCwd());
                 ideaGen.cleanLibraryConfigs(); // 清理旧配置
                 int libCount = ideaGen.generateLibraryConfigs(classpath);
                 System.out.println(green("  ✓ Generated " + libCount + " library configs in .idea/libraries/"));
@@ -394,7 +394,7 @@ public class QinCli {
      * @return classpath 字符串
      */
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
-        String cwd = System.getProperty("user.dir");
+        String cwd = QinConstants.getCwd();
         Path cacheFile = com.qin.core.QinPaths.getClasspathCache(cwd);
         Path configFile = Paths.get(cwd, QinConstants.CONFIG_FILE);
 
@@ -478,7 +478,7 @@ public class QinCli {
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
                     csCommand, config.repositories(), null,
-                    System.getProperty("user.dir"), config.localRep());
+                    QinConstants.getCwd(), config.localRep());
             classpath = resolver.resolveFromObject(deps);
         }
 

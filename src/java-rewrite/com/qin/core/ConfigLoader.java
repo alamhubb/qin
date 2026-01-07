@@ -19,7 +19,7 @@ public class ConfigLoader {
     private final Gson gson;
 
     public ConfigLoader() {
-        this(System.getProperty("user.dir"));
+        this(QinConstants.getCwd());
     }
 
     public ConfigLoader(String cwd) {

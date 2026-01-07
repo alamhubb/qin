@@ -1,6 +1,7 @@
 package com.qin.npm;
 
 import com.google.gson.*;
+import com.qin.constants.QinConstants;
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
@@ -27,12 +28,12 @@ public class NpmPackageManager {
     private String activeRegistry;
 
     public NpmPackageManager() {
-        this(System.getProperty("user.dir"));
+        this(QinConstants.getCwd());
     }
 
     public NpmPackageManager(String projectRoot) {
         this.projectRoot = projectRoot;
-        this.cacheDir = Paths.get(System.getProperty("user.home"), ".qin", "npm-cache").toString();
+        this.cacheDir = Paths.get(QinConstants.getHomeDir(), ".qin", "npm-cache").toString();
         this.nodeModulesDir = Paths.get(projectRoot, "node_modules").toString();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.activeRegistry = NPM_REGISTRIES[0];
@@ -402,7 +403,7 @@ public class NpmPackageManager {
         }
 
         // 解析参数
-        String projectDir = System.getProperty("user.dir");
+        String projectDir = QinConstants.getCwd();
         List<String> cmdArgs = new ArrayList<>();
 
         for (int i = 0; i < args.length; i++) {

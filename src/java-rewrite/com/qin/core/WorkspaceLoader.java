@@ -20,7 +20,7 @@ public class WorkspaceLoader {
     private final Gson gson = new Gson();
 
     public WorkspaceLoader() {
-        this(System.getProperty("user.dir"));
+        this(QinConstants.getCwd());
     }
 
     public WorkspaceLoader(String cwd) {

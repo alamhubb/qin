@@ -18,7 +18,7 @@ public class EnvironmentChecker {
     private final boolean isWindows;
 
     public EnvironmentChecker() {
-        String home = System.getProperty("user.home");
+        String home = QinConstants.getHomeDir();
         this.qinHome = Paths.get(home, ".qin").toString();
         this.isWindows = QinConstants.isWindows();
         this.csPath = isWindows

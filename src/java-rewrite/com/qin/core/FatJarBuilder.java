@@ -23,7 +23,7 @@ public class FatJarBuilder {
     private String jarCommand = "jar";
 
     public FatJarBuilder(QinConfig config, boolean debug) {
-        this(config, debug, System.getProperty("user.dir"));
+        this(config, debug, QinConstants.getCwd());
     }
 
     public FatJarBuilder(QinConfig config, boolean debug, String cwd) {

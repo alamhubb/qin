@@ -1,5 +1,6 @@
 package com.qin.java;
 
+import com.qin.constants.QinConstants;
 import com.qin.types.QinConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -18,7 +19,7 @@ public class PackageManager {
     private PackageJson pkg;
 
     public PackageManager() {
-        this(System.getProperty("user.dir"));
+        this(QinConstants.getCwd());
     }
 
     public PackageManager(String projectRoot) {
@@ -102,7 +103,7 @@ public class PackageManager {
         System.out.println("\n" + pkg.name + "@" + pkg.version + "\n");
 
         if ((pkg.dependencies == null || pkg.dependencies.isEmpty()) &&
-            (pkg.devDependencies == null || pkg.devDependencies.isEmpty())) {
+                (pkg.devDependencies == null || pkg.devDependencies.isEmpty())) {
             System.out.println("No dependencies");
             return;
         }
@@ -128,7 +129,7 @@ public class PackageManager {
     public List<String> getClasspath() {
         List<String> jars = new ArrayList<>();
         Path libPath = Paths.get(libDir);
-        
+
         if (!Files.exists(libPath)) {
             return jars;
         }

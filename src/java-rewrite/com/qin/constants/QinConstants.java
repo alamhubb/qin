@@ -225,6 +225,57 @@ public class QinConstants {
         return System.getProperty("os.name").toLowerCase().contains("mac");
     }
 
+    // ==================== 路径工具方法 ====================
+
+    /**
+     * 获取当前工作目录
+     */
+    public static String getCwd() {
+        return System.getProperty("user.dir");
+    }
+
+    /**
+     * 获取当前工作目录（Path 对象）
+     */
+    public static java.nio.file.Path getCwdPath() {
+        return java.nio.file.Paths.get(getCwd());
+    }
+
+    /**
+     * 获取用户主目录
+     */
+    public static String getHomeDir() {
+        return System.getProperty("user.home");
+    }
+
+    /**
+     * 获取用户主目录（Path 对象）
+     */
+    public static java.nio.file.Path getHomeDirPath() {
+        return java.nio.file.Paths.get(getHomeDir());
+    }
+
+    /**
+     * 获取 Qin 全局目录 (~/.qin)
+     */
+    public static java.nio.file.Path getQinHomeDir() {
+        return getHomeDirPath().resolve(QIN_DIR);
+    }
+
+    /**
+     * 获取项目级 Qin 目录 ({projectDir}/.qin)
+     */
+    public static java.nio.file.Path getProjectQinDir(String projectDir) {
+        return java.nio.file.Paths.get(projectDir, QIN_DIR);
+    }
+
+    /**
+     * 获取项目级 Qin 目录 ({projectDir}/.qin)
+     */
+    public static java.nio.file.Path getProjectQinDir(java.nio.file.Path projectDir) {
+        return projectDir.resolve(QIN_DIR);
+    }
+
     private QinConstants() {
         // 工具类，禁止实例化
     }

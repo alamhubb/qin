@@ -2,6 +2,7 @@ package com.qin.bsp;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.qin.constants.QinConstants;
 import java.io.*;
 import java.util.Scanner;
 
@@ -69,7 +70,7 @@ public class BspServer {
     }
 
     public static void main(String[] args) throws IOException {
-        String workDir = System.getProperty("user.dir");
+        String workDir = QinConstants.getCwd();
         new BspServer(workDir).run();
     }
 }
