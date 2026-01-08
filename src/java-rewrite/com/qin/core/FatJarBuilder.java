@@ -2,6 +2,7 @@ package com.qin.core;
 
 import com.qin.constants.QinConstants;
 import com.qin.types.*;
+import com.qin.utils.QinUtils;
 
 import java.io.*;
 import java.nio.file.*;
@@ -137,7 +138,7 @@ public class FatJarBuilder {
     private void createTempDir() throws IOException {
         Path temp = Paths.get(tempDir);
         if (Files.exists(temp)) {
-            deleteDir(temp);
+            QinUtils.deleteDir(temp);
         }
         Files.createDirectories(temp);
     }
@@ -332,7 +333,7 @@ public class FatJarBuilder {
     }
 
     private void cleanup() throws IOException {
-        deleteDir(Paths.get(tempDir));
+        QinUtils.deleteDir(Paths.get(tempDir));
     }
 
     private void copyDir(Path src, Path dest) throws IOException {
@@ -350,21 +351,6 @@ public class FatJarBuilder {
                     throw new UncheckedIOException(e);
                 }
             });
-        }
-    }
-
-    private void deleteDir(Path dir) throws IOException {
-        if (!Files.exists(dir))
-            return;
-        try (Stream<Path> walk = Files.walk(dir)) {
-            walk.sorted(Comparator.reverseOrder())
-                    .forEach(p -> {
-                        try {
-                            Files.delete(p);
-                        } catch (IOException e) {
-                            // Ignore
-                        }
-                    });
         }
     }
 

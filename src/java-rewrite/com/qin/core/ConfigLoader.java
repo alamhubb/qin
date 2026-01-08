@@ -65,15 +65,8 @@ public class ConfigLoader {
      * Auto-detect entry file
      */
     public String findEntry() {
-        String[] candidates = {
-                "src/main/java/com/subhuti/Main.java",
-                "src/Main.java",
-                "src/server/Main.java",
-                "src/App.java",
-                "src/Application.java"
-        };
-
-        for (String candidate : candidates) {
+        // 检查常用入口文件候选
+        for (String candidate : QinConstants.DEFAULT_ENTRY_CANDIDATES) {
             if (Files.exists(Paths.get(cwd, candidate))) {
                 return candidate;
             }

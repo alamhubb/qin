@@ -2,6 +2,7 @@ package com.qin.npm;
 
 import com.google.gson.*;
 import com.qin.constants.QinConstants;
+import com.qin.utils.QinUtils;
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;
@@ -34,7 +35,7 @@ public class NpmPackageManager {
     public NpmPackageManager(String projectRoot) {
         this.projectRoot = projectRoot;
         this.cacheDir = Paths.get(QinConstants.getHomeDir(), ".qin", "npm-cache").toString();
-        this.nodeModulesDir = Paths.get(projectRoot, "node_modules").toString();
+        this.nodeModulesDir = Paths.get(projectRoot, QinConstants.NODE_MODULES).toString();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.activeRegistry = NPM_REGISTRIES[0];
     }
@@ -62,7 +63,7 @@ public class NpmPackageManager {
             Path targetDir = Paths.get(nodeModulesDir, packageName);
             if (Files.exists(targetDir)) {
                 // 检查版本
-                Path pkgJsonPath = targetDir.resolve("package.json");
+                Path pkgJsonPath = targetDir.resolve(QinConstants.PACKAGE_JSON);
                 if (Files.exists(pkgJsonPath)) {
                     JsonObject existing = JsonParser.parseString(Files.readString(pkgJsonPath)).getAsJsonObject();
                     if (existing.has("version") && existing.get("version").getAsString().equals(resolvedVersion)) {
@@ -70,7 +71,7 @@ public class NpmPackageManager {
                         return true;
                     }
                 }
-                deleteDir(targetDir);
+                QinUtils.deleteDir(targetDir);
             }
 
             downloadAndExtract(tarballUrl, targetDir);
@@ -100,7 +101,7 @@ public class NpmPackageManager {
      */
     public boolean installAll() {
         try {
-            Path pkgJsonPath = Paths.get(projectRoot, "package.json");
+            Path pkgJsonPath = Paths.get(projectRoot, QinConstants.PACKAGE_JSON);
             if (!Files.exists(pkgJsonPath)) {
                 System.err.println("✗ package.json not found");
                 return false;
@@ -333,19 +334,6 @@ public class NpmPackageManager {
         return name.replace("/", "%2F");
     }
 
-    private void deleteDir(Path dir) throws IOException {
-        if (!Files.exists(dir))
-            return;
-        Files.walk(dir)
-                .sorted(Comparator.reverseOrder())
-                .forEach(p -> {
-                    try {
-                        Files.delete(p);
-                    } catch (IOException e) {
-                    }
-                });
-    }
-
     /**
      * 设置镜像源
      */
@@ -374,7 +362,7 @@ public class NpmPackageManager {
                     .filter(p -> !p.getFileName().toString().startsWith("."))
                     .forEach(p -> {
                         try {
-                            Path pkgJson = p.resolve("package.json");
+                            Path pkgJson = p.resolve(QinConstants.PACKAGE_JSON);
                             if (Files.exists(pkgJson)) {
                                 JsonObject pkg = JsonParser.parseString(Files.readString(pkgJson)).getAsJsonObject();
                                 String name = pkg.has("name") ? pkg.get("name").getAsString()

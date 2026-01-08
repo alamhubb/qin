@@ -4,6 +4,7 @@ import com.qin.core.*;
 import com.qin.types.*;
 import com.qin.plugins.*;
 import com.qin.constants.QinConstants;
+import com.qin.utils.QinUtils;
 
 import java.io.*;
 import java.nio.file.*;
@@ -295,7 +296,7 @@ public class QinCli {
 
         if (Files.exists(buildDir)) {
             System.out.println(blue("→ Cleaning build directory..."));
-            deleteDir(buildDir);
+            QinUtils.deleteDir(buildDir);
             System.out.println(green("✓ Cleaned build/"));
         } else {
             System.out.println(gray("✓ No build directory to clean"));
@@ -539,20 +540,6 @@ public class QinCli {
                   qin build             # Build Fat Jar
                   qin dev               # Start dev server
                 """);
-    }
-
-    private static void deleteDir(Path dir) throws IOException {
-        if (!Files.exists(dir))
-            return;
-        Files.walk(dir)
-                .sorted(Comparator.reverseOrder())
-                .forEach(p -> {
-                    try {
-                        Files.delete(p);
-                    } catch (IOException e) {
-                        // Ignore
-                    }
-                });
     }
 
     // ANSI color helpers

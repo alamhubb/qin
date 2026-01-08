@@ -19,10 +19,6 @@ public class WorkspaceScanner {
     // 默认的源码入口
     private static final String DEFAULT_MONOREPO_ENTRY = "./src/index.ts";
 
-    // 需要排除的目录
-    private static final Set<String> EXCLUDED_DIRS = Set.of(
-            "node_modules", ".git", ".qin", "dist", "build", ".cache", ".vscode");
-
     /**
      * 包信息
      */
@@ -80,10 +76,9 @@ public class WorkspaceScanner {
 
         while (current != null && current.getParent() != null) {
             // 检查是否是项目标志
-            boolean isProjectRoot = Files.exists(current.resolve(".vscode")) ||
-                    Files.exists(current.resolve(".idea")) ||
-                    Files.exists(current.resolve(QinConstants.CONFIG_FILE)) ||
-                    Files.exists(current.resolve("package.json"));
+            final Path finalCurrent = current;
+            boolean isProjectRoot = QinConstants.WORKSPACE_ROOT_MARKERS.stream()
+                    .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker)));
 
             if (isProjectRoot) {
                 topMostMatch = current; // 继续向上找，取最上层的
@@ -109,7 +104,7 @@ public class WorkspaceScanner {
             return;
         }
 
-        Path pkgPath = dir.resolve("package.json");
+        Path pkgPath = dir.resolve(QinConstants.PACKAGE_JSON);
 
         // 如果当前目录有 package.json，检查是否是一个包
         if (Files.exists(pkgPath)) {
@@ -136,7 +131,7 @@ public class WorkspaceScanner {
         // 递归扫描子目录
         try (var stream = Files.list(dir)) {
             stream.filter(Files::isDirectory)
-                    .filter(p -> !EXCLUDED_DIRS.contains(p.getFileName().toString()))
+                    .filter(p -> !QinConstants.EXCLUDED_DIRS.contains(p.getFileName().toString()))
                     .forEach(subDir -> scanPackagesRecursive(subDir, packages));
         } catch (IOException e) {
             // 忽略

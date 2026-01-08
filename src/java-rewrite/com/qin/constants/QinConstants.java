@@ -98,6 +98,16 @@ public class QinConstants {
     public static final String LOG_SUBDIR = "logs";
 
     /**
+     * Node.js package.json 文件名
+     */
+    public static final String PACKAGE_JSON = "package.json";
+
+    /**
+     * Node.js node_modules 目录名
+     */
+    public static final String NODE_MODULES = "node_modules";
+
+    /**
      * 日志文件扩展名
      */
     public static final String LOG_FILE_EXT = ".log";
@@ -145,6 +155,17 @@ public class QinConstants {
      * 默认测试目录
      */
     public static final String DEFAULT_TEST_DIR = "src/test/java";
+
+    /**
+     * Java 入口文件候选列表（按优先级排序）
+     * 用于自动检测项目入口
+     */
+    public static final java.util.List<String> DEFAULT_ENTRY_CANDIDATES = java.util.List.of(
+            "src/Main.java",
+            "src/App.java",
+            "src/Application.java",
+            "src/server/Main.java",
+            "src/main/java/Main.java");
 
     /**
      * 默认 JAR 名称

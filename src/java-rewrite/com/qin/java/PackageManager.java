@@ -30,7 +30,7 @@ public class PackageManager {
     }
 
     private PackageJson loadOrCreatePackageJson() {
-        Path pkgPath = Paths.get(projectRoot, "package.json");
+        Path pkgPath = Paths.get(projectRoot, QinConstants.PACKAGE_JSON);
         if (Files.exists(pkgPath)) {
             try {
                 String content = Files.readString(pkgPath);
@@ -54,7 +54,7 @@ public class PackageManager {
     }
 
     public void savePackageJson() throws IOException {
-        Path pkgPath = Paths.get(projectRoot, "package.json");
+        Path pkgPath = Paths.get(projectRoot, QinConstants.PACKAGE_JSON);
         Files.writeString(pkgPath, gson.toJson(pkg));
     }
 

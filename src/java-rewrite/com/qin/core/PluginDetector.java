@@ -1,5 +1,7 @@
 package com.qin.core;
 
+import com.qin.constants.QinConstants;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.stream.*;
@@ -55,7 +57,8 @@ public class PluginDetector {
 
     private boolean hasJavaFiles() {
         Path srcDir = Paths.get(cwd, "src");
-        if (!Files.exists(srcDir)) return false;
+        if (!Files.exists(srcDir))
+            return false;
 
         try (Stream<Path> walk = Files.walk(srcDir)) {
             return walk.anyMatch(p -> p.toString().endsWith(".java"));
@@ -66,7 +69,8 @@ public class PluginDetector {
 
     private boolean hasKotlinFiles() {
         Path srcDir = Paths.get(cwd, "src");
-        if (!Files.exists(srcDir)) return false;
+        if (!Files.exists(srcDir))
+            return false;
 
         try (Stream<Path> walk = Files.walk(srcDir)) {
             return walk.anyMatch(p -> p.toString().endsWith(".kt"));
@@ -76,15 +80,8 @@ public class PluginDetector {
     }
 
     private String findJavaEntry() {
-        String[] candidates = {
-            "src/Main.java",
-            "src/App.java",
-            "src/Application.java",
-            "src/server/Main.java",
-            "src/main/java/Main.java"
-        };
-
-        for (String candidate : candidates) {
+        // 检查常用入口文件候选
+        for (String candidate : QinConstants.DEFAULT_ENTRY_CANDIDATES) {
             if (Files.exists(Paths.get(cwd, candidate))) {
                 return candidate;
             }
@@ -92,15 +89,16 @@ public class PluginDetector {
 
         // 查找包含 main 方法的文件
         Path srcDir = Paths.get(cwd, "src");
-        if (!Files.exists(srcDir)) return null;
+        if (!Files.exists(srcDir))
+            return null;
 
         try (Stream<Path> walk = Files.walk(srcDir)) {
             return walk
-                .filter(p -> p.toString().endsWith(".java"))
-                .filter(this::hasMainMethod)
-                .map(p -> srcDir.getParent().relativize(p).toString().replace("\\", "/"))
-                .findFirst()
-                .orElse(null);
+                    .filter(p -> p.toString().endsWith(".java"))
+                    .filter(this::hasMainMethod)
+                    .map(p -> srcDir.getParent().relativize(p).toString().replace("\\", "/"))
+                    .findFirst()
+                    .orElse(null);
         } catch (IOException e) {
             return null;
         }
@@ -117,12 +115,12 @@ public class PluginDetector {
 
     private String findClientDir() {
         String[][] candidates = {
-            {"src/client", "index.html"},
-            {"client", "index.html"},
-            {"web", "index.html"},
-            {"frontend", "index.html"},
-            {"src/client", "package.json"},
-            {"client", "package.json"}
+                { "src/client", "index.html" },
+                { "client", "index.html" },
+                { "web", "index.html" },
+                { "frontend", "index.html" },
+                { "src/client", QinConstants.PACKAGE_JSON },
+                { "client", QinConstants.PACKAGE_JSON }
         };
 
         for (String[] candidate : candidates) {
@@ -138,11 +136,11 @@ public class PluginDetector {
 
     private boolean hasSpringBoot() {
         String[] configFiles = {
-            "src/resources/application.yml",
-            "src/resources/application.yaml",
-            "src/resources/application.properties",
-            "src/main/resources/application.yml",
-            "src/main/resources/application.properties"
+                "src/resources/application.yml",
+                "src/resources/application.yaml",
+                "src/resources/application.properties",
+                "src/main/resources/application.yml",
+                "src/main/resources/application.properties"
         };
 
         for (String file : configFiles) {
