@@ -15,5 +15,8 @@
         <toolWindow id="Qin" 
                     anchor="right"
                     factoryClass="com.qin.debug.QinToolWindowFactory"/>
+        <notificationGroup id="Qin Notifications" 
+                           displayType="BALLOON" 
+                           toolWindowId="Qin"/>
     </extensions>
 </idea-plugin>

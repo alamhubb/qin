@@ -35,7 +35,7 @@ public class DebugStartup implements ProjectActivity {
             return Unit.INSTANCE;
 
         // 初始化静态日志器
-        QinLogger.init(basePath);
+        QinLogger.init(basePath, project);
         QinLogger.info("[STARTUP] Qin 插件启动 - " + project.getName());
         QinLogger.info("[STARTUP] 项目路径: " + basePath);
 
