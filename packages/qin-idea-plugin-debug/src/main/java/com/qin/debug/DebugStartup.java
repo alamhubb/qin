@@ -44,59 +44,11 @@ public class DebugStartup implements ProjectActivity {
             configureProjectSdk(project);
         });
 
-        // 在后台线程扫描和执行 sync
+        // 在后台线程使用统一的 QinProjectSync 执行同步
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                // 发现所有 Qin 项目（包括当前目录和子目录）
-                List<Path> qinProjects = discoverQinProjects(Paths.get(basePath));
-
-                if (qinProjects.isEmpty()) {
-                    QinLogger.info("未检测到 Qin 项目");
-                    return;
-                }
-
-                QinLogger.info("检测到 " + qinProjects.size() + " 个 Qin 项目:");
-                for (Path p : qinProjects) {
-                    QinLogger.info("  - " + p.toString());
-                }
-
-                // 1. 先为所有项目生成 .iml（快速，让 IDEA 立即识别源代码）
-                Path ideaDir = Paths.get(basePath, ".idea");
-                for (Path projectPath : qinProjects) {
-                    generateImlFile(projectPath, false, ideaDir); // 启动时：已存在就跳过，但会注册模块
-                }
-
-                // 2. 再为每个项目执行 sync（可能较慢）
-                for (Path projectPath : qinProjects) {
-                    String relativePath = Paths.get(basePath).relativize(projectPath).toString();
-                    if (relativePath.isEmpty()) {
-                        relativePath = ".";
-                    }
-                    QinLogger.info("同步项目: " + relativePath);
-
-                    try {
-                        runQinSync(projectPath.toString());
-                        // sync 完成后，重新生成 .iml（此时会读取 classpath.json 添加依赖）
-                        generateImlFile(projectPath, true, ideaDir); // 强制更新以添加依赖
-                    } catch (Exception e) {
-                        QinLogger.error("同步失败 [" + relativePath + "]: " + e.getMessage());
-                    }
-                }
-
-                QinLogger.info("所有项目同步完成");
-
-                // 刷新项目，让 IDEA 重新加载库配置
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    try {
-                        com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
-                        QinLogger.info("项目模型已刷新");
-
-                        // 自动配置 Project SDK
-                        // SDK 配置已在启动时处理
-                    } catch (Exception e) {
-                        QinLogger.error("刷新项目失败: " + e.getMessage());
-                    }
-                });
+                QinProjectSync projectSync = new QinProjectSync(project);
+                projectSync.syncAllProjects();
             } catch (Exception e) {
                 QinLogger.error("自动同步失败: " + e.getMessage());
             }
@@ -121,6 +73,11 @@ public class DebugStartup implements ProjectActivity {
             }
         });
 
+        // 启动配置文件监听器（监听 qin.config.json 变化）
+        QinConfigWatcher watcher = new QinConfigWatcher(project);
+        watcher.startWatching();
+        QinLogger.info("[STARTUP] 配置文件监听器已启动");
+
         return Unit.INSTANCE;
     }
 
@@ -128,7 +85,7 @@ public class DebugStartup implements ProjectActivity {
      * 发现所有 Qin 项目
      * 使用 qin-cli 的 LocalProjectResolver
      */
-    private List<Path> discoverQinProjects(Path ideaProjectDir) {
+    public static List<Path> discoverQinProjects(Path ideaProjectDir) {
         return com.qin.core.LocalProjectResolver.scanAllProjects(ideaProjectDir.toString());
     }
 

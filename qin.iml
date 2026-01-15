@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="false">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_21" inherit-compiler-output="false">
     <exclude-output />
     <output url="file://$MODULE_DIR$/build/classes" />
     <output-test url="file://$MODULE_DIR$/build/test-classes" />
@@ -211,6 +211,36 @@
           <root url="jar://C:/Users/qinky/.qin/libs/org.virtuslab.scala-cli@config_2.13/org.virtuslab.scala-cli@config_2.13-0.2.1/org.virtuslab.scala-cli@config_2.13-0.2.1.jar!/" />
         </CLASSES>
       </library>
-    </orderEntry>
+    </orderEntry>    <!-- Qin Libraries -->
+    <orderEntry type="library" name="com.github.luben@zstd-jni-1.5.5" level="project" />
+    <orderEntry type="library" name="com.github.plokhotnyuk.jsoniter-scala@jsoniter-scala-core_2.13" level="project" />
+    <orderEntry type="library" name="com.google.code.gson@gson" level="project" />
+    <orderEntry type="library" name="commons-io@commons-io" level="project" />
+    <orderEntry type="library" name="io.get-coursier.jniutils@windows-jni-utils" level="project" />
+    <orderEntry type="library" name="io.get-coursier@coursier-cache_2.13" level="project" />
+    <orderEntry type="library" name="io.get-coursier@coursier-core_2.13" level="project" />
+    <orderEntry type="library" name="io.get-coursier@coursier-proxy-setup" level="project" />
+    <orderEntry type="library" name="io.get-coursier@coursier-util_2.13" level="project" />
+    <orderEntry type="library" name="io.get-coursier@coursier_2.13" level="project" />
+    <orderEntry type="library" name="io.github.alexarchambault.windows-ansi@windows-ansi" level="project" />
+    <orderEntry type="library" name="io.github.alexarchambault@concurrent-reference-hash-map" level="project" />
+    <orderEntry type="library" name="javax.inject@javax.inject" level="project" />
+    <orderEntry type="library" name="org.apache.commons@commons-compress" level="project" />
+    <orderEntry type="library" name="org.apache.xbean@xbean-reflect" level="project" />
+    <orderEntry type="library" name="org.codehaus.plexus@plexus-archiver" level="project" />
+    <orderEntry type="library" name="org.codehaus.plexus@plexus-classworlds" level="project" />
+    <orderEntry type="library" name="org.codehaus.plexus@plexus-container-default" level="project" />
+    <orderEntry type="library" name="org.codehaus.plexus@plexus-io" level="project" />
+    <orderEntry type="library" name="org.codehaus.plexus@plexus-utils" level="project" />
+    <orderEntry type="library" name="org.fusesource.jansi@jansi" level="project" />
+    <orderEntry type="library" name="org.iq80.snappy@snappy" level="project" />
+    <orderEntry type="library" name="org.scala-lang.modules@scala-collection-compat_2.13" level="project" />
+    <orderEntry type="library" name="org.scala-lang.modules@scala-xml_2.13" level="project" />
+    <orderEntry type="library" name="org.scala-lang@scala-library" level="project" />
+    <orderEntry type="library" name="org.slf4j@slf4j-api" level="project" />
+    <orderEntry type="library" name="org.tukaani@xz" level="project" />
+    <orderEntry type="library" name="org.virtuslab.scala-cli@config_2.13" level="project" />
+    <!-- End Qin Libraries -->
+
   </component>
 </module>

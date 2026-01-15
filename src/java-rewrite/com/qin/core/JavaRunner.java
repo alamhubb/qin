@@ -57,7 +57,8 @@ public class JavaRunner {
             // 使用 sourceDir 配置（默认 src/main/java）
             String srcDirStr = getSourceDir();
             if (srcDirStr == null) {
-                return CompileResult.failure("No source directory found (checked " + QinConstants.DEFAULT_SOURCE_DIR + " and src)");
+                return CompileResult
+                        .failure("No source directory found (checked " + QinConstants.DEFAULT_SOURCE_DIR + " and src)");
             }
             Path srcDir = Paths.get(cwd, srcDirStr);
             allJavaFiles.addAll(findJavaFiles(srcDir));
@@ -70,7 +71,8 @@ public class JavaRunner {
             }
 
             if (allJavaFiles.isEmpty()) {
-                return CompileResult.failure("No Java files found in " + srcDir + (Files.exists(testDir) ? " or " + testDir : ""));
+                return CompileResult
+                        .failure("No Java files found in " + srcDir + (Files.exists(testDir) ? " or " + testDir : ""));
             }
 
             // 复制资源文件
@@ -142,6 +144,20 @@ public class JavaRunner {
             options.add("-encoding");
             options.add(QinConstants.CHARSET_UTF8);
 
+            // 设置 source 和 target 版本
+            if (config.java() != null) {
+                String sourceVersion = config.java().source();
+                String targetVersion = config.java().target();
+                if (sourceVersion != null && !sourceVersion.isBlank()) {
+                    options.add("-source");
+                    options.add(sourceVersion);
+                }
+                if (targetVersion != null && !targetVersion.isBlank()) {
+                    options.add("-target");
+                    options.add(targetVersion);
+                }
+            }
+
             String fullCp = buildCompileClasspath();
             System.out.println("  [DEBUG] Compile classpath: "
                     + (fullCp != null ? fullCp.substring(0, Math.min(200, fullCp.length())) + "..." : "null"));
@@ -188,8 +204,8 @@ public class JavaRunner {
         javaArgs.add("java");
 
         // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
-        if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") || 
-            config.hasDependency("org.springframework.boot:spring-boot-starter")) {
+        if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") ||
+                config.hasDependency("org.springframework.boot:spring-boot-starter")) {
             javaArgs.add("-Dspring.classformat.ignore=true");
         }
 
@@ -251,8 +267,8 @@ public class JavaRunner {
         javaArgs.add("java");
 
         // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
-        if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") || 
-            config.hasDependency("org.springframework.boot:spring-boot-starter")) {
+        if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") ||
+                config.hasDependency("org.springframework.boot:spring-boot-starter")) {
             javaArgs.add("-Dspring.classformat.ignore=true");
         }
 

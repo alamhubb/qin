@@ -276,14 +276,28 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
     private class RefreshAction extends AnAction {
         RefreshAction() {
-            super("Refresh", "Reload Qin projects", AllIcons.Actions.Refresh);
+            super("Sync All", "Sync all Qin projects", AllIcons.Actions.Refresh);
         }
 
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            appendLog("\n=== Refreshing projects ===\n");
-            loadProjects();
-            appendLog("Projects reloaded\n");
+            appendLog("\n=== Syncing all projects ===\n");
+
+            // 使用统一的 QinProjectSync 进行完整同步
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                try {
+                    QinProjectSync projectSync = new QinProjectSync(project);
+                    projectSync.syncAllProjects();
+
+                    // 同步完成后刷新树形列表
+                    SwingUtilities.invokeLater(() -> {
+                        loadProjects();
+                        appendLog("=== Sync complete ===\n");
+                    });
+                } catch (Exception ex) {
+                    appendLog("Error: " + ex.getMessage() + "\n");
+                }
+            });
         }
     }
 

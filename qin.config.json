@@ -9,6 +9,7 @@
     },
     "java": {
         "version": "21",
+        "target": "21",
         "sourceDir": "src/java-rewrite",
         "outputDir": "build/classes",
         "encoding": "UTF-8"

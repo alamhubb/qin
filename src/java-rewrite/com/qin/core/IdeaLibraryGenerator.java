@@ -87,6 +87,9 @@ public class IdeaLibraryGenerator {
         // 1.5 确保 sourceFolder 存在（修复自闭合的 content 标签）
         content = ensureSourceFolder(content);
 
+        // 1.6 ✨ 设置模块级别的 LANGUAGE_LEVEL
+        content = ensureLanguageLevel(content);
+
         // 2. 移除所有旧的 Qin 库引用（可能有多个）
         while (content.contains("<!-- Qin Libraries -->")) {
             int startIdx = content.indexOf("<!-- Qin Libraries -->");
@@ -120,7 +123,120 @@ public class IdeaLibraryGenerator {
                     insertion + "$1</component>");
         }
 
+        // 4. ✨ 同时更新 misc.xml 的 languageLevel
+        updateMiscXmlLanguageLevel();
+
         Files.writeString(imlFile, content);
+    }
+
+    /**
+     * 确保 .iml 文件中有 LANGUAGE_LEVEL 属性
+     */
+    private String ensureLanguageLevel(String imlContent) {
+        // 从 qin.config.json 读取 Java 版本
+        String version = readJavaVersionFromConfig();
+        String languageLevel = "JDK_" + version;
+
+        // 检查是否已有 LANGUAGE_LEVEL 属性
+        if (imlContent.contains("LANGUAGE_LEVEL=")) {
+            // 更新现有属性
+            imlContent = imlContent.replaceAll(
+                    "LANGUAGE_LEVEL=\"[^\"]*\"",
+                    "LANGUAGE_LEVEL=\"" + languageLevel + "\"");
+        } else if (imlContent.contains("<component name=\"NewModuleRootManager\"")) {
+            // 添加 LANGUAGE_LEVEL 属性
+            imlContent = imlContent.replace(
+                    "<component name=\"NewModuleRootManager\"",
+                    "<component name=\"NewModuleRootManager\" LANGUAGE_LEVEL=\"" + languageLevel + "\"");
+        }
+
+        System.out.println("  [IDEA] 模块语言级别: " + languageLevel);
+        return imlContent;
+    }
+
+    /**
+     * 更新 misc.xml 中的 languageLevel
+     */
+    private void updateMiscXmlLanguageLevel() {
+        try {
+            Path miscXml = Paths.get(projectRoot, ".idea", "misc.xml");
+            if (!Files.exists(miscXml)) {
+                return;
+            }
+
+            String version = readJavaVersionFromConfig();
+            String content = Files.readString(miscXml);
+            String languageLevelAttr = "languageLevel=\"JDK_" + version + "\"";
+
+            if (content.contains("languageLevel=")) {
+                content = content.replaceAll("languageLevel=\"[^\"]*\"", languageLevelAttr);
+            } else if (content.contains("<component name=\"ProjectRootManager\"")) {
+                content = content.replace(
+                        "<component name=\"ProjectRootManager\"",
+                        "<component name=\"ProjectRootManager\" " + languageLevelAttr);
+            }
+
+            Files.writeString(miscXml, content);
+            System.out.println("  [IDEA] 项目语言级别: JDK_" + version);
+        } catch (IOException e) {
+            System.err.println("  [IDEA] 更新 misc.xml 失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 从 qin.config.json 读取 Java 版本
+     */
+    private String readJavaVersionFromConfig() {
+        try {
+            Path configPath = Paths.get(projectRoot, "qin.config.json");
+            if (!Files.exists(configPath)) {
+                return "21"; // 默认值
+            }
+
+            String json = Files.readString(configPath);
+
+            // 简单 JSON 解析：查找 java.target 或 java.version
+            // 优先使用 target
+            String target = extractJsonValue(json, "target");
+            if (target != null && !target.isBlank()) {
+                return target;
+            }
+
+            // 其次使用 version
+            String version = extractJsonValue(json, "version");
+            if (version != null && !version.isBlank()) {
+                return version;
+            }
+
+            return "21";
+        } catch (IOException e) {
+            return "21";
+        }
+    }
+
+    /**
+     * 从 JSON 中提取值（简单实现）
+     */
+    private String extractJsonValue(String json, String key) {
+        // 查找 "java" 对象中的键
+        int javaIdx = json.indexOf("\"java\"");
+        if (javaIdx < 0)
+            return null;
+
+        int keyIdx = json.indexOf("\"" + key + "\"", javaIdx);
+        if (keyIdx < 0)
+            return null;
+
+        int colonIdx = json.indexOf(":", keyIdx);
+        if (colonIdx < 0)
+            return null;
+
+        int quoteStart = json.indexOf("\"", colonIdx);
+        int quoteEnd = json.indexOf("\"", quoteStart + 1);
+        if (quoteStart < 0 || quoteEnd < 0)
+            return null;
+
+        return json.substring(quoteStart + 1, quoteEnd);
     }
 
     /**
