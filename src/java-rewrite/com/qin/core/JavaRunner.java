@@ -52,18 +52,36 @@ public class JavaRunner {
             // 2. 编译当前项目
             Files.createDirectories(Paths.get(outputDir));
 
-            // 使用 sourceDir 配置（默认 src）
-            String srcDirStr = getSourceDir();
-            Path srcDir = Paths.get(cwd, srcDirStr);
+            List<String> allJavaFiles = new ArrayList<>();
 
-            List<String> allJavaFiles = findJavaFiles(srcDir);
+            // 使用 sourceDir 配置（默认 src/main/java）
+            String srcDirStr = getSourceDir();
+            if (srcDirStr == null) {
+                return CompileResult.failure("No source directory found (checked " + QinConstants.DEFAULT_SOURCE_DIR + " and src)");
+            }
+            Path srcDir = Paths.get(cwd, srcDirStr);
+            allJavaFiles.addAll(findJavaFiles(srcDir));
+
+            // 同时查找测试目录（默认 src/test/java）
+            String testDirStr = getTestDir();
+            Path testDir = Paths.get(cwd, testDirStr);
+            if (Files.exists(testDir) && !testDir.equals(srcDir)) {
+                allJavaFiles.addAll(findJavaFiles(testDir));
+            }
+
             if (allJavaFiles.isEmpty()) {
-                return CompileResult.failure("No Java files found in " + srcDir);
+                return CompileResult.failure("No Java files found in " + srcDir + (Files.exists(testDir) ? " or " + testDir : ""));
             }
 
             // 复制资源文件
             ResourceCopier resourceCopier = new ResourceCopier(cwd, srcDirStr, outputDir);
             resourceCopier.copyResources();
+
+            // 如果存在测试资源目录，也进行复制
+            if (Files.exists(Paths.get(cwd, "src/test/resources"))) {
+                ResourceCopier testResourceCopier = new ResourceCopier(cwd, "src/test/resources", outputDir);
+                testResourceCopier.copyResources();
+            }
 
             System.out.println("  → Compiling " + allJavaFiles.size() + " files (javac handles incremental)...");
 
@@ -84,14 +102,24 @@ public class JavaRunner {
             return config.java().sourceDir();
         }
 
-        // 2. 自动检测：src/main/java > src > .
+        // 2. 自动检测：src/main/java > src
         if (Files.isDirectory(Paths.get(cwd, QinConstants.DEFAULT_SOURCE_DIR))) {
             return QinConstants.DEFAULT_SOURCE_DIR;
         }
         if (Files.isDirectory(Paths.get(cwd, "src"))) {
             return "src";
         }
-        return ".";
+        return null;
+    }
+
+    /**
+     * 获取测试目录
+     */
+    private String getTestDir() {
+        if (config.java() != null && config.java().testDir() != null) {
+            return config.java().testDir();
+        }
+        return QinConstants.DEFAULT_TEST_DIR;
     }
 
     /**
@@ -158,6 +186,13 @@ public class JavaRunner {
 
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("java");
+
+        // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
+        if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") || 
+            config.hasDependency("org.springframework.boot:spring-boot-starter")) {
+            javaArgs.add("-Dspring.classformat.ignore=true");
+        }
+
         javaArgs.add("-cp");
         javaArgs.add(fullClasspath);
         javaArgs.add(parsed.className());
@@ -214,6 +249,13 @@ public class JavaRunner {
 
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("java");
+
+        // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
+        if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") || 
+            config.hasDependency("org.springframework.boot:spring-boot-starter")) {
+            javaArgs.add("-Dspring.classformat.ignore=true");
+        }
+
         javaArgs.add("-cp");
         javaArgs.add(fullClasspath);
         javaArgs.add(className);

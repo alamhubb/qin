@@ -262,8 +262,11 @@ public class QinCli {
 
         // Resolve dependencies: 本地优先,远程fallback
         String classpath = "";
-        Map<String, String> deps = config.dependencies();
-        if (deps != null && !deps.isEmpty()) {
+        Map<String, String> deps = new HashMap<>();
+        if (config.dependencies() != null) deps.putAll(config.dependencies());
+        if (config.devDependencies() != null) deps.putAll(config.devDependencies());
+
+        if (!deps.isEmpty()) {
             // 1. 先尝试本地解析
             LocalProjectResolver localResolver = new LocalProjectResolver(QinConstants.getCwd());
             LocalProjectResolver.ResolutionResult localResult = localResolver.resolveDependencies(deps);
@@ -308,8 +311,11 @@ public class QinCli {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
-        Map<String, String> deps = config.dependencies();
-        if (deps == null || deps.isEmpty()) {
+        Map<String, String> deps = new HashMap<>();
+        if (config.dependencies() != null) deps.putAll(config.dependencies());
+        if (config.devDependencies() != null) deps.putAll(config.devDependencies());
+
+        if (deps.isEmpty()) {
             System.out.println(green("✓ No dependencies to sync"));
             return;
         }
@@ -321,7 +327,9 @@ public class QinCli {
      * 同步依赖的核心逻辑，返回生成的 classpath
      */
     private static String syncDependenciesCore(QinConfig config) throws Exception {
-        Map<String, String> deps = config.dependencies();
+        Map<String, String> deps = new HashMap<>();
+        if (config.dependencies() != null) deps.putAll(config.dependencies());
+        if (config.devDependencies() != null) deps.putAll(config.devDependencies());
 
         System.out.println(blue("→ Syncing dependencies..."));
         String sep = QinConstants.getClasspathSeparator();
@@ -474,8 +482,11 @@ public class QinCli {
         // Compile main source first
         System.out.println(blue("→ Compiling source code..."));
         String classpath = "";
-        Map<String, String> deps = config.dependencies();
-        if (deps != null && !deps.isEmpty()) {
+        Map<String, String> deps = new HashMap<>();
+        if (config.dependencies() != null) deps.putAll(config.dependencies());
+        if (config.devDependencies() != null) deps.putAll(config.devDependencies());
+
+        if (!deps.isEmpty()) {
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
                     csCommand, config.repositories(), null,

@@ -1,9 +1,7 @@
 package com.qin.bsp;
 
-import com.qin.constants.QinConstants;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.qin.bsp.model.*;
 import com.qin.constants.QinConstants;
 import java.io.*;
 import java.nio.file.*;
@@ -93,8 +91,14 @@ public class BspHandler {
     }
 
     /**
-     * 获取输出目录
+     * 获取测试代码目录
      */
+    public String getTestDir() {
+        if (project == null) {
+            loadProject();
+        }
+        return project.getTestDir();
+    }
     public String getOutputDir() {
         if (project == null) {
             loadProject();

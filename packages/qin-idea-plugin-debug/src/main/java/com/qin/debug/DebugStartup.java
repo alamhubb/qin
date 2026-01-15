@@ -500,23 +500,38 @@ public class DebugStartup implements ProjectActivity {
             QinLogger.info("[iml]   iml 路径: " + imlPath);
             QinLogger.info("[iml]   forceOverwrite: " + forceOverwrite);
 
-            // 如果已存在且不强制覆盖，跳过生成但仍注册
+            // 如果已存在且不强制覆盖，检查是否需要修复 sourceFolder
             boolean needGenerate = !Files.exists(imlPath) || forceOverwrite;
 
             if (!needGenerate) {
-                QinLogger.info("[iml]   .iml 已存在，跳过生成");
+                QinLogger.info("[iml]   .iml 已存在，检查是否需要修复...");
+                // 检查现有 .iml 是否缺少 sourceFolder
+                String existingContent = Files.readString(imlPath);
+                if (!existingContent.contains("<sourceFolder")) {
+                    QinLogger.info("[iml]   检测到缺少 sourceFolder，尝试修复...");
+                    String fixedContent = fixMissingSourceFolder(existingContent, projectPath);
+                    if (fixedContent != null && !fixedContent.equals(existingContent)) {
+                        Files.writeString(imlPath, fixedContent);
+                        QinLogger.info("[iml]   已修复 sourceFolder 配置");
+                    }
+                } else {
+                    QinLogger.info("[iml]   sourceFolder 已存在，无需修复");
+                }
             } else {
                 // 使用 BSP 处理器获取项目信息
                 com.qin.bsp.BspHandler bspHandler = new com.qin.bsp.BspHandler(projectPath.toString());
 
                 // 获取源代码目录（优先从 qin.config.json）
                 String sourceDir = bspHandler.getSourceDir();
+                String testDir = bspHandler.getTestDir();
+
                 // 检查目录是否实际存在
                 if (!Files.exists(projectPath.resolve(sourceDir))) {
                     // 回退到自动检测
                     sourceDir = detectSourceDir(projectPath);
                 }
                 QinLogger.info("[iml]   sourceDir: " + sourceDir);
+                QinLogger.info("[iml]   testDir: " + testDir);
 
                 if (sourceDir == null) {
                     QinLogger.info("[iml]   未找到源代码目录");
@@ -533,6 +548,15 @@ public class DebugStartup implements ProjectActivity {
                     excludeFolders.append("          <excludeFolder url=\"file://$MODULE_DIR$/")
                             .append(excludeDir)
                             .append("\" />\n");
+                }
+
+                // 生成源文件夹 XML
+                StringBuilder sourceFolders = new StringBuilder();
+                sourceFolders.append("      <sourceFolder url=\"file://$MODULE_DIR$/").append(sourceDir)
+                        .append("\" isTestSource=\"false\" />\n");
+                if (testDir != null && Files.exists(projectPath.resolve(testDir))) {
+                    sourceFolders.append("      <sourceFolder url=\"file://$MODULE_DIR$/").append(testDir)
+                            .append("\" isTestSource=\"true\" />\n");
                 }
 
                 // 通过 BSP 获取依赖（classpath）
@@ -586,14 +610,13 @@ public class DebugStartup implements ProjectActivity {
                             <output url="file://$MODULE_DIR$/%s" />
                             <output-test url="file://$MODULE_DIR$/%s" />
                             <content url="file://$MODULE_DIR$">
-                              <sourceFolder url="file://$MODULE_DIR$/%s" isTestSource="false" />
-                        %s    </content>
+                        %s%s    </content>
                             <orderEntry type="inheritedJdk" />
                             <orderEntry type="sourceFolder" forTests="false" />
                         %s  </component>
                         </module>
                         """.formatted(outputDir, outputDir.replace("classes", "test-classes"),
-                        sourceDir, excludeFolders.toString(), dependencyEntries.toString());
+                        sourceFolders.toString(), excludeFolders.toString(), dependencyEntries.toString());
 
                 Files.writeString(imlPath, imlContent);
                 QinLogger.info("生成 .iml 文件: " + projectName + ".iml（通过 BSP）");
@@ -713,5 +736,61 @@ public class DebugStartup implements ProjectActivity {
             // 忽略
         }
         return null;
+    }
+
+    /**
+     * 修复缺少 sourceFolder 的 .iml 文件内容
+     * 将自闭合的 <content url="..." /> 转换为包含 sourceFolder 的完整形式
+     */
+    private static String fixMissingSourceFolder(String imlContent, Path projectPath) {
+        try {
+            // 检测源代码目录
+            String sourceDir = detectSourceDir(projectPath);
+            if (sourceDir == null) {
+                QinLogger.info("[iml]   无法检测到源代码目录，跳过修复");
+                return imlContent;
+            }
+
+            // 检查是否是自闭合的 content 标签
+            java.util.regex.Pattern selfClosingPattern = java.util.regex.Pattern.compile(
+                    "<content\\s+url=\"[^\"]*\"\\s*/>");
+            java.util.regex.Matcher matcher = selfClosingPattern.matcher(imlContent);
+
+            if (matcher.find()) {
+                // 找到自闭合的 content 标签，需要替换为完整形式
+                String originalTag = matcher.group();
+                int urlStart = originalTag.indexOf("url=\"") + 5;
+                int urlEnd = originalTag.indexOf("\"", urlStart);
+                String url = originalTag.substring(urlStart, urlEnd);
+
+                // 构建完整的 content 标签
+                StringBuilder newContent = new StringBuilder();
+                newContent.append("<content url=\"").append(url).append("\">\n");
+                newContent.append("      <sourceFolder url=\"file://$MODULE_DIR$/")
+                        .append(sourceDir).append("\" isTestSource=\"false\" />\n");
+
+                // 检查是否有测试目录
+                Path testDir = projectPath.resolve("src/test/java");
+                if (Files.exists(testDir)) {
+                    newContent.append(
+                            "      <sourceFolder url=\"file://$MODULE_DIR$/src/test/java\" isTestSource=\"true\" />\n");
+                }
+
+                // 添加排除目录
+                for (String excludeDir : QinConstants.IML_EXCLUDED_DIRS) {
+                    newContent.append("          <excludeFolder url=\"file://$MODULE_DIR$/")
+                            .append(excludeDir).append("\" />\n");
+                }
+
+                newContent.append("    </content>");
+
+                return imlContent.replace(originalTag, newContent.toString());
+            }
+
+            return imlContent;
+        } catch (Exception e) {
+            QinLogger.error("[iml]   修复 sourceFolder 失败: " + e.getMessage());
+            return imlContent;
+        }
     }
 }

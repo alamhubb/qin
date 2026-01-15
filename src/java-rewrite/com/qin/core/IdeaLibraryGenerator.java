@@ -84,6 +84,9 @@ public class IdeaLibraryGenerator {
         // 1. 配置编译输出路径为 build/classes（与 qin 一致）
         content = configureOutputPath(content);
 
+        // 1.5 确保 sourceFolder 存在（修复自闭合的 content 标签）
+        content = ensureSourceFolder(content);
+
         // 2. 移除所有旧的 Qin 库引用（可能有多个）
         while (content.contains("<!-- Qin Libraries -->")) {
             int startIdx = content.indexOf("<!-- Qin Libraries -->");
@@ -160,6 +163,92 @@ public class IdeaLibraryGenerator {
         }
 
         return imlContent;
+    }
+
+    /**
+     * 确保 sourceFolder 存在
+     * 修复自闭合的 content 标签，例如 <content url="..." /> 改为包含 sourceFolder 的完整形式
+     */
+    private String ensureSourceFolder(String imlContent) {
+        // 检查是否已经有 sourceFolder
+        if (imlContent.contains("<sourceFolder")) {
+            return imlContent;
+        }
+
+        // 检测源代码目录
+        String sourceDir = detectSourceDir();
+        if (sourceDir == null) {
+            return imlContent;
+        }
+
+        // 检查是否是自闭合的 content 标签
+        // 匹配 <content url="file://$MODULE_DIR$" /> 或类似的自闭合形式
+        java.util.regex.Pattern selfClosingPattern = java.util.regex.Pattern.compile(
+                "<content\\s+url=\"[^\"]*\"\\s*/>");
+        java.util.regex.Matcher matcher = selfClosingPattern.matcher(imlContent);
+
+        if (matcher.find()) {
+            // 找到自闭合的 content 标签，需要替换为完整形式
+            String originalTag = matcher.group();
+            // 提取 url 属性
+            int urlStart = originalTag.indexOf("url=\"") + 5;
+            int urlEnd = originalTag.indexOf("\"", urlStart);
+            String url = originalTag.substring(urlStart, urlEnd);
+
+            // 构建完整的 content 标签
+            StringBuilder newContent = new StringBuilder();
+            newContent.append("<content url=\"").append(url).append("\">\n");
+            newContent.append("      <sourceFolder url=\"file://$MODULE_DIR$/")
+                    .append(sourceDir).append("\" isTestSource=\"false\" />\n");
+
+            // 检查是否有测试目录
+            String testDir = detectTestDir();
+            if (testDir != null) {
+                newContent.append("      <sourceFolder url=\"file://$MODULE_DIR$/")
+                        .append(testDir).append("\" isTestSource=\"true\" />\n");
+            }
+
+            // 添加排除目录（.iml 中常用的排除目录）
+            String[] imlExcludedDirs = { "build", ".qin", "out", "libs", "node_modules", "dist", "target" };
+            for (String excludeDir : imlExcludedDirs) {
+                newContent.append("          <excludeFolder url=\"file://$MODULE_DIR$/")
+                        .append(excludeDir).append("\" />\n");
+            }
+
+            newContent.append("    </content>");
+
+            imlContent = imlContent.replace(originalTag, newContent.toString());
+        }
+
+        return imlContent;
+    }
+
+    /**
+     * 检测源代码目录
+     */
+    private String detectSourceDir() {
+        // 优先检测标准 Maven 结构
+        Path mavenSrc = Paths.get(projectRoot, QinConstants.DEFAULT_SOURCE_DIR);
+        if (Files.exists(mavenSrc)) {
+            return QinConstants.DEFAULT_SOURCE_DIR;
+        }
+        // 其次检测简单结构
+        Path simpleSrc = Paths.get(projectRoot, "src");
+        if (Files.exists(simpleSrc) && Files.isDirectory(simpleSrc)) {
+            return "src";
+        }
+        return null;
+    }
+
+    /**
+     * 检测测试目录
+     */
+    private String detectTestDir() {
+        Path testDir = Paths.get(projectRoot, "src/test/java");
+        if (Files.exists(testDir)) {
+            return "src/test/java";
+        }
+        return null;
     }
 
     /**
