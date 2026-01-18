@@ -16,18 +16,46 @@ import static com.qin.constants.QinConstants.*;
 /**
  * Qin 项目同步工具类
  * 统一处理所有同步逻辑，被以下场景调用：
- * - 插件启动时
+ * - 插件启动时（静默模式）
  * - qin.config.json 变化时
- * - 手动点击刷新时
+ * - 手动点击刷新时（非静默模式）
  */
 public class QinProjectSync {
 
     private final Project project;
     private final String basePath;
 
+    /**
+     * 静默模式：不显示通知弹窗，只写日志
+     * 默认为 true（静默模式）
+     */
+    private boolean silentMode = true;
+
     public QinProjectSync(@NotNull Project project) {
         this.project = project;
         this.basePath = project.getBasePath();
+    }
+
+    /**
+     * 设置通知模式
+     * @param silent true=静默模式（不弹通知），false=正常模式（显示通知）
+     * @return this，支持链式调用
+     */
+    public QinProjectSync setSilentMode(boolean silent) {
+        this.silentMode = silent;
+        return this;
+    }
+
+    /**
+     * 检查缓存是否有效
+     * 使用通用的 CacheValidator 工具类
+     */
+    public boolean isCacheValid(Path projectPath) {
+        boolean valid = com.qin.core.CacheValidator.isCacheValid(projectPath);
+        if (valid) {
+            QinLogger.info("[Sync] 缓存有效，跳过同步: " + projectPath.getFileName());
+        }
+        return valid;
     }
 
     /**
@@ -49,7 +77,9 @@ public class QinProjectSync {
             QinConfig config = QinConfig.load(projectPath.toString());
             if (config == null) {
                 QinLogger.error("[Sync] 无法解析配置文件");
-                QinLogger.notifyError("Qin Sync Failed", "无法解析 " + projectName + " 的配置文件");
+                if (!silentMode) {
+                    QinLogger.notifyError("Qin Sync Failed", "无法解析 " + projectName + " 的配置文件");
+                }
                 return;
             }
 
@@ -63,18 +93,31 @@ public class QinProjectSync {
             refreshProject();
 
             QinLogger.info("[Sync] ========== 项目同步完成 ==========");
-            QinLogger.notifySuccess("Qin Sync Complete", projectName + " 同步成功");
+            if (!silentMode) {
+                QinLogger.notifySuccess("Qin Sync Complete", projectName + " 同步成功");
+            }
 
         } catch (Exception e) {
             QinLogger.error("[Sync] 同步失败: " + e.getMessage());
-            QinLogger.notifyError("Qin Sync Failed", projectName + " 同步失败: " + e.getMessage());
+            if (!silentMode) {
+                QinLogger.notifyError("Qin Sync Failed", projectName + " 同步失败: " + e.getMessage());
+            }
         }
     }
 
     /**
      * 同步所有检测到的 Qin 项目
+     * 默认会检查缓存，缓存有效则跳过同步
      */
     public void syncAllProjects() {
+        syncAllProjects(true);
+    }
+
+    /**
+     * 同步所有检测到的 Qin 项目
+     * @param checkCache true=检查缓存有效性，有效则跳过；false=强制同步
+     */
+    public void syncAllProjects(boolean checkCache) {
         if (basePath == null)
             return;
 
@@ -89,6 +132,10 @@ public class QinProjectSync {
             QinLogger.info("[Sync] 检测到 " + qinProjects.size() + " 个 Qin 项目");
 
             for (Path projectPath : qinProjects) {
+                // 检查缓存是否有效
+                if (checkCache && isCacheValid(projectPath)) {
+                    continue; // 缓存有效，跳过同步
+                }
                 syncProject(projectPath);
             }
 

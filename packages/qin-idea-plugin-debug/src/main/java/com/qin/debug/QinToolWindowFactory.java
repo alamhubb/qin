@@ -175,8 +175,13 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
         new Thread(() -> {
             try {
-                ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG,
-                        QIN_CMD, task.command);
+                // sync 命令使用 --force 强制同步
+                ProcessBuilder pb;
+                if ("sync".equals(task.command)) {
+                    pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "sync", "--force");
+                } else {
+                    pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, task.command);
+                }
                 pb.directory(new File(task.projectPath));
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
@@ -283,11 +288,31 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         public void actionPerformed(@NotNull AnActionEvent e) {
             appendLog("\n=== Syncing all projects ===\n");
 
-            // 使用统一的 QinProjectSync 进行完整同步
+            // 使用 qin sync --all --force 命令进行完整同步
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
                 try {
-                    QinProjectSync projectSync = new QinProjectSync(project);
-                    projectSync.syncAllProjects();
+                    appendLog("[调用 qin sync --all --force]\n");
+
+                    // 直接调用 CLI 命令，由 CLI 处理所有逻辑
+                    ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "sync", "--all", "--force");
+                    pb.directory(new File(project.getBasePath()));
+                    pb.redirectErrorStream(true);
+
+                    Process process = pb.start();
+                    try (BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(process.getInputStream(), CHARSET_UTF8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            appendLog(line);
+                        }
+                    }
+
+                    int exitCode = process.waitFor();
+                    if (exitCode == 0) {
+                        QinLogger.notifySuccess("Qin Sync Complete", "所有项目同步成功");
+                    } else {
+                        QinLogger.notifyError("Qin Sync Failed", "同步失败，退出码: " + exitCode);
+                    }
 
                     // 同步完成后刷新树形列表
                     SwingUtilities.invokeLater(() -> {

@@ -35,7 +35,7 @@ public class QinCli {
                 case "dev" -> devMode(cmdArgs);
                 case "compile" -> compileProject(cmdArgs);
                 case "clean" -> cleanProject();
-                case "sync" -> syncDependencies();
+                case "sync" -> syncDependencies(cmdArgs);
                 case "test" -> runTests(cmdArgs);
                 case "help", "-h", "--help" -> printHelp();
                 case "version", "-v", "--version" -> System.out.println("qin " + VERSION);
@@ -306,7 +306,33 @@ public class QinCli {
         }
     }
 
-    private static void syncDependencies() throws Exception {
+    private static void syncDependencies(String[] args) throws Exception {
+        // 解析参数
+        boolean syncAll = Arrays.asList(args).contains("--all");
+        boolean force = Arrays.asList(args).contains("--force");
+
+        if (syncAll) {
+            // 同步所有子项目
+            syncAllProjects(force);
+        } else {
+            // 同步当前项目
+            syncCurrentProject(force);
+        }
+    }
+
+    /**
+     * 同步当前项目的依赖
+     */
+    private static void syncCurrentProject(boolean force) throws Exception {
+        String cwd = QinConstants.getCwd();
+
+        // 如果不是强制同步，检查缓存
+        if (!force && CacheValidator.isCacheValid(cwd)) {
+            System.out.println(blue("→ Using cached dependencies (" + QinPaths.CLASSPATH_CACHE + ")"));
+            System.out.println(green("✓ Dependencies up to date (use --force to re-sync)"));
+            return;
+        }
+
         System.out.println(blue("→ Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
@@ -322,6 +348,121 @@ public class QinCli {
 
         syncDependenciesCore(config);
     }
+
+    /**
+     * 同步所有子项目（Monorepo 场景）
+     * 向上查找根目录，递归扫描所有 qin.config.json 项目
+     */
+    private static void syncAllProjects(boolean force) throws Exception {
+        String cwd = QinConstants.getCwd();
+        
+        System.out.println(blue("→ Scanning for Qin projects..."));
+        List<Path> projects = LocalProjectResolver.scanAllProjects(cwd);
+
+        if (projects.isEmpty()) {
+            System.out.println(yellow("✗ No Qin projects found"));
+            return;
+        }
+
+        System.out.println(blue("→ Found " + projects.size() + " Qin project(s)"));
+
+        // 统计
+        int synced = 0;
+        int skipped = 0;
+        int failed = 0;
+
+        // 遍历所有项目，异步执行 sync
+        List<Thread> threads = new ArrayList<>();
+        List<SyncResult> results = Collections.synchronizedList(new ArrayList<>());
+
+        for (Path projectPath : projects) {
+            Thread t = new Thread(() -> {
+                try {
+                    String projectName = projectPath.getFileName().toString();
+                    
+                    // 如果不是强制同步，检查缓存
+                    if (!force && CacheValidator.isCacheValid(projectPath)) {
+                        System.out.println(gray("  ○ " + projectName + " (cached, skipped)"));
+                        results.add(new SyncResult(projectName, SyncStatus.SKIPPED));
+                        return;
+                    }
+
+                    // 执行 qin sync
+                    System.out.println(blue("  → Syncing " + projectName + "..."));
+                    
+                    ProcessBuilder pb = new ProcessBuilder(
+                            QinConstants.CMD_PREFIX, QinConstants.CMD_FLAG,
+                            QinConstants.QIN_CMD, "sync");
+                    if (force) {
+                        pb = new ProcessBuilder(
+                                QinConstants.CMD_PREFIX, QinConstants.CMD_FLAG,
+                                QinConstants.QIN_CMD, "sync", "--force");
+                    }
+                    pb.directory(projectPath.toFile());
+                    pb.redirectErrorStream(true);
+
+                    Process process = pb.start();
+                    
+                    // 读取输出（静默处理）
+                    try (BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(process.getInputStream(), "UTF-8"))) {
+                        while (reader.readLine() != null) {
+                            // 静默消费输出
+                        }
+                    }
+
+                    int exitCode = process.waitFor();
+                    if (exitCode == 0) {
+                        System.out.println(green("  ✓ " + projectName));
+                        results.add(new SyncResult(projectName, SyncStatus.SUCCESS));
+                    } else {
+                        System.out.println(red("  ✗ " + projectName + " (exit: " + exitCode + ")"));
+                        results.add(new SyncResult(projectName, SyncStatus.FAILED));
+                    }
+                } catch (Exception e) {
+                    String projectName = projectPath.getFileName().toString();
+                    System.out.println(red("  ✗ " + projectName + " (" + e.getMessage() + ")"));
+                    results.add(new SyncResult(projectName, SyncStatus.FAILED));
+                }
+            });
+            threads.add(t);
+            t.start();
+        }
+
+        // 等待所有线程完成
+        for (Thread t : threads) {
+            t.join();
+        }
+
+        // 统计结果
+        for (SyncResult r : results) {
+            switch (r.status) {
+                case SUCCESS -> synced++;
+                case SKIPPED -> skipped++;
+                case FAILED -> failed++;
+            }
+        }
+
+        // 输出汇总
+        System.out.println();
+        if (failed > 0) {
+            System.out.println(yellow("⚠ Sync completed: " + synced + " synced, " + skipped + " skipped, " + failed + " failed"));
+        } else {
+            System.out.println(green("✓ All projects synced: " + synced + " synced, " + skipped + " skipped"));
+        }
+    }
+
+    /**
+     * 同步结果状态
+     */
+    private enum SyncStatus {
+        SUCCESS, SKIPPED, FAILED
+    }
+
+    /**
+     * 同步结果
+     */
+    private record SyncResult(String projectName, SyncStatus status) {}
 
     /**
      * 同步依赖的核心逻辑，返回生成的 classpath
@@ -404,31 +545,14 @@ public class QinCli {
      */
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
         String cwd = QinConstants.getCwd();
-        Path cacheFile = com.qin.core.QinPaths.getClasspathCache(cwd);
-        Path configFile = Paths.get(cwd, QinConstants.CONFIG_FILE);
 
-        // 检查缓存是否有效
-        if (Files.exists(cacheFile) && Files.exists(configFile)) {
-            try {
-                if (Files.getLastModifiedTime(cacheFile).compareTo(
-                        Files.getLastModifiedTime(configFile)) > 0) {
-                    String json = Files.readString(cacheFile);
-                    String classpath = parseClasspathFromJson(json);
-                    if (!classpath.isEmpty()) {
-                        // 验证所有 jar 文件是否存在
-                        if (validateClasspathFiles(classpath)) {
-                            System.out.println(
-                                    blue("→ Using cached dependencies (" + com.qin.core.QinPaths.CLASSPATH_CACHE
-                                            + ")"));
-                            return classpath;
-                        } else {
-                            System.out.println(
-                                    yellow("→ Cache invalid (some jars missing), re-syncing..."));
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                // 缓存读取失败，重新同步
+        // 使用通用缓存验证器检查缓存
+        if (CacheValidator.isCacheValid(cwd)) {
+            String classpath = CacheValidator.getCachedClasspath(cwd);
+            if (classpath != null) {
+                System.out.println(
+                        blue("→ Using cached dependencies (" + com.qin.core.QinPaths.CLASSPATH_CACHE + ")"));
+                return classpath;
             }
         }
 
@@ -438,21 +562,11 @@ public class QinCli {
 
     /**
      * 验证 classpath 中的所有文件是否存在
+     * @deprecated 使用 CacheValidator.validateClasspathFiles() 代替
      */
+    @Deprecated
     private static boolean validateClasspathFiles(String classpath) {
-        if (classpath == null || classpath.isEmpty()) {
-            return true;
-        }
-        String sep = QinConstants.getClasspathSeparator();
-        String[] paths = classpath.split(sep);
-        for (String path : paths) {
-            if (path.isEmpty())
-                continue;
-            if (!Files.exists(Paths.get(path))) {
-                return false;
-            }
-        }
-        return true;
+        return CacheValidator.validateClasspathFiles(classpath);
     }
 
     private static void runTests(String[] args) throws Exception {

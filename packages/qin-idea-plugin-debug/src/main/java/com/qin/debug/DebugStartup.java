@@ -44,34 +44,19 @@ public class DebugStartup implements ProjectActivity {
             configureProjectSdk(project);
         });
 
-        // 在后台线程使用统一的 QinProjectSync 执行同步
+        // 在后台线程使用统一的 QinProjectSync 执行同步（静默模式，检查缓存）
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 QinProjectSync projectSync = new QinProjectSync(project);
-                projectSync.syncAllProjects();
+                // 默认静默模式，检查缓存有效性
+                projectSync.setSilentMode(true).syncAllProjects(true);
             } catch (Exception e) {
                 QinLogger.error("自动同步失败: " + e.getMessage());
             }
         });
 
-        // 自动打开 Qin 工具窗口（如果有任何 Qin 项目）
-        ApplicationManager.getApplication().invokeLater(() -> {
-            // 检查是否有 qin.config.json（在根目录或子目录）
-            try {
-                boolean hasQinProject = Files.exists(Paths.get(basePath, CONFIG_FILE)) ||
-                        hasQinProjectInSubdirs(Paths.get(basePath));
-
-                if (hasQinProject) {
-                    ToolWindowManager manager = ToolWindowManager.getInstance(project);
-                    ToolWindow toolWindow = manager.getToolWindow("Qin");
-                    if (toolWindow != null) {
-                        toolWindow.show();
-                    }
-                }
-            } catch (Exception e) {
-                // 忽略
-            }
-        });
+        // 不再自动打开 Qin 工具窗口，避免闪烁
+        // 用户可以手动点击打开
 
         // 启动配置文件监听器（监听 qin.config.json 变化）
         QinConfigWatcher watcher = new QinConfigWatcher(project);
