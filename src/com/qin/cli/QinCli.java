@@ -7,9 +7,9 @@ import com.qin.types.BuildResult;
 import com.qin.types.CompileResult;
 import com.qin.types.EnvironmentStatus;
 import com.qin.types.QinConfig;
-import core.*;
-import types.*;
-import plugins.*;
+import com.qin.core.*;
+import com.qin.types.*;
+import com.qin.plugins.*;
 import com.qin.constants.QinConstants;
 import com.qin.utils.QinUtils;
 

@@ -2,7 +2,7 @@ package com.qin.core;
 
 import com.qin.types.Repository;
 import com.qin.types.ResolveResult;
-import types.*;
+import com.qin.types.*;
 import com.qin.constants.QinConstants;
 
 import java.io.*;

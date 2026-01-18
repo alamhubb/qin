@@ -5,7 +5,7 @@ import com.qin.types.LanguageSupport;
 import com.qin.types.PluginContext;
 import com.qin.types.QinConfig;
 import com.qin.types.QinPlugin;
-import types.*;
+import com.qin.types.*;
 
 import java.util.*;
 

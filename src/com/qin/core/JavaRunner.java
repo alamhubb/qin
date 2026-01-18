@@ -4,7 +4,7 @@ import com.qin.constants.QinConstants;
 import com.qin.types.CompileResult;
 import com.qin.types.ParsedEntry;
 import com.qin.types.QinConfig;
-import types.*;
+import com.qin.types.*;
 
 import javax.tools.*;
 import java.io.*;

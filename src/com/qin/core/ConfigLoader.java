@@ -2,7 +2,7 @@ package com.qin.core;
 
 import com.qin.constants.QinConstants;
 import com.qin.types.*;
-import types.*;
+import com.qin.types.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 

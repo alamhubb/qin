@@ -5,7 +5,7 @@ import com.qin.types.BuildResult;
 import com.qin.types.ParsedEntry;
 import com.qin.types.QinConfig;
 import com.qin.types.ResolveResult;
-import types.*;
+import com.qin.types.*;
 import com.qin.utils.QinUtils;
 
 import java.io.*;
