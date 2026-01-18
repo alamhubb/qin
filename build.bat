@@ -4,7 +4,7 @@ setlocal EnableDelayedExpansion
 
 REM ============================================
 REM Qin Distribution Build Script
-REM 构建可分发的 qin.jar + qin.bat + install.bat
+REM 构建可分发的 qin.jar + qin.bat + install.bat + uninstall.bat
 REM ============================================
 
 echo.
@@ -141,15 +141,20 @@ echo pause
 ) > "%DIST_DIR%\install.bat"
 echo   √ Created: dist\install.bat
 
+REM 复制 uninstall.bat
+copy /y "%QIN_DIR%\script\uninstall.bat" "%DIST_DIR%\uninstall.bat" >nul
+echo   √ Created: dist\uninstall.bat
+
 echo.
 echo ========================================
 echo   Build Complete!
 echo ========================================
 echo.
 echo Distribution files:
-echo   dist\qin.jar      - Executable Fat JAR
-echo   dist\qin.bat      - Launcher script
-echo   dist\install.bat  - One-click installer
+echo   dist\qin.jar        - Executable Fat JAR
+echo   dist\qin.bat        - Launcher script
+echo   dist\install.bat    - One-click installer
+echo   dist\uninstall.bat  - One-click uninstaller
 echo.
 echo To distribute:
 echo   1. Zip the 'dist' folder
