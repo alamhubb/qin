@@ -38,12 +38,15 @@ public class QinCli {
             switch (command) {
                 case "init" -> initProject();
                 case "run" -> runProject(cmdArgs);
-                case "build" -> buildProject(cmdArgs);
-                case "dev" -> devMode(cmdArgs);
                 case "compile" -> compileProject(cmdArgs);
+                case "test" -> runTests(cmdArgs);
+                case "jar" -> jarProject(cmdArgs);           // 🆕 新增
+                case "fatjar" -> fatjarProject(cmdArgs);     // 🆕 新增
+                case "build" -> buildProject(cmdArgs);
                 case "clean" -> cleanProject();
                 case "sync" -> syncDependencies(cmdArgs);
-                case "test" -> runTests(cmdArgs);
+                case "deps" -> showDependencies(cmdArgs);    // 🆕 新增
+                case "dev" -> devMode(cmdArgs);
                 case "dist" -> distProject();
                 case "help", "-h", "--help" -> printHelp();
                 case "version", "-v", "--version" -> System.out.println("qin " + VERSION);
@@ -684,6 +687,79 @@ public class QinCli {
         return envChecker.getCoursierCommand();
     }
 
+    /**
+     * qin jar - 打包普通 JAR（不含依赖）
+     */
+    private static void jarProject(String[] args) throws Exception {
+        System.out.println(blue("→ Loading configuration..."));
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+
+        BuildLifecycle lifecycle = new BuildLifecycle(QinConstants.getCwd(), config);
+        JarResult result = lifecycle.jar();
+
+        if (result.isSuccess()) {
+            System.out.println(green("✓ JAR created: " + result.getJarPath()));
+            System.out.println(gray("  Size: " + formatSize(result.getJarSize())));
+        } else {
+            System.err.println(red("✗ Failed: " + result.getError()));
+            System.exit(1);
+        }
+    }
+
+    /**
+     * qin fatjar - 打包 Fat JAR（包含所有依赖）
+     */
+    private static void fatjarProject(String[] args) throws Exception {
+        System.out.println(blue("→ Loading configuration..."));
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+
+        BuildLifecycle lifecycle = new BuildLifecycle(QinConstants.getCwd(), config);
+        JarResult result = lifecycle.fatjar();
+
+        if (result.isSuccess()) {
+            System.out.println(green("✓ Fat JAR created: " + result.getJarPath()));
+            System.out.println(gray("  Size: " + formatSize(result.getJarSize())));
+        } else {
+            System.err.println(red("✗ Failed: " + result.getError()));
+            System.exit(1);
+        }
+    }
+
+    /**
+     * qin deps - 显示依赖树
+     */
+    private static void showDependencies(String[] args) throws Exception {
+        System.out.println(blue("→ Loading configuration..."));
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+
+        System.out.println(blue("→ Dependencies:"));
+
+        Map<String, String> allDeps = new HashMap<>();
+        if (config.dependencies() != null) allDeps.putAll(config.dependencies());
+        if (config.devDependencies() != null) allDeps.putAll(config.devDependencies());
+
+        if (allDeps.isEmpty()) {
+            System.out.println(gray("  No dependencies"));
+            return;
+        }
+
+        for (Map.Entry<String, String> dep : allDeps.entrySet()) {
+            System.out.println("  • " + dep.getKey() + " : " + dep.getValue());
+        }
+    }
+
+    /**
+     * 格式化文件大小（辅助方法）
+     */
+    private static String formatSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format("%.2f KB", bytes / 1024.0);
+        return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
+    }
+
     private static void printHelp() {
         System.out.println("""
                 Qin - Java-Vite Build Tool
@@ -694,12 +770,16 @@ public class QinCli {
                 Commands:
                   init        Initialize a new Qin project
                   run         Compile and run the Java program
-                  build       Build a Fat Jar (Uber Jar)
-                  dev         Start development server with hot reload
                   compile     Compile Java source code
+                  test        Run JUnit tests
+                  jar         Build a JAR (without dependencies)          // 🆕 新增
+                  fatjar      Build a Fat JAR (with all dependencies)     // 🆕 新增
+                  build       Build a Fat Jar (Uber Jar)
                   clean       Clean build artifacts
                   sync        Sync dependencies
-                  test        Run JUnit tests
+                  deps        Show dependency tree                         // 🆕 新增
+                  dev         Start development server with hot reload
+                  dist        Create distribution package
                   help        Show this help message
                   version     Show version
 
@@ -713,7 +793,11 @@ public class QinCli {
                 Examples:
                   qin init              # Initialize new project
                   qin run               # Compile and run
+                  qin compile           # Compile only
+                  qin jar               # Build JAR (without dependencies)     // 🆕 新增
+                  qin fatjar            # Build Fat JAR (with dependencies)    // 🆕 新增
                   qin build             # Build Fat Jar
+                  qin deps              # Show dependencies                    // 🆕 新增
                   qin dev               # Start dev server
                 """);
     }
