@@ -577,6 +577,49 @@ public class QinCli {
         return CacheValidator.validateClasspathFiles(classpath);
     }
 
+    private static void distProject() throws Exception {
+        System.out.println(blue("→ Loading configuration..."));
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+
+        // Check environment
+        EnvironmentStatus envStatus = envChecker.checkAll();
+        if (!envStatus.hasJavac()) {
+            System.err.println(red("Error: javac is not installed."));
+            System.exit(1);
+        }
+
+        // Get dist directory from config or use default
+        String distDir = QinConstants.getDistDir(config.output());
+        Path distPath = Paths.get(QinConstants.getCwd(), distDir);
+
+        // Create dist directory if not exists
+        if (!Files.exists(distPath)) {
+            Files.createDirectories(distPath);
+        }
+
+        // Build Fat Jar first
+        System.out.println(blue("→ Building Fat Jar for distribution..."));
+        FatJarBuilder builder = new FatJarBuilder(config, false);
+        BuildResult result = builder.build();
+
+        if (!result.isSuccess()) {
+            System.err.println(red("Build failed: ") + result.getError());
+            System.exit(1);
+        }
+
+        // Copy the jar to dist directory
+        Path sourceJar = Paths.get(result.getOutputPath());
+        String jarName = QinConstants.getJarName(config.output());
+        Path targetJar = distPath.resolve(jarName);
+
+        System.out.println(blue("→ Copying to " + distDir + "/..."));
+        Files.copy(sourceJar, targetJar, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.println(green("✓ Distribution created: " + distDir + "/" + jarName));
+        System.out.println(gray("  Run with: java -jar " + distDir + "/" + jarName));
+    }
+
     private static void runTests(String[] args) throws Exception {
         String filter = null;
         boolean verbose = false;

@@ -1,5 +1,4 @@
 @echo off
-chcp 65001 >nul 2>&1
 setlocal EnableDelayedExpansion
 
 echo.
@@ -8,21 +7,21 @@ echo   Qin Uninstaller
 echo ========================================
 echo.
 
-:: 获取当前脚本所在目录
+REM Get current script directory
 set "QIN_HOME=%~dp0"
-:: 移除末尾的反斜杠
+REM Remove trailing backslash
 set "QIN_HOME=%QIN_HOME:~0,-1%"
 
 echo [1/2] Qin location: %QIN_HOME%
 
-:: 获取当前用户PATH
+REM Get current user PATH
 for /f "tokens=2*" %%a in ('reg query "HKCU\Environment" /v Path 2^>nul') do set "USER_PATH=%%b"
 
-:: 检查是否在PATH中
+REM Check if in PATH
 echo !USER_PATH! | findstr /i /c:"%QIN_HOME%" >nul
 if %errorlevel% neq 0 (
     echo.
-    echo   ! Qin is not in PATH, nothing to uninstall
+    echo   Qin is not in PATH, nothing to uninstall
     echo.
     pause
     exit /b 0
@@ -30,32 +29,31 @@ if %errorlevel% neq 0 (
 
 echo [2/2] Removing Qin from PATH...
 
-:: 从 PATH 中移除 QIN_HOME
-:: 处理两种情况: "QIN_HOME;" 或 ";QIN_HOME"
+REM Remove QIN_HOME from PATH
 set "NEW_PATH=!USER_PATH!"
 
-:: 移除 "QIN_HOME;" (在开头或中间)
+REM Remove "QIN_HOME;" (at start or middle)
 set "NEW_PATH=!NEW_PATH:%QIN_HOME%;=!"
 
-:: 移除 ";QIN_HOME" (在末尾)
+REM Remove ";QIN_HOME" (at end)
 set "NEW_PATH=!NEW_PATH:;%QIN_HOME%=!"
 
-:: 如果 PATH 只有 QIN_HOME 一个值
+REM If PATH only contains QIN_HOME
 if "!NEW_PATH!"=="%QIN_HOME%" set "NEW_PATH="
 
-:: 更新用户PATH
+REM Update user PATH
 if "!NEW_PATH!"=="" (
-    :: PATH 为空，删除环境变量
+    REM PATH is empty, delete the variable
     reg delete "HKCU\Environment" /v Path /f >nul 2>&1
 ) else (
-    :: 设置新的 PATH
+    REM Set new PATH
     setx PATH "!NEW_PATH!" >nul 2>&1
 )
 
 if %errorlevel%==0 (
-    echo   √ Qin removed from PATH successfully
+    echo   OK Qin removed from PATH successfully
 ) else (
-    echo   × Failed to remove Qin from PATH
+    echo   X Failed to remove Qin from PATH
     pause
     exit /b 1
 )

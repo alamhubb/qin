@@ -181,6 +181,11 @@ public class QinConstants {
     public static final String DEFAULT_JAR_NAME = "app.jar";
 
     /**
+     * 默认分发目录
+     */
+    public static final String DEFAULT_DIST_DIR = "dist";
+
+    /**
      * 默认入口类
      */
     public static final String DEFAULT_MAIN_CLASS = "Main";
@@ -231,6 +236,19 @@ public class QinConstants {
             return outputConfig.jarName();
         }
         return DEFAULT_JAR_NAME;
+    }
+
+    /**
+     * 获取分发目录（安全获取，带默认值）
+     *
+     * @param outputConfig 输出配置对象（可能为 null）
+     * @return 分发目录路径
+     */
+    public static String getDistDir(OutputConfig outputConfig) {
+        if (outputConfig != null && outputConfig.dir() != null && !outputConfig.dir().isEmpty()) {
+            return outputConfig.dir();
+        }
+        return DEFAULT_DIST_DIR;
     }
 
     /**

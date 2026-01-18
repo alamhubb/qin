@@ -1,39 +1,49 @@
 @echo off
-chcp 65001 >nul 2>&1
 setlocal EnableDelayedExpansion
 
-echo → Installing Qin to PATH...
+echo.
+echo ========================================
+echo   Qin Installer
+echo ========================================
+echo.
 
-:: 获取当前脚本所在目录
+REM Get current script directory
 set "QIN_HOME=%~dp0"
-:: 移除末尾的反斜杠
+REM Remove trailing backslash
 set "QIN_HOME=%QIN_HOME:~0,-1%"
 
-echo   Qin location: %QIN_HOME%
+echo [1/3] Qin location: %QIN_HOME%
 
-:: 获取当前用户PATH
+REM Get current user PATH
 for /f "tokens=2*" %%a in ('reg query "HKCU\Environment" /v Path 2^>nul') do set "USER_PATH=%%b"
 
-:: 检查是否已在PATH中
+echo [2/3] Adding to PATH...
+
+REM Check if already in PATH
 echo !USER_PATH! | findstr /i /c:"%QIN_HOME%" >nul
 if %errorlevel%==0 (
-    echo   √ Qin is already in PATH
+    echo   OK Qin is already in PATH
 ) else (
-    :: 添加到用户PATH（不需要管理员权限）
+    REM Add to user PATH (no admin required)
     setx PATH "%QIN_HOME%;!USER_PATH!" >nul 2>&1
     if %errorlevel%==0 (
-        echo   √ Qin added to PATH
+        echo   OK Qin added to PATH
         echo   ! Please restart your terminal for changes to take effect
     ) else (
-        echo   × Failed to add Qin to PATH
+        echo   X Failed to add Qin to PATH
+        pause
         exit /b 1
     )
 )
 
-echo.
-echo → Testing qin command...
+echo [3/3] Testing qin command...
 call "%QIN_HOME%\qin.bat" version
 
 echo.
-echo √ Installation complete!
-echo   You can now use: qin compile, qin run, etc.
+echo ========================================
+echo   Installation Complete!
+echo ========================================
+echo.
+echo You can now use: qin compile, qin run, etc.
+echo.
+pause
