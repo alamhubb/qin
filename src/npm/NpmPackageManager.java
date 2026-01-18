@@ -1,8 +1,8 @@
-package com.qin.npm;
+package npm;
 
 import com.google.gson.*;
-import com.qin.constants.QinConstants;
-import com.qin.utils.QinUtils;
+import constants.QinConstants;
+import utils.QinUtils;
 import java.io.*;
 import java.net.*;
 import java.nio.file.*;

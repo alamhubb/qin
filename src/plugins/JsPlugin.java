@@ -1,6 +1,6 @@
-package com.qin.plugins;
+package plugins;
 
-import com.qin.constants.QinConstants;
+import constants.QinConstants;
 
 import java.io.*;
 import java.nio.file.*;

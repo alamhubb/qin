@@ -1,8 +1,8 @@
-package com.qin.bsp;
+package bsp;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.qin.constants.QinConstants;
+import constants.QinConstants;
 import java.io.*;
 import java.util.Scanner;
 

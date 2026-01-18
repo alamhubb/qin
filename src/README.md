@@ -82,7 +82,7 @@ javac -d build/classes -cp lib/gson-2.10.1.jar $(find src/java-rewrite -name "*.
 ### 运行
 
 ```bash
-java -cp build/classes:lib/gson-2.10.1.jar com.qin.cli.QinCli help
+java -cp build/classes:lib/gson-2.10.1.jar cli.QinCli help
 ```
 
 ## 功能对比

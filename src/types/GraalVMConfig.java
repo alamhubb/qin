@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * GraalVM 配置 (Java 25 Record)

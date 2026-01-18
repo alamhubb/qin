@@ -1,7 +1,7 @@
-package com.qin.core;
+package core;
 
-import com.qin.constants.QinConstants;
-import com.qin.types.QinConfig;
+import constants.QinConstants;
+import types.QinConfig;
 import com.google.gson.Gson;
 
 import java.io.*;

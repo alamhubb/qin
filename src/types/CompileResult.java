@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * Compilation result (Java 25 Record)

@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * 构建上下文 (Java 25 Record using composition)

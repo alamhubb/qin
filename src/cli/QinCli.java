@@ -1,10 +1,10 @@
-package com.qin.cli;
+package cli;
 
-import com.qin.core.*;
-import com.qin.types.*;
-import com.qin.plugins.*;
-import com.qin.constants.QinConstants;
-import com.qin.utils.QinUtils;
+import core.*;
+import types.*;
+import plugins.*;
+import constants.QinConstants;
+import utils.QinUtils;
 
 import java.io.*;
 import java.nio.file.*;
@@ -508,7 +508,7 @@ public class QinCli {
         }
 
         // Save classpath cache to .qin/classpath.json
-        Path cacheDir = com.qin.core.QinPaths.getQinDir(QinConstants.getCwd());
+        Path cacheDir = core.QinPaths.getQinDir(QinConstants.getCwd());
         Files.createDirectories(cacheDir);
 
         String classpath = String.join(sep, classpaths);
@@ -517,7 +517,7 @@ public class QinCli {
         classpath = sortClasspathByConfigOrder(classpath, deps);
 
         String json = buildClasspathJson(classpath);
-        Files.writeString(com.qin.core.QinPaths.getClasspathCache(QinConstants.getCwd()), json);
+        Files.writeString(core.QinPaths.getClasspathCache(QinConstants.getCwd()), json);
 
         // 生成 IDEA 库配置文件（.idea/libraries/*.xml）
         if (!classpath.isEmpty()) {
@@ -533,7 +533,7 @@ public class QinCli {
         }
 
         System.out.println(green("✓ Dependencies synced (" + localCount + " local, " + remoteCount + " remote)"));
-        System.out.println(gray("  Cache: " + com.qin.core.QinPaths.CLASSPATH_CACHE));
+        System.out.println(gray("  Cache: " + core.QinPaths.CLASSPATH_CACHE));
 
         return classpath;
     }
@@ -551,7 +551,7 @@ public class QinCli {
             String classpath = CacheValidator.getCachedClasspath(cwd);
             if (classpath != null) {
                 System.out.println(
-                        blue("→ Using cached dependencies (" + com.qin.core.QinPaths.CLASSPATH_CACHE + ")"));
+                        blue("→ Using cached dependencies (" + core.QinPaths.CLASSPATH_CACHE + ")"));
                 return classpath;
             }
         }

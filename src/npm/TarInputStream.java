@@ -1,4 +1,4 @@
-package com.qin.npm;
+package npm;
 
 import java.io.*;
 

@@ -1,6 +1,6 @@
-package com.qin.core;
+package core;
 
-import com.qin.types.QinConfig;
+import types.QinConfig;
 
 import java.io.IOException;
 import java.nio.file.Path;

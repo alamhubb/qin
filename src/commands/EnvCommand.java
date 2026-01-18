@@ -1,7 +1,7 @@
-package com.qin.commands;
+package commands;
 
-import com.qin.core.EnvironmentChecker;
-import com.qin.types.EnvironmentStatus;
+import core.EnvironmentChecker;
+import types.EnvironmentStatus;
 
 /**
  * Environment check command

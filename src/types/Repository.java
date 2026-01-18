@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * Maven 仓库配置 (Java 25 Record)

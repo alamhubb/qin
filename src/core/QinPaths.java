@@ -1,6 +1,6 @@
-package com.qin.core;
+package core;
 
-import com.qin.constants.QinConstants;
+import constants.QinConstants;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

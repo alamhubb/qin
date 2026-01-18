@@ -1,4 +1,4 @@
-package com.qin.core;
+package core;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

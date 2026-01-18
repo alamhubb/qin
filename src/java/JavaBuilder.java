@@ -1,4 +1,4 @@
-package com.qin.java;
+package java;
 
 import java.io.*;
 import java.nio.file.*;

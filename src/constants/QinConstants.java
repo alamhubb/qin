@@ -1,4 +1,4 @@
-package com.qin.constants;
+package constants;
 
 /**
  * Qin 构建系统常量
@@ -188,7 +188,7 @@ public class QinConstants {
      * @param javaConfig Java 配置对象（可能为 null）
      * @return 源代码目录路径
      */
-    public static String getSourceDir(com.qin.types.JavaConfig javaConfig) {
+    public static String getSourceDir(types.JavaConfig javaConfig) {
         if (javaConfig != null && javaConfig.sourceDir() != null && !javaConfig.sourceDir().isEmpty()) {
             return javaConfig.sourceDir();
         }
@@ -198,7 +198,7 @@ public class QinConstants {
     /**
      * 获取测试目录（安全获取，带默认值）
      */
-    public static String getTestDir(com.qin.types.JavaConfig javaConfig) {
+    public static String getTestDir(types.JavaConfig javaConfig) {
         if (javaConfig != null && javaConfig.testDir() != null && !javaConfig.testDir().isEmpty()) {
             return javaConfig.testDir();
         }
@@ -208,7 +208,7 @@ public class QinConstants {
     /**
      * 获取输出目录（安全获取，带默认值）
      */
-    public static String getOutputDir(com.qin.types.JavaConfig javaConfig) {
+    public static String getOutputDir(types.JavaConfig javaConfig) {
         if (javaConfig != null && javaConfig.outputDir() != null && !javaConfig.outputDir().isEmpty()) {
             return javaConfig.outputDir();
         }
@@ -218,7 +218,7 @@ public class QinConstants {
     /**
      * 获取 JAR 名称（安全获取，带默认值）
      */
-    public static String getJarName(com.qin.types.OutputConfig outputConfig) {
+    public static String getJarName(types.OutputConfig outputConfig) {
         if (outputConfig != null && outputConfig.jarName() != null && !outputConfig.jarName().isEmpty()) {
             return outputConfig.jarName();
         }

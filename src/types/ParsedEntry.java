@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * Parsed entry point information (Java 25 Record)

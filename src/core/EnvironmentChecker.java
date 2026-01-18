@@ -1,7 +1,7 @@
-package com.qin.core;
+package core;
 
-import com.qin.constants.QinConstants;
-import com.qin.types.EnvironmentStatus;
+import constants.QinConstants;
+import types.EnvironmentStatus;
 
 import java.io.*;
 import java.net.*;

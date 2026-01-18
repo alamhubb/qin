@@ -1,6 +1,6 @@
-package com.qin.java;
+package java;
 
-import com.qin.constants.QinConstants;
+import constants.QinConstants;
 
 import java.util.*;
 import java.util.stream.*;

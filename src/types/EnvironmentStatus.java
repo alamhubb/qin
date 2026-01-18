@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * Environment check status

@@ -1,4 +1,4 @@
-package com.qin.core;
+package core;
 
 import java.util.List;
 import java.util.ArrayList;

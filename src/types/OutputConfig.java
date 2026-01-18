@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * 输出配置 (Java 25 Record)

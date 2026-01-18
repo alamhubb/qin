@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * Maven 依赖范围

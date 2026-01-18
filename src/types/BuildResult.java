@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * Build result for Fat Jar (Java 25 Record)

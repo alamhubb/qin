@@ -1,7 +1,7 @@
-package com.qin.constants;
+package constants;
 
-import com.qin.types.DependencyScope;
-import com.qin.types.Repository;
+import types.DependencyScope;
+import types.Repository;
 import java.util.List;
 
 /**

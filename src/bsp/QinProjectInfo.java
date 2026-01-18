@@ -1,6 +1,6 @@
-package com.qin.bsp;
+package bsp;
 
-import com.qin.constants.QinConstants;
+import constants.QinConstants;
 import java.util.Map;
 
 /**

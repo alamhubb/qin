@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 import java.util.Map;
 

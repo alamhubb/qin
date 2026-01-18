@@ -1,6 +1,6 @@
-package com.qin.core;
+package core;
 
-import com.qin.types.QinConfig;
+import types.QinConfig;
 
 /**
  * Workspace package information

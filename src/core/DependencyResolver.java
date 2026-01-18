@@ -1,7 +1,7 @@
-package com.qin.core;
+package core;
 
-import com.qin.types.*;
-import com.qin.constants.QinConstants;
+import types.*;
+import constants.QinConstants;
 
 import java.io.*;
 import java.nio.file.*;

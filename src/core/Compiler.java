@@ -1,7 +1,7 @@
-package com.qin.core;
+package core;
 
-import com.qin.constants.QinConstants;
-import com.qin.types.CompileResult;
+import constants.QinConstants;
+import types.CompileResult;
 
 import javax.tools.*;
 import java.io.IOException;

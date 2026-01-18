@@ -1,4 +1,4 @@
-package com.qin.types;
+package types;
 
 /**
  * 前端配置 (Java 25 Record)
