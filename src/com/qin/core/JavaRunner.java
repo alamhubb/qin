@@ -60,7 +60,7 @@ public class JavaRunner {
             String srcDirStr = getSourceDir();
             if (srcDirStr == null) {
                 return CompileResult
-                        .failure("No source directory found (checked " + QinConstants.DEFAULT_SOURCE_DIR + " and src)");
+                        .failure("No source directory found (checked " + QinConstants.JAVA_SOURCE_DIR + " and " + QinConstants.DEFAULT_SOURCE_DIR + ")");
             }
             Path srcDir = Paths.get(cwd, srcDirStr);
             allJavaFiles.addAll(findJavaFiles(srcDir));
@@ -107,11 +107,11 @@ public class JavaRunner {
         }
 
         // 2. 自动检测：src/main/java > src
+        if (Files.isDirectory(Paths.get(cwd, QinConstants.JAVA_SOURCE_DIR))) {
+            return QinConstants.JAVA_SOURCE_DIR;
+        }
         if (Files.isDirectory(Paths.get(cwd, QinConstants.DEFAULT_SOURCE_DIR))) {
             return QinConstants.DEFAULT_SOURCE_DIR;
-        }
-        if (Files.isDirectory(Paths.get(cwd, "src"))) {
-            return "src";
         }
         return null;
     }
@@ -308,7 +308,7 @@ public class JavaRunner {
 
         // 常见的源码目录前缀
         String[] srcPrefixes = {
-                QinConstants.DEFAULT_SOURCE_DIR + "/",
+                QinConstants.JAVA_SOURCE_DIR + "/",
                 QinConstants.DEFAULT_TEST_DIR + "/",
                 "src/"
         };

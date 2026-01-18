@@ -343,9 +343,9 @@ public class IdeaLibraryGenerator {
      */
     private String detectSourceDir() {
         // 优先检测标准 Maven 结构
-        Path mavenSrc = Paths.get(projectRoot, QinConstants.DEFAULT_SOURCE_DIR);
+        Path mavenSrc = Paths.get(projectRoot, QinConstants.JAVA_SOURCE_DIR);
         if (Files.exists(mavenSrc)) {
-            return QinConstants.DEFAULT_SOURCE_DIR;
+            return QinConstants.JAVA_SOURCE_DIR;
         }
         // 其次检测简单结构
         Path simpleSrc = Paths.get(projectRoot, "src");

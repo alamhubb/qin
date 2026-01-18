@@ -17,7 +17,7 @@ public class QinProjectInfo {
 
     public static class JavaConfig {
         public String version = "25";
-        public String sourceDir = QinConstants.DEFAULT_SOURCE_DIR;
+        public String sourceDir = QinConstants.JAVA_SOURCE_DIR;
         public String testDir = QinConstants.DEFAULT_TEST_DIR;
         public String outputDir = QinConstants.BUILD_CLASSES_DIR;
     }
@@ -26,7 +26,7 @@ public class QinProjectInfo {
         if (java != null && java.sourceDir != null && !java.sourceDir.isEmpty()) {
             return java.sourceDir;
         }
-        return QinConstants.DEFAULT_SOURCE_DIR;
+        return QinConstants.JAVA_SOURCE_DIR;
     }
 
     public String getTestDir() {

@@ -152,7 +152,12 @@ public class QinConstants {
     /**
      * 默认源代码目录
      */
-    public static final String DEFAULT_SOURCE_DIR = "src/main/java";
+    public static final String DEFAULT_SOURCE_DIR = "src";
+
+    /**
+     * Java/Maven 标准源代码目录（优先级高于 DEFAULT_SOURCE_DIR）
+     */
+    public static final String JAVA_SOURCE_DIR = "src/main/java";
 
     /**
      * 默认测试目录
