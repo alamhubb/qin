@@ -44,6 +44,7 @@ public class QinCli {
                 case "clean" -> cleanProject();
                 case "sync" -> syncDependencies(cmdArgs);
                 case "test" -> runTests(cmdArgs);
+                case "dist" -> distProject();
                 case "help", "-h", "--help" -> printHelp();
                 case "version", "-v", "--version" -> System.out.println("qin " + VERSION);
                 default -> {

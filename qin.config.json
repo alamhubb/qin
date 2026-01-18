@@ -15,8 +15,9 @@
         "encoding": "UTF-8"
     },
     "output": {
-        "dir": "build",
-        "jarName": "qin.jar"
+        "dir": "dist",
+        "jarName": "qin.jar",
+        "fatJar": true
     },
     "repositories": [
         {
