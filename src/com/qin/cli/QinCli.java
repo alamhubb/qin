@@ -48,6 +48,8 @@ public class QinCli {
                 case "deps" -> showDependencies(cmdArgs);    // 🆕 新增
                 case "dev" -> devMode(cmdArgs);
                 case "dist" -> distProject();
+                case "bsp" -> startBspServer();              // 🆕 BSP Server
+                case "bsp-init" -> initBspConfig();          // 🆕 生成 BSP 配置
                 case "help", "-h", "--help" -> printHelp();
                 case "version", "-v", "--version" -> System.out.println("qin " + VERSION);
                 default -> {
@@ -188,6 +190,8 @@ public class QinCli {
     private static void buildProject(String[] args) throws Exception {
         boolean debug = Arrays.asList(args).contains("--debug");
         boolean clean = Arrays.asList(args).contains("--clean");
+        boolean skipTests = Arrays.asList(args).contains("--skip-tests") ||
+                           Arrays.asList(args).contains("-DskipTests");
 
         if (clean) {
             cleanProject();
@@ -204,13 +208,22 @@ public class QinCli {
             System.exit(1);
         }
 
-        // Build Fat Jar
-        System.out.println(blue("→ Building Fat Jar..."));
-        FatJarBuilder builder = new FatJarBuilder(config, debug);
-        BuildResult result = builder.build();
+        // 使用 BuildLifecycle 进行完整构建
+        System.out.println(blue("→ Building project..."));
+        BuildLifecycle lifecycle = new BuildLifecycle(QinConstants.getCwd(), config);
+        lifecycle.setSkipTests(skipTests);
+
+        if (skipTests) {
+            System.out.println(yellow("  (skipping tests)"));
+        }
+
+        BuildResult result = lifecycle.build();
 
         if (result.isSuccess()) {
-            System.out.println(green("✓ Fat Jar built successfully: " + result.getOutputPath()));
+            System.out.println(green("✓ Build completed successfully!"));
+            if (result.getOutputPath() != null) {
+                System.out.println(green("  Output: " + result.getOutputPath()));
+            }
         } else {
             System.err.println(red("Build failed: ") + result.getError());
             System.exit(1);
@@ -254,6 +267,8 @@ public class QinCli {
 
     private static void compileProject(String[] args) throws Exception {
         String outputDir = QinConstants.BUILD_CLASSES_DIR;
+        boolean skipSync = Arrays.asList(args).contains("--no-sync");
+
         for (int i = 0; i < args.length - 1; i++) {
             if ("-o".equals(args[i]) || "--output".equals(args[i])) {
                 outputDir = args[i + 1];
@@ -271,26 +286,10 @@ public class QinCli {
             System.exit(1);
         }
 
-        // Resolve dependencies: 本地优先,远程fallback
+        // 🔑 关键改动：compile 之前自动确保依赖已同步（复用 sync 的缓存）
         String classpath = "";
-        Map<String, String> deps = new HashMap<>();
-        if (config.dependencies() != null) deps.putAll(config.dependencies());
-        if (config.devDependencies() != null) deps.putAll(config.devDependencies());
-
-        if (!deps.isEmpty()) {
-            // 1. 先尝试本地解析
-            LocalProjectResolver localResolver = new LocalProjectResolver(QinConstants.getCwd());
-            LocalProjectResolver.ResolutionResult localResult = localResolver.resolveDependencies(deps);
-
-            // 2. 对于未在本地找到的依赖,从Maven下载
-            if (localResult.remoteDependencies != null && !localResult.remoteDependencies.isEmpty()) {
-                System.out.println(blue("→ Resolving remote dependencies..."));
-                String csCommand = ensureCoursier();
-                DependencyResolver resolver = new DependencyResolver(
-                        csCommand, config.repositories(), null,
-                        QinConstants.getCwd(), config.localRep());
-                classpath = resolver.resolveFromObject(localResult.remoteDependencies);
-            }
+        if (!skipSync) {
+            classpath = ensureDependenciesSynced(config);
         }
 
         System.out.println(blue("→ Compiling..."));
@@ -319,15 +318,23 @@ public class QinCli {
 
     private static void syncDependencies(String[] args) throws Exception {
         // 解析参数
-        boolean syncAll = Arrays.asList(args).contains("--all");
-        boolean force = Arrays.asList(args).contains("--force");
+        List<String> argList = Arrays.asList(args);
+        boolean syncAll = argList.contains(QinConstants.ARG_ALL);
+        boolean force = argList.contains(QinConstants.ARG_FORCE);
+        boolean withCompile = argList.contains(QinConstants.ARG_COMPILE);
 
         if (syncAll) {
             // 同步所有子项目
-            syncAllProjects(force);
+            syncAllProjects(force, withCompile);
         } else {
             // 同步当前项目
             syncCurrentProject(force);
+
+            // 如果指定了 --compile，同步后自动编译
+            if (withCompile) {
+                System.out.println();
+                compileProject(new String[]{QinConstants.ARG_NO_SYNC});
+            }
         }
     }
 
@@ -364,9 +371,9 @@ public class QinCli {
      * 同步所有子项目（Monorepo 场景）
      * 向上查找根目录，递归扫描所有 qin.config.json 项目
      */
-    private static void syncAllProjects(boolean force) throws Exception {
+    private static void syncAllProjects(boolean force, boolean withCompile) throws Exception {
         String cwd = QinConstants.getCwd();
-        
+
         System.out.println(blue("→ Scanning for Qin projects..."));
         List<Path> projects = LocalProjectResolver.scanAllProjects(cwd);
 
@@ -390,7 +397,7 @@ public class QinCli {
             Thread t = new Thread(() -> {
                 try {
                     String projectName = projectPath.getFileName().toString();
-                    
+
                     // 如果不是强制同步，检查缓存
                     if (!force && CacheValidator.isCacheValid(projectPath)) {
                         System.out.println(gray("  ○ " + projectName + " (cached, skipped)"));
@@ -398,22 +405,27 @@ public class QinCli {
                         return;
                     }
 
-                    // 执行 qin sync
+                    // 执行 qin sync --compile（同步 + 编译）
                     System.out.println(blue("  → Syncing " + projectName + "..."));
-                    
-                    ProcessBuilder pb = new ProcessBuilder(
-                            QinConstants.CMD_PREFIX, QinConstants.CMD_FLAG,
-                            QinConstants.QIN_CMD, "sync");
+
+                    List<String> command = new ArrayList<>();
+                    command.add(QinConstants.CMD_PREFIX);
+                    command.add(QinConstants.CMD_FLAG);
+                    command.add(QinConstants.QIN_CMD);
+                    command.add("sync");
                     if (force) {
-                        pb = new ProcessBuilder(
-                                QinConstants.CMD_PREFIX, QinConstants.CMD_FLAG,
-                                QinConstants.QIN_CMD, "sync", "--force");
+                        command.add(QinConstants.ARG_FORCE);
                     }
+                    if (withCompile) {
+                        command.add(QinConstants.ARG_COMPILE);
+                    }
+
+                    ProcessBuilder pb = new ProcessBuilder(command);
                     pb.directory(projectPath.toFile());
                     pb.redirectErrorStream(true);
 
                     Process process = pb.start();
-                    
+
                     // 读取输出（静默处理）
                     try (BufferedReader reader = new BufferedReader(
                             new InputStreamReader(process.getInputStream(), "UTF-8"))) {
@@ -477,6 +489,7 @@ public class QinCli {
 
     /**
      * 同步依赖的核心逻辑，返回生成的 classpath
+     * 使用增强版解析器，支持自动编译本地项目
      */
     private static String syncDependenciesCore(QinConfig config) throws Exception {
         Map<String, String> deps = new HashMap<>();
@@ -487,14 +500,16 @@ public class QinCli {
         String sep = QinConstants.getClasspathSeparator();
         List<String> classpaths = new ArrayList<>();
 
-        // 1. 先用 LocalProjectResolver 解析本地依赖
-        LocalProjectResolver localResolver = new LocalProjectResolver(QinConstants.getCwd());
-        LocalProjectResolver.ResolutionResult localResult = localResolver.resolveDependencies(deps);
+        // 1. 使用增强版解析器（支持自动编译本地项目）
+        LocalProjectResolverEnhanced localResolver = new LocalProjectResolverEnhanced(QinConstants.getCwd());
+        LocalProjectResolverEnhanced.ResolutionResult localResult = localResolver.resolveDependencies(deps);
 
-        int localCount = 0;
+        int localCount = localResult.localCount;
         if (!localResult.localClasspath.isEmpty()) {
-            localCount = localResult.localClasspath.split(sep).length;
             System.out.println(blue("  → Found " + localCount + " local dependencies"));
+            if (localResult.autoCompiledCount > 0) {
+                System.out.println(green("  ✓ Auto-compiled " + localResult.autoCompiledCount + " project(s)"));
+            }
             classpaths.add(localResult.localClasspath);
         }
 
@@ -751,6 +766,39 @@ public class QinCli {
         }
     }
 
+    // ==================== BSP 相关命令 ====================
+
+    /**
+     * 启动 BSP Server
+     * IDE 会调用此命令与构建工具通信
+     */
+    private static void startBspServer() throws Exception {
+        com.qin.bsp.QinBspServer server = new com.qin.bsp.QinBspServer(QinConstants.getCwd());
+        server.start();
+    }
+
+    /**
+     * 初始化 BSP 配置
+     * 生成 .bsp/qin.json 文件，让 IDE 能发现此构建工具
+     */
+    private static void initBspConfig() throws Exception {
+        com.qin.bsp.BspConnectionGenerator generator =
+            new com.qin.bsp.BspConnectionGenerator(QinConstants.getCwd());
+
+        if (generator.exists()) {
+            System.out.println(yellow("BSP configuration already exists."));
+            System.out.println("  Location: .bsp/qin.json");
+            return;
+        }
+
+        java.nio.file.Path configPath = generator.generate();
+        System.out.println(green("✓ BSP configuration generated!"));
+        System.out.println("  Location: " + configPath);
+        System.out.println();
+        System.out.println("Your IDE should now detect Qin as the build server.");
+        System.out.println("Restart your IDE if it doesn't detect automatically.");
+    }
+
     /**
      * 格式化文件大小（辅助方法）
      */
@@ -772,33 +820,42 @@ public class QinCli {
                   run         Compile and run the Java program
                   compile     Compile Java source code
                   test        Run JUnit tests
-                  jar         Build a JAR (without dependencies)          // 🆕 新增
-                  fatjar      Build a Fat JAR (with all dependencies)     // 🆕 新增
-                  build       Build a Fat Jar (Uber Jar)
+                  jar         Build a JAR (without dependencies)
+                  fatjar      Build a Fat JAR (with all dependencies)
+                  build       Full build (compile + test + jar)
                   clean       Clean build artifacts
-                  sync        Sync dependencies
-                  deps        Show dependency tree                         // 🆕 新增
+                  sync        Sync dependencies (auto-compiles local projects)
+                  deps        Show dependency tree
                   dev         Start development server with hot reload
                   dist        Create distribution package
+
+                IDE Integration (BSP):
+                  bsp         Start BSP Server (called by IDE)
+                  bsp-init    Generate .bsp/qin.json for IDE discovery
+
+                Other:
                   help        Show this help message
                   version     Show version
 
                 Options:
-                  --debug     Keep temporary files for debugging (build)
-                  --clean     Clean build directory before building (build)
+                  --skip-tests    Skip tests during build
+                  -DskipTests     Skip tests (Maven-style)
+                  --debug         Keep temporary files for debugging
+                  --clean         Clean build directory before building
                   -o, --output <dir>  Output directory (compile)
                   -f, --filter <pattern>  Filter tests (test)
-                  -v, --verbose  Show verbose output
+                  -v, --verbose   Show verbose output
 
                 Examples:
-                  qin init              # Initialize new project
-                  qin run               # Compile and run
-                  qin compile           # Compile only
-                  qin jar               # Build JAR (without dependencies)     // 🆕 新增
-                  qin fatjar            # Build Fat JAR (with dependencies)    // 🆕 新增
-                  qin build             # Build Fat Jar
-                  qin deps              # Show dependencies                    // 🆕 新增
-                  qin dev               # Start dev server
+                  qin init                    # Initialize new project
+                  qin run                     # Compile and run
+                  qin compile                 # Compile only
+                  qin jar                     # Build JAR (without dependencies)
+                  qin fatjar                  # Build Fat JAR (with dependencies)
+                  qin build                   # Full build
+                  qin build --skip-tests      # Build without running tests
+                  qin sync                    # Sync deps (auto-compiles local projects)
+                  qin bsp-init                # Generate BSP config for IDE
                 """);
     }
 

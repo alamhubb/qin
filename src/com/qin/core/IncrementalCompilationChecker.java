@@ -9,15 +9,28 @@ import java.util.*;
 
 /**
  * 增量编译检测器
- * 检测本地项目是否需要重新编译
+ * 使用文件哈希缓存实现精确的增量编译检测
+ *
+ * 两种检测模式：
+ * 1. 快速模式（时间戳）- 用于本地依赖项目检测
+ * 2. 精确模式（哈希）- 用于当前项目编译
  */
 public class IncrementalCompilationChecker {
 
+    private final FileHashCache hashCache;
+
+    public IncrementalCompilationChecker() {
+        this.hashCache = null; // 快速模式，不使用哈希
+    }
+
+    public IncrementalCompilationChecker(String projectDir) {
+        this.hashCache = new FileHashCache(projectDir);
+        this.hashCache.load();
+    }
+
     /**
-     * 检查项目是否需要重新编译
-     * 
-     * @param projectDir 项目目录
-     * @return true 如果源文件比 class 文件新，或没有 class 文件
+     * 检查项目是否需要重新编译（快速模式 - 时间戳）
+     * 用于检测本地依赖项目
      */
     public boolean needsRecompilation(Path projectDir) {
         try {
@@ -44,9 +57,75 @@ public class IncrementalCompilationChecker {
             return latestSrcTime > oldestClassTime;
 
         } catch (IOException e) {
-            // 出错时保守起见，认为需要编译
             return true;
         }
+    }
+
+    /**
+     * 获取需要重新编译的文件（精确模式 - 哈希）
+     * 返回哈希值变化的文件列表
+     */
+    public List<Path> getChangedFiles(String sourceDir) throws IOException {
+        if (hashCache == null) {
+            throw new IllegalStateException("Hash cache not initialized");
+        }
+        return hashCache.getChangedFiles(sourceDir);
+    }
+
+    /**
+     * 检查是否需要编译（精确模式 - 哈希）
+     */
+    public boolean needsCompilationByHash(String sourceDir) throws IOException {
+        if (hashCache == null) {
+            return true;
+        }
+        return hashCache.needsCompilation(sourceDir);
+    }
+
+    /**
+     * 更新文件哈希（编译成功后调用）
+     */
+    public void updateHashes(List<Path> files) {
+        if (hashCache != null) {
+            hashCache.updateHashes(files);
+        }
+    }
+
+    /**
+     * 更新整个源目录的哈希
+     */
+    public void updateAllHashes(String sourceDir) throws IOException {
+        if (hashCache != null) {
+            hashCache.updateAllHashes(sourceDir);
+        }
+    }
+
+    /**
+     * 保存哈希缓存
+     */
+    public void saveCache() throws IOException {
+        if (hashCache != null) {
+            hashCache.save();
+        }
+    }
+
+    /**
+     * 清除缓存
+     */
+    public void clearCache() throws IOException {
+        if (hashCache != null) {
+            hashCache.clear();
+        }
+    }
+
+    /**
+     * 获取缓存统计信息
+     */
+    public FileHashCache.CacheStats getCacheStats() {
+        if (hashCache != null) {
+            return hashCache.getStats();
+        }
+        return null;
     }
 
     /**

@@ -149,7 +149,15 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         tasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("run", "Run project", projectPath.toString())));
         tasksNode.add(new DefaultMutableTreeNode(
-                new TaskNode("build", "Build JAR", projectPath.toString())));
+                new TaskNode("test", "Run tests", projectPath.toString())));
+        tasksNode.add(new DefaultMutableTreeNode(
+                new TaskNode("jar", "Build JAR (no deps)", projectPath.toString())));
+        tasksNode.add(new DefaultMutableTreeNode(
+                new TaskNode("fatjar", "Build Fat JAR", projectPath.toString())));
+        tasksNode.add(new DefaultMutableTreeNode(
+                new TaskNode("deps", "Show dependencies", projectPath.toString())));
+        tasksNode.add(new DefaultMutableTreeNode(
+                new TaskNode("build", "Build (full)", projectPath.toString())));
         tasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("clean", "Clean output", projectPath.toString())));
         projectTreeNode.add(tasksNode);

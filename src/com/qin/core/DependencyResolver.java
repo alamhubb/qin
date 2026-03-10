@@ -204,6 +204,16 @@ public class DependencyResolver {
      * Resolve dependencies and return detailed result
      */
     public ResolveResult resolveWithDetails(List<String> deps) {
+        return resolveWithDetails(deps, false, false);
+    }
+
+    /**
+     * Resolve dependencies with optional sources and javadoc
+     * @param deps List of dependencies
+     * @param downloadSources Whether to download sources jars
+     * @param downloadJavadoc Whether to download javadoc jars
+     */
+    public ResolveResult resolveWithDetails(List<String> deps, boolean downloadSources, boolean downloadJavadoc) {
         if (deps == null || deps.isEmpty()) {
             return ResolveResult.success("", new ArrayList<>());
         }
@@ -222,6 +232,16 @@ public class DependencyResolver {
             args.add("fetch");
             args.addAll(deps);
             args.add("--classpath");
+
+            // 下载源码
+            if (downloadSources) {
+                args.add("--sources");
+            }
+
+            // 下载 Javadoc
+            if (downloadJavadoc) {
+                args.add("--javadoc");
+            }
 
             // 添加缓存配置
             String cacheDir = QinConstants.getHomeDir() + "/.cache/coursier";
@@ -302,7 +322,10 @@ public class DependencyResolver {
             PackageInfo pkgInfo = extractPackageInfo(globalPath);
             if (pkgInfo == null) {
                 // 如果解析失败，直接使用 Coursier 下载的路径
-                classpathEntries.add(globalPath);
+                // 但只有主 jar 加入 classpath，sources/javadoc 不加入
+                if (!isSourcesOrJavadoc(globalPath)) {
+                    classpathEntries.add(globalPath);
+                }
                 continue;
             }
 
@@ -317,7 +340,16 @@ public class DependencyResolver {
             Path globalVersionDir = globalPackageDir.resolve(coordinateWithVersion);
             Files.createDirectories(globalVersionDir);
 
-            Path globalJarPath = globalVersionDir.resolve(coordinateWithVersion + ".jar");
+            // 判断是否是 sources 或 javadoc jar
+            String classifier = getClassifier(jarName);
+            String targetJarName;
+            if (classifier != null) {
+                targetJarName = coordinateWithVersion + "-" + classifier + ".jar";
+            } else {
+                targetJarName = coordinateWithVersion + ".jar";
+            }
+
+            Path globalJarPath = globalVersionDir.resolve(targetJarName);
             if (!Files.exists(globalJarPath)) {
                 Files.copy(Path.of(globalPath), globalJarPath);
             }
@@ -334,8 +366,10 @@ public class DependencyResolver {
                 }
             }
 
-            // 3. Classpath 使用全局真实路径
-            classpathEntries.add(globalJarPath.toString());
+            // 3. 只有主 jar 加入 classpath（不包括 sources 和 javadoc）
+            if (classifier == null) {
+                classpathEntries.add(globalJarPath.toString());
+            }
         }
 
         return classpathEntries;
@@ -393,6 +427,27 @@ public class DependencyResolver {
             }
         }
 
+        return null;
+    }
+
+    /**
+     * 判断 jar 文件是否是 sources 或 javadoc
+     */
+    private boolean isSourcesOrJavadoc(String jarPath) {
+        String fileName = Path.of(jarPath).getFileName().toString().toLowerCase();
+        return fileName.contains("-sources") || fileName.contains("-javadoc");
+    }
+
+    /**
+     * 从 jar 文件名中提取 classifier (sources, javadoc, 或 null)
+     */
+    private String getClassifier(String jarName) {
+        if (jarName.contains("-sources.jar") || jarName.contains("-sources-")) {
+            return "sources";
+        }
+        if (jarName.contains("-javadoc.jar") || jarName.contains("-javadoc-")) {
+            return "javadoc";
+        }
         return null;
     }
 

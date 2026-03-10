@@ -1,0 +1,20 @@
+{
+    "name": "com.qin:qin-lang-backend-jvm",
+    "version": "0.1.0",
+    "description": "JVM backend for Qin language using JDK Class-File API",
+    "entry": "src/java/com/qin/lang/backend/jvm/JvmBackendPackageMarker.java",
+    "dependencies": {
+        "com.qin:qin-lang-ir": "0.1.0",
+        "com.qin:qin-lang-runtime": "0.1.0"
+    },
+    "java": {
+        "version": "25",
+        "sourceDir": "src/java",
+        "outputDir": "build/classes",
+        "encoding": "UTF-8"
+    },
+    "output": {
+        "dir": "build",
+        "jarName": "qin-lang-backend-jvm.jar"
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "name": "com.qin:qin-lang-frontend-adapter",
+    "version": "0.1.0",
+    "description": "Adapter from Slime AST to Qin language IR",
+    "entry": "src/java/com/qin/lang/frontend/adapter/FrontendAdapterPackageMarker.java",
+    "dependencies": {
+        "com.qin:qin-lang-ir": "0.1.0",
+        "com.slime:slime-ast": "1.0.0"
+    },
+    "java": {
+        "version": "25",
+        "sourceDir": "src/java",
+        "outputDir": "build/classes",
+        "encoding": "UTF-8"
+    },
+    "output": {
+        "dir": "build",
+        "jarName": "qin-lang-frontend-adapter.jar"
+    }
+}

@@ -59,9 +59,14 @@ public class DebugStartup implements ProjectActivity {
         // 用户可以手动点击打开
 
         // 启动配置文件监听器（监听 qin.config.json 变化）
-        QinConfigWatcher watcher = new QinConfigWatcher(project);
-        watcher.startWatching();
+        QinConfigWatcher configWatcher = new QinConfigWatcher(project);
+        configWatcher.startWatching();
         QinLogger.info("[STARTUP] 配置文件监听器已启动");
+
+        // 🆕 启动 Java 文件监听器（监听 .java 文件变化，自动编译）
+        QinJavaFileWatcher javaWatcher = new QinJavaFileWatcher(project);
+        javaWatcher.startWatching();
+        QinLogger.info("[STARTUP] Java 文件监听器已启动 (自动编译 + 防抖)");
 
         return Unit.INSTANCE;
     }
@@ -416,6 +421,46 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
+     * 查找对应的 sources jar 文件
+     * 例如: xxx.jar -> xxx-sources.jar
+     */
+    private static String findSourcesJar(String jarPath) {
+        if (jarPath == null || !jarPath.endsWith(".jar")) {
+            return null;
+        }
+
+        // 尝试在同一目录下查找 -sources.jar
+        String basePath = jarPath.substring(0, jarPath.length() - 4); // 移除 .jar
+        String sourcesPath = basePath + "-sources.jar";
+
+        if (java.nio.file.Files.exists(java.nio.file.Paths.get(sourcesPath))) {
+            return sourcesPath.replace("\\", "/");
+        }
+
+        return null;
+    }
+
+    /**
+     * 查找对应的 javadoc jar 文件
+     * 例如: xxx.jar -> xxx-javadoc.jar
+     */
+    private static String findJavadocJar(String jarPath) {
+        if (jarPath == null || !jarPath.endsWith(".jar")) {
+            return null;
+        }
+
+        // 尝试在同一目录下查找 -javadoc.jar
+        String basePath = jarPath.substring(0, jarPath.length() - 4); // 移除 .jar
+        String javadocPath = basePath + "-javadoc.jar";
+
+        if (java.nio.file.Files.exists(java.nio.file.Paths.get(javadocPath))) {
+            return javadocPath.replace("\\", "/");
+        }
+
+        return null;
+    }
+
+    /**
      * 为 Qin 项目生成 .iml 文件
      * 让 IDEA 识别源代码目录
      * 
@@ -509,15 +554,39 @@ public class DebugStartup implements ProjectActivity {
                     String entryPath = path.replace("\\", "/");
 
                     if (entryPath.endsWith(".jar")) {
-                        // JAR 文件依赖
+                        // JAR 文件依赖 - 检查是否有对应的 sources 和 javadoc
+                        String sourcesPath = findSourcesJar(entryPath);
+                        String javadocPath = findJavadocJar(entryPath);
+
                         dependencyEntries.append("    <orderEntry type=\"module-library\">\n")
                                 .append("      <library>\n")
                                 .append("        <CLASSES>\n")
                                 .append("          <root url=\"jar://").append(entryPath).append("!/\" />\n")
-                                .append("        </CLASSES>\n")
-                                .append("      </library>\n")
+                                .append("        </CLASSES>\n");
+
+                        // 添加 JAVADOC 节点
+                        if (javadocPath != null) {
+                            dependencyEntries.append("        <JAVADOC>\n")
+                                    .append("          <root url=\"jar://").append(javadocPath).append("!/\" />\n")
+                                    .append("        </JAVADOC>\n");
+                        } else {
+                            dependencyEntries.append("        <JAVADOC />\n");
+                        }
+
+                        // 添加 SOURCES 节点
+                        if (sourcesPath != null) {
+                            dependencyEntries.append("        <SOURCES>\n")
+                                    .append("          <root url=\"jar://").append(sourcesPath).append("!/\" />\n")
+                                    .append("        </SOURCES>\n");
+                        } else {
+                            dependencyEntries.append("        <SOURCES />\n");
+                        }
+
+                        dependencyEntries.append("      </library>\n")
                                 .append("    </orderEntry>\n");
-                        QinLogger.info("[iml]   添加 JAR 依赖: " + entryPath);
+                        QinLogger.info("[iml]   添加 JAR 依赖: " + entryPath +
+                                (sourcesPath != null ? " (+sources)" : "") +
+                                (javadocPath != null ? " (+javadoc)" : ""));
                     } else {
                         // 本地类目录 - 计算对应的源码目录
                         String sourcePath = computeSourcePath(entryPath);

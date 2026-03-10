@@ -11,8 +11,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static com.qin.constants.QinConstants.*;
+import static com.qin.debug.QinConstants.AUTO_COMPILE_DEBOUNCE_MS;
 
 /**
  * Qin 配置文件监听器
@@ -27,6 +29,11 @@ public class QinConfigWatcher {
 
     // 标志位：当前是否正在同步中（用于避免循环触发）
     private volatile boolean syncing = false;
+
+    // 自动编译防抖调度器
+    private final ScheduledExecutorService compileScheduler = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> pendingCompileTask = null;
+    private volatile boolean compiling = false;
 
     public QinConfigWatcher(Project project) {
         this.project = project;
@@ -82,6 +89,12 @@ public class QinConfigWatcher {
                         QinLogger.info("[Watcher] 检测到 .iml 文件变化 (外部): " + filePath);
                         onImlChanged(file);
                     }
+
+                    // 场景 6: 监听 .java 文件变化，自动编译（1秒防抖）
+                    else if (fileName.endsWith(".java") && !compiling) {
+                        QinLogger.info("[Watcher] 检测到 Java 文件变化: " + filePath);
+                        scheduleAutoCompile(file);
+                    }
                 }
             }
         });
@@ -97,6 +110,85 @@ public class QinConfigWatcher {
             connection.disconnect();
             connection = null;
             QinLogger.info("[Watcher] 配置文件监听已停止");
+        }
+        // 关闭编译调度器
+        compileScheduler.shutdownNow();
+    }
+
+    /**
+     * 调度自动编译（1秒防抖）
+     * 每次文件变化都会重置计时器，只有最后一次变化后 1 秒才触发编译
+     */
+    private void scheduleAutoCompile(VirtualFile javaFile) {
+        // 取消之前的待执行任务
+        if (pendingCompileTask != null && !pendingCompileTask.isDone()) {
+            pendingCompileTask.cancel(false);
+        }
+
+        // 找到包含此文件的 Qin 项目
+        VirtualFile projectDir = findQinProject(javaFile);
+        if (projectDir == null) {
+            return; // 不在 Qin 项目中
+        }
+
+        Path projectPath = Paths.get(projectDir.getPath());
+
+        // 调度新任务（1秒后执行）
+        pendingCompileTask = compileScheduler.schedule(() -> {
+            executeAutoCompile(projectPath);
+        }, AUTO_COMPILE_DEBOUNCE_MS, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 查找包含指定文件的 Qin 项目目录
+     */
+    private VirtualFile findQinProject(VirtualFile file) {
+        VirtualFile dir = file.getParent();
+        while (dir != null) {
+            VirtualFile configFile = dir.findChild(CONFIG_FILE);
+            if (configFile != null && configFile.exists()) {
+                return dir;
+            }
+            dir = dir.getParent();
+        }
+        return null;
+    }
+
+    /**
+     * 执行自动编译
+     */
+    private void executeAutoCompile(Path projectPath) {
+        try {
+            compiling = true;
+            QinLogger.info("[AutoCompile] 开始编译: " + projectPath.getFileName());
+
+            ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "compile");
+            pb.directory(projectPath.toFile());
+            pb.redirectErrorStream(true);
+
+            Process process = pb.start();
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(process.getInputStream(), "UTF-8"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    QinLogger.info("[AutoCompile] " + line);
+                }
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                QinLogger.info("[AutoCompile] ✓ 编译成功");
+            } else {
+                QinLogger.error("[AutoCompile] ✗ 编译失败，退出码: " + exitCode);
+            }
+
+            // 刷新项目结构，让 IDEA 看到新的 class 文件
+            projectSync.refreshProject();
+
+        } catch (Exception e) {
+            QinLogger.error("[AutoCompile] 编译异常: " + e.getMessage());
+        } finally {
+            compiling = false;
         }
     }
 

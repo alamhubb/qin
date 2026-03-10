@@ -15,8 +15,38 @@
         <toolWindow id="Qin" 
                     anchor="right"
                     factoryClass="com.qin.debug.QinToolWindowFactory"/>
-        <notificationGroup id="Qin Notifications" 
-                           displayType="BALLOON" 
+        <notificationGroup id="Qin Notifications"
+                           displayType="BALLOON"
                            toolWindowId="Qin"/>
+
+        <!-- 功能2: 错误导航 -->
+        <consoleFilterProvider
+            implementation="com.qin.debug.console.QinConsoleFilterProvider"/>
+        <externalAnnotator language="JAVA"
+            implementationClass="com.qin.debug.annotator.QinExternalAnnotator"/>
+        <projectService
+            serviceImplementation="com.qin.debug.annotator.QinCompileErrorService"/>
+
+        <!-- 功能1: 断点调试 + 功能3: Run Configuration -->
+        <configurationType
+            implementation="com.qin.debug.run.QinRunConfigurationType"/>
+        <programRunner
+            implementation="com.qin.debug.run.QinProgramRunner"/>
+        <programRunner
+            implementation="com.qin.debug.run.QinDebugProgramRunner"/>
+        <runConfigurationProducer
+            implementation="com.qin.debug.run.QinRunConfigurationProducer"/>
+
+        <!-- 功能5: 测试集成 -->
+        <configurationType
+            implementation="com.qin.debug.test.QinTestConfigurationType"/>
+
+        <!-- 功能6: 依赖补全 (JSON Schema) -->
+        <json.jsonSchemaProviderFactory
+            implementation="com.qin.debug.schema.QinJsonSchemaProviderFactory"/>
+
+        <!-- 功能7: Gutter Icons -->
+        <codeInsight.lineMarkerProvider language="JAVA"
+            implementationClass="com.qin.debug.gutter.QinRunLineMarkerProvider"/>
     </extensions>
 </idea-plugin>

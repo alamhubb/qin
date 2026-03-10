@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Qin Configuration",
+  "description": "Qin 项目配置文件 (qin.config.json)",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "项目名称，格式: groupId:artifactId",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9._-]*:[a-zA-Z][a-zA-Z0-9._-]*$"
+    },
+    "version": {
+      "type": "string",
+      "description": "项目版本号",
+      "default": "1.0.0"
+    },
+    "description": {
+      "type": "string",
+      "description": "项目描述"
+    },
+    "entry": {
+      "type": "string",
+      "description": "入口类的完全限定名或文件路径"
+    },
+    "java": {
+      "type": "object",
+      "description": "Java 编译配置",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Java 版本",
+          "enum": ["8", "11", "17", "21", "23", "25"],
+          "default": "21"
+        },
+        "source": {
+          "type": "string",
+          "description": "源码兼容版本"
+        },
+        "target": {
+          "type": "string",
+          "description": "目标字节码版本"
+        },
+        "sourceDir": {
+          "type": "string",
+          "description": "源码目录",
+          "default": "src/main/java"
+        },
+        "testDir": {
+          "type": "string",
+          "description": "测试源码目录",
+          "default": "src/test/java"
+        },
+        "outputDir": {
+          "type": "string",
+          "description": "编译输出目录",
+          "default": "build/classes"
+        },
+        "encoding": {
+          "type": "string",
+          "description": "源文件编码",
+          "default": "UTF-8"
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "项目依赖，格式: { \"groupId:artifactId\": \"version\" }",
+      "additionalProperties": {
+        "type": "string",
+        "description": "依赖版本号"
+      }
+    },
+    "devDependencies": {
+      "type": "object",
+      "description": "开发依赖",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "output": {
+      "type": "object",
+      "description": "打包输出配置",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "输出目录",
+          "default": "dist"
+        },
+        "jarName": {
+          "type": "string",
+          "description": "JAR 文件名"
+        },
+        "fatJar": {
+          "type": "boolean",
+          "description": "是否打包为 Fat JAR",
+          "default": false
+        }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "description": "Maven 仓库配置",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "仓库 ID"
+          },
+          "url": {
+            "type": "string",
+            "description": "仓库 URL",
+            "format": "uri"
+          }
+        },
+        "required": ["url"]
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "description": "Qin 插件列表",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["name"]
+}

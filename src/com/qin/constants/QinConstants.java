@@ -147,6 +147,34 @@ public class QinConstants {
      */
     public static final String CMD_FLAG = "/c";
 
+    // ==================== CLI 参数常量 ====================
+
+    /**
+     * --all: 同步所有子项目
+     */
+    public static final String ARG_ALL = "--all";
+
+    /**
+     * --force: 强制执行（忽略缓存）
+     */
+    public static final String ARG_FORCE = "--force";
+
+    /**
+     * --compile: 同步后自动编译
+     */
+    public static final String ARG_COMPILE = "--compile";
+
+    /**
+     * --no-sync: 跳过依赖同步
+     */
+    public static final String ARG_NO_SYNC = "--no-sync";
+
+    /**
+     * -o / --output: 指定输出目录
+     */
+    public static final String ARG_OUTPUT = "--output";
+    public static final String ARG_OUTPUT_SHORT = "-o";
+
     // ==================== 默认值常量 ====================
 
     /**
