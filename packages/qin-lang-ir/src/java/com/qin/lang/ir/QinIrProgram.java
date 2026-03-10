@@ -6,10 +6,13 @@ import java.util.Objects;
 /**
  * Root Qin IR program node.
  */
-public record QinIrProgram(List<QinIrConstDeclaration> declarations) {
+public record QinIrProgram(
+        List<QinIrConstDeclaration> declarations,
+        List<QinIrConsoleLogStatement> consoleLogs) {
     public QinIrProgram {
         Objects.requireNonNull(declarations, "declarations cannot be null");
+        Objects.requireNonNull(consoleLogs, "consoleLogs cannot be null");
         declarations = List.copyOf(declarations);
+        consoleLogs = List.copyOf(consoleLogs);
     }
 }
-

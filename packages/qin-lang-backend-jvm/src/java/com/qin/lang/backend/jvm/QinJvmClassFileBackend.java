@@ -1,6 +1,7 @@
 package com.qin.lang.backend.jvm;
 
 import com.qin.lang.ir.QinIrConstDeclaration;
+import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
@@ -12,6 +13,7 @@ import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -20,14 +22,18 @@ import java.util.Objects;
 public final class QinJvmClassFileBackend {
     private static final ClassDesc OBJECT_DESC = ClassDesc.of("java.lang.Object");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
+    private static final ClassDesc QIN_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.QinConsole");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
 
     private static final MethodTypeDesc VOID_INIT = MethodTypeDesc.ofDescriptor("()V");
     private static final MethodTypeDesc RUN_SIGNATURE = MethodTypeDesc.ofDescriptor("()Ljava/lang/Object;");
+    private static final MethodTypeDesc CONSOLE_LOG_SIGNATURE = MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)V");
     private static final MethodTypeDesc INTEGER_VALUE_OF_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(I)Ljava/lang/Integer;");
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc MAP_GET_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
 
     public byte[] compileProgram(QinIrProgram program, String className) {
         Objects.requireNonNull(program, "program cannot be null");
@@ -53,11 +59,15 @@ public final class QinJvmClassFileBackend {
             });
 
             builder.withMethodBody("run", RUN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
-                    code -> emitRunMethod(code, objectLiteral));
+                    code -> emitRunMethod(code, declaration, objectLiteral, program.consoleLogs()));
         });
     }
 
-    private void emitRunMethod(CodeBuilder code, QinIrObjectLiteral objectLiteral) {
+    private void emitRunMethod(
+            CodeBuilder code,
+            QinIrConstDeclaration declaration,
+            QinIrObjectLiteral objectLiteral,
+            List<QinIrConsoleLogStatement> consoleLogs) {
         int objectSlot = code.allocateLocal(TypeKind.REFERENCE);
 
         code.new_(LINKED_HASH_MAP_DESC);
@@ -73,8 +83,40 @@ public final class QinJvmClassFileBackend {
             code.pop();
         }
 
+        for (QinIrConsoleLogStatement consoleLog : consoleLogs) {
+            emitConsoleLog(code, objectSlot, declaration, consoleLog);
+        }
+
         code.aload(objectSlot);
         code.areturn();
+    }
+
+    private void emitConsoleLog(
+            CodeBuilder code,
+            int objectSlot,
+            QinIrConstDeclaration declaration,
+            QinIrConsoleLogStatement consoleLog) {
+        if (!declaration.name().equals(consoleLog.objectName())) {
+            throw new IllegalArgumentException(
+                    "Unknown object in console.log: " + consoleLog.objectName());
+        }
+
+        if (!(declaration.initializer() instanceof QinIrObjectLiteral objectLiteral)) {
+            throw new IllegalArgumentException(
+                    "console.log currently requires const object literal declaration");
+        }
+
+        boolean propertyExists = objectLiteral.properties().stream()
+                .anyMatch(property -> property.key().equals(consoleLog.propertyName()));
+        if (!propertyExists) {
+            throw new IllegalArgumentException(
+                    "Unknown property in console.log: " + consoleLog.propertyName());
+        }
+
+        code.aload(objectSlot);
+        code.ldc(consoleLog.propertyName());
+        code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
+        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
     private void emitExpression(CodeBuilder code, QinIrExpression expression) {
@@ -87,4 +129,3 @@ public final class QinJvmClassFileBackend {
         throw new IllegalArgumentException("Unsupported expression type: " + expression.getClass().getSimpleName());
     }
 }
-
