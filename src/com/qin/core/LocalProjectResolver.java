@@ -9,14 +9,14 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * 本地项目解析器
- * 参考jsmanyprojectmanager-cli的逻辑,自动发现和解析本地项目依赖
+ * 鏈湴椤圭洰瑙ｆ瀽鍣?
+ * 鍙傝€僯smanyprojectmanager-cli鐨勯€昏緫,鑷姩鍙戠幇鍜岃В鏋愭湰鍦伴」鐩緷璧?
  * 
- * 核心逻辑:
- * 1. 从当前目录向上查找所有包含qin.config.json的目录
- * 2. 对每个found的目录,扫描其同级目录查找其他项目
- * 3. 就近优先:近的项目覆盖远的同名项目
- * 4. 匹配dependencies中的完整Maven坐标(groupId:artifactId)
+ * 鏍稿績閫昏緫:
+ * 1. 浠庡綋鍓嶇洰褰曞悜涓婃煡鎵炬墍鏈夊寘鍚玵in.config.json鐨勭洰褰?
+ * 2. 瀵规瘡涓猣ound鐨勭洰褰?鎵弿鍏跺悓绾х洰褰曟煡鎵惧叾浠栭」鐩?
+ * 3. 灏辫繎浼樺厛:杩戠殑椤圭洰瑕嗙洊杩滅殑鍚屽悕椤圭洰
+ * 4. 鍖归厤dependencies涓殑瀹屾暣Maven鍧愭爣(groupId:artifactId)
  */
 public class LocalProjectResolver {
 
@@ -28,61 +28,81 @@ public class LocalProjectResolver {
         this.gson = new Gson();
     }
 
-    // ==================== 公开的静态方法 ====================
+    // ==================== 鍏紑鐨勯潤鎬佹柟娉?====================
 
     /**
-     * 扫描工作目录下的所有 Qin 项目路径
-     * 供 IDEA 插件等外部调用
+     * 鎵弿宸ヤ綔鐩綍涓嬬殑鎵€鏈?Qin 椤圭洰璺緞
+     * 渚?IDEA 鎻掍欢绛夊閮ㄨ皟鐢?
      * 
-     * @param workingDir 工作目录
-     * @return 所有发现的 Qin 项目路径列表
+     * @param workingDir 宸ヤ綔鐩綍
+     * @return 鎵€鏈夊彂鐜扮殑 Qin 椤圭洰璺緞鍒楄〃
      */
     public static List<Path> scanAllProjects(String workingDir) {
         LocalProjectResolver resolver = new LocalProjectResolver(workingDir);
         List<Path> projects = new ArrayList<>();
 
-        // 向上查找 workspace root
+        // 鍚戜笂鏌ユ壘 workspace root
         Path workspaceRoot = resolver.findWorkspaceRoot(resolver.startDir);
 
-        // 从 workspace root 向下扫描
+        // 浠?workspace root 鍚戜笅鎵弿
         resolver.scanProjects(workspaceRoot, projects, 0, QinConstants.MAX_SCAN_DEPTH);
 
         return projects;
     }
 
     /**
-     * 解析依赖map,区分本地项目和远程依赖
+     * 瑙ｆ瀽渚濊禆map,鍖哄垎鏈湴椤圭洰鍜岃繙绋嬩緷璧?
      * 
-     * @param dependencies Maven坐标格式的依赖 {"com.slime:slime-token": "1.0.0"}
-     * @return ResolutionResult 包含本地classpath和需要从远程下载的依赖
+     * @param dependencies Maven鍧愭爣鏍煎紡鐨勪緷璧?{"com.slime:slime-token": "1.0.0"}
+     * @return ResolutionResult 鍖呭惈鏈湴classpath鍜岄渶瑕佷粠杩滅▼涓嬭浇鐨勪緷璧?
      */
     public ResolutionResult resolveDependencies(Map<String, String> dependencies) {
         if (dependencies == null || dependencies.isEmpty()) {
             return new ResolutionResult("", new LinkedHashMap<>());
         }
 
-        // 1. 发现所有本地项目
+        // 1) Discover all local projects.
         Map<String, ProjectInfo> localProjects = discoverLocalProjects();
 
-        // 2. 分类依赖:本地 vs 远程
+        // 2) Split local and remote dependencies, including transitives.
         List<String> localClasspaths = new ArrayList<>();
         Map<String, String> remoteDependencies = new LinkedHashMap<>();
+        Set<String> visited = new HashSet<>();
+        Deque<Map.Entry<String, String>> queue = new ArrayDeque<>(dependencies.entrySet());
 
-        for (Map.Entry<String, String> dep : dependencies.entrySet()) {
-            String fullName = dep.getKey(); // "com.slime:slime-token"
-            String version = dep.getValue(); // "1.0.0"
+        while (!queue.isEmpty()) {
+            Map.Entry<String, String> dep = queue.removeFirst();
+            String fullName = dep.getKey();
+            String version = dep.getValue();
+
+            if (!visited.add(fullName)) {
+                continue;
+            }
 
             ProjectInfo project = localProjects.get(fullName);
             if (project != null) {
-                // 本地项目:使用 build/classes 路径
-                localClasspaths.add(project.buildClassesPath.toString());
+                String classesPath = project.buildClassesPath.toString();
+                if (!localClasspaths.contains(classesPath)) {
+                    localClasspaths.add(classesPath);
+                }
                 System.err.println("[DEBUG] Matched local: " + fullName + " -> " + project.buildClassesPath);
+
+                // Add transitive dependencies declared by this local project.
+                try {
+                    Path configPath = project.projectDir.resolve(QinConstants.CONFIG_FILE);
+                    if (Files.exists(configPath)) {
+                        QinConfig projectConfig = loadConfig(configPath);
+                        if (projectConfig.dependencies() != null && !projectConfig.dependencies().isEmpty()) {
+                            queue.addAll(projectConfig.dependencies().entrySet());
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("[DEBUG] Failed to load transitives from "
+                            + project.projectDir + ": " + e.getMessage());
+                }
             } else {
-                // 远程依赖:需要下载
-                remoteDependencies.put(fullName, version);
-                System.err.println("[DEBUG] Not found locally: " + fullName + " (available: " +
-                        localProjects.keySet().stream().filter(k -> k.contains("subhuti")).findFirst().orElse("none")
-                        + ")");
+                remoteDependencies.putIfAbsent(fullName, version);
+                System.err.println("[DEBUG] Not found locally: " + fullName);
             }
         }
 
@@ -93,24 +113,24 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 发现所有本地项目
+     * 鍙戠幇鎵€鏈夋湰鍦伴」鐩?
      * 
-     * 新策略：
-     * 1. 向上查找 workspace root
-     * 2. 从 workspace root 递归向下扫描所有项目
-     * 3. 按距离排序（近的优先）
+     * 鏂扮瓥鐣ワ細
+     * 1. 鍚戜笂鏌ユ壘 workspace root
+     * 2. 浠?workspace root 閫掑綊鍚戜笅鎵弿鎵€鏈夐」鐩?
+     * 3. 鎸夎窛绂绘帓搴忥紙杩戠殑浼樺厛锛?
      * 
-     * 返回Map: fullName -> ProjectInfo
+     * 杩斿洖Map: fullName -> ProjectInfo
      */
     private Map<String, ProjectInfo> discoverLocalProjects() {
-        // 使用 LinkedHashMap 保持插入顺序（近 -> 远）
+        // 浣跨敤 LinkedHashMap 淇濇寔鎻掑叆椤哄簭锛堣繎 -> 杩滐級
         Map<String, ProjectInfo> projects = new LinkedHashMap<>();
 
-        // 1. 向上查找 workspace root
+        // 1. 鍚戜笂鏌ユ壘 workspace root
         Path workspaceRoot = findWorkspaceRoot(startDir);
         System.err.println("[DEBUG] Workspace root: " + workspaceRoot);
 
-        // 2. 从 workspace root 递归向下扫描所有项目
+        // 2. 浠?workspace root 閫掑綊鍚戜笅鎵弿鎵€鏈夐」鐩?
         List<Path> projectPaths = new ArrayList<>();
         scanProjects(workspaceRoot, projectPaths, 0, QinConstants.MAX_SCAN_DEPTH);
 
@@ -119,19 +139,19 @@ public class LocalProjectResolver {
             System.err.println("[DEBUG]   - " + p);
         }
 
-        // 3. 按距离排序（近的优先）
+        // 3. 鎸夎窛绂绘帓搴忥紙杩戠殑浼樺厛锛?
         projectPaths.sort(Comparator.comparingInt(p -> startDir.toAbsolutePath().normalize()
                 .relativize(p.toAbsolutePath().normalize())
                 .getNameCount()));
 
-        // 4. 加载项目信息（就近优先，已存在的不覆盖）
+        // 4. 鍔犺浇椤圭洰淇℃伅锛堝氨杩戜紭鍏堬紝宸插瓨鍦ㄧ殑涓嶈鐩栵級
         for (Path projectPath : projectPaths) {
             try {
                 Path configPath = projectPath.resolve(QinConstants.CONFIG_FILE);
                 QinConfig config = loadConfig(configPath);
                 String fullName = config.name(); // "com.slime:slime-token"
 
-                // 就近优先: 如果已存在，不覆盖
+                // 灏辫繎浼樺厛: 濡傛灉宸插瓨鍦紝涓嶈鐩?
                 if (!projects.containsKey(fullName)) {
                     Path buildPath = projectPath.resolve(QinConstants.BUILD_CLASSES_DIR);
                     projects.put(fullName, new ProjectInfo(
@@ -149,55 +169,55 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 加载qin.config.json
+     * 鍔犺浇qin.config.json
      */
     private QinConfig loadConfig(Path configPath) throws IOException {
         String json = Files.readString(configPath);
         return gson.fromJson(json, QinConfig.class);
     }
 
-    // ==================== workspace 扫描逻辑 ====================
-    // 使用 QinConstants.PROJECT_ROOT_MARKERS 和 QinConstants.MAX_SCAN_DEPTH
+    // ==================== workspace 鎵弿閫昏緫 ====================
+    // 浣跨敤 QinConstants.PROJECT_ROOT_MARKERS 鍜?QinConstants.MAX_SCAN_DEPTH
 
     /**
-     * 向上查找 workspace root
+     * 鍚戜笂鏌ユ壘 workspace root
      * 
-     * 优先级：
-     * 1. IDEA 环境变量（IDEA_INITIAL_DIRECTORY）
-     * 2. VSCode 环境变量（VSCODE_CWD）
-     * 3. 向上查找，取最远的 .idea/.vscode/.git
+     * 浼樺厛绾э細
+     * 1. IDEA 鐜鍙橀噺锛圛DEA_INITIAL_DIRECTORY锛?
+     * 2. VSCode 鐜鍙橀噺锛圴SCODE_CWD锛?
+     * 3. 鍚戜笂鏌ユ壘锛屽彇鏈€杩滅殑 .idea/.vscode/.git
      */
     public Path findWorkspaceRoot(Path startDir) {
-        // 1. 优先使用 IDEA 环境变量
+        // 1. 浼樺厛浣跨敤 IDEA 鐜鍙橀噺
         String ideaDir = System.getenv("IDEA_INITIAL_DIRECTORY");
         if (ideaDir != null && !ideaDir.isEmpty()) {
-            Path ideaPath = Path.of(ideaDir);
-            if (Files.exists(ideaPath)) {
+            Path ideaPath = Path.of(ideaDir).toAbsolutePath().normalize();
+            if (Files.exists(ideaPath) && startDir.toAbsolutePath().normalize().startsWith(ideaPath)) {
                 return ideaPath;
             }
         }
 
-        // 2. 其次使用 VSCode 环境变量
+        // 2. 鍏舵浣跨敤 VSCode 鐜鍙橀噺
         String vscodeCwd = System.getenv("VSCODE_CWD");
         if (vscodeCwd != null && !vscodeCwd.isEmpty()) {
-            Path vscodePath = Path.of(vscodeCwd);
-            if (Files.exists(vscodePath)) {
+            Path vscodePath = Path.of(vscodeCwd).toAbsolutePath().normalize();
+            if (Files.exists(vscodePath) && startDir.toAbsolutePath().normalize().startsWith(vscodePath)) {
                 return vscodePath;
             }
         }
 
-        // 2. 向上查找，取最远的（最顶层的）
+        // 2. 鍚戜笂鏌ユ壘锛屽彇鏈€杩滅殑锛堟渶椤跺眰鐨勶級
         Path current = startDir.toAbsolutePath().normalize();
-        Path topMost = startDir; // 默认使用起始目录
+        Path topMost = startDir; // 榛樿浣跨敤璧峰鐩綍
 
         while (current != null && current.getParent() != null) {
-            // 检查是否有项目标志
-            final Path finalCurrent = current; // lambda 需要 final
+            // 妫€鏌ユ槸鍚︽湁椤圭洰鏍囧織
+            final Path finalCurrent = current; // lambda 闇€瑕?final
             boolean isProjectRoot = QinConstants.WORKSPACE_ROOT_MARKERS.stream()
                     .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker)));
 
             if (isProjectRoot) {
-                topMost = current; // 继续向上，取最顶层的
+                topMost = current; // 缁х画鍚戜笂锛屽彇鏈€椤跺眰鐨?
             }
 
             current = current.getParent();
@@ -207,24 +227,24 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 递归扫描目录查找 qin.config.json
+     * 閫掑綊鎵弿鐩綍鏌ユ壘 qin.config.json
      */
     public void scanProjects(Path dir, List<Path> projects, int depth, int maxDepth) {
         if (depth >= maxDepth || !Files.exists(dir)) {
             return;
         }
 
-        // 先检查当前目录是否有配置文件
+        // 鍏堟鏌ュ綋鍓嶇洰褰曟槸鍚︽湁閰嶇疆鏂囦欢
         if (Files.exists(dir.resolve(QinConstants.CONFIG_FILE)) && !projects.contains(dir)) {
             projects.add(dir);
         }
 
-        // 扫描子目录
+        // 鎵弿瀛愮洰褰?
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
             for (Path subDir : stream) {
                 String dirName = subDir.getFileName().toString();
 
-                // 使用常量排除特殊目录
+                // 浣跨敤甯搁噺鎺掗櫎鐗规畩鐩綍
                 if (QinConstants.EXCLUDED_DIRS.contains(dirName) ||
                         dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
                     continue;
@@ -233,17 +253,17 @@ public class LocalProjectResolver {
                 scanProjects(subDir, projects, depth + 1, maxDepth);
             }
         } catch (IOException e) {
-            // 忽略目录遍历错误
+            // 蹇界暐鐩綍閬嶅巻閿欒
         }
     }
 
     /**
-     * 本地项目信息
+     * 鏈湴椤圭洰淇℃伅
      */
     public static class ProjectInfo {
         public final String fullName; // "com.slime:slime-token"
-        public final Path projectDir; // 项目根目录
-        public final Path buildClassesPath; // build/classes路径
+        public final Path projectDir; // 椤圭洰鏍圭洰褰?
+        public final Path buildClassesPath; // build/classes璺緞
 
         public ProjectInfo(String fullName, Path projectDir, Path buildClassesPath) {
             this.fullName = fullName;
@@ -258,12 +278,12 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 依赖解析结果
-     * 包含本地classpath和需要从远程下载的依赖
+     * 渚濊禆瑙ｆ瀽缁撴灉
+     * 鍖呭惈鏈湴classpath鍜岄渶瑕佷粠杩滅▼涓嬭浇鐨勪緷璧?
      */
     public static class ResolutionResult {
-        public final String localClasspath; // 本地项目的classpath字符串
-        public final Map<String, String> remoteDependencies; // 需要从Maven下载的依赖
+        public final String localClasspath; // 鏈湴椤圭洰鐨刢lasspath瀛楃涓?
+        public final Map<String, String> remoteDependencies; // 闇€瑕佷粠Maven涓嬭浇鐨勪緷璧?
 
         public ResolutionResult(String localClasspath, Map<String, String> remoteDependencies) {
             this.localClasspath = localClasspath;

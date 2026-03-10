@@ -2,10 +2,11 @@
     "name": "com.qin:qin-lang-cli",
     "version": "0.1.0",
     "description": "CLI entrypoint for Qin language toolchain",
-    "entry": "src/java/com/qin/lang/cli/SmokeTestMain.java",
+    "entry": "src/java/com/qin/lang/cli/QinCompileMain.java",
     "dependencies": {
         "com.qin:qin-lang-frontend-adapter": "0.1.0",
         "com.qin:qin-lang-backend-jvm": "0.1.0",
+        "com.qin:qin-lang-ir": "0.1.0",
         "com.qin:qin-lang-runtime": "0.1.0"
     },
     "java": {
