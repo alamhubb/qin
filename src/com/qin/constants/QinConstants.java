@@ -181,6 +181,9 @@ public class QinConstants {
      * 默认源代码目录
      */
     public static final String DEFAULT_SOURCE_DIR = "src";
+    public static final String MAIN_SOURCE_DIR = "main";
+    public static final String SHARED_DIR = "shared";
+    public static final String APP_DIR = "app";
 
     /**
      * Java/Maven 标准源代码目录（优先级高于 DEFAULT_SOURCE_DIR）
@@ -196,10 +199,15 @@ public class QinConstants {
      * Java 入口文件候选列表（按优先级排序）
      * 用于自动检测项目入口
      */
+    public static final String DEFAULT_ENTRY = "src/Main.java";
     public static final java.util.List<String> DEFAULT_ENTRY_CANDIDATES = java.util.List.of(
-            "src/Main.java",
+            DEFAULT_ENTRY,
             "src/App.java",
             "src/Application.java",
+            "main/Main.java",
+            "main/main.java",
+            "Main.java",
+            "main.java",
             "src/server/Main.java",
             "src/main/java/Main.java");
 

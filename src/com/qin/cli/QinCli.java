@@ -73,7 +73,7 @@ public class QinCli {
         Files.createDirectories(cwd.resolve("src"));
 
         // Create Main.java
-        Path mainJava = cwd.resolve("src/Main.java");
+        Path mainJava = cwd.resolve(QinConstants.DEFAULT_ENTRY);
         if (!Files.exists(mainJava)) {
             Files.writeString(mainJava, """
                     public class Main {
@@ -92,10 +92,10 @@ public class QinCli {
                     {
                       "name": "%s",
                       "version": "1.0.0",
-                      "entry": "src/Main.java",
+                      "entry": "%s",
                       "dependencies": {}
                     }
-                    """, projectName));
+                    """, projectName, QinConstants.DEFAULT_ENTRY));
         }
 
         System.out.println(green("✓ Project initialized!"));

@@ -101,17 +101,29 @@ public class JavaRunner {
      * 优先使用 java.sourceDir 配置，否则自动检测
      */
     private String getSourceDir() {
-        // 1. 优先使用配置
         if (config.java() != null && config.java().sourceDir() != null) {
             return config.java().sourceDir();
         }
 
-        // 2. 自动检测：src/main/java > src
+        if (config.entry() != null && !config.entry().isBlank()) {
+            Path entryPath = Paths.get(config.entry().replace("\\", "/"));
+            Path parent = entryPath.getParent();
+            if (parent != null) {
+                Path parentDir = Paths.get(cwd, parent.toString());
+                if (Files.isDirectory(parentDir)) {
+                    return parent.toString().replace("\\", "/");
+                }
+            }
+        }
+
         if (Files.isDirectory(Paths.get(cwd, QinConstants.JAVA_SOURCE_DIR))) {
             return QinConstants.JAVA_SOURCE_DIR;
         }
         if (Files.isDirectory(Paths.get(cwd, QinConstants.DEFAULT_SOURCE_DIR))) {
             return QinConstants.DEFAULT_SOURCE_DIR;
+        }
+        if (Files.isDirectory(Paths.get(cwd, QinConstants.MAIN_SOURCE_DIR))) {
+            return QinConstants.MAIN_SOURCE_DIR;
         }
         return null;
     }
@@ -493,3 +505,4 @@ public class JavaRunner {
         }
     }
 }
+

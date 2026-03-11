@@ -750,3 +750,23 @@ MIT License - 查看 [LICENSE](LICENSE) 文件
 
 **Built with ❤️ using Java 25**  
 **Powered by Flexible Constructors, Virtual Threads, and Structured Concurrency**
+## Qin Language Positioning (v0.1)
+
+Qin is defined as a Deno-like runtime implemented in Java, with a constrained ES syntax subset.
+
+- Qin source uses ES-style syntax and ESM `import/export`.
+- Qin backend compiles to JVM `.class` files (and can also emit JS for web targets).
+- Qin is not Node.js compatible by default.
+- Qin standard library is provided by Qin runtime and implemented on top of Java standard library.
+
+### Scope and Non-Goals
+
+- Supported: selected ES syntax (incremental subset), ESM module model, Java-backed runtime APIs.
+- Not supported: Node-specific APIs and conventions (`require`, `module.exports`, `__dirname`, `process`, `Buffer`, `node:*`).
+- Goal: a controllable fullstack language/runtime model, not full ECMAScript compatibility in phase 1.
+
+### Convention Folders (Current Project Rule)
+
+- `shared/`: shared code and shared contracts
+- `app/`: frontend static assets root (`/index` resolves to `app/index` or `app/index.html`)
+- backend entry: `src/Main.java` by default, and auto-detection supports `main/Main.java` as compatibility

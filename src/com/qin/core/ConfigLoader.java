@@ -46,7 +46,7 @@ public class ConfigLoader {
 
         if (detection.getLanguages().isEmpty() && detection.getFeatures().isEmpty()) {
             throw new IOException(
-                    "No project detected. Create src/Main.java or create qin.config.json");
+                    "No project detected. Create " + QinConstants.DEFAULT_ENTRY + " or create qin.config.json");
         }
 
         // 零配置模式 - 使用简化构造器
@@ -153,8 +153,9 @@ public class ConfigLoader {
      */
     public ParsedEntry parseEntry(String entry) {
         if (entry == null) {
-            return new ParsedEntry(QinConstants.JAVA_SOURCE_DIR, QinConstants.DEFAULT_MAIN_CLASS,
-                    QinConstants.JAVA_SOURCE_DIR + "/Main.java");
+            String detectedEntry = findEntry();
+            String fallbackEntry = detectedEntry != null ? detectedEntry : QinConstants.DEFAULT_ENTRY;
+            return parseEntry(fallbackEntry);
         }
 
         String normalized = entry.replace("\\", "/");

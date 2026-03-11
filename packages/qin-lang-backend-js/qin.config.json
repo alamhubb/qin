@@ -1,0 +1,19 @@
+{
+    "name": "com.qin:qin-lang-backend-js",
+    "version": "0.1.0",
+    "description": "JavaScript backend for Qin language",
+    "entry": "src/java/com/qin/lang/backend/js/QinJsBackend.java",
+    "dependencies": {
+        "com.qin:qin-lang-ir": "0.1.0"
+    },
+    "java": {
+        "version": "25",
+        "sourceDir": "src/java",
+        "outputDir": "build/classes",
+        "encoding": "UTF-8"
+    },
+    "output": {
+        "dir": "build",
+        "jarName": "qin-lang-backend-js.jar"
+    }
+}
