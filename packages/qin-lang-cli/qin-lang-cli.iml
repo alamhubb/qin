@@ -29,6 +29,16 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-backend-js/build/classes" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-backend-js/src" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-backend-jvm/build/classes" />
         </CLASSES>
         <SOURCES>
@@ -39,20 +49,20 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/build/classes" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/build/classes" />
         </CLASSES>
         <SOURCES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/src" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/src" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/build/classes" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/build/classes" />
         </CLASSES>
         <SOURCES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/src" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/src" />
         </SOURCES>
       </library>
     </orderEntry>
