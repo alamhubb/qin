@@ -4,7 +4,7 @@
     <version>0.1.1</version>
     <vendor>Qin</vendor>
     
-    <description>Qin 构建工具 IDEA 插件，支持一键 Sync/Compile/Run</description>
+    <description>Qin 鏋勫缓宸ュ叿 IDEA 鎻掍欢锛屾敮鎸佷竴閿?Sync/Compile/Run</description>
     
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
@@ -19,7 +19,7 @@
                            displayType="BALLOON"
                            toolWindowId="Qin"/>
 
-        <!-- 功能2: 错误导航 -->
+        <!-- 鍔熻兘2: 閿欒瀵艰埅 -->
         <consoleFilterProvider
             implementation="com.qin.debug.console.QinConsoleFilterProvider"/>
         <externalAnnotator language="JAVA"
@@ -27,25 +27,21 @@
         <projectService
             serviceImplementation="com.qin.debug.annotator.QinCompileErrorService"/>
 
-        <!-- 功能1: 断点调试 + 功能3: Run Configuration -->
+        <!-- 鍔熻兘1: 鏂偣璋冭瘯 + 鍔熻兘3: Run Configuration -->
         <configurationType
             implementation="com.qin.debug.run.QinRunConfigurationType"/>
         <programRunner
             implementation="com.qin.debug.run.QinProgramRunner"/>
-        <programRunner
-            implementation="com.qin.debug.run.QinDebugProgramRunner"/>
         <runConfigurationProducer
             implementation="com.qin.debug.run.QinRunConfigurationProducer"/>
 
-        <!-- 功能5: 测试集成 -->
+        <!-- 鍔熻兘5: 娴嬭瘯闆嗘垚 -->
         <configurationType
             implementation="com.qin.debug.test.QinTestConfigurationType"/>
 
-        <!-- 功能6: 依赖补全 (JSON Schema) -->
-        <json.jsonSchemaProviderFactory
-            implementation="com.qin.debug.schema.QinJsonSchemaProviderFactory"/>
+        <!-- 鍔熻兘6: 渚濊禆琛ュ叏 (JSON Schema) -->
 
-        <!-- 功能7: Gutter Icons -->
+        <!-- 鍔熻兘7: Gutter Icons -->
         <codeInsight.lineMarkerProvider language="JAVA"
             implementationClass="com.qin.debug.gutter.QinRunLineMarkerProvider"/>
     </extensions>

@@ -7,28 +7,25 @@ import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.pom.java.LanguageLevel;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
-import static com.qin.constants.QinConstants.*;
+import static com.qin.constants.QinConstants.CMD_FLAG;
+import static com.qin.constants.QinConstants.CMD_PREFIX;
+import static com.qin.constants.QinConstants.CONFIG_FILE;
+import static com.qin.constants.QinConstants.QIN_CMD;
 
 /**
- * Qin 项目同步工具类
- * 统一处理所有同步逻辑，被以下场景调用：
- * - 插件启动时（静默模式）
- * - qin.config.json 变化时
- * - 手动点击刷新时（非静默模式）
+ * Synchronizes Qin projects with IDEA metadata.
  */
 public class QinProjectSync {
 
     private final Project project;
     private final String basePath;
-
-    /**
-     * 静默模式：不显示通知弹窗，只写日志
-     * 默认为 true（静默模式）
-     */
     private boolean silentMode = true;
 
     public QinProjectSync(@NotNull Project project) {
@@ -36,139 +33,101 @@ public class QinProjectSync {
         this.basePath = project.getBasePath();
     }
 
-    /**
-     * 设置通知模式
-     * @param silent true=静默模式（不弹通知），false=正常模式（显示通知）
-     * @return this，支持链式调用
-     */
     public QinProjectSync setSilentMode(boolean silent) {
         this.silentMode = silent;
         return this;
     }
 
-    /**
-     * 检查缓存是否有效
-     * 使用通用的 CacheValidator 工具类
-     */
     public boolean isCacheValid(Path projectPath) {
         boolean valid = com.qin.core.CacheValidator.isCacheValid(projectPath);
         if (valid) {
-            QinLogger.info("[Sync] 缓存有效，跳过同步: " + projectPath.getFileName());
+            QinLogger.info("[Sync] Cache is valid, skipping unchanged project: " + projectPath.getFileName());
         }
         return valid;
     }
 
-    /**
-     * 同步单个项目
-     * 统一入口，调用所有需要更新的子任务
-     */
     public void syncProject(Path projectPath) {
-        QinLogger.info("[Sync] ========== 开始同步项目: " + projectPath + " ==========");
+        QinLogger.info("[Sync] ========== Syncing project: " + projectPath + " ==========");
         String projectName = projectPath.getFileName().toString();
 
         try {
-            // 1. 读取配置文件
             Path configPath = projectPath.resolve(CONFIG_FILE);
             if (!Files.exists(configPath)) {
-                QinLogger.info("[Sync] 配置文件不存在，跳过");
+                QinLogger.info("[Sync] Config file not found, skipping project");
                 return;
             }
 
             QinConfig config = QinConfig.load(projectPath.toString());
             if (config == null) {
-                QinLogger.error("[Sync] 无法解析配置文件");
+                QinLogger.error("[Sync] Failed to parse config file");
                 if (!silentMode) {
-                    QinLogger.notifyError("Qin Sync Failed", "无法解析 " + projectName + " 的配置文件");
+                    QinLogger.notifyError("Qin Sync Failed", "Failed to parse config for " + projectName);
                 }
                 return;
             }
 
-            // 2. 执行所有同步任务
             syncDependencies(projectPath);
             updateImlFile(projectPath, config);
             updateLanguageLevel(config);
             updateMiscXml(config);
-
-            // 3. 刷新 IDEA 项目结构
             refreshProject();
 
-            QinLogger.info("[Sync] ========== 项目同步完成 ==========");
+            QinLogger.info("[Sync] ========== Project sync complete ==========");
             if (!silentMode) {
-                QinLogger.notifySuccess("Qin Sync Complete", projectName + " 同步成功");
+                QinLogger.notifySuccess("Qin Sync Complete", projectName + " sync completed successfully");
             }
-
         } catch (Exception e) {
-            QinLogger.error("[Sync] 同步失败: " + e.getMessage());
+            QinLogger.error("[Sync] Project sync failed: " + e.getMessage());
             if (!silentMode) {
-                QinLogger.notifyError("Qin Sync Failed", projectName + " 同步失败: " + e.getMessage());
+                QinLogger.notifyError("Qin Sync Failed", projectName + " sync failed: " + e.getMessage());
             }
         }
     }
 
-    /**
-     * 同步所有检测到的 Qin 项目
-     * 默认会检查缓存，缓存有效则跳过同步
-     */
     public void syncAllProjects() {
         syncAllProjects(true);
     }
 
-    /**
-     * 同步所有检测到的 Qin 项目
-     * @param checkCache true=检查缓存有效性，有效则跳过；false=强制同步
-     */
     public void syncAllProjects(boolean checkCache) {
-        if (basePath == null)
+        if (basePath == null) {
             return;
+        }
 
         try {
             List<Path> qinProjects = DebugStartup.discoverQinProjects(Paths.get(basePath));
-
             if (qinProjects.isEmpty()) {
-                QinLogger.info("[Sync] 未检测到 Qin 项目");
+                QinLogger.info("[Sync] No Qin projects detected");
                 return;
             }
 
-            QinLogger.info("[Sync] 检测到 " + qinProjects.size() + " 个 Qin 项目");
-
+            QinLogger.info("[Sync] Detected " + qinProjects.size() + " Qin projects");
             for (Path projectPath : qinProjects) {
-                // 检查缓存是否有效
-                if (checkCache && isCacheValid(projectPath)) {
-                    continue; // 缓存有效，跳过同步
+                if (shouldSyncProject(projectPath, checkCache)) {
+                    syncProject(projectPath);
                 }
-                syncProject(projectPath);
             }
-
         } catch (Exception e) {
-            QinLogger.error("[Sync] 同步所有项目失败: " + e.getMessage());
+            QinLogger.error("[Sync] Failed to sync workspace projects: " + e.getMessage());
         }
     }
 
-    /**
-     * 仅刷新语言级别（场景 2: .iml 变化后使用）
-     * 用于 CLI qin sync 执行后，.iml 文件已更新，只需刷新 IDEA 内存中的设置
-     * 不重新执行 sync，避免循环和重复工作
-     */
     public void refreshLanguageLevel(QinConfig config) {
-        QinLogger.info("[Sync] → 仅刷新语言级别...");
-        updateLanguageLevel(config); // T3: 更新 IDEA 内存
-        refreshProject(); // T5: 刷新项目结构
-        QinLogger.info("[Sync] ✓ 语言级别刷新完成");
+        QinLogger.info("[Sync] Refreshing language level from .iml update...");
+        updateLanguageLevel(config);
+        refreshProject();
+        QinLogger.info("[Sync] Language level refresh complete");
     }
 
-    /**
-     * 任务1: 同步依赖（调用 qin sync）
-     */
     public void syncDependencies(Path projectPath) {
         try {
-            QinLogger.info("[Sync] → 同步依赖...");
+            QinLogger.info("[Sync] Running `qin sync` for project dependencies...");
             ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "sync");
             pb.directory(projectPath.toFile());
             pb.redirectErrorStream(true);
 
             Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream(), "UTF-8"))) {
+                    new InputStreamReader(process.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     QinLogger.info("[qin sync] " + line);
@@ -177,115 +136,88 @@ public class QinProjectSync {
 
             int exitCode = process.waitFor();
             if (exitCode == 0) {
-                QinLogger.info("[Sync] ✓ 依赖同步完成");
+                QinLogger.info("[Sync] Dependency sync complete");
             } else {
-                QinLogger.error("[Sync] ✗ 依赖同步失败，退出码: " + exitCode);
+                QinLogger.error("[Sync] Dependency sync command failed with exit code: " + exitCode);
             }
         } catch (Exception e) {
-            QinLogger.error("[Sync] 同步依赖异常: " + e.getMessage());
+            QinLogger.error("[Sync] Failed to run dependency sync: " + e.getMessage());
         }
     }
 
-    /**
-     * 任务2: 更新 .iml 文件
-     */
     public void updateImlFile(Path projectPath, QinConfig config) {
         try {
-            QinLogger.info("[Sync] → 更新 .iml 文件...");
-
+            QinLogger.info("[Sync] Regenerating module .iml file...");
             Path ideaDir = Paths.get(basePath, ".idea");
             DebugStartup.generateImlFile(projectPath, true, ideaDir);
 
-            // 更新模块级别的 LANGUAGE_LEVEL
             String projectName = projectPath.getFileName().toString();
             Path imlPath = projectPath.resolve(projectName + ".iml");
             if (Files.exists(imlPath)) {
                 updateImlLanguageLevel(imlPath, config);
             }
 
-            QinLogger.info("[Sync] ✓ .iml 文件更新完成");
+            QinLogger.info("[Sync] .iml update complete");
         } catch (Exception e) {
-            QinLogger.error("[Sync] 更新 .iml 失败: " + e.getMessage());
+            QinLogger.error("[Sync] Failed to update .iml file: " + e.getMessage());
         }
     }
 
-    /**
-     * 更新 .iml 文件中的 LANGUAGE_LEVEL 属性
-     */
     private void updateImlLanguageLevel(Path imlPath, QinConfig config) {
         try {
             String content = Files.readString(imlPath);
-            String targetVersion = config.getJavaVersion();
-            String languageLevel = "JDK_" + targetVersion;
+            String languageLevel = "JDK_" + config.getJavaVersion();
 
-            // 检查是否已有 LANGUAGE_LEVEL 属性
             if (content.contains("LANGUAGE_LEVEL=")) {
-                // 更新现有属性
-                content = content.replaceAll(
-                        "LANGUAGE_LEVEL=\"[^\"]*\"",
+                content = content.replaceAll("LANGUAGE_LEVEL=\"[^\"]*\"",
                         "LANGUAGE_LEVEL=\"" + languageLevel + "\"");
             } else if (content.contains("<component name=\"NewModuleRootManager\"")) {
-                // 添加 LANGUAGE_LEVEL 属性
                 content = content.replace(
                         "<component name=\"NewModuleRootManager\"",
                         "<component name=\"NewModuleRootManager\" LANGUAGE_LEVEL=\"" + languageLevel + "\"");
             }
 
             Files.writeString(imlPath, content);
-            QinLogger.info("[Sync] ✓ .iml LANGUAGE_LEVEL 已设置为 " + languageLevel);
+            QinLogger.info("[Sync] Updated .iml LANGUAGE_LEVEL to " + languageLevel);
         } catch (Exception e) {
-            QinLogger.error("[Sync] 更新 .iml LANGUAGE_LEVEL 失败: " + e.getMessage());
+            QinLogger.error("[Sync] Failed to update .iml LANGUAGE_LEVEL: " + e.getMessage());
         }
     }
 
-    /**
-     * 任务3: 更新 IDEA 语言级别
-     */
     public void updateLanguageLevel(QinConfig config) {
         try {
-            QinLogger.info("[Sync] → 更新语言级别...");
-
+            QinLogger.info("[Sync] Updating IDEA language level...");
             String sourceVersion = config.getSourceVersion();
             LanguageLevel level = parseLanguageLevel(sourceVersion);
-
             if (level == null) {
-                QinLogger.info("[Sync] 无法解析语言级别: " + sourceVersion);
+                QinLogger.info("[Sync] Unsupported sourceVersion, skipping language level update: " + sourceVersion);
                 return;
             }
 
-            final LanguageLevel finalLevel = level;
-            ApplicationManager.getApplication().invokeLater(() -> {
-                ApplicationManager.getApplication().runWriteAction(() -> {
-                    LanguageLevelProjectExtension extension = LanguageLevelProjectExtension.getInstance(project);
-                    if (extension != null) {
-                        extension.setLanguageLevel(finalLevel);
-                        QinLogger.info("[Sync] ✓ 语言级别已设置为 " + finalLevel.name());
-                    }
-                });
-            });
+            ApplicationManager.getApplication().invokeLater(() ->
+                    ApplicationManager.getApplication().runWriteAction(() -> {
+                        LanguageLevelProjectExtension extension = LanguageLevelProjectExtension.getInstance(project);
+                        if (extension != null) {
+                            extension.setLanguageLevel(level);
+                            QinLogger.info("[Sync] IDEA language level set to " + level.name());
+                        }
+                    }));
         } catch (Exception e) {
-            QinLogger.error("[Sync] 更新语言级别失败: " + e.getMessage());
+            QinLogger.error("[Sync] Failed to update IDEA language level: " + e.getMessage());
         }
     }
 
-    /**
-     * 任务4: 更新 .idea/misc.xml 中的 languageLevel
-     */
     public void updateMiscXml(QinConfig config) {
         try {
-            QinLogger.info("[Sync] → 更新 misc.xml...");
-
+            QinLogger.info("[Sync] Updating .idea/misc.xml...");
             String targetVersion = config.getJavaVersion();
-
             Path miscXml = Paths.get(basePath, ".idea", "misc.xml");
             if (!Files.exists(miscXml)) {
-                QinLogger.info("[Sync] misc.xml 不存在，跳过");
+                QinLogger.info("[Sync] misc.xml not found, skipping");
                 return;
             }
 
             String content = Files.readString(miscXml);
-
-            // 更新 languageLevel 属性
             String languageLevelAttr = "languageLevel=\"JDK_" + targetVersion + "\"";
             if (content.contains("languageLevel=")) {
                 content = content.replaceAll("languageLevel=\"[^\"]*\"", languageLevelAttr);
@@ -296,29 +228,23 @@ public class QinProjectSync {
             }
 
             Files.writeString(miscXml, content);
-            QinLogger.info("[Sync] ✓ misc.xml 已更新，languageLevel=JDK_" + targetVersion);
+            QinLogger.info("[Sync] Updated misc.xml languageLevel=JDK_" + targetVersion);
         } catch (Exception e) {
-            QinLogger.error("[Sync] 更新 misc.xml 失败: " + e.getMessage());
+            QinLogger.error("[Sync] Failed to update misc.xml: " + e.getMessage());
         }
     }
 
-    /**
-     * 刷新 IDEA 项目结构
-     */
     public void refreshProject() {
         ApplicationManager.getApplication().invokeLater(() -> {
             try {
                 VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
-                QinLogger.info("[Sync] ✓ 项目结构已刷新");
+                QinLogger.info("[Sync] Project structure refresh complete");
             } catch (Exception e) {
-                QinLogger.error("[Sync] 刷新项目失败: " + e.getMessage());
+                QinLogger.error("[Sync] Failed to refresh project structure: " + e.getMessage());
             }
         });
     }
 
-    /**
-     * 解析 Java 版本到 LanguageLevel
-     */
     private LanguageLevel parseLanguageLevel(String version) {
         try {
             int ver = Integer.parseInt(version);
@@ -334,6 +260,63 @@ public class QinProjectSync {
             return LanguageLevel.HIGHEST;
         } catch (Exception e) {
             return LanguageLevel.JDK_21;
+        }
+    }
+
+    private boolean shouldSyncProject(Path projectPath, boolean checkCache) {
+        if (!checkCache) {
+            return true;
+        }
+
+        if (!isCacheValid(projectPath)) {
+            return true;
+        }
+
+        if (needsIdeaModuleRepair(projectPath)) {
+            QinLogger.info("[Sync] IDEA module metadata is incomplete, forcing resync: " + projectPath.getFileName());
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean needsIdeaModuleRepair(Path projectPath) {
+        try {
+            if (basePath == null) {
+                return true;
+            }
+
+            String projectName = projectPath.getFileName().toString();
+            Path imlPath = projectPath.resolve(projectName + ".iml");
+            if (!Files.exists(imlPath)) {
+                QinLogger.info("[Sync] Missing .iml file: " + imlPath);
+                return true;
+            }
+
+            String imlContent = Files.readString(imlPath);
+            if (!imlContent.contains("<sourceFolder ")) {
+                QinLogger.info("[Sync] Missing sourceFolder in .iml: " + imlPath);
+                return true;
+            }
+
+            Path modulesXml = Paths.get(basePath, ".idea", "modules.xml");
+            if (!Files.exists(modulesXml)) {
+                QinLogger.info("[Sync] Missing IDEA modules.xml: " + modulesXml);
+                return true;
+            }
+
+            String modulesContent = Files.readString(modulesXml);
+            Path relativeImlPath = Paths.get(basePath).relativize(imlPath);
+            String moduleEntry = relativeImlPath.toString().replace("\\", "/");
+            if (!modulesContent.contains(moduleEntry)) {
+                QinLogger.info("[Sync] Module entry missing from modules.xml: " + moduleEntry);
+                return true;
+            }
+
+            return false;
+        } catch (Exception e) {
+            QinLogger.error("[Sync] Failed to validate IDEA module metadata: " + e.getMessage());
+            return true;
         }
     }
 }

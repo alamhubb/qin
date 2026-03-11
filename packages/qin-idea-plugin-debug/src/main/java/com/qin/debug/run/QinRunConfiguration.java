@@ -5,12 +5,13 @@ import com.intellij.execution.configurations.*;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
+import com.qin.debug.QinLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Qin 运行配置
- * 存储和管理 Qin 项目的运行配置信息
+ * Qin 杩愯閰嶇疆
+ * 瀛樺偍鍜岀鐞?Qin 椤圭洰鐨勮繍琛岄厤缃俊鎭?
  */
 public class QinRunConfiguration extends RunConfigurationBase<QinRunConfigurationOptions> {
 
@@ -80,19 +81,25 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
     @Override
     public RunProfileState getState(@NotNull Executor executor,
                                      @NotNull ExecutionEnvironment environment) {
+        QinLogger.info("[RUN] Building RunProfileState: executor=" + executor.getId()
+                + ", projectPath=" + getProjectPath()
+                + ", mainClass=" + getMainClass());
         return new QinRunProfileState(this, environment);
     }
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
         String projectPath = getProjectPath();
+        QinLogger.info("[RUN] Checking configuration: projectPath=" + projectPath + ", mainClass=" + getMainClass());
         if (projectPath == null || projectPath.isEmpty()) {
+            QinLogger.error("[RUN] Configuration check failed: project path is empty");
             throw new RuntimeConfigurationError("Project path is not specified");
         }
 
-        // 检查 qin.config.json 是否存在
+        // 妫€鏌?qin.config.json 鏄惁瀛樺湪
         java.nio.file.Path configPath = java.nio.file.Paths.get(projectPath, "qin.config.json");
         if (!java.nio.file.Files.exists(configPath)) {
+            QinLogger.error("[RUN] Configuration check failed: qin.config.json missing at " + configPath);
             throw new RuntimeConfigurationError("qin.config.json not found in: " + projectPath);
         }
     }

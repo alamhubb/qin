@@ -12,8 +12,8 @@ val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm
 group = "com.qin"
 version = "0.0.1-$buildTime"
 
-// qin-cli 编译输出目录（使用 qin.config.json 配置的 build/classes）
-val qinCliClasses = file("../../build/classes")
+// qin-cli compiled classes under qin/build/classes
+val qinCliClasses = file("../../build/classes").canonicalFile
 
 repositories {
     gradlePluginPortal()
@@ -24,9 +24,9 @@ repositories {
 }
 
 dependencies {
-    // 依赖 qin-cli 核心库（编译和运行时）
+    // Compile against qin-cli core classes.
     implementation(files(qinCliClasses))
-    
+
     implementation("com.google.code.gson:gson:2.10.1")
     intellijPlatform {
         intellijIdeaUltimate("2025.3.1")
@@ -35,7 +35,7 @@ dependencies {
 }
 
 kotlin {
-    // 使用 Java 25（系统安装版本），但编译输出为 Java 21 兼容
+    // Use the locally installed JDK 25 but keep plugin bytecode on Java 21.
     jvmToolchain(25)
 }
 
@@ -69,28 +69,39 @@ tasks {
         )
     }
 
-    // 将 qin-cli 的类打包进插件 JAR
+    // Bundle required qin-cli classes into the plugin JAR.
     withType<Jar> {
         from(qinCliClasses) {
             include("com/qin/core/**")
             include("com/qin/constants/**")
             include("com/qin/types/**")
-            include("com/qin/bsp/**")  // BspHandler 等
+            include("com/qin/bsp/**")
         }
     }
 
     intellijPlatform {
         buildSearchableOptions = false
     }
-    
-    // 在 buildPlugin 前清空 distributions 目录（只保留最新版本）
+
+    // Keep only the latest packaged plugin artifact.
     named("buildPlugin") {
         doFirst {
             val distDir = file("build/distributions")
             if (distDir.exists()) {
                 distDir.listFiles()?.forEach { it.delete() }
-                println("✓ 已清空 build/distributions/")
+                println("Cleaned build/distributions/")
             }
         }
     }
 }
+
+sourceSets {
+    main {
+        java {
+            exclude("com/qin/debug/run/QinDebugProcess.java")
+            exclude("com/qin/debug/run/QinDebugProgramRunner.java")
+            exclude("com/qin/debug/schema/**")
+        }
+    }
+}
+

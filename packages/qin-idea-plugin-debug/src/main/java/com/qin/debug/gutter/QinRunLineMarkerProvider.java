@@ -18,6 +18,7 @@ import com.intellij.psi.*;
 import com.intellij.codeInsight.daemon.LineMarkerInfo;
 import com.intellij.codeInsight.daemon.LineMarkerProvider;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
+import com.qin.debug.QinLogger;
 import com.qin.debug.run.QinConfigurationFactory;
 import com.qin.debug.run.QinRunConfiguration;
 import com.qin.debug.run.QinRunConfigurationType;
@@ -154,16 +155,29 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
      */
     private void runWithQin(PsiElement element, boolean debug) {
         PsiMethod method = findMethod(element);
-        if (method == null) return;
+        if (method == null) {
+            QinLogger.error("[RUN] Gutter run aborted: method not found");
+            return;
+        }
 
         PsiClass containingClass = method.getContainingClass();
-        if (containingClass == null) return;
+        if (containingClass == null) {
+            QinLogger.error("[RUN] Gutter run aborted: containing class not found");
+            return;
+        }
 
         Project project = element.getProject();
         String qualifiedName = containingClass.getQualifiedName();
         String projectPath = findQinProjectPath(element);
 
-        if (qualifiedName == null || projectPath == null) return;
+        if (qualifiedName == null || projectPath == null) {
+            QinLogger.error("[RUN] Gutter run aborted: qualifiedName=" + qualifiedName + ", projectPath=" + projectPath);
+            return;
+        }
+
+        QinLogger.info("[RUN] Gutter run requested: mainClass=" + qualifiedName
+                + ", projectPath=" + projectPath
+                + ", debug=" + debug);
 
         // 创建运行配置
         RunManager runManager = RunManager.getInstance(project);
