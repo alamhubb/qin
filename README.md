@@ -770,3 +770,19 @@ Qin is defined as a Deno-like runtime implemented in Java, with a constrained ES
 - `shared/`: shared code and shared contracts
 - `app/`: frontend static assets root (`/index` resolves to `app/index` or `app/index.html`)
 - backend entry: `src/Main.java` by default, and auto-detection supports `main/Main.java` as compatibility
+
+## Runtime Package Plan
+
+- Location: `qin/packages/qin-runtime-core`
+- Name: `qin-runtime-core`
+- Purpose: Qin runtime orchestration layer (Java runtime semantics, ES-style syntax)
+
+### Why this package
+
+- Keep `slime-java` parser frontend as shared infrastructure.
+- Keep compiler backends (`qin-lang-backend-jvm` and `qin-lang-backend-js`) as independent modules.
+- Put project-level orchestration (layout conventions, bootstrap CLI) in a dedicated runtime package.
+
+### Stage 0 Entry
+
+Use `com.qin.runtime.core.QinRuntimeMain` to parse `.qin` via Slime and emit `.class/.js` outputs.

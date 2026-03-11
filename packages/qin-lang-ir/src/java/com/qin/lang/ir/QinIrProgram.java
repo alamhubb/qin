@@ -8,11 +8,17 @@ import java.util.Objects;
  */
 public record QinIrProgram(
         List<QinIrConstDeclaration> declarations,
-        List<QinIrConsoleLogStatement> consoleLogs) {
+        List<QinIrConsoleLogStatement> consoleLogs,
+        List<QinIrJavaImport> javaImports,
+        List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs) {
     public QinIrProgram {
         Objects.requireNonNull(declarations, "declarations cannot be null");
         Objects.requireNonNull(consoleLogs, "consoleLogs cannot be null");
+        Objects.requireNonNull(javaImports, "javaImports cannot be null");
+        Objects.requireNonNull(javaStaticConsoleLogs, "javaStaticConsoleLogs cannot be null");
         declarations = List.copyOf(declarations);
         consoleLogs = List.copyOf(consoleLogs);
+        javaImports = List.copyOf(javaImports);
+        javaStaticConsoleLogs = List.copyOf(javaStaticConsoleLogs);
     }
 }
