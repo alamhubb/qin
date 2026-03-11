@@ -19,6 +19,16 @@ public class ClasspathBuilder {
     private final String externalClasspath;
     private final QinConfig config;
 
+    public ClasspathBuilder(String cwd, QinConfig config) {
+        this(
+                cwd,
+                config != null && config.java() != null && config.java().outputDir() != null
+                        ? Paths.get(cwd, config.java().outputDir()).toString()
+                        : Paths.get(cwd, "build", "classes").toString(),
+                "",
+                config);
+    }
+
     public ClasspathBuilder(String cwd, String outputDir, String externalClasspath, QinConfig config) {
         this.cwd = cwd;
         this.outputDir = outputDir;

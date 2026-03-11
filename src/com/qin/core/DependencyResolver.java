@@ -29,20 +29,20 @@ public class DependencyResolver {
     public DependencyResolver(String csCommand, List<Repository> repos,
             Map<String, WorkspacePackage> localPackages,
             String projectRoot, boolean localRep) {
-        // 如果没有提供csCommand,使用内嵌的coursier.jar
+        // 婵″倹鐏夊▽鈩冩箒閹绘劒绶礳sCommand,娴ｈ法鏁ら崘鍛サ閻ㄥ垻oursier.jar
         if (csCommand == null || csCommand.isEmpty()) {
-            // 1. 首先尝试提取内嵌的coursier.jar
+            // 1. 妫ｆ牕鍘涚亸婵婄槸閹绘劕褰囬崘鍛サ閻ㄥ垻oursier.jar
             Path embeddedJar = extractEmbeddedCoursier();
             if (embeddedJar != null) {
                 this.csCommand = "java -jar " + embeddedJar.toString();
             } else {
-                // 2. 其次尝试qin安装目录的lib/coursier.jar
+                // 2. 閸忚埖顐肩亸婵婄槸qin鐎瑰顥婇惄顔肩秿閻ㄥ埐ib/coursier.jar
                 String qinDir = getQinInstallDir();
                 Path libJar = Paths.get(qinDir, "lib", "coursier.jar");
                 if (Files.exists(libJar)) {
                     this.csCommand = "java -jar " + libJar.toString();
                 } else {
-                    // 3. 最后fallback到系统cs命令
+                    // 3. 閺堚偓閸氬穳allback閸掓壆閮寸紒鐒巗閸涙垝鎶?
                     this.csCommand = "cs";
                 }
             }
@@ -54,8 +54,8 @@ public class DependencyResolver {
         this.projectRoot = projectRoot;
         this.useLocalRep = localRep;
 
-        // 全局libs目录：~/.qin/libs（所有项目共享）
-        // 本地libs目录：.qin/libs（创建符号链接指向全局）
+        // 閸忋劌鐪琹ibs閻╊喖缍嶉敍娈?.qin/libs閿涘牊澧嶉張澶愩€嶉惄顔煎彙娴滎偓绱?
+        // 閺堫剙婀磍ibs閻╊喖缍嶉敍?qin/libs閿涘牆鍨卞铏诡儊閸欑兘鎽奸幒銉﹀瘹閸氭垵鍙忕仦鈧敍?
         this.repoDir = localRep
                 ? QinPaths.getLocalLibsDir(projectRoot).toString()
                 : QinPaths.getGlobalLibsDir().toString();
@@ -70,16 +70,16 @@ public class DependencyResolver {
     }
 
     /**
-     * 获取qin的安装目录
+     * 閼惧嘲褰噏in閻ㄥ嫬鐣ㄧ憗鍛窗瑜?
      */
     private static String getQinInstallDir() {
-        // 尝试从环境变量或系统属性获取qin目录
+        // 鐏忔繆鐦禒搴ｅ箚婢у啫褰夐柌蹇斿灗缁崵绮虹仦鐐粹偓褑骞忛崣鏉歩n閻╊喖缍?
         String qinDir = System.getProperty("qin.home");
         if (qinDir != null) {
             return qinDir;
         }
 
-        // Fallback: 获取当前jar所在目录
+        // Fallback: 閼惧嘲褰囪ぐ鎾冲jar閹碘偓閸︺劎娲拌ぐ?
         try {
             String jarPath = DependencyResolver.class
                     .getProtectionDomain()
@@ -87,7 +87,7 @@ public class DependencyResolver {
                     .getLocation()
                     .toURI()
                     .getPath();
-            // 如果在 build/classes 中,返回上两级
+            // 婵″倹鐏夐崷?build/classes 娑?鏉╂柨娲栨稉濠佽⒈缁?
             if (jarPath.contains("build")) {
                 return Paths.get(jarPath).getParent().getParent().toString();
             }
@@ -95,24 +95,24 @@ public class DependencyResolver {
             // Ignore
         }
 
-        // 最后fallback: 当前目录
+        // 閺堚偓閸氬穳allback: 瑜版挸澧犻惄顔肩秿
         return QinConstants.getCwd();
     }
 
     /**
-     * 提取内嵌的coursier.jar到临时目录
+     * 閹绘劕褰囬崘鍛サ閻ㄥ垻oursier.jar閸掗澶嶉弮鍓佹窗瑜?
      */
     private static Path extractEmbeddedCoursier() {
         try {
-            // 首先尝试从classpath中的lib/coursier.jar加载
+            // 妫ｆ牕鍘涚亸婵婄槸娴犲穯lasspath娑擃厾娈憀ib/coursier.jar閸旂姾娴?
             InputStream is = DependencyResolver.class.getResourceAsStream("/lib/coursier.jar");
             if (is == null) {
-                // 尝试相对路径
+                // 鐏忔繆鐦惄绋款嚠鐠侯垰绶?
                 is = DependencyResolver.class.getClassLoader().getResourceAsStream("lib/coursier.jar");
             }
 
             if (is != null) {
-                // 提取到临时目录
+                // 閹绘劕褰囬崚棰佸閺冨墎娲拌ぐ?
                 Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"), ".qin");
                 Files.createDirectories(tempDir);
                 Path coursierJar = tempDir.resolve("coursier.jar");
@@ -156,17 +156,21 @@ public class DependencyResolver {
                         pkgVersion = "0.0.0";
                     if (!checkVersionMatch(version, pkgVersion)) {
                         throw new IOException(
-                                String.format("本地包 \"%s\" 版本不匹配: 需要 %s, 实际 %s",
+                                String.format("閺堫剙婀撮崠?\"%s\" 閻楀牊婀版稉宥呭爱闁? 闂団偓鐟?%s, 鐎圭偤妾?%s",
                                         name, version, pkgVersion));
                     }
                 }
                 localPaths.add(pkg.getClassesDir());
             } else {
-                // 支持 Qin 分隔符，转换为 Maven 格式
-                System.out.println("[DEBUG] 原始 name: " + name);
-                String mavenCoordinate = QinConstants.toMavenCoordinate(name) +
-                        QinConstants.MAVEN_COORDINATE_SEPARATOR + version;
-                System.out.println("[DEBUG] 转换后: " + mavenCoordinate);
+                String mavenCoordinate = toResolveCoordinate(name, version);
+                if (mavenCoordinate == null) {
+                    throw new IOException(
+                            String.format(
+                                    "Unsupported dependency notation: \"%s\" -> \"%s\". Use groupId:artifactId:version for Maven dependencies or declare a matching local Qin package name.",
+                                    name,
+                                    version));
+                }
+                System.out.println("[DEBUG] Resolved dependency: " + name + " -> " + mavenCoordinate);
                 mavenDeps.add(mavenCoordinate);
             }
         }
@@ -233,47 +237,47 @@ public class DependencyResolver {
             args.addAll(deps);
             args.add("--classpath");
 
-            // 下载源码
+            // 娑撳娴囧┃鎰垳
             if (downloadSources) {
                 args.add("--sources");
             }
 
-            // 下载 Javadoc
+            // 娑撳娴?Javadoc
             if (downloadJavadoc) {
                 args.add("--javadoc");
             }
 
-            // 添加缓存配置
+            // 濞ｈ濮炵紓鎾崇摠闁板秶鐤?
             String cacheDir = QinConstants.getHomeDir() + "/.cache/coursier";
             args.add("--cache");
             args.add(cacheDir);
 
-            // 启用并行下载
+            // 閸氼垳鏁ら獮鎯邦攽娑撳娴?
             args.add("--parallel");
             args.add("8");
 
-            // 添加仓库
+            // 濞ｈ濮炴禒鎾崇氨
             for (String repo : repositories) {
                 args.add("-r");
                 args.add(repo);
             }
 
-            // 设置进度模式
+            // 鐠佸墽鐤嗘潻娑樺濡€崇础
             args.add("--progress");
             args.add("--ttl");
-            args.add("24h"); // 缓存有效期 24 小时
+            args.add("24h"); // 缂傛挸鐡ㄩ張澶嬫櫏閺?24 鐏忓繑妞?
 
             ProcessBuilder pb = new ProcessBuilder(args);
             pb.redirectErrorStream(false);
             Process proc = pb.start();
 
-            // 异步读取进度信息
+            // 瀵倹顒炵拠璇插絿鏉╂稑瀹虫穱鈩冧紖
             Thread progressThread = new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(proc.getErrorStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        // 显示下载进度
+                        // 閺勫墽銇氭稉瀣祰鏉╂稑瀹?
                         if (line.contains("Downloading") || line.contains("Downloaded")) {
                             System.out.println("  " + line);
                         }
@@ -304,11 +308,11 @@ public class DependencyResolver {
     }
 
     private List<String> copyToRepository(List<String> globalPaths) throws IOException {
-        // 全局存储目录
+        // 閸忋劌鐪€涙ê鍋嶉惄顔肩秿
         Path globalLibsDir = QinPaths.getGlobalLibsDir();
         Files.createDirectories(globalLibsDir);
 
-        // 项目根目录的 libs 符号链接目录
+        // 妞ゅ湱娲伴弽鍦窗瑜版洜娈?libs 缁楋箑褰块柧鐐复閻╊喖缍?
         Path projectLibsDir = Paths.get(projectRoot, "libs");
         Files.createDirectories(projectLibsDir);
 
@@ -318,11 +322,11 @@ public class DependencyResolver {
             if (!globalPath.endsWith(".jar"))
                 continue;
 
-            // 提取包信息：groupId, artifactId 和 version
+            // 閹绘劕褰囬崠鍛繆閹垽绱癵roupId, artifactId 閸?version
             PackageInfo pkgInfo = extractPackageInfo(globalPath);
             if (pkgInfo == null) {
-                // 如果解析失败，直接使用 Coursier 下载的路径
-                // 但只有主 jar 加入 classpath，sources/javadoc 不加入
+                // 婵″倹鐏夌憴锝嗙€芥径杈Е閿涘瞼娲块幒銉ゅ▏閻?Coursier 娑撳娴囬惃鍕熅瀵?
+                // 娴ｅ棗褰ч張澶夊瘜 jar 閸旂姴鍙?classpath閿涘ources/javadoc 娑撳秴濮為崗?
                 if (!isSourcesOrJavadoc(globalPath)) {
                     classpathEntries.add(globalPath);
                 }
@@ -331,16 +335,16 @@ public class DependencyResolver {
 
             String jarName = Path.of(globalPath).getFileName().toString();
 
-            // 坐标：com.google.code.gson@gson
+            // 閸ф劖鐖ｉ敍姝漮m.google.code.gson@gson
             String coordinate = pkgInfo.groupId + QinConstants.QIN_COORDINATE_SEPARATOR + pkgInfo.artifactId;
             String coordinateWithVersion = coordinate + QinConstants.VERSION_SEPARATOR + pkgInfo.version;
 
-            // 1. 复制到全局存储
+            // 1. 婢跺秴鍩楅崚鏉垮弿鐏炩偓鐎涙ê鍋?
             Path globalPackageDir = globalLibsDir.resolve(coordinate);
             Path globalVersionDir = globalPackageDir.resolve(coordinateWithVersion);
             Files.createDirectories(globalVersionDir);
 
-            // 判断是否是 sources 或 javadoc jar
+            // 閸掋倖鏌囬弰顖氭儊閺?sources 閹?javadoc jar
             String classifier = getClassifier(jarName);
             String targetJarName;
             if (classifier != null) {
@@ -354,19 +358,19 @@ public class DependencyResolver {
                 Files.copy(Path.of(globalPath), globalJarPath);
             }
 
-            // 2. 在项目 libs/ 创建 Junction（链接整个包目录）
-            // Junction 不需要管理员权限，比 Symlink 更可靠
+            // 2. 閸︺劑銆嶉惄?libs/ 閸掓稑缂?Junction閿涘牓鎽奸幒銉︽殻娑擃亜瀵橀惄顔肩秿閿?
+            // Junction 娑撳秹娓剁憰浣侯吀閻炲棗鎲抽弶鍐閿涘本鐦?Symlink 閺囨潙褰查棃?
             Path projectJunction = projectLibsDir.resolve(coordinate);
             if (!Files.exists(projectJunction)) {
                 try {
                     createJunction(projectJunction, globalPackageDir);
                 } catch (IOException e) {
-                    // Junction 创建失败，打印错误但不影响编译
+                    // Junction 閸掓稑缂撴径杈Е閿涘本澧﹂崡浼存晩鐠囶垯绲炬稉宥呭閸濆秶绱拠?
                     System.err.println("Warning: Failed to create junction for " + coordinate + ": " + e.getMessage());
                 }
             }
 
-            // 3. 只有主 jar 加入 classpath（不包括 sources 和 javadoc）
+            // 3. 閸欘亝婀佹稉?jar 閸旂姴鍙?classpath閿涘牅绗夐崠鍛 sources 閸?javadoc閿?
             if (classifier == null) {
                 classpathEntries.add(globalJarPath.toString());
             }
@@ -376,11 +380,11 @@ public class DependencyResolver {
     }
 
     /**
-     * 包信息
+     * 閸栧懍淇婇幁?
      */
     private static class PackageInfo {
-        final String groupId; // com.github.ben-manes.caffeine (. 不展开)
-        final String artifactId; // caffeine (作为子目录)
+        final String groupId; // com.github.ben-manes.caffeine (. 娑撳秴鐫嶅鈧?
+        final String artifactId; // caffeine (娴ｆ粈璐熺€涙劗娲拌ぐ?
         final String version; // 3.1.8
 
         PackageInfo(String groupId, String artifactId, String version) {
@@ -391,11 +395,11 @@ public class DependencyResolver {
     }
 
     /**
-     * 从 Maven 路径中提取包信息
+     * 娴?Maven 鐠侯垰绶炴稉顓熷絹閸欐牕瀵樻穱鈩冧紖
      * 
-     * 例如：
+     * 娓氬顩ч敍?
      * - .../com/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar
-     * - 提取：groupId=com.github.ben-manes.caffeine, artifactId=caffeine,
+     * - 閹绘劕褰囬敍姝oupId=com.github.ben-manes.caffeine, artifactId=caffeine,
      * version=3.1.8
      */
     private PackageInfo extractPackageInfo(String jarPath) {
@@ -408,17 +412,17 @@ public class DependencyResolver {
                 String afterPattern = normalized.substring(idx + pattern.length());
                 String[] parts = afterPattern.split("/");
 
-                // Maven 路径格式：groupId/artifactId/version/artifactId-version.jar
-                // 例如：com/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar
+                // Maven 鐠侯垰绶為弽鐓庣础閿涙roupId/artifactId/version/artifactId-version.jar
+                // 娓氬顩ч敍姝漮m/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar
                 // parts = ["com", "github", "ben-manes", "caffeine", "caffeine", "3.1.8",
                 // "caffeine-3.1.8.jar"]
 
                 if (parts.length >= 4) {
-                    // 最后一个是 jar 文件名，倒数第二个是版本，倒数第三个是 artifactId
+                    // 閺堚偓閸氬簼绔存稉顏呮Ц jar 閺傚洣娆㈤崥宥忕礉閸婃帗鏆熺粭顑跨癌娑擃亝妲搁悧鍫熸拱閿涘苯鈧帗鏆熺粭顑跨瑏娑擃亝妲?artifactId
                     String version = parts[parts.length - 2];
                     String artifactId = parts[parts.length - 3];
 
-                    // groupId 是从开始到 artifactId 之前的所有部分
+                    // groupId 閺勵垯绮犲鈧慨瀣煂 artifactId 娑斿澧犻惃鍕閺堝鍎撮崚?
                     String[] groupParts = Arrays.copyOf(parts, parts.length - 3);
                     String groupId = String.join(".", groupParts);
 
@@ -431,7 +435,7 @@ public class DependencyResolver {
     }
 
     /**
-     * 判断 jar 文件是否是 sources 或 javadoc
+     * 閸掋倖鏌?jar 閺傚洣娆㈤弰顖氭儊閺?sources 閹?javadoc
      */
     private boolean isSourcesOrJavadoc(String jarPath) {
         String fileName = Path.of(jarPath).getFileName().toString().toLowerCase();
@@ -439,7 +443,7 @@ public class DependencyResolver {
     }
 
     /**
-     * 从 jar 文件名中提取 classifier (sources, javadoc, 或 null)
+     * 娴?jar 閺傚洣娆㈤崥宥勮厬閹绘劕褰?classifier (sources, javadoc, 閹?null)
      */
     private String getClassifier(String jarName) {
         if (jarName.contains("-sources.jar") || jarName.contains("-sources-")) {
@@ -456,10 +460,41 @@ public class DependencyResolver {
         return parts.length >= 3 && Arrays.stream(parts).allMatch(p -> !p.isEmpty());
     }
 
+    private String toResolveCoordinate(String name, String version) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+
+        String normalizedName = QinConstants.toMavenCoordinate(name.trim());
+        String normalizedVersion = version == null ? "" : version.trim();
+        int segmentCount = normalizedName.split(":").length;
+
+        if (segmentCount >= 3) {
+            return isProviderMarker(normalizedVersion) || normalizedVersion.isEmpty()
+                    ? normalizedName
+                    : null;
+        }
+
+        if (segmentCount == 2 && !normalizedVersion.isEmpty() && !isProviderMarker(normalizedVersion)) {
+            return normalizedName + QinConstants.MAVEN_COORDINATE_SEPARATOR + normalizedVersion;
+        }
+
+        return null;
+    }
+
+    private boolean isProviderMarker(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        return switch (value.toLowerCase(Locale.ROOT)) {
+            case "maven", "remote" -> true;
+            default -> false;
+        };
+    }
     private boolean checkVersionMatch(String required, String actual) {
         if ("*".equals(required))
             return true;
-        // 简化版本匹配，完整实现需要 semver 库
+        // 缁犫偓閸栨牜澧楅張顒€灏柊宥忕礉鐎瑰本鏆ｇ€圭偟骞囬棁鈧憰?semver 鎼?
         if (required.startsWith("^") || required.startsWith("~")) {
             String base = required.substring(1);
             return actual.startsWith(base.split("\\.")[0]);
@@ -491,20 +526,20 @@ public class DependencyResolver {
     }
 
     /**
-     * 在 Windows 上创建 Junction（目录联接）
-     * Junction 不需要管理员权限，比 Symlink 更可靠
+     * 閸?Windows 娑撳﹤鍨卞?Junction閿涘牏娲拌ぐ鏇′粓閹恒儻绱?
+     * Junction 娑撳秹娓剁憰浣侯吀閻炲棗鎲抽弶鍐閿涘本鐦?Symlink 閺囨潙褰查棃?
      * 
-     * @param link   要创建的 Junction 路径
-     * @param target 目标目录路径
+     * @param link   鐟曚礁鍨卞铏规畱 Junction 鐠侯垰绶?
+     * @param target 閻╊喗鐖ｉ惄顔肩秿鐠侯垰绶?
      */
     private void createJunction(Path link, Path target) throws IOException {
         if (!QinConstants.isWindows()) {
-            // 非 Windows 系统使用 symlink
+            // 闂?Windows 缁崵绮烘担璺ㄦ暏 symlink
             Files.createSymbolicLink(link, target);
             return;
         }
 
-        // Windows: 使用 cmd mklink /J 创建 Junction
+        // Windows: 娴ｈ法鏁?cmd mklink /J 閸掓稑缂?Junction
         ProcessBuilder pb = new ProcessBuilder(
                 "cmd", "/c", "mklink", "/J",
                 link.toAbsolutePath().toString(),

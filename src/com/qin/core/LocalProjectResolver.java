@@ -79,7 +79,7 @@ public class LocalProjectResolver {
                 continue;
             }
 
-            ProjectInfo project = localProjects.get(fullName);
+            ProjectInfo project = findProject(localProjects, fullName);
             if (project != null) {
                 String classesPath = project.buildClassesPath.toString();
                 if (!localClasspaths.contains(classesPath)) {
@@ -152,20 +152,97 @@ public class LocalProjectResolver {
                 String fullName = config.name(); // "com.slime:slime-token"
 
                 // 灏辫繎浼樺厛: 濡傛灉宸插瓨鍦紝涓嶈鐩?
-                if (!projects.containsKey(fullName)) {
-                    Path buildPath = projectPath.resolve(QinConstants.BUILD_CLASSES_DIR);
-                    projects.put(fullName, new ProjectInfo(
-                            fullName,
-                            projectPath,
-                            buildPath));
-                    System.err.println("[DEBUG] Added project: " + fullName + " -> " + buildPath);
+                Path buildPath = projectPath.resolve(QinConstants.BUILD_CLASSES_DIR);
+                ProjectInfo projectInfo = new ProjectInfo(fullName, projectPath, buildPath);
+                for (String alias : collectProjectAliases(fullName, projectPath)) {
+                    projects.putIfAbsent(alias, projectInfo);
                 }
+                System.err.println("[DEBUG] Added project: " + fullName + " -> " + buildPath);
             } catch (Exception e) {
                 System.err.println("[DEBUG] Failed to load config from " + projectPath + ": " + e.getMessage());
             }
         }
 
         return projects;
+    }
+
+    private ProjectInfo findProject(Map<String, ProjectInfo> projects, String dependencyName) {
+        if (dependencyName == null || dependencyName.isBlank()) {
+            return null;
+        }
+
+        ProjectInfo direct = projects.get(dependencyName);
+        if (direct != null) {
+            return direct;
+        }
+
+        String normalized = dependencyName.trim().toLowerCase(Locale.ROOT);
+        ProjectInfo normalizedDirect = projects.get(normalized);
+        if (normalizedDirect != null) {
+            return normalizedDirect;
+        }
+
+        for (ProjectInfo candidate : new LinkedHashSet<>(projects.values())) {
+            if (matchesProjectAlias(candidate, normalized)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private List<String> collectProjectAliases(String fullName, Path projectPath) {
+        LinkedHashSet<String> aliases = new LinkedHashSet<>();
+        aliases.add(fullName);
+        aliases.add(fullName.toLowerCase(Locale.ROOT));
+
+        String qinCoordinate = QinConstants.toQinCoordinate(fullName);
+        aliases.add(qinCoordinate);
+        aliases.add(qinCoordinate.toLowerCase(Locale.ROOT));
+
+        String artifactId = extractArtifactId(fullName);
+        if (!artifactId.isBlank()) {
+            aliases.add(artifactId);
+            aliases.add(artifactId.toLowerCase(Locale.ROOT));
+
+            if (artifactId.endsWith("-java")) {
+                String shortAlias = artifactId.substring(0, artifactId.length() - "-java".length());
+                aliases.add(shortAlias);
+                aliases.add(shortAlias.toLowerCase(Locale.ROOT));
+            }
+        }
+
+        String dirName = projectPath.getFileName().toString();
+        aliases.add(dirName);
+        aliases.add(dirName.toLowerCase(Locale.ROOT));
+
+        return new ArrayList<>(aliases);
+    }
+
+    private String extractArtifactId(String fullName) {
+        int atIndex = fullName.lastIndexOf('@');
+        int colonIndex = fullName.lastIndexOf(':');
+        int splitIndex = Math.max(atIndex, colonIndex);
+        return splitIndex >= 0 ? fullName.substring(splitIndex + 1) : fullName;
+    }
+
+    private boolean matchesProjectAlias(ProjectInfo project, String dependencyName) {
+        String fullName = project.fullName.toLowerCase(Locale.ROOT);
+        if (fullName.equals(dependencyName) || QinConstants.toQinCoordinate(project.fullName).toLowerCase(Locale.ROOT).equals(dependencyName)) {
+            return true;
+        }
+
+        String artifactId = extractArtifactId(project.fullName).toLowerCase(Locale.ROOT);
+        if (artifactId.equals(dependencyName)) {
+            return true;
+        }
+
+        if (artifactId.endsWith("-java")
+                && artifactId.substring(0, artifactId.length() - "-java".length()).equals(dependencyName)) {
+            return true;
+        }
+
+        return project.projectDir.getFileName().toString().toLowerCase(Locale.ROOT).equals(dependencyName);
     }
 
     /**

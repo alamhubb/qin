@@ -25,6 +25,14 @@ public class TestResult {
         this.error = error;
     }
 
+    public static TestResult success(int testsRun, int failures, int errors) {
+        return new TestResult(true, testsRun, failures, errors, 0, 0, "", null);
+    }
+
+    public static TestResult failure(String error) {
+        return new TestResult(false, 0, 0, 1, 0, 0, "", error);
+    }
+
     public boolean isSuccess() { return success; }
     public int getTestsRun() { return testsRun; }
     public int getFailures() { return failures; }

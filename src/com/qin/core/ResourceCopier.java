@@ -14,6 +14,12 @@ public class ResourceCopier {
     private final String srcDir;
     private final String outputDir;
 
+    public ResourceCopier() {
+        this.cwd = null;
+        this.srcDir = null;
+        this.outputDir = null;
+    }
+
     public ResourceCopier(String cwd, String srcDir, String outputDir) {
         this.cwd = cwd;
         this.srcDir = srcDir;
@@ -36,6 +42,12 @@ public class ResourceCopier {
             if (Files.exists(resPath)) {
                 copyDir(resPath, Paths.get(outputDir));
             }
+        }
+    }
+
+    public void copy(Path src, Path dest) throws IOException {
+        if (Files.exists(src)) {
+            copyDir(src, dest);
         }
     }
 

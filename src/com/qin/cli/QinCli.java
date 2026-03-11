@@ -861,23 +861,47 @@ public class QinCli {
 
     // ANSI color helpers
     private static String blue(String s) {
-        return "\u001B[34m" + s + "\u001B[0m";
+        return colorize("\u001B[34m", s);
     }
 
     private static String green(String s) {
-        return "\u001B[32m" + s + "\u001B[0m";
+        return colorize("\u001B[32m", s);
     }
 
     private static String red(String s) {
-        return "\u001B[31m" + s + "\u001B[0m";
+        return colorize("\u001B[31m", s);
     }
 
     private static String yellow(String s) {
-        return "\u001B[33m" + s + "\u001B[0m";
+        return colorize("\u001B[33m", s);
     }
 
     private static String gray(String s) {
-        return "\u001B[90m" + s + "\u001B[0m";
+        return colorize("\u001B[90m", s);
+    }
+
+    private static String colorize(String ansi, String value) {
+        return ansi + normalizeConsoleText(value) + "\u001B[0m";
+    }
+
+    private static String normalizeConsoleText(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+
+        return value
+                .replace("鈫?", "-> ")
+                .replace("→", "-> ")
+                .replace("鉁?", "[OK] ")
+                .replace("✓", "[OK] ")
+                .replace("鈿?", "[WARN] ")
+                .replace("⚠", "[WARN] ")
+                .replace("鈼?", "[SKIP] ")
+                .replace("•", "- ")
+                .replace("鉂?", "[ERROR] ")
+                .replace("✗", "[ERROR] ")
+                .replace("锟斤拷", "")
+                .trim();
     }
 
     /**

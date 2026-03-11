@@ -130,7 +130,7 @@ public class QinLogger {
         }
 
         String time = LocalDateTime.now().format(TIME_FMT);
-        String cleanMsg = msg.replaceAll("\\u001B\\[[;\\d]*m", "");
+        String cleanMsg = normalizeForLog(msg);
         String line = String.format("[%s] [%s] %s%n", time, level, cleanMsg);
         try {
             Files.writeString(
@@ -146,5 +146,26 @@ public class QinLogger {
 
     public static Path getLogFile() {
         return logFile;
+    }
+
+    private static String normalizeForLog(String msg) {
+        if (msg == null || msg.isEmpty()) {
+            return msg;
+        }
+
+        return msg
+                .replaceAll("\\u001B\\[[;\\d]*m", "")
+                .replace("鈫?", "-> ")
+                .replace("→", "-> ")
+                .replace("鉁?", "[OK] ")
+                .replace("✓", "[OK] ")
+                .replace("鈿?", "[WARN] ")
+                .replace("⚠", "[WARN] ")
+                .replace("鈼?", "[SKIP] ")
+                .replace("•", "- ")
+                .replace("鉂?", "[ERROR] ")
+                .replace("✗", "[ERROR] ")
+                .replace("锟斤拷", "")
+                .trim();
     }
 }
