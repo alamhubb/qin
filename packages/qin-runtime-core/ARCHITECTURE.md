@@ -70,12 +70,26 @@ import { Math } from "java:java.lang";
 console.log(Math.random());
 ```
 
+```js
+import { ArrayList } from "java:java.util";
+
+const list = new ArrayList();
+list.add("hello");
+console.log(list.size());
+```
+
 Rules:
 
 - ESM-like syntax, case-sensitive
 - No implicit case conversion
 - `import { Math as math } ...` is allowed
-- Current MVP supports zero-arg static method call in `console.log(...)`
+- Imported items represent Java classes
+- Stage-1 JVM interop supports:
+  - public constructors
+  - public static methods in `console.log(...)`
+  - public instance methods as expression statements
+  - public instance methods in `console.log(...)`
+  - integer and string literal arguments
 
 ## 3. Recommended Next Split
 

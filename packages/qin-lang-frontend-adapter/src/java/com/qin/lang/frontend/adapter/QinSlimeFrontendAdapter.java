@@ -1,13 +1,18 @@
 package com.qin.lang.frontend.adapter;
 
 import com.qin.lang.ir.QinIrConstDeclaration;
+import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
+import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrJavaImport;
+import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
+import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrStringLiteral;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -36,7 +41,7 @@ public final class QinSlimeFrontendAdapter {
             ImportExtraction importExtraction = extractJavaImports(source);
             String sourceForSlime = importExtraction.remainingSource().trim();
             if (sourceForSlime.isEmpty()) {
-                return new QinIrProgram(List.of(), List.of(), importExtraction.imports(), List.of());
+                return new QinIrProgram(List.of(), List.of(), importExtraction.imports(), List.of(), List.of(), List.of());
             }
             return parseProgramWithSlime(sourceForSlime, importExtraction.imports());
         } catch (Exception e) {
@@ -95,7 +100,10 @@ public final class QinSlimeFrontendAdapter {
         List<QinIrConsoleLogStatement> consoleLogs = new ArrayList<>();
         List<QinIrJavaImport> javaImports = new ArrayList<>();
         List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs = new ArrayList<>();
+        List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls = new ArrayList<>();
+        List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs = new ArrayList<>();
         Map<String, String> javaImportLookup = new HashMap<>();
+        Map<String, QinIrExpression> declarationLookup = new HashMap<>();
         if (preImports != null) {
             javaImports.addAll(preImports);
             for (QinIrJavaImport javaImport : preImports) {
@@ -114,30 +122,45 @@ public final class QinSlimeFrontendAdapter {
                 continue;
             }
             if ("VariableDeclaration".equals(nodeType)) {
-                if (!declarations.isEmpty()) {
-                    throw new IllegalArgumentException("Only one top-level const declaration is supported");
-                }
-                declarations.add(lowerVariableDeclaration(statement));
+                QinIrConstDeclaration declaration = lowerVariableDeclaration(statement, javaImportLookup);
+                declarations.add(declaration);
+                declarationLookup.put(declaration.name(), declaration.initializer());
                 continue;
             }
             if ("ExpressionStatement".equals(nodeType)) {
-                LoweredConsoleLog lowered = lowerExpressionStatement(statement, javaImportLookup);
+                LoweredStatement lowered = lowerExpressionStatement(statement, javaImportLookup, declarationLookup);
                 if (lowered.objectLog() != null) {
                     consoleLogs.add(lowered.objectLog());
                 }
                 if (lowered.javaStaticCall() != null) {
                     javaStaticConsoleLogs.add(lowered.javaStaticCall());
                 }
+                if (lowered.javaInstanceMethodCall() != null) {
+                    javaInstanceMethodCalls.add(lowered.javaInstanceMethodCall());
+                }
+                if (lowered.javaInstanceConsoleLog() != null) {
+                    javaInstanceConsoleLogs.add(lowered.javaInstanceConsoleLog());
+                }
                 continue;
             }
             throw new IllegalArgumentException("Unsupported top-level statement type: " + nodeType);
         }
 
-        if (declarations.isEmpty() && consoleLogs.isEmpty() && javaStaticConsoleLogs.isEmpty()) {
+        if (declarations.isEmpty()
+                && consoleLogs.isEmpty()
+                && javaStaticConsoleLogs.isEmpty()
+                && javaInstanceMethodCalls.isEmpty()
+                && javaInstanceConsoleLogs.isEmpty()) {
             throw new IllegalArgumentException("Program must contain at least one supported statement");
         }
 
-        return new QinIrProgram(declarations, consoleLogs, javaImports, javaStaticConsoleLogs);
+        return new QinIrProgram(
+                declarations,
+                consoleLogs,
+                javaImports,
+                javaStaticConsoleLogs,
+                javaInstanceMethodCalls,
+                javaInstanceConsoleLogs);
     }
 
     private List<QinIrJavaImport> lowerImportDeclaration(Object importDeclarationAst) {
@@ -215,7 +238,9 @@ public final class QinSlimeFrontendAdapter {
         }
     }
 
-    private QinIrConstDeclaration lowerVariableDeclaration(Object variableDeclarationAst) {
+    private QinIrConstDeclaration lowerVariableDeclaration(
+            Object variableDeclarationAst,
+            Map<String, String> javaImportLookup) {
         String kind = asString(invokeByName(variableDeclarationAst, "kind"), "VariableDeclaration.kind");
         if (!"const".equals(kind)) {
             throw new IllegalArgumentException("Only const declaration is supported, but got: " + kind);
@@ -232,9 +257,18 @@ public final class QinSlimeFrontendAdapter {
         Object init = invokeByName(declarator, "init");
 
         String name = extractIdentifierName(id, "VariableDeclarator.id");
-        QinIrObjectLiteral initializer = lowerObjectLiteral(init);
+        QinIrExpression initializer = lowerDeclarationInitializer(init, javaImportLookup);
 
         return new QinIrConstDeclaration(name, initializer);
+    }
+
+    private QinIrExpression lowerDeclarationInitializer(Object expressionAst, Map<String, String> javaImportLookup) {
+        QinIrExpression initializer = lowerExpression(expressionAst, javaImportLookup);
+        if (initializer instanceof QinIrObjectLiteral || initializer instanceof QinIrJavaNewExpression) {
+            return initializer;
+        }
+        throw new IllegalArgumentException(
+                "Only object literal or Java constructor initializer is supported in const declaration");
     }
 
     private QinIrObjectLiteral lowerObjectLiteral(Object objectExpressionAst) {
@@ -254,21 +288,41 @@ public final class QinSlimeFrontendAdapter {
             Object valueNode = invokeByName(property, "value");
 
             String key = extractPropertyKey(keyNode);
-            QinIrNumberLiteral value = lowerNumericLiteral(valueNode);
+            QinIrExpression value = lowerObjectPropertyValue(valueNode);
             irProperties.add(new QinIrObjectProperty(key, value));
         }
 
         return new QinIrObjectLiteral(irProperties);
     }
 
-    private LoweredConsoleLog lowerExpressionStatement(
-            Object expressionStatementAst,
-            Map<String, String> javaImportLookup) {
-        Object expression = invokeByName(expressionStatementAst, "expression");
-        return lowerConsoleLogCall(expression, javaImportLookup);
+    private QinIrExpression lowerObjectPropertyValue(Object expressionAst) {
+        QinIrExpression value = lowerExpression(expressionAst, Map.of());
+        if (value instanceof QinIrNumberLiteral || value instanceof QinIrStringLiteral) {
+            return value;
+        }
+        throw new IllegalArgumentException("Only integer and string literal are supported in object value");
     }
 
-    private LoweredConsoleLog lowerConsoleLogCall(Object expressionAst, Map<String, String> javaImportLookup) {
+    private LoweredStatement lowerExpressionStatement(
+            Object expressionStatementAst,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        Object expression = invokeByName(expressionStatementAst, "expression");
+        if (!"CallExpression".equals(simpleName(expression))) {
+            throw new IllegalArgumentException("Only call expression statement is supported");
+        }
+
+        Object callee = invokeByName(expression, "callee");
+        if (isConsoleLogCallee(callee)) {
+            return lowerConsoleLogCall(expression, javaImportLookup, declarationLookup);
+        }
+        return lowerJavaInstanceMethodStatement(expression, declarationLookup, javaImportLookup);
+    }
+
+    private LoweredStatement lowerConsoleLogCall(
+            Object expressionAst,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
         if (!"CallExpression".equals(simpleName(expressionAst))) {
             throw new IllegalArgumentException("Only console.log(...) expression statement is supported");
         }
@@ -289,21 +343,20 @@ public final class QinSlimeFrontendAdapter {
             Object targetProperty = invokeByName(firstArgument, "property");
             String objectName = extractIdentifierName(targetObject, "console.log argument object");
             String propertyName = extractIdentifierName(targetProperty, "console.log argument property");
-            return new LoweredConsoleLog(new QinIrConsoleLogStatement(objectName, propertyName), null);
+            return new LoweredStatement(new QinIrConsoleLogStatement(objectName, propertyName), null, null, null);
         }
 
         if ("CallExpression".equals(simpleName(firstArgument))) {
-            return lowerConsoleLogJavaStaticCall(firstArgument, javaImportLookup);
+            return lowerConsoleLogJavaCall(firstArgument, javaImportLookup, declarationLookup);
         }
 
-        throw new IllegalArgumentException("console.log argument must be member access or zero-arg call expression");
+        throw new IllegalArgumentException("console.log argument must be member access or call expression");
     }
 
-    private LoweredConsoleLog lowerConsoleLogJavaStaticCall(Object callExpressionAst, Map<String, String> javaImportLookup) {
-        List<?> args = asList(invokeByName(callExpressionAst, "arguments"), "CallExpression.arguments");
-        if (!args.isEmpty()) {
-            throw new IllegalArgumentException("java static call in console.log currently supports zero arguments only");
-        }
+    private LoweredStatement lowerConsoleLogJavaCall(
+            Object callExpressionAst,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
         Object callee = invokeByName(callExpressionAst, "callee");
         if (!"MemberExpression".equals(simpleName(callee))) {
             throw new IllegalArgumentException("console.log call argument must be member call like Math.random()");
@@ -311,12 +364,59 @@ public final class QinSlimeFrontendAdapter {
 
         String receiverName = extractIdentifierName(invokeByName(callee, "object"), "CallExpression.callee.object");
         String methodName = extractIdentifierName(invokeByName(callee, "property"), "CallExpression.callee.property");
+        List<QinIrExpression> arguments = lowerCallArguments(callExpressionAst, javaImportLookup);
 
         String ownerBinaryName = javaImportLookup.get(receiverName);
-        if (ownerBinaryName == null) {
-            throw new IllegalArgumentException("Unknown java import receiver in console.log: " + receiverName);
+        if (ownerBinaryName != null) {
+            return new LoweredStatement(
+                    null,
+                    new QinIrConsoleLogJavaStaticCall(receiverName, ownerBinaryName, methodName, arguments),
+                    null,
+                    null);
         }
-        return new LoweredConsoleLog(null, new QinIrConsoleLogJavaStaticCall(receiverName, ownerBinaryName, methodName));
+
+        QinIrExpression declaration = declarationLookup.get(receiverName);
+        if (declaration instanceof QinIrJavaNewExpression javaNewExpression) {
+            return new LoweredStatement(
+                    null,
+                    null,
+                    null,
+                    new QinIrConsoleLogJavaInstanceCall(
+                            receiverName,
+                            javaNewExpression.ownerBinaryName(),
+                            methodName,
+                            arguments));
+        }
+
+        throw new IllegalArgumentException("Unknown java receiver in console.log: " + receiverName);
+    }
+
+    private LoweredStatement lowerJavaInstanceMethodStatement(
+            Object callExpressionAst,
+            Map<String, QinIrExpression> declarationLookup,
+            Map<String, String> javaImportLookup) {
+        Object callee = invokeByName(callExpressionAst, "callee");
+        if (!"MemberExpression".equals(simpleName(callee))) {
+            throw new IllegalArgumentException("Only member call expression statement is supported");
+        }
+
+        String receiverName = extractIdentifierName(invokeByName(callee, "object"), "CallExpression.callee.object");
+        String methodName = extractIdentifierName(invokeByName(callee, "property"), "CallExpression.callee.property");
+        QinIrExpression declaration = declarationLookup.get(receiverName);
+        if (!(declaration instanceof QinIrJavaNewExpression javaNewExpression)) {
+            throw new IllegalArgumentException("Only Java instance method call statement is supported: " + receiverName);
+        }
+
+        List<QinIrExpression> arguments = lowerCallArguments(callExpressionAst, javaImportLookup);
+        return new LoweredStatement(
+                null,
+                null,
+                new QinIrJavaInstanceMethodCall(
+                        receiverName,
+                        javaNewExpression.ownerBinaryName(),
+                        methodName,
+                        arguments),
+                null);
     }
 
     private boolean isConsoleLogCallee(Object calleeAst) {
@@ -348,15 +448,56 @@ public final class QinSlimeFrontendAdapter {
         return asString(invokeByName(astNode, "name"), where + ".name");
     }
 
-    private QinIrNumberLiteral lowerNumericLiteral(Object expressionAst) {
-        if (!"Literal".equals(simpleName(expressionAst))) {
-            throw new IllegalArgumentException("Only numeric literal is supported in object value");
+    private List<QinIrExpression> lowerCallArguments(Object callExpressionAst, Map<String, String> javaImportLookup) {
+        List<?> arguments = asList(invokeByName(callExpressionAst, "arguments"), "CallExpression.arguments");
+        List<QinIrExpression> lowered = new ArrayList<>();
+        for (Object argument : arguments) {
+            lowered.add(lowerCallArgument(argument, javaImportLookup));
         }
-        Object value = invokeByName(expressionAst, "value");
-        if (!(value instanceof Number number)) {
-            throw new IllegalArgumentException("Only numeric literal is supported in object value, got: " + value);
+        return lowered;
+    }
+
+    private QinIrExpression lowerCallArgument(Object expressionAst, Map<String, String> javaImportLookup) {
+        QinIrExpression expression = lowerExpression(expressionAst, javaImportLookup);
+        if (expression instanceof QinIrNumberLiteral || expression instanceof QinIrStringLiteral) {
+            return expression;
         }
-        return new QinIrNumberLiteral(number.intValue());
+        throw new IllegalArgumentException("Only integer and string call arguments are supported");
+    }
+
+    private QinIrExpression lowerExpression(Object expressionAst, Map<String, String> javaImportLookup) {
+        String nodeType = simpleName(expressionAst);
+        if ("ObjectExpression".equals(nodeType)) {
+            return lowerObjectLiteral(expressionAst);
+        }
+        if ("NewExpression".equals(nodeType)) {
+            return lowerJavaNewExpression(expressionAst, javaImportLookup);
+        }
+        if ("Literal".equals(nodeType)) {
+            Object value = invokeByName(expressionAst, "value");
+            if (value instanceof Number number) {
+                return new QinIrNumberLiteral(number.intValue());
+            }
+            if (value instanceof String text) {
+                return new QinIrStringLiteral(text);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported expression type: " + nodeType);
+    }
+
+    private QinIrJavaNewExpression lowerJavaNewExpression(
+            Object newExpressionAst,
+            Map<String, String> javaImportLookup) {
+        Object callee = invokeByName(newExpressionAst, "callee");
+        String classLocalName = extractIdentifierName(callee, "NewExpression.callee");
+        String ownerBinaryName = javaImportLookup.get(classLocalName);
+        if (ownerBinaryName == null) {
+            throw new IllegalArgumentException("Unknown java class in constructor call: " + classLocalName);
+        }
+        return new QinIrJavaNewExpression(
+                classLocalName,
+                ownerBinaryName,
+                lowerCallArguments(newExpressionAst, javaImportLookup));
     }
 
     private static String simpleName(Object value) {
@@ -447,9 +588,11 @@ public final class QinSlimeFrontendAdapter {
         return msg;
     }
 
-    private record LoweredConsoleLog(
+    private record LoweredStatement(
             QinIrConsoleLogStatement objectLog,
-            QinIrConsoleLogJavaStaticCall javaStaticCall) {
+            QinIrConsoleLogJavaStaticCall javaStaticCall,
+            QinIrJavaInstanceMethodCall javaInstanceMethodCall,
+            QinIrConsoleLogJavaInstanceCall javaInstanceConsoleLog) {
     }
 
     private record ImportExtraction(

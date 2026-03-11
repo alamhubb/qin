@@ -27,7 +27,9 @@ public final class QinIrValidator {
     private void validateProgramNotEmpty(QinIrProgram program) {
         if (program.declarations().isEmpty()
                 && program.consoleLogs().isEmpty()
-                && program.javaStaticConsoleLogs().isEmpty()) {
+                && program.javaStaticConsoleLogs().isEmpty()
+                && program.javaInstanceMethodCalls().isEmpty()
+                && program.javaInstanceConsoleLogs().isEmpty()) {
             throw new IllegalArgumentException("Program contains no supported executable statements");
         }
     }

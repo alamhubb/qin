@@ -1,13 +1,17 @@
 package com.qin.lang.backend.jvm;
 
 import com.qin.lang.ir.QinIrConstDeclaration;
+import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrExpression;
+import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
+import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrStringLiteral;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeBuilder;
@@ -15,9 +19,12 @@ import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -43,24 +50,14 @@ public final class QinJvmClassFileBackend {
         Objects.requireNonNull(program, "program cannot be null");
         Objects.requireNonNull(className, "className cannot be null");
 
-        QinIrConstDeclaration declaration = null;
-        QinIrObjectLiteral objectLiteral = null;
-        if (!program.declarations().isEmpty()) {
-            declaration = program.declarations().get(0);
-            if (!(declaration.initializer() instanceof QinIrObjectLiteral literal)) {
-                throw new IllegalArgumentException("Current backend supports only const object literal initializer");
-            }
-            objectLiteral = literal;
-        }
-
-        if (declaration == null
+        if (program.declarations().isEmpty()
                 && program.consoleLogs().isEmpty()
-                && program.javaStaticConsoleLogs().isEmpty()) {
+                && program.javaStaticConsoleLogs().isEmpty()
+                && program.javaInstanceMethodCalls().isEmpty()
+                && program.javaInstanceConsoleLogs().isEmpty()) {
             throw new IllegalArgumentException("Program has no compilable statements");
         }
 
-        QinIrConstDeclaration finalDeclaration = declaration;
-        QinIrObjectLiteral finalObjectLiteral = objectLiteral;
         ClassFile classFile = ClassFile.of();
         return classFile.build(ClassDesc.of(className), builder -> {
             builder.withFlags(ClassFile.ACC_PUBLIC | ClassFile.ACC_SUPER);
@@ -74,49 +71,48 @@ public final class QinJvmClassFileBackend {
             builder.withMethodBody("run", RUN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
                     code -> emitRunMethod(
                             code,
-                            finalDeclaration,
-                            finalObjectLiteral,
+                            program.declarations(),
                             program.consoleLogs(),
-                            program.javaStaticConsoleLogs()));
+                            program.javaStaticConsoleLogs(),
+                            program.javaInstanceMethodCalls(),
+                            program.javaInstanceConsoleLogs()));
         });
     }
 
     private void emitRunMethod(
             CodeBuilder code,
-            QinIrConstDeclaration declaration,
-            QinIrObjectLiteral objectLiteral,
+            List<QinIrConstDeclaration> declarations,
             List<QinIrConsoleLogStatement> consoleLogs,
-            List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs) {
-        int objectSlot = -1;
-        if (declaration != null && objectLiteral != null) {
-            objectSlot = code.allocateLocal(TypeKind.REFERENCE);
-            code.new_(LINKED_HASH_MAP_DESC);
-            code.dup();
-            code.invokespecial(LINKED_HASH_MAP_DESC, "<init>", VOID_INIT);
-            code.astore(objectSlot);
+            List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs,
+            List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls,
+            List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs) {
+        Map<String, DeclarationBinding> bindings = new LinkedHashMap<>();
 
-            for (QinIrObjectProperty property : objectLiteral.properties()) {
-                code.aload(objectSlot);
-                code.ldc(property.key());
-                emitExpression(code, property.value());
-                code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
-                code.pop();
-            }
+        for (QinIrConstDeclaration declaration : declarations) {
+            int slot = code.allocateLocal(TypeKind.REFERENCE);
+            emitDeclarationInitializer(code, declaration.initializer(), slot);
+            bindings.put(declaration.name(), new DeclarationBinding(slot, declaration.initializer()));
         }
 
         for (QinIrConsoleLogStatement consoleLog : consoleLogs) {
-            if (objectSlot < 0 || declaration == null) {
-                throw new IllegalArgumentException("console.log(object.property) requires const object declaration");
-            }
-            emitConsoleLog(code, objectSlot, declaration, consoleLog);
+            emitObjectConsoleLog(code, bindings, consoleLog);
+        }
+
+        for (QinIrJavaInstanceMethodCall javaInstanceMethodCall : javaInstanceMethodCalls) {
+            emitJavaInstanceMethodCall(code, bindings, javaInstanceMethodCall);
         }
 
         for (QinIrConsoleLogJavaStaticCall javaStaticCall : javaStaticConsoleLogs) {
             emitJavaStaticConsoleLog(code, javaStaticCall);
         }
 
-        if (objectSlot >= 0) {
-            code.aload(objectSlot);
+        for (QinIrConsoleLogJavaInstanceCall javaInstanceConsoleLog : javaInstanceConsoleLogs) {
+            emitJavaInstanceConsoleLog(code, bindings, javaInstanceConsoleLog);
+        }
+
+        Integer returnSlot = lastDeclarationSlot(bindings);
+        if (returnSlot != null) {
+            code.aload(returnSlot);
             code.areturn();
         } else {
             code.aconst_null();
@@ -124,19 +120,59 @@ public final class QinJvmClassFileBackend {
         }
     }
 
-    private void emitConsoleLog(
-            CodeBuilder code,
-            int objectSlot,
-            QinIrConstDeclaration declaration,
-            QinIrConsoleLogStatement consoleLog) {
-        if (!declaration.name().equals(consoleLog.objectName())) {
-            throw new IllegalArgumentException(
-                    "Unknown object in console.log: " + consoleLog.objectName());
+    private void emitDeclarationInitializer(CodeBuilder code, QinIrExpression initializer, int slot) {
+        if (initializer instanceof QinIrObjectLiteral objectLiteral) {
+            emitObjectLiteralInitializer(code, objectLiteral, slot);
+            return;
         }
+        if (initializer instanceof QinIrJavaNewExpression javaNewExpression) {
+            emitJavaNewInitializer(code, javaNewExpression, slot);
+            return;
+        }
+        throw new IllegalArgumentException(
+                "Unsupported const initializer: " + initializer.getClass().getSimpleName());
+    }
 
-        if (!(declaration.initializer() instanceof QinIrObjectLiteral objectLiteral)) {
+    private void emitObjectLiteralInitializer(CodeBuilder code, QinIrObjectLiteral objectLiteral, int slot) {
+        code.new_(LINKED_HASH_MAP_DESC);
+        code.dup();
+        code.invokespecial(LINKED_HASH_MAP_DESC, "<init>", VOID_INIT);
+        code.astore(slot);
+
+        for (QinIrObjectProperty property : objectLiteral.properties()) {
+            code.aload(slot);
+            code.ldc(property.key());
+            emitExpressionAsObject(code, property.value());
+            code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
+            code.pop();
+        }
+    }
+
+    private void emitJavaNewInitializer(CodeBuilder code, QinIrJavaNewExpression javaNewExpression, int slot) {
+        ResolvedConstructor resolvedConstructor = resolveConstructor(
+                javaNewExpression.ownerBinaryName(),
+                javaNewExpression.arguments());
+
+        ClassDesc ownerDesc = ClassDesc.of(javaNewExpression.ownerBinaryName());
+        code.new_(ownerDesc);
+        code.dup();
+        emitArgumentsForParameters(code, javaNewExpression.arguments(), resolvedConstructor.parameterTypes());
+        code.invokespecial(ownerDesc, "<init>", resolvedConstructor.descriptor());
+        code.astore(slot);
+    }
+
+    private void emitObjectConsoleLog(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrConsoleLogStatement consoleLog) {
+        DeclarationBinding binding = bindings.get(consoleLog.objectName());
+        if (binding == null) {
+            throw new IllegalArgumentException("Unknown object in console.log: " + consoleLog.objectName());
+        }
+        if (!(binding.initializer() instanceof QinIrObjectLiteral objectLiteral)) {
             throw new IllegalArgumentException(
-                    "console.log currently requires const object literal declaration");
+                    "console.log(object.property) currently supports only object literal declarations: "
+                            + consoleLog.objectName());
         }
 
         boolean propertyExists = objectLiteral.properties().stream()
@@ -146,47 +182,276 @@ public final class QinJvmClassFileBackend {
                     "Unknown property in console.log: " + consoleLog.propertyName());
         }
 
-        code.aload(objectSlot);
+        code.aload(binding.slot());
         code.ldc(consoleLog.propertyName());
         code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
         code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
-    private void emitExpression(CodeBuilder code, QinIrExpression expression) {
+    private void emitJavaInstanceMethodCall(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrJavaInstanceMethodCall javaInstanceMethodCall) {
+        DeclarationBinding binding = requireJavaBinding(bindings, javaInstanceMethodCall.receiverName());
+        ResolvedMethod resolvedMethod = resolveInstanceMethod(
+                javaInstanceMethodCall.ownerBinaryName(),
+                javaInstanceMethodCall.methodName(),
+                javaInstanceMethodCall.arguments());
+
+        code.aload(binding.slot());
+        emitArgumentsForParameters(code, javaInstanceMethodCall.arguments(), resolvedMethod.parameterTypes());
+        invokeInstanceMethod(code, resolvedMethod);
+        discardReturnValue(code, resolvedMethod.returnType());
+    }
+
+    private void emitJavaStaticConsoleLog(CodeBuilder code, QinIrConsoleLogJavaStaticCall javaStaticCall) {
+        ResolvedMethod resolvedMethod = resolveStaticMethod(
+                javaStaticCall.ownerBinaryName(),
+                javaStaticCall.methodName(),
+                javaStaticCall.arguments());
+
+        emitArgumentsForParameters(code, javaStaticCall.arguments(), resolvedMethod.parameterTypes());
+        code.invokestatic(
+                ClassDesc.of(javaStaticCall.ownerBinaryName()),
+                javaStaticCall.methodName(),
+                resolvedMethod.descriptor());
+
+        emitBoxIfNeeded(code, resolvedMethod.returnType());
+        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
+    }
+
+    private void emitJavaInstanceConsoleLog(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrConsoleLogJavaInstanceCall javaInstanceConsoleLog) {
+        DeclarationBinding binding = requireJavaBinding(bindings, javaInstanceConsoleLog.receiverName());
+        ResolvedMethod resolvedMethod = resolveInstanceMethod(
+                javaInstanceConsoleLog.ownerBinaryName(),
+                javaInstanceConsoleLog.methodName(),
+                javaInstanceConsoleLog.arguments());
+
+        code.aload(binding.slot());
+        emitArgumentsForParameters(code, javaInstanceConsoleLog.arguments(), resolvedMethod.parameterTypes());
+        invokeInstanceMethod(code, resolvedMethod);
+        emitBoxIfNeeded(code, resolvedMethod.returnType());
+        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
+    }
+
+    private DeclarationBinding requireJavaBinding(Map<String, DeclarationBinding> bindings, String receiverName) {
+        DeclarationBinding binding = bindings.get(receiverName);
+        if (binding == null) {
+            throw new IllegalArgumentException("Unknown Java instance receiver: " + receiverName);
+        }
+        if (!(binding.initializer() instanceof QinIrJavaNewExpression)) {
+            throw new IllegalArgumentException("Receiver is not a Java instance binding: " + receiverName);
+        }
+        return binding;
+    }
+
+    private void emitArgumentsForParameters(
+            CodeBuilder code,
+            List<QinIrExpression> arguments,
+            Class<?>[] parameterTypes) {
+        if (arguments.size() != parameterTypes.length) {
+            throw new IllegalArgumentException("Argument count mismatch");
+        }
+        for (int i = 0; i < arguments.size(); i++) {
+            emitExpressionForParameter(code, arguments.get(i), parameterTypes[i]);
+        }
+    }
+
+    private void emitExpressionAsObject(CodeBuilder code, QinIrExpression expression) {
         if (expression instanceof QinIrNumberLiteral numberLiteral) {
             code.loadConstant(numberLiteral.value());
             code.invokestatic(INTEGER_DESC, "valueOf", INTEGER_VALUE_OF_SIGNATURE);
             return;
         }
+        if (expression instanceof QinIrStringLiteral stringLiteral) {
+            code.ldc(stringLiteral.value());
+            return;
+        }
 
-        throw new IllegalArgumentException("Unsupported expression type: " + expression.getClass().getSimpleName());
+        throw new IllegalArgumentException("Unsupported object expression type: "
+                + expression.getClass().getSimpleName());
     }
 
-    private void emitJavaStaticConsoleLog(CodeBuilder code, QinIrConsoleLogJavaStaticCall javaStaticCall) {
-        try {
-            Class<?> ownerClass = Class.forName(javaStaticCall.ownerBinaryName());
-            Method method = ownerClass.getMethod(javaStaticCall.methodName());
-            if (!Modifier.isStatic(method.getModifiers())) {
-                throw new IllegalArgumentException("Method is not static: " + javaStaticCall.ownerBinaryName()
-                        + "." + javaStaticCall.methodName());
+    private void emitExpressionForParameter(CodeBuilder code, QinIrExpression expression, Class<?> parameterType) {
+        if (expression instanceof QinIrStringLiteral stringLiteral) {
+            if (parameterType.isPrimitive()) {
+                throw new IllegalArgumentException("String literal cannot target primitive parameter: "
+                        + parameterType.getName());
             }
-            if (method.getParameterCount() != 0) {
-                throw new IllegalArgumentException("Only zero-arg Java static call is supported: "
-                        + javaStaticCall.ownerBinaryName() + "." + javaStaticCall.methodName());
-            }
-
-            String descriptor = MethodType.methodType(method.getReturnType()).toMethodDescriptorString();
-            code.invokestatic(
-                    ClassDesc.of(javaStaticCall.ownerBinaryName()),
-                    javaStaticCall.methodName(),
-                    MethodTypeDesc.ofDescriptor(descriptor));
-
-            emitBoxIfNeeded(code, method.getReturnType());
-            code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException("Cannot resolve Java static method: "
-                    + javaStaticCall.ownerBinaryName() + "." + javaStaticCall.methodName(), e);
+            code.ldc(stringLiteral.value());
+            return;
         }
+
+        if (expression instanceof QinIrNumberLiteral numberLiteral) {
+            if (parameterType == int.class) {
+                code.loadConstant(numberLiteral.value());
+                return;
+            }
+            if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Integer.class)) {
+                code.loadConstant(numberLiteral.value());
+                code.invokestatic(INTEGER_DESC, "valueOf", INTEGER_VALUE_OF_SIGNATURE);
+                return;
+            }
+            throw new IllegalArgumentException("Unsupported numeric parameter type: " + parameterType.getName());
+        }
+
+        throw new IllegalArgumentException("Unsupported call argument expression: "
+                + expression.getClass().getSimpleName());
+    }
+
+    private ResolvedConstructor resolveConstructor(String ownerBinaryName, List<QinIrExpression> arguments) {
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Constructor<?> best = null;
+            int bestScore = Integer.MAX_VALUE;
+            for (Constructor<?> constructor : ownerClass.getConstructors()) {
+                int score = compatibilityScore(arguments, constructor.getParameterTypes());
+                if (score < 0) {
+                    continue;
+                }
+                if (score < bestScore) {
+                    best = constructor;
+                    bestScore = score;
+                } else if (score == bestScore) {
+                    throw new IllegalArgumentException("Ambiguous constructor for " + ownerBinaryName);
+                }
+            }
+            if (best == null) {
+                throw new IllegalArgumentException("No compatible constructor for " + ownerBinaryName);
+            }
+            return new ResolvedConstructor(
+                    best.getParameterTypes(),
+                    MethodTypeDesc.ofDescriptor(MethodType.methodType(void.class, best.getParameterTypes())
+                            .toMethodDescriptorString()));
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException("Cannot resolve Java constructor: " + ownerBinaryName, e);
+        }
+    }
+
+    private ResolvedMethod resolveStaticMethod(
+            String ownerBinaryName,
+            String methodName,
+            List<QinIrExpression> arguments) {
+        ResolvedMethod resolvedMethod = resolveMethod(ownerBinaryName, methodName, arguments);
+        if (!Modifier.isStatic(resolvedMethod.method().getModifiers())) {
+            throw new IllegalArgumentException("Method is not static: " + ownerBinaryName + "." + methodName);
+        }
+        return resolvedMethod;
+    }
+
+    private ResolvedMethod resolveInstanceMethod(
+            String ownerBinaryName,
+            String methodName,
+            List<QinIrExpression> arguments) {
+        ResolvedMethod resolvedMethod = resolveMethod(ownerBinaryName, methodName, arguments);
+        if (Modifier.isStatic(resolvedMethod.method().getModifiers())) {
+            throw new IllegalArgumentException("Method is static, expected instance method: "
+                    + ownerBinaryName + "." + methodName);
+        }
+        return resolvedMethod;
+    }
+
+    private ResolvedMethod resolveMethod(
+            String ownerBinaryName,
+            String methodName,
+            List<QinIrExpression> arguments) {
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Method best = null;
+            int bestScore = Integer.MAX_VALUE;
+            for (Method method : ownerClass.getMethods()) {
+                if (!method.getName().equals(methodName)) {
+                    continue;
+                }
+                int score = compatibilityScore(arguments, method.getParameterTypes());
+                if (score < 0) {
+                    continue;
+                }
+                if (score < bestScore) {
+                    best = method;
+                    bestScore = score;
+                } else if (score == bestScore) {
+                    throw new IllegalArgumentException("Ambiguous method: " + ownerBinaryName + "." + methodName);
+                }
+            }
+            if (best == null) {
+                throw new IllegalArgumentException("No compatible method: " + ownerBinaryName + "." + methodName);
+            }
+            return new ResolvedMethod(
+                    best,
+                    best.getParameterTypes(),
+                    best.getReturnType(),
+                    MethodTypeDesc.ofDescriptor(MethodType.methodType(best.getReturnType(), best.getParameterTypes())
+                            .toMethodDescriptorString()));
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException("Cannot resolve Java method: "
+                    + ownerBinaryName + "." + methodName, e);
+        }
+    }
+
+    private int compatibilityScore(List<QinIrExpression> arguments, Class<?>[] parameterTypes) {
+        if (arguments.size() != parameterTypes.length) {
+            return -1;
+        }
+        int total = 0;
+        for (int i = 0; i < arguments.size(); i++) {
+            int parameterScore = compatibilityScore(arguments.get(i), parameterTypes[i]);
+            if (parameterScore < 0) {
+                return -1;
+            }
+            total += parameterScore;
+        }
+        return total;
+    }
+
+    private int compatibilityScore(QinIrExpression argument, Class<?> parameterType) {
+        if (argument instanceof QinIrStringLiteral) {
+            if (parameterType == String.class) {
+                return 0;
+            }
+            if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(String.class)) {
+                return 1;
+            }
+            return -1;
+        }
+        if (argument instanceof QinIrNumberLiteral) {
+            if (parameterType == int.class) {
+                return 0;
+            }
+            if (parameterType == Integer.class) {
+                return 1;
+            }
+            if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Integer.class)) {
+                return 2;
+            }
+            return -1;
+        }
+        return -1;
+    }
+
+    private void invokeInstanceMethod(CodeBuilder code, ResolvedMethod resolvedMethod) {
+        if (resolvedMethod.method().getDeclaringClass().isInterface()) {
+            code.invokeinterface(
+                    ClassDesc.of(resolvedMethod.method().getDeclaringClass().getName()),
+                    resolvedMethod.method().getName(),
+                    resolvedMethod.descriptor());
+            return;
+        }
+        code.invokevirtual(
+                ClassDesc.of(resolvedMethod.method().getDeclaringClass().getName()),
+                resolvedMethod.method().getName(),
+                resolvedMethod.descriptor());
+    }
+
+    private void discardReturnValue(CodeBuilder code, Class<?> returnType) {
+        if (returnType == void.class) {
+            return;
+        }
+        emitBoxIfNeeded(code, returnType);
+        code.pop();
     }
 
     private void emitBoxIfNeeded(CodeBuilder code, Class<?> returnType) {
@@ -238,5 +503,26 @@ public final class QinJvmClassFileBackend {
             return;
         }
         throw new IllegalArgumentException("Unsupported primitive return type: " + returnType.getName());
+    }
+
+    private Integer lastDeclarationSlot(Map<String, DeclarationBinding> bindings) {
+        Integer slot = null;
+        for (DeclarationBinding binding : bindings.values()) {
+            slot = binding.slot();
+        }
+        return slot;
+    }
+
+    private record DeclarationBinding(int slot, QinIrExpression initializer) {
+    }
+
+    private record ResolvedConstructor(Class<?>[] parameterTypes, MethodTypeDesc descriptor) {
+    }
+
+    private record ResolvedMethod(
+            Method method,
+            Class<?>[] parameterTypes,
+            Class<?> returnType,
+            MethodTypeDesc descriptor) {
     }
 }

@@ -2,6 +2,10 @@
 
 Core runtime orchestration package for Qin.
 
+Planning document:
+
+- `ROADMAP.md`
+
 ## Positioning
 
 - Qin keeps JS/ES-style syntax.
@@ -12,6 +16,7 @@ Core runtime orchestration package for Qin.
 ## Current Scope (Stage 0)
 
 - Read a `.qin` source file.
+- Resolve local `.qin` module imports.
 - Parse source via Slime frontend adapter.
 - Lower to Qin IR.
 - Emit target artifacts:
@@ -46,6 +51,23 @@ If `--file` is omitted, it tries:
 - `main/main.qin`
 - `app/main.qin`
 
+## Local Module Demo
+
+Example entry:
+
+`packages/qin-runtime-core/examples/modules/main/main.qin`
+
+```js
+import { shared } from "../shared/shared.qin";
+console.log(shared.age);
+```
+
+Imported module:
+
+```js
+export const shared = { age: 21 };
+```
+
 ## Java Standard Library Import Demo
 
 Supported demo syntax:
@@ -53,6 +75,16 @@ Supported demo syntax:
 ```js
 import { Math } from "java:java.lang";
 console.log(Math.random());
+```
+
+Supported JVM interop demo:
+
+```js
+import { ArrayList } from "java:java.util";
+
+const list = new ArrayList();
+list.add("hello");
+console.log(list.size());
 ```
 
 ESM name resolution is case-sensitive.
@@ -66,3 +98,7 @@ console.log(math.random());
 Runnable Java demo entry:
 
 `com.qin.runtime.core.QinJavaImportMathDemoMain`
+
+Additional runnable Java demo entry:
+
+`com.qin.runtime.core.QinJavaArrayListDemoMain`
