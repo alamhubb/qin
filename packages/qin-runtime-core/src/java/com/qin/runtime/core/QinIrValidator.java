@@ -4,16 +4,20 @@ import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrProgram;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Validates IR rules and policy constraints before backend emission.
  */
 public final class QinIrValidator {
-    private static final Set<String> ALLOWED_JAVA_MODULE_PREFIXES = Set.of(
-            "java.lang",
-            "java.util",
-            "java.nio.file");
+    private final QinJdkInteropPolicy jdkInteropPolicy;
+
+    public QinIrValidator() {
+        this(new QinJdkInteropPolicy());
+    }
+
+    public QinIrValidator(QinJdkInteropPolicy jdkInteropPolicy) {
+        this.jdkInteropPolicy = jdkInteropPolicy;
+    }
 
     public void validate(QinIrProgram program) {
         validateProgramNotEmpty(program);
@@ -35,9 +39,7 @@ public final class QinIrValidator {
                 throw new IllegalArgumentException("Unsupported import module scheme: " + module);
             }
             String javaModule = module.substring("java:".length());
-            boolean allowed = ALLOWED_JAVA_MODULE_PREFIXES.stream()
-                    .anyMatch(prefix -> javaModule.equals(prefix) || javaModule.startsWith(prefix + "."));
-            if (!allowed) {
+            if (!jdkInteropPolicy.isModuleAllowed(javaModule)) {
                 throw new IllegalArgumentException("java import module is not allowed: " + module);
             }
         }

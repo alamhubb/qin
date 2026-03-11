@@ -18,6 +18,15 @@ Core runtime orchestration package for Qin.
   - JVM `.class`
   - JS `.js`
 
+Pipeline entry classes:
+
+- `QinRuntimeMain` (CLI entry)
+- `QinBuildCoordinator` (orchestration)
+- `QinSourceResolver` (source/layout resolution)
+- `QinFrontendCompiler` (Slime -> IR)
+- `QinIrValidator` + `QinJdkInteropPolicy` (policy checks)
+- `QinDependencyService` (dependency boundary, current placeholder)
+
 ## Convention Layout
 
 - `shared/`: shared modules and contracts.

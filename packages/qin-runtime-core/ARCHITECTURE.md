@@ -79,16 +79,15 @@ Rules:
 
 ## 3. Recommended Next Split
 
-To make orchestration fully decoupled, split `QinRuntimeMain` into:
+`QinRuntimeMain` is now split by responsibilities:
 
 1. `QinSourceResolver`
 2. `QinFrontendCompiler`
-3. `QinIrValidator` (including Java import policy)
-4. `QinJvmEmitter`
-5. `QinJsEmitter`
-6. `QinBuildCoordinator`
+3. `QinIrValidator` + `QinJdkInteropPolicy`
+4. `QinBuildCoordinator`
+5. `QinDependencyService` (placeholder boundary)
 
-`QinRuntimeMain` should only parse CLI options and call `QinBuildCoordinator`.
+`QinRuntimeMain` only parses CLI options and calls `QinBuildCoordinator`.
 
 ## 4. Dependency / JDK Loading Strategy
 

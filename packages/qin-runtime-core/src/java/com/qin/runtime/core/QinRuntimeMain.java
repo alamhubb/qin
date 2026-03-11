@@ -1,15 +1,6 @@
 package com.qin.runtime.core;
 
-import com.qin.lang.backend.js.QinJsBackend;
-import com.qin.lang.backend.jvm.QinClassFileWriter;
-import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
-import com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter;
-import com.qin.lang.ir.QinIrProgram;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 
 /**
  * Qin runtime bootstrap entry.
@@ -30,77 +21,28 @@ public final class QinRuntimeMain {
             return;
         }
 
-        Path root = resolveRoot(options.rootDir);
-        QinRuntimeProjectLayout layout = QinRuntimeProjectLayout.discover(root);
-        Path sourceFile = resolveSourceFile(options, layout);
-        String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
-
-        QinSlimeFrontendAdapter adapter = new QinSlimeFrontendAdapter();
-        QinIrProgram program = adapter.parseProgram(source);
+        QinBuildRequest request = toBuildRequest(options);
+        QinBuildCoordinator coordinator = new QinBuildCoordinator();
+        QinBuildResult result = coordinator.build(request);
 
         if (options.printIr) {
-            System.out.println("IR declarations: " + program.declarations().size());
-            System.out.println("IR console logs: " + program.consoleLogs().size());
-            System.out.println("IR java imports: " + program.javaImports().size());
-            System.out.println("IR java static console logs: " + program.javaStaticConsoleLogs().size());
+            System.out.println("IR declarations: " + result.program().declarations().size());
+            System.out.println("IR console logs: " + result.program().consoleLogs().size());
+            System.out.println("IR java imports: " + result.program().javaImports().size());
+            System.out.println("IR java static console logs: " + result.program().javaStaticConsoleLogs().size());
         }
 
-        if (options.target.emitJvm()) {
-            QinJvmClassFileBackend jvmBackend = new QinJvmClassFileBackend();
-            byte[] classBytes = jvmBackend.compileProgram(program, options.className);
-            Path classFile = QinClassFileWriter.writeClassFile(options.classOutputDir, options.className, classBytes);
-            System.out.println("Generated .class: " + classFile.toAbsolutePath());
+        if (result.classFile() != null) {
+            System.out.println("Generated .class: " + result.classFile().toAbsolutePath());
         }
-
-        if (options.target.emitJs()) {
-            QinJsBackend jsBackend = new QinJsBackend();
-            String jsCode = jsBackend.compileProgram(program);
-            Path parent = options.jsOutputFile.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            Files.writeString(options.jsOutputFile, jsCode, StandardCharsets.UTF_8);
-            System.out.println("Generated .js: " + options.jsOutputFile.toAbsolutePath());
+        if (result.jsFile() != null) {
+            System.out.println("Generated .js: " + result.jsFile().toAbsolutePath());
         }
-
-        System.out.println("Project root: " + root.toAbsolutePath());
-        System.out.println("Source file: " + sourceFile.toAbsolutePath());
-        System.out.println("Layout shared: " + layout.sharedDir().toAbsolutePath());
-        System.out.println("Layout app: " + layout.appDir().toAbsolutePath());
-        System.out.println("Layout backend entry: " + layout.backendEntry().toAbsolutePath());
-    }
-
-    private static Path resolveRoot(Path rootDir) {
-        if (rootDir != null) {
-            return rootDir.toAbsolutePath().normalize();
-        }
-        return Path.of("").toAbsolutePath().normalize();
-    }
-
-    private static Path resolveSourceFile(Options options, QinRuntimeProjectLayout layout) {
-        if (options.sourceFile != null) {
-            Path file = options.sourceFile;
-            if (!file.isAbsolute()) {
-                file = layout.root().resolve(file).normalize();
-            }
-            requireFile(file, "--file");
-            return file;
-        }
-
-        Path detected = layout.resolveDefaultQinSource();
-        if (detected != null) {
-            return detected;
-        }
-
-        throw new IllegalArgumentException(
-                "No qin source found. Use --file, or provide one of: shared/main.qin, shared/shared.qin, main/main.qin, app/main.qin");
-    }
-
-    private static void requireFile(Path file, String from) {
-        Objects.requireNonNull(file, "file cannot be null");
-        if (!Files.exists(file) || !Files.isRegularFile(file)) {
-            throw new IllegalArgumentException("Missing source file from " + from + ": " + file.toAbsolutePath());
-        }
+        System.out.println("Project root: " + result.layout().root().toAbsolutePath());
+        System.out.println("Source file: " + result.sourceFile().toAbsolutePath());
+        System.out.println("Layout shared: " + result.layout().sharedDir().toAbsolutePath());
+        System.out.println("Layout app: " + result.layout().appDir().toAbsolutePath());
+        System.out.println("Layout backend entry: " + result.layout().backendEntry().toAbsolutePath());
     }
 
     private static Options parseArgs(String[] args) {
@@ -112,7 +54,7 @@ public final class QinRuntimeMain {
                 case "--print-ir" -> options.printIr = true;
                 case "--root" -> options.rootDir = Path.of(nextValue(args, ++i, "--root"));
                 case "--file" -> options.sourceFile = Path.of(nextValue(args, ++i, "--file"));
-                case "--target" -> options.target = Target.parse(nextValue(args, ++i, "--target"));
+                case "--target" -> options.target = QinBuildTarget.parse(nextValue(args, ++i, "--target"));
                 case "--class" -> options.className = nextValue(args, ++i, "--class");
                 case "--class-out" -> options.classOutputDir = Path.of(nextValue(args, ++i, "--class-out"));
                 case "--js-out" -> options.jsOutputFile = Path.of(nextValue(args, ++i, "--js-out"));
@@ -141,37 +83,28 @@ public final class QinRuntimeMain {
         System.out.println("  --print-ir                   Print IR summary");
     }
 
+    private static QinBuildRequest toBuildRequest(Options options) {
+        Path root = options.rootDir != null
+                ? options.rootDir.toAbsolutePath().normalize()
+                : Path.of("").toAbsolutePath().normalize();
+        return new QinBuildRequest(
+                root,
+                options.sourceFile,
+                options.target,
+                options.className,
+                options.classOutputDir,
+                options.jsOutputFile,
+                options.printIr);
+    }
+
     private static final class Options {
         private Path rootDir;
         private Path sourceFile;
-        private Target target = Target.BOTH;
+        private QinBuildTarget target = QinBuildTarget.BOTH;
         private String className = "com.qin.runtime.generated.App";
         private Path classOutputDir = Path.of("build", "runtime-classes");
         private Path jsOutputFile = Path.of("build", "runtime-web", "app.js");
         private boolean printIr;
         private boolean showHelp;
-    }
-
-    private enum Target {
-        JVM,
-        JS,
-        BOTH;
-
-        private boolean emitJvm() {
-            return this == JVM || this == BOTH;
-        }
-
-        private boolean emitJs() {
-            return this == JS || this == BOTH;
-        }
-
-        private static Target parse(String raw) {
-            return switch (raw.toLowerCase()) {
-                case "jvm" -> JVM;
-                case "js" -> JS;
-                case "both" -> BOTH;
-                default -> throw new IllegalArgumentException("Unknown --target value: " + raw);
-            };
-        }
     }
 }
