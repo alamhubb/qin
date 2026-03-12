@@ -9,6 +9,7 @@
     },
     "java": {
         "version": "21",
+        "release": "21",
         "target": "21",
         "sourceDir": "src",
         "outputDir": "build/classes",

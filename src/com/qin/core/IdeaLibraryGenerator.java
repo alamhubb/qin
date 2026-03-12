@@ -195,7 +195,13 @@ public class IdeaLibraryGenerator {
             String json = Files.readString(configPath);
 
             // 简单 JSON 解析：查找 java.target 或 java.version
-            // 优先使用 target
+            // 优先使用 release
+            String release = extractJsonValue(json, "release");
+            if (release != null && !release.isBlank()) {
+                return release;
+            }
+
+            // 其次使用 target
             String target = extractJsonValue(json, "target");
             if (target != null && !target.isBlank()) {
                 return target;

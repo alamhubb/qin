@@ -21,11 +21,17 @@ public class Compiler {
     private final String cwd;
     private final String outputDir;
     private final ClasspathBuilder classpathBuilder;
+    private final JavaCompileConfig javaCompileConfig;
 
     public Compiler(String cwd, String outputDir, ClasspathBuilder classpathBuilder) {
+        this(cwd, outputDir, classpathBuilder, JavaCompileConfig.from((com.qin.types.JavaConfig) null));
+    }
+
+    public Compiler(String cwd, String outputDir, ClasspathBuilder classpathBuilder, JavaCompileConfig javaCompileConfig) {
         this.cwd = cwd;
         this.outputDir = outputDir;
         this.classpathBuilder = classpathBuilder;
+        this.javaCompileConfig = javaCompileConfig;
     }
 
     /**
@@ -45,8 +51,7 @@ public class Compiler {
             List<String> options = new ArrayList<>();
             options.add("-d");
             options.add(outputDir);
-            options.add("-encoding");
-            options.add(QinConstants.CHARSET_UTF8);
+            javaCompileConfig.appendJavacOptions(options);
 
             String fullCp = classpathBuilder.buildCompileClasspath();
             System.out.println("  [DEBUG] Compile classpath: " + fullCp);

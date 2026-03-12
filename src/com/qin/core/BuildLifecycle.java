@@ -44,18 +44,16 @@ public class BuildLifecycle {
         System.out.println("📦 Compiling project...");
 
         try {
-            // 准备输出目录
-            String outputDir = config.java() != null && config.java().outputDir() != null
-                ? config.java().outputDir()
-                : QinConstants.BUILD_CLASSES_DIR;
+            JavaCompileConfig javaCompileConfig = JavaCompileConfig.from(config);
+
+            // prepare output directory
+            String outputDir = javaCompileConfig.outputDir();
 
             Path outputPath = Paths.get(projectDir, outputDir);
             Files.createDirectories(outputPath);
 
-            // 获取源代码目录
-            String sourceDir = config.java() != null && config.java().sourceDir() != null
-                ? config.java().sourceDir()
-                : "src/main/java";
+            // resolve source directory
+            String sourceDir = javaCompileConfig.sourceDir();
 
             Path sourcePath = Paths.get(projectDir, sourceDir);
             if (!Files.exists(sourcePath)) {
@@ -68,7 +66,7 @@ public class BuildLifecycle {
 
             // 使用现有的 Compiler
             ClasspathBuilder classpathBuilder = new ClasspathBuilder(projectDir, config);
-            Compiler compiler = new Compiler(projectDir, outputDir, classpathBuilder);
+            Compiler compiler = new Compiler(projectDir, outputDir, classpathBuilder, javaCompileConfig);
 
             // 查找所有 Java 文件
             List<String> javaFiles = compiler.findJavaFiles(sourcePath);
@@ -239,9 +237,8 @@ public class BuildLifecycle {
      */
     private CompileResult compileTests() {
         try {
-            String testDir = config.java() != null && config.java().testDir() != null
-                ? config.java().testDir()
-                : "src/test/java";
+            JavaCompileConfig javaCompileConfig = JavaCompileConfig.from(config);
+            String testDir = javaCompileConfig.testDir();
 
             Path testPath = Paths.get(projectDir, testDir);
             if (!Files.exists(testPath)) {
@@ -256,7 +253,7 @@ public class BuildLifecycle {
             Files.createDirectories(testOutputPath);
 
             ClasspathBuilder classpathBuilder = new ClasspathBuilder(projectDir, config);
-            Compiler compiler = new Compiler(projectDir, testOutputDir, classpathBuilder);
+            Compiler compiler = new Compiler(projectDir, testOutputDir, classpathBuilder, javaCompileConfig);
 
             List<String> testFiles = compiler.findJavaFiles(testPath);
             if (testFiles.isEmpty()) {
@@ -283,9 +280,7 @@ public class BuildLifecycle {
         try {
             Path resourcesDir = Paths.get(projectDir, "src/main/resources");
             if (Files.exists(resourcesDir)) {
-                String outputDir = config.java() != null && config.java().outputDir() != null
-                    ? config.java().outputDir()
-                    : QinConstants.BUILD_CLASSES_DIR;
+                String outputDir = JavaCompileConfig.from(config).outputDir();
 
                 Path outputPath = Paths.get(projectDir, outputDir);
 

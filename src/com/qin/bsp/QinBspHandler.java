@@ -575,11 +575,18 @@ public class QinBspHandler {
     }
 
     private String getJavaVersion() {
-        if (config != null && config.java() != null
-            && config.java().version() != null) {
-            return config.java().version();
+        if (config != null && config.java() != null) {
+            if (config.java().release() != null && !config.java().release().isBlank()) {
+                return config.java().release();
+            }
+            if (config.java().target() != null && !config.java().target().isBlank()) {
+                return config.java().target();
+            }
+            if (config.java().version() != null && !config.java().version().isBlank()) {
+                return config.java().version();
+            }
         }
-        return "21"; // 默认 Java 21
+        return "21"; // default Java 21
     }
 
     private String getMainClass() {

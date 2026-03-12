@@ -21,6 +21,7 @@ public class JavaRunner {
     private final String classpath;
     private final String cwd;
     private final String outputDir;
+    private final JavaCompileConfig javaCompileConfig;
 
     private final ClasspathBuilder classpathBuilder;
     private final DependencyGraphBuilder graphBuilder;
@@ -34,7 +35,8 @@ public class JavaRunner {
         this.config = config;
         this.classpath = classpath;
         this.cwd = cwd;
-        this.outputDir = QinPaths.getOutputDir(cwd).toString();
+        this.javaCompileConfig = JavaCompileConfig.from(config);
+        this.outputDir = Paths.get(cwd, javaCompileConfig.outputDir()).toString();
 
         this.classpathBuilder = new ClasspathBuilder(cwd, outputDir, classpath, config);
         this.graphBuilder = new DependencyGraphBuilder();
@@ -148,29 +150,12 @@ public class JavaRunner {
         }
 
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
-            // 准备源文件
             Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromStrings(javaFiles);
 
-            // 编译选项
             List<String> options = new ArrayList<>();
             options.add("-d");
             options.add(outputDir);
-            options.add("-encoding");
-            options.add(QinConstants.CHARSET_UTF8);
-
-            // 设置 source 和 target 版本
-            if (config.java() != null) {
-                String sourceVersion = config.java().source();
-                String targetVersion = config.java().target();
-                if (sourceVersion != null && !sourceVersion.isBlank()) {
-                    options.add("-source");
-                    options.add(sourceVersion);
-                }
-                if (targetVersion != null && !targetVersion.isBlank()) {
-                    options.add("-target");
-                    options.add(targetVersion);
-                }
-            }
+            javaCompileConfig.appendJavacOptions(options);
 
             String fullCp = buildCompileClasspath();
             System.out.println("  [DEBUG] Compile classpath: "
@@ -180,10 +165,7 @@ public class JavaRunner {
                 options.add(fullCp);
             }
 
-            // 收集诊断信息
             DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-
-            // 执行编译
             JavaCompiler.CompilationTask task = compiler.getTask(
                     null, fileManager, diagnostics, options, null, compilationUnits);
 

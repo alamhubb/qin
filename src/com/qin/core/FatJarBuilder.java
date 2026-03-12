@@ -230,9 +230,10 @@ public class FatJarBuilder {
     private void compileSourceWithClasspath(List<String> jarPaths) throws Exception {
         ConfigLoader configLoader = new ConfigLoader(cwd);
         ParsedEntry parsed = configLoader.parseEntry(config.entry());
+        JavaCompileConfig javaCompileConfig = JavaCompileConfig.from(config);
 
         // 使用 QinConstants.getSourceDir() 统一获取源代码目录
-        String sourceDirPath = QinConstants.getSourceDir(config.java());
+        String sourceDirPath = javaCompileConfig.sourceDir();
         Path srcDir = Paths.get(cwd, sourceDirPath);
 
         List<String> javaFiles;
@@ -251,8 +252,7 @@ public class FatJarBuilder {
         args.add("javac");
         args.add("-d");
         args.add(tempDir);
-        args.add("-encoding");
-        args.add(QinConstants.CHARSET_UTF8);
+        javaCompileConfig.appendJavacOptions(args);
 
         // 构建 classpath：tempDir + 所有依赖 JAR
         List<String> cpParts = new ArrayList<>();

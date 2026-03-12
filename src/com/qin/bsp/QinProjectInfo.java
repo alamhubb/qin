@@ -4,8 +4,7 @@ import com.qin.constants.QinConstants;
 import java.util.Map;
 
 /**
- * Qin 项目配置信息
- * 对应 qin.config.json
+ * BSP-facing project metadata derived from qin.config.json.
  */
 public class QinProjectInfo {
     public String name;
@@ -16,7 +15,10 @@ public class QinProjectInfo {
     public JavaConfig java;
 
     public static class JavaConfig {
-        public String version = "25";
+        public String version = "21";
+        public String release;
+        public String source;
+        public String target;
         public String sourceDir = QinConstants.JAVA_SOURCE_DIR;
         public String testDir = QinConstants.DEFAULT_TEST_DIR;
         public String outputDir = QinConstants.BUILD_CLASSES_DIR;
@@ -37,9 +39,17 @@ public class QinProjectInfo {
     }
 
     public String getJavaVersion() {
-        if (java != null && java.version != null) {
-            return java.version;
+        if (java != null) {
+            if (java.release != null && !java.release.isBlank()) {
+                return java.release;
+            }
+            if (java.target != null && !java.target.isBlank()) {
+                return java.target;
+            }
+            if (java.version != null && !java.version.isBlank()) {
+                return java.version;
+            }
         }
-        return "25";
+        return "21";
     }
 }
