@@ -5,9 +5,12 @@ import com.intellij.execution.actions.LazyRunConfigurationProducer;
 import com.intellij.execution.configurations.ConfigurationFactory;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.qin.debug.QinProjectLocator;
 import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
+
+import java.nio.file.Path;
 
 /**
  * Qin 运行配置生产者
@@ -117,15 +120,7 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
         VirtualFile file = psiFile.getVirtualFile();
         if (file == null) return null;
 
-        VirtualFile current = file.getParent();
-        while (current != null) {
-            VirtualFile configFile = current.findChild("qin.config.json");
-            if (configFile != null && configFile.exists()) {
-                return current.getPath();
-            }
-            current = current.getParent();
-        }
-
-        return null;
+        Path nearest = QinProjectLocator.findNearestQinProject(Path.of(file.getPath()));
+        return nearest != null ? nearest.toString().replace('\\', '/') : null;
     }
 }

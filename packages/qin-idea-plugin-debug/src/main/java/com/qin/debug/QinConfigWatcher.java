@@ -109,10 +109,9 @@ public class QinConfigWatcher {
 
             String languageLevel = content.substring(start, end);
             String version = languageLevel.replace("JDK_", "").replace("_", ".");
-            QinConfig tempConfig = new QinConfig(version);
 
             QinLogger.info("[Watcher] Detected LANGUAGE_LEVEL in .iml: " + languageLevel);
-            projectSync.refreshLanguageLevel(tempConfig);
+            projectSync.refreshLanguageLevel(version);
         } catch (Exception e) {
             QinLogger.error("[Watcher] Failed to process .iml change: " + e.getMessage());
         }

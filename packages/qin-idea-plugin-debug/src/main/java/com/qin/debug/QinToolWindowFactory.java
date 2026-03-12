@@ -136,8 +136,8 @@ public class QinToolWindowFactory implements ToolWindowFactory {
             relativePath = project.getName();
 
         // 鍔犺浇閰嶇疆
-        QinConfig config = QinConfig.load(projectPath.toString());
-        String projectName = config != null ? config.name : relativePath;
+        com.qin.types.QinConfig config = QinConfigSupport.load(projectPath);
+        String projectName = QinConfigSupport.projectName(config, relativePath);
 
         ProjectNode projectNode = new ProjectNode(projectName, projectPath.toString());
         DefaultMutableTreeNode projectTreeNode = new DefaultMutableTreeNode(projectNode);
@@ -165,9 +165,10 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         projectTreeNode.add(tasksNode);
 
         // Dependencies 鑺傜偣
-        if (config != null && config.dependencies != null && !config.dependencies.isEmpty()) {
+        Map<String, String> dependencies = QinConfigSupport.dependencies(config);
+        if (!dependencies.isEmpty()) {
             DefaultMutableTreeNode depsNode = new DefaultMutableTreeNode(NODE_DEPENDENCIES);
-            config.dependencies.forEach((name, version) -> {
+            dependencies.forEach((name, version) -> {
                 depsNode.add(new DefaultMutableTreeNode(name + ":" + version));
             });
             projectTreeNode.add(depsNode);

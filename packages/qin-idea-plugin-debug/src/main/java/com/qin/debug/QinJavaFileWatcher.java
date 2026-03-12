@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +21,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.qin.constants.QinConstants.CHARSET_UTF8;
-import static com.qin.constants.QinConstants.CONFIG_FILE;
 import static com.qin.constants.QinConstants.NODE_MODULES;
 import static com.qin.constants.QinConstants.QIN_DIR;
 
@@ -146,15 +146,8 @@ public class QinJavaFileWatcher {
     }
 
     private String findQinProjectPath(VirtualFile file) {
-        VirtualFile current = file.getParent();
-        while (current != null) {
-            VirtualFile configFile = current.findChild(CONFIG_FILE);
-            if (configFile != null && configFile.exists()) {
-                return current.getPath();
-            }
-            current = current.getParent();
-        }
-        return null;
+        Path nearest = QinProjectLocator.findNearestQinProject(Path.of(file.getPath()));
+        return nearest != null ? nearest.toString().replace('\\', '/') : null;
     }
 
     private void executeCompile(String projectPath) {

@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.LanguageLevelProjectExtension;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.pom.java.LanguageLevel;
+import com.qin.types.QinConfig;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
@@ -54,7 +55,7 @@ public class QinProjectSync {
                 return;
             }
 
-            QinConfig config = QinConfig.load(projectPath.toString());
+            QinConfig config = QinConfigSupport.load(projectPath);
             if (config == null) {
                 QinLogger.info("[Sync] Invalid config file, skipping project");
                 if (!silentMode) {
@@ -112,9 +113,9 @@ public class QinProjectSync {
         }
     }
 
-    public void refreshLanguageLevel(QinConfig config) {
+    public void refreshLanguageLevel(String sourceVersion) {
         QinLogger.info("[Sync] Refreshing language level from .iml update...");
-        updateLanguageLevel(config);
+        updateLanguageLevel(sourceVersion);
         refreshProject();
         QinLogger.info("[Sync] Language level refresh complete");
     }
@@ -171,7 +172,7 @@ public class QinProjectSync {
     private void updateImlLanguageLevel(Path imlPath, QinConfig config) {
         try {
             String content = Files.readString(imlPath);
-            String languageLevel = "JDK_" + config.getJavaVersion();
+            String languageLevel = "JDK_" + QinConfigSupport.javaVersion(config);
 
             if (content.contains("LANGUAGE_LEVEL=")) {
                 content = content.replaceAll("LANGUAGE_LEVEL=\"[^\"]*\"",
@@ -190,9 +191,12 @@ public class QinProjectSync {
     }
 
     public void updateLanguageLevel(QinConfig config) {
+        updateLanguageLevel(QinConfigSupport.sourceVersion(config));
+    }
+
+    private void updateLanguageLevel(String sourceVersion) {
         try {
             QinLogger.info("[Sync] Updating IDEA language level...");
-            String sourceVersion = config.getSourceVersion();
             LanguageLevel level = parseLanguageLevel(sourceVersion);
             if (level == null) {
                 QinLogger.info("[Sync] Unsupported sourceVersion, skipping language level update: " + sourceVersion);
@@ -215,7 +219,7 @@ public class QinProjectSync {
     public void updateMiscXml(QinConfig config) {
         try {
             QinLogger.info("[Sync] Updating .idea/misc.xml...");
-            String targetVersion = config.getJavaVersion();
+            String targetVersion = QinConfigSupport.javaVersion(config);
             Path miscXml = Paths.get(basePath, ".idea", "misc.xml");
             IdeaMiscXmlSupport.updateLanguageLevel(miscXml, targetVersion);
             QinLogger.info("[Sync] Updated misc.xml languageLevel=JDK_" + targetVersion);

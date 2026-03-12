@@ -117,7 +117,7 @@ public class QinRunProfileState extends CommandLineState {
         // 娣诲姞涓荤被鍙傛暟锛堝鏋滄寚瀹氾級
         String mainClass = configuration.getResolvedMainClass();
         if (mainClass != null && !mainClass.isEmpty()) {
-            command.add("--main=" + mainClass);
+            command.add(mainClass);
         }
 
         // 娣诲姞 JVM 鍙傛暟

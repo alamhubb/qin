@@ -6,12 +6,12 @@
     <output-test url="file://$MODULE_DIR$/build/test-classes" />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
-          <excludeFolder url="file://$MODULE_DIR$/dist" />
-          <excludeFolder url="file://$MODULE_DIR$/target" />
-          <excludeFolder url="file://$MODULE_DIR$/build" />
-          <excludeFolder url="file://$MODULE_DIR$/.qin" />
-          <excludeFolder url="file://$MODULE_DIR$/out" />
           <excludeFolder url="file://$MODULE_DIR$/libs" />
+          <excludeFolder url="file://$MODULE_DIR$/out" />
+          <excludeFolder url="file://$MODULE_DIR$/.qin" />
+          <excludeFolder url="file://$MODULE_DIR$/build" />
+          <excludeFolder url="file://$MODULE_DIR$/target" />
+          <excludeFolder url="file://$MODULE_DIR$/dist" />
           <excludeFolder url="file://$MODULE_DIR$/node_modules" />
     </content>
     <orderEntry type="inheritedJdk" />
@@ -19,10 +19,113 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/slime-parser/build/classes" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/slime-parser/src" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/build/classes" />
         </CLASSES>
         <SOURCES>
           <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/src" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/ch.qos.logback@logback-classic/ch.qos.logback@logback-classic-1.4.14/ch.qos.logback@logback-classic-1.4.14.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/ch.qos.logback@logback-core/ch.qos.logback@logback-core-1.4.14/ch.qos.logback@logback-core-1.4.14.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/com.github.ben-manes.caffeine@caffeine/com.github.ben-manes.caffeine@caffeine-3.1.8/com.github.ben-manes.caffeine@caffeine-3.1.8.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/com.google.errorprone@error_prone_annotations/com.google.errorprone@error_prone_annotations-2.23.0/com.google.errorprone@error_prone_annotations-2.23.0.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/net.bytebuddy@byte-buddy/net.bytebuddy@byte-buddy-1.14.11/net.bytebuddy@byte-buddy-1.14.11.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.checkerframework@checker-qual/org.checkerframework@checker-qual-3.41.0/org.checkerframework@checker-qual-3.41.0.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://C:/Users/qinky/.qin/libs/org.slf4j@slf4j-api/org.slf4j@slf4j-api-2.0.9/org.slf4j@slf4j-api-2.0.9.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/slime-ast/build/classes" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/slime-ast/src" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/slime-token/build/classes" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/slime-token/src" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/subhuti-java/build/classes" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/subhuti-java/src" />
         </SOURCES>
       </library>
     </orderEntry>

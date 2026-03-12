@@ -26,6 +26,7 @@ Planning document:
 Pipeline entry classes:
 
 - `QinRuntimeMain` (CLI entry)
+- `QinFullstackMain` (single-entry fullstack serve)
 - `QinBuildCoordinator` (orchestration)
 - `QinSourceResolver` (source/layout resolution)
 - `QinFrontendCompiler` (Slime -> IR)
@@ -102,3 +103,23 @@ Runnable Java demo entry:
 Additional runnable Java demo entry:
 
 `com.qin.runtime.core.QinJavaArrayListDemoMain`
+
+## Fullstack MVP (Single Java Entry)
+
+Run one Java class to build and start backend + frontend on one port:
+
+```bash
+java -cp "<cp>" com.qin.runtime.core.QinFullstackMain --root examples/fullstack-mvp --port 8080
+```
+
+Example project layout:
+
+- `examples/fullstack-mvp/shared/shared.qin`
+- `examples/fullstack-mvp/main/main.qin`
+- `examples/fullstack-mvp/app/main.qin`
+- `examples/fullstack-mvp/app/index.html`
+
+Endpoints:
+
+- `GET /api/health`
+- `GET /api/result`

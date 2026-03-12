@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
+import com.qin.types.QinConfig;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
@@ -596,7 +597,7 @@ public class DebugStartup implements ProjectActivity {
         if (basePath == null) {
             return false;
         }
-        if (QinConfig.loadNearest(basePath) != null) {
+        if (QinConfigSupport.loadNearest(basePath) != null) {
             return true;
         }
         try {
@@ -608,9 +609,9 @@ public class DebugStartup implements ProjectActivity {
     }
 
     private static String resolvePreferredJavaVersion(Path basePath) {
-        QinConfig nearestConfig = QinConfig.loadNearest(basePath);
+        QinConfig nearestConfig = QinConfigSupport.loadNearest(basePath);
         if (nearestConfig != null) {
-            String version = nearestConfig.getJavaVersion();
+            String version = QinConfigSupport.javaVersion(nearestConfig);
             QinLogger.info("[SDK] Resolved Java version from nearest Qin config: " + version);
             return version;
         }
@@ -630,12 +631,12 @@ public class DebugStartup implements ProjectActivity {
         String bestVersion = null;
 
         for (Path projectPath : qinProjects) {
-            QinConfig config = QinConfig.load(projectPath);
+            QinConfig config = QinConfigSupport.load(projectPath);
             if (config == null) {
                 continue;
             }
 
-            String version = config.getJavaVersion();
+            String version = QinConfigSupport.javaVersion(config);
             versionCounts.merge(version, 1, Integer::sum);
 
             int depth = depthFrom(basePath, projectPath);
