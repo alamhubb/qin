@@ -16,6 +16,8 @@ import com.qin.utils.QinUtils;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.zip.ZipFile;
 
 /**
  * Qin CLI - Java-Vite Build Tool
@@ -346,12 +348,11 @@ public class QinCli {
 
     private static String resolveDefaultQinEntry(QinConfig config) {
         if (config.entry() != null && !config.entry().isBlank()) {
-            if (!config.entry().endsWith(".qin")) {
-                return null;
+            if (config.entry().endsWith(".qin")) {
+                String entry = normalizeRelativePath(config.entry());
+                Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
+                return Files.exists(absolute) ? entry : null;
             }
-            String entry = normalizeRelativePath(config.entry());
-            Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
-            return Files.exists(absolute) ? entry : null;
         }
 
         for (String candidate : QinConstants.DEFAULT_QIN_ENTRY_CANDIDATES) {
@@ -395,6 +396,7 @@ public class QinCli {
         int port = config.port() > 0 ? config.port() : QinConstants.DEFAULT_PORT;
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         Path backendSource = Paths.get(QinConstants.getCwd(), qinFile).toAbsolutePath().normalize();
+        String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
 
         System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
         System.out.println(gray("  Backend entry: " + qinFile));
@@ -403,8 +405,8 @@ public class QinCli {
         command.add("java");
         command.add("-cp");
         command.add(runtimeClasspath);
-        command.add(QinConstants.FULLSTACK_MAIN_CLASS);
-        if (devMode) {
+        command.add(runtimeMainClass);
+        if (devMode && QinConstants.FULLSTACK_MAIN_CLASS.equals(runtimeMainClass)) {
             command.add("--dev");
         }
         command.add("--root");
@@ -420,10 +422,54 @@ public class QinCli {
         Process process = pb.start();
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new RuntimeException("Qin runtime exited with code " + exitCode);
+            throw new RuntimeException("Qin runtime exited with code " + exitCode + " (main class: " + runtimeMainClass + ")");
         }
 
         System.out.println(green(devMode ? "[OK] Qin dev runtime stopped" : "[OK] Done!"));
+    }
+
+    private static String resolveQinRuntimeMainClass(String runtimeClasspath, boolean devMode) {
+        if (!devMode) {
+            return QinConstants.FULLSTACK_MAIN_CLASS;
+        }
+
+        if (isClassAvailableOnClasspath(runtimeClasspath, QinConstants.JITE_DEV_MAIN_CLASS)) {
+            return QinConstants.JITE_DEV_MAIN_CLASS;
+        }
+
+        System.out.println(yellow("-> qin-plugin-jite not found in classpath, fallback to built-in dev runtime."));
+        return QinConstants.FULLSTACK_MAIN_CLASS;
+    }
+
+    private static boolean isClassAvailableOnClasspath(String classpath, String className) {
+        if (classpath == null || classpath.isBlank() || className == null || className.isBlank()) {
+            return false;
+        }
+
+        String classFile = className.replace('.', '/') + ".class";
+        String separator = QinConstants.getClasspathSeparator();
+        String[] entries = classpath.split(Pattern.quote(separator));
+        for (String rawEntry : entries) {
+            if (rawEntry == null || rawEntry.isBlank()) {
+                continue;
+            }
+
+            Path entry = Paths.get(rawEntry.trim());
+            if (Files.isDirectory(entry) && Files.exists(entry.resolve(classFile))) {
+                return true;
+            }
+
+            if (Files.isRegularFile(entry) && entry.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".jar")) {
+                try (ZipFile zipFile = new ZipFile(entry.toFile())) {
+                    if (zipFile.getEntry(classFile) != null) {
+                        return true;
+                    }
+                } catch (IOException ignored) {
+                    // Ignore broken classpath entry and keep probing.
+                }
+            }
+        }
+        return false;
     }
 
     private static List<String> tokenizeArguments(String raw) {

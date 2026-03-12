@@ -1,0 +1,15 @@
+{
+  "name": "com.qin.demo:fullstack-mvp",
+  "version": "0.1.0",
+  "description": "Qin fullstack MVP with convention startup class",
+  "entry": "launcher/com/qin/demo/FullstackApplication.java",
+  "dependencies": {
+    "com.qin:qin-runtime-core": "0.1.0"
+  },
+  "java": {
+    "version": "21",
+    "sourceDir": "launcher",
+    "outputDir": "build/classes",
+    "encoding": "UTF-8"
+  }
+}

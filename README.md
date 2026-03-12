@@ -152,6 +152,25 @@ qin run
 qin build
 ```
 
+## Jite Default Dev Runtime
+
+- New package: `packages/qin-plugin-jite`
+- Dev entry class: `com.qin.jite.JiteDevMain`
+- `qin dev` now prefers Jite runtime for `.qin` projects
+- If `qin-plugin-jite` is not on classpath, CLI falls back to `com.qin.runtime.core.QinFullstackMain --dev`
+
+### Demo Project
+
+- Path: `packages/exmaples/jitedemo`
+- Dependency: `com.qin:qin-plugin-jite`
+- Run inside demo folder:
+
+```bash
+qin dev
+```
+
+Open [http://localhost:18080](http://localhost:18080).
+
 ## 📝 配置文件
 
 ### `qin.config.json`

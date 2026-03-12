@@ -1,0 +1,45 @@
+[34m-> Loading configuration...[0m
+  [local] com.qin:qin-lang-runtime -> qin-lang-runtime
+  [local] com.qin:qin-lang-backend-jvm -> qin-lang-backend-jvm
+  [local] com.qin:qin-lang-frontend-adapter -> qin-lang-frontend-adapter
+  [local] com.qin:qin-lang-ir -> qin-lang-ir
+  [local] com.qin:qin-lang-backend-js -> qin-lang-backend-js
+  [local] com.slime:slime-parser -> slime-parser
+  [local] com.subhuti:subhuti-java -> subhuti-java
+  [local] com.slime:slime-token -> slime-token
+  [local] com.slime:slime-ast -> slime-ast
+[34m-> Using cached dependencies (.qin/classpath.json)[0m
+[34m-> Compiling and running...[0m
+  -> Compiling 21 files (javac handles incremental)...
+  [DEBUG] Compile classpath: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\build\classes;D:\project\qkyproject\slime-java\qin\packages\qin-lang-runtime\build\classes;D:\project\qkyproject\slime-java\qin\packages\...
+[ByteBuddy] »º´æ´óÐ¡: 0, parserClass hashCode: 1096979270, Àà¼ÓÔØÆ÷: jdk.internal.loader.ClassLoaders$AppClassLoader@2a139a55
+[ByteBuddy] ÕýÔÚ´´½¨ÔöÇ¿Àà: com.slime.parser.SlimeJavascriptParser
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.parse
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.Program
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.Program
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.ScriptBody
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.Script
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.Module
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ImportSpecifier
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ImportDeclaration
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ModuleSpecifier
+[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ImportedBinding
+[ByteBuddy] ¹²·¢ÏÖ 227 ¸ö @SubhutiRule ·½·¨
+[ByteBuddy] ´´½¨ÔöÇ¿Àà³É¹¦: com.slime.parser.SlimeJavascriptParser$ByteBuddy$VFBADnEr (ÒÑ»º´æ)
+[ByteBuddy] »º´æ´óÐ¡: 1, parserClass hashCode: 1096979270, Àà¼ÓÔØÆ÷: jdk.internal.loader.ClassLoaders$AppClassLoader@2a139a55
+[ByteBuddy] ? Ê¹ÓÃ»º´æµÄÔöÇ¿Àà: com.slime.parser.SlimeJavascriptParser$ByteBuddy$VFBADnEr
+Project root: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp
+Backend source: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\main\main.qin
+Frontend source: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\app\main.qin
+Generated server class: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\build\fullstack\server-classes\com\qin\runtime\generated\ServerApp.class
+Generated frontend js: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\app\app.js
+Static root: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\app
+[dev] watching source files (thread: qin-dev-rebuild-loop)
+Qin fullstack server started on http://localhost:8080
+Health endpoint: http://localhost:8080/api/health
+Result endpoint: http://localhost:8080/api/result
+Dev mode enabled: browser auto-reloads when source files change.
+Press Ctrl+C to stop.
+21
+
+D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core>

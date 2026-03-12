@@ -1,0 +1,8 @@
+.idea/
+.qin/
+build/
+libs/
+app/app.js
+*.out
+*.err
+*.iml

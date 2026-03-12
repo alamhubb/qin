@@ -1,0 +1,7 @@
+.idea/
+.qin/
+build/
+libs/
+*.out
+*.err
+*.iml

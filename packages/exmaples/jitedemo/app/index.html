@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qin Jite Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    pre { background: #f6f8fa; padding: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Qin Jite Demo</h1>
+  <p>Frontend source: <code>app/main.qin</code></p>
+  <p>Generated file: <code>app/app.js</code></p>
+  <pre id="state">loading...</pre>
+  <script src="/app.js"></script>
+  <script>
+    document.getElementById("state").textContent = "page loaded at " + new Date().toLocaleTimeString();
+  </script>
+</body>
+</html>
