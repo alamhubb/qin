@@ -773,20 +773,24 @@ MIT License - 查看 [LICENSE](LICENSE) 文件
 
 **Built with ❤️ using Java 25**  
 **Powered by Flexible Constructors, Virtual Threads, and Structured Concurrency**
-## Qin Language Positioning (v0.1)
+## Qin Language Positioning (v0.2)
 
-Qin is defined as a Deno-like runtime implemented in Java, with a constrained ES syntax subset.
+Qin is an ESM-first language/runtime implemented on Java/JVM.
+It is designed as a new language platform, not a Node.js compatibility layer.
 
-- Qin source uses ES-style syntax and ESM `import/export`.
-- Qin backend compiles to JVM `.class` files (and can also emit JS for web targets).
-- Qin is not Node.js compatible by default.
-- Qin standard library is provided by Qin runtime and implemented on top of Java standard library.
+### Design Direction (Current)
+
+- ESM-first: Qin source uses ES-style syntax and ESM `import/export` as the primary module model.
+- Java/JVM kernel: backend compiles to JVM `.class` (and can also emit JS for web targets).
+- Node-free by default: no Node-specific conventions (`require`, `module.exports`, `__dirname`, `process`, `Buffer`, `node:*`).
+- Java-backed stdlib: runtime capabilities are implemented on top of Java standard library.
+- Fullstack orientation: one language across `shared/`, frontend, and backend, with target-specific backends.
 
 ### Scope and Non-Goals
 
-- Supported: selected ES syntax (incremental subset), ESM module model, Java-backed runtime APIs.
-- Not supported: Node-specific APIs and conventions (`require`, `module.exports`, `__dirname`, `process`, `Buffer`, `node:*`).
-- Goal: a controllable fullstack language/runtime model, not full ECMAScript compatibility in phase 1.
+- Phase 1: selected ES syntax + stable ESM core semantics + Java-backed runtime APIs.
+- Phase 1 non-goal: full ECMAScript and full ESM edge-case compatibility.
+- Reason: this is an engineering phasing strategy, not a JVM limitation. We prioritize a stable core first, then expand features incrementally.
 
 ### Convention Folders (Current Project Rule)
 

@@ -345,12 +345,13 @@ public class QinCli {
     }
 
     private static String resolveDefaultQinEntry(QinConfig config) {
-        if (config.entry() != null && config.entry().endsWith(".qin")) {
+        if (config.entry() != null && !config.entry().isBlank()) {
+            if (!config.entry().endsWith(".qin")) {
+                return null;
+            }
             String entry = normalizeRelativePath(config.entry());
             Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
-            if (Files.exists(absolute)) {
-                return entry;
-            }
+            return Files.exists(absolute) ? entry : null;
         }
 
         for (String candidate : QinConstants.DEFAULT_QIN_ENTRY_CANDIDATES) {
