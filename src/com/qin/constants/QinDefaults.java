@@ -5,25 +5,25 @@ import com.qin.types.Repository;
 import java.util.List;
 
 /**
- * Qin 默认配置常量
+ * @deprecated 常量统一迁移到 QinConstants。这里只保留兼容别名。
  */
+@Deprecated
 public class QinDefaults {
 
     // === 项目配置 ===
-    public static final String DEFAULT_VERSION = "1.0.0";
+    public static final String DEFAULT_VERSION = QinConstants.DEFAULT_VERSION;
     public static final DependencyScope DEFAULT_SCOPE = DependencyScope.COMPILE;
-    public static final int DEFAULT_PORT = 8080;
-    public static final boolean DEFAULT_LOCAL_REP = false;
+    public static final int DEFAULT_PORT = QinConstants.DEFAULT_PORT;
+    public static final boolean DEFAULT_LOCAL_REP = QinConstants.DEFAULT_LOCAL_REP;
 
     // === Java 配置 ===
-    public static final String DEFAULT_JAVA_VERSION = "21";
-    public static final String DEFAULT_SOURCE_DIR = "src";
-    // 输出目录常量已移至 QinConstants.BUILD_CLASSES_DIR
-    public static final String DEFAULT_ENCODING = "UTF-8";
+    public static final String DEFAULT_JAVA_VERSION = QinConstants.DEFAULT_JAVA_VERSION;
+    public static final String DEFAULT_SOURCE_DIR = QinConstants.DEFAULT_SOURCE_DIR;
+    public static final String DEFAULT_ENCODING = QinConstants.CHARSET_UTF8;
 
     // === 输出配置 ===
-    public static final String DEFAULT_BUILD_DIR = "build";
-    public static final String DEFAULT_JAR_NAME = "app.jar";
+    public static final String DEFAULT_BUILD_DIR = QinConstants.BUILD_DIR;
+    public static final String DEFAULT_JAR_NAME = QinConstants.DEFAULT_JAR_NAME;
 
     // === Maven 仓库 ===
     public static final List<Repository> DEFAULT_REPOSITORIES = List.of(
@@ -31,13 +31,13 @@ public class QinDefaults {
             new Repository("central", "https://repo1.maven.org/maven2"));
 
     // === 文件名 ===
-    public static final String CONFIG_FILE_NAME = "qin.config.json";
+    public static final String CONFIG_FILE_NAME = QinConstants.CONFIG_FILE;
 
     // === 目录名 ===
-    public static final String QIN_DIR = ".qin";
+    public static final String QIN_DIR = QinConstants.QIN_DIR;
     public static final String CLASSES_DIR = "classes";
-    public static final String LIBS_DIR = "libs"; // 项目根目录，存放依赖符号链接（应加入 .gitignore）
-    public static final String CACHE_DIR = "cache";
+    public static final String LIBS_DIR = QinConstants.LIBS_DIR_NAME;
+    public static final String CACHE_DIR = QinConstants.CACHE_DIR_NAME;
 
     private QinDefaults() {
         // 工具类，禁止实例化

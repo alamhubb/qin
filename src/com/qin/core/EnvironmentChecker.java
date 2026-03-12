@@ -19,11 +19,11 @@ public class EnvironmentChecker {
 
     public EnvironmentChecker() {
         String home = QinConstants.getHomeDir();
-        this.qinHome = Paths.get(home, ".qin").toString();
+        this.qinHome = QinConstants.getQinHomeDir().toString();
         this.isWindows = QinConstants.isWindows();
         this.csPath = isWindows
-                ? Paths.get(qinHome, "bin", "cs.exe").toString()
-                : Paths.get(qinHome, "bin", "cs").toString();
+                ? Paths.get(qinHome, QinConstants.BIN_DIR, "cs.exe").toString()
+                : Paths.get(qinHome, QinConstants.BIN_DIR, "cs").toString();
     }
 
     public String getCoursierCommand() {
@@ -54,7 +54,7 @@ public class EnvironmentChecker {
         System.out.println("→ 正在安装 Coursier...");
 
         try {
-            Path binDir = Paths.get(qinHome, "bin");
+            Path binDir = Paths.get(qinHome, QinConstants.BIN_DIR);
             Files.createDirectories(binDir);
 
             if (isWindows) {

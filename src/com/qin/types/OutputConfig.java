@@ -1,5 +1,7 @@
 package com.qin.types;
 
+import com.qin.constants.QinConstants;
+
 /**
  * 输出配置 (Java 25 Record)
  * 
@@ -16,8 +18,8 @@ public record OutputConfig(
      * Compact Constructor with defaults
      */
     public OutputConfig {
-        dir = dir != null && !dir.isBlank() ? dir : "dist";
-        jarName = jarName != null && !jarName.isBlank() ? jarName : "app.jar";
+        dir = dir != null && !dir.isBlank() ? dir : QinConstants.DEFAULT_DIST_DIR;
+        jarName = jarName != null && !jarName.isBlank() ? jarName : QinConstants.DEFAULT_JAR_NAME;
     }
 
     /**

@@ -34,7 +34,7 @@ public class NpmPackageManager {
 
     public NpmPackageManager(String projectRoot) {
         this.projectRoot = projectRoot;
-        this.cacheDir = Paths.get(QinConstants.getHomeDir(), ".qin", "npm-cache").toString();
+        this.cacheDir = QinConstants.getGlobalNpmCacheDir().toString();
         this.nodeModulesDir = Paths.get(projectRoot, QinConstants.NODE_MODULES).toString();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.activeRegistry = NPM_REGISTRIES[0];

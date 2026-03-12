@@ -3,83 +3,35 @@ package com.qin.core;
 import com.qin.constants.QinConstants;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
- * Qin路径常量配置
- * 所有路径相关的常量都在这里定义，避免硬编码
- * 这些常量不可修改，各模块统一使用
- * 
- * 目录结构:
- * 
- * 项目目录/
- * ├── build/
- * │ └── classes/ # OUTPUT_DIR - 编译输出
- * ├── .qin/
- * │ ├── classpath.json # CLASSPATH_CACHE - 依赖缓存
- * │ └── libs/ # LOCAL_LIBS_DIR - 本地项目依赖jar
- * └── src/
- * 
- * 全局目录 (~/.qin/):
- * └── libs/ # GLOBAL_LIBS_DIR - 全局依赖jar缓存
+ * Qin 路径工具。
+ * 路径字符串常量统一定义在 QinConstants，这里只保留路径计算方法。
  */
 public final class QinPaths {
 
     private QinPaths() {
     } // 工具类，禁止实例化
 
-    // ==================== 编译输出目录 ====================
-    // 输出目录常量已移至 QinConstants.BUILD_CLASSES_DIR
-
-    // ==================== 配置文件 ====================
-
-    /**
-     * 配置文件名
-     */
-    public static final String CONFIG_FILE = "qin.config.json";
-
-    // ==================== Qin配置目录 ====================
-
-    /**
-     * Qin配置目录 (相对于项目根目录)
-     */
-    public static final String QIN_DIR = ".qin";
-
-    /**
-     * 依赖classpath缓存文件 (相对于项目根目录)
-     */
-    public static final String CLASSPATH_CACHE = ".qin/classpath.json";
-
-    // ==================== 依赖库目录 ====================
-
-    /**
-     * 依赖库目录 (相对路径)
-     * 本地: {projectRoot}/.qin/libs
-     * 全局: ~/.qin/libs
-     */
-    public static final String LIBS_DIR = ".qin/libs";
-
-    // ==================== 便捷方法 ====================
-
     /**
      * 获取绝对输出目录路径
      */
     public static Path getOutputDir(String projectRoot) {
-        return Paths.get(projectRoot, QinConstants.BUILD_CLASSES_DIR);
+        return java.nio.file.Paths.get(projectRoot, QinConstants.BUILD_CLASSES_DIR);
     }
 
     /**
      * 获取classpath缓存文件绝对路径
      */
     public static Path getClasspathCache(String projectRoot) {
-        return Paths.get(projectRoot, CLASSPATH_CACHE);
+        return QinConstants.getProjectClasspathCache(projectRoot);
     }
 
     /**
      * 获取本地libs目录绝对路径
      */
     public static Path getLocalLibsDir(String projectRoot) {
-        return Paths.get(projectRoot, LIBS_DIR);
+        return QinConstants.getProjectLibsDir(projectRoot);
     }
 
     /**
@@ -88,13 +40,13 @@ public final class QinPaths {
      * @return ~/.qin/libs
      */
     public static Path getGlobalLibsDir() {
-        return Paths.get(System.getProperty("user.home"), LIBS_DIR);
+        return QinConstants.getGlobalLibsDir();
     }
 
     /**
      * 获取Qin配置目录绝对路径
      */
     public static Path getQinDir(String projectRoot) {
-        return Paths.get(projectRoot, QIN_DIR);
+        return QinConstants.getProjectQinDir(projectRoot);
     }
 }

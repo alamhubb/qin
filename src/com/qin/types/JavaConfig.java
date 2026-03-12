@@ -1,5 +1,7 @@
 package com.qin.types;
 
+import com.qin.constants.QinConstants;
+
 /**
  * Java-specific configuration.
  */
@@ -14,14 +16,14 @@ public record JavaConfig(
         String encoding) {
 
     public JavaConfig {
-        version = version != null && !version.isBlank() ? version : "21";
+        version = version != null && !version.isBlank() ? version : QinConstants.DEFAULT_JAVA_VERSION;
         release = release != null && !release.isBlank() ? release : null;
         source = source != null && !source.isBlank() ? source : (release != null ? release : version);
         target = target != null && !target.isBlank() ? target : (release != null ? release : version);
-        sourceDir = sourceDir != null && !sourceDir.isBlank() ? sourceDir : "src/main/java";
-        testDir = testDir != null && !testDir.isBlank() ? testDir : "src/test/java";
-        outputDir = outputDir != null && !outputDir.isBlank() ? outputDir : "build/classes";
-        encoding = encoding != null && !encoding.isBlank() ? encoding : "UTF-8";
+        sourceDir = sourceDir != null && !sourceDir.isBlank() ? sourceDir : QinConstants.JAVA_SOURCE_DIR;
+        testDir = testDir != null && !testDir.isBlank() ? testDir : QinConstants.DEFAULT_TEST_DIR;
+        outputDir = outputDir != null && !outputDir.isBlank() ? outputDir : QinConstants.BUILD_CLASSES_DIR;
+        encoding = encoding != null && !encoding.isBlank() ? encoding : QinConstants.CHARSET_UTF8;
     }
 
     public JavaConfig() {

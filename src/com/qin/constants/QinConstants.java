@@ -101,6 +101,61 @@ public class QinConstants {
     public static final String LOG_SUBDIR = "logs";
 
     /**
+     * 本地/全局依赖目录名
+     */
+    public static final String LIBS_DIR_NAME = "libs";
+
+    /**
+     * 二进制工具目录名
+     */
+    public static final String BIN_DIR = "bin";
+
+    /**
+     * 通用缓存目录名
+     */
+    public static final String CACHE_DIR_NAME = "cache";
+
+    /**
+     * classpath 缓存文件名
+     */
+    public static final String CLASSPATH_CACHE_FILE = "classpath.json";
+
+    /**
+     * 编译缓存文件名
+     */
+    public static final String COMPILE_CACHE_FILE = "compile-cache.json";
+
+    /**
+     * classpath 缓存相对路径
+     */
+    public static final String CLASSPATH_CACHE_PATH = QIN_DIR + "/" + CLASSPATH_CACHE_FILE;
+
+    /**
+     * 编译缓存相对路径
+     */
+    public static final String COMPILE_CACHE_PATH = QIN_DIR + "/" + COMPILE_CACHE_FILE;
+
+    /**
+     * JS 运行时生成的 loader 文件名
+     */
+    public static final String LOADER_FILE = "loader.mjs";
+
+    /**
+     * JS 运行时生成的 hooks 文件名
+     */
+    public static final String HOOKS_FILE = "hooks.mjs";
+
+    /**
+     * JS monorepo 配置文件名
+     */
+    public static final String MONOREPO_CONFIG_FILE = "monorepo-config.json";
+
+    /**
+     * npm 全局缓存目录名
+     */
+    public static final String NPM_CACHE_DIR_NAME = "npm-cache";
+
+    /**
      * Node.js package.json 文件名
      */
     public static final String PACKAGE_JSON = "package.json";
@@ -209,6 +264,10 @@ public class QinConstants {
     public static final String MAIN_SOURCE_DIR = "main";
     public static final String SHARED_DIR = "shared";
     public static final String APP_DIR = "app";
+    public static final String DEFAULT_VERSION = "1.0.0";
+    public static final String DEFAULT_JAVA_VERSION = "21";
+    public static final int DEFAULT_PORT = 8080;
+    public static final boolean DEFAULT_LOCAL_REP = false;
 
     /**
      * Java/Maven 标准源代码目录（优先级高于 DEFAULT_SOURCE_DIR）
@@ -371,6 +430,20 @@ public class QinConstants {
     }
 
     /**
+     * 获取全局依赖缓存目录 (~/.qin/libs)
+     */
+    public static java.nio.file.Path getGlobalLibsDir() {
+        return getQinHomeDir().resolve(LIBS_DIR_NAME);
+    }
+
+    /**
+     * 获取全局 npm 缓存目录 (~/.qin/npm-cache)
+     */
+    public static java.nio.file.Path getGlobalNpmCacheDir() {
+        return getQinHomeDir().resolve(NPM_CACHE_DIR_NAME);
+    }
+
+    /**
      * 获取项目级 Qin 目录 ({projectDir}/.qin)
      */
     public static java.nio.file.Path getProjectQinDir(String projectDir) {
@@ -382,6 +455,48 @@ public class QinConstants {
      */
     public static java.nio.file.Path getProjectQinDir(java.nio.file.Path projectDir) {
         return projectDir.resolve(QIN_DIR);
+    }
+
+    /**
+     * 获取项目级 classpath 缓存文件 ({projectDir}/.qin/classpath.json)
+     */
+    public static java.nio.file.Path getProjectClasspathCache(String projectDir) {
+        return getProjectQinDir(projectDir).resolve(CLASSPATH_CACHE_FILE);
+    }
+
+    /**
+     * 获取项目级 classpath 缓存文件 ({projectDir}/.qin/classpath.json)
+     */
+    public static java.nio.file.Path getProjectClasspathCache(java.nio.file.Path projectDir) {
+        return getProjectQinDir(projectDir).resolve(CLASSPATH_CACHE_FILE);
+    }
+
+    /**
+     * 获取项目级编译缓存文件 ({projectDir}/.qin/compile-cache.json)
+     */
+    public static java.nio.file.Path getProjectCompileCache(String projectDir) {
+        return getProjectQinDir(projectDir).resolve(COMPILE_CACHE_FILE);
+    }
+
+    /**
+     * 获取项目级编译缓存文件 ({projectDir}/.qin/compile-cache.json)
+     */
+    public static java.nio.file.Path getProjectCompileCache(java.nio.file.Path projectDir) {
+        return getProjectQinDir(projectDir).resolve(COMPILE_CACHE_FILE);
+    }
+
+    /**
+     * 获取项目级依赖目录 ({projectDir}/.qin/libs)
+     */
+    public static java.nio.file.Path getProjectLibsDir(String projectDir) {
+        return getProjectQinDir(projectDir).resolve(LIBS_DIR_NAME);
+    }
+
+    /**
+     * 获取项目级依赖目录 ({projectDir}/.qin/libs)
+     */
+    public static java.nio.file.Path getProjectLibsDir(java.nio.file.Path projectDir) {
+        return getProjectQinDir(projectDir).resolve(LIBS_DIR_NAME);
     }
 
     private QinConstants() {

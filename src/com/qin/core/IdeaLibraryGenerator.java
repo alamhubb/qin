@@ -187,9 +187,9 @@ public class IdeaLibraryGenerator {
      */
     private String readJavaVersionFromConfig() {
         try {
-            Path configPath = Paths.get(projectRoot, "qin.config.json");
+            Path configPath = Paths.get(projectRoot, QinConstants.CONFIG_FILE);
             if (!Files.exists(configPath)) {
-                return "21"; // 默认值
+                return QinConstants.DEFAULT_JAVA_VERSION;
             }
 
             String json = Files.readString(configPath);
@@ -213,9 +213,9 @@ public class IdeaLibraryGenerator {
                 return version;
             }
 
-            return "21";
+            return QinConstants.DEFAULT_JAVA_VERSION;
         } catch (IOException e) {
-            return "21";
+            return QinConstants.DEFAULT_JAVA_VERSION;
         }
     }
 
@@ -330,8 +330,7 @@ public class IdeaLibraryGenerator {
             }
 
             // 添加排除目录（.iml 中常用的排除目录）
-            String[] imlExcludedDirs = { "build", ".qin", "out", "libs", "node_modules", "dist", "target" };
-            for (String excludeDir : imlExcludedDirs) {
+            for (String excludeDir : QinConstants.IML_EXCLUDED_DIRS) {
                 newContent.append("          <excludeFolder url=\"file://$MODULE_DIR$/")
                         .append(excludeDir).append("\" />\n");
             }

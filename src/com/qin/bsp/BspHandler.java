@@ -65,7 +65,7 @@ public class BspHandler {
     private void loadClasspath() {
         classpath = new ArrayList<>();
         try {
-            Path cpPath = Paths.get(workDir, ".qin", "classpath.json");
+            Path cpPath = QinConstants.getProjectClasspathCache(workDir);
             if (Files.exists(cpPath)) {
                 String json = Files.readString(cpPath);
                 JsonObject obj = gson.fromJson(json, JsonObject.class);

@@ -90,11 +90,11 @@ public class JsPlugin implements RunnerPlugin {
      * 确保 loader.mjs 和 hooks.mjs 存在于 .qin 目录
      */
     private Path ensureLoader(Path workDir) throws IOException {
-        Path qinDir = workDir.resolve(".qin");
+        Path qinDir = QinConstants.getProjectQinDir(workDir);
         Files.createDirectories(qinDir);
 
-        Path loaderPath = qinDir.resolve("loader.mjs");
-        Path hooksPath = qinDir.resolve("hooks.mjs");
+        Path loaderPath = qinDir.resolve(QinConstants.LOADER_FILE);
+        Path hooksPath = qinDir.resolve(QinConstants.HOOKS_FILE);
 
         // 先写入 hooks，因为 loader 需要 hooks 的路径
         Files.writeString(hooksPath, getEmbeddedHooksCode());
@@ -107,10 +107,10 @@ public class JsPlugin implements RunnerPlugin {
      * 生成 monorepo-config.json
      */
     private Path generateConfig(Path workDir, Map<String, WorkspaceScanner.PackageInfo> packages) throws IOException {
-        Path qinDir = workDir.resolve(".qin");
+        Path qinDir = QinConstants.getProjectQinDir(workDir);
         Files.createDirectories(qinDir);
 
-        Path configPath = qinDir.resolve("monorepo-config.json");
+        Path configPath = qinDir.resolve(QinConstants.MONOREPO_CONFIG_FILE);
 
         StringBuilder json = new StringBuilder();
         json.append("{\n");

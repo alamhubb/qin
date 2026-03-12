@@ -70,7 +70,7 @@ public class FatJarBuilder {
             System.out.println("  [6/6] Packaging JAR...");
             String jarName = config.output() != null && config.output().jarName() != null
                     ? config.output().jarName()
-                    : "app.jar";
+                    : QinConstants.DEFAULT_JAR_NAME;
             String outputPath = Paths.get(outputDir, jarName).toString();
             packageJar(outputPath);
 

@@ -2,7 +2,7 @@ package com.qin.core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
+import com.qin.constants.QinConstants;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FileHashCache {
 
-    private static final String CACHE_FILE = ".qin/compile-cache.json";
     private static final String HASH_ALGORITHM = "MD5";
 
     private final Path projectDir;
@@ -40,7 +39,7 @@ public class FileHashCache {
 
     public FileHashCache(String projectDir) {
         this.projectDir = Paths.get(projectDir);
-        this.cacheFile = this.projectDir.resolve(CACHE_FILE);
+        this.cacheFile = QinConstants.getProjectCompileCache(this.projectDir);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.fileHashes = new ConcurrentHashMap<>();
         this.lastCompileTime = 0;

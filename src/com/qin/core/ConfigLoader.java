@@ -124,7 +124,7 @@ public class ConfigLoader {
         // 构建带默认值的新 config
         String entry = config.entry() != null ? config.entry() : findEntry();
         OutputConfig output = config.output() != null ? config.output() : new OutputConfig();
-        JavaConfig java = config.java() != null ? config.java() : new JavaConfig("21");
+        JavaConfig java = config.java() != null ? config.java() : new JavaConfig(QinConstants.DEFAULT_JAVA_VERSION);
 
         // 创建新的不可变配置
         return new QinConfig(

@@ -113,7 +113,7 @@ public class DependencyResolver {
 
             if (is != null) {
                 // 閹绘劕褰囬崚棰佸閺冨墎娲拌ぐ?
-                Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"), ".qin");
+                Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"), QinConstants.QIN_DIR);
                 Files.createDirectories(tempDir);
                 Path coursierJar = tempDir.resolve("coursier.jar");
 
@@ -129,8 +129,7 @@ public class DependencyResolver {
     }
 
     private static String getGlobalRepoDir() {
-        String home = QinConstants.getHomeDir();
-        return Paths.get(home, ".qin", "libs").toString();
+        return QinConstants.getGlobalLibsDir().toString();
     }
 
     /**

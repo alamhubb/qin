@@ -15,7 +15,7 @@ public class QinProjectInfo {
     public JavaConfig java;
 
     public static class JavaConfig {
-        public String version = "21";
+        public String version = QinConstants.DEFAULT_JAVA_VERSION;
         public String release;
         public String source;
         public String target;
@@ -50,6 +50,6 @@ public class QinProjectInfo {
                 return java.version;
             }
         }
-        return "21";
+        return QinConstants.DEFAULT_JAVA_VERSION;
     }
 }

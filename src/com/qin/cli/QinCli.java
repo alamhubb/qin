@@ -346,7 +346,7 @@ public class QinCli {
 
         // 如果不是强制同步，检查缓存
         if (!force && CacheValidator.isCacheValid(cwd)) {
-            System.out.println(blue("-> Using cached dependencies (" + QinPaths.CLASSPATH_CACHE + ")"));
+            System.out.println(blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
             System.out.println(green("[OK] Dependencies up to date (use --force to re-sync)"));
             return;
         }
@@ -428,7 +428,7 @@ public class QinCli {
 
                     // 读取输出（静默处理）
                     try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(process.getInputStream(), "UTF-8"))) {
+                            new InputStreamReader(process.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
                         while (reader.readLine() != null) {
                             // 静默消费输出
                         }
@@ -534,7 +534,7 @@ public class QinCli {
         }
 
         // Save classpath cache to .qin/classpath.json
-        Path cacheDir = QinPaths.getQinDir(QinConstants.getCwd());
+        Path cacheDir = QinConstants.getProjectQinDir(QinConstants.getCwd());
         Files.createDirectories(cacheDir);
 
         String classpath = String.join(sep, classpaths);
@@ -543,7 +543,7 @@ public class QinCli {
         classpath = sortClasspathByConfigOrder(classpath, deps);
 
         String json = buildClasspathJson(classpath);
-        Files.writeString(QinPaths.getClasspathCache(QinConstants.getCwd()), json);
+        Files.writeString(QinConstants.getProjectClasspathCache(QinConstants.getCwd()), json);
 
         // 生成 IDEA 库配置文件（.idea/libraries/*.xml）
         if (!classpath.isEmpty()) {
@@ -559,7 +559,7 @@ public class QinCli {
         }
 
         System.out.println(green("[OK] Dependencies synced (" + localCount + " local, " + remoteCount + " remote)"));
-        System.out.println(gray("  Cache: " + QinPaths.CLASSPATH_CACHE));
+        System.out.println(gray("  Cache: " + QinConstants.CLASSPATH_CACHE_PATH));
 
         return classpath;
     }
@@ -577,7 +577,7 @@ public class QinCli {
             String classpath = CacheValidator.getCachedClasspath(cwd);
             if (classpath != null) {
                 System.out.println(
-                        blue("-> Using cached dependencies (" + QinPaths.CLASSPATH_CACHE + ")"));
+                        blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
                 return classpath;
             }
         }

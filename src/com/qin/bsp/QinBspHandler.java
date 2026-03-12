@@ -57,7 +57,7 @@ public class QinBspHandler {
     private void loadClasspath() {
         classpath = new ArrayList<>();
         try {
-            Path cpPath = Paths.get(workDir, ".qin", "classpath.json");
+            Path cpPath = QinConstants.getProjectClasspathCache(workDir);
             if (Files.exists(cpPath)) {
                 String json = Files.readString(cpPath);
                 JsonObject obj = gson.fromJson(json, JsonObject.class);
@@ -586,7 +586,7 @@ public class QinBspHandler {
                 return config.java().version();
             }
         }
-        return "21"; // default Java 21
+        return QinConstants.DEFAULT_JAVA_VERSION;
     }
 
     private String getMainClass() {

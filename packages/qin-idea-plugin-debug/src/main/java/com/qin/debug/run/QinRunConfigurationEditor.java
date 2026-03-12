@@ -3,8 +3,8 @@ package com.qin.debug.run;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.TextBrowseFolderListener;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
-import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
@@ -28,13 +28,10 @@ public class QinRunConfigurationEditor extends SettingsEditor<QinRunConfiguratio
     public QinRunConfigurationEditor(Project project) {
         // 项目路径选择器
         projectPathField = new TextFieldWithBrowseButton();
-        projectPathField.addBrowseFolderListener(
-            "Select Qin Project",
-            "Select the directory containing qin.config.json",
-            project,
-            FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
-        );
+        var descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
+        descriptor.setTitle("Select Qin Project");
+        descriptor.setDescription("Select the directory containing qin.config.json");
+        projectPathField.addBrowseFolderListener(new TextBrowseFolderListener(descriptor, project));
 
         // 主类输入框
         mainClassField = new JBTextField();
