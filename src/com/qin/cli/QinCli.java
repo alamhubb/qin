@@ -40,16 +40,16 @@ public class QinCli {
                 case "run" -> runProject(cmdArgs);
                 case "compile" -> compileProject(cmdArgs);
                 case "test" -> runTests(cmdArgs);
-                case "jar" -> jarProject(cmdArgs);           // 棣冨晭 閺傛澘顤?
-                case "fatjar" -> fatjarProject(cmdArgs);     // 棣冨晭 閺傛澘顤?
+                case "jar" -> jarProject(cmdArgs);           // 妫ｅ啫鏅?闁哄倹婢橀·?
+                case "fatjar" -> fatjarProject(cmdArgs);     // 妫ｅ啫鏅?闁哄倹婢橀·?
                 case "build" -> buildProject(cmdArgs);
                 case "clean" -> cleanProject();
                 case "sync" -> syncDependencies(cmdArgs);
-                case "deps" -> showDependencies(cmdArgs);    // 棣冨晭 閺傛澘顤?
+                case "deps" -> showDependencies(cmdArgs);    // 妫ｅ啫鏅?闁哄倹婢橀·?
                 case "dev" -> devMode(cmdArgs);
                 case "dist" -> distProject();
-                case "bsp" -> startBspServer();              // 棣冨晭 BSP Server
-                case "bsp-init" -> initBspConfig();          // 棣冨晭 閻㈢喐鍨?BSP 闁板秶鐤?
+                case "bsp" -> startBspServer();              // 妫ｅ啫鏅?BSP Server
+                case "bsp-init" -> initBspConfig();          // 妫ｅ啫鏅?闁汇垻鍠愰崹?BSP 闂佹澘绉堕悿?
                 case "help", "-h", "--help" -> printHelp();
                 case "version", "-v", "--version" -> System.out.println("qin " + VERSION);
                 default -> {
@@ -103,7 +103,10 @@ public class QinCli {
     }
 
     private static void runProject(String[] args) throws Exception {
-        // 濡偓閺屻儲妲搁崥锔藉瘹鐎规矮绨￠弬鍥︽
+        System.out.println(blue("-> Loading configuration..."));
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+
         if (args.length > 0 && !args[0].startsWith("-")) {
             String target = args[0];
             Path targetPath = Paths.get(target);
@@ -111,27 +114,38 @@ public class QinCli {
                 targetPath = Paths.get(QinConstants.getCwd()).resolve(target);
             }
 
-            // 娴ｈ法鏁ら幓鎺嶆缁崵绮洪懛顏勫З濡偓濞村鏋冩禒鍓佽閸?
             RunnerPlugin plugin = PluginRegistry.getInstance().getPlugin(targetPath);
-
             if (plugin != null) {
-                // 閹垫儳鍩岀€电懓绨查幓鎺嶆閿涘奔濞囬悽銊﹀絻娴犳儼绻嶇悰?
                 System.out.println(blue("-> Running with " + plugin.name() + " plugin..."));
                 String[] runArgs = Arrays.copyOfRange(args, 1, args.length);
                 plugin.run(targetPath, runArgs, Paths.get(QinConstants.getCwd()));
                 System.out.println(green("[OK] Done!"));
                 return;
             }
+
+            String qinFile = resolveRunTargetToQinFile(config, target);
+            if (qinFile != null) {
+                runQinProject(config, qinFile);
+                return;
+            }
+        } else {
+            String qinEntry = resolveDefaultQinEntry(config);
+            if (qinEntry != null) {
+                runQinProject(config, qinEntry);
+                return;
+            }
         }
 
-        // 閸樼喐婀侀惃?Java 妞ゅ湱娲版潻鎰攽闁槒绶?
-        runJavaProject(args);
+        runJavaProject(config, args);
     }
+
     private static void runJavaProject(String[] args) throws Exception {
-        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
+        runJavaProject(config, args);
+    }
 
+    private static void runJavaProject(QinConfig config, String[] args) throws Exception {
         // Check environment
         EnvironmentStatus envStatus = envChecker.checkAll();
         if (!envStatus.hasJavac()) {
@@ -140,7 +154,7 @@ public class QinCli {
             System.exit(1);
         }
 
-        // 濡偓閺屻儲妲搁崥锔藉瘹鐎规矮绨?.java 閺傚洣娆?
+        // 婵☆偀鍋撻柡灞诲劜濡叉悂宕ラ敂钘夌樄閻庤鐭花?.java 闁哄倸娲ｅ▎?
         JavaRunOptions runOptions = parseJavaRunOptions(config, args);
         if (runOptions.javaFile != null) {
             Path javaFilePath = Paths.get(QinConstants.getCwd(), runOptions.javaFile);
@@ -284,6 +298,133 @@ public class QinCli {
 
         return null;
     }
+
+    private static String resolveRunTargetToQinFile(QinConfig config, String runTarget) {
+        if (runTarget == null || runTarget.isBlank()) {
+            return null;
+        }
+
+        String normalizedTarget = runTarget.trim();
+        if (normalizedTarget.endsWith(".qin")) {
+            String pathTarget = normalizeRelativePath(normalizedTarget);
+            Path absolute = Paths.get(QinConstants.getCwd()).resolve(pathTarget).normalize();
+            return Files.exists(absolute) ? pathTarget : null;
+        }
+
+        if (normalizedTarget.contains("/") || normalizedTarget.contains("\\")) {
+            String pathTarget = normalizeRelativePath(normalizedTarget);
+            if (!pathTarget.endsWith(".qin")) {
+                pathTarget = pathTarget + ".qin";
+            }
+            Path absolute = Paths.get(QinConstants.getCwd()).resolve(pathTarget).normalize();
+            return Files.exists(absolute) ? pathTarget : null;
+        }
+
+        LinkedHashSet<Path> candidates = new LinkedHashSet<>();
+        if (config.entry() != null && config.entry().endsWith(".qin")) {
+            Path entryPath = Paths.get(config.entry().replace("\\", "/"));
+            Path parent = entryPath.getParent();
+            if (parent != null) {
+                candidates.add(parent.resolve(normalizedTarget + ".qin"));
+            }
+        }
+        candidates.add(Paths.get(QinConstants.MAIN_SOURCE_DIR, normalizedTarget + ".qin"));
+        candidates.add(Paths.get(QinConstants.APP_DIR, normalizedTarget + ".qin"));
+        candidates.add(Paths.get(QinConstants.SHARED_DIR, normalizedTarget + ".qin"));
+        candidates.add(Paths.get("src", normalizedTarget + ".qin"));
+        candidates.add(Paths.get(normalizedTarget + ".qin"));
+
+        for (Path candidate : candidates) {
+            Path absolute = Paths.get(QinConstants.getCwd()).resolve(candidate).normalize();
+            if (Files.exists(absolute)) {
+                return normalizeRelativePath(candidate.toString());
+            }
+        }
+
+        return null;
+    }
+
+    private static String resolveDefaultQinEntry(QinConfig config) {
+        if (config.entry() != null && config.entry().endsWith(".qin")) {
+            String entry = normalizeRelativePath(config.entry());
+            Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
+            if (Files.exists(absolute)) {
+                return entry;
+            }
+        }
+
+        for (String candidate : QinConstants.DEFAULT_QIN_ENTRY_CANDIDATES) {
+            Path absolute = Paths.get(QinConstants.getCwd()).resolve(candidate).normalize();
+            if (Files.exists(absolute)) {
+                return normalizeRelativePath(candidate);
+            }
+        }
+        return null;
+    }
+
+    private static void runQinProject(QinConfig config, String qinFile) throws Exception {
+        runQinRuntime(config, qinFile, false);
+    }
+
+    private static void runQinDevProject(QinConfig config, String qinFile) throws Exception {
+        runQinRuntime(config, qinFile, true);
+    }
+
+    private static void runQinRuntime(QinConfig config, String qinFile, boolean devMode) throws Exception {
+        EnvironmentStatus envStatus = envChecker.checkAll();
+        if (!envStatus.hasJava()) {
+            System.err.println(red("Error: java is not installed."));
+            System.out.println(envChecker.getInstallGuide("java"));
+            System.exit(1);
+        }
+
+        Map<String, String> deps = collectAllDependencies(config);
+        if (deps.isEmpty()) {
+            throw new IllegalStateException(
+                    "Qin runtime dependencies are missing. Add `com.qin:qin-runtime-core` to qin.config.json dependencies.");
+        }
+
+        String dependencyClasspath = ensureDependenciesSynced(config);
+        String compileOutputDir = Paths.get(QinConstants.getCwd(), JavaCompileConfig.from(config).outputDir()).toString();
+        String separator = QinConstants.getClasspathSeparator();
+        String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
+                ? compileOutputDir
+                : compileOutputDir + separator + dependencyClasspath;
+
+        int port = config.port() > 0 ? config.port() : QinConstants.DEFAULT_PORT;
+        Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
+        Path backendSource = Paths.get(QinConstants.getCwd(), qinFile).toAbsolutePath().normalize();
+
+        System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
+        System.out.println(gray("  Backend entry: " + qinFile));
+
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        command.add("-cp");
+        command.add(runtimeClasspath);
+        command.add(QinConstants.FULLSTACK_MAIN_CLASS);
+        if (devMode) {
+            command.add("--dev");
+        }
+        command.add("--root");
+        command.add(root.toString());
+        command.add("--backend-file");
+        command.add(backendSource.toString());
+        command.add("--port");
+        command.add(String.valueOf(port));
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.directory(root.toFile());
+        pb.inheritIO();
+        Process process = pb.start();
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("Qin runtime exited with code " + exitCode);
+        }
+
+        System.out.println(green(devMode ? "[OK] Qin dev runtime stopped" : "[OK] Done!"));
+    }
+
     private static List<String> tokenizeArguments(String raw) {
         List<String> tokens = new ArrayList<>();
         if (raw == null || raw.isBlank()) {
@@ -343,7 +484,6 @@ public class QinCli {
     }
 
     private static void buildProject(String[] args) throws Exception {
-        boolean debug = Arrays.asList(args).contains("--debug");
         boolean clean = Arrays.asList(args).contains("--clean");
         boolean skipTests = Arrays.asList(args).contains("--skip-tests") ||
                            Arrays.asList(args).contains("-DskipTests");
@@ -356,6 +496,12 @@ public class QinCli {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
+        String qinBuildTarget = resolveBuildTargetToQinFile(config, args);
+        if (qinBuildTarget != null) {
+            buildQinProject(config, qinBuildTarget, args);
+            return;
+        }
+
         // Check environment
         EnvironmentStatus envStatus = envChecker.checkAll();
         if (!envStatus.hasJavac()) {
@@ -363,7 +509,7 @@ public class QinCli {
             System.exit(1);
         }
 
-        // 娴ｈ法鏁?BuildLifecycle 鏉╂稖顢戠€瑰本鏆ｉ弸鍕紦
+        // 濞达綀娉曢弫?BuildLifecycle 閺夆晜绋栭、鎴犫偓鐟版湰閺嗭綁寮搁崟顐ょ处
         System.out.println(blue("-> Building project..."));
         BuildLifecycle lifecycle = new BuildLifecycle(QinConstants.getCwd(), config);
         lifecycle.setSkipTests(skipTests);
@@ -385,10 +531,123 @@ public class QinCli {
         }
     }
 
+    private static String resolveBuildTargetToQinFile(QinConfig config, String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (arg == null || arg.isBlank() || arg.startsWith("-")) {
+                if ("-o".equals(arg) || "--output".equals(arg)) {
+                    i++;
+                }
+                continue;
+            }
+
+            String explicitTarget = resolveRunTargetToQinFile(config, arg);
+            if (explicitTarget != null) {
+                return explicitTarget;
+            }
+
+            return null;
+        }
+
+        return resolveDefaultQinEntry(config);
+    }
+
+    private static void buildQinProject(QinConfig config, String qinFile, String[] args) throws Exception {
+        EnvironmentStatus envStatus = envChecker.checkAll();
+        if (!envStatus.hasJava()) {
+            System.err.println(red("Error: java is not installed."));
+            System.out.println(envChecker.getInstallGuide("java"));
+            System.exit(1);
+        }
+
+        Map<String, String> deps = collectAllDependencies(config);
+        if (deps.isEmpty()) {
+            throw new IllegalStateException(
+                    "Qin runtime dependencies are missing. Add `com.qin:qin-runtime-core` to qin.config.json dependencies.");
+        }
+
+        String dependencyClasspath = ensureDependenciesSynced(config);
+        String compileOutputDir = Paths.get(QinConstants.getCwd(), JavaCompileConfig.from(config).outputDir()).toString();
+        String separator = QinConstants.getClasspathSeparator();
+        String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
+                ? compileOutputDir
+                : compileOutputDir + separator + dependencyClasspath;
+
+        Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
+        Path backendSource = root.resolve(qinFile).normalize();
+        Path fullstackOutRoot = resolveQinBuildOutputRoot(config, args);
+        Path classOutDir = fullstackOutRoot.resolve("server-classes").normalize();
+        Path staticOutDir = fullstackOutRoot.resolve("web").normalize();
+
+        System.out.println(blue("-> Building Qin fullstack artifacts..."));
+        System.out.println(gray("  Backend entry: " + qinFile));
+        System.out.println(gray("  Output root: " + fullstackOutRoot));
+
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        command.add("-cp");
+        command.add(runtimeClasspath);
+        command.add(QinConstants.FULLSTACK_MAIN_CLASS);
+        command.add("--build-only");
+        command.add("--root");
+        command.add(root.toString());
+        command.add("--backend-file");
+        command.add(backendSource.toString());
+        command.add("--class-out");
+        command.add(classOutDir.toString());
+        command.add("--static-dir");
+        command.add(staticOutDir.toString());
+        if (Arrays.asList(args).contains("--print-ir")) {
+            command.add("--print-ir");
+        }
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.directory(root.toFile());
+        pb.inheritIO();
+        Process process = pb.start();
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("Qin fullstack build exited with code " + exitCode);
+        }
+
+        System.out.println(green("[OK] Qin build completed"));
+        System.out.println(green("  Server classes: " + classOutDir));
+        System.out.println(green("  Web assets: " + staticOutDir));
+    }
+
+    private static Path resolveQinBuildOutputRoot(QinConfig config, String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if ("-o".equals(arg) || "--output".equals(arg)) {
+                if (i + 1 >= args.length) {
+                    throw new IllegalArgumentException("Missing value for " + arg);
+                }
+                String raw = args[++i];
+                return Paths.get(raw).isAbsolute()
+                        ? Paths.get(raw).normalize()
+                        : Paths.get(QinConstants.getCwd()).resolve(raw).normalize();
+            }
+        }
+
+        String distDir = QinConstants.getDistDir(config.output());
+        return Paths.get(QinConstants.getCwd(), distDir, "fullstack").normalize();
+    }
+
     private static void devMode(String[] args) throws Exception {
         System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
+
+        String qinDevEntry = null;
+        if (args.length > 0 && !args[0].startsWith("-")) {
+            qinDevEntry = resolveRunTargetToQinFile(config, args[0]);
+        } else {
+            qinDevEntry = resolveDefaultQinEntry(config);
+        }
+        if (qinDevEntry != null) {
+            runQinDevProject(config, qinDevEntry);
+            return;
+        }
 
         // Check environment
         EnvironmentStatus envStatus = envChecker.checkAll();
@@ -441,7 +700,7 @@ public class QinCli {
             System.exit(1);
         }
 
-        // 棣冩斀 閸忔娊鏁弨鐟板З閿涙瓭ompile 娑斿澧犻懛顏勫З绾喕绻氭笟婵婄瀹告彃鎮撳銉礄婢跺秶鏁?sync 閻ㄥ嫮绱︾€涙﹫绱?
+        // 妫ｅ啯鏂€ 闁稿繑濞婇弫顓㈠绩閻熸澘袟闁挎稒鐡璷mpile 濞戞柨顑呮晶鐘绘嚊椤忓嫬袟缁绢収鍠曠换姘瑹濠靛﹦顩€瑰憡褰冮幃鎾愁潰閵夘垳绀勫璺虹Ф閺?sync 闁汇劌瀚槐锔锯偓娑欙公缁?
         String classpath = "";
         if (!skipSync) {
             classpath = ensureDependenciesSynced(config);
@@ -472,20 +731,20 @@ public class QinCli {
     }
 
     private static void syncDependencies(String[] args) throws Exception {
-        // 鐟欙絾鐎介崣鍌涙殶
+        // 閻熸瑱绲鹃悗浠嬪矗閸屾稒娈?
         List<String> argList = Arrays.asList(args);
         boolean syncAll = argList.contains(QinConstants.ARG_ALL);
         boolean force = argList.contains(QinConstants.ARG_FORCE);
         boolean withCompile = argList.contains(QinConstants.ARG_COMPILE);
 
         if (syncAll) {
-            // 閸氬本顒為幍鈧張澶婄摍妞ゅ湱娲?
+            // 闁告艾鏈鐐哄箥閳ь剟寮垫径濠勬憤濡炪倕婀卞ú?
             syncAllProjects(force, withCompile);
         } else {
-            // 閸氬本顒炶ぐ鎾冲妞ゅ湱娲?
+            // 闁告艾鏈鐐躲亹閹惧啿顤呭銈呮贡濞?
             syncCurrentProject(force);
 
-            // 婵″倹鐏夐幐鍥х暰娴?--compile閿涘苯鎮撳銉ユ倵閼奉亜濮╃紓鏍槯
+            // 濠碘€冲€归悘澶愬箰閸パ呮毎濞?--compile闁挎稑鑻幃鎾愁潰閵夈儲鍊甸柤濂変簻婵晝绱撻弽顒傛Н
             if (withCompile) {
                 System.out.println();
                 compileProject(new String[]{QinConstants.ARG_NO_SYNC});
@@ -494,7 +753,7 @@ public class QinCli {
     }
 
     /**
-     * 閸氬本顒炶ぐ鎾冲妞ゅ湱娲伴惃鍕贩鐠?
+     * 闁告艾鏈鐐躲亹閹惧啿顤呭銈呮贡濞蹭即鎯冮崟顏嗚穿閻?
      */
     private static void syncCurrentProject(boolean force) throws Exception {
         String cwd = QinConstants.getCwd();
@@ -523,8 +782,8 @@ public class QinCli {
     }
 
     /**
-     * 閸氬本顒為幍鈧張澶婄摍妞ゅ湱娲伴敍鍦norepo 閸︾儤娅欓敍?
-     * 閸氭垳绗傞弻銉﹀閺嶅湱娲拌ぐ鏇礉闁帒缍婇幍顐ｅ伎閹碘偓閺?qin.config.json 妞ゅ湱娲?
+     * 闁告艾鏈鐐哄箥閳ь剟寮垫径濠勬憤濡炪倕婀卞ú浼存晬閸︻摰norepo 闁革妇鍎ゅ▍娆撴晬?
+     * 闁告碍鍨崇粭鍌炲蓟閵夛箑顥濋柡宥呮贡濞叉媽銇愰弴顏嗙闂侇偅甯掔紞濠囧箥椤愶絽浼庨柟纰樺亾闁?qin.config.json 濡炪倕婀卞ú?
      */
     private static void syncAllProjects(boolean force, boolean withCompile) throws Exception {
         String cwd = QinConstants.getCwd();
@@ -539,12 +798,12 @@ public class QinCli {
 
         System.out.println(blue("-> Found " + projects.size() + " Qin project(s)"));
 
-        // 缂佺喕顓?
+        // 缂備胶鍠曢?
         int synced = 0;
         int skipped = 0;
         int failed = 0;
 
-        // 闁秴宸婚幍鈧張澶愩€嶉惄顕嗙礉瀵倹顒為幍褑顢?sync
+        // 闂侇剙绉村濠氬箥閳ь剟寮垫径鎰┾偓宥夋儎椤曞棛绀夌€殿喖鍊归鐐哄箥瑜戦、?sync
         List<Thread> threads = new ArrayList<>();
         List<SyncResult> results = Collections.synchronizedList(new ArrayList<>());
 
@@ -553,14 +812,14 @@ public class QinCli {
                 try {
                     String projectName = projectPath.getFileName().toString();
 
-                    // 婵″倹鐏夋稉宥嗘Ц瀵搫鍩楅崥灞绢劄閿涘本顥呴弻銉х处鐎?
+                    // 濠碘€冲€归悘澶嬬▔瀹ュ棙笑鐎殿喖鎼崺妤呭触鐏炵虎鍔勯柨娑樻湰椤ュ懘寮婚妷褏澶勯悗?
                     if (!force && CacheValidator.isCacheValid(projectPath)) {
                         System.out.println(gray("  [SKIP] " + projectName + " (cached, skipped)"));
                         results.add(new SyncResult(projectName, SyncStatus.SKIPPED));
                         return;
                     }
 
-                    // 閹笛嗩攽 qin sync --compile閿涘牆鎮撳?+ 缂傛牞鐦ч敍?
+                    // 闁圭瑳鍡╂斀 qin sync --compile闁挎稑鐗嗛幃鎾愁潰?+ 缂傚倹鐗為惁褔鏁?
                     System.out.println(blue("  -> Syncing " + projectName + "..."));
 
                     List<String> command = new ArrayList<>();
@@ -581,11 +840,11 @@ public class QinCli {
 
                     Process process = pb.start();
 
-                    // 鐠囪褰囨潏鎾冲毉閿涘牓娼ゆ妯侯槱閻炲棴绱?
+                    // 閻犲洩顕цぐ鍥ㄦ綇閹惧啿姣夐柨娑樼墦濞笺倖顪€濡警妲遍柣鐐叉４缁?
                     try (BufferedReader reader = new BufferedReader(
                             new InputStreamReader(process.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
                         while (reader.readLine() != null) {
-                            // 闂堟瑩绮☉鍫ｅ瀭鏉堟挸鍤?
+                            // 闂傚牊鐟╃划顖氣槈閸絽鐎弶鍫熸尭閸?
                         }
                     }
 
@@ -607,12 +866,12 @@ public class QinCli {
             t.start();
         }
 
-        // 缁涘绶熼幍鈧張澶屽殠缁嬪鐣幋?
+        // 缂佹稑顦欢鐔煎箥閳ь剟寮垫径灞芥疇缂佸顑呴悾顒勫箣?
         for (Thread t : threads) {
             t.join();
         }
 
-        // 缂佺喕顓哥紒鎾寸亯
+        // 缂備胶鍠曢鍝ョ磼閹惧浜?
         for (SyncResult r : results) {
             switch (r.status) {
                 case SUCCESS -> synced++;
@@ -621,7 +880,7 @@ public class QinCli {
             }
         }
 
-        // 鏉堟挸鍤Ч鍥ㄢ偓?
+        // 閺夊牊鎸搁崵顓炐ч崶銊㈠亾?
         System.out.println();
         if (failed > 0) {
             System.out.println(yellow("[WARN] Sync completed: " + synced + " synced, " + skipped + " skipped, " + failed + " failed"));
@@ -631,20 +890,20 @@ public class QinCli {
     }
 
     /**
-     * 閸氬本顒炵紒鎾寸亯閻樿埖鈧?
+     * 闁告艾鏈鐐电磼閹惧浜柣妯垮煐閳?
      */
     private enum SyncStatus {
         SUCCESS, SKIPPED, FAILED
     }
 
     /**
-     * 閸氬本顒炵紒鎾寸亯
+     * 闁告艾鏈鐐电磼閹惧浜?
      */
     private record SyncResult(String projectName, SyncStatus status) {}
 
     /**
-     * 閸氬本顒炴笟婵婄閻ㄥ嫭鐗宠箛鍐偓鏄忕帆閿涘矁绻戦崶鐐垫晸閹存劗娈?classpath
-     * 娴ｈ法鏁ゆ晶鐐插繁閻楀牐袙閺嬫劕娅掗敍灞炬暜閹镐浇鍤滈崝銊х椽鐠囨垶婀伴崷浼淬€嶉惄?
+     * 闁告艾鏈鐐寸瑹濠靛﹦顩柣銊ュ閻楀疇绠涢崘顔瑰亾閺勫繒甯嗛柨娑樼焷缁绘垿宕堕悙鍨櫢闁瑰瓨鍔楀▓?classpath
+     * 濞达綀娉曢弫銈嗘櫠閻愭彃绻侀柣妤€鐗愯闁哄鍔曞▍鎺楁晬鐏炵偓鏆滈柟闀愭祰閸ゆ粓宕濋妸褏妞介悹鍥ㄥ灦濠€浼村捶娴兼番鈧秹鎯?
      */
     private static String syncDependenciesCore(QinConfig config) throws Exception {
         Map<String, String> deps = new HashMap<>();
@@ -655,7 +914,7 @@ public class QinCli {
         String sep = QinConstants.getClasspathSeparator();
         List<String> classpaths = new ArrayList<>();
 
-        // 1. 娴ｈ法鏁ゆ晶鐐插繁閻楀牐袙閺嬫劕娅掗敍鍫熸暜閹镐浇鍤滈崝銊х椽鐠囨垶婀伴崷浼淬€嶉惄顕嗙礆
+        // 1. 濞达綀娉曢弫銈嗘櫠閻愭彃绻侀柣妤€鐗愯闁哄鍔曞▍鎺楁晬閸喐鏆滈柟闀愭祰閸ゆ粓宕濋妸褏妞介悹鍥ㄥ灦濠€浼村捶娴兼番鈧秹鎯勯鍡欑
         LocalProjectResolverEnhanced localResolver = new LocalProjectResolverEnhanced(QinConstants.getCwd());
         LocalProjectResolverEnhanced.ResolutionResult localResult = localResolver.resolveDependencies(deps);
 
@@ -668,7 +927,7 @@ public class QinCli {
             classpaths.add(localResult.localClasspath);
         }
 
-        // 2. 閸欘亝婀佹潻婊呪柤娓氭繆绂嗛幍宥堢殶閻?Coursier
+        // 2. 闁告瑯浜濆﹢浣规交濠婂應鏌ゅ〒姘箚缁傚棝骞嶅鍫㈡闁?Coursier
         int remoteCount = 0;
         if (!localResult.remoteDependencies.isEmpty()) {
             System.out.println(
@@ -694,18 +953,18 @@ public class QinCli {
 
         String classpath = String.join(sep, classpaths);
 
-        // 閹稿鍘ょ純顔昏厬閻ㄥ嫪绶风挧鏍€庢惔蹇斿笓鎼?classpath
+        // 闁圭顦甸崢銈囩磾椤旀槒鍘柣銊ュ缁堕鎸ч弽顓溾偓搴㈡償韫囨柨绗撻幖?classpath
         classpath = sortClasspathByConfigOrder(classpath, deps);
 
         String json = buildClasspathJson(classpath);
         Files.writeString(QinConstants.getProjectClasspathCache(QinConstants.getCwd()), json);
 
-        // 閻㈢喐鍨?IDEA 鎼存捇鍘ょ純顔芥瀮娴犺绱?idea/libraries/*.xml閿?
+        // 闁汇垻鍠愰崹?IDEA 閹煎瓨鎹囬崢銈囩磾椤旇姤鐎ù鐘侯啇缁?idea/libraries/*.xml闁?
         if (!classpath.isEmpty()) {
             try {
                 System.out.println(blue("-> Generating IDEA library configs..."));
                 IdeaLibraryGenerator ideaGen = new IdeaLibraryGenerator(QinConstants.getCwd());
-                ideaGen.cleanLibraryConfigs(); // 濞撳懐鎮婇弮褔鍘ょ純?
+                ideaGen.cleanLibraryConfigs(); // 婵炴挸鎳愰幃濠囧籍瑜旈崢銈囩磾?
                 int libCount = ideaGen.generateLibraryConfigs(classpath);
                 System.out.println(green("  [OK] Generated " + libCount + " library configs in .idea/libraries/"));
             } catch (IOException e) {
@@ -720,9 +979,9 @@ public class QinCli {
     }
 
     /**
-     * 绾喕绻氭笟婵婄瀹告彃鎮撳銉礉婵″倹鐏夌紓鎾崇摠閺堝鏅ラ崚娆庡▏閻劎绱︾€涙﹫绱濋崥锕€鍨幍褑顢戦崥灞绢劄
+     * 缁绢収鍠曠换姘瑹濠靛﹦顩€瑰憡褰冮幃鎾愁潰閵夘垳绀夊┑鈥冲€归悘澶岀磽閹惧磭鎽犻柡鍫濐槹閺呫儵宕氬▎搴♀枏闁活潿鍔庣槐锔锯偓娑欙公缁辨繈宕ラ敃鈧崹顖炲箥瑜戦、鎴﹀触鐏炵虎鍔?
      * 
-     * @return classpath 鐎涙顑佹稉?
+     * @return classpath 閻庢稒顨堥浣圭▔?
      */
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
         String cwd = QinConstants.getCwd();
@@ -762,8 +1021,8 @@ public class QinCli {
     }
 
     /**
-     * 妤犲矁鐦?classpath 娑擃厾娈戦幍鈧張澶嬫瀮娴犺埖妲搁崥锕€鐡ㄩ崷?
-     * @deprecated 娴ｈ法鏁?CacheValidator.validateClasspathFiles() 娴狅絾娴?
+     * 濡ょ姴鐭侀惁?classpath 濞戞搩鍘惧▓鎴﹀箥閳ь剟寮垫径瀣€ù鐘哄煐濡叉悂宕ラ敃鈧悺銊╁捶?
+     * @deprecated 濞达綀娉曢弫?CacheValidator.validateClasspathFiles() 濞寸媴绲惧ù?
      */
     @Deprecated
     private static boolean validateClasspathFiles(String classpath) {
@@ -878,7 +1137,7 @@ public class QinCli {
     }
 
     /**
-     * qin jar - 閹垫挸瀵橀弲顕€鈧?JAR閿涘牅绗夐崥顐＄贩鐠ф牭绱?
+     * qin jar - 闁瑰灚鎸哥€垫﹢寮查鈧埀?JAR闁挎稑鐗呯粭澶愬触椤愶紕璐╅悹褎鐗槐?
      */
     private static void jarProject(String[] args) throws Exception {
         System.out.println(blue("-> Loading configuration..."));
@@ -898,7 +1157,7 @@ public class QinCli {
     }
 
     /**
-     * qin fatjar - 閹垫挸瀵?Fat JAR閿涘牆瀵橀崥顐ｅ閺堝绶风挧鏍电礆
+     * qin fatjar - 闁瑰灚鎸哥€?Fat JAR闁挎稑鐗嗙€垫﹢宕ラ锝咁暡闁哄牆顦欢椋庢導閺嶇數绀?
      */
     private static void fatjarProject(String[] args) throws Exception {
         System.out.println(blue("-> Loading configuration..."));
@@ -918,7 +1177,7 @@ public class QinCli {
     }
 
     /**
-     * qin deps - 閺勫墽銇氭笟婵婄閺?
+     * qin deps - 闁哄嫬澧介妵姘瑹濠靛﹦顩柡?
      */
     private static void showDependencies(String[] args) throws Exception {
         System.out.println(blue("-> Loading configuration..."));
@@ -941,11 +1200,11 @@ public class QinCli {
         }
     }
 
-    // ==================== BSP 閻╃鍙ч崨鎴掓姢 ====================
+    // ==================== BSP 闁烩晝顭堥崣褔宕ㄩ幋鎺撳Б ====================
 
     /**
-     * 閸氼垰濮?BSP Server
-     * IDE 娴兼俺鐨熼悽銊︻劃閸涙垝鎶ゆ稉搴㈢€鍝勪紣閸忕兘鈧矮淇?
+     * 闁告凹鍨版慨?BSP Server
+     * IDE 濞村吋淇洪惃鐔兼偨閵婏富鍔冮柛娑欏灊閹躲倖绋夋惔銏⑩偓顖氼嚈閸濆嫪绱ｉ柛蹇曞厴閳ь剚鐭穱?
      */
     private static void startBspServer() throws Exception {
         com.qin.bsp.QinBspServer server = new com.qin.bsp.QinBspServer(QinConstants.getCwd());
@@ -953,8 +1212,8 @@ public class QinCli {
     }
 
     /**
-     * 閸掓繂顫愰崠?BSP 闁板秶鐤?
-     * 閻㈢喐鍨?.bsp/qin.json 閺傚洣娆㈤敍宀冾唨 IDE 閼宠棄褰傞悳鐗堫劃閺嬪嫬缂撳銉ュ徔
+     * 闁告帗绻傞～鎰板礌?BSP 闂佹澘绉堕悿?
+     * 闁汇垻鍠愰崹?.bsp/qin.json 闁哄倸娲ｅ▎銏ゆ晬瀹€鍐惧敤 IDE 闁煎疇妫勮ぐ鍌炴偝閻楀牜鍔冮柡瀣缂傛挸顔忛妷銉ュ緮
      */
     private static void initBspConfig() throws Exception {
         com.qin.bsp.BspConnectionGenerator generator =
@@ -975,7 +1234,7 @@ public class QinCli {
     }
 
     /**
-     * 閺嶇厧绱￠崠鏍ㄦ瀮娴犺泛銇囩亸蹇ョ礄鏉堝懎濮弬瑙勭《閿?
+     * 闁哄秶鍘х槐锟犲礌閺嶃劍鐎ù鐘烘硾閵囧洨浜歌箛銉х閺夊牆鎳庢慨顏堝棘鐟欏嫮銆婇柨?
      */
     private static String formatSize(long bytes) {
         if (bytes < 1024) return bytes + " B";
@@ -1001,7 +1260,7 @@ public class QinCli {
                   clean       Clean build artifacts
                   sync        Sync dependencies (auto-compiles local projects)
                   deps        Show dependency tree
-                  dev         Start development server with hot reload
+                  dev         Start development mode (Qin: single-port dev server, Java: compile+run)
                   dist        Create distribution package
 
                 IDE Integration (BSP):
@@ -1017,16 +1276,20 @@ public class QinCli {
                   -DskipTests     Skip tests (Maven-style)
                   --debug         Keep temporary files for debugging
                   --clean         Clean build directory before building
-                  -o, --output <dir>  Output directory (compile)
+                  -o, --output <dir>  Output directory (compile / qin fullstack build)
                   -f, --filter <pattern>  Filter tests (test)
                   -v, --verbose   Show verbose output
 
                 Examples:
                   qin init                    # Initialize new project
-                  qin run                     # Compile and run
+                  qin run                     # Compile and run (auto Qin runtime when entry is .qin)
+                  qin run main/main.qin       # Run a specific Qin entry file
+                  qin dev                     # Start Qin dev mode (watch + auto reload)
                   qin run src/app/Main.java   # Run a specific Java file
                   qin run com.app.Main        # Run by fully-qualified class name
                   qin compile                 # Compile only
+                  qin build main/main.qin     # Build Qin fullstack artifacts to dist/fullstack
+                  qin build -o dist/prod      # Override build output root
                   qin jar                     # Build JAR (without dependencies)
                   qin fatjar                  # Build Fat JAR (with dependencies)
                   qin build                   # Full build
@@ -1070,11 +1333,11 @@ public class QinCli {
     }
 
     /**
-     * 娴?.qin/classpath.json 鐟欙絾鐎?classpath
+     * 濞?.qin/classpath.json 閻熸瑱绲鹃悗?classpath
      */
     private static String parseClasspathFromJson(String json) {
         try {
-            // 缁犫偓閸楁洝袙閺?JSON 閺佹壆绮?
+            // 缂佺姭鍋撻柛妤佹礉琚欓柡?JSON 闁轰焦澹嗙划?
             int start = json.indexOf("[");
             int end = json.lastIndexOf("]");
             if (start < 0 || end < 0)
@@ -1083,7 +1346,7 @@ public class QinCli {
             String arrayContent = json.substring(start + 1, end);
             List<String> paths = new ArrayList<>();
 
-            // 鐟欙絾鐎藉В蹇庨嚋鐠侯垰绶?
+            // 閻熸瑱绲鹃悗钘壭掕箛搴ㄥ殝閻犱警鍨扮欢?
             int pos = 0;
             while (pos < arrayContent.length()) {
                 int quote1 = arrayContent.indexOf("\"", pos);
@@ -1104,7 +1367,7 @@ public class QinCli {
     }
 
     /**
-     * 閺嬪嫬缂?.qin/classpath.json 閺嶇厧绱?
+     * 闁哄瀚紓?.qin/classpath.json 闁哄秶鍘х槐?
      */
     private static String buildClasspathJson(String classpath) {
         String sep = QinConstants.getClasspathSeparator();
@@ -1126,11 +1389,11 @@ public class QinCli {
     }
 
     /**
-     * 閹稿鍘ょ純顔昏厬閻ㄥ嫪绶风挧鏍€庢惔蹇斿笓鎼?classpath
+     * 闁圭顦甸崢銈囩磾椤旀槒鍘柣銊ュ缁堕鎸ч弽顓溾偓搴㈡償韫囨柨绗撻幖?classpath
      * 
-     * @param classpath 閸樼喎顫?classpath閿涘牆鍨庨崣?閸愭帒褰块崚鍡涙閿?
-     * @param deps      闁板秶鐤嗘稉顓犳畱娓氭繆绂嗛敍鍫滅箽閹镐焦褰冮崗銉┿€庢惔蹇ョ礆
-     * @return 閹烘帒绨崥搴ｆ畱 classpath
+     * @param classpath 闁告鍠庨～?classpath闁挎稑鐗嗛崹搴ㄥ矗?闁告劖甯掕ぐ鍧楀礆閸℃稒顓鹃柨?
+     * @param deps      闂佹澘绉堕悿鍡樼▔椤撶姵鐣卞〒姘箚缁傚棝鏁嶉崼婊呯闁归晲鐒﹁ぐ鍐礂閵夆斂鈧孩鎯旇箛銉х
+     * @return 闁圭儤甯掔花顓㈠触鎼达絾鐣?classpath
      */
     private static String sortClasspathByConfigOrder(String classpath, Map<String, String> deps) {
         if (classpath == null || classpath.isEmpty() || deps == null || deps.isEmpty()) {
@@ -1140,16 +1403,16 @@ public class QinCli {
         String sep = QinConstants.getClasspathSeparator();
         String[] paths = classpath.split(sep.equals(";") ? ";" : ":");
 
-        // 閸掓稑缂?artifactId 閸掍即銆庢惔蹇曟畱閺勭姴鐨?
+        // 闁告帗绋戠紓?artifactId 闁告帊鍗抽妴搴㈡償韫囨洘鐣遍柡鍕Т閻?
         Map<String, Integer> orderMap = new LinkedHashMap<>();
         int order = 0;
         for (String depKey : deps.keySet()) {
-            // depKey 閺嶇厧绱? groupId@artifactId 閹?groupId:artifactId
+            // depKey 闁哄秶鍘х槐? groupId@artifactId 闁?groupId:artifactId
             String artifactId = extractArtifactId(depKey);
             orderMap.put(artifactId.toLowerCase(), order++);
         }
 
-        // 閹稿鍘ょ純顕€銆庢惔蹇斿笓鎼?
+        // 闁圭顦甸崢銈囩磾椤曗偓閵嗗孩鎯旇箛鏂跨瑩閹?
         List<String> sortedPaths = new ArrayList<>(Arrays.asList(paths));
         sortedPaths.sort((a, b) -> {
             String artifactA = extractArtifactIdFromPath(a).toLowerCase();
@@ -1161,7 +1424,7 @@ public class QinCli {
             if (orderA != orderB) {
                 return Integer.compare(orderA, orderB);
             }
-            // 婵″倹鐏夐柈鎴掔瑝閸︺劑鍘ょ純顔昏厬閿涘本瀵滅€涙鐦濇い鍝勭碍
+            // 濠碘€冲€归悘澶愭焾閹存帞鐟濋柛锔哄姂閸樸倗绱旈鏄忓幀闁挎稑鏈€垫粎鈧稒顨嗛惁婵囥亜閸濆嫮纰?
             return a.compareToIgnoreCase(b);
         });
 
@@ -1169,10 +1432,10 @@ public class QinCli {
     }
 
     /**
-     * 娴犲簼绶风挧?key 娑擃厽褰侀崣?artifactId
+     * 濞寸姴绨肩欢椋庢導?key 濞戞搩鍘借ぐ渚€宕?artifactId
      */
     private static String extractArtifactId(String depKey) {
-        // 閺嶇厧绱? groupId@artifactId 閹?groupId:artifactId
+        // 闁哄秶鍘х槐? groupId@artifactId 闁?groupId:artifactId
         int sepIndex = depKey.lastIndexOf('@');
         if (sepIndex < 0)
             sepIndex = depKey.lastIndexOf(':');
@@ -1180,13 +1443,13 @@ public class QinCli {
     }
 
     /**
-     * 娴?jar 鐠侯垰绶炴稉顓熷絹閸?artifactId
+     * 濞?jar 閻犱警鍨扮欢鐐寸▔椤撶喎绲归柛?artifactId
      */
     private static String extractArtifactIdFromPath(String path) {
-        // 鐠侯垰绶為弽鐓庣础: .../groupId/artifactId/version/artifactId-version.jar
-        // 閹? .../build/classes
+        // 閻犱警鍨扮欢鐐哄冀閻撳海纭€: .../groupId/artifactId/version/artifactId-version.jar
+        // 闁? .../build/classes
         if (path.contains("build") || path.contains("classes")) {
-            // 閺堫剙婀存い鍦窗閿涘奔濞囬悽銊ф窗瑜版洖鎮?
+            // 闁哄牜鍓欏﹢瀛樸亜閸︻厽绐楅柨娑樺婵炲洭鎮介妸褎绐楃憸鐗堟礀閹?
             Path p = Paths.get(path);
             if (p.getParent() != null && p.getParent().getParent() != null) {
                 return p.getParent().getParent().getFileName().toString();
@@ -1194,17 +1457,17 @@ public class QinCli {
             return p.getFileName().toString();
         }
 
-        // Maven jar 鐠侯垰绶?
+        // Maven jar 閻犱警鍨扮欢?
         String fileName = Paths.get(path).getFileName().toString();
-        // 缁夊娅?.jar 閸滃瞼澧楅張顒€褰?
+        // 缂佸顭峰▍?.jar 闁告粌鐬兼晶妤呭嫉椤掆偓瑜?
         if (fileName.endsWith(".jar")) {
             fileName = fileName.substring(0, fileName.length() - 4);
         }
-        // 鐏忔繆鐦幓鎰絿 artifactId閿涘牆婀張鈧崥搴濈娑?- 娑斿澧犻敍灞筋洤閺嬫粌鎮楅棃銏℃Ц閻楀牊婀伴崣鍑ょ礆
+        // 閻忓繑绻嗛惁顖炲箵閹邦剙绲?artifactId闁挎稑鐗嗗﹢顏堝嫉閳ь剟宕ユ惔婵堫伇濞?- 濞戞柨顑呮晶鐘绘晬鐏炵瓔娲ら柡瀣矊閹妫冮姀鈩冃﹂柣妤€鐗婂﹢浼村矗閸戙倗绀?
         int lastDash = fileName.lastIndexOf('-');
         if (lastDash > 0) {
             String suffix = fileName.substring(lastDash + 1);
-            // 濡偓閺屻儲妲搁崥锔芥Ц閻楀牊婀伴崣鍑ょ礄娴犮儲鏆熺€涙绱戞径杈剧礆
+            // 婵☆偀鍋撻柡灞诲劜濡叉悂宕ラ敂鑺バ﹂柣妤€鐗婂﹢浼村矗閸戙倗绀勫ù鐘劜閺嗙喓鈧稒顨呯槐鎴炲緞鏉堝墽绀?
             if (!suffix.isEmpty() && Character.isDigit(suffix.charAt(0))) {
                 return fileName.substring(0, lastDash);
             }
@@ -1212,3 +1475,4 @@ public class QinCli {
         return fileName;
     }
 }
+

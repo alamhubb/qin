@@ -1,19 +1,26 @@
 package com.qin.core;
 
-import com.qin.constants.QinConstants;
-import com.qin.types.*;
-import com.qin.types.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.qin.constants.QinConstants;
+import com.qin.types.JavaConfig;
+import com.qin.types.OutputConfig;
+import com.qin.types.ParsedEntry;
+import com.qin.types.QinConfig;
+import com.qin.types.ValidationResult;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.regex.*;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Configuration Loader for Qin (Java 25)
- * 加载配置文件，QinConfig 现在是不可变 Record
+ * Configuration loader for Qin.
  */
 public class ConfigLoader {
     private final String cwd;
@@ -29,10 +36,9 @@ public class ConfigLoader {
     }
 
     /**
-     * Load configuration from qin.config.json
+     * Load configuration from qin.config.json.
      */
     public QinConfig load() throws IOException {
-        // 尝试加载 JSON 配置
         Path jsonConfig = Paths.get(cwd, QinConstants.CONFIG_FILE);
         if (Files.exists(jsonConfig)) {
             String content = Files.readString(jsonConfig);
@@ -40,40 +46,35 @@ public class ConfigLoader {
             return applyDefaults(config);
         }
 
-        // 自动检测项目类型
         PluginDetector detector = new PluginDetector(cwd);
         DetectionResult detection = detector.detect();
-
         if (detection.getLanguages().isEmpty() && detection.getFeatures().isEmpty()) {
-            throw new IOException(
-                    "No project detected. Create " + QinConstants.DEFAULT_ENTRY + " or create qin.config.json");
+            throw new IOException("No project detected. Create " + QinConstants.DEFAULT_ENTRY + " or create qin.config.json");
         }
 
-        // 零配置模式 - 使用简化构造器
-        return applyDefaults(new QinConfig(
-                detectProjectName(),
-                "1.0.0"));
+        return applyDefaults(new QinConfig(detectProjectName(), "1.0.0"));
     }
 
-    /**
-     * Auto-detect project name from directory
-     */
     private String detectProjectName() {
         return Paths.get(cwd).getFileName().toString();
     }
 
     /**
-     * Auto-detect entry file
+     * Auto-detect entry file.
      */
     public String findEntry() {
-        // 检查常用入口文件候选
         for (String candidate : QinConstants.DEFAULT_ENTRY_CANDIDATES) {
             if (Files.exists(Paths.get(cwd, candidate))) {
                 return candidate;
             }
         }
 
-        // Search src/*/Main.java
+        for (String candidate : QinConstants.DEFAULT_QIN_ENTRY_CANDIDATES) {
+            if (Files.exists(Paths.get(cwd, candidate))) {
+                return candidate;
+            }
+        }
+
         Path srcDir = Paths.get(cwd, "src");
         if (Files.exists(srcDir) && Files.isDirectory(srcDir)) {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(srcDir)) {
@@ -85,8 +86,8 @@ public class ConfigLoader {
                         }
                     }
                 }
-            } catch (IOException e) {
-                // Ignore
+            } catch (IOException ignored) {
+                // ignore
             }
         }
 
@@ -94,7 +95,7 @@ public class ConfigLoader {
     }
 
     /**
-     * Validate configuration
+     * Validate configuration.
      */
     public ValidationResult validate(QinConfig config) {
         List<String> errors = new ArrayList<>();
@@ -104,29 +105,27 @@ public class ConfigLoader {
             return ValidationResult.failure(errors);
         }
 
-        if (config.entry() != null && !config.entry().endsWith(".java")) {
-            errors.add("'entry' must be a .java file");
+        if (config.entry() != null &&
+                !config.entry().endsWith(".java") &&
+                !config.entry().endsWith(".qin")) {
+            errors.add("'entry' must be a .java or .qin file");
         }
 
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.failure(errors);
     }
 
     /**
-     * Apply default values to configuration
-     * 因为 Record 不可变，所以返回新的 QinConfig 实例
+     * Apply default values and return a new immutable config instance.
      */
     private QinConfig applyDefaults(QinConfig config) {
-        // 如果已经有完整配置，直接返回
         if (config.entry() != null && config.output() != null && config.java() != null) {
             return config;
         }
 
-        // 构建带默认值的新 config
         String entry = config.entry() != null ? config.entry() : findEntry();
         OutputConfig output = config.output() != null ? config.output() : new OutputConfig();
         JavaConfig java = config.java() != null ? config.java() : new JavaConfig(QinConstants.DEFAULT_JAVA_VERSION);
 
-        // 创建新的不可变配置
         return new QinConfig(
                 config.name(),
                 config.version(),
@@ -149,7 +148,7 @@ public class ConfigLoader {
     }
 
     /**
-     * Parse entry path to extract source directory and class name
+     * Parse entry path to source directory and class name.
      */
     public ParsedEntry parseEntry(String entry) {
         if (entry == null) {
@@ -159,17 +158,24 @@ public class ConfigLoader {
         }
 
         String normalized = entry.replace("\\", "/");
-        int lastSlash = normalized.lastIndexOf("/");
+        int lastSlash = normalized.lastIndexOf('/');
 
         String fileName = lastSlash >= 0 ? normalized.substring(lastSlash + 1) : normalized;
         String srcDir = lastSlash >= 0 ? normalized.substring(0, lastSlash) : ".";
-        String simpleClassName = fileName.replace(".java", "");
 
-        // Try to read package declaration
+        String simpleClassName;
+        if (fileName.endsWith(".java")) {
+            simpleClassName = fileName.substring(0, fileName.length() - ".java".length());
+        } else if (fileName.endsWith(".qin")) {
+            simpleClassName = fileName.substring(0, fileName.length() - ".qin".length());
+        } else {
+            simpleClassName = fileName;
+        }
+
         String className = simpleClassName;
         try {
             Path filePath = Paths.get(cwd, entry);
-            if (Files.exists(filePath)) {
+            if (Files.exists(filePath) && fileName.endsWith(".java")) {
                 String content = Files.readString(filePath);
                 Pattern pattern = Pattern.compile("^\\s*package\\s+([\\w.]+)\\s*;", Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(content);
@@ -177,8 +183,8 @@ public class ConfigLoader {
                     className = matcher.group(1) + "." + simpleClassName;
                 }
             }
-        } catch (IOException e) {
-            // Use simple class name
+        } catch (IOException ignored) {
+            // use simple class name
         }
 
         return new ParsedEntry(srcDir, className, entry);

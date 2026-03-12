@@ -268,6 +268,7 @@ public class QinConstants {
     public static final String DEFAULT_JAVA_VERSION = "21";
     public static final int DEFAULT_PORT = 8080;
     public static final boolean DEFAULT_LOCAL_REP = false;
+    public static final String FULLSTACK_MAIN_CLASS = "com.qin.runtime.core.QinFullstackMain";
 
     /**
      * Java/Maven 标准源代码目录（优先级高于 DEFAULT_SOURCE_DIR）
@@ -294,6 +295,13 @@ public class QinConstants {
             "main.java",
             "src/server/Main.java",
             "src/main/java/Main.java");
+    public static final java.util.List<String> DEFAULT_QIN_ENTRY_CANDIDATES = java.util.List.of(
+            "main/main.qin",
+            "main/Main.qin",
+            "shared/main.qin",
+            "shared/shared.qin",
+            "app/main.qin",
+            "src/main.qin");
 
     /**
      * 默认 JAR 名称
