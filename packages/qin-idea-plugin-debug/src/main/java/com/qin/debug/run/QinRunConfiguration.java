@@ -5,6 +5,7 @@ import com.intellij.execution.configurations.*;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
+import com.qin.debug.QinProjectLocator;
 import com.qin.debug.QinLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -71,6 +72,14 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
         getOptions().setDebugPort(port);
     }
 
+    public String getResolvedProjectPath() {
+        return QinProjectLocator.resolveProjectPath(getProject(), getProjectPath());
+    }
+
+    public String getResolvedMainClass() {
+        return QinProjectLocator.resolveMainClass(getProject(), getResolvedProjectPath(), getMainClass());
+    }
+
     // ========== RunConfiguration Implementation ==========
 
     @NotNull
@@ -83,21 +92,23 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
     @Override
     public RunProfileState getState(@NotNull Executor executor,
                                      @NotNull ExecutionEnvironment environment) {
-        QinLogger.ensureInitialized(getProject(), getProjectPath());
+        applyResolvedDefaults();
+        QinLogger.ensureInitialized(getProject(), getResolvedProjectPath());
         QinLogger.info("[RUN] Building RunProfileState: executor=" + executor.getId()
-                + ", projectPath=" + getProjectPath()
-                + ", mainClass=" + getMainClass());
+                + ", projectPath=" + getResolvedProjectPath()
+                + ", mainClass=" + getResolvedMainClass());
         return new QinRunProfileState(this, environment);
     }
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
-        String projectPath = getProjectPath();
+        applyResolvedDefaults();
+        String projectPath = getResolvedProjectPath();
         QinLogger.ensureInitialized(getProject(), projectPath);
-        QinLogger.info("[RUN] Checking configuration: projectPath=" + projectPath + ", mainClass=" + getMainClass());
+        QinLogger.info("[RUN] Checking configuration: projectPath=" + projectPath + ", mainClass=" + getResolvedMainClass());
         if (projectPath == null || projectPath.isEmpty()) {
             QinLogger.error("[RUN] Configuration check failed: project path is empty");
-            throw new RuntimeConfigurationError("Project path is not specified");
+            throw new RuntimeConfigurationError("Project path is not specified and could not be inferred from qin.config.json");
         }
 
         // 妫€鏌?qin.config.json 鏄惁瀛樺湪
@@ -105,6 +116,18 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
         if (!java.nio.file.Files.exists(configPath)) {
             QinLogger.error("[RUN] Configuration check failed: " + CONFIG_FILE + " missing at " + configPath);
             throw new RuntimeConfigurationError(CONFIG_FILE + " not found in: " + projectPath);
+        }
+    }
+
+    private void applyResolvedDefaults() {
+        String resolvedProjectPath = getResolvedProjectPath();
+        if (resolvedProjectPath != null && !resolvedProjectPath.equals(getProjectPath())) {
+            setProjectPath(resolvedProjectPath);
+        }
+
+        String resolvedMainClass = QinProjectLocator.resolveMainClass(getProject(), resolvedProjectPath, getMainClass());
+        if (resolvedMainClass != null && !resolvedMainClass.equals(getMainClass())) {
+            setMainClass(resolvedMainClass);
         }
     }
 }

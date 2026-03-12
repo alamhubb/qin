@@ -323,11 +323,19 @@ public class JavaRunner {
         }
 
         // 常见的源码目录前缀
-        String[] srcPrefixes = {
-                QinConstants.JAVA_SOURCE_DIR + "/",
-                QinConstants.DEFAULT_TEST_DIR + "/",
-                "src/"
-        };
+        LinkedHashSet<String> srcPrefixes = new LinkedHashSet<>();
+        String configuredSourceDir = getSourceDir();
+        String configuredTestDir = getTestDir();
+        if (configuredSourceDir != null && !configuredSourceDir.isBlank()) {
+            srcPrefixes.add(configuredSourceDir.replace('\\', '/') + "/");
+        }
+        if (configuredTestDir != null && !configuredTestDir.isBlank()) {
+            srcPrefixes.add(configuredTestDir.replace('\\', '/') + "/");
+        }
+        srcPrefixes.add(QinConstants.JAVA_SOURCE_DIR + "/");
+        srcPrefixes.add("src/java/");
+        srcPrefixes.add(QinConstants.DEFAULT_TEST_DIR + "/");
+        srcPrefixes.add("src/");
 
         for (String prefix : srcPrefixes) {
             int idx = normalized.indexOf(prefix);

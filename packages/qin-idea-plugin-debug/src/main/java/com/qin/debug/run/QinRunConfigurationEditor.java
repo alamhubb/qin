@@ -13,8 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 
 /**
- * Qin 运行配置编辑器
- * 提供配置界面，让用户编辑运行配置的各项参数
+ * Editor for Qin run configurations.
  */
 public class QinRunConfigurationEditor extends SettingsEditor<QinRunConfiguration> {
 
@@ -26,35 +25,33 @@ public class QinRunConfigurationEditor extends SettingsEditor<QinRunConfiguratio
     private final JBTextField debugPortField;
 
     public QinRunConfigurationEditor(Project project) {
-        // 项目路径选择器
         projectPathField = new TextFieldWithBrowseButton();
         var descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
         descriptor.setTitle("Select Qin Project");
         descriptor.setDescription("Select the directory containing qin.config.json");
         projectPathField.addBrowseFolderListener(new TextBrowseFolderListener(descriptor, project));
+        projectPathField.getTextField().setToolTipText("Auto-detect nearest Qin project");
 
-        // 主类输入框
         mainClassField = new JBTextField();
+        mainClassField.getEmptyText().setText("Optional, defaults to qin.config.json entry");
 
-        // 程序参数输入框
         programArgsField = new JBTextField();
+        programArgsField.getEmptyText().setText("Optional");
 
-        // JVM 参数输入框
         jvmArgsField = new JBTextField();
+        jvmArgsField.getEmptyText().setText("Optional");
 
-        // 调试端口输入框
         debugPortField = new JBTextField();
         debugPortField.setText("5005");
 
-        // 构建表单
         mainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel("Project path:"), projectPathField, 1, false)
-            .addLabeledComponent(new JBLabel("Main class:"), mainClassField, 1, false)
-            .addLabeledComponent(new JBLabel("Program arguments:"), programArgsField, 1, false)
-            .addLabeledComponent(new JBLabel("JVM arguments:"), jvmArgsField, 1, false)
-            .addLabeledComponent(new JBLabel("Debug port:"), debugPortField, 1, false)
-            .addComponentFillVertically(new JPanel(), 0)
-            .getPanel();
+                .addLabeledComponent(new JBLabel("Project path (optional):"), projectPathField, 1, false)
+                .addLabeledComponent(new JBLabel("Main class (optional):"), mainClassField, 1, false)
+                .addLabeledComponent(new JBLabel("Program arguments:"), programArgsField, 1, false)
+                .addLabeledComponent(new JBLabel("JVM arguments:"), jvmArgsField, 1, false)
+                .addLabeledComponent(new JBLabel("Debug port:"), debugPortField, 1, false)
+                .addComponentFillVertically(new JPanel(), 0)
+                .getPanel();
     }
 
     @Override

@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 
 /**
- * Qin 测试配置编辑器
+ * Editor for Qin test configurations.
  */
 public class QinTestConfigurationEditor extends SettingsEditor<QinTestConfiguration> {
 
@@ -28,16 +28,20 @@ public class QinTestConfigurationEditor extends SettingsEditor<QinTestConfigurat
         descriptor.setTitle("Select Qin Project");
         descriptor.setDescription("Select the directory containing qin.config.json");
         projectPathField.addBrowseFolderListener(new TextBrowseFolderListener(descriptor, project));
+        projectPathField.getTextField().setToolTipText("Auto-detect nearest Qin project");
 
         testClassField = new JBTextField();
+        testClassField.getEmptyText().setText("Optional");
+
         testMethodField = new JBTextField();
+        testMethodField.getEmptyText().setText("Optional");
 
         mainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel("Project path:"), projectPathField, 1, false)
-            .addLabeledComponent(new JBLabel("Test class (optional):"), testClassField, 1, false)
-            .addLabeledComponent(new JBLabel("Test method (optional):"), testMethodField, 1, false)
-            .addComponentFillVertically(new JPanel(), 0)
-            .getPanel();
+                .addLabeledComponent(new JBLabel("Project path (optional):"), projectPathField, 1, false)
+                .addLabeledComponent(new JBLabel("Test class (optional):"), testClassField, 1, false)
+                .addLabeledComponent(new JBLabel("Test method (optional):"), testMethodField, 1, false)
+                .addComponentFillVertically(new JPanel(), 0)
+                .getPanel();
     }
 
     @Override

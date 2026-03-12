@@ -64,7 +64,7 @@ public class QinTestRunProfileState extends CommandLineState {
     }
 
     private GeneralCommandLine createCommandLine() throws ExecutionException {
-        String projectPath = configuration.getProjectPath();
+        String projectPath = configuration.getResolvedProjectPath();
         if (projectPath == null || projectPath.isEmpty()) {
             throw new ExecutionException("Project path is not specified");
         }

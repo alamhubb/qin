@@ -99,7 +99,7 @@ public class QinRunProfileState extends CommandLineState {
      * 鍒涘缓鍛戒护琛?
      */
     private GeneralCommandLine createCommandLine() throws ExecutionException {
-        String projectPath = configuration.getProjectPath();
+        String projectPath = configuration.getResolvedProjectPath();
         if (projectPath == null || projectPath.isEmpty()) {
             QinLogger.error("[RUN] Project path is empty before command creation");
             throw new ExecutionException("Project path is not specified");
@@ -115,7 +115,7 @@ public class QinRunProfileState extends CommandLineState {
         }
 
         // 娣诲姞涓荤被鍙傛暟锛堝鏋滄寚瀹氾級
-        String mainClass = configuration.getMainClass();
+        String mainClass = configuration.getResolvedMainClass();
         if (mainClass != null && !mainClass.isEmpty()) {
             command.add("--main=" + mainClass);
         }
