@@ -65,7 +65,7 @@ public class QinCli {
     }
 
     private static void initProject() throws IOException {
-        System.out.println(blue("→ Initializing new Qin project..."));
+        System.out.println(blue("-> Initializing new Qin project..."));
 
         Path cwd = Paths.get(QinConstants.getCwd());
 
@@ -98,7 +98,7 @@ public class QinCli {
                     """, projectName, QinConstants.DEFAULT_ENTRY));
         }
 
-        System.out.println(green("✓ Project initialized!"));
+        System.out.println(green("[OK] Project initialized!"));
         System.out.println(gray("  Run 'qin run' to start"));
     }
 
@@ -116,18 +116,18 @@ public class QinCli {
 
             if (plugin != null) {
                 // 找到对应插件，使用插件运行
-                System.out.println(blue("→ Running with " + plugin.name() + " plugin..."));
+                System.out.println(blue("-> Running with " + plugin.name() + " plugin..."));
                 String[] runArgs = Arrays.copyOfRange(args, 1, args.length);
                 plugin.run(filePath, runArgs, Paths.get(QinConstants.getCwd()));
-                System.out.println(green("✓ Done!"));
+                System.out.println(green("[OK] Done!"));
                 return;
             }
 
             // 如果不是已知文件类型，检查是否是 .java
             if (!file.endsWith(".java")) {
-                String ext = file.contains(".") ? file.substring(file.lastIndexOf('.')) : "无后缀";
-                System.err.println(red("Error: 不支持的文件类型: " + ext));
-                System.err.println("  支持的类型: " + PluginRegistry.getInstance().getSupportedExtensions());
+                String ext = file.contains(".") ? file.substring(file.lastIndexOf('.')) : "<none>";
+                System.err.println(red("Error: unsupported file type: " + ext));
+                System.err.println("  Supported types: " + PluginRegistry.getInstance().getSupportedExtensions());
                 System.exit(1);
             }
         }
@@ -137,7 +137,7 @@ public class QinCli {
     }
 
     private static void runJavaProject(String[] args) throws Exception {
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -175,7 +175,7 @@ public class QinCli {
         }
 
         // Compile and run
-        System.out.println(blue("→ Compiling and running..."));
+        System.out.println(blue("-> Compiling and running..."));
         JavaRunner runner = new JavaRunner(config, classpath);
 
         if (javaFile != null) {
@@ -184,7 +184,7 @@ public class QinCli {
             runner.compileAndRun(runArgs);
         }
 
-        System.out.println(green("✓ Done!"));
+        System.out.println(green("[OK] Done!"));
     }
 
     private static void buildProject(String[] args) throws Exception {
@@ -197,7 +197,7 @@ public class QinCli {
             cleanProject();
         }
 
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -209,7 +209,7 @@ public class QinCli {
         }
 
         // 使用 BuildLifecycle 进行完整构建
-        System.out.println(blue("→ Building project..."));
+        System.out.println(blue("-> Building project..."));
         BuildLifecycle lifecycle = new BuildLifecycle(QinConstants.getCwd(), config);
         lifecycle.setSkipTests(skipTests);
 
@@ -220,7 +220,7 @@ public class QinCli {
         BuildResult result = lifecycle.build();
 
         if (result.isSuccess()) {
-            System.out.println(green("✓ Build completed successfully!"));
+            System.out.println(green("[OK] Build completed successfully!"));
             if (result.getOutputPath() != null) {
                 System.out.println(green("  Output: " + result.getOutputPath()));
             }
@@ -231,7 +231,7 @@ public class QinCli {
     }
 
     private static void devMode(String[] args) throws Exception {
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -246,7 +246,7 @@ public class QinCli {
         String classpath = "";
         Map<String, String> deps = config.dependencies();
         if (deps != null && !deps.isEmpty()) {
-            System.out.println(blue("→ Resolving dependencies..."));
+            System.out.println(blue("-> Resolving dependencies..."));
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
                     csCommand, config.repositories(), null,
@@ -254,14 +254,14 @@ public class QinCli {
             classpath = resolver.resolveFromObject(deps);
         }
 
-        System.out.println(blue("→ Starting development mode..."));
+        System.out.println(blue("-> Starting development mode..."));
         JavaRunner runner = new JavaRunner(config, classpath);
 
         // Simple dev mode - just compile and run
         // TODO: Add hot reload support
         runner.compileAndRun(new ArrayList<>());
 
-        System.out.println(green("✓ Development server started"));
+        System.out.println(green("[OK] Development server started"));
         System.out.println(gray("  Press Ctrl+C to stop"));
     }
 
@@ -275,7 +275,7 @@ public class QinCli {
             }
         }
 
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -292,12 +292,12 @@ public class QinCli {
             classpath = ensureDependenciesSynced(config);
         }
 
-        System.out.println(blue("→ Compiling..."));
+        System.out.println(blue("-> Compiling..."));
         JavaRunner runner = new JavaRunner(config, classpath);
         CompileResult result = runner.compile();
 
         if (result.isSuccess()) {
-            System.out.println(green("✓ Compiled " + result.getCompiledFiles() + " files to " + outputDir));
+            System.out.println(green("[OK] Compiled " + result.getCompiledFiles() + " files to " + outputDir));
         } else {
             System.err.println(red("Compilation failed: ") + result.getError());
             System.exit(1);
@@ -308,11 +308,11 @@ public class QinCli {
         Path buildDir = Paths.get(QinConstants.getCwd(), "build");
 
         if (Files.exists(buildDir)) {
-            System.out.println(blue("→ Cleaning build directory..."));
+            System.out.println(blue("-> Cleaning build directory..."));
             QinUtils.deleteDir(buildDir);
-            System.out.println(green("✓ Cleaned build/"));
+            System.out.println(green("[OK] Cleaned build/"));
         } else {
-            System.out.println(gray("✓ No build directory to clean"));
+            System.out.println(gray("[OK] No build directory to clean"));
         }
     }
 
@@ -346,12 +346,12 @@ public class QinCli {
 
         // 如果不是强制同步，检查缓存
         if (!force && CacheValidator.isCacheValid(cwd)) {
-            System.out.println(blue("→ Using cached dependencies (" + QinPaths.CLASSPATH_CACHE + ")"));
-            System.out.println(green("✓ Dependencies up to date (use --force to re-sync)"));
+            System.out.println(blue("-> Using cached dependencies (" + QinPaths.CLASSPATH_CACHE + ")"));
+            System.out.println(green("[OK] Dependencies up to date (use --force to re-sync)"));
             return;
         }
 
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -360,7 +360,7 @@ public class QinCli {
         if (config.devDependencies() != null) deps.putAll(config.devDependencies());
 
         if (deps.isEmpty()) {
-            System.out.println(green("✓ No dependencies to sync"));
+            System.out.println(green("[OK] No dependencies to sync"));
             return;
         }
 
@@ -374,15 +374,15 @@ public class QinCli {
     private static void syncAllProjects(boolean force, boolean withCompile) throws Exception {
         String cwd = QinConstants.getCwd();
 
-        System.out.println(blue("→ Scanning for Qin projects..."));
+        System.out.println(blue("-> Scanning for Qin projects..."));
         List<Path> projects = LocalProjectResolver.scanAllProjects(cwd);
 
         if (projects.isEmpty()) {
-            System.out.println(yellow("✗ No Qin projects found"));
+            System.out.println(yellow("[WARN] No Qin projects found"));
             return;
         }
 
-        System.out.println(blue("→ Found " + projects.size() + " Qin project(s)"));
+        System.out.println(blue("-> Found " + projects.size() + " Qin project(s)"));
 
         // 统计
         int synced = 0;
@@ -400,13 +400,13 @@ public class QinCli {
 
                     // 如果不是强制同步，检查缓存
                     if (!force && CacheValidator.isCacheValid(projectPath)) {
-                        System.out.println(gray("  ○ " + projectName + " (cached, skipped)"));
+                        System.out.println(gray("  [SKIP] " + projectName + " (cached, skipped)"));
                         results.add(new SyncResult(projectName, SyncStatus.SKIPPED));
                         return;
                     }
 
                     // 执行 qin sync --compile（同步 + 编译）
-                    System.out.println(blue("  → Syncing " + projectName + "..."));
+                    System.out.println(blue("  -> Syncing " + projectName + "..."));
 
                     List<String> command = new ArrayList<>();
                     command.add(QinConstants.CMD_PREFIX);
@@ -436,15 +436,15 @@ public class QinCli {
 
                     int exitCode = process.waitFor();
                     if (exitCode == 0) {
-                        System.out.println(green("  ✓ " + projectName));
+                        System.out.println(green("  [OK] " + projectName));
                         results.add(new SyncResult(projectName, SyncStatus.SUCCESS));
                     } else {
-                        System.out.println(red("  ✗ " + projectName + " (exit: " + exitCode + ")"));
+                        System.out.println(red("  [ERROR] " + projectName + " (exit: " + exitCode + ")"));
                         results.add(new SyncResult(projectName, SyncStatus.FAILED));
                     }
                 } catch (Exception e) {
                     String projectName = projectPath.getFileName().toString();
-                    System.out.println(red("  ✗ " + projectName + " (" + e.getMessage() + ")"));
+                    System.out.println(red("  [ERROR] " + projectName + " (" + e.getMessage() + ")"));
                     results.add(new SyncResult(projectName, SyncStatus.FAILED));
                 }
             });
@@ -469,9 +469,9 @@ public class QinCli {
         // 输出汇总
         System.out.println();
         if (failed > 0) {
-            System.out.println(yellow("⚠ Sync completed: " + synced + " synced, " + skipped + " skipped, " + failed + " failed"));
+            System.out.println(yellow("[WARN] Sync completed: " + synced + " synced, " + skipped + " skipped, " + failed + " failed"));
         } else {
-            System.out.println(green("✓ All projects synced: " + synced + " synced, " + skipped + " skipped"));
+            System.out.println(green("[OK] All projects synced: " + synced + " synced, " + skipped + " skipped"));
         }
     }
 
@@ -496,7 +496,7 @@ public class QinCli {
         if (config.dependencies() != null) deps.putAll(config.dependencies());
         if (config.devDependencies() != null) deps.putAll(config.devDependencies());
 
-        System.out.println(blue("→ Syncing dependencies..."));
+        System.out.println(blue("-> Syncing dependencies..."));
         String sep = QinConstants.getClasspathSeparator();
         List<String> classpaths = new ArrayList<>();
 
@@ -506,9 +506,9 @@ public class QinCli {
 
         int localCount = localResult.localCount;
         if (!localResult.localClasspath.isEmpty()) {
-            System.out.println(blue("  → Found " + localCount + " local dependencies"));
+            System.out.println(blue("  -> Found " + localCount + " local dependencies"));
             if (localResult.autoCompiledCount > 0) {
-                System.out.println(green("  ✓ Auto-compiled " + localResult.autoCompiledCount + " project(s)"));
+                System.out.println(green("  [OK] Auto-compiled " + localResult.autoCompiledCount + " project(s)"));
             }
             classpaths.add(localResult.localClasspath);
         }
@@ -517,8 +517,8 @@ public class QinCli {
         int remoteCount = 0;
         if (!localResult.remoteDependencies.isEmpty()) {
             System.out.println(
-                    blue("  → Resolving " + localResult.remoteDependencies.size() + " remote dependencies..."));
-            System.out.println(blue("→ Checking environment..."));
+                    blue("  -> Resolving " + localResult.remoteDependencies.size() + " remote dependencies..."));
+            System.out.println(blue("-> Checking environment..."));
             String csCommand = ensureCoursier();
             DependencyResolver resolver = new DependencyResolver(
                     csCommand, config.repositories(), null,
@@ -548,17 +548,17 @@ public class QinCli {
         // 生成 IDEA 库配置文件（.idea/libraries/*.xml）
         if (!classpath.isEmpty()) {
             try {
-                System.out.println(blue("→ Generating IDEA library configs..."));
+                System.out.println(blue("-> Generating IDEA library configs..."));
                 IdeaLibraryGenerator ideaGen = new IdeaLibraryGenerator(QinConstants.getCwd());
                 ideaGen.cleanLibraryConfigs(); // 清理旧配置
                 int libCount = ideaGen.generateLibraryConfigs(classpath);
-                System.out.println(green("  ✓ Generated " + libCount + " library configs in .idea/libraries/"));
+                System.out.println(green("  [OK] Generated " + libCount + " library configs in .idea/libraries/"));
             } catch (IOException e) {
                 System.err.println(yellow("  Warning: Failed to generate IDEA configs: " + e.getMessage()));
             }
         }
 
-        System.out.println(green("✓ Dependencies synced (" + localCount + " local, " + remoteCount + " remote)"));
+        System.out.println(green("[OK] Dependencies synced (" + localCount + " local, " + remoteCount + " remote)"));
         System.out.println(gray("  Cache: " + QinPaths.CLASSPATH_CACHE));
 
         return classpath;
@@ -577,7 +577,7 @@ public class QinCli {
             String classpath = CacheValidator.getCachedClasspath(cwd);
             if (classpath != null) {
                 System.out.println(
-                        blue("→ Using cached dependencies (" + QinPaths.CLASSPATH_CACHE + ")"));
+                        blue("-> Using cached dependencies (" + QinPaths.CLASSPATH_CACHE + ")"));
                 return classpath;
             }
         }
@@ -596,7 +596,7 @@ public class QinCli {
     }
 
     private static void distProject() throws Exception {
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -617,7 +617,7 @@ public class QinCli {
         }
 
         // Build Fat Jar first
-        System.out.println(blue("→ Building Fat Jar for distribution..."));
+        System.out.println(blue("-> Building Fat Jar for distribution..."));
         FatJarBuilder builder = new FatJarBuilder(config, false);
         BuildResult result = builder.build();
 
@@ -631,10 +631,10 @@ public class QinCli {
         String jarName = QinConstants.getJarName(config.output());
         Path targetJar = distPath.resolve(jarName);
 
-        System.out.println(blue("→ Copying to " + distDir + "/..."));
+        System.out.println(blue("-> Copying to " + distDir + "/..."));
         Files.copy(sourceJar, targetJar, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
-        System.out.println(green("✓ Distribution created: " + distDir + "/" + jarName));
+        System.out.println(green("[OK] Distribution created: " + distDir + "/" + jarName));
         System.out.println(gray("  Run with: java -jar " + distDir + "/" + jarName));
     }
 
@@ -651,7 +651,7 @@ public class QinCli {
             }
         }
 
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -663,7 +663,7 @@ public class QinCli {
         }
 
         // Compile main source first
-        System.out.println(blue("→ Compiling source code..."));
+        System.out.println(blue("-> Compiling source code..."));
         String classpath = "";
         Map<String, String> deps = new HashMap<>();
         if (config.dependencies() != null) deps.putAll(config.dependencies());
@@ -685,7 +685,7 @@ public class QinCli {
             System.exit(1);
         }
 
-        System.out.println(blue("→ Running tests..."));
+        System.out.println(blue("-> Running tests..."));
         // TODO: Implement test runner with JUnit
         System.out.println(yellow("Test runner not yet implemented in Java version"));
     }
@@ -706,7 +706,7 @@ public class QinCli {
      * qin jar - 打包普通 JAR（不含依赖）
      */
     private static void jarProject(String[] args) throws Exception {
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -714,10 +714,10 @@ public class QinCli {
         JarResult result = lifecycle.jar();
 
         if (result.isSuccess()) {
-            System.out.println(green("✓ JAR created: " + result.getJarPath()));
+            System.out.println(green("[OK] JAR created: " + result.getJarPath()));
             System.out.println(gray("  Size: " + formatSize(result.getJarSize())));
         } else {
-            System.err.println(red("✗ Failed: " + result.getError()));
+            System.err.println(red("[ERROR] Failed: " + result.getError()));
             System.exit(1);
         }
     }
@@ -726,7 +726,7 @@ public class QinCli {
      * qin fatjar - 打包 Fat JAR（包含所有依赖）
      */
     private static void fatjarProject(String[] args) throws Exception {
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
@@ -734,10 +734,10 @@ public class QinCli {
         JarResult result = lifecycle.fatjar();
 
         if (result.isSuccess()) {
-            System.out.println(green("✓ Fat JAR created: " + result.getJarPath()));
+            System.out.println(green("[OK] Fat JAR created: " + result.getJarPath()));
             System.out.println(gray("  Size: " + formatSize(result.getJarSize())));
         } else {
-            System.err.println(red("✗ Failed: " + result.getError()));
+            System.err.println(red("[ERROR] Failed: " + result.getError()));
             System.exit(1);
         }
     }
@@ -746,11 +746,11 @@ public class QinCli {
      * qin deps - 显示依赖树
      */
     private static void showDependencies(String[] args) throws Exception {
-        System.out.println(blue("→ Loading configuration..."));
+        System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
-        System.out.println(blue("→ Dependencies:"));
+        System.out.println(blue("-> Dependencies:"));
 
         Map<String, String> allDeps = new HashMap<>();
         if (config.dependencies() != null) allDeps.putAll(config.dependencies());
@@ -762,7 +762,7 @@ public class QinCli {
         }
 
         for (Map.Entry<String, String> dep : allDeps.entrySet()) {
-            System.out.println("  • " + dep.getKey() + " : " + dep.getValue());
+            System.out.println("  - " + dep.getKey() + " : " + dep.getValue());
         }
     }
 
@@ -792,7 +792,7 @@ public class QinCli {
         }
 
         java.nio.file.Path configPath = generator.generate();
-        System.out.println(green("✓ BSP configuration generated!"));
+        System.out.println(green("[OK] BSP configuration generated!"));
         System.out.println("  Location: " + configPath);
         System.out.println();
         System.out.println("Your IDE should now detect Qin as the build server.");
@@ -889,19 +889,7 @@ public class QinCli {
             return value;
         }
 
-        return value
-                .replace("鈫?", "-> ")
-                .replace("→", "-> ")
-                .replace("鉁?", "[OK] ")
-                .replace("✓", "[OK] ")
-                .replace("鈿?", "[WARN] ")
-                .replace("⚠", "[WARN] ")
-                .replace("鈼?", "[SKIP] ")
-                .replace("•", "- ")
-                .replace("鉂?", "[ERROR] ")
-                .replace("✗", "[ERROR] ")
-                .replace("锟斤拷", "")
-                .trim();
+        return value.trim();
     }
 
     /**

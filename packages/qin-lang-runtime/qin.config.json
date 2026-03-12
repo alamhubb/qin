@@ -1,16 +1,19 @@
 {
-    "name": "com.qin:qin-lang-runtime",
-    "version": "0.1.0",
-    "description": "Runtime library for Qin language",
-    "entry": "src/java/com/qin/lang/runtime/RuntimePackageMarker.java",
-    "java": {
-        "version": "25",
-        "sourceDir": "src/java",
-        "outputDir": "build/classes",
-        "encoding": "UTF-8"
-    },
-    "output": {
-        "dir": "build",
-        "jarName": "qin-lang-runtime.jar"
-    }
+    "name":  "com.qin:qin-lang-runtime",
+    "version":  "0.1.0",
+    "description":  "Runtime library for Qin language",
+    "entry":  "src/java/com/qin/lang/runtime/RuntimePackageMarker.java",
+    "java":  {
+                 "version":  "21",
+                 "sourceDir":  "src/java",
+                 "outputDir":  "build/classes",
+                 "encoding":  "UTF-8",
+                 "release":  "21",
+                 "source":  "21",
+                 "target":  "21"
+             },
+    "output":  {
+                   "dir":  "build",
+                   "jarName":  "qin-lang-runtime.jar"
+               }
 }

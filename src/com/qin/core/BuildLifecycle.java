@@ -79,7 +79,7 @@ public class BuildLifecycle {
             List<String> filesToCompile = compiler.filterModifiedFiles(javaFiles, sourcePath.toString());
 
             if (filesToCompile.isEmpty()) {
-                System.out.println("✓ Everything is up-to-date");
+                System.out.println("[OK] Everything is up-to-date");
                 return CompileResult.success(0, outputDir);
             }
 
@@ -92,9 +92,9 @@ public class BuildLifecycle {
                 // 复制资源文件
                 copyResources();
 
-                System.out.println("✓ Compiled " + filesToCompile.size() + " files to " + outputDir);
+                System.out.println("[OK] Compiled " + filesToCompile.size() + " files to " + outputDir);
             } else {
-                System.err.println("✗ Compilation failed");
+                System.err.println("[ERROR] Compilation failed");
                 System.err.println(result.getError());
             }
 
@@ -127,7 +127,7 @@ public class BuildLifecycle {
         System.out.println("  Tests run: 0");
         System.out.println("  Passed: 0");
         System.out.println("  Failed: 0");
-        System.out.println("⚠ Test runner not yet fully implemented");
+        System.out.println("[WARN] Test runner not yet fully implemented");
 
         return TestResult.success(0, 0, 0);
     }
@@ -195,7 +195,7 @@ public class BuildLifecycle {
             }
             System.out.println();
         } else {
-            System.out.println("⚠ Skipping tests");
+            System.out.println("[WARN] Skipping tests");
             System.out.println();
         }
 
@@ -207,7 +207,7 @@ public class BuildLifecycle {
         System.out.println();
 
         long totalTime = System.currentTimeMillis() - startTime;
-        System.out.println("✓ BUILD SUCCESS");
+        System.out.println("[OK] BUILD SUCCESS");
         System.out.println("  Total time: " + formatDuration(totalTime));
 
         return BuildResult.success(jarResult.getJarPath());
@@ -223,9 +223,9 @@ public class BuildLifecycle {
         if (Files.exists(buildDir)) {
             try {
                 QinUtils.deleteDir(buildDir);
-                System.out.println("✓ Deleted: build/");
+                System.out.println("[OK] Deleted: build/");
             } catch (IOException e) {
-                System.err.println("✗ Failed to delete build directory: " + e.getMessage());
+                System.err.println("[ERROR] Failed to delete build directory: " + e.getMessage());
             }
         } else {
             System.out.println("  Nothing to clean");
@@ -263,7 +263,7 @@ public class BuildLifecycle {
             CompileResult result = compiler.compile(testFiles);
 
             if (result.isSuccess()) {
-                System.out.println("  ✓ Compiled " + testFiles.size() + " test files");
+                System.out.println("  [OK] Compiled " + testFiles.size() + " test files");
             }
 
             return result;

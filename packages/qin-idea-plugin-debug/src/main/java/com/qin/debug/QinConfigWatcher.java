@@ -17,11 +17,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.qin.constants.QinConstants.CMD_FLAG;
-import static com.qin.constants.QinConstants.CMD_PREFIX;
+import static com.qin.constants.QinConstants.AUTO_COMPILE_DEBOUNCE_MS;
 import static com.qin.constants.QinConstants.CONFIG_FILE;
-import static com.qin.constants.QinConstants.QIN_CMD;
-import static com.qin.debug.QinConstants.AUTO_COMPILE_DEBOUNCE_MS;
 
 /**
  * Watches workspace files that affect Qin project structure and compilation.
@@ -133,9 +130,7 @@ public class QinConfigWatcher {
             compiling = true;
             QinLogger.info("[AutoCompile] Starting compile for project: " + projectPath.getFileName());
 
-            ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "compile");
-            pb.directory(projectPath.toFile());
-            pb.redirectErrorStream(true);
+            ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath.toString(), "compile");
 
             Process process = pb.start();
             try (java.io.BufferedReader reader = new java.io.BufferedReader(

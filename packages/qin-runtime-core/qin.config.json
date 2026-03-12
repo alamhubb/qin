@@ -1,23 +1,26 @@
 {
-    "name": "com.qin:qin-runtime-core",
-    "version": "0.1.0",
-    "description": "Core runtime orchestration for Qin (JS syntax on Java runtime)",
-    "entry": "src/java/com/qin/runtime/core/QinRuntimeMain.java",
-    "dependencies": {
-        "com.qin:qin-lang-frontend-adapter": "0.1.0",
-        "com.qin:qin-lang-backend-jvm": "0.1.0",
-        "com.qin:qin-lang-backend-js": "0.1.0",
-        "com.qin:qin-lang-ir": "0.1.0",
-        "com.qin:qin-lang-runtime": "0.1.0"
-    },
-    "java": {
-        "version": "25",
-        "sourceDir": "src/java",
-        "outputDir": "build/classes",
-        "encoding": "UTF-8"
-    },
-    "output": {
-        "dir": "build",
-        "jarName": "qin-runtime-core.jar"
-    }
+    "name":  "com.qin:qin-runtime-core",
+    "version":  "0.1.0",
+    "description":  "Core runtime orchestration for Qin (JS syntax on Java runtime)",
+    "entry":  "src/java/com/qin/runtime/core/QinRuntimeMain.java",
+    "dependencies":  {
+                         "com.qin:qin-lang-frontend-adapter":  "0.1.0",
+                         "com.qin:qin-lang-backend-jvm":  "0.1.0",
+                         "com.qin:qin-lang-backend-js":  "0.1.0",
+                         "com.qin:qin-lang-ir":  "0.1.0",
+                         "com.qin:qin-lang-runtime":  "0.1.0"
+                     },
+    "java":  {
+                 "version":  "21",
+                 "sourceDir":  "src/java",
+                 "outputDir":  "build/classes",
+                 "encoding":  "UTF-8",
+                 "release":  "21",
+                 "source":  "21",
+                 "target":  "21"
+             },
+    "output":  {
+                   "dir":  "build",
+                   "jarName":  "qin-runtime-core.jar"
+               }
 }

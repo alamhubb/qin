@@ -15,18 +15,17 @@ import com.intellij.execution.runners.ProgramRunner;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.openapi.project.Project;
+import com.qin.debug.QinCommandResolver;
 import com.qin.debug.QinLogger;
 import com.qin.debug.console.QinConsoleFilter;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Qin 运行状态
- * 负责执行 qin run 命令并处理进程输出
+ * Qin 杩愯鐘舵€?
+ * 璐熻矗鎵ц qin run 鍛戒护骞跺鐞嗚繘绋嬭緭鍑?
  */
 public class QinRunProfileState extends CommandLineState {
 
@@ -50,6 +49,7 @@ public class QinRunProfileState extends CommandLineState {
     @Override
     protected ProcessHandler startProcess() throws ExecutionException {
         try {
+            QinLogger.ensureInitialized(getEnvironment().getProject(), configuration.getProjectPath());
             GeneralCommandLine commandLine = createCommandLine();
             QinLogger.info("[RUN] Starting process");
             QinLogger.info("[RUN] Work directory: " + commandLine.getWorkDirectory());
@@ -72,18 +72,19 @@ public class QinRunProfileState extends CommandLineState {
     @Override
     public ExecutionResult execute(@NotNull Executor executor,
                                     @NotNull ProgramRunner<?> runner) throws ExecutionException {
+        QinLogger.ensureInitialized(getEnvironment().getProject(), configuration.getProjectPath());
         QinLogger.info("[RUN] Execute requested: executor=" + executor.getId()
                 + ", mainClass=" + configuration.getMainClass()
                 + ", projectPath=" + configuration.getProjectPath()
                 + ", debugMode=" + debugMode);
         ProcessHandler processHandler = startProcess();
 
-        // 创建控制台并添加错误过滤器
+        // 鍒涘缓鎺у埗鍙板苟娣诲姞閿欒杩囨护鍣?
         ConsoleView console = createConsole(executor);
         console.addMessageFilter(new QinConsoleFilter(getEnvironment().getProject()));
         console.attachToProcess(processHandler);
 
-        // 显示启动信息
+        // 鏄剧ず鍚姩淇℃伅
         console.print("Starting Qin application...\n", ConsoleViewContentType.SYSTEM_OUTPUT);
         console.print("Project: " + configuration.getProjectPath() + "\n", ConsoleViewContentType.SYSTEM_OUTPUT);
         if (debugMode) {
@@ -95,7 +96,7 @@ public class QinRunProfileState extends CommandLineState {
     }
 
     /**
-     * 创建命令行
+     * 鍒涘缓鍛戒护琛?
      */
     private GeneralCommandLine createCommandLine() throws ExecutionException {
         String projectPath = configuration.getProjectPath();
@@ -105,37 +106,27 @@ public class QinRunProfileState extends CommandLineState {
         }
 
         List<String> command = new ArrayList<>();
-
-        // Windows 使用 cmd /c，Unix 直接使用 qin
-        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            command.add("cmd");
-            command.add("/c");
-            command.add("qin");
-        } else {
-            command.add("qin");
-        }
-
         command.add("run");
 
-        // 调试模式添加 --debug 参数
+        // 璋冭瘯妯″紡娣诲姞 --debug 鍙傛暟
         if (debugMode) {
             command.add("--debug");
             command.add("--debug-port=" + configuration.getDebugPort());
         }
 
-        // 添加主类参数（如果指定）
+        // 娣诲姞涓荤被鍙傛暟锛堝鏋滄寚瀹氾級
         String mainClass = configuration.getMainClass();
         if (mainClass != null && !mainClass.isEmpty()) {
             command.add("--main=" + mainClass);
         }
 
-        // 添加 JVM 参数
+        // 娣诲姞 JVM 鍙傛暟
         String jvmArgs = configuration.getJvmArguments();
         if (jvmArgs != null && !jvmArgs.isEmpty()) {
             command.add("--jvm-args=" + jvmArgs);
         }
 
-        // 添加程序参数
+        // 娣诲姞绋嬪簭鍙傛暟
         String programArgs = configuration.getProgramArguments();
         if (programArgs != null && !programArgs.isEmpty()) {
             command.add("--");
@@ -146,12 +137,9 @@ public class QinRunProfileState extends CommandLineState {
             }
         }
 
-        GeneralCommandLine commandLine = new GeneralCommandLine(command);
-        commandLine.setWorkDirectory(new File(projectPath));
-        commandLine.setCharset(StandardCharsets.UTF_8);
-
-        // 设置环境变量
-        commandLine.withEnvironment("JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8");
+        GeneralCommandLine commandLine = QinCommandResolver.createGeneralCommandLine(
+                projectPath,
+                command.toArray(String[]::new));
         QinLogger.info("[RUN] Command prepared for mainClass=" + mainClass);
 
         return commandLine;

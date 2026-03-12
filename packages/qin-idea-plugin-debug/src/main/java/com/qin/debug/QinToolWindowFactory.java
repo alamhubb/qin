@@ -16,15 +16,17 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import javax.swing.tree.*;
 import java.awt.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.*;
 import java.util.*;
 
-// 别名：使用 qin-cli 的通用常量
+// 鍒悕锛氫娇鐢?qin-cli 鐨勯€氱敤甯搁噺
 import static com.qin.constants.QinConstants.*;
 
 /**
- * Qin 工具窗口工厂 - 树形界面
+ * Qin 宸ュ叿绐楀彛宸ュ巶 - 鏍戝舰鐣岄潰
  */
 public class QinToolWindowFactory implements ToolWindowFactory {
 
@@ -37,10 +39,10 @@ public class QinToolWindowFactory implements ToolWindowFactory {
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         this.project = project;
 
-        // 创建主面板
+        // 鍒涘缓涓婚潰鏉?
         JPanel mainPanel = new JPanel(new BorderLayout());
 
-        // 创建工具栏
+        // 鍒涘缓宸ュ叿鏍?
         DefaultActionGroup actionGroup = new DefaultActionGroup();
         actionGroup.add(new RefreshAction());
         actionGroup.addSeparator();
@@ -49,18 +51,18 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 .createActionToolbar("QinToolbar", actionGroup, true);
         toolbar.setTargetComponent(mainPanel);
 
-        // 创建树形结构
+        // 鍒涘缓鏍戝舰缁撴瀯
         rootNode = new DefaultMutableTreeNode("Qin Projects");
         tree = new Tree(rootNode);
         tree.setRootVisible(false);
         tree.setShowsRootHandles(true);
         tree.setCellRenderer(new QinTreeCellRenderer());
 
-        // 单击监听器（改为单击触发，提升体验）
+        // 鍗曞嚮鐩戝惉鍣紙鏀逛负鍗曞嚮瑙﹀彂锛屾彁鍗囦綋楠岋級
         tree.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 1) { // 改为单击
+                if (e.getClickCount() == 1) { // 鏀逛负鍗曞嚮
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                     if (node != null && node.getUserObject() instanceof TaskNode) {
                         TaskNode task = (TaskNode) node.getUserObject();
@@ -70,11 +72,11 @@ public class QinToolWindowFactory implements ToolWindowFactory {
             }
         });
 
-        // 创建分割面板
+        // 鍒涘缓鍒嗗壊闈㈡澘
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.setTopComponent(new JScrollPane(tree));
 
-        // 日志区域
+        // 鏃ュ織鍖哄煙
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
@@ -84,7 +86,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         mainPanel.add(toolbar.getComponent(), BorderLayout.NORTH);
         mainPanel.add(splitPane, BorderLayout.CENTER);
 
-        // 加载项目
+        // 鍔犺浇椤圭洰
         loadProjects();
 
         Content content = ContentFactory.getInstance()
@@ -93,7 +95,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
     }
 
     /**
-     * 加载所有 Qin 项目
+     * 鍔犺浇鎵€鏈?Qin 椤圭洰
      */
     private void loadProjects() {
         rootNode.removeAllChildren();
@@ -103,12 +105,12 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
         java.util.List<Path> projects = new ArrayList<>();
 
-        // 检查根目录
+        // 妫€鏌ユ牴鐩綍
         if (Files.exists(Paths.get(basePath, CONFIG_FILE))) {
             projects.add(Paths.get(basePath));
         }
 
-        // 扫描子目录
+        // 鎵弿瀛愮洰褰?
         scanQinProjects(Paths.get(basePath), projects, 0, com.qin.constants.QinConstants.MAX_SCAN_DEPTH);
 
         if (projects.isEmpty()) {
@@ -126,22 +128,22 @@ public class QinToolWindowFactory implements ToolWindowFactory {
     }
 
     /**
-     * 添加项目节点
+     * 娣诲姞椤圭洰鑺傜偣
      */
     private void addProjectNode(Path projectPath, String workspaceRoot) {
         String relativePath = Paths.get(workspaceRoot).relativize(projectPath).toString();
         if (relativePath.isEmpty())
             relativePath = project.getName();
 
-        // 加载配置
+        // 鍔犺浇閰嶇疆
         QinConfig config = QinConfig.load(projectPath.toString());
         String projectName = config != null ? config.name : relativePath;
 
         ProjectNode projectNode = new ProjectNode(projectName, projectPath.toString());
         DefaultMutableTreeNode projectTreeNode = new DefaultMutableTreeNode(projectNode);
 
-        // Tasks 节点
-        DefaultMutableTreeNode tasksNode = new DefaultMutableTreeNode(com.qin.debug.QinConstants.NODE_TASKS);
+        // Tasks 鑺傜偣
+        DefaultMutableTreeNode tasksNode = new DefaultMutableTreeNode(NODE_TASKS);
         tasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("sync", "Sync dependencies", projectPath.toString())));
         tasksNode.add(new DefaultMutableTreeNode(
@@ -162,9 +164,9 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 new TaskNode("clean", "Clean output", projectPath.toString())));
         projectTreeNode.add(tasksNode);
 
-        // Dependencies 节点
+        // Dependencies 鑺傜偣
         if (config != null && config.dependencies != null && !config.dependencies.isEmpty()) {
-            DefaultMutableTreeNode depsNode = new DefaultMutableTreeNode(com.qin.debug.QinConstants.NODE_DEPENDENCIES);
+            DefaultMutableTreeNode depsNode = new DefaultMutableTreeNode(NODE_DEPENDENCIES);
             config.dependencies.forEach((name, version) -> {
                 depsNode.add(new DefaultMutableTreeNode(name + ":" + version));
             });
@@ -175,7 +177,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
     }
 
     /**
-     * 执行任务
+     * 鎵ц浠诲姟
      */
     private void executeTask(TaskNode task) {
         appendLog("\n> qin " + task.command + " (" + task.projectPath + ")");
@@ -183,15 +185,13 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
         new Thread(() -> {
             try {
-                // sync 命令使用 --force 强制同步
+                // sync 鍛戒护浣跨敤 --force 寮哄埗鍚屾
                 ProcessBuilder pb;
                 if ("sync".equals(task.command)) {
-                    pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "sync", "--force");
+                    pb = QinCommandResolver.createProcessBuilder(task.projectPath, "sync", "--force");
                 } else {
-                    pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, task.command);
+                    pb = QinCommandResolver.createProcessBuilder(task.projectPath, task.command);
                 }
-                pb.directory(new File(task.projectPath));
-                pb.redirectErrorStream(true);
                 Process process = pb.start();
 
                 try (BufferedReader reader = new BufferedReader(
@@ -206,29 +206,27 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 int exitCode = process.waitFor();
                 appendLog("\n[Exit: " + exitCode + "]\n");
 
-                // 如果是 sync 命令且成功，生成 .iml 文件
+                // 濡傛灉鏄?sync 鍛戒护涓旀垚鍔燂紝鐢熸垚 .iml 鏂囦欢
                 if ("sync".equals(task.command) && exitCode == 0) {
                     Path ideaDir = Paths.get(project.getBasePath(), ".idea");
-                    DebugStartup.generateImlFile(Paths.get(task.projectPath), true, ideaDir); // 手动 sync：强制覆盖并注册
-                    appendLog("[生成 .iml 文件完成]");
+                    DebugStartup.generateImlFile(Paths.get(task.projectPath), true, ideaDir); // 鎵嬪姩 sync锛氬己鍒惰鐩栧苟娉ㄥ唽
+                    appendLog("[鐢熸垚 .iml 鏂囦欢瀹屾垚]");
 
-                    // ✨ 触发 IDEA 完整刷新（包括索引重建）
+                    // 鉁?瑙﹀彂 IDEA 瀹屾暣鍒锋柊锛堝寘鎷储寮曢噸寤猴級
                     ApplicationManager.getApplication().invokeLater(() -> {
                         try {
-                            appendLog("[开始刷新 IDEA...]");
+                            appendLog("[寮€濮嬪埛鏂?IDEA...]");
 
-                            // 1. 刷新虚拟文件系统（启用监听器）
+                            // 1. 鍒锋柊铏氭嫙鏂囦欢绯荤粺锛堝惎鐢ㄧ洃鍚櫒锛?
                             VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
 
-                            // 2. 触发项目结构重新加载
+                            // 2. 瑙﹀彂椤圭洰缁撴瀯閲嶆柊鍔犺浇
                             ProjectRootManager.getInstance(project).incModificationCount();
 
-                            // 3. 等待索引重建
-                            Thread.sleep(500);
 
-                            appendLog("[✓] IDEA 刷新完成，索引已更新");
+                            appendLog("[鉁揮 IDEA 鍒锋柊瀹屾垚锛岀储寮曞凡鏇存柊");
                         } catch (Exception ex) {
-                            appendLog("[!] 刷新失败: " + ex.getMessage());
+                            appendLog("[!] 鍒锋柊澶辫触: " + ex.getMessage());
                         }
                     });
                 }
@@ -240,24 +238,24 @@ public class QinToolWindowFactory implements ToolWindowFactory {
     }
 
     /**
-     * 扫描 Qin 项目
+     * 鎵弿 Qin 椤圭洰
      */
     private void scanQinProjects(Path dir, java.util.List<Path> projects, int depth, int maxDepth) {
         if (depth >= maxDepth || !Files.exists(dir)) {
             return;
         }
 
-        // 先检查当前目录是否有配置文件（优先级最高）
+        // 鍏堟鏌ュ綋鍓嶇洰褰曟槸鍚︽湁閰嶇疆鏂囦欢锛堜紭鍏堢骇鏈€楂橈級
         if (Files.exists(dir.resolve(CONFIG_FILE)) && !projects.contains(dir)) {
             projects.add(dir);
         }
 
-        // 扫描子目录（即使当前目录有 .git 等也继续扫描子目录）
+        // 鎵弿瀛愮洰褰曪紙鍗充娇褰撳墠鐩綍鏈?.git 绛変篃缁х画鎵弿瀛愮洰褰曪級
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
             for (Path subDir : stream) {
                 String dirName = subDir.getFileName().toString();
 
-                // 只排除子目录，不影响当前目录的检测
+                // 鍙帓闄ゅ瓙鐩綍锛屼笉褰卞搷褰撳墠鐩綍鐨勬娴?
                 if (EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(HIDDEN_PREFIX)) {
                     continue;
                 }
@@ -265,12 +263,12 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 scanQinProjects(subDir, projects, depth + 1, maxDepth);
             }
         } catch (IOException e) {
-            // 忽略
+            // 蹇界暐
         }
     }
 
     /**
-     * 展开所有节点
+     * 灞曞紑鎵€鏈夎妭鐐?
      */
     private void expandAllNodes() {
         for (int i = 0; i < tree.getRowCount(); i++) {
@@ -285,7 +283,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         });
     }
 
-    // ==================== 刷新动作 ====================
+    // ==================== 鍒锋柊鍔ㄤ綔 ====================
 
     private class RefreshAction extends AnAction {
         RefreshAction() {
@@ -296,15 +294,13 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         public void actionPerformed(@NotNull AnActionEvent e) {
             appendLog("\n=== Syncing all projects ===\n");
 
-            // 使用 qin sync --all --force 命令进行完整同步
+            // 浣跨敤 qin sync --all --force 鍛戒护杩涜瀹屾暣鍚屾
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
                 try {
-                    appendLog("[调用 qin sync --all --force]\n");
+                    appendLog("[璋冪敤 qin sync --all --force]\n");
 
-                    // 直接调用 CLI 命令，由 CLI 处理所有逻辑
-                    ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "sync", "--all", "--force");
-                    pb.directory(new File(project.getBasePath()));
-                    pb.redirectErrorStream(true);
+                    // 鐩存帴璋冪敤 CLI 鍛戒护锛岀敱 CLI 澶勭悊鎵€鏈夐€昏緫
+                    ProcessBuilder pb = QinCommandResolver.createProcessBuilder(project.getBasePath(), "sync", "--all", "--force");
 
                     Process process = pb.start();
                     try (BufferedReader reader = new BufferedReader(
@@ -317,12 +313,12 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
                     int exitCode = process.waitFor();
                     if (exitCode == 0) {
-                        QinLogger.notifySuccess("Qin Sync Complete", "所有项目同步成功");
+                        QinLogger.notifySuccess("Qin Sync Complete", "All projects synced successfully");
                     } else {
-                        QinLogger.notifyError("Qin Sync Failed", "同步失败，退出码: " + exitCode);
+                        QinLogger.notifyError("Qin Sync Failed", "Sync failed with exit code: " + exitCode);
                     }
 
-                    // 同步完成后刷新树形列表
+                    // 鍚屾瀹屾垚鍚庡埛鏂版爲褰㈠垪琛?
                     SwingUtilities.invokeLater(() -> {
                         loadProjects();
                         appendLog("=== Sync complete ===\n");
@@ -334,10 +330,10 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         }
     }
 
-    // ==================== 树节点类型 ====================
+    // ==================== 鏍戣妭鐐圭被鍨?====================
 
     /**
-     * 项目节点
+     * 椤圭洰鑺傜偣
      */
     static class ProjectNode {
         String name;
@@ -355,7 +351,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
     }
 
     /**
-     * 任务节点
+     * 浠诲姟鑺傜偣
      */
     static class TaskNode {
         String command;
@@ -374,7 +370,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         }
     }
 
-    // ==================== 树渲染器 ====================
+    // ==================== 鏍戞覆鏌撳櫒 ====================
 
     private static class QinTreeCellRenderer extends DefaultTreeCellRenderer {
         @Override
@@ -389,12 +385,12 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 setIcon(AllIcons.Nodes.Module);
             } else if (userObject instanceof TaskNode) {
                 setIcon(AllIcons.Actions.Execute);
-            } else if (com.qin.debug.QinConstants.NODE_TASKS.equals(userObject)) {
+            } else if (NODE_TASKS.equals(userObject)) {
                 setIcon(AllIcons.Nodes.Folder);
-            } else if (com.qin.debug.QinConstants.NODE_DEPENDENCIES.equals(userObject)) {
+            } else if (NODE_DEPENDENCIES.equals(userObject)) {
                 setIcon(AllIcons.Nodes.PpLib);
             } else if (userObject instanceof String && ((String) userObject).contains(":")) {
-                // 依赖项
+                // 渚濊禆椤?
                 setIcon(AllIcons.Nodes.PpJar);
             }
 

@@ -1,12 +1,17 @@
 package com.qin.debug;
 
 import com.google.gson.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+
+import static com.qin.constants.QinConstants.CONFIG_FILE;
 
 /**
  * BSP 客户端
- * 与 qin-bsp-server 通信
+ * 与 qin bsp 通信
  */
 public class BspClient {
     private final String projectPath;
@@ -31,10 +36,14 @@ public class BspClient {
             String requestJson = gson.toJson(request);
 
             // 启动 BSP Server
-            ProcessBuilder pb = new ProcessBuilder(
-                    "cmd", "/c", "qin", "bsp-server");
-            pb.directory(new File(projectPath));
-            pb.redirectErrorStream(true);
+            if (projectPath == null || projectPath.isBlank()) {
+                throw new IllegalStateException("Qin project path is empty");
+            }
+            if (!new File(projectPath, CONFIG_FILE).exists()) {
+                throw new IllegalStateException("Missing " + CONFIG_FILE + " in " + projectPath);
+            }
+
+            ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath, "bsp");
 
             Process process = pb.start();
 

@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import java.nio.file.*;
 import java.util.*;
 
+import static com.qin.constants.QinConstants.CONFIG_FILE;
+
 /**
  * Parses qin.config.json for the IDEA plugin.
  */
@@ -65,7 +67,7 @@ public class QinConfig {
 
     public static QinConfig load(String projectPath) {
         try {
-            Path configPath = Paths.get(projectPath, "qin.config.json");
+            Path configPath = Paths.get(projectPath, CONFIG_FILE);
             if (!Files.exists(configPath)) {
                 return null;
             }

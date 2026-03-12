@@ -89,7 +89,7 @@ public class JavaRunner {
                 testResourceCopier.copyResources();
             }
 
-            System.out.println("  → Compiling " + allJavaFiles.size() + " files (javac handles incremental)...");
+            System.out.println("  -> Compiling " + allJavaFiles.size() + " files (javac handles incremental)...");
 
             // 使用 javax.tools API 编译（javac 自动增量编译）
             return compileWithToolsApi(allJavaFiles);
@@ -400,7 +400,7 @@ public class JavaRunner {
             // 4. 拓扑排序，按依赖顺序编译
             List<String> compileOrder = graphBuilder.topologicalSort(graph);
 
-            System.out.println("  → Compiling " + outdated.size() + " outdated local dependencies...");
+            System.out.println("  -> Compiling " + outdated.size() + " outdated local dependencies...");
 
             for (String projectName : compileOrder) {
                 if (outdated.contains(projectName)) {
@@ -434,7 +434,7 @@ public class JavaRunner {
      */
     private void compileLocalDependencyProject(LocalProjectResolver.ProjectInfo projectInfo) {
         try {
-            System.out.println("    → Compiling dependency: " + projectInfo.fullName);
+            System.out.println("    -> Compiling dependency: " + projectInfo.fullName);
 
             // 加载依赖项目的配置
             Path configPath = projectInfo.projectDir.resolve(QinConstants.CONFIG_FILE);
@@ -451,9 +451,9 @@ public class JavaRunner {
             CompileResult result = depRunner.compileCurrentOnly(); // 只编译当前，不递归
 
             if (result.isSuccess()) {
-                System.out.println("      ✓ Compiled " + result.getCompiledFiles() + " files");
+                System.out.println("      [OK] Compiled " + result.getCompiledFiles() + " files");
             } else {
-                System.err.println("      ✗ Compilation failed: " + result.getError());
+                System.err.println("      [ERROR] Compilation failed: " + result.getError());
             }
         } catch (Exception e) {
             System.err.println("      Error: " + e.getMessage());

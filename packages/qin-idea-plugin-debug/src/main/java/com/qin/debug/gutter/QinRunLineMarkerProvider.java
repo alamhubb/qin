@@ -29,6 +29,8 @@ import javax.swing.*;
 import java.util.Collection;
 import java.util.List;
 
+import static com.qin.constants.QinConstants.CONFIG_FILE;
+
 /**
  * Qin 运行图标提供者
  * 在 main() 方法和 @Test 方法旁边显示运行图标
@@ -88,7 +90,7 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
         VirtualFile current = virtualFile.getParent();
         int maxDepth = 10;
         while (current != null && maxDepth-- > 0) {
-            if (current.findChild("qin.config.json") != null) {
+            if (current.findChild(CONFIG_FILE) != null) {
                 return true;
             }
             current = current.getParent();
@@ -175,6 +177,7 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
             return;
         }
 
+        QinLogger.ensureInitialized(project, projectPath);
         QinLogger.info("[RUN] Gutter run requested: mainClass=" + qualifiedName
                 + ", projectPath=" + projectPath
                 + ", debug=" + debug);
@@ -223,7 +226,7 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
 
         VirtualFile current = virtualFile.getParent();
         while (current != null) {
-            if (current.findChild("qin.config.json") != null) {
+            if (current.findChild(CONFIG_FILE) != null) {
                 return current.getPath();
             }
             current = current.getParent();

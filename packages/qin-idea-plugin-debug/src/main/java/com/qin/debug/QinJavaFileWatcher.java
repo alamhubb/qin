@@ -10,7 +10,6 @@ import com.intellij.util.messages.MessageBusConnection;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Set;
@@ -22,9 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.qin.constants.QinConstants.CHARSET_UTF8;
 import static com.qin.constants.QinConstants.CONFIG_FILE;
-import static com.qin.constants.QinConstants.CMD_FLAG;
-import static com.qin.constants.QinConstants.CMD_PREFIX;
-import static com.qin.constants.QinConstants.QIN_CMD;
+import static com.qin.constants.QinConstants.NODE_MODULES;
+import static com.qin.constants.QinConstants.QIN_DIR;
 
 /**
  * Watches Java source files and triggers incremental `qin compile`.
@@ -118,8 +116,8 @@ public class QinJavaFileWatcher {
                 || normalizedPath.contains("/out/")
                 || normalizedPath.contains("/target/")
                 || normalizedPath.contains("/.idea/")
-                || normalizedPath.contains("/.qin/")
-                || normalizedPath.contains("/node_modules/");
+                || normalizedPath.contains("/" + QIN_DIR + "/")
+                || normalizedPath.contains("/" + NODE_MODULES + "/");
     }
 
     private void onJavaFileChanged(VirtualFile javaFile) {
@@ -207,9 +205,7 @@ public class QinJavaFileWatcher {
 
     private boolean runQinCompile(String projectPath) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "compile");
-            pb.directory(new File(projectPath));
-            pb.redirectErrorStream(true);
+            ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath, "compile");
 
             Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(

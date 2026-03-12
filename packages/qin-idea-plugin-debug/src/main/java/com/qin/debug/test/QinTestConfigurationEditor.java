@@ -4,6 +4,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.openapi.ui.TextComponentAccessor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
@@ -27,7 +28,8 @@ public class QinTestConfigurationEditor extends SettingsEditor<QinTestConfigurat
             "Select Qin Project",
             "Select the directory containing qin.config.json",
             project,
-            FileChooserDescriptorFactory.createSingleFolderDescriptor()
+            FileChooserDescriptorFactory.createSingleFolderDescriptor(),
+            TextComponentAccessor.TEXT_FIELD_WHOLE_TEXT
         );
 
         testClassField = new JBTextField();

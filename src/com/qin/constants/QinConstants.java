@@ -175,6 +175,31 @@ public class QinConstants {
     public static final String ARG_OUTPUT = "--output";
     public static final String ARG_OUTPUT_SHORT = "-o";
 
+    // ==================== IDEA 插件常量 ====================
+
+    /**
+     * 自动编译防抖时间（毫秒）
+     */
+    public static final long AUTO_COMPILE_DEBOUNCE_MS = 3000;
+
+    /**
+     * .iml 中需要排除的目录
+     */
+    public static final java.util.Set<String> IML_EXCLUDED_DIRS = java.util.Set.of(
+            ".qin",
+            "build",
+            "libs",
+            "dist",
+            "out",
+            "target",
+            "node_modules");
+
+    /**
+     * 工具窗口树节点名称
+     */
+    public static final String NODE_TASKS = "Tasks";
+    public static final String NODE_DEPENDENCIES = "Dependencies";
+
     // ==================== 默认值常量 ====================
 
     /**

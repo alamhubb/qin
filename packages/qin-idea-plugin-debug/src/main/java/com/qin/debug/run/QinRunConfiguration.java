@@ -9,6 +9,8 @@ import com.qin.debug.QinLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static com.qin.constants.QinConstants.CONFIG_FILE;
+
 /**
  * Qin 杩愯閰嶇疆
  * 瀛樺偍鍜岀鐞?Qin 椤圭洰鐨勮繍琛岄厤缃俊鎭?
@@ -81,6 +83,7 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
     @Override
     public RunProfileState getState(@NotNull Executor executor,
                                      @NotNull ExecutionEnvironment environment) {
+        QinLogger.ensureInitialized(getProject(), getProjectPath());
         QinLogger.info("[RUN] Building RunProfileState: executor=" + executor.getId()
                 + ", projectPath=" + getProjectPath()
                 + ", mainClass=" + getMainClass());
@@ -90,6 +93,7 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
         String projectPath = getProjectPath();
+        QinLogger.ensureInitialized(getProject(), projectPath);
         QinLogger.info("[RUN] Checking configuration: projectPath=" + projectPath + ", mainClass=" + getMainClass());
         if (projectPath == null || projectPath.isEmpty()) {
             QinLogger.error("[RUN] Configuration check failed: project path is empty");
@@ -97,10 +101,10 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
         }
 
         // 妫€鏌?qin.config.json 鏄惁瀛樺湪
-        java.nio.file.Path configPath = java.nio.file.Paths.get(projectPath, "qin.config.json");
+        java.nio.file.Path configPath = java.nio.file.Paths.get(projectPath, CONFIG_FILE);
         if (!java.nio.file.Files.exists(configPath)) {
-            QinLogger.error("[RUN] Configuration check failed: qin.config.json missing at " + configPath);
-            throw new RuntimeConfigurationError("qin.config.json not found in: " + projectPath);
+            QinLogger.error("[RUN] Configuration check failed: " + CONFIG_FILE + " missing at " + configPath);
+            throw new RuntimeConfigurationError(CONFIG_FILE + " not found in: " + projectPath);
         }
     }
 }

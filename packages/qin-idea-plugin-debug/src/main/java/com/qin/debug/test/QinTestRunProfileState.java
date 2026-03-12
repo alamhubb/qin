@@ -14,16 +14,15 @@ import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil;
 import com.intellij.execution.ui.ConsoleView;
+import com.qin.debug.QinCommandResolver;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Qin 测试运行状态
- * 执行 qin test 命令并使用 TeamCity 格式解析测试结果
+ * Qin 娴嬭瘯杩愯鐘舵€?
+ * 鎵ц qin test 鍛戒护骞朵娇鐢?TeamCity 鏍煎紡瑙ｆ瀽娴嬭瘯缁撴灉
  */
 public class QinTestRunProfileState extends CommandLineState {
 
@@ -53,8 +52,8 @@ public class QinTestRunProfileState extends CommandLineState {
                                     @NotNull ProgramRunner<?> runner) throws ExecutionException {
         ProcessHandler processHandler = startProcess();
 
-        // 使用 SMTestRunnerConnectionUtil 创建测试控制台
-        // 这会自动解析 TeamCity 格式的测试输出
+        // 浣跨敤 SMTestRunnerConnectionUtil 鍒涘缓娴嬭瘯鎺у埗鍙?
+        // 杩欎細鑷姩瑙ｆ瀽 TeamCity 鏍煎紡鐨勬祴璇曡緭鍑?
         ConsoleView console = SMTestRunnerConnectionUtil.createAndAttachConsole(
             "Qin",
             processHandler,
@@ -71,37 +70,25 @@ public class QinTestRunProfileState extends CommandLineState {
         }
 
         List<String> command = new ArrayList<>();
-
-        // Windows 使用 cmd /c
-        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            command.add("cmd");
-            command.add("/c");
-            command.add("qin");
-        } else {
-            command.add("qin");
-        }
-
         command.add("test");
 
-        // 启用 TeamCity 格式输出
+        // 鍚敤 TeamCity 鏍煎紡杈撳嚭
         command.add("--teamcity");
 
-        // 指定测试类（如果有）
+        // 鎸囧畾娴嬭瘯绫伙紙濡傛灉鏈夛級
         String testClass = configuration.getTestClass();
         if (testClass != null && !testClass.isEmpty()) {
             command.add("--class=" + testClass);
         }
 
-        // 指定测试方法（如果有）
+        // 鎸囧畾娴嬭瘯鏂规硶锛堝鏋滄湁锛?
         String testMethod = configuration.getTestMethod();
         if (testMethod != null && !testMethod.isEmpty()) {
             command.add("--method=" + testMethod);
         }
 
-        GeneralCommandLine commandLine = new GeneralCommandLine(command);
-        commandLine.setWorkDirectory(new File(projectPath));
-        commandLine.setCharset(StandardCharsets.UTF_8);
-
-        return commandLine;
+        return QinCommandResolver.createGeneralCommandLine(
+                projectPath,
+                command.toArray(String[]::new));
     }
 }

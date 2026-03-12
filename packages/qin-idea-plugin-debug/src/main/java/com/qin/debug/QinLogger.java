@@ -15,6 +15,9 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static com.qin.constants.QinConstants.LOG_SUBDIR;
+import static com.qin.constants.QinConstants.QIN_DIR;
+
 /**
  * Simple UTF-8 project logger for the IDEA plugin.
  * Log path: {project}/.qin/logs/{yyyy-MM-dd-HH}.log
@@ -26,22 +29,28 @@ public class QinLogger {
     private static Path logFile;
     private static boolean initialized = false;
     private static Project currentProject;
+    private static String currentProjectPath;
     private static boolean debugEnabled = true;
 
     private QinLogger() {
     }
 
-    /**
-     * Initializes the logger once per project.
-     */
     public static synchronized void init(String projectPath, Project project) {
-        if (initialized) {
+        if (projectPath == null || projectPath.isBlank()) {
+            return;
+        }
+
+        if (initialized && projectPath.equals(currentProjectPath)) {
+            if (project != null) {
+                currentProject = project;
+            }
             return;
         }
 
         currentProject = project;
+        currentProjectPath = projectPath;
         String timestamp = LocalDateTime.now().format(FILE_FMT);
-        Path logDir = Paths.get(projectPath, ".qin", "logs");
+        Path logDir = Paths.get(projectPath, QIN_DIR, LOG_SUBDIR);
         logFile = logDir.resolve(timestamp + ".log");
 
         try {
@@ -53,23 +62,24 @@ public class QinLogger {
         }
     }
 
-    /**
-     * Backward-compatible init entry point.
-     */
     public static synchronized void init(String projectPath) {
         init(projectPath, null);
     }
 
-    /**
-     * Enables or disables debug logging.
-     */
+    public static synchronized void ensureInitialized(Project project, String projectPath) {
+        if (!initialized || logFile == null || (projectPath != null && !projectPath.isBlank() && !projectPath.equals(currentProjectPath))) {
+            init(projectPath, project);
+            return;
+        }
+        if (project != null && currentProject == null) {
+            currentProject = project;
+        }
+    }
+
     public static void setDebugEnabled(boolean enabled) {
         debugEnabled = enabled;
     }
 
-    /**
-     * Writes a debug line when debug logging is enabled.
-     */
     public static void debug(String msg) {
         if (debugEnabled) {
             log("DEBUG", msg);
@@ -95,23 +105,14 @@ public class QinLogger {
         error(sw.toString());
     }
 
-    /**
-     * Shows a success notification in IDEA.
-     */
     public static void notifySuccess(String title, String content) {
         notify(title, content, NotificationType.INFORMATION);
     }
 
-    /**
-     * Shows an error notification in IDEA.
-     */
     public static void notifyError(String title, String content) {
         notify(title, content, NotificationType.ERROR);
     }
 
-    /**
-     * Shows an IDEA notification and falls back to the log file.
-     */
     private static void notify(String title, String content, NotificationType type) {
         try {
             NotificationGroupManager.getInstance()
@@ -125,7 +126,7 @@ public class QinLogger {
 
     private static synchronized void log(String level, String msg) {
         if (!initialized || logFile == null) {
-            System.out.println("[QinLogger] " + msg);
+            System.out.println("[QinLogger] " + normalizeForLog(msg));
             return;
         }
 

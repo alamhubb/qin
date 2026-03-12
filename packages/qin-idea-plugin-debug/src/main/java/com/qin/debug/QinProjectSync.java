@@ -14,10 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static com.qin.constants.QinConstants.CMD_FLAG;
-import static com.qin.constants.QinConstants.CMD_PREFIX;
 import static com.qin.constants.QinConstants.CONFIG_FILE;
-import static com.qin.constants.QinConstants.QIN_CMD;
 
 /**
  * Synchronizes Qin projects with IDEA metadata.
@@ -59,7 +56,7 @@ public class QinProjectSync {
 
             QinConfig config = QinConfig.load(projectPath.toString());
             if (config == null) {
-                QinLogger.error("[Sync] Failed to parse config file");
+                QinLogger.info("[Sync] Invalid config file, skipping project");
                 if (!silentMode) {
                     QinLogger.notifyError("Qin Sync Failed", "Failed to parse config for " + projectName);
                 }
@@ -70,7 +67,6 @@ public class QinProjectSync {
             updateImlFile(projectPath, config);
             updateLanguageLevel(config);
             updateMiscXml(config);
-            refreshProject();
 
             QinLogger.info("[Sync] ========== Project sync complete ==========");
             if (!silentMode) {
@@ -101,10 +97,15 @@ public class QinProjectSync {
             }
 
             QinLogger.info("[Sync] Detected " + qinProjects.size() + " Qin projects");
+            boolean refreshed = false;
             for (Path projectPath : qinProjects) {
                 if (shouldSyncProject(projectPath, checkCache)) {
                     syncProject(projectPath);
+                    refreshed = true;
                 }
+            }
+            if (refreshed) {
+                refreshProject();
             }
         } catch (Exception e) {
             QinLogger.error("[Sync] Failed to sync workspace projects: " + e.getMessage());
@@ -121,9 +122,7 @@ public class QinProjectSync {
     public void syncDependencies(Path projectPath) {
         try {
             QinLogger.info("[Sync] Running `qin sync` for project dependencies...");
-            ProcessBuilder pb = new ProcessBuilder(CMD_PREFIX, CMD_FLAG, QIN_CMD, "sync");
-            pb.directory(projectPath.toFile());
-            pb.redirectErrorStream(true);
+            ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath.toString(), "sync");
 
             Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(
