@@ -5,6 +5,7 @@ import java.nio.file.*;
 import java.util.*;
 
 import static com.qin.constants.QinConstants.CONFIG_FILE;
+import static com.qin.constants.QinConstants.DEFAULT_JAVA_VERSION;
 
 /**
  * Parses qin.config.json for the IDEA plugin.
@@ -35,7 +36,7 @@ public class QinConfig {
 
     public String getJavaVersion() {
         if (java == null) {
-            return "21";
+            return DEFAULT_JAVA_VERSION;
         }
         if (java.release != null && !java.release.isBlank()) {
             return java.release;
@@ -46,12 +47,12 @@ public class QinConfig {
         if (java.version != null && !java.version.isBlank()) {
             return java.version;
         }
-        return "21";
+        return DEFAULT_JAVA_VERSION;
     }
 
     public String getSourceVersion() {
         if (java == null) {
-            return "21";
+            return DEFAULT_JAVA_VERSION;
         }
         if (java.release != null && !java.release.isBlank()) {
             return java.release;
@@ -62,7 +63,7 @@ public class QinConfig {
         if (java.version != null && !java.version.isBlank()) {
             return java.version;
         }
-        return "21";
+        return DEFAULT_JAVA_VERSION;
     }
 
     public static QinConfig load(String projectPath) {
@@ -76,5 +77,25 @@ public class QinConfig {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static QinConfig load(Path projectPath) {
+        return projectPath == null ? null : load(projectPath.toString());
+    }
+
+    public static QinConfig loadNearest(Path start) {
+        if (start == null) {
+            return null;
+        }
+
+        Path current = Files.isDirectory(start) ? start : start.getParent();
+        while (current != null) {
+            QinConfig config = load(current);
+            if (config != null) {
+                return config;
+            }
+            current = current.getParent();
+        }
+        return null;
     }
 }

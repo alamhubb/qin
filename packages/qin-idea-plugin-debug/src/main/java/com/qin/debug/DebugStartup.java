@@ -39,11 +39,11 @@ public class DebugStartup implements ProjectActivity {
         QinLogger.info("[STARTUP] Qin plugin startup: " + project.getName());
         QinLogger.info("[STARTUP] Project base path: " + basePath);
 
-        // 缂傚倷鐒﹂弻銊╊敄閸涱厾鏆ら柛鈩冪⊕閻撯偓閻庡箍鍎卞ú銊╁几?Project SDK闂備焦瀵х粙鎴︽偋閸℃鑰?EDT 缂傚倷鐒﹀畷妯衡枖閺囥垹鐓濋柛蹇氬亹閳绘梹銇勯幘鍗炲缂佲偓?
-        if (Files.exists(Paths.get(basePath, CONFIG_FILE))) {
+        // 根据 Qin 配置链自动补齐 Project SDK。已有用户配置时不覆盖。
+        if (hasQinSdkContext(Paths.get(basePath))) {
             ApplicationManager.getApplication().invokeLater(() -> configureProjectSdk(project));
         } else {
-            QinLogger.info("[SDK] Skipping project SDK auto-configuration for workspace root without qin.config.json");
+            QinLogger.info("[SDK] Skipping project SDK auto-configuration because no Qin config context was found");
         }
 
         // 闂備線娼荤拹鐔煎礉瀹€鍕畺婵°倕鎳庨惌妤呮煙濞堝灝鏋涙繛鍫㈠Х缁辨帞鈧綆浜堕崕搴♀攽閻愬弶鍠橀柟顔荤矙婵℃瓕顦撮柛鈺冨Т閳藉骞橀姘闂?QinProjectSync 闂備礁婀遍悷鎶藉幢閳哄倹鏉搁梻浣告啞閼归箖寮甸鍕垫晢闁绘劗鍎ら弲顒勬煕椤愮姴鍔滃Δ妤婂灠椤鈽夊▍铏灱閸燁垶鎮楀▓鍨灈濡ょ姴绻掑Σ鎰攽閸狀喗鐩崺鈧い鎺戝閽冪喖鏌曟竟顖氭噹椤︹晠鏌ｆ惔銏⑩姇闁挎洦鍋嗗Σ?
@@ -132,6 +132,11 @@ public class DebugStartup implements ProjectActivity {
     private static void configureProjectSdk(Project project) {
         try {
             QinLogger.info("[SDK] ========== Configuring Project SDK ==========");
+            String basePath = project.getBasePath();
+            if (basePath == null) {
+                QinLogger.info("[SDK] Project base path is unavailable, skipping");
+                return;
+            }
 
             // 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉簵娴滃綊鏌熼幆褍鏆辨い?Project SDK
             com.intellij.openapi.projectRoots.ProjectJdkTable jdkTable = com.intellij.openapi.projectRoots.ProjectJdkTable
@@ -153,33 +158,19 @@ public class DebugStartup implements ProjectActivity {
                 return;
             }
 
-            // 婵犵數鍋涙径鍥礈濠靛棴鑰?SDK闂備焦瀵х粙鎴︽嚐椤栫偞鍎嶉柛鎾楀嫬鐝伴梺鍝勬川閸犳捇宕ｉ埀顒勬⒑閻熸壆浠涢柛搴㈠▕楠炲啯鎯旈妸锔惧姷闂佺鏈划宥夋偩?JDK
-            QinLogger.info("[SDK] No Project SDK configured, selecting the best available JDK...");
+            String desiredJavaVersion = resolvePreferredJavaVersion(Paths.get(basePath));
+            int desiredVersion = parseJavaVersion(desiredJavaVersion);
+            QinLogger.info("[SDK] No Project SDK configured, resolving preferred JDK from Qin config context...");
+            QinLogger.info("[SDK] Desired Java version = " + desiredJavaVersion);
 
-            // 濠电偞娼欓崥瀣晪闂佸憡蓱閻╊垰顕ｆ繝姘ㄩ柨鏇楀亾妞ゃ儲绻勯埀顒€婀遍…鍫濐嚕閸洖鏋侀柣鎰惈缁€鍐偓鍏夊亾闁逞屽墮閳?JDK
-            com.intellij.openapi.projectRoots.Sdk bestSdk = null;
-            int bestVersion = 0;
-
-            for (com.intellij.openapi.projectRoots.Sdk sdk : allJdks) {
-                if (sdk.getSdkType() instanceof com.intellij.openapi.projectRoots.JavaSdk) {
-                    String versionStr = com.intellij.openapi.projectRoots.JavaSdk.getInstance()
-                            .getVersionString(sdk);
-                    if (versionStr != null) {
-                        // 缂傚倷鑳舵慨顓㈠磻閹剧粯鐓曟俊銈勭劍缁€澶屾偖濞嗘挻鐓涢悗锝庡亜婵顭胯椤ㄥ﹤顕ｉ悽鍓叉晢闁逞屽墲閵?
-                        int version = parseJavaVersion(versionStr);
-                        QinLogger.info("[SDK]   Candidate JDK: " + sdk.getName() + " (version: " + version + ")");
-                        if (version > bestVersion) {
-                            bestVersion = version;
-                            bestSdk = sdk;
-                        }
-                    }
-                }
-            }
+            com.intellij.openapi.projectRoots.Sdk bestSdk = selectBestMatchingJdk(allJdks, desiredVersion);
 
             if (bestSdk != null) {
                 final com.intellij.openapi.projectRoots.Sdk sdkToSet = bestSdk;
                 final String sdkName = bestSdk.getName();
-                QinLogger.info("[SDK] Selected JDK: " + sdkName + " (version: " + bestVersion + ")");
+                int selectedVersion = parseJavaVersion(
+                        com.intellij.openapi.projectRoots.JavaSdk.getInstance().getVersionString(bestSdk));
+                QinLogger.info("[SDK] Selected JDK: " + sdkName + " (version: " + selectedVersion + ", desired: " + desiredVersion + ")");
 
                 // 闂佽崵濮崇粈浣规櫠娴犲鍋?Project SDK闂備焦瀵х粙鎴︽偋閸涱喚绠鹃柛銉墯閸嬨劑鏌曟繛鍨姎鐟滄澘妫濋弻锝夛綖椤掆偓婵′粙鏌″畝鈧崰搴ㄥ煝閺冨牆鍗虫い蹇撴椤?
                 QinLogger.info("[SDK] Applying selected Project SDK...");
@@ -338,61 +329,13 @@ public class DebugStartup implements ProjectActivity {
     private static void updateMiscXmlWithSdk(Path miscXml, String sdkName) {
         try {
             QinLogger.info("[SDK]   Updating misc.xml: " + miscXml);
-
-            String content;
-            if (Files.exists(miscXml)) {
-                content = Files.readString(miscXml);
-            } else {
-                // 闂備礁鎲＄敮妤冪矙閹寸姷纾介柟鎹愵嚙濡﹢鏌熷▓鍨灍闁?misc.xml
-                content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                        "<project version=\"4\">\n" +
-                        "</project>";
-                Files.createDirectories(miscXml.getParent());
-            }
-
-            // 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑濠碘€冲级閹倸鐣烽妷鈺傛櫇闁逞屽墴瀹曟瑩鏁撻悩鎻掔彉?ProjectRootManager 缂傚倸鍊风粈浣衡偓姘间簻閳?
-            if (content.contains("<component name=\"ProjectRootManager\"")) {
-                // 闂備礁鎼ú銈夋偤閵娾晛钃熷┑鐘叉处閸嬫繈鏌ｅΔ鈧悧濠勭不閹烘梻纾藉ù锝囶焾椤徰勭箾?
-                if (content.contains("project-jdk-name=")) {
-                    // 闂備礁鎼ú锔锯偓绗涘啰鏆﹂柡灞诲劜閸嬫繈鏌ｅΔ鈧悧濠勭不閹烘鐓?project-jdk-name
-                    content = content.replaceAll("project-jdk-name=\"[^\"]*\"",
-                            "project-jdk-name=\"" + sdkName + "\"");
-                    QinLogger.info("[SDK]   Updated project-jdk-name attribute");
-                } else {
-                    // 婵犵數鍎戠紞鈧い鏇嗗嫭鍙?project-jdk-name 闂佽绻掗崑鐔煎磻閻愬搫鐒?
-                    content = content.replace("<component name=\"ProjectRootManager\"",
-                            "<component name=\"ProjectRootManager\" project-jdk-name=\"" + sdkName
-                                    + "\" project-jdk-type=\"JavaSDK\"");
-                    QinLogger.info("[SDK]   Added project-jdk-name attribute");
-                }
-
-                // 缂備胶铏庨崣搴ㄥ窗閺囩姵宕?project-jdk-type 闂佽瀛╃粙鎺楁晪濠电姭鍋?
-                if (!content.contains("project-jdk-type=")) {
-                    content = content.replace("project-jdk-name=\"" + sdkName + "\"",
-                            "project-jdk-name=\"" + sdkName + "\" project-jdk-type=\"JavaSDK\"");
-                }
-            } else {
-                // 婵犵數鍎戠紞鈧い鏇嗗嫭鍙忛柣鎰惈濡﹢鏌熷▓鍨灍闁?ProjectRootManager 缂傚倸鍊风粈浣衡偓姘间簻閳?
-                String component = "  <component name=\"ProjectRootManager\" version=\"2\" " +
-                        "project-jdk-name=\"" + sdkName + "\" project-jdk-type=\"JavaSDK\">\n" +
-                        "    <output url=\"file://$PROJECT_DIR$/out\" />\n" +
-                        "  </component>\n";
-                content = content.replace("</project>", component + "</project>");
-                QinLogger.info("[SDK]   Added ProjectRootManager component");
-            }
-
-            // 闂備礁鎲￠崝鏍偡閵夈儍娲冀椤撶偞顥濋梺鎼炲劵闂勫嫰顢?
-            Files.writeString(miscXml, content);
-            QinLogger.info("[SDK]   misc.xml now contains project-jdk-name=\"" + sdkName + "\"");
-
-            // 濠德板€楁慨鎾儗娓氣偓閹焦寰勯幇顒傤槰濠电偛妫楃换鎰嚕?
-            String verify = Files.readString(miscXml);
+            IdeaMiscXmlSupport.updateProjectSdk(miscXml, sdkName);
+            String verify = Files.readString(miscXml, StandardCharsets.UTF_8);
             if (verify.contains("project-jdk-name=\"" + sdkName + "\"")) {
                 QinLogger.info("[SDK] misc.xml write verification succeeded");
             } else {
                 QinLogger.error("[SDK] misc.xml write verification failed");
             }
-            // 婵犵數鍋涢ˇ顓㈠礉瀹ュ绀堝ù鐓庣摠閺咁剚鎱ㄥ鍡楀闁绘挻娲熼弻?IDEA 闂傚倸鍊稿ú鐘诲磻閹剧粯鍋￠柡鍥ㄦ皑椤︼附绻濋埀顒勵敂閸℃ê顏╅梺鍛婂姦娴滄繈寮宠箛鎿冪唵閻犲搫鎼褍鈹戦悙鍙夊枠闁?refreshProjectStructure(project)
         } catch (Exception e) {
             QinLogger.error("[SDK]   Failed to update misc.xml: " + e.getMessage());
             e.printStackTrace();
@@ -480,6 +423,11 @@ public class DebugStartup implements ProjectActivity {
      */
     public static void generateImlFile(Path projectPath, boolean forceOverwrite, Path ideaDir) {
         try {
+            if (!hasSourceDirectory(projectPath)) {
+                QinLogger.info("[iml] Skipping .iml generation for source-less aggregate project: " + projectPath);
+                return;
+            }
+
             // 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉ｅ妸娴滄粓鏌涢敂璇插箺缂佹劖顨婇弻娑橆潩椤掑倐銈囨偖?
             String projectName = projectPath.getFileName().toString();
             Path imlPath = projectPath.resolve(projectName + ".iml");
@@ -642,6 +590,143 @@ public class DebugStartup implements ProjectActivity {
         } catch (Exception e) {
             QinLogger.error("Failed to generate .iml file: " + e.getMessage());
         }
+    }
+
+    private static boolean hasQinSdkContext(Path basePath) {
+        if (basePath == null) {
+            return false;
+        }
+        if (QinConfig.loadNearest(basePath) != null) {
+            return true;
+        }
+        try {
+            return !discoverQinProjects(basePath).isEmpty();
+        } catch (Exception e) {
+            QinLogger.info("[SDK] Failed to detect Qin project context: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private static String resolvePreferredJavaVersion(Path basePath) {
+        QinConfig nearestConfig = QinConfig.loadNearest(basePath);
+        if (nearestConfig != null) {
+            String version = nearestConfig.getJavaVersion();
+            QinLogger.info("[SDK] Resolved Java version from nearest Qin config: " + version);
+            return version;
+        }
+
+        List<Path> qinProjects = discoverQinProjects(basePath);
+        if (qinProjects.isEmpty()) {
+            QinLogger.info("[SDK] No Qin project config found, using default Java version: " + DEFAULT_JAVA_VERSION);
+            return DEFAULT_JAVA_VERSION;
+        }
+
+        qinProjects.sort(Comparator
+                .comparingInt((Path path) -> depthFrom(basePath, path))
+                .thenComparing(Path::toString));
+
+        Map<String, Integer> versionCounts = new LinkedHashMap<>();
+        int bestDepth = Integer.MAX_VALUE;
+        String bestVersion = null;
+
+        for (Path projectPath : qinProjects) {
+            QinConfig config = QinConfig.load(projectPath);
+            if (config == null) {
+                continue;
+            }
+
+            String version = config.getJavaVersion();
+            versionCounts.merge(version, 1, Integer::sum);
+
+            int depth = depthFrom(basePath, projectPath);
+            if (depth < bestDepth) {
+                bestDepth = depth;
+                bestVersion = version;
+            }
+        }
+
+        if (bestVersion != null) {
+            if (versionCounts.size() > 1) {
+                QinLogger.info("[SDK] Multiple Java versions detected in workspace: " + versionCounts
+                        + ". Using nearest project version: " + bestVersion);
+            } else {
+                QinLogger.info("[SDK] Resolved Java version from workspace Qin projects: " + bestVersion);
+            }
+            return bestVersion;
+        }
+
+        QinLogger.info("[SDK] Workspace Qin configs did not provide a Java version, using default: " + DEFAULT_JAVA_VERSION);
+        return DEFAULT_JAVA_VERSION;
+    }
+
+    private static int depthFrom(Path basePath, Path childPath) {
+        try {
+            return basePath.relativize(childPath).getNameCount();
+        } catch (Exception e) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    private static com.intellij.openapi.projectRoots.Sdk selectBestMatchingJdk(
+            com.intellij.openapi.projectRoots.Sdk[] allJdks,
+            int desiredVersion) {
+        com.intellij.openapi.projectRoots.Sdk exactMatch = null;
+        com.intellij.openapi.projectRoots.Sdk nearestHigher = null;
+        int nearestHigherVersion = Integer.MAX_VALUE;
+        com.intellij.openapi.projectRoots.Sdk nearestLower = null;
+        int nearestLowerVersion = Integer.MIN_VALUE;
+
+        for (com.intellij.openapi.projectRoots.Sdk sdk : allJdks) {
+            if (!(sdk.getSdkType() instanceof com.intellij.openapi.projectRoots.JavaSdk)) {
+                continue;
+            }
+
+            String versionStr = com.intellij.openapi.projectRoots.JavaSdk.getInstance().getVersionString(sdk);
+            if (versionStr == null) {
+                continue;
+            }
+
+            int version = parseJavaVersion(versionStr);
+            QinLogger.info("[SDK]   Candidate JDK: " + sdk.getName() + " (version: " + version + ")");
+
+            if (version == desiredVersion) {
+                exactMatch = sdk;
+                break;
+            }
+            if (version > desiredVersion && version < nearestHigherVersion) {
+                nearestHigherVersion = version;
+                nearestHigher = sdk;
+            }
+            if (version < desiredVersion && version > nearestLowerVersion) {
+                nearestLowerVersion = version;
+                nearestLower = sdk;
+            }
+        }
+
+        if (exactMatch != null) {
+            return exactMatch;
+        }
+        if (nearestHigher != null) {
+            return nearestHigher;
+        }
+        return nearestLower;
+    }
+
+    public static boolean hasSourceDirectory(Path projectPath) {
+        try {
+            com.qin.bsp.BspHandler bspHandler = new com.qin.bsp.BspHandler(projectPath.toString());
+            String configuredSourceDir = bspHandler.getSourceDir();
+            if (configuredSourceDir != null && !configuredSourceDir.isBlank()) {
+                Path configuredPath = projectPath.resolve(configuredSourceDir);
+                if (Files.exists(configuredPath) && Files.isDirectory(configuredPath)) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            QinLogger.info("[iml] Failed to inspect configured sourceDir, falling back to directory detection: " + e.getMessage());
+        }
+
+        return detectSourceDir(projectPath) != null;
     }
 
     /**

@@ -150,27 +150,19 @@ public class QinCli {
         }
 
         // 检查是否指定了 .java 文件
-        String javaFile = null;
-        List<String> runArgs = new ArrayList<>();
-
-        if (args.length > 0 && args[0].endsWith(".java")) {
-            javaFile = args[0];
-            Path javaFilePath = Paths.get(QinConstants.getCwd(), javaFile);
+        JavaRunOptions runOptions = parseJavaRunOptions(config, args);
+        if (runOptions.javaFile != null) {
+            Path javaFilePath = Paths.get(QinConstants.getCwd(), runOptions.javaFile);
             if (!Files.exists(javaFilePath)) {
-                System.err.println(red("Error: Java file not found: " + javaFile));
+                System.err.println(red("Error: Java file not found: " + runOptions.javaFile));
                 System.exit(1);
             }
-            for (int i = 1; i < args.length; i++) {
-                runArgs.add(args[i]);
-            }
-        } else {
-            runArgs = Arrays.asList(args);
         }
 
         // Resolve dependencies
         String classpath = "";
-        Map<String, String> deps = config.dependencies();
-        if (deps != null && !deps.isEmpty()) {
+        Map<String, String> deps = collectAllDependencies(config);
+        if (!deps.isEmpty()) {
             classpath = ensureDependenciesSynced(config);
         }
 
@@ -178,10 +170,10 @@ public class QinCli {
         System.out.println(blue("-> Compiling and running..."));
         JavaRunner runner = new JavaRunner(config, classpath);
 
-        if (javaFile != null) {
-            runner.compileAndRunFile(javaFile, runArgs);
+        if (runOptions.javaFile != null) {
+            runner.compileAndRunFile(runOptions.javaFile, runOptions.programArgs, runOptions.jvmArgs);
         } else {
-            runner.compileAndRun(runArgs);
+            runner.compileAndRun(runOptions.programArgs, runOptions.jvmArgs);
         }
 
         System.out.println(green("[OK] Done!"));

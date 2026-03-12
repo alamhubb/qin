@@ -146,6 +146,12 @@ public class QinProjectSync {
 
     public void updateImlFile(Path projectPath, QinConfig config) {
         try {
+            if (!DebugStartup.hasSourceDirectory(projectPath)) {
+                QinLogger.info("[Sync] No source directory detected, skipping .iml generation for aggregate project: "
+                        + projectPath.getFileName());
+                return;
+            }
+
             QinLogger.info("[Sync] Regenerating module .iml file...");
             Path ideaDir = Paths.get(basePath, ".idea");
             DebugStartup.generateImlFile(projectPath, true, ideaDir);
@@ -211,22 +217,7 @@ public class QinProjectSync {
             QinLogger.info("[Sync] Updating .idea/misc.xml...");
             String targetVersion = config.getJavaVersion();
             Path miscXml = Paths.get(basePath, ".idea", "misc.xml");
-            if (!Files.exists(miscXml)) {
-                QinLogger.info("[Sync] misc.xml not found, skipping");
-                return;
-            }
-
-            String content = Files.readString(miscXml);
-            String languageLevelAttr = "languageLevel=\"JDK_" + targetVersion + "\"";
-            if (content.contains("languageLevel=")) {
-                content = content.replaceAll("languageLevel=\"[^\"]*\"", languageLevelAttr);
-            } else if (content.contains("<component name=\"ProjectRootManager\"")) {
-                content = content.replace(
-                        "<component name=\"ProjectRootManager\"",
-                        "<component name=\"ProjectRootManager\" " + languageLevelAttr);
-            }
-
-            Files.writeString(miscXml, content);
+            IdeaMiscXmlSupport.updateLanguageLevel(miscXml, targetVersion);
             QinLogger.info("[Sync] Updated misc.xml languageLevel=JDK_" + targetVersion);
         } catch (Exception e) {
             QinLogger.error("[Sync] Failed to update misc.xml: " + e.getMessage());
@@ -283,6 +274,12 @@ public class QinProjectSync {
         try {
             if (basePath == null) {
                 return true;
+            }
+
+            if (!DebugStartup.hasSourceDirectory(projectPath)) {
+                QinLogger.info("[Sync] No source directory detected, skipping IDEA module repair check: "
+                        + projectPath.getFileName());
+                return false;
             }
 
             String projectName = projectPath.getFileName().toString();

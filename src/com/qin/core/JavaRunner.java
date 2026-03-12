@@ -191,6 +191,10 @@ public class JavaRunner {
      * Run compiled Java program
      */
     public void run(List<String> args) throws Exception {
+        run(args, List.of());
+    }
+
+    public void run(List<String> args, List<String> jvmArgs) throws Exception {
         ConfigLoader configLoader = new ConfigLoader(cwd);
         ParsedEntry parsed = configLoader.parseEntry(config.entry());
 
@@ -198,6 +202,9 @@ public class JavaRunner {
 
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("java");
+        if (jvmArgs != null && !jvmArgs.isEmpty()) {
+            javaArgs.addAll(jvmArgs);
+        }
 
         // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
         if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") ||
@@ -227,11 +234,15 @@ public class JavaRunner {
      * Compile and run in one step
      */
     public void compileAndRun(List<String> args) throws Exception {
+        compileAndRun(args, List.of());
+    }
+
+    public void compileAndRun(List<String> args, List<String> jvmArgs) throws Exception {
         CompileResult result = compile();
         if (!result.isSuccess()) {
             throw new RuntimeException("Compilation failed: " + result.getError());
         }
-        run(args);
+        run(args, jvmArgs);
     }
 
     /**
@@ -241,11 +252,15 @@ public class JavaRunner {
      * @param args         传递给 main 方法的参数
      */
     public void compileAndRunFile(String javaFilePath, List<String> args) throws Exception {
+        compileAndRunFile(javaFilePath, args, List.of());
+    }
+
+    public void compileAndRunFile(String javaFilePath, List<String> args, List<String> jvmArgs) throws Exception {
         CompileResult result = compile();
         if (!result.isSuccess()) {
             throw new RuntimeException("Compilation failed: " + result.getError());
         }
-        runFile(javaFilePath, args);
+        runFile(javaFilePath, args, jvmArgs);
     }
 
     /**
@@ -255,12 +270,19 @@ public class JavaRunner {
      * @param args         传递给 main 方法的参数
      */
     public void runFile(String javaFilePath, List<String> args) throws Exception {
+        runFile(javaFilePath, args, List.of());
+    }
+
+    public void runFile(String javaFilePath, List<String> args, List<String> jvmArgs) throws Exception {
         String className = javaFilePathToClassName(javaFilePath);
 
         String fullClasspath = buildFullClasspath();
 
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("java");
+        if (jvmArgs != null && !jvmArgs.isEmpty()) {
+            javaArgs.addAll(jvmArgs);
+        }
 
         // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
         if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") ||
