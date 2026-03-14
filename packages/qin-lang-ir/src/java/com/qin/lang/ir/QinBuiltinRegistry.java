@@ -282,6 +282,22 @@ public final class QinBuiltinRegistry {
                             "com.qin.lang.runtime.JavaEsmGlobal",
                             "isFinite",
                             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_dynamic_import__", 1),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_dynamic_import__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_dynamic_import__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_top_level_await__", 1),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_top_level_await__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_top_level_await__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
                             List.of(BuiltinArgKind.ANY))));
 
     private QinBuiltinRegistry() {

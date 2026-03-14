@@ -28,6 +28,7 @@ public final class QinIrValidator {
 
     private void validateProgramNotEmpty(QinIrProgram program) {
         if (program.declarations().isEmpty()
+                && program.expressionStatements().isEmpty()
                 && program.consoleValueLogs().isEmpty()
                 && program.consoleLogs().isEmpty()
                 && program.javaStaticConsoleLogs().isEmpty()

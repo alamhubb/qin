@@ -2,6 +2,7 @@ package com.qin.lang.lowering.jvm;
 
 import com.qin.lang.ir.QinBuiltinRegistry;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
+import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
@@ -36,6 +37,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
             validateUniqueLocalImports(module);
         }
         validateBuiltinCalls(program.consoleValueLogs());
+        validateExpressionStatements(program.expressionStatements());
         return program;
     }
 
@@ -56,6 +58,12 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
     private void validateBuiltinCalls(Iterable<QinIrConsoleLogValue> logs) {
         for (QinIrConsoleLogValue log : logs) {
             validateExpression(log.value());
+        }
+    }
+
+    private void validateExpressionStatements(Iterable<QinIrExpressionStatement> expressionStatements) {
+        for (QinIrExpressionStatement expressionStatement : expressionStatements) {
+            validateExpression(expressionStatement.expression());
         }
     }
 

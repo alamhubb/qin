@@ -8,6 +8,7 @@ import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
+import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
@@ -51,6 +52,7 @@ public final class QinJsBackend {
         }
 
         js.append("function run() {\n");
+        emitExpressionStatements(js, program.expressionStatements());
         emitConsoleValueLogs(js, program.consoleValueLogs());
         emitConsoleLogs(js, declarationMap, program.consoleLogs());
         emitJavaStaticConsoleLogs(js, program.javaStaticConsoleLogs());
@@ -225,6 +227,16 @@ public final class QinJsBackend {
             js.append("  console.log(");
             emitExpression(js, consoleValueLog.value());
             js.append(");\n");
+        }
+    }
+
+    private void emitExpressionStatements(
+            StringBuilder js,
+            List<QinIrExpressionStatement> expressionStatements) {
+        for (QinIrExpressionStatement expressionStatement : expressionStatements) {
+            js.append("  ");
+            emitExpression(js, expressionStatement.expression());
+            js.append(";\n");
         }
     }
 

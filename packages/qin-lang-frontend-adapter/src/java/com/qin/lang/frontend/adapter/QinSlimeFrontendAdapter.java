@@ -8,6 +8,7 @@ import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
+import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
@@ -51,6 +52,12 @@ public final class QinSlimeFrontendAdapter {
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "^\\s*import\\s+[\"']([^\"'\\n]+)[\"']\\s*;?\\s*$");
     private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("^[A-Za-z_$][A-Za-z0-9_$]*$");
+    private static final Pattern SOURCE_IMPORT_META_URL_PATTERN = Pattern.compile("\\bimport\\s*\\.\\s*meta\\s*\\.\\s*url\\b");
+    private static final Pattern SOURCE_DYNAMIC_IMPORT_PATTERN = Pattern.compile("\\bimport\\s*\\(([^\\n\\)]*)\\)");
+    private static final Pattern SOURCE_TOP_LEVEL_AWAIT_PATTERN = Pattern.compile("(?m)^\\s*await\\s+([^;\\n]+)\\s*;?\\s*$");
+    private static final String IMPORT_META_URL_SHIM = "__qin_import_meta_url__";
+    private static final String DYNAMIC_IMPORT_SHIM = "__qin_dynamic_import__";
+    private static final String TOP_LEVEL_AWAIT_SHIM = "__qin_top_level_await__";
 
     public QinIrProgram parseProgram(String source) {
         Objects.requireNonNull(source, "source cannot be null");
@@ -64,11 +71,13 @@ public final class QinSlimeFrontendAdapter {
                     List.of(),
                     List.of(),
                     List.of(),
+                    List.of(),
                     List.of());
         }
+        String parserInput = preprocessRuntimeSyntax(sourceForSlime);
 
         try {
-            return parseProgramWithSlime(sourceForSlime, List.of(), List.of());
+            return parseProgramWithSlime(parserInput, List.of(), List.of());
         } catch (Exception primaryError) {
             try {
                 ExtractedImports extracted = extractImports(sourceForSlime);
@@ -81,14 +90,16 @@ public final class QinSlimeFrontendAdapter {
                             List.of(),
                             List.of(),
                             List.of(),
+                            List.of(),
                             extracted.javaImports(),
                             extracted.jsImports(),
                             List.of(),
                             List.of(),
                             List.of());
                 }
+                String strippedParserInput = preprocessRuntimeSyntax(strippedSource);
                 return parseProgramWithSlime(
-                        strippedSource,
+                        strippedParserInput,
                         extracted.javaImports(),
                         extracted.jsImports());
             } catch (Exception fallbackError) {
@@ -111,9 +122,10 @@ public final class QinSlimeFrontendAdapter {
         if (sourceForSlime.isEmpty()) {
             return "Program(empty)";
         }
+        String parserInput = preprocessRuntimeSyntax(sourceForSlime);
 
         try {
-            return parseAstWithSlime(sourceForSlime);
+            return parseAstWithSlime(parserInput);
         } catch (Exception primaryError) {
             try {
                 ExtractedImports extracted = extractImports(sourceForSlime);
@@ -124,7 +136,7 @@ public final class QinSlimeFrontendAdapter {
                 if (strippedSource.isEmpty()) {
                     return "Program(import-only)";
                 }
-                return parseAstWithSlime(strippedSource);
+                return parseAstWithSlime(preprocessRuntimeSyntax(strippedSource));
             } catch (Exception fallbackError) {
                 Throwable cause = fallbackError == primaryError ? primaryError : fallbackError;
                 String message = fallbackError == primaryError
@@ -417,6 +429,7 @@ public final class QinSlimeFrontendAdapter {
         }
 
         List<QinIrConstDeclaration> declarations = new ArrayList<>();
+        List<QinIrExpressionStatement> expressionStatements = new ArrayList<>();
         List<QinIrConsoleLogValue> consoleValueLogs = new ArrayList<>();
         List<QinIrConsoleLogStatement> consoleLogs = new ArrayList<>();
         List<QinIrJavaImport> javaImports = new ArrayList<>();
@@ -458,6 +471,9 @@ public final class QinSlimeFrontendAdapter {
                 if (lowered.consoleValueLog() != null) {
                     consoleValueLogs.add(lowered.consoleValueLog());
                 }
+                if (lowered.expressionStatement() != null) {
+                    expressionStatements.add(lowered.expressionStatement());
+                }
                 if (lowered.objectLog() != null) {
                     consoleLogs.add(lowered.objectLog());
                 }
@@ -476,6 +492,7 @@ public final class QinSlimeFrontendAdapter {
         }
 
         if (declarations.isEmpty()
+                && expressionStatements.isEmpty()
                 && consoleValueLogs.isEmpty()
                 && consoleLogs.isEmpty()
                 && javaStaticConsoleLogs.isEmpty()
@@ -486,6 +503,7 @@ public final class QinSlimeFrontendAdapter {
 
         return new QinIrProgram(
                 declarations,
+                expressionStatements,
                 consoleValueLogs,
                 consoleLogs,
                 javaImports,
@@ -652,15 +670,15 @@ public final class QinSlimeFrontendAdapter {
         Object expression = invokeByName(expressionStatementAst, "expression");
         String expressionNodeType = simpleName(expression);
         if ("AwaitExpression".equals(expressionNodeType)) {
-            return new LoweredStatement(null, null, null, null, null);
+            return lowerAwaitExpressionStatement(expression, javaImportLookup, declarationLookup);
         }
         if ("ImportExpression".equals(expressionNodeType)) {
-            return new LoweredStatement(null, null, null, null, null);
+            return lowerImportExpressionStatement(expression, javaImportLookup, declarationLookup);
         }
         if ("Identifier".equals(expressionNodeType)) {
             String name = asString(invokeByName(expression, "name"), "ExpressionStatement.expression.name");
             if ("import".equals(name) || "await".equals(name)) {
-                return new LoweredStatement(null, null, null, null, null);
+                return new LoweredStatement(null, null, null, null, null, null);
             }
         }
         if (!"CallExpression".equals(expressionNodeType)) {
@@ -668,13 +686,63 @@ public final class QinSlimeFrontendAdapter {
         }
 
         Object callee = invokeByName(expression, "callee");
-        if (isDynamicImportCallee(callee)) {
-            return new LoweredStatement(null, null, null, null, null);
+        if (isRuntimeShimCall(callee)) {
+            QinIrBuiltinCallExpression shim = lowerGlobalBuiltinCallExpression(
+                    expression,
+                    javaImportLookup,
+                    declarationLookup);
+            return new LoweredStatement(null, new QinIrExpressionStatement(shim), null, null, null, null);
         }
         if (isConsoleLogCallee(callee)) {
             return lowerConsoleLogCall(expression, javaImportLookup, declarationLookup);
         }
-        return lowerJavaInstanceMethodStatement(expression, declarationLookup, javaImportLookup);
+        if (isDynamicImportCallee(callee)) {
+            return lowerDynamicImportCalleeStatement(expression, javaImportLookup, declarationLookup);
+        }
+        if (isJavaInstanceMethodCallee(callee, declarationLookup)) {
+            return lowerJavaInstanceMethodStatement(expression, declarationLookup, javaImportLookup);
+        }
+
+        QinIrExpression runtimeExpression = lowerRuntimeExpression(expression, javaImportLookup, declarationLookup);
+        return new LoweredStatement(null, new QinIrExpressionStatement(runtimeExpression), null, null, null, null);
+    }
+
+    private LoweredStatement lowerAwaitExpressionStatement(
+            Object awaitExpressionAst,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        Object argumentAst = invokeByName(awaitExpressionAst, "argument");
+        QinIrExpression argument = lowerRuntimeExpression(argumentAst, javaImportLookup, declarationLookup);
+        QinIrBuiltinCallExpression shim = new QinIrBuiltinCallExpression(
+                "Global",
+                TOP_LEVEL_AWAIT_SHIM,
+                List.of(argument));
+        return new LoweredStatement(null, new QinIrExpressionStatement(shim), null, null, null, null);
+    }
+
+    private LoweredStatement lowerImportExpressionStatement(
+            Object importExpressionAst,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        Object sourceAst = invokeByName(importExpressionAst, "source");
+        QinIrExpression argument = lowerRuntimeExpression(sourceAst, javaImportLookup, declarationLookup);
+        QinIrBuiltinCallExpression shim = new QinIrBuiltinCallExpression(
+                "Global",
+                DYNAMIC_IMPORT_SHIM,
+                List.of(argument));
+        return new LoweredStatement(null, new QinIrExpressionStatement(shim), null, null, null, null);
+    }
+
+    private LoweredStatement lowerDynamicImportCalleeStatement(
+            Object callExpressionAst,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        List<QinIrExpression> arguments = lowerRuntimeArguments(callExpressionAst, javaImportLookup, declarationLookup);
+        QinIrBuiltinCallExpression shim = new QinIrBuiltinCallExpression(
+                "Global",
+                DYNAMIC_IMPORT_SHIM,
+                arguments);
+        return new LoweredStatement(null, new QinIrExpressionStatement(shim), null, null, null, null);
     }
 
     private LoweredStatement lowerConsoleLogCall(
@@ -710,7 +778,7 @@ public final class QinSlimeFrontendAdapter {
         }
 
         QinIrExpression value = lowerRuntimeExpression(firstArgument, javaImportLookup, declarationLookup);
-        return new LoweredStatement(new QinIrConsoleLogValue(value), null, null, null, null);
+        return new LoweredStatement(new QinIrConsoleLogValue(value), null, null, null, null, null);
     }
 
     private LoweredStatement lowerConsoleLogJavaCall(
@@ -731,6 +799,7 @@ public final class QinSlimeFrontendAdapter {
             return new LoweredStatement(
                     null,
                     null,
+                    null,
                     new QinIrConsoleLogJavaStaticCall(receiverName, ownerBinaryName, methodName, arguments),
                     null,
                     null);
@@ -744,6 +813,7 @@ public final class QinSlimeFrontendAdapter {
                     null,
                     null,
                     null,
+                    null,
                     new QinIrConsoleLogJavaInstanceCall(
                             receiverName,
                             javaNewExpression.ownerBinaryName(),
@@ -753,16 +823,19 @@ public final class QinSlimeFrontendAdapter {
 
         QinIrBuiltinCallExpression builtin =
                 lowerBuiltinCallExpression(callExpressionAst, javaImportLookup, declarationLookup);
-        return new LoweredStatement(new QinIrConsoleLogValue(builtin), null, null, null, null);
+        return new LoweredStatement(new QinIrConsoleLogValue(builtin), null, null, null, null, null);
     }
 
     private LoweredStatement lowerJavaInstanceMethodStatement(
             Object callExpressionAst,
             Map<String, QinIrExpression> declarationLookup,
             Map<String, String> javaImportLookup) {
+        if (isNoOpRuntimeShimCall(callExpressionAst)) {
+            return new LoweredStatement(null, null, null, null, null, null);
+        }
         Object callee = invokeByName(callExpressionAst, "callee");
         if (isDynamicImportCallee(callee)) {
-            return new LoweredStatement(null, null, null, null, null);
+            return new LoweredStatement(null, null, null, null, null, null);
         }
         if (!"MemberExpression".equals(simpleName(callee))) {
             throw qjsError("QJS2001", "Only member call expression statement is supported");
@@ -777,6 +850,7 @@ public final class QinSlimeFrontendAdapter {
 
         List<QinIrExpression> arguments = lowerCallArguments(callExpressionAst, javaImportLookup);
         return new LoweredStatement(
+                null,
                 null,
                 null,
                 null,
@@ -799,6 +873,30 @@ public final class QinSlimeFrontendAdapter {
 
     private boolean isDynamicImportCallee(Object calleeAst) {
         return "Import".equals(simpleName(calleeAst));
+    }
+
+    private boolean isNoOpRuntimeShimCall(Object callExpressionAst) {
+        if (!"CallExpression".equals(simpleName(callExpressionAst))) {
+            return false;
+        }
+        Object callee = invokeByName(callExpressionAst, "callee");
+        return isRuntimeShimCall(callee);
+    }
+
+    private boolean isRuntimeShimCall(Object calleeAst) {
+        if (!"Identifier".equals(simpleName(calleeAst))) {
+            return false;
+        }
+        String name = asString(invokeByName(calleeAst, "name"), "CallExpression.callee.name");
+        return DYNAMIC_IMPORT_SHIM.equals(name) || TOP_LEVEL_AWAIT_SHIM.equals(name);
+    }
+
+    private boolean isJavaInstanceMethodCallee(Object calleeAst, Map<String, QinIrExpression> declarationLookup) {
+        if (!"MemberExpression".equals(simpleName(calleeAst))) {
+            return false;
+        }
+        String receiverName = extractIdentifierName(invokeByName(calleeAst, "object"), "CallExpression.callee.object");
+        return declarationLookup.get(receiverName) instanceof QinIrJavaNewExpression;
     }
 
     private boolean isImportMetaUrlExpression(Object expressionAst) {
@@ -920,28 +1018,29 @@ public final class QinSlimeFrontendAdapter {
             if (isImportMetaUrlExpression(expressionAst)) {
                 return new QinIrStringLiteral("import.meta.url");
             }
-            QinIrMemberAccessExpression memberAccess = lowerMemberAccessExpression(expressionAst);
-            if ("obj".equals(memberAccess.objectName())
-                    && "url".equals(memberAccess.propertyName())
-                    && !declarationLookup.containsKey("obj")) {
-                return new QinIrStringLiteral("import.meta.url");
-            }
-            return memberAccess;
+            return lowerMemberAccessExpression(expressionAst);
         }
         if ("MetaProperty".equals(nodeType) && isImportMeta(expressionAst)) {
             return new QinIrStringLiteral("import.meta");
         }
         if ("Identifier".equals(nodeType)) {
             String name = extractIdentifierName(expressionAst, "Identifier");
+            if (IMPORT_META_URL_SHIM.equals(name)) {
+                return new QinIrStringLiteral("import.meta.url");
+            }
             return new QinIrIdentifierReference(name);
         }
         if ("ImportExpression".equals(nodeType)) {
             return new QinIrNullLiteral();
         }
         if ("CallExpression".equals(nodeType)) {
+            if (isNoOpRuntimeShimCall(expressionAst)) {
+                return lowerGlobalBuiltinCallExpression(expressionAst, javaImportLookup, declarationLookup);
+            }
             Object callee = invokeByName(expressionAst, "callee");
             if (isDynamicImportCallee(callee)) {
-                return new QinIrNullLiteral();
+                List<QinIrExpression> args = lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup);
+                return new QinIrBuiltinCallExpression("Global", DYNAMIC_IMPORT_SHIM, args);
             }
             if ("MemberExpression".equals(simpleName(callee))) {
                 String receiverName = extractIdentifierName(invokeByName(callee, "object"), "CallExpression.callee.object");
@@ -1084,6 +1183,14 @@ public final class QinSlimeFrontendAdapter {
         return enumConstant(sourceTypeClass, "SCRIPT");
     }
 
+    private String preprocessRuntimeSyntax(String source) {
+        String rewritten = source == null ? "" : source;
+        rewritten = SOURCE_IMPORT_META_URL_PATTERN.matcher(rewritten).replaceAll(IMPORT_META_URL_SHIM);
+        rewritten = SOURCE_DYNAMIC_IMPORT_PATTERN.matcher(rewritten).replaceAll(DYNAMIC_IMPORT_SHIM + "($1)");
+        rewritten = SOURCE_TOP_LEVEL_AWAIT_PATTERN.matcher(rewritten).replaceAll(TOP_LEVEL_AWAIT_SHIM + "($1);");
+        return rewritten;
+    }
+
     private static List<?> asList(Object value, String where) {
         if (value instanceof List<?> list) {
             return list;
@@ -1164,6 +1271,7 @@ public final class QinSlimeFrontendAdapter {
 
     private record LoweredStatement(
             QinIrConsoleLogValue consoleValueLog,
+            QinIrExpressionStatement expressionStatement,
             QinIrConsoleLogStatement objectLog,
             QinIrConsoleLogJavaStaticCall javaStaticCall,
             QinIrJavaInstanceMethodCall javaInstanceMethodCall,

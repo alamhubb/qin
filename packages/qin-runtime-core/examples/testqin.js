@@ -1,5 +1,10 @@
 import { profile, flags } from "./testqin-module-a.js";
 
+console.log(import.meta.url);
+import("./testqin-module-a.js");
+await 1;
+console.log(import("./testqin-module-a.js"));
+
 const user = { age: 18, name: "qin" };
 const stats = { min: 2, max: 8 };
 const meta = { tag: "demo", version: 1 };

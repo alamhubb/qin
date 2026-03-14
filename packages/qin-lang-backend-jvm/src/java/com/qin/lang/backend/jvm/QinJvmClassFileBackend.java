@@ -9,6 +9,7 @@ import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
+import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
@@ -62,6 +63,7 @@ public final class QinJvmClassFileBackend {
         Objects.requireNonNull(className, "className cannot be null");
 
         if (program.declarations().isEmpty()
+                && program.expressionStatements().isEmpty()
                 && program.consoleValueLogs().isEmpty()
                 && program.consoleLogs().isEmpty()
                 && program.javaStaticConsoleLogs().isEmpty()
@@ -84,6 +86,7 @@ public final class QinJvmClassFileBackend {
                     code -> emitRunMethod(
                             code,
                             program.declarations(),
+                            program.expressionStatements(),
                             program.consoleValueLogs(),
                             program.consoleLogs(),
                             program.javaStaticConsoleLogs(),
@@ -104,6 +107,7 @@ public final class QinJvmClassFileBackend {
     private void emitRunMethod(
             CodeBuilder code,
             List<QinIrConstDeclaration> declarations,
+            List<QinIrExpressionStatement> expressionStatements,
             List<QinIrConsoleLogValue> consoleValueLogs,
             List<QinIrConsoleLogStatement> consoleLogs,
             List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs,
@@ -115,6 +119,11 @@ public final class QinJvmClassFileBackend {
             int slot = code.allocateLocal(TypeKind.REFERENCE);
             emitDeclarationInitializer(code, bindings, declaration.initializer(), slot);
             bindings.put(declaration.name(), new DeclarationBinding(slot, declaration.initializer()));
+        }
+
+        for (QinIrExpressionStatement expressionStatement : expressionStatements) {
+            emitExpressionAsObject(code, bindings, expressionStatement.expression());
+            code.pop();
         }
 
         for (QinIrConsoleLogValue consoleValueLog : consoleValueLogs) {
