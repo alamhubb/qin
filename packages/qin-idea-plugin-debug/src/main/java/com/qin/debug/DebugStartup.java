@@ -1,6 +1,8 @@
 package com.qin.debug;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.execution.RunManager;
+import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.wm.ToolWindow;
@@ -25,6 +27,8 @@ import static com.qin.constants.QinConstants.*;
  * 闂備浇銆€閸嬫挻銇勯弽銊р槈闁?Monorepo闂備焦瀵х粙鎺撶┍濞差亜鍚规繝濠傜墕缁€澶愭煏婵犲繒鐣辨い銉ユ喘閺岀喓鎷犻懠顒傤唹婵犫拃鍐х€殿喖鐏氬鍕節閸曨剚鍟㈠┑锛勫亼閸婃洖锕㈤崡鐏?
  */
 public class DebugStartup implements ProjectActivity {
+    private static final String LEGACY_QIN_RUN_CONFIG_ID = "QinRunConfiguration";
+    private static final String LEGACY_QIN_TEST_CONFIG_ID = "QinTestConfiguration";
 
     @Nullable
     @Override
@@ -39,6 +43,7 @@ public class DebugStartup implements ProjectActivity {
         QinLogger.init(basePath, project);
         QinLogger.info("[STARTUP] Qin plugin startup: " + project.getName());
         QinLogger.info("[STARTUP] Project base path: " + basePath);
+        removeLegacyQinRunConfigurations(project);
 
         // 根据 Qin 配置链自动补齐 Project SDK。已有用户配置时不覆盖。
         if (hasQinSdkContext(Paths.get(basePath))) {
@@ -74,6 +79,28 @@ public class DebugStartup implements ProjectActivity {
         QinLogger.info("[STARTUP] Java file watcher started (incremental compile + debounce)");
 
         return Unit.INSTANCE;
+    }
+
+    private static void removeLegacyQinRunConfigurations(Project project) {
+        ApplicationManager.getApplication().invokeLater(() -> ApplicationManager.getApplication().runWriteAction(() -> {
+            RunManager runManager = RunManager.getInstance(project);
+            List<RunnerAndConfigurationSettings> allSettings = new ArrayList<>(runManager.getAllSettings());
+            int removed = 0;
+
+            for (RunnerAndConfigurationSettings settings : allSettings) {
+                String typeId = settings.getType().getId();
+                if (LEGACY_QIN_RUN_CONFIG_ID.equals(typeId) || LEGACY_QIN_TEST_CONFIG_ID.equals(typeId)) {
+                    runManager.removeConfiguration(settings);
+                    removed++;
+                }
+            }
+
+            if (removed > 0) {
+                QinLogger.info("[RUN] Removed legacy Qin run configurations: " + removed);
+            } else {
+                QinLogger.info("[RUN] No legacy Qin run configurations found.");
+            }
+        }));
     }
 
     /**

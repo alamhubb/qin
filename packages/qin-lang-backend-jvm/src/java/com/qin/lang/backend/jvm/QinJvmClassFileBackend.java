@@ -1,12 +1,16 @@
 package com.qin.lang.backend.jvm;
 
+import com.qin.lang.ir.QinBuiltinRegistry;
+import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
+import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
+import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
@@ -51,6 +55,7 @@ public final class QinJvmClassFileBackend {
         Objects.requireNonNull(className, "className cannot be null");
 
         if (program.declarations().isEmpty()
+                && program.consoleValueLogs().isEmpty()
                 && program.consoleLogs().isEmpty()
                 && program.javaStaticConsoleLogs().isEmpty()
                 && program.javaInstanceMethodCalls().isEmpty()
@@ -72,6 +77,7 @@ public final class QinJvmClassFileBackend {
                     code -> emitRunMethod(
                             code,
                             program.declarations(),
+                            program.consoleValueLogs(),
                             program.consoleLogs(),
                             program.javaStaticConsoleLogs(),
                             program.javaInstanceMethodCalls(),
@@ -82,6 +88,7 @@ public final class QinJvmClassFileBackend {
     private void emitRunMethod(
             CodeBuilder code,
             List<QinIrConstDeclaration> declarations,
+            List<QinIrConsoleLogValue> consoleValueLogs,
             List<QinIrConsoleLogStatement> consoleLogs,
             List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs,
             List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls,
@@ -90,8 +97,12 @@ public final class QinJvmClassFileBackend {
 
         for (QinIrConstDeclaration declaration : declarations) {
             int slot = code.allocateLocal(TypeKind.REFERENCE);
-            emitDeclarationInitializer(code, declaration.initializer(), slot);
+            emitDeclarationInitializer(code, bindings, declaration.initializer(), slot);
             bindings.put(declaration.name(), new DeclarationBinding(slot, declaration.initializer()));
+        }
+
+        for (QinIrConsoleLogValue consoleValueLog : consoleValueLogs) {
+            emitConsoleValueLog(code, bindings, consoleValueLog);
         }
 
         for (QinIrConsoleLogStatement consoleLog : consoleLogs) {
@@ -120,9 +131,13 @@ public final class QinJvmClassFileBackend {
         }
     }
 
-    private void emitDeclarationInitializer(CodeBuilder code, QinIrExpression initializer, int slot) {
+    private void emitDeclarationInitializer(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrExpression initializer,
+            int slot) {
         if (initializer instanceof QinIrObjectLiteral objectLiteral) {
-            emitObjectLiteralInitializer(code, objectLiteral, slot);
+            emitObjectLiteralInitializer(code, bindings, objectLiteral, slot);
             return;
         }
         if (initializer instanceof QinIrJavaNewExpression javaNewExpression) {
@@ -133,19 +148,13 @@ public final class QinJvmClassFileBackend {
                 "Unsupported const initializer: " + initializer.getClass().getSimpleName());
     }
 
-    private void emitObjectLiteralInitializer(CodeBuilder code, QinIrObjectLiteral objectLiteral, int slot) {
-        code.new_(LINKED_HASH_MAP_DESC);
-        code.dup();
-        code.invokespecial(LINKED_HASH_MAP_DESC, "<init>", VOID_INIT);
+    private void emitObjectLiteralInitializer(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrObjectLiteral objectLiteral,
+            int slot) {
+        emitObjectLiteralAsObject(code, bindings, objectLiteral);
         code.astore(slot);
-
-        for (QinIrObjectProperty property : objectLiteral.properties()) {
-            code.aload(slot);
-            code.ldc(property.key());
-            emitExpressionAsObject(code, property.value());
-            code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
-            code.pop();
-        }
     }
 
     private void emitJavaNewInitializer(CodeBuilder code, QinIrJavaNewExpression javaNewExpression, int slot) {
@@ -185,6 +194,14 @@ public final class QinJvmClassFileBackend {
         code.aload(binding.slot());
         code.ldc(consoleLog.propertyName());
         code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
+        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
+    }
+
+    private void emitConsoleValueLog(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrConsoleLogValue consoleValueLog) {
+        emitExpressionAsObject(code, bindings, consoleValueLog.value());
         code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
@@ -260,7 +277,10 @@ public final class QinJvmClassFileBackend {
         }
     }
 
-    private void emitExpressionAsObject(CodeBuilder code, QinIrExpression expression) {
+    private void emitExpressionAsObject(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrExpression expression) {
         if (expression instanceof QinIrNumberLiteral numberLiteral) {
             code.loadConstant(numberLiteral.value());
             code.invokestatic(INTEGER_DESC, "valueOf", INTEGER_VALUE_OF_SIGNATURE);
@@ -270,9 +290,88 @@ public final class QinJvmClassFileBackend {
             code.ldc(stringLiteral.value());
             return;
         }
+        if (expression instanceof QinIrObjectLiteral objectLiteral) {
+            emitObjectLiteralAsObject(code, bindings, objectLiteral);
+            return;
+        }
+        if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
+            emitMemberAccessAsObject(code, bindings, memberAccessExpression);
+            return;
+        }
+        if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
+            emitBuiltinCallAsObject(code, bindings, builtinCallExpression);
+            return;
+        }
 
         throw new IllegalArgumentException("Unsupported object expression type: "
                 + expression.getClass().getSimpleName());
+    }
+
+    private void emitObjectLiteralAsObject(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrObjectLiteral objectLiteral) {
+        code.new_(LINKED_HASH_MAP_DESC);
+        code.dup();
+        code.invokespecial(LINKED_HASH_MAP_DESC, "<init>", VOID_INIT);
+
+        for (QinIrObjectProperty property : objectLiteral.properties()) {
+            code.dup();
+            code.ldc(property.key());
+            emitExpressionAsObject(code, bindings, property.value());
+            code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
+            code.pop();
+        }
+    }
+
+    private void emitMemberAccessAsObject(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrMemberAccessExpression memberAccessExpression) {
+        DeclarationBinding binding = bindings.get(memberAccessExpression.objectName());
+        if (binding == null) {
+            throw new IllegalArgumentException("QJS2008 unknown identifier in member access: "
+                    + memberAccessExpression.objectName());
+        }
+        code.aload(binding.slot());
+        code.ldc(memberAccessExpression.propertyName());
+        code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
+    }
+
+    private void emitBuiltinCallAsObject(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrBuiltinCallExpression builtinCallExpression) {
+        QinBuiltinRegistry.BuiltinMethod method = QinBuiltinRegistry
+                .resolve(
+                        builtinCallExpression.receiverName(),
+                        builtinCallExpression.methodName(),
+                        builtinCallExpression.arguments().size())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "QJS1001 unknown builtin call: "
+                                + builtinCallExpression.receiverName() + "."
+                                + builtinCallExpression.methodName() + "/"
+                                + builtinCallExpression.arguments().size()));
+
+        for (int i = 0; i < builtinCallExpression.arguments().size(); i++) {
+            QinIrExpression argument = builtinCallExpression.arguments().get(i);
+            QinBuiltinRegistry.BuiltinArgKind argKind = method.argumentKinds().get(i);
+            if (argKind == QinBuiltinRegistry.BuiltinArgKind.STRING) {
+                if (argument instanceof QinIrStringLiteral stringLiteral) {
+                    code.ldc(stringLiteral.value());
+                    continue;
+                }
+                throw new IllegalArgumentException("QJS1003 builtin argument type mismatch at index "
+                        + i + " for " + builtinCallExpression.receiverName()
+                        + "." + builtinCallExpression.methodName() + ": expected string");
+            }
+            emitExpressionAsObject(code, bindings, argument);
+        }
+
+        code.invokestatic(
+                ClassDesc.of(method.ownerBinaryName()),
+                method.jvmMethodName(),
+                method.descriptor());
     }
 
     private void emitExpressionForParameter(CodeBuilder code, QinIrExpression expression, Class<?> parameterType) {

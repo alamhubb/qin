@@ -84,6 +84,7 @@ public final class QinImportPolicyTestMain {
                 List.of(declaration),
                 List.of(),
                 List.of(),
+                List.of(),
                 List.of(jsImport),
                 List.of(),
                 List.of(),

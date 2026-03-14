@@ -1,14 +1,17 @@
 package com.qin.lang.backend.js;
 
+import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
+import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJsImport;
 import com.qin.lang.ir.QinIrJavaNewExpression;
+import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
@@ -48,6 +51,7 @@ public final class QinJsBackend {
         }
 
         js.append("function run() {\n");
+        emitConsoleValueLogs(js, program.consoleValueLogs());
         emitConsoleLogs(js, declarationMap, program.consoleLogs());
         emitJavaStaticConsoleLogs(js, program.javaStaticConsoleLogs());
         String returnName = lastDeclarationName(program.declarations());
@@ -214,6 +218,16 @@ public final class QinJsBackend {
         }
     }
 
+    private void emitConsoleValueLogs(
+            StringBuilder js,
+            List<QinIrConsoleLogValue> consoleValueLogs) {
+        for (QinIrConsoleLogValue consoleValueLog : consoleValueLogs) {
+            js.append("  console.log(");
+            emitExpression(js, consoleValueLog.value());
+            js.append(");\n");
+        }
+    }
+
     private void emitJavaStaticConsoleLogs(
             StringBuilder js,
             List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs) {
@@ -235,6 +249,25 @@ public final class QinJsBackend {
         }
         if (expression instanceof QinIrStringLiteral stringLiteral) {
             js.append("\"").append(escapeJs(stringLiteral.value())).append("\"");
+            return;
+        }
+        if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
+            js.append(memberAccessExpression.objectName())
+                    .append(".")
+                    .append(memberAccessExpression.propertyName());
+            return;
+        }
+        if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
+            js.append(builtinCallExpression.receiverName())
+                    .append(".")
+                    .append(builtinCallExpression.methodName())
+                    .append("(");
+            emitArguments(js, builtinCallExpression.arguments());
+            js.append(")");
+            return;
+        }
+        if (expression instanceof QinIrObjectLiteral objectLiteral) {
+            emitObjectLiteral(js, objectLiteral);
             return;
         }
         throw new IllegalArgumentException("Unsupported expression: " + expression.getClass().getSimpleName());

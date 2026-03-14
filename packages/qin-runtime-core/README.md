@@ -77,6 +77,28 @@ This verifies:
 - semantic link validation
 - JVM backend class generation and in-memory execution
 
+## JS-SDK Core (Class-File API Path)
+
+Qin now supports JS-style global built-ins without import:
+
+```js
+console.log(1);
+console.log(Math.random());
+console.log(JSON.stringify({ age: 1 }));
+```
+
+Current built-ins:
+
+- `console.log`
+- `Math.random/abs/floor/ceil/max/min`
+- `JSON.stringify/parse`
+
+Compile-time built-in diagnostics:
+
+- `QJS1001`: unknown built-in call
+- `QJS1003`: built-in argument mismatch
+- `QJS2xxx`: unsupported subset syntax/semantics
+
 ## Run
 
 ```bash
@@ -180,3 +202,11 @@ Endpoints:
 - `com.qin.runtime.core.EsmBackendParityTestMain`
 - `com.qin.runtime.core.QinRunEntryParityTestMain`
 - `com.qin.runtime.core.FullstackSinglePortSmokeTestMain`
+
+## New TestMain Entries (JS-SDK + npm bare import)
+
+- `com.qin.runtime.core.JsSdkBuiltinSmokeTestMain`
+- `com.qin.runtime.core.JsSdkBuiltinCompileErrorTestMain`
+- `com.qin.runtime.core.JvmClassFileBuiltinEmitTestMain`
+- `com.qin.runtime.core.NpmBareImportResolverTestMain`
+- `com.qin.runtime.core.NpmSubsetCompileTestMain`
