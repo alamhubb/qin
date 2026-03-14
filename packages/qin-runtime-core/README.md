@@ -39,7 +39,7 @@ Pipeline layering:
 - `qin-lang-module-policy`: zone import policy checks
 - `qin-lang-sema-esm`: import/export semantic model + link validation
 - `qin-lang-frontend-adapter`: linked source -> Qin IR
-- `qin-lang-lowering-jvm`: target-specific lowering stage (current no-op)
+- `qin-lang-lowering-jvm`: shared strict lowering gate used before target backends
 - `qin-lang-backend-jvm` / `qin-lang-backend-js`: target emission
 
 ## Convention Layout
@@ -53,7 +53,7 @@ Pipeline layering:
 Compile-time policy is enforced by `qin-lang-module-policy`:
 
 - `app/` (frontend): JS imports allowed, `java:` imports denied (`QIN1001`)
-- `main/` (backend): `java:` imports allowed, JS imports denied (`QIN1002`)
+- `main/` (backend): `java:` and JS imports allowed
 - `shared/`: both JS and `java:` imports denied (`QIN1003`)
 
 Smoke test entry:
@@ -161,3 +161,22 @@ Endpoints:
 
 - `GET /api/health`
 - `GET /api/result`
+
+## Frontend ESM Mode (Qin as TS-like Source)
+
+- Dev mode (`--dev`):
+  - no frontend `.js` disk emit is required
+  - `/app.js` is served as bootstrap
+  - `.qin` modules are transformed on request under `/@qin-mod/...`
+- Build mode (`--build-only`):
+  - emits browser `.js` files for `.qin` module graph
+  - writes bootstrap `app.js` and module outputs under `@qin-mod/`
+
+## New TestMain Entries (Stage-1)
+
+- `com.qin.runtime.core.EsmStage1TestMain`
+- `com.qin.runtime.core.EsmSyntaxMatrixTestMain`
+- `com.qin.runtime.core.EsmCycleLiveBindingTestMain`
+- `com.qin.runtime.core.EsmBackendParityTestMain`
+- `com.qin.runtime.core.QinRunEntryParityTestMain`
+- `com.qin.runtime.core.FullstackSinglePortSmokeTestMain`

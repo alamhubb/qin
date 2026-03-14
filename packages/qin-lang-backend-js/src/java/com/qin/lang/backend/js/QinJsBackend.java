@@ -93,19 +93,63 @@ public final class QinJsBackend {
         }
 
         for (Map.Entry<String, List<QinIrJsImport>> entry : grouped.entrySet()) {
-            js.append("import { ");
             List<QinIrJsImport> specs = entry.getValue();
-            for (int i = 0; i < specs.size(); i++) {
-                QinIrJsImport spec = specs.get(i);
-                js.append(spec.importedName());
-                if (!spec.importedName().equals(spec.localName())) {
-                    js.append(" as ").append(spec.localName());
-                }
-                if (i < specs.size() - 1) {
-                    js.append(", ");
+            boolean sideEffectOnly = specs.stream().allMatch(spec -> spec.importedName().isBlank());
+            if (sideEffectOnly) {
+                js.append("import \"").append(escapeJs(entry.getKey())).append("\";\n");
+                continue;
+            }
+
+            String defaultLocal = null;
+            String namespaceLocal = null;
+            List<QinIrJsImport> named = new java.util.ArrayList<>();
+            for (QinIrJsImport spec : specs) {
+                if ("default".equals(spec.importedName())) {
+                    defaultLocal = spec.localName();
+                } else if ("*".equals(spec.importedName())) {
+                    namespaceLocal = spec.localName();
+                } else if (!spec.importedName().isBlank()) {
+                    named.add(spec);
                 }
             }
-            js.append(" } from \"").append(escapeJs(entry.getKey())).append("\";\n");
+
+            js.append("import ");
+            boolean hasPrefix = false;
+            if (defaultLocal != null && !defaultLocal.isBlank()) {
+                js.append(defaultLocal);
+                hasPrefix = true;
+            }
+            if (namespaceLocal != null && !namespaceLocal.isBlank()) {
+                if (hasPrefix) {
+                    js.append(", ");
+                }
+                js.append("* as ").append(namespaceLocal);
+                hasPrefix = true;
+            }
+            if (!named.isEmpty()) {
+                if (hasPrefix) {
+                    js.append(", ");
+                }
+                js.append("{ ");
+                for (int i = 0; i < named.size(); i++) {
+                    QinIrJsImport spec = named.get(i);
+                    js.append(spec.importedName());
+                    if (!spec.importedName().equals(spec.localName())) {
+                        js.append(" as ").append(spec.localName());
+                    }
+                    if (i < named.size() - 1) {
+                        js.append(", ");
+                    }
+                }
+                js.append(" }");
+            }
+
+            if (!hasPrefix && named.isEmpty()) {
+                js.append("\"").append(escapeJs(entry.getKey())).append("\";\n");
+                continue;
+            }
+
+            js.append(" from \"").append(escapeJs(entry.getKey())).append("\";\n");
         }
         js.append("\n");
     }

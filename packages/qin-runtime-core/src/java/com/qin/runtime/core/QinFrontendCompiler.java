@@ -4,6 +4,7 @@ import com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.module.policy.QinImportPolicyChecker;
 import com.qin.lang.sema.esm.QinEsmLinkValidator;
+import com.qin.lang.sema.esm.QinEsmRuntimeFeatureValidator;
 import com.qin.lang.sema.esm.QinEsmSemanticAnalyzer;
 import com.qin.lang.sema.esm.QinEsmSemanticModel;
 
@@ -18,10 +19,12 @@ public final class QinFrontendCompiler {
     private final QinImportPolicyChecker importPolicyChecker = new QinImportPolicyChecker();
     private final QinEsmSemanticAnalyzer esmSemanticAnalyzer = new QinEsmSemanticAnalyzer();
     private final QinEsmLinkValidator esmLinkValidator = new QinEsmLinkValidator();
+    private final QinEsmRuntimeFeatureValidator esmRuntimeFeatureValidator = new QinEsmRuntimeFeatureValidator();
 
     public QinFrontendCompileResult compile(Path sourceFile, Path projectRoot) throws Exception {
         QinLinkedSource linkedSource = moduleLinker.link(sourceFile);
         importPolicyChecker.validate(projectRoot, linkedSource.imports());
+        esmRuntimeFeatureValidator.validate(linkedSource.moduleGraph());
         QinEsmSemanticModel semanticModel = esmSemanticAnalyzer.analyze(linkedSource.moduleGraph());
         esmLinkValidator.validate(semanticModel);
         QinIrProgram program = adapter.parseProgram(linkedSource.source());

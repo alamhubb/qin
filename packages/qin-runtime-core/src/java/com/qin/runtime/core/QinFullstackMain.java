@@ -78,17 +78,13 @@ public final class QinFullstackMain {
                 options.printIr);
         QinBuildResult backendResult = coordinator.build(backendRequest);
         Method runMethod = loadRunMethod(classOutputDir, options.className);
+        QinFrontendEsmService frontendEsmService = null;
 
         if (frontendSource != null) {
-            QinBuildRequest frontendRequest = new QinBuildRequest(
-                    root,
-                    frontendSource,
-                    QinBuildTarget.JS,
-                    options.className,
-                    classOutputDir,
-                    jsOutputFile,
-                    options.printIr);
-            coordinator.build(frontendRequest);
+            frontendEsmService = QinFrontendEsmService.create(root, frontendSource);
+            if (!options.dev || options.buildOnly) {
+                frontendEsmService.emitProduction(staticRoot);
+            }
         } else {
             Files.createDirectories(staticRoot);
             if (!Files.exists(jsOutputFile)) {
@@ -106,10 +102,18 @@ public final class QinFullstackMain {
             System.out.println("Frontend source: <none>");
         }
         System.out.println("Generated server class: " + backendResult.classFile().toAbsolutePath());
-        System.out.println("Generated frontend js: " + jsOutputFile.toAbsolutePath());
+        if (frontendSource != null) {
+            if (!options.dev || options.buildOnly) {
+                System.out.println("Generated frontend js: " + jsOutputFile.toAbsolutePath());
+            } else {
+                System.out.println("Frontend js mode: in-memory dev transform (no disk emit)");
+            }
+        } else {
+            System.out.println("Generated frontend js: " + jsOutputFile.toAbsolutePath());
+        }
         System.out.println("Static root: " + staticRoot.toAbsolutePath());
 
-        return new BuildArtifacts(root, staticRoot, runMethod);
+        return new BuildArtifacts(root, staticRoot, runMethod, frontendEsmService);
     }
 
     private static void serve(BuildArtifacts artifacts, Options options) throws IOException {
@@ -153,6 +157,8 @@ public final class QinFullstackMain {
                 }
                 sendText(exchange, 200, devClientScript(), "application/javascript; charset=utf-8");
             });
+            server.createContext("/app.js", exchange -> serveFrontendBootstrap(exchange, artifacts));
+            server.createContext("/@qin-mod/", exchange -> serveFrontendQinModule(exchange, artifacts));
         }
 
         server.createContext("/", exchange -> serveStatic(exchange, artifacts, options.dev));
@@ -205,6 +211,40 @@ public final class QinFullstackMain {
             os.write(bytes);
         }
         exchange.close();
+    }
+
+    private static void serveFrontendBootstrap(HttpExchange exchange, BuildArtifacts artifacts) throws IOException {
+        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            sendText(exchange, 405, "method not allowed", "text/plain; charset=utf-8");
+            return;
+        }
+        QinFrontendEsmService service = artifacts.frontendEsmService();
+        if (service == null) {
+            sendText(exchange, 404, "not found", "text/plain; charset=utf-8");
+            return;
+        }
+        exchange.getResponseHeaders().set("Cache-Control", "no-store");
+        sendText(exchange, 200, service.bootstrapJs(), "application/javascript; charset=utf-8");
+    }
+
+    private static void serveFrontendQinModule(HttpExchange exchange, BuildArtifacts artifacts) throws IOException {
+        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            sendText(exchange, 405, "method not allowed", "text/plain; charset=utf-8");
+            return;
+        }
+        QinFrontendEsmService service = artifacts.frontendEsmService();
+        if (service == null) {
+            sendText(exchange, 404, "not found", "text/plain; charset=utf-8");
+            return;
+        }
+        String requestPath = exchange.getRequestURI() == null ? null : exchange.getRequestURI().getPath();
+        String js = service.transpileByRequestPath(requestPath);
+        if (js == null) {
+            sendText(exchange, 404, "not found", "text/plain; charset=utf-8");
+            return;
+        }
+        exchange.getResponseHeaders().set("Cache-Control", "no-store");
+        sendText(exchange, 200, js, "application/javascript; charset=utf-8");
     }
 
     private static Path resolveStaticFile(Path webRoot, String relativePath) {
@@ -681,12 +721,14 @@ public final class QinFullstackMain {
         private final Path root;
         private volatile Path staticRoot;
         private final AtomicReference<Method> runMethodRef;
+        private final AtomicReference<QinFrontendEsmService> frontendEsmServiceRef;
         private final AtomicLong version;
 
-        private BuildArtifacts(Path root, Path staticRoot, Method runMethod) {
+        private BuildArtifacts(Path root, Path staticRoot, Method runMethod, QinFrontendEsmService frontendEsmService) {
             this.root = root;
             this.staticRoot = staticRoot;
             this.runMethodRef = new AtomicReference<>(runMethod);
+            this.frontendEsmServiceRef = new AtomicReference<>(frontendEsmService);
             this.version = new AtomicLong(System.currentTimeMillis());
         }
 
@@ -702,6 +744,10 @@ public final class QinFullstackMain {
             return runMethodRef.get();
         }
 
+        private QinFrontendEsmService frontendEsmService() {
+            return frontendEsmServiceRef.get();
+        }
+
         private long version() {
             return version.get();
         }
@@ -709,6 +755,7 @@ public final class QinFullstackMain {
         private void updateFrom(BuildArtifacts rebuilt) {
             this.staticRoot = rebuilt.staticRoot;
             this.runMethodRef.set(rebuilt.currentRunMethod());
+            this.frontendEsmServiceRef.set(rebuilt.frontendEsmService());
             this.version.incrementAndGet();
         }
     }

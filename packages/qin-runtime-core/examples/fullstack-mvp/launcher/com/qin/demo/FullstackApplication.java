@@ -1,6 +1,8 @@
 package com.qin.demo;
 
-import com.qin.runtime.core.QinFullstackMain;
+import com.qin.runtime.core.QinRuntimeApi;
+
+import java.nio.file.Path;
 
 /**
  * Convention startup class for the fullstack MVP project.
@@ -11,6 +13,6 @@ public final class FullstackApplication {
     }
 
     public static void main(String[] args) throws Exception {
-        QinFullstackMain.main(new String[] { "--dev" });
+        QinRuntimeApi.runFullstack(Path.of("").toAbsolutePath().normalize(), 8080, true);
     }
 }

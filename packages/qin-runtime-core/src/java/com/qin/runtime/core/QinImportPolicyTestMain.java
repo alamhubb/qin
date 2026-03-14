@@ -28,16 +28,16 @@ public final class QinImportPolicyTestMain {
 
         expectPolicyPass(linker, checker, exampleRoot, QinImportPolicyTestConstants.FRONTEND_OK);
         expectPolicyPass(linker, checker, exampleRoot, QinImportPolicyTestConstants.BACKEND_OK);
+        expectPolicyPass(linker, checker, exampleRoot, QinImportPolicyTestConstants.BACKEND_BAD_JS);
         expectPolicyPass(linker, checker, exampleRoot, QinImportPolicyTestConstants.SHARED_OK);
 
         expectPolicyFail(linker, checker, exampleRoot, QinImportPolicyTestConstants.FRONTEND_BAD_JAVA, "QIN1001");
-        expectPolicyFail(linker, checker, exampleRoot, QinImportPolicyTestConstants.BACKEND_BAD_JS, "QIN1002");
         expectPolicyFail(linker, checker, exampleRoot, QinImportPolicyTestConstants.SHARED_BAD_JS, "QIN1003");
         expectPolicyFail(linker, checker, exampleRoot, QinImportPolicyTestConstants.SHARED_BAD_JAVA, "QIN1003");
 
         QinIrProgram jsImportProgram = buildJsImportProgram();
         validator.validate(jsImportProgram, QinBuildTarget.JS);
-        expectValidationFail(validator, jsImportProgram, QinBuildTarget.JVM, "JVM target does not support js imports");
+        validator.validate(jsImportProgram, QinBuildTarget.JVM);
 
         System.out.println("Import policy smoke test passed.");
         System.out.println("Example root: " + exampleRoot.toAbsolutePath());
@@ -88,22 +88,6 @@ public final class QinImportPolicyTestMain {
                 List.of(),
                 List.of(),
                 List.of());
-    }
-
-    private static void expectValidationFail(
-            QinIrValidator validator,
-            QinIrProgram program,
-            QinBuildTarget target,
-            String expectedMessagePart) {
-        try {
-            validator.validate(program, target);
-        } catch (IllegalArgumentException ex) {
-            if (ex.getMessage() != null && ex.getMessage().contains(expectedMessagePart)) {
-                return;
-            }
-            throw new IllegalStateException("Unexpected validator error: " + ex.getMessage(), ex);
-        }
-        throw new IllegalStateException("Expected validator to fail for target: " + target);
     }
 
     private static Path resolveExampleRoot() {

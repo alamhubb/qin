@@ -820,7 +820,7 @@ It is designed as a new language platform, not a Node.js compatibility layer.
 ### Import Policy by Zone (Current Rule)
 
 - `app/` (frontend): can import JS modules, cannot import `java:` modules
-- `main/` (backend): can import `java:` modules, cannot import JS modules
+- `main/` (backend): can import `java:` and JS modules
 - `shared/` (shared): cannot import `java:` or JS modules
 - Violations fail at compile time with policy error codes
 
@@ -839,3 +839,34 @@ It is designed as a new language platform, not a Node.js compatibility layer.
 ### Stage 0 Entry
 
 Use `com.qin.runtime.core.QinRuntimeMain` to parse `.qin` via Slime and emit `.class/.js` outputs.
+
+## Qin Language Design (Normative)
+
+Qin is a JS/ESM-syntax, JVM-kernel compiled language.
+
+- Qin is not a full JavaScript engine.
+- Qin does not aim for Node compatibility.
+- Qin uses Class-File API to emit JVM `.class` artifacts.
+
+Project zoning rules (compile-time hard rules):
+
+- `app/` (frontend): JS/ESM imports allowed, `java:` imports denied.
+- `main/` (backend): `java:` and JS imports allowed.
+- `shared/`: platform-specific imports denied (`java:` and JS package imports).
+
+Run model:
+
+- `qin run` without args follows `qin.config.json` and convention candidates.
+- `.qin` entries run through Qin runtime (`qin-runtime-core`).
+- `.java` entries run through Java compile/run flow.
+
+ESM diagnostics:
+
+- Link and semantic diagnostics: `ESM2xxx`
+- Runtime feature gates: `ESM3xxx`
+
+Reference implementation details live in:
+
+- `packages/qin-lang-module-policy/README.md`
+- `packages/qin-lang-sema-esm/README.md`
+- `packages/qin-runtime-core/README.md`

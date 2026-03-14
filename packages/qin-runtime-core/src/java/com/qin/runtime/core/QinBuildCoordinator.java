@@ -6,7 +6,7 @@ import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.lowering.jvm.QinEsmJvmLowerer;
 import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
-import com.qin.lang.lowering.jvm.QinNoOpEsmJvmLowerer;
+import com.qin.lang.lowering.jvm.QinStrictEsmJvmLowerer;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -31,7 +31,7 @@ public final class QinBuildCoordinator {
                 new QinIrValidator(),
                 new QinJvmClassFileBackend(),
                 new QinJsBackend(),
-                new QinNoOpEsmJvmLowerer());
+                new QinStrictEsmJvmLowerer());
     }
 
     public QinBuildCoordinator(
@@ -62,12 +62,10 @@ public final class QinBuildCoordinator {
 
         QinFrontendCompileResult frontendResult = frontendCompiler.compile(sourceFile, root);
         QinIrProgram program = frontendResult.program();
-        if (request.target().emitJvm()) {
-            QinEsmJvmLoweringContext loweringContext = new QinEsmJvmLoweringContext(
-                    frontendResult.linkedSource().entryFile(),
-                    frontendResult.linkedSource().modules());
-            program = esmJvmLowerer.lower(program, frontendResult.semanticModel(), loweringContext);
-        }
+        QinEsmJvmLoweringContext loweringContext = new QinEsmJvmLoweringContext(
+                frontendResult.linkedSource().entryFile(),
+                frontendResult.linkedSource().modules());
+        program = esmJvmLowerer.lower(program, frontendResult.semanticModel(), loweringContext);
         irValidator.validate(program, request.target());
 
         Path classFile = null;

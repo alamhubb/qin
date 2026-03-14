@@ -3,7 +3,7 @@ package com.qin.runtime.core;
 import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
-import com.qin.lang.lowering.jvm.QinNoOpEsmJvmLowerer;
+import com.qin.lang.lowering.jvm.QinStrictEsmJvmLowerer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +31,7 @@ public final class QinEsmRuntimeTestMain {
         QinFrontendCompiler frontendCompiler = new QinFrontendCompiler();
         QinFrontendCompileResult frontendResult = frontendCompiler.compile(entryFile, projectRoot);
 
-        QinIrProgram program = new QinNoOpEsmJvmLowerer().lower(
+        QinIrProgram program = new QinStrictEsmJvmLowerer().lower(
                 frontendResult.program(),
                 frontendResult.semanticModel(),
                 new QinEsmJvmLoweringContext(
