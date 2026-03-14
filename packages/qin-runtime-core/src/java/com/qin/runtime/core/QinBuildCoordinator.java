@@ -4,6 +4,9 @@ import com.qin.lang.backend.js.QinJsBackend;
 import com.qin.lang.backend.jvm.QinClassFileWriter;
 import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.lowering.jvm.QinEsmJvmLowerer;
+import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
+import com.qin.lang.lowering.jvm.QinNoOpEsmJvmLowerer;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,6 +22,7 @@ public final class QinBuildCoordinator {
     private final QinIrValidator irValidator;
     private final QinJvmClassFileBackend jvmBackend;
     private final QinJsBackend jsBackend;
+    private final QinEsmJvmLowerer esmJvmLowerer;
 
     public QinBuildCoordinator() {
         this(new QinDependencyService(),
@@ -26,7 +30,8 @@ public final class QinBuildCoordinator {
                 new QinFrontendCompiler(),
                 new QinIrValidator(),
                 new QinJvmClassFileBackend(),
-                new QinJsBackend());
+                new QinJsBackend(),
+                new QinNoOpEsmJvmLowerer());
     }
 
     public QinBuildCoordinator(
@@ -35,13 +40,15 @@ public final class QinBuildCoordinator {
             QinFrontendCompiler frontendCompiler,
             QinIrValidator irValidator,
             QinJvmClassFileBackend jvmBackend,
-            QinJsBackend jsBackend) {
+            QinJsBackend jsBackend,
+            QinEsmJvmLowerer esmJvmLowerer) {
         this.dependencyService = dependencyService;
         this.sourceResolver = sourceResolver;
         this.frontendCompiler = frontendCompiler;
         this.irValidator = irValidator;
         this.jvmBackend = jvmBackend;
         this.jsBackend = jsBackend;
+        this.esmJvmLowerer = esmJvmLowerer;
     }
 
     public QinBuildResult build(QinBuildRequest request) throws Exception {
@@ -53,8 +60,15 @@ public final class QinBuildCoordinator {
         QinRuntimeProjectLayout layout = QinRuntimeProjectLayout.discover(root);
         Path sourceFile = sourceResolver.resolveSourceFile(request, layout);
 
-        QinIrProgram program = frontendCompiler.compile(sourceFile);
-        irValidator.validate(program);
+        QinFrontendCompileResult frontendResult = frontendCompiler.compile(sourceFile, root);
+        QinIrProgram program = frontendResult.program();
+        if (request.target().emitJvm()) {
+            QinEsmJvmLoweringContext loweringContext = new QinEsmJvmLoweringContext(
+                    frontendResult.linkedSource().entryFile(),
+                    frontendResult.linkedSource().modules());
+            program = esmJvmLowerer.lower(program, frontendResult.semanticModel(), loweringContext);
+        }
+        irValidator.validate(program, request.target());
 
         Path classFile = null;
         Path jsFile = null;

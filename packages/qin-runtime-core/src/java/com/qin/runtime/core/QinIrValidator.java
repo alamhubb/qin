@@ -19,9 +19,10 @@ public final class QinIrValidator {
         this.jdkInteropPolicy = jdkInteropPolicy;
     }
 
-    public void validate(QinIrProgram program) {
+    public void validate(QinIrProgram program, QinBuildTarget target) {
         validateProgramNotEmpty(program);
         validateJavaImportPolicy(program.javaImports());
+        validateTargetImportPolicy(program, target);
     }
 
     private void validateProgramNotEmpty(QinIrProgram program) {
@@ -44,6 +45,13 @@ public final class QinIrValidator {
             if (!jdkInteropPolicy.isModuleAllowed(javaModule)) {
                 throw new IllegalArgumentException("java import module is not allowed: " + module);
             }
+        }
+    }
+
+    private void validateTargetImportPolicy(QinIrProgram program, QinBuildTarget target) {
+        if (target.emitJvm() && !program.jsImports().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "JVM target does not support js imports. Found: " + program.jsImports().get(0).moduleName());
         }
     }
 }

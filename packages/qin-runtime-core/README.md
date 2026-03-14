@@ -33,11 +33,49 @@ Pipeline entry classes:
 - `QinIrValidator` + `QinJdkInteropPolicy` (policy checks)
 - `QinDependencyService` (dependency boundary, current placeholder)
 
+Pipeline layering:
+
+- `qin-lang-module-resolver`: entry file -> module graph -> linked source
+- `qin-lang-module-policy`: zone import policy checks
+- `qin-lang-sema-esm`: import/export semantic model + link validation
+- `qin-lang-frontend-adapter`: linked source -> Qin IR
+- `qin-lang-lowering-jvm`: target-specific lowering stage (current no-op)
+- `qin-lang-backend-jvm` / `qin-lang-backend-js`: target emission
+
 ## Convention Layout
 
 - `shared/`: shared modules and contracts.
 - `app/`: frontend static assets root.
 - `main/`: backend startup side (`main/Main.java` as preferred entry).
+
+## Import Policy (Zone-Based)
+
+Compile-time policy is enforced by `qin-lang-module-policy`:
+
+- `app/` (frontend): JS imports allowed, `java:` imports denied (`QIN1001`)
+- `main/` (backend): `java:` imports allowed, JS imports denied (`QIN1002`)
+- `shared/`: both JS and `java:` imports denied (`QIN1003`)
+
+Smoke test entry:
+
+- `com.qin.runtime.core.QinImportPolicyTestMain`
+
+## ESM Runtime Smoke Test
+
+Example files:
+
+- `examples/esm-runtime/shared/shared.qin`
+- `examples/esm-runtime/main/main.qin`
+
+Runner:
+
+- `com.qin.runtime.core.QinEsmRuntimeTestMain`
+
+This verifies:
+
+- local `.qin` ESM import resolution
+- semantic link validation
+- JVM backend class generation and in-memory execution
 
 ## Run
 

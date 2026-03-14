@@ -27,6 +27,7 @@ public class QinLogger {
     private static final DateTimeFormatter FILE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
 
     private static Path logFile;
+    private static String logFileKey;
     private static boolean initialized = false;
     private static Project currentProject;
     private static String currentProjectPath;
@@ -49,12 +50,9 @@ public class QinLogger {
 
         currentProject = project;
         currentProjectPath = projectPath;
-        String timestamp = LocalDateTime.now().format(FILE_FMT);
-        Path logDir = Paths.get(projectPath, QIN_DIR, LOG_SUBDIR);
-        logFile = logDir.resolve(timestamp + ".log");
 
         try {
-            Files.createDirectories(logDir);
+            rotateLogFileIfNeeded();
             initialized = true;
             info("[LOGGER] Logger initialized");
         } catch (IOException e) {
@@ -134,6 +132,7 @@ public class QinLogger {
         String cleanMsg = normalizeForLog(msg);
         String line = String.format("[%s] [%s] %s%n", time, level, cleanMsg);
         try {
+            rotateLogFileIfNeeded();
             Files.writeString(
                     logFile,
                     line,
@@ -147,6 +146,24 @@ public class QinLogger {
 
     public static Path getLogFile() {
         return logFile;
+    }
+
+    private static void rotateLogFileIfNeeded() throws IOException {
+        if (currentProjectPath == null || currentProjectPath.isBlank()) {
+            return;
+        }
+
+        String nowKey = LocalDateTime.now().format(FILE_FMT);
+        Path logDir = Paths.get(currentProjectPath, QIN_DIR, LOG_SUBDIR);
+        if (logFile != null
+                && nowKey.equals(logFileKey)
+                && logDir.equals(logFile.getParent())) {
+            return;
+        }
+
+        Files.createDirectories(logDir);
+        logFile = logDir.resolve(nowKey + ".log");
+        logFileKey = nowKey;
     }
 
     private static String normalizeForLog(String msg) {

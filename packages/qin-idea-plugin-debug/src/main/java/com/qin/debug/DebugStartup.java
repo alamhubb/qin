@@ -154,15 +154,25 @@ public class DebugStartup implements ProjectActivity {
             com.intellij.openapi.projectRoots.Sdk currentSdk = rootManager.getProjectSdk();
             QinLogger.info("[SDK] Current Project SDK = " + (currentSdk != null ? currentSdk.getName() : "null"));
 
-            if (currentSdk != null) {
-                QinLogger.info("[SDK] Existing Project SDK detected: " + currentSdk.getName() + ", no reconfiguration needed");
-                return;
-            }
-
             String desiredJavaVersion = resolvePreferredJavaVersion(Paths.get(basePath));
             int desiredVersion = parseJavaVersion(desiredJavaVersion);
-            QinLogger.info("[SDK] No Project SDK configured, resolving preferred JDK from Qin config context...");
-            QinLogger.info("[SDK] Desired Java version = " + desiredJavaVersion);
+            QinLogger.info("[SDK] Required Java version from Qin workspace = " + desiredJavaVersion);
+
+            int currentVersion = 0;
+            if (currentSdk != null) {
+                String currentVersionStr = com.intellij.openapi.projectRoots.JavaSdk.getInstance()
+                        .getVersionString(currentSdk);
+                currentVersion = parseJavaVersion(currentVersionStr);
+                if (currentVersion >= desiredVersion) {
+                    QinLogger.info("[SDK] Existing Project SDK is compatible (current: "
+                            + currentVersion + ", required: " + desiredVersion + "), keeping as-is");
+                    return;
+                }
+                QinLogger.warn("[SDK] Existing Project SDK is lower than required (current: "
+                        + currentVersion + ", required: " + desiredVersion + "), attempting auto-upgrade");
+            } else {
+                QinLogger.info("[SDK] No Project SDK configured, selecting one automatically...");
+            }
 
             com.intellij.openapi.projectRoots.Sdk bestSdk = selectBestMatchingJdk(allJdks, desiredVersion);
 
@@ -172,6 +182,16 @@ public class DebugStartup implements ProjectActivity {
                 int selectedVersion = parseJavaVersion(
                         com.intellij.openapi.projectRoots.JavaSdk.getInstance().getVersionString(bestSdk));
                 QinLogger.info("[SDK] Selected JDK: " + sdkName + " (version: " + selectedVersion + ", desired: " + desiredVersion + ")");
+
+                if (currentSdk != null && sdkName.equals(currentSdk.getName())) {
+                    QinLogger.info("[SDK] Selected JDK is the same as current SDK, no update needed");
+                    return;
+                }
+
+                if (selectedVersion < desiredVersion) {
+                    QinLogger.warn("[SDK] Best available JDK is still lower than required (selected: "
+                            + selectedVersion + ", required: " + desiredVersion + ")");
+                }
 
                 // 闂佽崵濮崇粈浣规櫠娴犲鍋?Project SDK闂備焦瀵х粙鎴︽偋閸涱喚绠鹃柛銉墯閸嬨劑鏌曟繛鍨姎鐟滄澘妫濋弻锝夛綖椤掆偓婵′粙鏌″畝鈧崰搴ㄥ煝閺冨牆鍗虫い蹇撴椤?
                 QinLogger.info("[SDK] Applying selected Project SDK...");
@@ -609,26 +629,21 @@ public class DebugStartup implements ProjectActivity {
     }
 
     private static String resolvePreferredJavaVersion(Path basePath) {
-        QinConfig nearestConfig = QinConfigSupport.loadNearest(basePath);
-        if (nearestConfig != null) {
-            String version = QinConfigSupport.javaVersion(nearestConfig);
-            QinLogger.info("[SDK] Resolved Java version from nearest Qin config: " + version);
-            return version;
-        }
-
         List<Path> qinProjects = discoverQinProjects(basePath);
         if (qinProjects.isEmpty()) {
+            QinConfig nearestConfig = QinConfigSupport.loadNearest(basePath);
+            if (nearestConfig != null) {
+                String version = QinConfigSupport.javaVersion(nearestConfig);
+                QinLogger.info("[SDK] Resolved Java version from nearest Qin config: " + version);
+                return version;
+            }
             QinLogger.info("[SDK] No Qin project config found, using default Java version: " + DEFAULT_JAVA_VERSION);
             return DEFAULT_JAVA_VERSION;
         }
 
-        qinProjects.sort(Comparator
-                .comparingInt((Path path) -> depthFrom(basePath, path))
-                .thenComparing(Path::toString));
-
         Map<String, Integer> versionCounts = new LinkedHashMap<>();
-        int bestDepth = Integer.MAX_VALUE;
-        String bestVersion = null;
+        int maxVersion = parseJavaVersion(DEFAULT_JAVA_VERSION);
+        String maxVersionStr = DEFAULT_JAVA_VERSION;
 
         for (Path projectPath : qinProjects) {
             QinConfig config = QinConfigSupport.load(projectPath);
@@ -638,26 +653,25 @@ public class DebugStartup implements ProjectActivity {
 
             String version = QinConfigSupport.javaVersion(config);
             versionCounts.merge(version, 1, Integer::sum);
-
-            int depth = depthFrom(basePath, projectPath);
-            if (depth < bestDepth) {
-                bestDepth = depth;
-                bestVersion = version;
+            int parsed = parseJavaVersion(version);
+            if (parsed > maxVersion) {
+                maxVersion = parsed;
+                maxVersionStr = version;
             }
         }
 
-        if (bestVersion != null) {
-            if (versionCounts.size() > 1) {
-                QinLogger.info("[SDK] Multiple Java versions detected in workspace: " + versionCounts
-                        + ". Using nearest project version: " + bestVersion);
-            } else {
-                QinLogger.info("[SDK] Resolved Java version from workspace Qin projects: " + bestVersion);
-            }
-            return bestVersion;
+        if (versionCounts.isEmpty()) {
+            QinLogger.info("[SDK] Workspace Qin configs did not provide a Java version, using default: " + DEFAULT_JAVA_VERSION);
+            return DEFAULT_JAVA_VERSION;
         }
 
-        QinLogger.info("[SDK] Workspace Qin configs did not provide a Java version, using default: " + DEFAULT_JAVA_VERSION);
-        return DEFAULT_JAVA_VERSION;
+        if (versionCounts.size() > 1) {
+            QinLogger.info("[SDK] Multiple Java versions detected in workspace: " + versionCounts
+                    + ". Using highest required version: " + maxVersionStr);
+        } else {
+            QinLogger.info("[SDK] Resolved Java version from workspace Qin projects: " + maxVersionStr);
+        }
+        return maxVersionStr;
     }
 
     private static int depthFrom(Path basePath, Path childPath) {

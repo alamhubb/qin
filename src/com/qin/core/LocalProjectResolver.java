@@ -19,6 +19,7 @@ import java.util.*;
  * 4. 鍖归厤dependencies涓殑瀹屾暣Maven鍧愭爣(groupId:artifactId)
  */
 public class LocalProjectResolver {
+    private static final boolean DEBUG = isDebugEnabled();
 
     private final Path startDir;
     private final Gson gson;
@@ -85,7 +86,7 @@ public class LocalProjectResolver {
                 if (!localClasspaths.contains(classesPath)) {
                     localClasspaths.add(classesPath);
                 }
-                System.err.println("[DEBUG] Matched local: " + fullName + " -> " + project.buildClassesPath);
+                debug("Matched local: " + fullName + " -> " + project.buildClassesPath);
 
                 // Add transitive dependencies declared by this local project.
                 try {
@@ -97,12 +98,11 @@ public class LocalProjectResolver {
                         }
                     }
                 } catch (Exception e) {
-                    System.err.println("[DEBUG] Failed to load transitives from "
-                            + project.projectDir + ": " + e.getMessage());
+                    debug("Failed to load transitives from " + project.projectDir + ": " + e.getMessage());
                 }
             } else {
                 remoteDependencies.putIfAbsent(fullName, version);
-                System.err.println("[DEBUG] Not found locally: " + fullName);
+                debug("Not found locally: " + fullName);
             }
         }
 
@@ -128,15 +128,15 @@ public class LocalProjectResolver {
 
         // 1. 鍚戜笂鏌ユ壘 workspace root
         Path workspaceRoot = findWorkspaceRoot(startDir);
-        System.err.println("[DEBUG] Workspace root: " + workspaceRoot);
+        debug("Workspace root: " + workspaceRoot);
 
         // 2. 浠?workspace root 閫掑綊鍚戜笅鎵弿鎵€鏈夐」鐩?
         List<Path> projectPaths = new ArrayList<>();
         scanProjects(workspaceRoot, projectPaths, 0, QinConstants.MAX_SCAN_DEPTH);
 
-        System.err.println("[DEBUG] Found " + projectPaths.size() + " project paths:");
+        debug("Found " + projectPaths.size() + " project paths:");
         for (Path p : projectPaths) {
-            System.err.println("[DEBUG]   - " + p);
+            debug("  - " + p);
         }
 
         // 3. 鎸夎窛绂绘帓搴忥紙杩戠殑浼樺厛锛?
@@ -149,6 +149,10 @@ public class LocalProjectResolver {
             try {
                 Path configPath = projectPath.resolve(QinConstants.CONFIG_FILE);
                 QinConfig config = loadConfig(configPath);
+                if (config == null || config.name() == null || config.name().isBlank()) {
+                    debug("Skip invalid qin.config.json: " + projectPath);
+                    continue;
+                }
                 String fullName = config.name(); // "com.slime:slime-token"
 
                 // 灏辫繎浼樺厛: 濡傛灉宸插瓨鍦紝涓嶈鐩?
@@ -157,9 +161,9 @@ public class LocalProjectResolver {
                 for (String alias : collectProjectAliases(fullName, projectPath)) {
                     projects.putIfAbsent(alias, projectInfo);
                 }
-                System.err.println("[DEBUG] Added project: " + fullName + " -> " + buildPath);
+                debug("Added project: " + fullName + " -> " + buildPath);
             } catch (Exception e) {
-                System.err.println("[DEBUG] Failed to load config from " + projectPath + ": " + e.getMessage());
+                debug("Failed to load config from " + projectPath + ": " + e.getMessage());
             }
         }
 
@@ -250,7 +254,29 @@ public class LocalProjectResolver {
      */
     private QinConfig loadConfig(Path configPath) throws IOException {
         String json = Files.readString(configPath);
-        return gson.fromJson(json, QinConfig.class);
+        if (json == null || json.isBlank()) {
+            throw new IOException("qin.config.json is empty");
+        }
+        QinConfig config = gson.fromJson(json, QinConfig.class);
+        if (config == null) {
+            throw new IOException("qin.config.json parsed to null");
+        }
+        return config;
+    }
+
+    private static boolean isDebugEnabled() {
+        String env = System.getenv("QIN_DEBUG");
+        if (env != null) {
+            return "1".equals(env) || "true".equalsIgnoreCase(env);
+        }
+        String prop = System.getProperty("qin.debug");
+        return "1".equals(prop) || "true".equalsIgnoreCase(prop);
+    }
+
+    private static void debug(String message) {
+        if (DEBUG) {
+            System.err.println("[DEBUG] " + message);
+        }
     }
 
     // ==================== workspace 鎵弿閫昏緫 ====================

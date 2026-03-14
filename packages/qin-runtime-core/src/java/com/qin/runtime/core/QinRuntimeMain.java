@@ -29,6 +29,7 @@ public final class QinRuntimeMain {
             System.out.println("IR declarations: " + result.program().declarations().size());
             System.out.println("IR console logs: " + result.program().consoleLogs().size());
             System.out.println("IR java imports: " + result.program().javaImports().size());
+            System.out.println("IR js imports: " + result.program().jsImports().size());
             System.out.println("IR java static console logs: " + result.program().javaStaticConsoleLogs().size());
             System.out.println("IR java instance method calls: " + result.program().javaInstanceMethodCalls().size());
             System.out.println("IR java instance console logs: " + result.program().javaInstanceConsoleLogs().size());

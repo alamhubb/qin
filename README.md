@@ -817,6 +817,13 @@ It is designed as a new language platform, not a Node.js compatibility layer.
 - `app/`: frontend static assets root (`/index` resolves to `app/index` or `app/index.html`)
 - backend entry: Java defaults to `src/Main.java` (with compatibility candidates), Qin defaults use `main/main.qin` and other built-in candidates
 
+### Import Policy by Zone (Current Rule)
+
+- `app/` (frontend): can import JS modules, cannot import `java:` modules
+- `main/` (backend): can import `java:` modules, cannot import JS modules
+- `shared/` (shared): cannot import `java:` or JS modules
+- Violations fail at compile time with policy error codes
+
 ## Runtime Package Plan
 
 - Location: `qin/packages/qin-runtime-core`

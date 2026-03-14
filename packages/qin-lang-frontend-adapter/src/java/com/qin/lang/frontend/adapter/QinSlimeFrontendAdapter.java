@@ -7,6 +7,7 @@ import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
+import com.qin.lang.ir.QinIrJsImport;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
@@ -32,18 +33,29 @@ import java.util.regex.Pattern;
  */
 public final class QinSlimeFrontendAdapter {
     private static final Pattern JAVA_IMPORT_PATTERN = Pattern.compile(
-            "import\\s*\\{([^}]*)}\\s*from\\s*\"java:([^\"]+)\"\\s*;?",
+            "import\\s*\\{([^}]*)}\\s*from\\s*[\"']java:([^\"']+)[\"']\\s*;?",
+            Pattern.MULTILINE);
+    private static final Pattern JS_IMPORT_PATTERN = Pattern.compile(
+            "import\\s*\\{([^}]*)}\\s*from\\s*[\"']([^\"']+)[\"']\\s*;?",
             Pattern.MULTILINE);
 
     public QinIrProgram parseProgram(String source) {
         Objects.requireNonNull(source, "source cannot be null");
         try {
-            ImportExtraction importExtraction = extractJavaImports(source);
-            String sourceForSlime = importExtraction.remainingSource().trim();
+            ImportExtraction javaImportExtraction = extractJavaImports(source);
+            JSImportExtraction jsImportExtraction = extractJsImports(javaImportExtraction.remainingSource());
+            String sourceForSlime = jsImportExtraction.remainingSource().trim();
             if (sourceForSlime.isEmpty()) {
-                return new QinIrProgram(List.of(), List.of(), importExtraction.imports(), List.of(), List.of(), List.of());
+                return new QinIrProgram(
+                        List.of(),
+                        List.of(),
+                        javaImportExtraction.imports(),
+                        jsImportExtraction.imports(),
+                        List.of(),
+                        List.of(),
+                        List.of());
             }
-            return parseProgramWithSlime(sourceForSlime, importExtraction.imports());
+            return parseProgramWithSlime(sourceForSlime, javaImportExtraction.imports(), jsImportExtraction.imports());
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     "Failed to parse Qin source with Slime frontend.\n" +
@@ -57,25 +69,32 @@ public final class QinSlimeFrontendAdapter {
         return parseProgram(source);
     }
 
-    private QinIrProgram parseProgramWithSlime(String source, List<QinIrJavaImport> preImports)
+    private QinIrProgram parseProgramWithSlime(
+            String source,
+            List<QinIrJavaImport> preImports,
+            List<QinIrJsImport> preJsImports)
             throws ReflectiveOperationException {
         Class<?> slimeParserClass = Class.forName("com.slime.parser.SlimeJavascriptParser");
         Class<?> sourceTypeClass = Arrays.stream(slimeParserClass.getDeclaredClasses())
                 .filter(c -> c.getSimpleName().equals("SourceType"))
                 .findFirst()
                 .orElseThrow(() -> new ClassNotFoundException("SlimeJavascriptParser.SourceType not found"));
-
         Object sourceType = selectSourceType(source, sourceTypeClass);
 
         Class<?> subhutiParserClass = Class.forName("com.subhuti.parser.SubhutiParser");
         Method createMethod = subhutiParserClass.getMethod("create", Class.class, Object[].class);
         Object parser = invokeStatic(createMethod, slimeParserClass, new Object[]{source});
 
-        Method programMethod = parser.getClass().getMethod("Program", sourceTypeClass);
-        invoke(programMethod, parser, sourceType);
-
-        Method getCstMethod = parser.getClass().getMethod("getCst");
-        Object cst = invoke(getCstMethod, parser);
+        Method programMethod = findMethod(parser.getClass(), "Program", 1);
+        Object cst = invoke(programMethod, parser, sourceType);
+        if (cst == null) {
+            try {
+                Method getCstMethod = findMethod(parser.getClass(), "getCst", 0);
+                cst = invoke(getCstMethod, parser);
+            } catch (NoSuchMethodException ignored) {
+                // keep null and fail with explicit message below
+            }
+        }
         if (cst == null) {
             throw new IllegalArgumentException("Slime parser returned null CST");
         }
@@ -87,10 +106,13 @@ public final class QinSlimeFrontendAdapter {
             throw new IllegalArgumentException("Slime CST->AST returned null Program");
         }
 
-        return lowerProgramAst(programAst, preImports);
+        return lowerProgramAst(programAst, preImports, preJsImports);
     }
 
-    private QinIrProgram lowerProgramAst(Object programAst, List<QinIrJavaImport> preImports) {
+    private QinIrProgram lowerProgramAst(
+            Object programAst,
+            List<QinIrJavaImport> preImports,
+            List<QinIrJsImport> preJsImports) {
         List<?> body = asList(invokeByName(programAst, "body"), "Program.body");
         if (body.isEmpty()) {
             throw new IllegalArgumentException("Program body cannot be empty");
@@ -99,6 +121,7 @@ public final class QinSlimeFrontendAdapter {
         List<QinIrConstDeclaration> declarations = new ArrayList<>();
         List<QinIrConsoleLogStatement> consoleLogs = new ArrayList<>();
         List<QinIrJavaImport> javaImports = new ArrayList<>();
+        List<QinIrJsImport> jsImports = new ArrayList<>();
         List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs = new ArrayList<>();
         List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls = new ArrayList<>();
         List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs = new ArrayList<>();
@@ -110,13 +133,17 @@ public final class QinSlimeFrontendAdapter {
                 registerJavaImportLookup(javaImportLookup, javaImport);
             }
         }
+        if (preJsImports != null) {
+            jsImports.addAll(preJsImports);
+        }
 
         for (Object statement : body) {
             String nodeType = simpleName(statement);
             if ("ImportDeclaration".equals(nodeType)) {
-                List<QinIrJavaImport> loweredImports = lowerImportDeclaration(statement);
-                javaImports.addAll(loweredImports);
-                for (QinIrJavaImport javaImport : loweredImports) {
+                LoweredImports loweredImports = lowerImportDeclaration(statement);
+                javaImports.addAll(loweredImports.javaImports());
+                jsImports.addAll(loweredImports.jsImports());
+                for (QinIrJavaImport javaImport : loweredImports.javaImports()) {
                     registerJavaImportLookup(javaImportLookup, javaImport);
                 }
                 continue;
@@ -158,38 +185,52 @@ public final class QinSlimeFrontendAdapter {
                 declarations,
                 consoleLogs,
                 javaImports,
+                jsImports,
                 javaStaticConsoleLogs,
                 javaInstanceMethodCalls,
                 javaInstanceConsoleLogs);
     }
 
-    private List<QinIrJavaImport> lowerImportDeclaration(Object importDeclarationAst) {
+    private LoweredImports lowerImportDeclaration(Object importDeclarationAst) {
         Object sourceNode = invokeByName(importDeclarationAst, "source");
         String sourceValue = asString(invokeByName(sourceNode, "value"), "ImportDeclaration.source.value");
-        if (!sourceValue.startsWith("java:")) {
-            throw new IllegalArgumentException("Only java: imports are supported, got: " + sourceValue);
-        }
-        String javaModule = sourceValue.substring("java:".length());
-        if (javaModule.isBlank()) {
-            throw new IllegalArgumentException("java: import module cannot be blank");
-        }
-
         List<?> specifiers = asList(invokeByName(importDeclarationAst, "specifiers"), "ImportDeclaration.specifiers");
         if (specifiers.isEmpty()) {
-            throw new IllegalArgumentException("java: import must include at least one named specifier");
+            throw new IllegalArgumentException("Import must include at least one named specifier");
         }
 
-        List<QinIrJavaImport> imports = new ArrayList<>();
-        for (Object specifier : specifiers) {
-            if (!"ImportSpecifier".equals(simpleName(specifier))) {
-                throw new IllegalArgumentException("Only named import specifier is supported for java: imports");
+        if (sourceValue.startsWith("java:")) {
+            String javaModule = sourceValue.substring("java:".length());
+            if (javaModule.isBlank()) {
+                throw new IllegalArgumentException("java: import module cannot be blank");
             }
-            String importedName = extractIdentifierName(invokeByName(specifier, "imported"), "ImportSpecifier.imported");
-            String localName = extractIdentifierName(invokeByName(specifier, "local"), "ImportSpecifier.local");
-            String ownerBinaryName = javaModule + "." + importedName;
-            imports.add(new QinIrJavaImport(sourceValue, importedName, localName, ownerBinaryName));
+            List<QinIrJavaImport> imports = new ArrayList<>();
+            for (Object specifier : specifiers) {
+                if (!"ImportSpecifier".equals(simpleName(specifier))) {
+                    throw new IllegalArgumentException("Only named import specifier is supported for java: imports");
+                }
+                String importedName = extractIdentifierName(invokeByName(specifier, "imported"), "ImportSpecifier.imported");
+                String localName = extractIdentifierName(invokeByName(specifier, "local"), "ImportSpecifier.local");
+                String ownerBinaryName = javaModule + "." + importedName;
+                imports.add(new QinIrJavaImport(sourceValue, importedName, localName, ownerBinaryName));
+            }
+            return new LoweredImports(imports, List.of());
         }
-        return imports;
+
+        if (isJsModule(sourceValue)) {
+            List<QinIrJsImport> imports = new ArrayList<>();
+            for (Object specifier : specifiers) {
+                if (!"ImportSpecifier".equals(simpleName(specifier))) {
+                    throw new IllegalArgumentException("Only named import specifier is supported for js imports");
+                }
+                String importedName = extractIdentifierName(invokeByName(specifier, "imported"), "ImportSpecifier.imported");
+                String localName = extractIdentifierName(invokeByName(specifier, "local"), "ImportSpecifier.local");
+                imports.add(new QinIrJsImport(sourceValue, importedName, localName));
+            }
+            return new LoweredImports(List.of(), imports);
+        }
+
+        throw new IllegalArgumentException("Unsupported import module: " + sourceValue);
     }
 
     private void registerJavaImportLookup(Map<String, String> lookup, QinIrJavaImport javaImport) {
@@ -236,6 +277,58 @@ public final class QinSlimeFrontendAdapter {
             String ownerBinaryName = javaModule + "." + importedName;
             imports.add(new QinIrJavaImport("java:" + javaModule, importedName, localName, ownerBinaryName));
         }
+    }
+
+    private JSImportExtraction extractJsImports(String source) {
+        Matcher matcher = JS_IMPORT_PATTERN.matcher(source);
+        StringBuffer remaining = new StringBuffer();
+        List<QinIrJsImport> imports = new ArrayList<>();
+        while (matcher.find()) {
+            String specifierBlock = matcher.group(1);
+            String moduleName = matcher.group(2).trim();
+            if (!isJsModule(moduleName)) {
+                matcher.appendReplacement(remaining, Matcher.quoteReplacement(matcher.group()));
+                continue;
+            }
+            parseJsImportSpecifiers(imports, specifierBlock, moduleName);
+            matcher.appendReplacement(remaining, "");
+        }
+        matcher.appendTail(remaining);
+        return new JSImportExtraction(imports, remaining.toString());
+    }
+
+    private void parseJsImportSpecifiers(List<QinIrJsImport> imports, String specifierBlock, String moduleName) {
+        String[] parts = specifierBlock.split(",");
+        for (String raw : parts) {
+            String spec = raw.trim();
+            if (spec.isEmpty()) {
+                continue;
+            }
+            String importedName;
+            String localName;
+            int asIndex = spec.indexOf(" as ");
+            if (asIndex > 0) {
+                importedName = spec.substring(0, asIndex).trim();
+                localName = spec.substring(asIndex + 4).trim();
+            } else {
+                importedName = spec;
+                localName = spec;
+            }
+            if (importedName.isEmpty() || localName.isEmpty()) {
+                throw new IllegalArgumentException("Invalid js import specifier: " + spec);
+            }
+            imports.add(new QinIrJsImport(moduleName, importedName, localName));
+        }
+    }
+
+    private boolean isJsModule(String moduleName) {
+        if (moduleName == null || moduleName.isBlank()) {
+            return false;
+        }
+        return moduleName.startsWith("js:")
+                || moduleName.endsWith(".js")
+                || moduleName.endsWith(".mjs")
+                || (!moduleName.startsWith("java:") && !moduleName.endsWith(".qin"));
     }
 
     private QinIrConstDeclaration lowerVariableDeclaration(
@@ -595,8 +688,18 @@ public final class QinSlimeFrontendAdapter {
             QinIrConsoleLogJavaInstanceCall javaInstanceConsoleLog) {
     }
 
+    private record LoweredImports(
+            List<QinIrJavaImport> javaImports,
+            List<QinIrJsImport> jsImports) {
+    }
+
     private record ImportExtraction(
             List<QinIrJavaImport> imports,
+            String remainingSource) {
+    }
+
+    private record JSImportExtraction(
+            List<QinIrJsImport> imports,
             String remainingSource) {
     }
 }

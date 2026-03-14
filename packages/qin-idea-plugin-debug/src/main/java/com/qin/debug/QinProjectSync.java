@@ -207,6 +207,11 @@ public class QinProjectSync {
                     ApplicationManager.getApplication().runWriteAction(() -> {
                         LanguageLevelProjectExtension extension = LanguageLevelProjectExtension.getInstance(project);
                         if (extension != null) {
+                            LanguageLevel current = extension.getLanguageLevel();
+                            if (current == level) {
+                                QinLogger.debug("[Sync] IDEA language level unchanged: " + level.name());
+                                return;
+                            }
                             extension.setLanguageLevel(level);
                             QinLogger.info("[Sync] IDEA language level set to " + level.name());
                         }
@@ -313,9 +318,41 @@ public class QinProjectSync {
                 return true;
             }
 
+            if (hasMissingClasspathEntries(projectPath, imlContent)) {
+                return true;
+            }
+
             return false;
         } catch (Exception e) {
             QinLogger.error("[Sync] Failed to validate IDEA module metadata: " + e.getMessage());
+            return true;
+        }
+    }
+
+    private boolean hasMissingClasspathEntries(Path projectPath, String imlContent) {
+        try {
+            com.qin.bsp.BspHandler bspHandler = new com.qin.bsp.BspHandler(projectPath.toString());
+            List<String> classpath = bspHandler.getClasspath();
+            if (classpath == null || classpath.isEmpty()) {
+                return false;
+            }
+
+            for (String path : classpath) {
+                if (path == null || path.isBlank()) {
+                    continue;
+                }
+                String entryPath = path.replace("\\", "/");
+                String expectedRoot = entryPath.endsWith(".jar")
+                        ? "jar://" + entryPath + "!/"
+                        : "file://" + entryPath;
+                if (!imlContent.contains(expectedRoot)) {
+                    QinLogger.info("[Sync] Missing classpath entry in .iml: " + expectedRoot);
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            QinLogger.error("[Sync] Failed to validate classpath entries in .iml: " + e.getMessage());
             return true;
         }
     }

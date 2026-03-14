@@ -25,7 +25,14 @@ public final class QinConfigSupport {
             ConfigLoader loader = new ConfigLoader(projectPath.toString());
             return loader.load();
         } catch (Exception e) {
-            QinLogger.info("[Config] Failed to load config from " + projectPath + ": " + e.getMessage());
+            String message = e.getMessage() == null ? "" : e.getMessage();
+            if (message.contains("qin.config.json is empty")
+                    || message.contains("qin.config.json parsed to null")
+                    || message.contains("No project detected")) {
+                QinLogger.debug("[Config] Ignore invalid config at " + projectPath + ": " + message);
+            } else {
+                QinLogger.warn("[Config] Failed to load config from " + projectPath + ": " + message);
+            }
             return null;
         }
     }

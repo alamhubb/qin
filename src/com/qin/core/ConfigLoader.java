@@ -42,7 +42,13 @@ public class ConfigLoader {
         Path jsonConfig = Paths.get(cwd, QinConstants.CONFIG_FILE);
         if (Files.exists(jsonConfig)) {
             String content = Files.readString(jsonConfig);
+            if (content == null || content.isBlank()) {
+                throw new IOException("qin.config.json is empty");
+            }
             QinConfig config = gson.fromJson(content, QinConfig.class);
+            if (config == null) {
+                throw new IOException("qin.config.json parsed to null");
+            }
             return applyDefaults(config);
         }
 
@@ -118,6 +124,9 @@ public class ConfigLoader {
      * Apply default values and return a new immutable config instance.
      */
     private QinConfig applyDefaults(QinConfig config) {
+        if (config == null) {
+            config = new QinConfig(detectProjectName(), "1.0.0");
+        }
         if (config.entry() != null && config.output() != null && config.java() != null) {
             return config;
         }
