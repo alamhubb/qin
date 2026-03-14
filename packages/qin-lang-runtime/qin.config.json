@@ -3,6 +3,9 @@
     "version":  "0.1.0",
     "description":  "Runtime library for Qin language",
     "entry":  "src/java/com/qin/lang/runtime/RuntimePackageMarker.java",
+    "dependencies":  {
+                         "com.qin:esmjs-sdk":  "0.1.0"
+                     },
     "java":  {
                  "version":  "21",
                  "sourceDir":  "src/java",

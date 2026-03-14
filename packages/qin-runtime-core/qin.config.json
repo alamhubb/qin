@@ -8,6 +8,7 @@
                          "com.qin:qin-lang-backend-jvm":  "0.1.0",
                          "com.qin:qin-lang-backend-js":  "0.1.0",
                          "com.qin:qin-lang-ir":  "0.1.0",
+                         "com.qin:esmjs-sdk":  "0.1.0",
                          "com.qin:qin-lang-runtime":  "0.1.0",
                          "com.qin:qin-lang-module-policy":  "0.1.0",
                          "com.qin:qin-lang-module-resolver":  "0.1.0",
