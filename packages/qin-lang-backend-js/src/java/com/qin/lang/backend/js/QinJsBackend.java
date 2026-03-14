@@ -39,15 +39,12 @@ public final class QinJsBackend {
         emitJsImports(js, program.jsImports());
         ensureNoUnsupportedJavaInterop(program);
 
-        Map<String, QinIrObjectLiteral> declarationMap = new LinkedHashMap<>();
+        Map<String, QinIrExpression> declarationMap = new LinkedHashMap<>();
         for (QinIrConstDeclaration declaration : program.declarations()) {
-            if (!(declaration.initializer() instanceof QinIrObjectLiteral literal)) {
-                throw new IllegalArgumentException("JS backend supports only object literal const initializer");
-            }
             js.append("const ").append(declaration.name()).append(" = ");
-            emitObjectLiteral(js, literal);
+            emitExpression(js, declaration.initializer());
             js.append(";\n");
-            declarationMap.put(declaration.name(), literal);
+            declarationMap.put(declaration.name(), declaration.initializer());
         }
         if (!declarationMap.isEmpty()) {
             js.append("\n");
@@ -198,13 +195,13 @@ public final class QinJsBackend {
 
     private void emitConsoleLogs(
             StringBuilder js,
-            Map<String, QinIrObjectLiteral> declarations,
+            Map<String, QinIrExpression> declarations,
             List<QinIrConsoleLogStatement> consoleLogs) {
         for (QinIrConsoleLogStatement consoleLog : consoleLogs) {
-            QinIrObjectLiteral objectLiteral = declarations.get(consoleLog.objectName());
-            if (objectLiteral == null) {
+            QinIrExpression declaration = declarations.get(consoleLog.objectName());
+            if (!(declaration instanceof QinIrObjectLiteral objectLiteral)) {
                 throw new IllegalArgumentException(
-                        "Unknown object in console.log: " + consoleLog.objectName());
+                        "console.log(object.property) requires object literal declaration: " + consoleLog.objectName());
             }
             boolean propertyExists = objectLiteral.properties().stream()
                     .anyMatch(property -> property.key().equals(consoleLog.propertyName()));

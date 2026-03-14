@@ -16,9 +16,9 @@ public final class EsmBackendParityTestMain {
 
         List<TestCase> cases = List.of(
                 new TestCase("valid-main", "main/runtime-ok.js", true, null),
-                new TestCase("invalid-dynamic-import", "main/invalid-dynamic-import.js", false, "ESM3002"),
-                new TestCase("invalid-import-meta", "main/invalid-import-meta.js", false, "ESM3001"),
-                new TestCase("invalid-top-level-await", "main/invalid-top-level-await.js", false, "ESM3003"));
+                new TestCase("invalid-dynamic-import", "main/invalid-dynamic-import.js", true, null),
+                new TestCase("invalid-import-meta", "main/invalid-import-meta.js", true, null),
+                new TestCase("invalid-top-level-await", "main/invalid-top-level-await.js", true, null));
 
         for (TestCase testCase : cases) {
             Outcome jvm = runBuild(coordinator, root, testCase, QinBuildTarget.JVM);

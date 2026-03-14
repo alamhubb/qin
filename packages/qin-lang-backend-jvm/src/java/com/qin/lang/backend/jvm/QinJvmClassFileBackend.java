@@ -160,8 +160,8 @@ public final class QinJvmClassFileBackend {
             emitJavaNewInitializer(code, javaNewExpression, slot);
             return;
         }
-        throw new IllegalArgumentException(
-                "Unsupported const initializer: " + initializer.getClass().getSimpleName());
+        emitExpressionAsObject(code, bindings, initializer);
+        code.astore(slot);
     }
 
     private void emitObjectLiteralInitializer(
@@ -367,6 +367,7 @@ public final class QinJvmClassFileBackend {
                     + memberAccessExpression.objectName());
         }
         code.aload(binding.slot());
+        code.checkcast(LINKED_HASH_MAP_DESC);
         code.ldc(memberAccessExpression.propertyName());
         code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
     }

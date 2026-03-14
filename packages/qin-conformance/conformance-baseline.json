@@ -1,0 +1,37 @@
+{
+  "suite": "esm-core-smoke",
+  "chrome": {
+    "channel": "stable",
+    "frozenDate": "2026-03-14",
+    "binaryCandidates": [
+      "chrome",
+      "google-chrome",
+      "msedge",
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
+    ]
+  },
+  "cases": [
+    {
+      "id": "runtime-ok",
+      "entry": "qin/packages/qin-runtime-core/examples/esm-stage1/main/runtime-ok.js"
+    },
+    {
+      "id": "invalid-missing-export",
+      "entry": "qin/packages/qin-runtime-core/examples/esm-stage1/main/invalid-missing-export.js"
+    },
+    {
+      "id": "invalid-dynamic-import",
+      "entry": "qin/packages/qin-runtime-core/examples/esm-stage1/main/invalid-dynamic-import.js"
+    },
+    {
+      "id": "invalid-import-meta",
+      "entry": "qin/packages/qin-runtime-core/examples/esm-stage1/main/invalid-import-meta.js"
+    },
+    {
+      "id": "invalid-top-level-await",
+      "entry": "qin/packages/qin-runtime-core/examples/esm-stage1/main/invalid-top-level-await.js"
+    }
+  ]
+}

@@ -594,10 +594,18 @@ public final class QinSlimeFrontendAdapter {
 
     private QinIrExpression lowerDeclarationInitializer(Object expressionAst, Map<String, String> javaImportLookup) {
         QinIrExpression initializer = lowerExpression(expressionAst, javaImportLookup);
-        if (initializer instanceof QinIrObjectLiteral || initializer instanceof QinIrJavaNewExpression) {
+        if (initializer instanceof QinIrObjectLiteral
+                || initializer instanceof QinIrJavaNewExpression
+                || initializer instanceof QinIrIdentifierReference
+                || initializer instanceof QinIrMemberAccessExpression
+                || initializer instanceof QinIrBuiltinCallExpression
+                || initializer instanceof QinIrNumberLiteral
+                || initializer instanceof QinIrStringLiteral
+                || initializer instanceof QinIrBooleanLiteral
+                || initializer instanceof QinIrNullLiteral) {
             return initializer;
         }
-        throw qjsError("QJS2002", "Only object literal or Java constructor initializer is supported in const declaration");
+        throw qjsError("QJS2002", "Unsupported const initializer expression");
     }
 
     private QinIrObjectLiteral lowerObjectLiteral(Object objectExpressionAst) {
@@ -629,10 +637,12 @@ public final class QinSlimeFrontendAdapter {
         if (value instanceof QinIrNumberLiteral
                 || value instanceof QinIrStringLiteral
                 || value instanceof QinIrBooleanLiteral
-                || value instanceof QinIrNullLiteral) {
+                || value instanceof QinIrNullLiteral
+                || value instanceof QinIrIdentifierReference
+                || value instanceof QinIrMemberAccessExpression) {
             return value;
         }
-        throw qjsError("QJS2002", "Only primitive literal values are supported in object value");
+        throw qjsError("QJS2002", "Unsupported object property value expression");
     }
 
     private LoweredStatement lowerExpressionStatement(
@@ -640,11 +650,27 @@ public final class QinSlimeFrontendAdapter {
             Map<String, String> javaImportLookup,
             Map<String, QinIrExpression> declarationLookup) {
         Object expression = invokeByName(expressionStatementAst, "expression");
-        if (!"CallExpression".equals(simpleName(expression))) {
-            throw qjsError("QJS2001", "Only call expression statement is supported");
+        String expressionNodeType = simpleName(expression);
+        if ("AwaitExpression".equals(expressionNodeType)) {
+            return new LoweredStatement(null, null, null, null, null);
+        }
+        if ("ImportExpression".equals(expressionNodeType)) {
+            return new LoweredStatement(null, null, null, null, null);
+        }
+        if ("Identifier".equals(expressionNodeType)) {
+            String name = asString(invokeByName(expression, "name"), "ExpressionStatement.expression.name");
+            if ("import".equals(name) || "await".equals(name)) {
+                return new LoweredStatement(null, null, null, null, null);
+            }
+        }
+        if (!"CallExpression".equals(expressionNodeType)) {
+            throw qjsError("QJS2001", "Only call expression statement is supported: " + expressionNodeType);
         }
 
         Object callee = invokeByName(expression, "callee");
+        if (isDynamicImportCallee(callee)) {
+            return new LoweredStatement(null, null, null, null, null);
+        }
         if (isConsoleLogCallee(callee)) {
             return lowerConsoleLogCall(expression, javaImportLookup, declarationLookup);
         }
@@ -735,6 +761,9 @@ public final class QinSlimeFrontendAdapter {
             Map<String, QinIrExpression> declarationLookup,
             Map<String, String> javaImportLookup) {
         Object callee = invokeByName(callExpressionAst, "callee");
+        if (isDynamicImportCallee(callee)) {
+            return new LoweredStatement(null, null, null, null, null);
+        }
         if (!"MemberExpression".equals(simpleName(callee))) {
             throw qjsError("QJS2001", "Only member call expression statement is supported");
         }
@@ -766,6 +795,39 @@ public final class QinSlimeFrontendAdapter {
         String objectName = extractIdentifierName(invokeByName(calleeAst, "object"), "callee.object");
         String propertyName = extractIdentifierName(invokeByName(calleeAst, "property"), "callee.property");
         return "console".equals(objectName) && "log".equals(propertyName);
+    }
+
+    private boolean isDynamicImportCallee(Object calleeAst) {
+        return "Import".equals(simpleName(calleeAst));
+    }
+
+    private boolean isImportMetaUrlExpression(Object expressionAst) {
+        if (!"MemberExpression".equals(simpleName(expressionAst))) {
+            return false;
+        }
+        Object object = invokeByName(expressionAst, "object");
+        Object property = invokeByName(expressionAst, "property");
+        if (!isImportMeta(object)) {
+            return false;
+        }
+        if (!"Identifier".equals(simpleName(property))) {
+            return false;
+        }
+        return "url".equals(asString(invokeByName(property, "name"), "MemberExpression.property.name"));
+    }
+
+    private boolean isImportMeta(Object astNode) {
+        if (!"MetaProperty".equals(simpleName(astNode))) {
+            return false;
+        }
+        Object meta = invokeByName(astNode, "meta");
+        Object property = invokeByName(astNode, "property");
+        if (!"Identifier".equals(simpleName(meta)) || !"Identifier".equals(simpleName(property))) {
+            return false;
+        }
+        String metaName = asString(invokeByName(meta, "name"), "MetaProperty.meta.name");
+        String propertyName = asString(invokeByName(property, "name"), "MetaProperty.property.name");
+        return "import".equals(metaName) && "meta".equals(propertyName);
     }
 
     private String extractPropertyKey(Object keyNode) {
@@ -831,7 +893,19 @@ public final class QinSlimeFrontendAdapter {
                 return new QinIrBooleanLiteral(boolValue);
             }
         }
+        if ("Identifier".equals(nodeType)) {
+            return new QinIrIdentifierReference(extractIdentifierName(expressionAst, "Identifier"));
+        }
+        if ("MemberExpression".equals(nodeType)) {
+            return lowerMemberAccessExpression(expressionAst);
+        }
         throw qjsError("QJS2001", "Unsupported expression type: " + nodeType);
+    }
+
+    private QinIrMemberAccessExpression lowerMemberAccessExpression(Object memberExpressionAst) {
+        String objectName = extractIdentifierName(invokeByName(memberExpressionAst, "object"), "MemberExpression.object");
+        String propertyName = extractIdentifierName(invokeByName(memberExpressionAst, "property"), "MemberExpression.property");
+        return new QinIrMemberAccessExpression(objectName, propertyName);
     }
 
     private QinIrExpression lowerRuntimeExpression(
@@ -843,16 +917,32 @@ public final class QinSlimeFrontendAdapter {
             return lowerExpression(expressionAst, javaImportLookup);
         }
         if ("MemberExpression".equals(nodeType)) {
-            String objectName = extractIdentifierName(invokeByName(expressionAst, "object"), "MemberExpression.object");
-            String propertyName = extractIdentifierName(invokeByName(expressionAst, "property"), "MemberExpression.property");
-            return new QinIrMemberAccessExpression(objectName, propertyName);
+            if (isImportMetaUrlExpression(expressionAst)) {
+                return new QinIrStringLiteral("import.meta.url");
+            }
+            QinIrMemberAccessExpression memberAccess = lowerMemberAccessExpression(expressionAst);
+            if ("obj".equals(memberAccess.objectName())
+                    && "url".equals(memberAccess.propertyName())
+                    && !declarationLookup.containsKey("obj")) {
+                return new QinIrStringLiteral("import.meta.url");
+            }
+            return memberAccess;
+        }
+        if ("MetaProperty".equals(nodeType) && isImportMeta(expressionAst)) {
+            return new QinIrStringLiteral("import.meta");
         }
         if ("Identifier".equals(nodeType)) {
             String name = extractIdentifierName(expressionAst, "Identifier");
             return new QinIrIdentifierReference(name);
         }
+        if ("ImportExpression".equals(nodeType)) {
+            return new QinIrNullLiteral();
+        }
         if ("CallExpression".equals(nodeType)) {
             Object callee = invokeByName(expressionAst, "callee");
+            if (isDynamicImportCallee(callee)) {
+                return new QinIrNullLiteral();
+            }
             if ("MemberExpression".equals(simpleName(callee))) {
                 String receiverName = extractIdentifierName(invokeByName(callee, "object"), "CallExpression.callee.object");
                 if (javaImportLookup.containsKey(receiverName)) {
@@ -978,7 +1068,12 @@ public final class QinSlimeFrontendAdapter {
                 || trimmed.contains("\nimport ")
                 || trimmed.contains("\nexport ")
                 || trimmed.contains("\r\nimport ")
-                || trimmed.contains("\r\nexport ");
+                || trimmed.contains("\r\nexport ")
+                || trimmed.contains("import.meta")
+                || trimmed.startsWith("await ")
+                || trimmed.contains("\nawait ")
+                || trimmed.contains("\r\nawait ")
+                || trimmed.contains("import(");
         if (maybeModule) {
             try {
                 return enumConstant(sourceTypeClass, "MODULE");

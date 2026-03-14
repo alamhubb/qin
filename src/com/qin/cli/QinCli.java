@@ -50,6 +50,7 @@ public class QinCli {
                 case "deps" -> showDependencies(cmdArgs);    // 妫ｅ啫鏅?闁哄倹婢橀·?
                 case "dev" -> devMode(cmdArgs);
                 case "dist" -> distProject();
+                case "conformance" -> runConformance(cmdArgs);
                 case "bsp" -> startBspServer();              // 妫ｅ啫鏅?BSP Server
                 case "bsp-init" -> initBspConfig();          // 妫ｅ啫鏅?闁汇垻鍠愰崹?BSP 闂佹澘绉堕悿?
                 case "help", "-h", "--help" -> printHelp();
@@ -139,6 +140,65 @@ public class QinCli {
         }
 
         runJavaProject(config, args);
+    }
+
+    private static void runConformance(String[] args) throws Exception {
+        System.out.println(blue("-> Loading configuration..."));
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+
+        EnvironmentStatus envStatus = envChecker.checkAll();
+        if (!envStatus.hasJava()) {
+            System.err.println(red("Error: java is not installed."));
+            System.out.println(envChecker.getInstallGuide("java"));
+            System.exit(1);
+        }
+
+        String conformanceMainClass = "com.qin.conformance.QinConformanceMain";
+        String dependencyClasspath = ensureDependenciesSynced(config);
+        String compileOutputDir = Paths.get(QinConstants.getCwd(), JavaCompileConfig.from(config).outputDir()).toString();
+        String separator = QinConstants.getClasspathSeparator();
+        String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
+                ? compileOutputDir
+                : compileOutputDir + separator + dependencyClasspath;
+
+        if (!isClassAvailableOnClasspath(runtimeClasspath, conformanceMainClass)) {
+            System.out.println(yellow("-> Conformance class missing in cached classpath, forcing dependency resync..."));
+            dependencyClasspath = syncDependenciesCore(config);
+            runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
+                    ? compileOutputDir
+                    : compileOutputDir + separator + dependencyClasspath;
+        }
+
+        if (!isClassAvailableOnClasspath(runtimeClasspath, conformanceMainClass)) {
+            throw new IllegalStateException("""
+                    Conformance command requires com.qin:qin-conformance.
+                    Add it to qin.config.json dependencies, then run `qin sync`.
+                    """.trim());
+        }
+
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        command.add("-cp");
+        command.add(runtimeClasspath);
+        command.add(conformanceMainClass);
+
+        if (!hasRootOption(args)) {
+            command.add("--root");
+            command.add(Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize().toString());
+        }
+        command.addAll(Arrays.asList(args));
+
+        System.out.println(blue("-> Running Qin conformance (Qin vs Chrome)..."));
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.directory(Paths.get(QinConstants.getCwd()).toFile());
+        processBuilder.inheritIO();
+        Process process = processBuilder.start();
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            System.exit(exitCode);
+        }
+        System.out.println(green("[OK] Conformance completed"));
     }
 
     private static void runJavaProject(String[] args) throws Exception {
@@ -467,6 +527,15 @@ public class QinCli {
                 } catch (IOException ignored) {
                     // Ignore broken classpath entry and keep probing.
                 }
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasRootOption(String[] args) {
+        for (String arg : args) {
+            if ("--root".equals(arg) || (arg != null && arg.startsWith("--root="))) {
+                return true;
             }
         }
         return false;
@@ -1309,6 +1378,7 @@ public class QinCli {
                   deps        Show dependency tree
                   dev         Start development mode (Qin: single-port dev server, Java: compile+run)
                   dist        Create distribution package
+                  conformance Run Qin vs Chrome conformance suite
 
                 IDE Integration (BSP):
                   bsp         Start BSP Server (called by IDE)
@@ -1342,6 +1412,8 @@ public class QinCli {
                   qin build                   # Full build
                   qin build --skip-tests      # Build without running tests
                   qin sync                    # Sync deps (auto-compiles local projects)
+                  qin conformance             # Run conformance baseline with Chrome
+                  qin conformance --chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"
                   qin bsp-init                # Generate BSP config for IDE
                 """);
     }
