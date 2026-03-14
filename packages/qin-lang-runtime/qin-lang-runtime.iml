@@ -19,11 +19,8 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://D:/project/qkyproject/slime-java/esmjs-sdk/build/classes" />
+          <root url="file://" />
         </CLASSES>
-        <SOURCES>
-          <root url="file://D:/project/qkyproject/slime-java/esmjs-sdk/src" />
-        </SOURCES>
       </library>
     </orderEntry>
   </component>

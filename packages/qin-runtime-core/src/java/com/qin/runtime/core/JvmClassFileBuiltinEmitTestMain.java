@@ -32,7 +32,7 @@ public final class JvmClassFileBuiltinEmitTestMain {
 
         byte[] bytes = Files.readAllBytes(classFile);
         String content = new String(bytes, StandardCharsets.ISO_8859_1);
-        requireContains(content, "com/qin/lang/runtime/QinConsole");
+        requireContains(content, "com/qin/lang/runtime/JavaEsmConsole");
         requireContains(content, "com/qin/lang/runtime/JavaEsmMath");
         requireContains(content, "com/qin/lang/runtime/JavaEsmJson");
 

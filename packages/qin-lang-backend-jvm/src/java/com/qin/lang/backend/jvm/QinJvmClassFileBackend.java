@@ -40,7 +40,7 @@ import java.util.Objects;
 public final class QinJvmClassFileBackend {
     private static final ClassDesc OBJECT_DESC = ClassDesc.of("java.lang.Object");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
-    private static final ClassDesc QIN_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.QinConsole");
+    private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
 
@@ -210,7 +210,7 @@ public final class QinJvmClassFileBackend {
         code.aload(binding.slot());
         code.ldc(consoleLog.propertyName());
         code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
-        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
+        code.invokestatic(JS_SDK_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
     private void emitConsoleValueLog(
@@ -218,7 +218,7 @@ public final class QinJvmClassFileBackend {
             Map<String, DeclarationBinding> bindings,
             QinIrConsoleLogValue consoleValueLog) {
         emitExpressionAsObject(code, bindings, consoleValueLog.value());
-        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
+        code.invokestatic(JS_SDK_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
     private void emitJavaInstanceMethodCall(
@@ -250,7 +250,7 @@ public final class QinJvmClassFileBackend {
                 resolvedMethod.descriptor());
 
         emitBoxIfNeeded(code, resolvedMethod.returnType());
-        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
+        code.invokestatic(JS_SDK_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
     private void emitJavaInstanceConsoleLog(
@@ -267,7 +267,7 @@ public final class QinJvmClassFileBackend {
         emitArgumentsForParameters(code, javaInstanceConsoleLog.arguments(), resolvedMethod.parameterTypes());
         invokeInstanceMethod(code, resolvedMethod);
         emitBoxIfNeeded(code, resolvedMethod.returnType());
-        code.invokestatic(QIN_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
+        code.invokestatic(JS_SDK_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
     private DeclarationBinding requireJavaBinding(Map<String, DeclarationBinding> bindings, String receiverName) {
