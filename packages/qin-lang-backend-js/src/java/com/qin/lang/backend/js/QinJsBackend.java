@@ -1,17 +1,20 @@
 package com.qin.lang.backend.js;
 
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
+import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
+import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJsImport;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
+import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
@@ -251,17 +254,33 @@ public final class QinJsBackend {
             js.append("\"").append(escapeJs(stringLiteral.value())).append("\"");
             return;
         }
+        if (expression instanceof QinIrBooleanLiteral booleanLiteral) {
+            js.append(booleanLiteral.value() ? "true" : "false");
+            return;
+        }
+        if (expression instanceof QinIrNullLiteral) {
+            js.append("null");
+            return;
+        }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
             js.append(memberAccessExpression.objectName())
                     .append(".")
                     .append(memberAccessExpression.propertyName());
             return;
         }
+        if (expression instanceof QinIrIdentifierReference identifierReference) {
+            js.append(identifierReference.name());
+            return;
+        }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
-            js.append(builtinCallExpression.receiverName())
-                    .append(".")
-                    .append(builtinCallExpression.methodName())
-                    .append("(");
+            if ("Global".equals(builtinCallExpression.receiverName())) {
+                js.append(builtinCallExpression.methodName()).append("(");
+            } else {
+                js.append(builtinCallExpression.receiverName())
+                        .append(".")
+                        .append(builtinCallExpression.methodName())
+                        .append("(");
+            }
             emitArguments(js, builtinCallExpression.arguments());
             js.append(")");
             return;

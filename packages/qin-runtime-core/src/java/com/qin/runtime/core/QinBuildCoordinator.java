@@ -23,6 +23,7 @@ public final class QinBuildCoordinator {
     private final QinJvmClassFileBackend jvmBackend;
     private final QinJsBackend jsBackend;
     private final QinEsmJvmLowerer esmJvmLowerer;
+    private final QinCompileSnapshotWriter snapshotWriter;
 
     public QinBuildCoordinator() {
         this(new QinDependencyService(),
@@ -31,7 +32,8 @@ public final class QinBuildCoordinator {
                 new QinIrValidator(),
                 new QinJvmClassFileBackend(),
                 new QinJsBackend(),
-                new QinStrictEsmJvmLowerer());
+                new QinStrictEsmJvmLowerer(),
+                new QinCompileSnapshotWriter());
     }
 
     public QinBuildCoordinator(
@@ -41,7 +43,8 @@ public final class QinBuildCoordinator {
             QinIrValidator irValidator,
             QinJvmClassFileBackend jvmBackend,
             QinJsBackend jsBackend,
-            QinEsmJvmLowerer esmJvmLowerer) {
+            QinEsmJvmLowerer esmJvmLowerer,
+            QinCompileSnapshotWriter snapshotWriter) {
         this.dependencyService = dependencyService;
         this.sourceResolver = sourceResolver;
         this.frontendCompiler = frontendCompiler;
@@ -49,6 +52,7 @@ public final class QinBuildCoordinator {
         this.jvmBackend = jvmBackend;
         this.jsBackend = jsBackend;
         this.esmJvmLowerer = esmJvmLowerer;
+        this.snapshotWriter = snapshotWriter;
     }
 
     public QinBuildResult build(QinBuildRequest request) throws Exception {
@@ -62,17 +66,20 @@ public final class QinBuildCoordinator {
 
         QinFrontendCompileResult frontendResult = frontendCompiler.compile(sourceFile, root);
         QinIrProgram program = frontendResult.program();
+        QinIrProgram irBeforeLowering = program;
         QinEsmJvmLoweringContext loweringContext = new QinEsmJvmLoweringContext(
                 frontendResult.linkedSource().entryFile(),
                 frontendResult.linkedSource().modules());
         program = esmJvmLowerer.lower(program, frontendResult.semanticModel(), loweringContext);
+        QinIrProgram loweredProgram = program;
         irValidator.validate(program, request.target());
 
         Path classFile = null;
         Path jsFile = null;
+        byte[] classBytes = null;
 
         if (request.target().emitJvm()) {
-            byte[] classBytes = jvmBackend.compileProgram(program, request.className());
+            classBytes = jvmBackend.compileProgram(program, request.className());
             classFile = QinClassFileWriter.writeClassFile(request.classOutputDir(), request.className(), classBytes);
         }
 
@@ -84,6 +91,21 @@ public final class QinBuildCoordinator {
             }
             Files.writeString(request.jsOutputFile(), jsCode, StandardCharsets.UTF_8);
             jsFile = request.jsOutputFile();
+        }
+
+        try {
+            String originalSource = Files.readString(sourceFile, StandardCharsets.UTF_8);
+            snapshotWriter.writeSnapshot(
+                    sourceFile,
+                    originalSource,
+                    frontendResult.linkedSource().source(),
+                    frontendResult.astText(),
+                    irBeforeLowering,
+                    loweredProgram,
+                    request.className(),
+                    classBytes);
+        } catch (Exception snapshotError) {
+            System.err.println("[WARN] failed to write compile snapshot: " + snapshotError.getMessage());
         }
 
         return new QinBuildResult(layout, sourceFile, program, classFile, jsFile);

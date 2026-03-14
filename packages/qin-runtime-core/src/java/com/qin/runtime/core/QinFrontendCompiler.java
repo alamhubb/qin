@@ -28,6 +28,7 @@ public final class QinFrontendCompiler {
         QinEsmSemanticModel semanticModel = esmSemanticAnalyzer.analyze(linkedSource.moduleGraph());
         esmLinkValidator.validate(semanticModel);
         QinIrProgram program = adapter.parseProgram(linkedSource.source());
-        return new QinFrontendCompileResult(program, linkedSource, semanticModel);
+        String astText = adapter.parseAst(linkedSource.source());
+        return new QinFrontendCompileResult(program, linkedSource, semanticModel, astText);
     }
 }

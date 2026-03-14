@@ -1,6 +1,7 @@
 package com.qin.lang.backend.jvm;
 
 import com.qin.lang.ir.QinBuiltinRegistry;
+import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
@@ -8,9 +9,11 @@ import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
+import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
+import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
@@ -39,12 +42,16 @@ public final class QinJvmClassFileBackend {
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc QIN_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.QinConsole");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
+    private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
 
     private static final MethodTypeDesc VOID_INIT = MethodTypeDesc.ofDescriptor("()V");
     private static final MethodTypeDesc RUN_SIGNATURE = MethodTypeDesc.ofDescriptor("()Ljava/lang/Object;");
+    private static final MethodTypeDesc MAIN_SIGNATURE = MethodTypeDesc.ofDescriptor("([Ljava/lang/String;)V");
     private static final MethodTypeDesc CONSOLE_LOG_SIGNATURE = MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)V");
     private static final MethodTypeDesc INTEGER_VALUE_OF_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(I)Ljava/lang/Integer;");
+    private static final MethodTypeDesc BOOLEAN_VALUE_OF_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Z)Ljava/lang/Boolean;");
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MAP_GET_SIGNATURE =
@@ -82,7 +89,16 @@ public final class QinJvmClassFileBackend {
                             program.javaStaticConsoleLogs(),
                             program.javaInstanceMethodCalls(),
                             program.javaInstanceConsoleLogs()));
+
+            builder.withMethodBody("main", MAIN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
+                    code -> emitMainMethod(code, className));
         });
+    }
+
+    private void emitMainMethod(CodeBuilder code, String className) {
+        code.invokestatic(ClassDesc.of(className), "run", RUN_SIGNATURE);
+        code.pop();
+        code.return_();
     }
 
     private void emitRunMethod(
@@ -290,12 +306,29 @@ public final class QinJvmClassFileBackend {
             code.ldc(stringLiteral.value());
             return;
         }
+        if (expression instanceof QinIrBooleanLiteral booleanLiteral) {
+            code.loadConstant(booleanLiteral.value() ? 1 : 0);
+            code.invokestatic(BOOLEAN_DESC, "valueOf", BOOLEAN_VALUE_OF_SIGNATURE);
+            return;
+        }
+        if (expression instanceof QinIrNullLiteral) {
+            code.aconst_null();
+            return;
+        }
         if (expression instanceof QinIrObjectLiteral objectLiteral) {
             emitObjectLiteralAsObject(code, bindings, objectLiteral);
             return;
         }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
             emitMemberAccessAsObject(code, bindings, memberAccessExpression);
+            return;
+        }
+        if (expression instanceof QinIrIdentifierReference identifierReference) {
+            DeclarationBinding binding = bindings.get(identifierReference.name());
+            if (binding == null) {
+                throw new IllegalArgumentException("QJS2008 unknown identifier: " + identifierReference.name());
+            }
+            code.aload(binding.slot());
             return;
         }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {

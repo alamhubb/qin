@@ -11,10 +11,12 @@ import java.util.Objects;
 public record QinFrontendCompileResult(
         QinIrProgram program,
         QinLinkedSource linkedSource,
-        QinEsmSemanticModel semanticModel) {
+        QinEsmSemanticModel semanticModel,
+        String astText) {
     public QinFrontendCompileResult {
         Objects.requireNonNull(program, "program cannot be null");
         Objects.requireNonNull(linkedSource, "linkedSource cannot be null");
         Objects.requireNonNull(semanticModel, "semanticModel cannot be null");
+        Objects.requireNonNull(astText, "astText cannot be null");
     }
 }

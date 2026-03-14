@@ -1,6 +1,7 @@
 package com.qin.lang.frontend.adapter;
 
 import com.qin.lang.ir.QinIrConstDeclaration;
+import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
@@ -8,10 +9,12 @@ import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrJavaImport;
+import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJsImport;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
+import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
@@ -20,12 +23,18 @@ import com.qin.lang.ir.QinIrStringLiteral;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,6 +100,39 @@ public final class QinSlimeFrontendAdapter {
                         "Failed to parse Qin source with Slime frontend.\n" +
                                 "Make sure Slime Java modules are on classpath.\n" +
                                 "Cause: " + message,
+                        cause);
+            }
+        }
+    }
+
+    public String parseAst(String source) {
+        Objects.requireNonNull(source, "source cannot be null");
+        String sourceForSlime = source.trim();
+        if (sourceForSlime.isEmpty()) {
+            return "Program(empty)";
+        }
+
+        try {
+            return parseAstWithSlime(sourceForSlime);
+        } catch (Exception primaryError) {
+            try {
+                ExtractedImports extracted = extractImports(sourceForSlime);
+                if (!extracted.hasAnyImport()) {
+                    throw primaryError;
+                }
+                String strippedSource = extracted.strippedSource().trim();
+                if (strippedSource.isEmpty()) {
+                    return "Program(import-only)";
+                }
+                return parseAstWithSlime(strippedSource);
+            } catch (Exception fallbackError) {
+                Throwable cause = fallbackError == primaryError ? primaryError : fallbackError;
+                String message = fallbackError == primaryError
+                        ? safeMessage(primaryError)
+                        : ("primary=" + safeMessage(primaryError) + "; fallback=" + safeMessage(fallbackError));
+                throw new IllegalArgumentException(
+                        "Failed to parse AST with Slime frontend.\n"
+                                + "Cause: " + message,
                         cause);
             }
         }
@@ -321,6 +363,16 @@ public final class QinSlimeFrontendAdapter {
             List<QinIrJavaImport> preImports,
             List<QinIrJsImport> preJsImports)
             throws ReflectiveOperationException {
+        Object programAst = createProgramAst(source);
+        return lowerProgramAst(programAst, preImports, preJsImports);
+    }
+
+    private String parseAstWithSlime(String source) throws ReflectiveOperationException {
+        Object programAst = createProgramAst(source);
+        return AstJsonEncoder.toJson(programAst);
+    }
+
+    private Object createProgramAst(String source) throws ReflectiveOperationException {
         Class<?> slimeParserClass = Class.forName("com.slime.parser.SlimeJavascriptParser");
         Class<?> sourceTypeClass = Arrays.stream(slimeParserClass.getDeclaredClasses())
                 .filter(c -> c.getSimpleName().equals("SourceType"))
@@ -352,8 +404,7 @@ public final class QinSlimeFrontendAdapter {
         if (programAst == null) {
             throw new IllegalArgumentException("Slime CST->AST returned null Program");
         }
-
-        return lowerProgramAst(programAst, preImports, preJsImports);
+        return programAst;
     }
 
     private QinIrProgram lowerProgramAst(
@@ -575,10 +626,13 @@ public final class QinSlimeFrontendAdapter {
 
     private QinIrExpression lowerObjectPropertyValue(Object expressionAst) {
         QinIrExpression value = lowerExpression(expressionAst, Map.of());
-        if (value instanceof QinIrNumberLiteral || value instanceof QinIrStringLiteral) {
+        if (value instanceof QinIrNumberLiteral
+                || value instanceof QinIrStringLiteral
+                || value instanceof QinIrBooleanLiteral
+                || value instanceof QinIrNullLiteral) {
             return value;
         }
-        throw qjsError("QJS2002", "Only integer and string literal are supported in object value");
+        throw qjsError("QJS2002", "Only primitive literal values are supported in object value");
     }
 
     private LoweredStatement lowerExpressionStatement(
@@ -617,7 +671,16 @@ public final class QinSlimeFrontendAdapter {
 
         Object firstArgument = arguments.get(0);
         if ("CallExpression".equals(simpleName(firstArgument))) {
-            return lowerConsoleLogJavaCall(firstArgument, javaImportLookup, declarationLookup);
+            Object nestedCallee = invokeByName(firstArgument, "callee");
+            if ("MemberExpression".equals(simpleName(nestedCallee))) {
+                String receiverName = extractIdentifierName(
+                        invokeByName(nestedCallee, "object"),
+                        "CallExpression.callee.object");
+                if (javaImportLookup.containsKey(receiverName)
+                        || declarationLookup.get(receiverName) instanceof QinIrJavaNewExpression) {
+                    return lowerConsoleLogJavaCall(firstArgument, javaImportLookup, declarationLookup);
+                }
+            }
         }
 
         QinIrExpression value = lowerRuntimeExpression(firstArgument, javaImportLookup, declarationLookup);
@@ -712,6 +775,9 @@ public final class QinSlimeFrontendAdapter {
         }
         if ("Literal".equals(nodeType)) {
             Object value = invokeByName(keyNode, "value");
+            if (value instanceof String text) {
+                return normalizeStringLiteral(text);
+            }
             return String.valueOf(value);
         }
         throw new IllegalArgumentException("Unsupported object key node type: " + nodeType);
@@ -752,11 +818,17 @@ public final class QinSlimeFrontendAdapter {
         }
         if ("Literal".equals(nodeType)) {
             Object value = invokeByName(expressionAst, "value");
+            if (value == null) {
+                return new QinIrNullLiteral();
+            }
             if (value instanceof Number number) {
                 return new QinIrNumberLiteral(number.intValue());
             }
             if (value instanceof String text) {
-                return new QinIrStringLiteral(text);
+                return new QinIrStringLiteral(normalizeStringLiteral(text));
+            }
+            if (value instanceof Boolean boolValue) {
+                return new QinIrBooleanLiteral(boolValue);
             }
         }
         throw qjsError("QJS2001", "Unsupported expression type: " + nodeType);
@@ -775,6 +847,10 @@ public final class QinSlimeFrontendAdapter {
             String propertyName = extractIdentifierName(invokeByName(expressionAst, "property"), "MemberExpression.property");
             return new QinIrMemberAccessExpression(objectName, propertyName);
         }
+        if ("Identifier".equals(nodeType)) {
+            String name = extractIdentifierName(expressionAst, "Identifier");
+            return new QinIrIdentifierReference(name);
+        }
         if ("CallExpression".equals(nodeType)) {
             Object callee = invokeByName(expressionAst, "callee");
             if ("MemberExpression".equals(simpleName(callee))) {
@@ -786,6 +862,9 @@ public final class QinSlimeFrontendAdapter {
                     throw qjsError("QJS2005", "Java instance call must be statement form");
                 }
                 return lowerBuiltinCallExpression(expressionAst, javaImportLookup, declarationLookup);
+            }
+            if ("Identifier".equals(simpleName(callee))) {
+                return lowerGlobalBuiltinCallExpression(expressionAst, javaImportLookup, declarationLookup);
             }
         }
         throw qjsError("QJS2001", "Unsupported runtime expression type: " + nodeType);
@@ -803,6 +882,16 @@ public final class QinSlimeFrontendAdapter {
         String methodName = extractIdentifierName(invokeByName(callee, "property"), "CallExpression.callee.property");
         List<QinIrExpression> arguments = lowerRuntimeArguments(callExpressionAst, javaImportLookup, declarationLookup);
         return new QinIrBuiltinCallExpression(receiverName, methodName, arguments);
+    }
+
+    private QinIrBuiltinCallExpression lowerGlobalBuiltinCallExpression(
+            Object callExpressionAst,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        Object callee = invokeByName(callExpressionAst, "callee");
+        String methodName = extractIdentifierName(callee, "CallExpression.callee");
+        List<QinIrExpression> arguments = lowerRuntimeArguments(callExpressionAst, javaImportLookup, declarationLookup);
+        return new QinIrBuiltinCallExpression("Global", methodName, arguments);
     }
 
     private List<QinIrExpression> lowerRuntimeArguments(
@@ -925,6 +1014,55 @@ public final class QinSlimeFrontendAdapter {
         return msg;
     }
 
+    private String normalizeStringLiteral(String text) {
+        String candidate = text == null ? "" : text;
+        if (candidate.length() >= 2) {
+            char first = candidate.charAt(0);
+            char last = candidate.charAt(candidate.length() - 1);
+            if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                return unescapeJsString(candidate.substring(1, candidate.length() - 1));
+            }
+        }
+        return candidate;
+    }
+
+    private String unescapeJsString(String text) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch != '\\' || i == text.length() - 1) {
+                out.append(ch);
+                continue;
+            }
+
+            char esc = text.charAt(++i);
+            switch (esc) {
+                case '"' -> out.append('"');
+                case '\'' -> out.append('\'');
+                case '\\' -> out.append('\\');
+                case 'n' -> out.append('\n');
+                case 'r' -> out.append('\r');
+                case 't' -> out.append('\t');
+                case 'b' -> out.append('\b');
+                case 'f' -> out.append('\f');
+                case 'u' -> {
+                    if (i + 4 >= text.length()) {
+                        throw qjsError("QJS2002", "Invalid unicode escape in string literal");
+                    }
+                    String hex = text.substring(i + 1, i + 5);
+                    try {
+                        out.append((char) Integer.parseInt(hex, 16));
+                    } catch (NumberFormatException ex) {
+                        throw qjsError("QJS2002", "Invalid unicode escape in string literal");
+                    }
+                    i += 4;
+                }
+                default -> out.append(esc);
+            }
+        }
+        return out.toString();
+    }
+
     private IllegalArgumentException qjsError(String code, String message) {
         return new IllegalArgumentException(code + " " + message);
     }
@@ -942,4 +1080,181 @@ public final class QinSlimeFrontendAdapter {
             List<QinIrJsImport> jsImports) {
     }
 
+    private static final class AstJsonEncoder {
+        private static final int MAX_DEPTH = 128;
+
+        private final IdentityHashMap<Object, Boolean> seen = new IdentityHashMap<>();
+        private final StringBuilder out = new StringBuilder();
+
+        private static String toJson(Object value) {
+            return new AstJsonEncoder().encode(value);
+        }
+
+        private String encode(Object value) {
+            writeValue(value, 0);
+            return out.toString();
+        }
+
+        private void writeValue(Object value, int depth) {
+            if (depth > MAX_DEPTH) {
+                out.append("\"<max-depth>\"");
+                return;
+            }
+            if (value == null) {
+                out.append("null");
+                return;
+            }
+            if (value instanceof String s) {
+                writeString(s);
+                return;
+            }
+            if (value instanceof Number || value instanceof Boolean) {
+                out.append(value);
+                return;
+            }
+            if (value instanceof Enum<?> e) {
+                writeString(e.name());
+                return;
+            }
+            if (value instanceof Class<?> c) {
+                writeString(c.getName());
+                return;
+            }
+            if (value instanceof Collection<?> collection) {
+                writeCollection(collection, depth + 1);
+                return;
+            }
+            if (value instanceof Map<?, ?> map) {
+                writeMap(map, depth + 1);
+                return;
+            }
+            if (value.getClass().isArray()) {
+                int len = java.lang.reflect.Array.getLength(value);
+                out.append('[');
+                for (int i = 0; i < len; i++) {
+                    if (i > 0) {
+                        out.append(',');
+                    }
+                    writeValue(java.lang.reflect.Array.get(value, i), depth + 1);
+                }
+                out.append(']');
+                return;
+            }
+            writeObject(value, depth + 1);
+        }
+
+        private void writeCollection(Collection<?> collection, int depth) {
+            out.append('[');
+            boolean first = true;
+            for (Object item : collection) {
+                if (!first) {
+                    out.append(',');
+                }
+                first = false;
+                writeValue(item, depth);
+            }
+            out.append(']');
+        }
+
+        private void writeMap(Map<?, ?> map, int depth) {
+            out.append('{');
+            boolean first = true;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (!first) {
+                    out.append(',');
+                }
+                first = false;
+                writeString(String.valueOf(entry.getKey()));
+                out.append(':');
+                writeValue(entry.getValue(), depth);
+            }
+            out.append('}');
+        }
+
+        private void writeObject(Object value, int depth) {
+            if (seen.containsKey(value)) {
+                out.append("null");
+                return;
+            }
+            seen.put(value, Boolean.TRUE);
+
+            out.append('{');
+            Map<String, Object> fields = extractFields(value);
+            boolean first = true;
+            for (Map.Entry<String, Object> entry : fields.entrySet()) {
+                if (!first) {
+                    out.append(',');
+                }
+                first = false;
+                writeString(entry.getKey());
+                out.append(':');
+                writeValue(entry.getValue(), depth);
+            }
+            out.append('}');
+        }
+
+        private Map<String, Object> extractFields(Object value) {
+            Class<?> type = value.getClass();
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            if (type.isRecord()) {
+                RecordComponent[] components = type.getRecordComponents();
+                if (components != null) {
+                    for (RecordComponent component : components) {
+                        try {
+                            fields.put(component.getName(), component.getAccessor().invoke(value));
+                        } catch (Exception e) {
+                            fields.put(component.getName(), "<error:" + e.getClass().getSimpleName() + ">");
+                        }
+                    }
+                    return fields;
+                }
+            }
+
+            Set<String> visitedNames = new java.util.HashSet<>();
+            Class<?> current = type;
+            while (current != null && current != Object.class) {
+                java.lang.reflect.Field[] declared = current.getDeclaredFields();
+                for (java.lang.reflect.Field field : declared) {
+                    if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
+                        continue;
+                    }
+                    if (!visitedNames.add(field.getName())) {
+                        continue;
+                    }
+                    try {
+                        field.setAccessible(true);
+                        fields.put(field.getName(), field.get(value));
+                    } catch (Exception e) {
+                        fields.put(field.getName(), "<error:" + e.getClass().getSimpleName() + ">");
+                    }
+                }
+                current = current.getSuperclass();
+            }
+            return fields;
+        }
+
+        private void writeString(String text) {
+            out.append('"');
+            for (int i = 0; i < text.length(); i++) {
+                char c = text.charAt(i);
+                switch (c) {
+                    case '"' -> out.append("\\\"");
+                    case '\\' -> out.append("\\\\");
+                    case '\b' -> out.append("\\b");
+                    case '\f' -> out.append("\\f");
+                    case '\n' -> out.append("\\n");
+                    case '\r' -> out.append("\\r");
+                    case '\t' -> out.append("\\t");
+                    default -> {
+                        if (c < 0x20) {
+                            out.append(String.format("\\u%04x", (int) c));
+                        } else {
+                            out.append(c);
+                        }
+                    }
+                }
+            }
+            out.append('"');
+        }
+    }
 }
