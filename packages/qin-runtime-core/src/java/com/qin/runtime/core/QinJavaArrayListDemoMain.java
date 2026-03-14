@@ -29,8 +29,8 @@ public final class QinJavaArrayListDemoMain {
         }
         Path cwd = Path.of("").toAbsolutePath().normalize();
         Path[] candidates = new Path[]{
-                cwd.resolve("qin/packages/qin-runtime-core/examples/java-array-list.qin"),
-                cwd.resolve("packages/qin-runtime-core/examples/java-array-list.qin")
+                cwd.resolve("qin/packages/qin-runtime-core/examples/java-array-list.js"),
+                cwd.resolve("packages/qin-runtime-core/examples/java-array-list.js")
         };
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
@@ -38,6 +38,6 @@ public final class QinJavaArrayListDemoMain {
             }
         }
         throw new IllegalArgumentException(
-                "Cannot find java-array-list.qin. Pass file path as arg[0].");
+                "Cannot find java-array-list.js. Pass file path as arg[0].");
     }
 }

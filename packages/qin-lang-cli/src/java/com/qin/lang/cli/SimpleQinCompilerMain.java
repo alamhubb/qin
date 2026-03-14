@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * Simplest file-based Qin compiler entry:
- * reads test.qin and writes one .class file.
+ * reads test.js and writes one .class file.
  */
 public final class SimpleQinCompilerMain {
     private SimpleQinCompilerMain() {
@@ -43,8 +43,8 @@ public final class SimpleQinCompilerMain {
         if (args.length > 0 && !args[0].isBlank()) {
             candidates.add(Path.of(args[0]));
         }
-        candidates.add(Path.of("test.qin"));
-        candidates.add(Path.of("qin", "packages", "qin-lang-cli", "test.qin"));
+        candidates.add(Path.of("test.js"));
+        candidates.add(Path.of("qin", "packages", "qin-lang-cli", "test.js"));
 
         for (Path candidate : candidates) {
             if (Files.exists(candidate)) {

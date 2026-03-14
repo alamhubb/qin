@@ -25,14 +25,14 @@ import java.util.concurrent.Executors;
 
 /**
  * Minimal fullstack entry:
- * 1) compile backend .qin -> JVM .class
- * 2) compile frontend .qin -> app.js
+ * 1) compile backend .js -> JVM .class
+ * 2) compile frontend .js -> app.js
  * 3) serve static files + API on one port
  */
 public final class QinFullstackMain {
     private static final String INDEX_HTML = "index.html";
     private static final String INDEX = "index";
-    private static final List<String> DEV_WATCH_EXTENSIONS = List.of(".qin", ".html", ".js", ".css");
+    private static final List<String> DEV_WATCH_EXTENSIONS = List.of(".html", ".js", ".css");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(".git", ".qin", "build", "dist", "target", "node_modules", "out");
 
     private QinFullstackMain() {
@@ -399,11 +399,11 @@ public final class QinFullstackMain {
         }
 
         List<Path> candidates = List.of(
-                layout.root().resolve("main/main.qin"),
-                layout.root().resolve("main/Main.qin"),
-                layout.root().resolve("shared/main.qin"),
-                layout.root().resolve("shared/shared.qin"),
-                layout.root().resolve("app/main.qin"));
+                layout.root().resolve("main/main.js"),
+                layout.root().resolve("main/Main.js"),
+                layout.root().resolve("shared/main.js"),
+                layout.root().resolve("shared/shared.js"),
+                layout.root().resolve("app/main.js"));
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
                 return candidate.toAbsolutePath().normalize();
@@ -411,7 +411,7 @@ public final class QinFullstackMain {
         }
 
         throw new IllegalArgumentException(
-                "No backend .qin source found. Expected one of: main/main.qin, shared/main.qin, shared/shared.qin, app/main.qin");
+                "No backend .js source found. Expected one of: main/main.js, shared/main.js, shared/shared.js, app/main.js");
     }
 
     private static Path resolveFrontendSource(QinRuntimeProjectLayout layout, Path fromArgs) {
@@ -422,10 +422,10 @@ public final class QinFullstackMain {
         }
 
         List<Path> candidates = List.of(
-                layout.root().resolve("app/main.qin"),
-                layout.root().resolve("app/Main.qin"),
-                layout.root().resolve("shared/main.qin"),
-                layout.root().resolve("shared/shared.qin"));
+                layout.root().resolve("app/main.js"),
+                layout.root().resolve("app/Main.js"),
+                layout.root().resolve("shared/main.js"),
+                layout.root().resolve("shared/shared.js"));
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
                 return candidate.toAbsolutePath().normalize();
@@ -437,7 +437,7 @@ public final class QinFullstackMain {
             try (var stream = Files.walk(appDir)) {
                 return stream
                         .filter(Files::isRegularFile)
-                        .filter(path -> path.getFileName().toString().endsWith(".qin"))
+                        .filter(path -> path.getFileName().toString().endsWith(".js"))
                         .sorted(Comparator.comparing(Path::toString))
                         .map(path -> path.toAbsolutePath().normalize())
                         .findFirst()
@@ -696,8 +696,8 @@ public final class QinFullstackMain {
         System.out.println("  --class <binary.name>    Generated backend class (default: com.qin.runtime.generated.ServerApp)");
         System.out.println("  --class-out <dir>        Backend class output (default: build/fullstack/server-classes)");
         System.out.println("  --static-dir <dir>       Static root (default: app/ or build/fullstack/web)");
-        System.out.println("  --backend-file <file>    Backend qin source override");
-        System.out.println("  --frontend-file <file>   Frontend qin source override");
+        System.out.println("  --backend-file <file>    Backend .js source override");
+        System.out.println("  --frontend-file <file>   Frontend .js source override");
         System.out.println("  --print-ir               Print IR summaries while building");
         System.out.println("  --build-only             Build outputs only");
         System.out.println("  --help                   Show help");

@@ -115,7 +115,7 @@ public final class QinCompileMain {
         System.out.println(
                 "  --source \"const a = { age: 1 }\" [--target jvm|js|both] [--class com.qin.generated.Demo] [--out build/generated-classes] [--js-out build/generated-js/app.js] [--run]");
         System.out.println(
-                "  --file path/to/input.qin [--target jvm|js|both] [--class com.qin.generated.Demo] [--out build/generated-classes] [--js-out build/generated-js/app.js] [--run]");
+                "  --file path/to/input.js [--target jvm|js|both] [--class com.qin.generated.Demo] [--out build/generated-classes] [--js-out build/generated-js/app.js] [--run]");
     }
 
     private static final class Options {

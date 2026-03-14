@@ -16,7 +16,7 @@ This package is the runtime orchestration layer for Qin:
 
 Responsibility:
 
-- Parse `.qin` source
+- Parse `.js` source
 - Enforce language surface rules (ES subset)
 - Build IR nodes
 
@@ -57,7 +57,7 @@ Responsibility:
 Responsibility:
 
 - Project layout detection (`shared/app/main`)
-- Input source resolution (`.qin` file)
+- Input source resolution (`.js` file)
 - Pipeline orchestration (frontend -> IR -> backend targets)
 - Build output routing
 

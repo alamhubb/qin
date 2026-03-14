@@ -13,7 +13,7 @@ CLI package for Qin language.
 `QinCompileMain` compiles a tiny Qin subset into `jvm/js/both` targets:
 
 ```bash
-java -cp "<cli>;<backend>;<frontend>;<ir>" com.qin.lang.cli.QinCompileMain --file test.qin --target both --run
+java -cp "<cli>;<backend>;<frontend>;<ir>" com.qin.lang.cli.QinCompileMain --file test.js --target both --run
 ```
 
 Supported grammar (POC):

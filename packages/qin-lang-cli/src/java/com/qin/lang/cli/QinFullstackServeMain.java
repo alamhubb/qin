@@ -53,9 +53,9 @@ public final class QinFullstackServeMain {
     }
 
     private static BuildArtifacts buildArtifacts(Path demoRoot) throws Exception {
-        Path sharedFile = demoRoot.resolve("packages/shared/src/qin/shared.qin");
-        Path serverFile = demoRoot.resolve("packages/server/src/qin/server.qin");
-        Path webFile = demoRoot.resolve("packages/web/src/qin/web.qin");
+        Path sharedFile = demoRoot.resolve("packages/shared/src/qin/shared.js");
+        Path serverFile = demoRoot.resolve("packages/server/src/qin/server.js");
+        Path webFile = demoRoot.resolve("packages/web/src/qin/web.js");
 
         validateInputFile(sharedFile, "shared");
         validateInputFile(serverFile, "server");

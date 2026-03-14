@@ -156,7 +156,7 @@ qin build
 
 - New package: `packages/qin-plugin-jite`
 - Dev entry class: `com.qin.jite.JiteDevMain`
-- `qin dev` now prefers Jite runtime for `.qin` projects
+- `qin dev` now prefers Jite runtime for `.js` projects
 - If `qin-plugin-jite` is not on classpath, CLI falls back to `com.qin.runtime.core.QinFullstackMain --dev`
 
 ### Demo Project
@@ -175,14 +175,14 @@ Open [http://localhost:18080](http://localhost:18080).
 
 ### `qin.config.json`
 
-`entry` 同时支持 `.java` 和 `.qin`。`qin run` 无参数时优先读取这里的 `entry`。
+`entry` 同时支持 `.java` 和 `.js`。`qin run` 无参数时优先读取这里的 `entry`。
 
 ```json
 {
   "name": "my-app",
   "version": "1.0.0",
   "description": "My awesome Java 25 app",
-  "entry": "main/main.qin",
+  "entry": "main/main.js",
   
   "dependencies": {
     "org.springframework.boot:spring-boot-starter-web": "3.2.0",
@@ -225,9 +225,9 @@ Open [http://localhost:18080](http://localhost:18080).
 | 命令 | 说明 | 示例 |
 |------|------|------|
 | `compile` | 编译 Java 项目 | `qin compile` |
-| `run` | 编译并运行 | `qin run` / `qin run Test.java` / `qin run main/main.qin` |
-| `dev` | 开发模式（Qin 单端口 + 自动刷新） | `qin dev` / `qin dev main/main.qin` |
-| `build` | 构建产物（Java: JAR / Qin: fullstack 产物） | `qin build` / `qin build main/main.qin` |
+| `run` | 编译并运行 | `qin run` / `qin run Test.java` / `qin run main/main.js` |
+| `dev` | 开发模式（Qin 单端口 + 自动刷新） | `qin dev` / `qin dev main/main.js` |
+| `build` | 构建产物（Java: JAR / Qin: fullstack 产物） | `qin build` / `qin build main/main.js` |
 | `test` | 运行测试 | `qin test` |
 | `sync` | 同步依赖 | `qin sync` |
 | `clean` | 清理构建产物 | `qin clean` |
@@ -244,7 +244,7 @@ qin run
 qin run src/main/java/com/example/Test.java
 
 # 运行指定的 Qin 文件
-qin run main/main.qin
+qin run main/main.js
 
 # 运行指定文件并传递参数
 qin run MyTest.java arg1 arg2
@@ -252,18 +252,18 @@ qin run MyTest.java arg1 arg2
 
 运行分发规则（统一）：
 
-- 传入目标参数时：优先插件解析，其次 `.qin`，最后按 Java 入口处理。
-- 不传参数时：读取 `qin.config.json` 的 `entry`；若为 `.qin` 走 Qin 运行时，否则走 Java 编译运行流程。
+- 传入目标参数时：优先插件解析，其次 `.js`，最后按 Java 入口处理。
+- 不传参数时：读取 `qin.config.json` 的 `entry`；若为 `.js` 走 Qin 运行时，否则走 Java 编译运行流程。
 
 `run` / `dev` 区别：
 
 - `qin run`：一次构建后启动，不监听文件变化。
-- `qin dev`：单端口开发服务（默认同端口提供 API + 静态页面），监听 `.qin/.html/.js/.css` 变更并自动重编译与浏览器刷新。
+- `qin dev`：单端口开发服务（默认同端口提供 API + 静态页面），监听 `.js/.html/.css` 变更并自动重编译与浏览器刷新。
 - 该 MVP 开发链路不依赖 Node/Vite，直接使用 Qin + Java 运行时。
 
 构建分发规则（统一）：
 
-- `qin build` 在检测到 `.qin` 入口时，会走 Qin fullstack build-only 流程。
+- `qin build` 在检测到 `.js` 入口时，会走 Qin fullstack build-only 流程。
 - 默认输出目录：`dist/fullstack`，其中 `server-classes/` 存放后端 `.class`，`web/` 存放前端构建产物（含 `app.js`）。
 - 可用 `-o/--output` 覆盖输出根目录。
 
@@ -757,7 +757,7 @@ cd examples/hello-java
 - [x] **依赖缓存** - .qin/classpath.json 自动缓存，秒级启动
 - [x] **本地依赖优先** - 自动发现本地项目，无需发布到 Maven
 - [x] **Fat JAR 构建** - 一键生成可执行 JAR
-- [x] **运行指定文件** - `qin run Test.java` / `qin run main/main.qin`
+- [x] **运行指定文件** - `qin run Test.java` / `qin run main/main.js`
 - [x] **并行编译** - Virtual Threads 加速
 - [x] **热重载** - 开发模式自动重新编译
 - [x] **Monorepo 支持** - 多项目管理
@@ -815,7 +815,7 @@ It is designed as a new language platform, not a Node.js compatibility layer.
 
 - `shared/`: shared code and shared contracts
 - `app/`: frontend static assets root (`/index` resolves to `app/index` or `app/index.html`)
-- backend entry: Java defaults to `src/Main.java` (with compatibility candidates), Qin defaults use `main/main.qin` and other built-in candidates
+- backend entry: Java defaults to `src/Main.java` (with compatibility candidates), Qin defaults use `main/main.js` and other built-in candidates
 
 ### Import Policy by Zone (Current Rule)
 
@@ -838,7 +838,7 @@ It is designed as a new language platform, not a Node.js compatibility layer.
 
 ### Stage 0 Entry
 
-Use `com.qin.runtime.core.QinRuntimeMain` to parse `.qin` via Slime and emit `.class/.js` outputs.
+Use `com.qin.runtime.core.QinRuntimeMain` to parse `.js` via Slime and emit `.class/.js` outputs.
 
 ## Qin Language Design (Normative)
 
@@ -857,7 +857,7 @@ Project zoning rules (compile-time hard rules):
 Run model:
 
 - `qin run` without args follows `qin.config.json` and convention candidates.
-- `.qin` entries run through Qin runtime (`qin-runtime-core`).
+- `.js` entries run through Qin runtime (`qin-runtime-core`).
 - `.java` entries run through Java compile/run flow.
 
 ESM diagnostics:

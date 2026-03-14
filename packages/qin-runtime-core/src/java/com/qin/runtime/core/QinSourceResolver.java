@@ -25,13 +25,13 @@ public final class QinSourceResolver {
             return file;
         }
 
-        Path detected = layout.resolveDefaultQinSource();
+        Path detected = layout.resolveDefaultSource();
         if (detected != null) {
             return detected;
         }
 
         throw new IllegalArgumentException(
-                "No qin source found. Use --file, or provide one of: shared/main.qin, shared/shared.qin, main/main.qin, app/main.qin");
+                "No Qin source found. Use --file, or provide one of: shared/main.js, shared/shared.js, main/main.js, app/main.js");
     }
 
     private void requireFile(Path file, String from) {

@@ -27,8 +27,8 @@ public final class QinJavaImportMathDemoMain {
         }
         Path cwd = Path.of("").toAbsolutePath().normalize();
         Path[] candidates = new Path[]{
-                cwd.resolve("qin/packages/qin-runtime-core/examples/java-import-math.qin"),
-                cwd.resolve("packages/qin-runtime-core/examples/java-import-math.qin")
+                cwd.resolve("qin/packages/qin-runtime-core/examples/java-import-math.js"),
+                cwd.resolve("packages/qin-runtime-core/examples/java-import-math.js")
         };
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
@@ -36,6 +36,6 @@ public final class QinJavaImportMathDemoMain {
             }
         }
         throw new IllegalArgumentException(
-                "Cannot find java-import-math.qin. Pass file path as arg[0].");
+                "Cannot find java-import-math.js. Pass file path as arg[0].");
     }
 }

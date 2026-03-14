@@ -1,7 +1,7 @@
 {
     "name": "com.qin:jitedemo",
     "version": "0.1.0",
-    "description": "Jite demo project (frontend .qin test project)",
+    "description": "Jite demo project (frontend .js test project)",
     "entry": "launcher/com/qin/jitedemo/JiteDemoApplication.java",
     "port": 18080,
     "dependencies": {

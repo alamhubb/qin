@@ -19,11 +19,11 @@ public record QinRuntimeProjectLayout(
             "main/main.java",
             "src/Main.java");
 
-    private static final List<String> QIN_SOURCE_CANDIDATES = List.of(
-            "shared/main.qin",
-            "shared/shared.qin",
-            "main/main.qin",
-            "app/main.qin");
+    private static final List<String> SOURCE_CANDIDATES = List.of(
+            "shared/main.js",
+            "shared/shared.js",
+            "main/main.js",
+            "app/main.js");
 
     public static QinRuntimeProjectLayout discover(Path rootDir) {
         Path root = rootDir.toAbsolutePath().normalize();
@@ -46,8 +46,8 @@ public record QinRuntimeProjectLayout(
         return new QinRuntimeProjectLayout(root, shared, app, main, backendEntry);
     }
 
-    public Path resolveDefaultQinSource() {
-        for (String candidate : QIN_SOURCE_CANDIDATES) {
+    public Path resolveDefaultSource() {
+        for (String candidate : SOURCE_CANDIDATES) {
             Path file = root.resolve(candidate).normalize();
             if (Files.exists(file) && Files.isRegularFile(file)) {
                 return file;

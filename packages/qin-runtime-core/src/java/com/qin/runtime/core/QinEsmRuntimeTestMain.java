@@ -10,7 +10,7 @@ import java.nio.file.Path;
 
 /**
  * End-to-end ESM Qin test runner:
- * - local .qin module import resolution
+ * - local .js module import resolution
  * - semantic validation
  * - IR -> .class bytecode
  * - in-memory run() invocation
@@ -23,7 +23,7 @@ public final class QinEsmRuntimeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path projectRoot = resolveProjectRoot();
-        Path entryFile = projectRoot.resolve("main/main.qin").normalize();
+        Path entryFile = projectRoot.resolve("main/main.js").normalize();
         if (!Files.exists(entryFile)) {
             throw new IllegalArgumentException("Missing entry file: " + entryFile.toAbsolutePath());
         }

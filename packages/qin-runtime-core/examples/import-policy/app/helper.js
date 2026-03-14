@@ -1,1 +1,1 @@
-export const utilValue = 1;
+export const utilValue = { age: 1 };

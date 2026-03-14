@@ -503,7 +503,7 @@ public final class QinSlimeFrontendAdapter {
         return moduleName.startsWith("js:")
                 || moduleName.endsWith(".js")
                 || moduleName.endsWith(".mjs")
-                || (!moduleName.startsWith("java:") && !moduleName.endsWith(".qin"));
+                || !moduleName.startsWith("java:");
     }
 
     private QinIrConstDeclaration lowerVariableDeclaration(

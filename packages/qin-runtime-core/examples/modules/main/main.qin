@@ -1,2 +1,0 @@
-import { shared } from "../shared/shared.qin";
-console.log(shared.age);

@@ -12,25 +12,25 @@
 [34m-> Compiling and running...[0m
   -> Compiling 21 files (javac handles incremental)...
   [DEBUG] Compile classpath: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\build\classes;D:\project\qkyproject\slime-java\qin\packages\qin-lang-runtime\build\classes;D:\project\qkyproject\slime-java\qin\packages\...
-[ByteBuddy] »º´æ´óÐ¡: 0, parserClass hashCode: 1096979270, Àà¼ÓÔØÆ÷: jdk.internal.loader.ClassLoaders$AppClassLoader@2a139a55
-[ByteBuddy] ÕýÔÚ´´½¨ÔöÇ¿Àà: com.slime.parser.SlimeJavascriptParser
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.parse
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.Program
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.Program
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.ScriptBody
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeJavascriptParser.Script
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.Module
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ImportSpecifier
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ImportDeclaration
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ModuleSpecifier
-[ByteBuddy] ·¢ÏÖ @SubhutiRule ·½·¨: SlimeModuleParser.ImportedBinding
-[ByteBuddy] ¹²·¢ÏÖ 227 ¸ö @SubhutiRule ·½·¨
-[ByteBuddy] ´´½¨ÔöÇ¿Àà³É¹¦: com.slime.parser.SlimeJavascriptParser$ByteBuddy$VFBADnEr (ÒÑ»º´æ)
-[ByteBuddy] »º´æ´óÐ¡: 1, parserClass hashCode: 1096979270, Àà¼ÓÔØÆ÷: jdk.internal.loader.ClassLoaders$AppClassLoader@2a139a55
-[ByteBuddy] ? Ê¹ÓÃ»º´æµÄÔöÇ¿Àà: com.slime.parser.SlimeJavascriptParser$ByteBuddy$VFBADnEr
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡: 0, parserClass hashCode: 1096979270, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: jdk.internal.loader.ClassLoaders$AppClassLoader@2a139a55
+[ByteBuddy] ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½: com.slime.parser.SlimeJavascriptParser
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeJavascriptParser.parse
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeJavascriptParser.Program
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeJavascriptParser.Program
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeJavascriptParser.ScriptBody
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeJavascriptParser.Script
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeModuleParser.Module
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeModuleParser.ImportSpecifier
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeModuleParser.ImportDeclaration
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeModuleParser.ModuleSpecifier
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½: SlimeModuleParser.ImportedBinding
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 227 ï¿½ï¿½ @SubhutiRule ï¿½ï¿½ï¿½ï¿½
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½É¹ï¿½: com.slime.parser.SlimeJavascriptParser$ByteBuddy$VFBADnEr (ï¿½Ñ»ï¿½ï¿½ï¿½)
+[ByteBuddy] ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡: 1, parserClass hashCode: 1096979270, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: jdk.internal.loader.ClassLoaders$AppClassLoader@2a139a55
+[ByteBuddy] ? Ê¹ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½: com.slime.parser.SlimeJavascriptParser$ByteBuddy$VFBADnEr
 Project root: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp
-Backend source: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\main\main.qin
-Frontend source: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\app\main.qin
+Backend source: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\main\main.js
+Frontend source: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\app\main.js
 Generated server class: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\build\fullstack\server-classes\com\qin\runtime\generated\ServerApp.class
 Generated frontend js: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\app\app.js
 Static root: D:\project\qkyproject\slime-java\qin\packages\qin-runtime-core\examples\fullstack-mvp\app

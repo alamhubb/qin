@@ -16,5 +16,12 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://" />
+        </CLASSES>
+      </library>
+    </orderEntry>
   </component>
 </module>

@@ -15,8 +15,8 @@ Planning document:
 
 ## Current Scope (Stage 0)
 
-- Read a `.qin` source file.
-- Resolve local `.qin` module imports.
+- Read a `.js` source file.
+- Resolve local `.js` module imports.
 - Parse source via Slime frontend adapter.
 - Lower to Qin IR.
 - Emit target artifacts:
@@ -64,8 +64,8 @@ Smoke test entry:
 
 Example files:
 
-- `examples/esm-runtime/shared/shared.qin`
-- `examples/esm-runtime/main/main.qin`
+- `examples/esm-runtime/shared/shared.js`
+- `examples/esm-runtime/main/main.js`
 
 Runner:
 
@@ -73,31 +73,31 @@ Runner:
 
 This verifies:
 
-- local `.qin` ESM import resolution
+- local `.js` ESM import resolution
 - semantic link validation
 - JVM backend class generation and in-memory execution
 
 ## Run
 
 ```bash
-java -cp "<cp>" com.qin.runtime.core.QinRuntimeMain --root . --file shared/main.qin --target both --print-ir
+java -cp "<cp>" com.qin.runtime.core.QinRuntimeMain --root . --file shared/main.js --target both --print-ir
 ```
 
 If `--file` is omitted, it tries:
 
-- `shared/main.qin`
-- `shared/shared.qin`
-- `main/main.qin`
-- `app/main.qin`
+- `shared/main.js`
+- `shared/shared.js`
+- `main/main.js`
+- `app/main.js`
 
 ## Local Module Demo
 
 Example entry:
 
-`packages/qin-runtime-core/examples/modules/main/main.qin`
+`packages/qin-runtime-core/examples/modules/main/main.js`
 
 ```js
-import { shared } from "../shared/shared.qin";
+import { shared } from "../shared/shared.js";
 console.log(shared.age);
 ```
 
@@ -152,9 +152,9 @@ java -cp "<cp>" com.qin.runtime.core.QinFullstackMain --root examples/fullstack-
 
 Example project layout:
 
-- `examples/fullstack-mvp/shared/shared.qin`
-- `examples/fullstack-mvp/main/main.qin`
-- `examples/fullstack-mvp/app/main.qin`
+- `examples/fullstack-mvp/shared/shared.js`
+- `examples/fullstack-mvp/main/main.js`
+- `examples/fullstack-mvp/app/main.js`
 - `examples/fullstack-mvp/app/index.html`
 
 Endpoints:
@@ -167,9 +167,9 @@ Endpoints:
 - Dev mode (`--dev`):
   - no frontend `.js` disk emit is required
   - `/app.js` is served as bootstrap
-  - `.qin` modules are transformed on request under `/@qin-mod/...`
+  - `.js` modules are transformed on request under `/@qin-mod/...`
 - Build mode (`--build-only`):
-  - emits browser `.js` files for `.qin` module graph
+  - emits browser `.js` files for `.js` module graph
   - writes bootstrap `app.js` and module outputs under `@qin-mod/`
 
 ## New TestMain Entries (Stage-1)

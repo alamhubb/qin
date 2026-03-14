@@ -14,7 +14,7 @@ This document defines the near-term implementation plan for Qin as a Java-based 
 
 Build a minimal but credible Qin full-stack foundation:
 
-1. Qin source can be parsed from `.qin`.
+1. Qin source can be parsed from `.js`.
 2. Qin IR remains backend-neutral enough for JVM and JS targets.
 3. JVM target can emit `.class` and call selected Java standard library APIs.
 4. Frontend target can emit `.js` for browser-side modules without Node semantics.
@@ -56,7 +56,7 @@ Out of scope:
 
 Scope:
 
-- local `.qin` module graph
+- local `.js` module graph
 - `shared / app / main` project conventions
 - import/export validation
 - build target separation:

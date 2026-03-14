@@ -23,9 +23,9 @@ public final class QinFullstackDemoMain {
     public static void main(String[] args) throws Exception {
         Path demoRoot = resolveDemoRoot(args);
 
-        Path sharedFile = demoRoot.resolve("packages/shared/src/qin/shared.qin");
-        Path serverFile = demoRoot.resolve("packages/server/src/qin/server.qin");
-        Path webFile = demoRoot.resolve("packages/web/src/qin/web.qin");
+        Path sharedFile = demoRoot.resolve("packages/shared/src/qin/shared.js");
+        Path serverFile = demoRoot.resolve("packages/server/src/qin/server.js");
+        Path webFile = demoRoot.resolve("packages/web/src/qin/web.js");
         validateInputs(sharedFile, serverFile, webFile);
 
         String sharedSource = Files.readString(sharedFile, StandardCharsets.UTF_8).trim();
