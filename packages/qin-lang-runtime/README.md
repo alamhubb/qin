@@ -11,5 +11,5 @@ Runtime library for Qin language programs.
 ## Current Built-ins
 
 - `QinConsole.log(Object)`
-- `QinMath.random/abs/floor/ceil/max/min`
-- `QinJson.stringify/parse`
+- `JavaEsmMath.random/abs/floor/ceil/max/min`
+- `JavaEsmJson.stringify/parse`
