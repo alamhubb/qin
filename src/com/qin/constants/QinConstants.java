@@ -126,6 +126,11 @@ public class QinConstants {
     public static final String COMPILE_CACHE_FILE = "compile-cache.json";
 
     /**
+     * 编译锁文件名（用于跨进程串行化项目编译）
+     */
+    public static final String COMPILE_LOCK_FILE = "compile.lock";
+
+    /**
      * classpath 缓存相对路径
      */
     public static final String CLASSPATH_CACHE_PATH = QIN_DIR + "/" + CLASSPATH_CACHE_FILE;
@@ -297,12 +302,24 @@ public class QinConstants {
             "src/server/Main.java",
             "src/main/java/Main.java");
     public static final java.util.List<String> DEFAULT_QIN_ENTRY_CANDIDATES = java.util.List.of(
-            "main/main.qin",
-            "main/Main.qin",
-            "shared/main.qin",
-            "shared/shared.qin",
-            "app/main.qin",
-            "src/main.qin");
+            "main/main.js",
+            "main/main.mjs",
+            "main/main.ts",
+            "main/Main.js",
+            "main/Main.mjs",
+            "main/Main.ts",
+            "shared/main.js",
+            "shared/main.mjs",
+            "shared/main.ts",
+            "shared/shared.js",
+            "shared/shared.mjs",
+            "shared/shared.ts",
+            "app/main.js",
+            "app/main.mjs",
+            "app/main.ts",
+            "src/main.js",
+            "src/main.mjs",
+            "src/main.ts");
 
     /**
      * 默认 JAR 名称

@@ -26,6 +26,7 @@ import java.util.zip.ZipFile;
 public class QinCli {
     private static final String VERSION = "0.1.0";
     private static final EnvironmentChecker envChecker = new EnvironmentChecker();
+    private static final List<String> QIN_SCRIPT_EXTENSIONS = List.of(".js", ".mjs", ".ts");
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -367,7 +368,7 @@ public class QinCli {
         }
 
         String normalizedTarget = runTarget.trim();
-        if (normalizedTarget.endsWith(".qin")) {
+        if (hasQinScriptExtension(normalizedTarget)) {
             String pathTarget = normalizeRelativePath(normalizedTarget);
             Path absolute = Paths.get(QinConstants.getCwd()).resolve(pathTarget).normalize();
             return Files.exists(absolute) ? pathTarget : null;
@@ -375,26 +376,35 @@ public class QinCli {
 
         if (normalizedTarget.contains("/") || normalizedTarget.contains("\\")) {
             String pathTarget = normalizeRelativePath(normalizedTarget);
-            if (!pathTarget.endsWith(".qin")) {
-                pathTarget = pathTarget + ".qin";
+            if (hasQinScriptExtension(pathTarget)) {
+                Path absolute = Paths.get(QinConstants.getCwd()).resolve(pathTarget).normalize();
+                return Files.exists(absolute) ? pathTarget : null;
             }
-            Path absolute = Paths.get(QinConstants.getCwd()).resolve(pathTarget).normalize();
-            return Files.exists(absolute) ? pathTarget : null;
+            for (String ext : QIN_SCRIPT_EXTENSIONS) {
+                String candidate = pathTarget + ext;
+                Path absolute = Paths.get(QinConstants.getCwd()).resolve(candidate).normalize();
+                if (Files.exists(absolute)) {
+                    return normalizeRelativePath(candidate);
+                }
+            }
+            return null;
         }
 
         LinkedHashSet<Path> candidates = new LinkedHashSet<>();
-        if (config.entry() != null && config.entry().endsWith(".qin")) {
+        if (config.entry() != null && hasQinScriptExtension(config.entry())) {
             Path entryPath = Paths.get(config.entry().replace("\\", "/"));
             Path parent = entryPath.getParent();
             if (parent != null) {
-                candidates.add(parent.resolve(normalizedTarget + ".qin"));
+                for (String ext : QIN_SCRIPT_EXTENSIONS) {
+                    candidates.add(parent.resolve(normalizedTarget + ext));
+                }
             }
         }
-        candidates.add(Paths.get(QinConstants.MAIN_SOURCE_DIR, normalizedTarget + ".qin"));
-        candidates.add(Paths.get(QinConstants.APP_DIR, normalizedTarget + ".qin"));
-        candidates.add(Paths.get(QinConstants.SHARED_DIR, normalizedTarget + ".qin"));
-        candidates.add(Paths.get("src", normalizedTarget + ".qin"));
-        candidates.add(Paths.get(normalizedTarget + ".qin"));
+        addScriptCandidates(candidates, Paths.get(QinConstants.MAIN_SOURCE_DIR), normalizedTarget);
+        addScriptCandidates(candidates, Paths.get(QinConstants.APP_DIR), normalizedTarget);
+        addScriptCandidates(candidates, Paths.get(QinConstants.SHARED_DIR), normalizedTarget);
+        addScriptCandidates(candidates, Paths.get("src"), normalizedTarget);
+        addScriptCandidates(candidates, Paths.get(""), normalizedTarget);
 
         for (Path candidate : candidates) {
             Path absolute = Paths.get(QinConstants.getCwd()).resolve(candidate).normalize();
@@ -408,7 +418,7 @@ public class QinCli {
 
     private static String resolveDefaultQinEntry(QinConfig config) {
         if (config.entry() != null && !config.entry().isBlank()) {
-            if (config.entry().endsWith(".qin")) {
+            if (hasQinScriptExtension(config.entry())) {
                 String entry = normalizeRelativePath(config.entry());
                 Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
                 return Files.exists(absolute) ? entry : null;
@@ -422,6 +432,26 @@ public class QinCli {
             }
         }
         return null;
+    }
+
+    private static boolean hasQinScriptExtension(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        for (String ext : QIN_SCRIPT_EXTENSIONS) {
+            if (lower.endsWith(ext)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void addScriptCandidates(Set<Path> out, Path baseDir, String baseName) {
+        for (String ext : QIN_SCRIPT_EXTENSIONS) {
+            if (baseDir.toString().isBlank()) {
+                out.add(Paths.get(baseName + ext));
+            } else {
+                out.add(baseDir.resolve(baseName + ext));
+            }
+        }
     }
 
     private static void runQinProject(QinConfig config, String qinFile) throws Exception {
@@ -1399,13 +1429,13 @@ public class QinCli {
 
                 Examples:
                   qin init                    # Initialize new project
-                  qin run                     # Compile and run (auto Qin runtime when entry is .qin)
-                  qin run main/main.qin       # Run a specific Qin entry file
+                  qin run                     # Compile and run (auto Qin runtime when entry is .js/.mjs/.ts)
+                  qin run main/main.js        # Run a specific Qin entry file
                   qin dev                     # Start Qin dev mode (watch + auto reload)
                   qin run src/app/Main.java   # Run a specific Java file
                   qin run com.app.Main        # Run by fully-qualified class name
                   qin compile                 # Compile only
-                  qin build main/main.qin     # Build Qin fullstack artifacts to dist/fullstack
+                  qin build main/main.js      # Build Qin fullstack artifacts to dist/fullstack
                   qin build -o dist/prod      # Override build output root
                   qin jar                     # Build JAR (without dependencies)
                   qin fatjar                  # Build Fat JAR (with dependencies)

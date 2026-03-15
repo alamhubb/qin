@@ -14,8 +14,6 @@ import java.util.regex.Pattern;
 public final class QinEsmRuntimeFeatureValidator {
     private static final Pattern UNSUPPORTED_EXPORT_DECLARATION_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+(let|var|function|class)\\b");
-    private static final Pattern UNSUPPORTED_EXPORT_DEFAULT_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+default\\s+(function|class)\\b");
 
     public void validate(QinModuleGraph graph) {
         List<QinEsmDiagnostic> diagnostics = new ArrayList<>();
@@ -30,8 +28,6 @@ public final class QinEsmRuntimeFeatureValidator {
     private void scanOne(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
         addIfMatched(module, diagnostics, UNSUPPORTED_EXPORT_DECLARATION_PATTERN, "ESM3004",
                 "Only `export const` / re-export forms are currently executable in Qin runtime.");
-        addIfMatched(module, diagnostics, UNSUPPORTED_EXPORT_DEFAULT_DECLARATION_PATTERN, "ESM3005",
-                "`export default function/class` is recognized but runtime semantics are not implemented yet.");
     }
 
     private void addIfMatched(

@@ -31,7 +31,7 @@ public final class QinSourceResolver {
         }
 
         throw new IllegalArgumentException(
-                "No Qin source found. Use --file, or provide one of: shared/main.js, shared/shared.js, main/main.js, app/main.js");
+                "No Qin source found. Use --file, or provide one of: shared/main.(js|mjs|ts), shared/shared.(js|mjs|ts), main/main.(js|mjs|ts), app/main.(js|mjs|ts)");
     }
 
     private void requireFile(Path file, String from) {

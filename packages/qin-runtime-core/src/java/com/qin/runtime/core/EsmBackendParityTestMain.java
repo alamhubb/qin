@@ -16,6 +16,14 @@ public final class EsmBackendParityTestMain {
 
         List<TestCase> cases = List.of(
                 new TestCase("valid-main", "main/runtime-ok.js", true, null),
+                new TestCase("valid-star-same-binding", "main/runtime-star-same-binding.js", true, null),
+                new TestCase("valid-namespace-ambiguous", "main/runtime-namespace-ambiguous.js", true, null),
+                new TestCase("valid-export-star-as-ns", "main/runtime-export-star-as-ns.js", true, null),
+                new TestCase("valid-intermediate-amb-ok", "main/runtime-intermediate-amb-ok.js", true, null),
+                new TestCase("valid-chain-reexport", "main/runtime-chain-reexport.js", true, null),
+                new TestCase("valid-cycle-runtime-ok", "main/runtime-cycle-ok.js", true, null),
+                new TestCase("invalid-ambiguous-export", "main/invalid-ambiguous-export.js", false, "ESM2004"),
+                new TestCase("invalid-intermediate-ambiguous-val", "main/invalid-intermediate-ambiguous-val.js", false, "ESM2004"),
                 new TestCase("invalid-dynamic-import", "main/invalid-dynamic-import.js", true, null),
                 new TestCase("invalid-import-meta", "main/invalid-import-meta.js", true, null),
                 new TestCase("invalid-top-level-await", "main/invalid-top-level-await.js", true, null));

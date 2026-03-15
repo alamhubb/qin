@@ -8,6 +8,9 @@ import com.qin.types.*;
 
 import javax.tools.*;
 import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.*;
@@ -40,7 +43,7 @@ public class JavaRunner {
 
         this.classpathBuilder = new ClasspathBuilder(cwd, outputDir, classpath, config);
         this.graphBuilder = new DependencyGraphBuilder();
-        this.incrementalChecker = new IncrementalCompilationChecker();
+        this.incrementalChecker = new IncrementalCompilationChecker(cwd);
     }
 
     /**
@@ -54,45 +57,98 @@ public class JavaRunner {
             compileOutdatedLocalDependencies();
 
             // 2. 编译当前项目
-            Files.createDirectories(Paths.get(outputDir));
+            Path compileLockPath = ensureCompileLockFile();
+            try (RandomAccessFile lockHandle = new RandomAccessFile(compileLockPath.toFile(), "rw");
+                    FileChannel lockChannel = lockHandle.getChannel();
+                    FileLock compileLock = acquireCompileLock(lockChannel)) {
+                incrementalChecker.reloadCache();
+                Files.createDirectories(Paths.get(outputDir));
 
-            List<String> allJavaFiles = new ArrayList<>();
+                List<String> allJavaFiles = new ArrayList<>();
+                List<String> sourceDirsForCache = new ArrayList<>();
 
-            // 使用 sourceDir 配置（默认 src/main/java）
-            String srcDirStr = getSourceDir();
-            if (srcDirStr == null) {
-                return CompileResult
-                        .failure("No source directory found (checked " + QinConstants.JAVA_SOURCE_DIR + " and " + QinConstants.DEFAULT_SOURCE_DIR + ")");
+                // 使用 sourceDir 配置（默认 src/main/java）
+                String srcDirStr = getSourceDir();
+                if (srcDirStr == null) {
+                    return CompileResult
+                            .failure("No source directory found (checked " + QinConstants.JAVA_SOURCE_DIR + " and " + QinConstants.DEFAULT_SOURCE_DIR + ")");
+                }
+                Path srcDir = Paths.get(cwd, srcDirStr);
+                allJavaFiles.addAll(findJavaFiles(srcDir));
+                sourceDirsForCache.add(srcDirStr);
+
+                // 同时查找测试目录（默认 src/test/java）
+                String testDirStr = getTestDir();
+                Path testDir = Paths.get(cwd, testDirStr);
+                if (Files.exists(testDir) && !testDir.equals(srcDir)) {
+                    allJavaFiles.addAll(findJavaFiles(testDir));
+                    sourceDirsForCache.add(testDirStr);
+                }
+
+                if (allJavaFiles.isEmpty()) {
+                    return CompileResult
+                            .failure("No Java files found in " + srcDir + (Files.exists(testDir) ? " or " + testDir : ""));
+                }
+
+                // 复制资源文件
+                ResourceCopier resourceCopier = new ResourceCopier(cwd, srcDirStr, outputDir);
+                resourceCopier.copyResources();
+
+                // 如果存在测试资源目录，也进行复制
+                if (Files.exists(Paths.get(cwd, "src/test/resources"))) {
+                    ResourceCopier testResourceCopier = new ResourceCopier(cwd, "src/test/resources", outputDir);
+                    testResourceCopier.copyResources();
+                }
+
+                List<Path> changedPaths = new ArrayList<>();
+                boolean hasDeletedFiles = false;
+                for (String sourceDir : sourceDirsForCache) {
+                    changedPaths.addAll(incrementalChecker.getChangedFiles(sourceDir));
+                    if (incrementalChecker.hasDeletedFiles(sourceDir)) {
+                        hasDeletedFiles = true;
+                    }
+                }
+
+                if (hasDeletedFiles) {
+                    System.out.println("  -> Java file deletion detected, forcing full recompile...");
+                    clearOutputDirectory();
+                }
+
+                boolean hasCompiledClass = hasAnyCompiledClass();
+                List<String> filesToCompile;
+                if (hasDeletedFiles || !hasCompiledClass) {
+                    filesToCompile = allJavaFiles;
+                } else {
+                    LinkedHashSet<String> dedup = new LinkedHashSet<>();
+                    for (Path changedPath : changedPaths) {
+                        dedup.add(changedPath.toString());
+                    }
+                    filesToCompile = new ArrayList<>(dedup);
+                }
+
+                if (filesToCompile.isEmpty() && hasCompiledClass) {
+                    System.out.println("  [OK] No Java changes detected, skip compile (cache)");
+                    return CompileResult.success(0, outputDir);
+                }
+
+                if (filesToCompile.isEmpty()) {
+                    filesToCompile = allJavaFiles;
+                }
+
+                System.out.println("  -> Compiling " + filesToCompile.size() + " file(s)...");
+
+                CompileResult compileResult = compileWithToolsApi(filesToCompile);
+                if (!compileResult.isSuccess()) {
+                    return compileResult;
+                }
+
+                for (String sourceDir : sourceDirsForCache) {
+                    incrementalChecker.updateAllHashes(sourceDir);
+                }
+                incrementalChecker.saveCache();
+
+                return compileResult;
             }
-            Path srcDir = Paths.get(cwd, srcDirStr);
-            allJavaFiles.addAll(findJavaFiles(srcDir));
-
-            // 同时查找测试目录（默认 src/test/java）
-            String testDirStr = getTestDir();
-            Path testDir = Paths.get(cwd, testDirStr);
-            if (Files.exists(testDir) && !testDir.equals(srcDir)) {
-                allJavaFiles.addAll(findJavaFiles(testDir));
-            }
-
-            if (allJavaFiles.isEmpty()) {
-                return CompileResult
-                        .failure("No Java files found in " + srcDir + (Files.exists(testDir) ? " or " + testDir : ""));
-            }
-
-            // 复制资源文件
-            ResourceCopier resourceCopier = new ResourceCopier(cwd, srcDirStr, outputDir);
-            resourceCopier.copyResources();
-
-            // 如果存在测试资源目录，也进行复制
-            if (Files.exists(Paths.get(cwd, "src/test/resources"))) {
-                ResourceCopier testResourceCopier = new ResourceCopier(cwd, "src/test/resources", outputDir);
-                testResourceCopier.copyResources();
-            }
-
-            System.out.println("  -> Compiling " + allJavaFiles.size() + " files (javac handles incremental)...");
-
-            // 使用 javax.tools API 编译（javac 自动增量编译）
-            return compileWithToolsApi(allJavaFiles);
         } catch (Exception e) {
             return CompileResult.failure(e.getMessage());
         }
@@ -398,6 +454,66 @@ public class JavaRunner {
         }
     }
 
+    private boolean hasAnyCompiledClass() throws IOException {
+        Path classesDir = Paths.get(outputDir);
+        if (!Files.exists(classesDir)) {
+            return false;
+        }
+        try (Stream<Path> walk = Files.walk(classesDir)) {
+            return walk.anyMatch(path -> path.toString().endsWith(".class"));
+        }
+    }
+
+    private void clearOutputDirectory() throws IOException {
+        Path outputPath = Paths.get(outputDir);
+        if (!Files.exists(outputPath)) {
+            Files.createDirectories(outputPath);
+            return;
+        }
+        try (Stream<Path> walk = Files.walk(outputPath)) {
+            List<Path> paths = walk.sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+            for (Path path : paths) {
+                Files.deleteIfExists(path);
+            }
+        }
+        Files.createDirectories(outputPath);
+    }
+
+    private Path ensureCompileLockFile() throws IOException {
+        Path qinDir = QinConstants.getProjectQinDir(cwd);
+        Files.createDirectories(qinDir);
+        return qinDir.resolve(QinConstants.COMPILE_LOCK_FILE);
+    }
+
+    private FileLock acquireCompileLock(FileChannel lockChannel) throws IOException {
+        boolean waitingLogged = false;
+        while (true) {
+            try {
+                FileLock lock = lockChannel.tryLock();
+                if (lock != null) {
+                    if (waitingLogged) {
+                        System.out.println("  -> Compile lock acquired.");
+                    }
+                    return lock;
+                }
+            } catch (OverlappingFileLockException ignored) {
+                // Same JVM overlap; wait and retry.
+            }
+
+            if (!waitingLogged) {
+                System.out.println("  -> Another compile is in progress, waiting for compile lock...");
+                waitingLogged = true;
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted while waiting for compile lock", e);
+            }
+        }
+    }
+
     /**
      * 编译所有过期的本地依赖项目
      */
@@ -495,23 +611,28 @@ public class JavaRunner {
      */
     private CompileResult compileCurrentOnly() {
         try {
-            Files.createDirectories(Paths.get(outputDir));
+            Path compileLockPath = ensureCompileLockFile();
+            try (RandomAccessFile lockHandle = new RandomAccessFile(compileLockPath.toFile(), "rw");
+                    FileChannel lockChannel = lockHandle.getChannel();
+                    FileLock compileLock = acquireCompileLock(lockChannel)) {
+                Files.createDirectories(Paths.get(outputDir));
 
-            // 使用 sourceDir 配置（默认 src）
-            String srcDirStr = getSourceDir();
-            Path srcDir = Paths.get(cwd, srcDirStr);
+                // 使用 sourceDir 配置（默认 src）
+                String srcDirStr = getSourceDir();
+                Path srcDir = Paths.get(cwd, srcDirStr);
 
-            List<String> allJavaFiles = findJavaFiles(srcDir);
-            if (allJavaFiles.isEmpty()) {
-                return CompileResult.failure("No Java files found in " + srcDir);
+                List<String> allJavaFiles = findJavaFiles(srcDir);
+                if (allJavaFiles.isEmpty()) {
+                    return CompileResult.failure("No Java files found in " + srcDir);
+                }
+
+                // 复制资源文件
+                ResourceCopier resourceCopier = new ResourceCopier(cwd, srcDirStr, outputDir);
+                resourceCopier.copyResources();
+
+                // 使用 javax.tools API 编译（javac 自动增量编译）
+                return compileWithToolsApi(allJavaFiles);
             }
-
-            // 复制资源文件
-            ResourceCopier resourceCopier = new ResourceCopier(cwd, srcDirStr, outputDir);
-            resourceCopier.copyResources();
-
-            // 使用 javax.tools API 编译（javac 自动增量编译）
-            return compileWithToolsApi(allJavaFiles);
         } catch (Exception e) {
             return CompileResult.failure(e.getMessage());
         }

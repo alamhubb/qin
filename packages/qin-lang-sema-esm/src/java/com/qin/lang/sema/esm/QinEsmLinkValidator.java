@@ -72,18 +72,18 @@ public final class QinEsmLinkValidator {
             }
 
             ExportResolution resolution = resolveExportName(model, resolvedModule, importName, new HashSet<>(), 0);
-            if (!resolution.exists()) {
+            if (resolution.isAmbiguous()) {
                 diagnostics.add(new QinEsmDiagnostic(
-                        "ESM2003",
-                        "Imported binding does not exist: " + importBinding.importedName()
+                        "ESM2004",
+                        "Ambiguous import binding: " + importBinding.importedName()
                                 + " from " + importBinding.moduleSpecifier(),
                         importBinding.sourceFile(),
                         importBinding.line(),
                         importBinding.column()));
-            } else if (resolution.isAmbiguous()) {
+            } else if (!resolution.exists()) {
                 diagnostics.add(new QinEsmDiagnostic(
-                        "ESM2004",
-                        "Ambiguous import binding: " + importBinding.importedName()
+                        "ESM2003",
+                        "Imported binding does not exist: " + importBinding.importedName()
                                 + " from " + importBinding.moduleSpecifier(),
                         importBinding.sourceFile(),
                         importBinding.line(),
@@ -110,72 +110,85 @@ public final class QinEsmLinkValidator {
             // Legal cycle in ESM graph; do not treat as immediate error here.
             return ExportResolution.notResolved();
         }
-
-        QinEsmModuleSemantic module = model.modules().get(moduleFile);
-        if (module == null) {
-            return ExportResolution.notResolved();
-        }
-
-        List<QinEsmExportBinding> directMatches = new ArrayList<>();
-        List<QinEsmExportBinding> exportAll = new ArrayList<>();
-        for (QinEsmExportBinding exportBinding : module.exports()) {
-            if (QinEsmExportKind.RE_EXPORT_ALL.equals(exportBinding.kind())) {
-                exportAll.add(exportBinding);
-                continue;
+        try {
+            QinEsmModuleSemantic module = model.modules().get(moduleFile);
+            if (module == null) {
+                return ExportResolution.notResolved();
             }
-            if (exportName.equals(exportBinding.exportName())) {
-                directMatches.add(exportBinding);
-            }
-        }
 
-        if (directMatches.size() > 1) {
-            return ExportResolution.ambiguousResult();
-        }
-        if (directMatches.size() == 1) {
-            QinEsmExportBinding binding = directMatches.get(0);
-            if (QinEsmExportKind.RE_EXPORT_NAMED.equals(binding.kind())) {
-                return resolveExportName(
-                        model,
-                        binding.resolvedModule(),
-                        binding.localName(),
-                        visiting,
-                        depth + 1);
+            List<QinEsmExportBinding> directMatches = new ArrayList<>();
+            List<QinEsmExportBinding> exportAll = new ArrayList<>();
+            for (QinEsmExportBinding exportBinding : module.exports()) {
+                if (QinEsmExportKind.RE_EXPORT_ALL.equals(exportBinding.kind())) {
+                    exportAll.add(exportBinding);
+                    continue;
+                }
+                if (exportName.equals(exportBinding.exportName())) {
+                    directMatches.add(exportBinding);
+                }
             }
-            return ExportResolution.foundResult();
-        }
 
-        boolean found = false;
-        for (QinEsmExportBinding star : exportAll) {
-            ExportResolution sub = resolveExportName(
-                    model,
-                    star.resolvedModule(),
-                    exportName,
-                    visiting,
-                    depth + 1);
-            if (sub.isAmbiguous()) {
+            if (directMatches.size() > 1) {
                 return ExportResolution.ambiguousResult();
             }
-            if (sub.exists()) {
-                if (found) {
+            if (directMatches.size() == 1) {
+                QinEsmExportBinding binding = directMatches.get(0);
+                if (QinEsmExportKind.RE_EXPORT_NAMED.equals(binding.kind())) {
+                    return resolveExportName(
+                            model,
+                            binding.resolvedModule(),
+                            binding.localName(),
+                            visiting,
+                            depth + 1);
+                }
+                return ExportResolution.foundResult(moduleFile, exportName);
+            }
+
+            ExportResolution found = ExportResolution.notResolved();
+            for (QinEsmExportBinding star : exportAll) {
+                ExportResolution sub = resolveExportName(
+                        model,
+                        star.resolvedModule(),
+                        exportName,
+                        visiting,
+                        depth + 1);
+                if (sub.isAmbiguous()) {
                     return ExportResolution.ambiguousResult();
                 }
-                found = true;
+                if (sub.exists()) {
+                    if (found.exists() && !sameResolvedBinding(found, sub)) {
+                        return ExportResolution.ambiguousResult();
+                    }
+                    found = sub;
+                }
             }
+            return found;
+        } finally {
+            visiting.remove(visitKey);
         }
-        return found ? ExportResolution.foundResult() : ExportResolution.notResolved();
     }
 
-    private record ExportResolution(boolean exists, boolean isAmbiguous) {
-        private static ExportResolution foundResult() {
-            return new ExportResolution(true, false);
+    private boolean sameResolvedBinding(ExportResolution left, ExportResolution right) {
+        if (!left.exists() || !right.exists()) {
+            return false;
+        }
+        return left.owner() != null
+                && right.owner() != null
+                && left.owner().equals(right.owner())
+                && left.exportName().equals(right.exportName());
+    }
+
+    private record ExportResolution(boolean exists, boolean isAmbiguous, Path owner, String exportName) {
+        private static ExportResolution foundResult(Path owner, String exportName) {
+            return new ExportResolution(true, false, owner, exportName);
         }
 
         private static ExportResolution ambiguousResult() {
-            return new ExportResolution(false, true);
+            return new ExportResolution(false, true, null, "");
         }
 
         private static ExportResolution notResolved() {
-            return new ExportResolution(false, false);
+            return new ExportResolution(false, false, null, "");
         }
     }
 }

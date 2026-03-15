@@ -1,10 +1,9 @@
 package com.qin.runtime.core;
 
-import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
-import com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter;
-import com.qin.lang.ir.QinIrProgram;
-import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
-import com.qin.lang.lowering.jvm.QinStrictEsmJvmLowerer;
+import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
+import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
+import com.qin.lang.pipeline.cfa.QinCfaPipeline;
+import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,22 +13,16 @@ import java.nio.file.Path;
  * Compiles Qin source to JVM bytecode and executes the generated run() method in-memory.
  */
 public final class QinInMemoryJvmRunner {
-    private final QinSlimeFrontendAdapter adapter;
-    private final QinJvmClassFileBackend backend;
+    private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
-    private final QinFrontendCompiler frontendCompiler;
-    private final QinStrictEsmJvmLowerer lowerer;
 
     public QinInMemoryJvmRunner() {
-        this(new QinSlimeFrontendAdapter(), new QinJvmClassFileBackend());
+        this(new QinSlimeCfaCompiler());
     }
 
-    public QinInMemoryJvmRunner(QinSlimeFrontendAdapter adapter, QinJvmClassFileBackend backend) {
-        this.adapter = adapter;
-        this.backend = backend;
+    public QinInMemoryJvmRunner(QinCfaPipeline cfaPipeline) {
+        this.cfaPipeline = cfaPipeline;
         this.snapshotWriter = new QinCompileSnapshotWriter();
-        this.frontendCompiler = new QinFrontendCompiler();
-        this.lowerer = new QinStrictEsmJvmLowerer();
     }
 
     public Object compileAndRun(Path sourceFile, String className) throws Exception {
@@ -38,23 +31,20 @@ public final class QinInMemoryJvmRunner {
         Path projectRoot = sourceFile.getParent() == null
                 ? Path.of("").toAbsolutePath().normalize()
                 : sourceFile.getParent().toAbsolutePath().normalize();
-        QinFrontendCompileResult frontendResult = frontendCompiler.compile(sourceFile, projectRoot);
-        QinIrProgram irBeforeLowering = frontendResult.program();
-        QinIrProgram loweredProgram = lowerer.lower(
-                irBeforeLowering,
-                frontendResult.semanticModel(),
-                new QinEsmJvmLoweringContext(
-                        frontendResult.linkedSource().entryFile(),
-                        frontendResult.linkedSource().modules()));
-
-        byte[] classBytes = backend.compileProgram(loweredProgram, className);
+        QinCfaCompileResult compileResult = cfaPipeline.compile(
+                QinCfaCompileRequest.forJvm(sourceFile, projectRoot, className));
+        byte[] classBytes = compileResult.classBytes();
+        if (classBytes == null || classBytes.length == 0) {
+            throw new IllegalStateException("CFA compiler returned empty class bytes");
+        }
         snapshotWriter.writeSnapshot(
                 sourceFile,
                 source,
-                frontendResult.linkedSource().source(),
-                frontendResult.astText(),
-                irBeforeLowering,
-                loweredProgram,
+                compileResult.linkedSource().source(),
+                compileResult.astText(),
+                compileResult.irBeforeLowering(),
+                compileResult.loweredProgram(),
+                compileResult.cfaProgram(),
                 className,
                 classBytes);
         Class<?> generatedClass = new ByteArrayClassLoader(getClass().getClassLoader()).define(className, classBytes);

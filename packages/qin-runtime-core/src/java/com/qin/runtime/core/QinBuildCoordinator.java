@@ -2,11 +2,11 @@ package com.qin.runtime.core;
 
 import com.qin.lang.backend.js.QinJsBackend;
 import com.qin.lang.backend.jvm.QinClassFileWriter;
-import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
 import com.qin.lang.ir.QinIrProgram;
-import com.qin.lang.lowering.jvm.QinEsmJvmLowerer;
-import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
-import com.qin.lang.lowering.jvm.QinStrictEsmJvmLowerer;
+import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
+import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
+import com.qin.lang.pipeline.cfa.QinCfaPipeline;
+import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,40 +18,32 @@ import java.nio.file.Path;
 public final class QinBuildCoordinator {
     private final QinDependencyService dependencyService;
     private final QinSourceResolver sourceResolver;
-    private final QinFrontendCompiler frontendCompiler;
     private final QinIrValidator irValidator;
-    private final QinJvmClassFileBackend jvmBackend;
     private final QinJsBackend jsBackend;
-    private final QinEsmJvmLowerer esmJvmLowerer;
+    private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
 
     public QinBuildCoordinator() {
         this(new QinDependencyService(),
                 new QinSourceResolver(),
-                new QinFrontendCompiler(),
                 new QinIrValidator(),
-                new QinJvmClassFileBackend(),
                 new QinJsBackend(),
-                new QinStrictEsmJvmLowerer(),
+                new QinSlimeCfaCompiler(),
                 new QinCompileSnapshotWriter());
     }
 
     public QinBuildCoordinator(
             QinDependencyService dependencyService,
             QinSourceResolver sourceResolver,
-            QinFrontendCompiler frontendCompiler,
             QinIrValidator irValidator,
-            QinJvmClassFileBackend jvmBackend,
             QinJsBackend jsBackend,
-            QinEsmJvmLowerer esmJvmLowerer,
+            QinCfaPipeline cfaPipeline,
             QinCompileSnapshotWriter snapshotWriter) {
         this.dependencyService = dependencyService;
         this.sourceResolver = sourceResolver;
-        this.frontendCompiler = frontendCompiler;
         this.irValidator = irValidator;
-        this.jvmBackend = jvmBackend;
         this.jsBackend = jsBackend;
-        this.esmJvmLowerer = esmJvmLowerer;
+        this.cfaPipeline = cfaPipeline;
         this.snapshotWriter = snapshotWriter;
     }
 
@@ -64,22 +56,23 @@ public final class QinBuildCoordinator {
         QinRuntimeProjectLayout layout = QinRuntimeProjectLayout.discover(root);
         Path sourceFile = sourceResolver.resolveSourceFile(request, layout);
 
-        QinFrontendCompileResult frontendResult = frontendCompiler.compile(sourceFile, root);
-        QinIrProgram program = frontendResult.program();
-        QinIrProgram irBeforeLowering = program;
-        QinEsmJvmLoweringContext loweringContext = new QinEsmJvmLoweringContext(
-                frontendResult.linkedSource().entryFile(),
-                frontendResult.linkedSource().modules());
-        program = esmJvmLowerer.lower(program, frontendResult.semanticModel(), loweringContext);
-        QinIrProgram loweredProgram = program;
+        QinCfaCompileResult compileResult = cfaPipeline.compile(
+                new QinCfaCompileRequest(
+                        sourceFile,
+                        root,
+                        request.className(),
+                        request.target().emitJvm()));
+        QinIrProgram program = compileResult.loweredProgram();
         irValidator.validate(program, request.target());
 
         Path classFile = null;
         Path jsFile = null;
-        byte[] classBytes = null;
+        byte[] classBytes = compileResult.classBytes();
 
         if (request.target().emitJvm()) {
-            classBytes = jvmBackend.compileProgram(program, request.className());
+            if (classBytes == null || classBytes.length == 0) {
+                throw new IllegalStateException("CFA compiler returned empty class bytes");
+            }
             classFile = QinClassFileWriter.writeClassFile(request.classOutputDir(), request.className(), classBytes);
         }
 
@@ -98,10 +91,11 @@ public final class QinBuildCoordinator {
             snapshotWriter.writeSnapshot(
                     sourceFile,
                     originalSource,
-                    frontendResult.linkedSource().source(),
-                    frontendResult.astText(),
-                    irBeforeLowering,
-                    loweredProgram,
+                    compileResult.linkedSource().source(),
+                    compileResult.astText(),
+                    compileResult.irBeforeLowering(),
+                    compileResult.loweredProgram(),
+                    compileResult.cfaProgram(),
                     request.className(),
                     classBytes);
         } catch (Exception snapshotError) {

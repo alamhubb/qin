@@ -13,6 +13,7 @@ public final class NpmSubsetCompileTestMain {
     public static void main(String[] args) throws Exception {
         Path root = QinJsSdkTestPaths.resolveNpmBareRoot();
         compileOk(root.resolve("main/main.js"), "com.qin.runtime.generated.NpmSubsetOk");
+        compileOk(root.resolve("main/default-export.js"), "com.qin.runtime.generated.NpmSubsetDefaultOk");
         compileFail(root.resolve("main/unsupported.js"), "QJS2");
         System.out.println("NpmSubsetCompileTestMain passed.");
     }

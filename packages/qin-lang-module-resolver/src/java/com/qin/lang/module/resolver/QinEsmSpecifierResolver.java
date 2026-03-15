@@ -178,7 +178,7 @@ public final class QinEsmSpecifierResolver {
     }
 
     private Path resolveAsFile(Path path) {
-        if (Files.isRegularFile(path)) {
+        if (Files.isRegularFile(path) && isSupportedScriptFile(path)) {
             return path.toAbsolutePath().normalize();
         }
 
@@ -192,6 +192,10 @@ public final class QinEsmSpecifierResolver {
             if (Files.isRegularFile(mjs)) {
                 return mjs.toAbsolutePath().normalize();
             }
+            Path ts = path.resolveSibling(fileName + ".ts");
+            if (Files.isRegularFile(ts)) {
+                return ts.toAbsolutePath().normalize();
+            }
         }
 
         if (Files.isDirectory(path)) {
@@ -203,8 +207,17 @@ public final class QinEsmSpecifierResolver {
             if (Files.isRegularFile(indexMjs)) {
                 return indexMjs.toAbsolutePath().normalize();
             }
+            Path indexTs = path.resolve("index.ts");
+            if (Files.isRegularFile(indexTs)) {
+                return indexTs.toAbsolutePath().normalize();
+            }
         }
         return null;
+    }
+
+    private boolean isSupportedScriptFile(Path path) {
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
+        return fileName.endsWith(".js") || fileName.endsWith(".mjs") || fileName.endsWith(".ts");
     }
 
     private record BareSpecifier(String packageName, String subPath) {

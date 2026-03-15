@@ -14,16 +14,18 @@ public enum QinImportKind {
             return UNKNOWN;
         }
         String normalized = specifier.trim();
+        boolean isScriptExt = normalized.endsWith(".js")
+                || normalized.endsWith(".mjs")
+                || normalized.endsWith(".ts");
         boolean isRelative = normalized.startsWith("./") || normalized.startsWith("../");
-        if (isRelative && (normalized.endsWith(".js") || normalized.endsWith(".mjs"))) {
+        if (isRelative && isScriptExt) {
             return LOCAL;
         }
         if (normalized.startsWith("java:")) {
             return JAVA;
         }
         if (normalized.startsWith("js:")
-                || normalized.endsWith(".js")
-                || normalized.endsWith(".mjs")) {
+                || isScriptExt) {
             return JS;
         }
         // Treat non-java/non-qin imports as JS side for policy purpose.

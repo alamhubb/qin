@@ -21,9 +21,17 @@ public record QinRuntimeProjectLayout(
 
     private static final List<String> SOURCE_CANDIDATES = List.of(
             "shared/main.js",
+            "shared/main.mjs",
+            "shared/main.ts",
             "shared/shared.js",
+            "shared/shared.mjs",
+            "shared/shared.ts",
             "main/main.js",
-            "app/main.js");
+            "main/main.mjs",
+            "main/main.ts",
+            "app/main.js",
+            "app/main.mjs",
+            "app/main.ts");
 
     public static QinRuntimeProjectLayout discover(Path rootDir) {
         Path root = rootDir.toAbsolutePath().normalize();

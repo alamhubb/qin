@@ -1,9 +1,9 @@
 package com.qin.runtime.core;
 
-import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
 import com.qin.lang.ir.QinIrProgram;
-import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
-import com.qin.lang.lowering.jvm.QinStrictEsmJvmLowerer;
+import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
+import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
+import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,20 +28,17 @@ public final class QinEsmRuntimeTestMain {
             throw new IllegalArgumentException("Missing entry file: " + entryFile.toAbsolutePath());
         }
 
-        QinFrontendCompiler frontendCompiler = new QinFrontendCompiler();
-        QinFrontendCompileResult frontendResult = frontendCompiler.compile(entryFile, projectRoot);
-
-        QinIrProgram program = new QinStrictEsmJvmLowerer().lower(
-                frontendResult.program(),
-                frontendResult.semanticModel(),
-                new QinEsmJvmLoweringContext(
-                        frontendResult.linkedSource().entryFile(),
-                        frontendResult.linkedSource().modules()));
+        QinCfaCompileResult compileResult = new QinSlimeCfaCompiler().compile(
+                QinCfaCompileRequest.forJvm(entryFile, projectRoot, GENERATED_CLASS_NAME));
+        QinIrProgram program = compileResult.loweredProgram();
 
         QinIrValidator irValidator = new QinIrValidator();
         irValidator.validate(program, QinBuildTarget.JVM);
 
-        byte[] classBytes = new QinJvmClassFileBackend().compileProgram(program, GENERATED_CLASS_NAME);
+        byte[] classBytes = compileResult.classBytes();
+        if (classBytes == null || classBytes.length == 0) {
+            throw new IllegalStateException("CFA compiler returned empty class bytes");
+        }
         Class<?> generated = new ByteArrayClassLoader(QinEsmRuntimeTestMain.class.getClassLoader())
                 .define(GENERATED_CLASS_NAME, classBytes);
         Object result = generated.getMethod("run").invoke(null);

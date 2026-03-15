@@ -27,6 +27,12 @@ public final class QinLinkedModuleSourceEmitter {
             "(?m)^\\s*export\\s+const\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_DEFAULT_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+default\\s+(.+?)\\s*;?\\s*$");
+    private static final Pattern EXPORT_DEFAULT_DECLARATION_PATTERN = Pattern.compile(
+            "\\bexport\\s+default\\s+(function|class)\\b");
+    private static final Pattern DEFAULT_EXPR_FUNCTION_NAMED_PATTERN = Pattern.compile(
+            "^function\\s+([A-Za-z_$][\\w$]*)\\b");
+    private static final Pattern DEFAULT_EXPR_CLASS_NAMED_PATTERN = Pattern.compile(
+            "^class\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_NAMED_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s*\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?\\s*$");
     private static final Pattern EXPORT_ALL_PATTERN = Pattern.compile(
@@ -63,6 +69,12 @@ public final class QinLinkedModuleSourceEmitter {
         for (QinModuleSource module : graph.modules()) {
             moduleIndex.put(module.file(), index++);
             parsedModules.put(module.file(), parseModule(module));
+        }
+
+        List<String> instantiateLines = emitExportSlotDeclarations(parsedModules, moduleIndex);
+        if (!instantiateLines.isEmpty()) {
+            output.append("// instantiate exports");
+            appendLines(output, instantiateLines);
         }
 
         for (QinModuleSource module : graph.modules()) {
@@ -117,16 +129,366 @@ public final class QinLinkedModuleSourceEmitter {
     }
 
     private String rewriteDefaultExports(String source, Path moduleFile, Map<Path, Integer> moduleIndex) {
-        Matcher matcher = EXPORT_DEFAULT_PATTERN.matcher(source);
+        String defaultLocal = defaultLocalSymbol(moduleFile, moduleIndex);
+        String rewritten = rewriteDefaultDeclarationExports(source, defaultLocal);
+
+        Matcher matcher = EXPORT_DEFAULT_PATTERN.matcher(rewritten);
         StringBuilder out = new StringBuilder();
         while (matcher.find()) {
             String expression = matcher.group(1).trim();
-            String replacement = "const " + exportSymbol(moduleFile, "default", moduleIndex) + " = "
-                    + expression + ";";
+            String replacement = "const " + defaultLocal + " = " + expression + ";";
             matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(out);
         return out.toString();
+    }
+
+    private String rewriteDefaultDeclarationExports(String source, String defaultSymbol) {
+        Matcher matcher = EXPORT_DEFAULT_DECLARATION_PATTERN.matcher(source);
+        if (!matcher.find()) {
+            return source;
+        }
+
+        StringBuilder out = new StringBuilder();
+        int cursor = 0;
+        do {
+            int start = matcher.start();
+            out.append(source, cursor, start);
+
+            String declarationKind = matcher.group(1);
+            int declarationEnd = findDefaultDeclarationEnd(source, matcher.end());
+            String declaration = source.substring(start, declarationEnd);
+            out.append(rewriteDefaultDeclaration(declaration, declarationKind, defaultSymbol));
+            cursor = declarationEnd;
+            matcher.region(cursor, source.length());
+        } while (matcher.find());
+
+        out.append(source, cursor, source.length());
+        return out.toString();
+    }
+
+    private String rewriteDefaultDeclaration(String declarationSource, String declarationKind, String defaultSymbol) {
+        String declaration = declarationSource.strip();
+        declaration = declaration.replaceFirst("^\\s*export\\s+default\\s+", "");
+        String normalizedKind = declarationKind == null ? "" : declarationKind.trim();
+
+        if ("function".equals(normalizedKind)) {
+            Matcher named = DEFAULT_EXPR_FUNCTION_NAMED_PATTERN.matcher(declaration);
+            if (named.find()) {
+                String localName = named.group(1);
+                return declaration + System.lineSeparator() + "const " + defaultSymbol + " = " + localName + ";";
+            }
+            return "const " + defaultSymbol + " = null;";
+        }
+
+        if ("class".equals(normalizedKind)) {
+            Matcher named = DEFAULT_EXPR_CLASS_NAMED_PATTERN.matcher(declaration);
+            if (named.find()) {
+                String localName = named.group(1);
+                return declaration + System.lineSeparator() + "const " + defaultSymbol + " = " + localName + ";";
+            }
+            return "const " + defaultSymbol + " = null;";
+        }
+
+        return "const " + defaultSymbol + " = " + trimTrailingSemicolon(declaration) + ";";
+    }
+
+    private String trimTrailingSemicolon(String text) {
+        String value = text.strip();
+        if (value.endsWith(";")) {
+            return value.substring(0, value.length() - 1).stripTrailing();
+        }
+        return value;
+    }
+
+    private int findDefaultDeclarationEnd(String source, int afterKeywordIndex) {
+        int bodyStart = findBodyStartBrace(source, afterKeywordIndex);
+        if (bodyStart < 0) {
+            return findLineEnd(source, afterKeywordIndex);
+        }
+        int bodyEnd = findMatchingBrace(source, bodyStart);
+        if (bodyEnd < 0) {
+            return source.length();
+        }
+        int i = bodyEnd + 1;
+        while (i < source.length() && Character.isWhitespace(source.charAt(i))) {
+            i++;
+        }
+        if (i < source.length() && source.charAt(i) == ';') {
+            i++;
+        }
+        return i;
+    }
+
+    private int findBodyStartBrace(String source, int fromIndex) {
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+
+        for (int i = fromIndex; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (ch == '\n') {
+                    inLineComment = false;
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (ch == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                inLineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+            if (ch == '{') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int findMatchingBrace(String source, int bodyStart) {
+        int depth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+
+        for (int i = bodyStart; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (ch == '\n') {
+                    inLineComment = false;
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (ch == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                inLineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+
+            if (ch == '{') {
+                depth++;
+                continue;
+            }
+            if (ch == '}') {
+                depth--;
+                if (depth == 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int findLineEnd(String source, int fromIndex) {
+        int idx = source.indexOf('\n', fromIndex);
+        return idx >= 0 ? idx : source.length();
+    }
+
+    private List<String> emitExportSlotDeclarations(
+            Map<Path, ModuleParsed> parsedModules,
+            Map<Path, Integer> moduleIndex) {
+        LinkedHashSet<String> slots = new LinkedHashSet<>();
+        for (ModuleParsed module : parsedModules.values()) {
+            LinkedHashSet<String> directExports = new LinkedHashSet<>();
+            for (ParsedExport parsedExport : module.exports()) {
+                if (parsedExport.kind() != ExportKind.RE_EXPORT_ALL) {
+                    directExports.add(parsedExport.exportName());
+                    slots.add(exportSymbol(module.sourceFile(), parsedExport.exportName(), moduleIndex));
+                }
+            }
+
+            for (ParsedExport parsedExport : module.exports()) {
+                if (parsedExport.kind() != ExportKind.RE_EXPORT_ALL || parsedExport.resolvedModule() == null) {
+                    continue;
+                }
+                List<String> inherited = resolveExportedNames(parsedExport.resolvedModule(), parsedModules, new HashSet<>(), 0);
+                for (String exportName : inherited) {
+                    if ("default".equals(exportName) || directExports.contains(exportName)) {
+                        continue;
+                    }
+                    ExportResolution resolution = resolveExportName(
+                            module.sourceFile(),
+                            exportName,
+                            parsedModules,
+                            new HashSet<>(),
+                            0);
+                    if (!resolution.exists() || resolution.isAmbiguous()) {
+                        continue;
+                    }
+                    slots.add(exportSymbol(module.sourceFile(), exportName, moduleIndex));
+                }
+            }
+        }
+
+        List<String> lines = new ArrayList<>();
+        for (String slot : slots) {
+            lines.add("const " + slot + " = " + exportSlotCreateCall() + ";");
+        }
+        return lines;
+    }
+
+    private String exportSlotCreateCall() {
+        return "__qin_export_slot__()";
+    }
+
+    private String exportGetCall(String slotExpr) {
+        return "__qin_export_get__(" + slotExpr + ")";
+    }
+
+    private String exportInitCall(String slotExpr, String valueExpr) {
+        return "__qin_export_init__(" + slotExpr + ", " + valueExpr + ")";
+    }
+
+    private String exportInitDeclaration(String slotExpr, String valueExpr) {
+        return "const " + exportInitTempSymbol(slotExpr) + " = " + exportInitCall(slotExpr, valueExpr) + ";";
+    }
+
+    private String exportInitTempSymbol(String slotExpr) {
+        return "__qesm_init_" + slotExpr.replaceAll("[^A-Za-z0-9_$]", "_");
     }
 
     private List<String> emitImportAliases(
@@ -146,7 +508,8 @@ public final class QinLinkedModuleSourceEmitter {
             }
 
             lines.add("const " + parsedImport.localName() + " = "
-                    + exportSymbol(parsedImport.resolvedModule(), parsedImport.importedName(), moduleIndex) + ";");
+                    + exportGetCall(exportSymbol(parsedImport.resolvedModule(), parsedImport.importedName(), moduleIndex))
+                    + ";");
         }
         return lines;
     }
@@ -175,7 +538,11 @@ public final class QinLinkedModuleSourceEmitter {
                         parsedExport.localName(),
                         moduleIndex);
                 case LOCAL_DEFAULT -> {
-                    // handled in rewriteDefaultExports for `export default expr`.
+                    emitLocalDefaultExportAliasLine(
+                            lines,
+                            emittedExports,
+                            parsed.sourceFile(),
+                            moduleIndex);
                 }
                 case RE_EXPORT_NAMED -> emitReExportNamed(
                         lines,
@@ -187,8 +554,9 @@ public final class QinLinkedModuleSourceEmitter {
                     if (parsedExport.resolvedModule() != null) {
                         String target = exportSymbol(parsed.sourceFile(), parsedExport.exportName(), moduleIndex);
                         if (emittedExports.add(target)) {
-                            lines.add("const " + target + " = "
-                                    + namespaceLiteral(parsedExport.resolvedModule(), parsedModules, moduleIndex) + ";");
+                            lines.add(exportInitDeclaration(
+                                    target,
+                                    namespaceLiteral(parsedExport.resolvedModule(), parsedModules, moduleIndex)));
                         }
                     }
                 }
@@ -216,7 +584,19 @@ public final class QinLinkedModuleSourceEmitter {
         if (!emittedExports.add(target)) {
             return;
         }
-        lines.add("const " + target + " = " + localName + ";");
+        lines.add(exportInitDeclaration(target, localName));
+    }
+
+    private void emitLocalDefaultExportAliasLine(
+            List<String> lines,
+            Set<String> emittedExports,
+            Path sourceFile,
+            Map<Path, Integer> moduleIndex) {
+        String target = exportSymbol(sourceFile, "default", moduleIndex);
+        if (!emittedExports.add(target)) {
+            return;
+        }
+        lines.add(exportInitDeclaration(target, defaultLocalSymbol(sourceFile, moduleIndex)));
     }
 
     private void emitReExportNamed(
@@ -233,7 +613,9 @@ public final class QinLinkedModuleSourceEmitter {
         if (!emittedExports.add(target)) {
             return;
         }
-        lines.add("const " + target + " = " + exportSymbol(resolvedModule, parsedExport.localName(), moduleIndex) + ";");
+        lines.add(exportInitDeclaration(
+                target,
+                exportGetCall(exportSymbol(resolvedModule, parsedExport.localName(), moduleIndex))));
     }
 
     private void emitReExportAll(
@@ -253,7 +635,7 @@ public final class QinLinkedModuleSourceEmitter {
             if ("default".equals(name) || directExports.contains(name)) {
                 continue;
             }
-            ExportResolution resolution = resolveExportName(parsedExport.resolvedModule(), name, parsedModules,
+            ExportResolution resolution = resolveExportName(parsed.sourceFile(), name, parsedModules,
                     new HashSet<>(), 0);
             if (!resolution.exists() || resolution.isAmbiguous()) {
                 continue;
@@ -263,8 +645,9 @@ public final class QinLinkedModuleSourceEmitter {
             if (!emittedExports.add(target)) {
                 continue;
             }
-            lines.add("const " + target + " = "
-                    + exportSymbol(resolution.owner(), resolution.exportName(), moduleIndex) + ";");
+            lines.add(exportInitDeclaration(
+                    target,
+                    exportGetCall(exportSymbol(resolution.owner(), resolution.exportName(), moduleIndex))));
         }
     }
 
@@ -277,14 +660,27 @@ public final class QinLinkedModuleSourceEmitter {
             return "{}";
         }
         StringBuilder out = new StringBuilder("{ ");
-        for (int i = 0; i < names.size(); i++) {
-            String name = names.get(i);
-            if (i > 0) {
+        boolean first = true;
+        for (String name : names) {
+            ExportResolution resolution = resolveExportName(
+                    moduleFile,
+                    name,
+                    parsedModules,
+                    new HashSet<>(),
+                    0);
+            if (!resolution.exists() || resolution.isAmbiguous()) {
+                continue;
+            }
+            if (!first) {
                 out.append(", ");
             }
+            first = false;
             out.append(objectKey(name))
                     .append(": ")
-                    .append(exportSymbol(moduleFile, name, moduleIndex));
+                    .append(exportSymbol(resolution.owner(), resolution.exportName(), moduleIndex));
+        }
+        if (first) {
+            return "{}";
         }
         out.append(" }");
         return out.toString();
@@ -324,7 +720,16 @@ public final class QinLinkedModuleSourceEmitter {
                     parsedModules,
                     visiting,
                     depth + 1)) {
-                if (!"default".equals(inherited)) {
+                if ("default".equals(inherited)) {
+                    continue;
+                }
+                ExportResolution resolution = resolveExportName(
+                        moduleFile,
+                        inherited,
+                        parsedModules,
+                        new HashSet<>(),
+                        0);
+                if (resolution.exists() && !resolution.isAmbiguous()) {
                     names.add(inherited);
                 }
             }
@@ -347,53 +752,75 @@ public final class QinLinkedModuleSourceEmitter {
         if (!visiting.add(visitKey)) {
             return ExportResolution.notResolvedResult();
         }
-
-        ModuleParsed module = parsedModules.get(moduleFile);
-        if (module == null) {
-            return ExportResolution.notResolvedResult();
-        }
-
-        List<ParsedExport> direct = new ArrayList<>();
-        List<ParsedExport> stars = new ArrayList<>();
-        for (ParsedExport parsedExport : module.exports()) {
-            if (parsedExport.kind() == ExportKind.RE_EXPORT_ALL) {
-                stars.add(parsedExport);
-                continue;
+        try {
+            ModuleParsed module = parsedModules.get(moduleFile);
+            if (module == null) {
+                return ExportResolution.notResolvedResult();
             }
-            if (exportName.equals(parsedExport.exportName())) {
-                direct.add(parsedExport);
-            }
-        }
 
-        if (direct.size() > 1) {
-            return ExportResolution.ambiguousResult();
-        }
-        if (direct.size() == 1) {
-            ParsedExport parsedExport = direct.get(0);
-            if (parsedExport.kind() == ExportKind.RE_EXPORT_NAMED && parsedExport.resolvedModule() != null) {
-                return resolveExportName(parsedExport.resolvedModule(), parsedExport.localName(), parsedModules, visiting,
-                        depth + 1);
+            List<ParsedExport> direct = new ArrayList<>();
+            List<ParsedExport> stars = new ArrayList<>();
+            for (ParsedExport parsedExport : module.exports()) {
+                if (parsedExport.kind() == ExportKind.RE_EXPORT_ALL) {
+                    stars.add(parsedExport);
+                    continue;
+                }
+                if (exportName.equals(parsedExport.exportName())) {
+                    direct.add(parsedExport);
+                }
             }
-            return ExportResolution.found(moduleFile, exportName);
-        }
 
-        ExportResolution found = ExportResolution.notResolvedResult();
-        for (ParsedExport star : stars) {
-            if (star.resolvedModule() == null) {
-                continue;
-            }
-            ExportResolution sub = resolveExportName(star.resolvedModule(), exportName, parsedModules, visiting, depth + 1);
-            if (sub.isAmbiguous()) {
+            if (direct.size() > 1) {
                 return ExportResolution.ambiguousResult();
             }
-            if (sub.exists()) {
-                if (found.exists()) {
+            if (direct.size() == 1) {
+                ParsedExport parsedExport = direct.get(0);
+                if (parsedExport.kind() == ExportKind.RE_EXPORT_NAMED && parsedExport.resolvedModule() != null) {
+                    return resolveExportName(
+                            parsedExport.resolvedModule(),
+                            parsedExport.localName(),
+                            parsedModules,
+                            visiting,
+                            depth + 1);
+                }
+                return ExportResolution.found(moduleFile, exportName);
+            }
+
+            ExportResolution found = ExportResolution.notResolvedResult();
+            for (ParsedExport star : stars) {
+                if (star.resolvedModule() == null) {
+                    continue;
+                }
+                ExportResolution sub = resolveExportName(
+                        star.resolvedModule(),
+                        exportName,
+                        parsedModules,
+                        visiting,
+                        depth + 1);
+                if (sub.isAmbiguous()) {
                     return ExportResolution.ambiguousResult();
                 }
-                found = sub;
+                if (sub.exists()) {
+                    if (found.exists() && !sameResolvedBinding(found, sub)) {
+                        return ExportResolution.ambiguousResult();
+                    }
+                    found = sub;
+                }
             }
+            return found;
+        } finally {
+            visiting.remove(visitKey);
         }
-        return found;
+    }
+
+    private boolean sameResolvedBinding(ExportResolution left, ExportResolution right) {
+        if (!left.exists() || !right.exists()) {
+            return false;
+        }
+        return left.owner() != null
+                && right.owner() != null
+                && left.owner().equals(right.owner())
+                && left.exportName().equals(right.exportName());
     }
 
     private String joinModuleSection(List<String> importAliases, String body, List<String> exportAliases) {
@@ -514,7 +941,18 @@ public final class QinLinkedModuleSourceEmitter {
 
         Matcher defaultMatcher = EXPORT_DEFAULT_PATTERN.matcher(module.source());
         while (defaultMatcher.find()) {
-            exports.add(new ParsedExport(ExportKind.LOCAL_DEFAULT, "default", "default", null));
+            String defaultExpr = defaultMatcher.group(1).trim();
+            String localName = "default";
+            Matcher functionDeclMatcher = DEFAULT_EXPR_FUNCTION_NAMED_PATTERN.matcher(defaultExpr);
+            if (functionDeclMatcher.find()) {
+                localName = functionDeclMatcher.group(1).trim();
+            } else {
+                Matcher classDeclMatcher = DEFAULT_EXPR_CLASS_NAMED_PATTERN.matcher(defaultExpr);
+                if (classDeclMatcher.find()) {
+                    localName = classDeclMatcher.group(1).trim();
+                }
+            }
+            exports.add(new ParsedExport(ExportKind.LOCAL_DEFAULT, "default", localName, null));
         }
 
         Matcher namedMatcher = EXPORT_NAMED_PATTERN.matcher(module.source());
@@ -587,6 +1025,11 @@ public final class QinLinkedModuleSourceEmitter {
     private String exportSymbol(Path moduleFile, String exportName, Map<Path, Integer> moduleIndex) {
         int idx = moduleIndex.getOrDefault(moduleFile, -1);
         return "__qesm_m" + idx + "_e_" + sanitize(exportName);
+    }
+
+    private String defaultLocalSymbol(Path moduleFile, Map<Path, Integer> moduleIndex) {
+        int idx = moduleIndex.getOrDefault(moduleFile, -1);
+        return "__qesm_m" + idx + "_default_local";
     }
 
     private String sanitize(String name) {

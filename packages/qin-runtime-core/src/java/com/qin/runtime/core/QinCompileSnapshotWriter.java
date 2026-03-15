@@ -29,6 +29,28 @@ public final class QinCompileSnapshotWriter {
             QinIrProgram loweredProgram,
             String className,
             byte[] classBytes) throws IOException {
+        return writeSnapshot(
+                sourceFile,
+                originalSource,
+                parserSource,
+                astText,
+                irProgram,
+                loweredProgram,
+                null,
+                className,
+                classBytes);
+    }
+
+    public Path writeSnapshot(
+            Path sourceFile,
+            String originalSource,
+            String parserSource,
+            String astText,
+            QinIrProgram irProgram,
+            QinIrProgram loweredProgram,
+            Object cfaIrProgram,
+            String className,
+            byte[] classBytes) throws IOException {
         Path source = sourceFile.toAbsolutePath().normalize();
         String sourceBase = source.getFileName().toString();
         int dot = sourceBase.lastIndexOf('.');
@@ -54,6 +76,9 @@ public final class QinCompileSnapshotWriter {
         writeJsonText(runDir.resolve(prefix + "-ast.json"), defaultString(astText));
         writeJsonObject(runDir.resolve(prefix + "-ir.json"), irProgram);
         writeJsonObject(runDir.resolve(prefix + "-lowerer.json"), loweredProgram);
+        if (cfaIrProgram != null) {
+            writeJsonObject(runDir.resolve(prefix + "-cfa-ir.json"), cfaIrProgram);
+        }
         writeJsonObject(
                 runDir.resolve(prefix + "-class-name.json"),
                 Map.of("className", className == null ? "" : className));

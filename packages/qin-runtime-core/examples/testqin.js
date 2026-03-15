@@ -1,9 +1,17 @@
+import mitt from "mitt";
 import { profile, flags } from "./testqin-module-a.js";
+import makePayload from "./testqin-module-fn.js";
 
 console.log(import.meta.url);
 import("./testqin-module-a.js");
 await 1;
 console.log(import("./testqin-module-a.js"));
+const dynPath = "./testqin-module-a.js";
+console.log(import(dynPath));
+const promiseNs = import(dynPath);
+const awaitedNs = await promiseNs;
+console.log(awaitedNs.profile);
+console.log(await import("./testqin-module-a.js"));
 
 const user = { age: 18, name: "qin" };
 const stats = { min: 2, max: 8 };
@@ -54,4 +62,10 @@ console.log(Date.now());
 console.log(JSON.stringify({ ok: 1, text: "hello" }));
 console.log(JSON.parse("{\"k\":1}"));
 console.log(Math.max(100, 200));
+const emitter = mitt();
+console.log(emitter);
+const payload = makePayload();
+console.log(payload);
+console.log(payload.code);
+console.log(payload.label);
 console.log("done");

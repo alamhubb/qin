@@ -16,7 +16,7 @@ public class PluginRegistry {
 
     private PluginRegistry() {
         // 注册内置插件
-        register(new JsPlugin());
+        // register(new JsPlugin());
         // JavaPlugin 将在后续添加
     }
 

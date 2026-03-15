@@ -6,6 +6,7 @@ package com.qin.lang.ir;
 public sealed interface QinIrExpression permits
         QinIrBooleanLiteral,
         QinIrBuiltinCallExpression,
+        QinIrFunctionLiteral,
         QinIrIdentifierReference,
         QinIrJavaNewExpression,
         QinIrMemberAccessExpression,

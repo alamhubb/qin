@@ -19,10 +19,10 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-module-policy/build/classes" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-runtime/build/classes" />
         </CLASSES>
         <SOURCES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-module-policy/src" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-runtime/src" />
         </SOURCES>
       </library>
     </orderEntry>
@@ -39,10 +39,10 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-runtime/build/classes" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-module-policy/build/classes" />
         </CLASSES>
         <SOURCES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-runtime/src" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-module-policy/src" />
         </SOURCES>
       </library>
     </orderEntry>
@@ -79,6 +79,16 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-pipeline-cfa/build/classes" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-pipeline-cfa/src" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-sema-esm/build/classes" />
         </CLASSES>
         <SOURCES>
@@ -99,20 +109,20 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/build/classes" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/build/classes" />
         </CLASSES>
         <SOURCES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/src" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/src" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/build/classes" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/build/classes" />
         </CLASSES>
         <SOURCES>
-          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-ir/src" />
+          <root url="file://D:/project/qkyproject/slime-java/qin/packages/qin-lang-frontend-adapter/src" />
         </SOURCES>
       </library>
     </orderEntry>
@@ -218,6 +228,15 @@
           <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/subhuti-java/src" />
         </SOURCES>
       </library>
-    </orderEntry>
+    </orderEntry>    <!-- Qin Libraries -->
+    <orderEntry type="library" name="ch.qos.logback@logback-classic" level="project" />
+    <orderEntry type="library" name="ch.qos.logback@logback-core" level="project" />
+    <orderEntry type="library" name="com.github.ben-manes.caffeine@caffeine" level="project" />
+    <orderEntry type="library" name="com.google.errorprone@error_prone_annotations" level="project" />
+    <orderEntry type="library" name="net.bytebuddy@byte-buddy" level="project" />
+    <orderEntry type="library" name="org.checkerframework@checker-qual" level="project" />
+    <orderEntry type="library" name="org.slf4j@slf4j-api" level="project" />
+    <!-- End Qin Libraries -->
+
   </component>
 </module>

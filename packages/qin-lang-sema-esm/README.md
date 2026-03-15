@@ -17,4 +17,4 @@ ESM semantic analysis layer for Qin.
 - Ambiguous star re-export resolution (`ESM2004`).
 - Runtime feature guards with stable codes:
   - `ESM3004` for unsupported `export let/var/function/class`
-  - `ESM3005` for unsupported `export default function/class`
+  - `export default function/class` now passes semantic stage and is lowered downstream

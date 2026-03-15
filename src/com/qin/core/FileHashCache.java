@@ -49,6 +49,9 @@ public class FileHashCache {
      * 加载缓存
      */
     public void load() {
+        fileHashes = new ConcurrentHashMap<>();
+        lastCompileTime = 0;
+
         if (!Files.exists(cacheFile)) {
             return;
         }
@@ -129,6 +132,38 @@ public class FileHashCache {
     }
 
     /**
+     * 检查 sourceDir 下是否存在已删除的 .java 文件（相对于缓存）
+     */
+    public boolean hasDeletedFiles(String sourceDir) throws IOException {
+        Path srcPath = projectDir.resolve(sourceDir);
+        String normalizedPrefix = normalizeSourcePrefix(sourceDir);
+        if (normalizedPrefix == null) {
+            return false;
+        }
+
+        Set<String> currentFiles = new HashSet<>();
+        if (Files.exists(srcPath)) {
+            Files.walkFileTree(srcPath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (file.toString().endsWith(".java")) {
+                        currentFiles.add(normalizeCacheKey(projectDir.relativize(file).toString()));
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+
+        for (String cachedPath : fileHashes.keySet()) {
+            if (cachedPath.startsWith(normalizedPrefix) && cachedPath.endsWith(".java")
+                    && !currentFiles.contains(cachedPath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 检查是否需要编译（任何文件变化）
      */
     public boolean needsCompilation(String sourceDir) throws IOException {
@@ -163,6 +198,10 @@ public class FileHashCache {
      */
     public void updateAllHashes(String sourceDir) throws IOException {
         Path srcPath = projectDir.resolve(sourceDir);
+        String normalizedPrefix = normalizeSourcePrefix(sourceDir);
+        if (normalizedPrefix != null) {
+            removeEntriesByPrefix(normalizedPrefix);
+        }
 
         if (!Files.exists(srcPath)) {
             return;
@@ -241,5 +280,33 @@ public class FileHashCache {
                     ? new java.util.Date(lastCompileTime).toString()
                     : "never");
         }
+    }
+
+    private String normalizeSourcePrefix(String sourceDir) {
+        Path sourcePath = Paths.get(sourceDir);
+        Path resolved = sourcePath.isAbsolute() ? sourcePath.normalize() : projectDir.resolve(sourcePath).normalize();
+        try {
+            String relative = normalizeCacheKey(projectDir.relativize(resolved).toString());
+            if (relative.isEmpty()) {
+                return relative;
+            }
+            return relative.endsWith("/") ? relative : relative + "/";
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private void removeEntriesByPrefix(String prefix) {
+        Iterator<String> iterator = fileHashes.keySet().iterator();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            if (key.startsWith(prefix)) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private String normalizeCacheKey(String path) {
+        return path.replace('\\', '/');
     }
 }

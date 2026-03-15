@@ -73,6 +73,16 @@ public class IncrementalCompilationChecker {
     }
 
     /**
+     * 检查 sourceDir 下是否有已删除文件（用于触发全量重编译清理陈旧 class）
+     */
+    public boolean hasDeletedFiles(String sourceDir) throws IOException {
+        if (hashCache == null) {
+            return false;
+        }
+        return hashCache.hasDeletedFiles(sourceDir);
+    }
+
+    /**
      * 检查是否需要编译（精确模式 - 哈希）
      */
     public boolean needsCompilationByHash(String sourceDir) throws IOException {
@@ -97,6 +107,15 @@ public class IncrementalCompilationChecker {
     public void updateAllHashes(String sourceDir) throws IOException {
         if (hashCache != null) {
             hashCache.updateAllHashes(sourceDir);
+        }
+    }
+
+    /**
+     * 重新加载哈希缓存（用于等待编译锁后读取最新状态）
+     */
+    public void reloadCache() {
+        if (hashCache != null) {
+            hashCache.load();
         }
     }
 
