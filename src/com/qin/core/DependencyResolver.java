@@ -161,6 +161,10 @@ public class DependencyResolver {
                 }
                 localPaths.add(pkg.getClassesDir());
             } else {
+                if (isNpmDependencyNotation(name)) {
+                    System.out.println("[DEBUG] Skip npm dependency in JVM resolver: " + name);
+                    continue;
+                }
                 String mavenCoordinate = toResolveCoordinate(name, version);
                 if (mavenCoordinate == null) {
                     throw new IOException(
@@ -490,6 +494,18 @@ public class DependencyResolver {
             default -> false;
         };
     }
+
+    private boolean isNpmDependencyNotation(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        String normalized = name.trim();
+        if (normalized.startsWith("@")) {
+            return normalized.contains("/");
+        }
+        return !normalized.contains(":") && !normalized.contains("@");
+    }
+
     private boolean checkVersionMatch(String required, String actual) {
         if ("*".equals(required))
             return true;

@@ -291,6 +291,22 @@ public final class QinBuiltinRegistry {
                             "__qin_make_function__",
                             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
                             List.of(BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_global__", 1),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_global__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_global__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_bind_global__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_bind_global__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_bind_global__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
             Map.entry(key("Global", "__qin_export_slot__", 0),
                     new BuiltinMethod(
                             "Global",
@@ -358,6 +374,176 @@ public final class QinBuiltinRegistry {
                             MethodTypeDesc.ofDescriptor(
                                     "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
                             List.of(
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_call_method__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_call_method__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_call_method__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_call_method__", 3),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_call_method__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_call_method__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_call_method__", 4),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_call_method__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_call_method__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_call_method__", 5),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_call_method__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_call_method__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_call_method__", 6),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_call_method__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_call_method__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_binary__", 3),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_binary__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_binary__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_logical__", 3),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_logical__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_logical__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_unary__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_unary__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_unary__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_conditional__", 3),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_conditional__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_conditional__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_member_get__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_member_get__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_member_get__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_member_set__", 3),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_member_set__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_member_set__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_new__", 1),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_new__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_new__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_new__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_new__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_new__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_new__", 3),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_new__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_new__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_new__", 4),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_new__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_new__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_new__", 5),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_new__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_new__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY,
+                                    BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_new__", 6),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_new__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_new__",
+                            MethodTypeDesc.ofDescriptor(
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(
+                                    BuiltinArgKind.ANY,
                                     BuiltinArgKind.ANY,
                                     BuiltinArgKind.ANY,
                                     BuiltinArgKind.ANY,

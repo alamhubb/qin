@@ -2,6 +2,7 @@ package com.qin.lang.pipeline.cfa;
 
 import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
+import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
@@ -106,6 +107,13 @@ public final class QinCfaIrToQinIrAdapter {
                     toExpressions(javaInstanceConsoleLog.arguments())));
         }
 
+        List<QinIrProgram.TopLevelExecutionStep> executionSteps = new ArrayList<>();
+        for (QinCfaProgram.TopLevelExecutionStep executionStep : cfaProgram.executionSteps()) {
+            executionSteps.add(new QinIrProgram.TopLevelExecutionStep(
+                    mapKind(executionStep.kind()),
+                    executionStep.index()));
+        }
+
         return new QinIrProgram(
                 declarations,
                 expressionStatements,
@@ -115,7 +123,20 @@ public final class QinCfaIrToQinIrAdapter {
                 jsImports,
                 javaStaticConsoleLogs,
                 javaInstanceMethodCalls,
-                javaInstanceConsoleLogs);
+                javaInstanceConsoleLogs,
+                executionSteps);
+    }
+
+    private QinIrProgram.TopLevelStatementKind mapKind(QinCfaProgram.TopLevelStatementKind kind) {
+        return switch (kind) {
+            case DECLARATION -> QinIrProgram.TopLevelStatementKind.DECLARATION;
+            case EXPRESSION_STATEMENT -> QinIrProgram.TopLevelStatementKind.EXPRESSION_STATEMENT;
+            case CONSOLE_VALUE -> QinIrProgram.TopLevelStatementKind.CONSOLE_VALUE;
+            case CONSOLE_OBJECT -> QinIrProgram.TopLevelStatementKind.CONSOLE_OBJECT;
+            case JAVA_STATIC_CONSOLE -> QinIrProgram.TopLevelStatementKind.JAVA_STATIC_CONSOLE;
+            case JAVA_INSTANCE_CALL -> QinIrProgram.TopLevelStatementKind.JAVA_INSTANCE_CALL;
+            case JAVA_INSTANCE_CONSOLE -> QinIrProgram.TopLevelStatementKind.JAVA_INSTANCE_CONSOLE;
+        };
     }
 
     private List<QinIrExpression> toExpressions(List<QinCfaProgram.Expression> expressions) {
@@ -164,6 +185,9 @@ public final class QinCfaIrToQinIrAdapter {
         }
         if (expression instanceof QinCfaProgram.StringLiteral stringLiteral) {
             return new QinIrStringLiteral(stringLiteral.value());
+        }
+        if (expression instanceof QinCfaProgram.ArrayLiteral arrayLiteral) {
+            return new QinIrArrayLiteral(toExpressions(arrayLiteral.elements()));
         }
         throw new IllegalArgumentException("Unsupported QinCfa expression for adapter: "
                 + expression.getClass().getName());

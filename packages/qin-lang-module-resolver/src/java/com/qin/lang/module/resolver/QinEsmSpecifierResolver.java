@@ -14,8 +14,20 @@ public final class QinEsmSpecifierResolver {
     private static final Pattern EXPORTS_IMPORT_DOT = Pattern.compile(
             "\"exports\"\\s*:\\s*\\{[^}]*\"\\.\"\\s*:\\s*\\{[^}]*\"import\"\\s*:\\s*\"([^\"]+)\"",
             Pattern.DOTALL);
+    private static final Pattern EXPORTS_DEFAULT_DOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{[^}]*\"\\.\"\\s*:\\s*\\{[^}]*\"default\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
     private static final Pattern EXPORTS_DOT_STRING = Pattern.compile(
             "\"exports\"\\s*:\\s*\\{[^}]*\"\\.\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+    private static final Pattern EXPORTS_IMPORT_ROOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{[^}]*\"import\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+    private static final Pattern EXPORTS_DEFAULT_ROOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{[^}]*\"default\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+    private static final Pattern EXPORTS_STRING_ROOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\"([^\"]+)\"",
             Pattern.DOTALL);
 
     public Path resolveModule(Path importerFile, String specifier) {
@@ -99,10 +111,28 @@ public final class QinEsmSpecifierResolver {
                 String json = Files.readString(packageJson);
                 String entry = readExportsImport(json);
                 if (entry == null) {
+                    entry = readExportsDefault(json);
+                }
+                if (entry == null) {
                     entry = readExportsDotString(json);
                 }
                 if (entry == null) {
+                    entry = readExportsImportRoot(json);
+                }
+                if (entry == null) {
+                    entry = readExportsDefaultRoot(json);
+                }
+                if (entry == null) {
+                    entry = readExportsStringRoot(json);
+                }
+                if (entry == null) {
                     entry = readField(json, "module");
+                }
+                if (entry == null) {
+                    Path esmIndex = resolveAsFile(packageDir.resolve("esm/index.js"));
+                    if (esmIndex != null) {
+                        return esmIndex;
+                    }
                 }
                 if (entry == null) {
                     entry = readField(json, "main");
@@ -138,8 +168,40 @@ public final class QinEsmSpecifierResolver {
         return null;
     }
 
+    private String readExportsDefault(String json) {
+        Matcher matcher = EXPORTS_DEFAULT_DOT.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
     private String readExportsDotString(String json) {
         Matcher matcher = EXPORTS_DOT_STRING.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String readExportsImportRoot(String json) {
+        Matcher matcher = EXPORTS_IMPORT_ROOT.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String readExportsDefaultRoot(String json) {
+        Matcher matcher = EXPORTS_DEFAULT_ROOT.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String readExportsStringRoot(String json) {
+        Matcher matcher = EXPORTS_STRING_ROOT.matcher(json);
         if (matcher.find()) {
             return matcher.group(1);
         }

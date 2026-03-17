@@ -20,8 +20,8 @@ public final class QinEsmSemanticAnalyzer {
             "(?m)^\\s*import\\s+(.+?)\\s+from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "(?m)^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$");
-    private static final Pattern EXPORT_CONST_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+const\\s+([A-Za-z_$][\\w$]*)\\b");
+    private static final Pattern EXPORT_DECLARATION_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+(const|function|class)\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_DEFAULT_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+default\\b");
     private static final Pattern EXPORT_NAMED_PATTERN = Pattern.compile(
@@ -79,10 +79,10 @@ public final class QinEsmSemanticAnalyzer {
 
     private List<QinEsmExportBinding> parseExports(QinModuleSource module) {
         List<QinEsmExportBinding> exports = new ArrayList<>();
-        Matcher matcher = EXPORT_CONST_PATTERN.matcher(module.source());
+        Matcher matcher = EXPORT_DECLARATION_PATTERN.matcher(module.source());
         while (matcher.find()) {
-            String name = matcher.group(1).trim();
-            int[] lineCol = lineCol(module.source(), matcher.start(1));
+            String name = matcher.group(2).trim();
+            int[] lineCol = lineCol(module.source(), matcher.start(2));
             exports.add(new QinEsmExportBinding(
                     module.file(),
                     QinEsmExportKind.LOCAL_NAMED,

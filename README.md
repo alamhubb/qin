@@ -876,6 +876,38 @@ Qin is a JS/ESM-syntax, JVM-kernel compiled language.
 - Qin does not aim for Node compatibility.
 - Qin uses Class-File API to emit JVM `.class` artifacts.
 
+### Module Semantics (Strict Rule)
+
+- ESM-only module model in this phase.
+- Supported module syntax baseline: `import` / `export` (ESM).
+- Not supported as language spec: CommonJS (`require`, `module.exports`, `exports.*`).
+- Any accidental CJS behavior seen during experiments is non-normative and not a compatibility promise.
+- If source depends on CJS semantics, Qin may fail at parse/semantic/lowering/runtime stages.
+
+### Runtime Boundary (Strict Rule)
+
+- Node runtime APIs are out of scope in this phase (`process`, `Buffer`, `__dirname`, `fs`, `path`, `node:*`, etc.).
+- `qin install` can fetch npm packages, but "can install" != "can run".
+- Runtime compatibility depends on whether package code stays inside Qin-supported ESM + syntax/runtime subset.
+
+### Runtime Function Model (No Shim Path)
+
+- Qin runtime uses a single function-construction entrypoint: `Global.__qin_make_function__`.
+- Frontend lowers supported JS function AST into a runtime function definition object, then routes through that entrypoint.
+- Runtime decides whether to instantiate:
+  - interpreted JS function (AST-driven, generic semantics path), or
+  - fallback callable (for unsupported/over-budget shapes).
+- This is a structural design, not package-specific behavior:
+  - no npm package hardcode,
+  - no library shim mapping,
+  - no package-name condition branches in parser/lowering/runtime.
+
+Safety guard for large modules:
+
+- Qin applies a lowering budget for runtime function definitions.
+- For very large source units, function-model lowering is automatically disabled to prevent JVM bytecode method-size overflow.
+- This keeps pipeline stability while preserving the same architecture and entrypoint.
+
 Project zoning rules (compile-time hard rules):
 
 - `app/` (frontend): JS/ESM imports allowed, `java:` imports denied.
@@ -898,3 +930,48 @@ Reference implementation details live in:
 - `packages/qin-lang-module-policy/README.md`
 - `packages/qin-lang-sema-esm/README.md`
 - `packages/qin-runtime-core/README.md`
+
+## Dependency Install Design (`qin install`)
+
+`qin install` now supports mixed dependency sources in one workflow:
+
+1. npm-first resolution (Node-free installer implemented in Java)
+2. Maven fallback when npm package cannot be resolved
+3. Automatic write-back to `qin.config.json`
+
+### Command behavior (no options)
+
+- `qin install <pkg...>`
+  - For bare package names (for example `mitt`, `lodash-es`), Qin tries npm first.
+  - If npm cannot resolve that package, Qin falls back to Maven Central lookup.
+  - Installed dependencies are recorded into `qin.config.json`.
+
+- `qin install org.example:artifact[:version]`
+  - Explicit Maven coordinates go directly to Maven resolution.
+  - Added to `qin.config.json`, then resolved by `qin sync` logic.
+
+- `qin install` (no package names)
+  - Executes install using dependencies already declared in `qin.config.json`.
+  - npm-style entries are installed to `node_modules` by Qin's Java npm installer.
+  - Maven-style entries are resolved using the existing `sync` pipeline.
+  - This is the unified update path for `main/` backend JS + Java dependency environment.
+
+### `qin.config.json` dependency shape
+
+- npm dependencies: key is npm package name, value is npm version
+  - Example: `"mitt": "3.0.1"`
+- Maven dependencies: key is Maven coordinate (`groupId:artifactId`), value is Maven version
+  - Example: `"org.jsoup:jsoup": "1.18.1"`
+
+This allows Qin projects to manage npm + Maven dependencies together while keeping runtime constraints explicit (Node APIs are still out of scope unless Qin runtime explicitly supports them).
+
+### Dependency vs Runtime Clarification (Normative)
+
+- `qin install` is a dependency acquisition and lock/write-back workflow.
+- Runtime execution still follows Qin language/runtime constraints above (ESM-first, no CJS guarantee, no Node API guarantee).
+- If an npm package requires CJS or Node-only APIs, install may succeed but compile/run can still fail by design.
+
+Notes:
+
+- `app/` frontend package behavior is intentionally not changed in this phase.
+- `main/` backend JS and Java now follow one dependency update entrypoint: `qin install`.

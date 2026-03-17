@@ -4,17 +4,19 @@ import com.qin.lang.ir.QinBuiltinRegistry;
 import com.qin.lang.pipeline.cfa.ir.QinCfaProgram;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Minimal JVM backend based on JDK Class-File API.
@@ -22,6 +24,7 @@ import java.util.Objects;
 public final class QinCfaJvmClassFileBackend {
     private static final ClassDesc OBJECT_DESC = ClassDesc.of("java.lang.Object");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
+    private static final ClassDesc ARRAY_LIST_DESC = ClassDesc.of("java.util.ArrayList");
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
     private static final ClassDesc JS_SDK_FUNCTIONS_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmFunctions");
     private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
@@ -30,6 +33,7 @@ public final class QinCfaJvmClassFileBackend {
 
     private static final MethodTypeDesc VOID_INIT = MethodTypeDesc.ofDescriptor("()V");
     private static final MethodTypeDesc RUN_SIGNATURE = MethodTypeDesc.ofDescriptor("()Ljava/lang/Object;");
+    private static final MethodTypeDesc RUN_CHUNK_SIGNATURE = MethodTypeDesc.ofDescriptor("()V");
     private static final MethodTypeDesc MAIN_SIGNATURE = MethodTypeDesc.ofDescriptor("([Ljava/lang/String;)V");
     private static final MethodTypeDesc CONSOLE_LOG_SIGNATURE = MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)V");
     private static final MethodTypeDesc INTEGER_VALUE_OF_SIGNATURE =
@@ -40,10 +44,28 @@ public final class QinCfaJvmClassFileBackend {
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc EXPORT_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc GLOBAL_GET_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc MEMBER_GET_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc BIND_GLOBAL_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MAP_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc LIST_ADD_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Z");
+    private static final int DECLARATION_CHUNK_SIZE = 16;
+    private static final int RUNTIME_CHUNK_SIZE = 64;
+    private static final List<ChunkSizing> CHUNK_SIZING_FALLBACKS = List.of(
+            new ChunkSizing(DECLARATION_CHUNK_SIZE, RUNTIME_CHUNK_SIZE),
+            new ChunkSizing(8, 32),
+            new ChunkSizing(4, 16),
+            new ChunkSizing(2, 8),
+            new ChunkSizing(1, 4),
+            new ChunkSizing(1, 2),
+            new ChunkSizing(1, 1));
 
     public byte[] compileProgram(QinCfaProgram program, String className) {
         Objects.requireNonNull(program, "program cannot be null");
@@ -59,8 +81,38 @@ public final class QinCfaJvmClassFileBackend {
             throw new IllegalArgumentException("Program has no compilable statements");
         }
 
+        validateExecutionPlan(program);
+        BindingPlan bindingPlan = buildBindingPlan(program.declarations());
+        ClassDesc generatedClassDesc = ClassDesc.of(className);
+        IllegalArgumentException lastTooLargeError = null;
+        for (ChunkSizing sizing : CHUNK_SIZING_FALLBACKS) {
+            try {
+                return buildClassBytes(program, bindingPlan, generatedClassDesc, sizing);
+            } catch (IllegalArgumentException error) {
+                if (!isMethodTooLargeError(error)) {
+                    throw error;
+                }
+                lastTooLargeError = error;
+            }
+        }
+        if (lastTooLargeError != null) {
+            throw lastTooLargeError;
+        }
+        throw new IllegalStateException("Failed to compile program with chunk fallbacks");
+    }
+
+    private byte[] buildClassBytes(
+            QinCfaProgram program,
+            BindingPlan bindingPlan,
+            ClassDesc generatedClassDesc,
+            ChunkSizing sizing) {
+        Set<String> eagerGlobalBindingNames = collectEagerGlobalBindingNames(program);
+        List<ChunkMethodSpec> chunkMethods = buildChunkMethods(
+                bindingPlan,
+                program,
+                sizing.runtimeChunkSize());
         ClassFile classFile = ClassFile.of();
-        return classFile.build(ClassDesc.of(className), builder -> {
+        return classFile.build(generatedClassDesc, builder -> {
             builder.withFlags(ClassFile.ACC_PUBLIC | ClassFile.ACC_SUPER);
 
             builder.withMethodBody("<init>", VOID_INIT, ClassFile.ACC_PUBLIC, code -> {
@@ -69,107 +121,248 @@ public final class QinCfaJvmClassFileBackend {
                 code.return_();
             });
 
+            for (String fieldName : bindingPlan.fieldNamesByIndex()) {
+                builder.withField(
+                        fieldName,
+                        OBJECT_DESC,
+                        ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC);
+            }
+
+            for (ChunkMethodSpec chunkMethod : chunkMethods) {
+                builder.withMethodBody(
+                        chunkMethod.methodName(),
+                        RUN_CHUNK_SIGNATURE,
+                        ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC,
+                        code -> emitChunkMethod(
+                                code,
+                                generatedClassDesc,
+                                chunkMethod,
+                                bindingPlan,
+                                program,
+                                eagerGlobalBindingNames));
+            }
+
             builder.withMethodBody("run", RUN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
-                    code -> emitRunMethod(
-                            code,
-                            program.declarations(),
-                            program.expressionStatements(),
-                            program.consoleValueLogs(),
-                            program.consoleLogs(),
-                            program.javaStaticConsoleLogs(),
-                            program.javaInstanceMethodCalls(),
-                            program.javaInstanceConsoleLogs()));
+                    code -> emitRunMethod(code, generatedClassDesc, chunkMethods, bindingPlan));
 
             builder.withMethodBody("main", MAIN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
-                    code -> emitMainMethod(code, className));
+                    code -> emitMainMethod(code, generatedClassDesc));
         });
     }
 
-    private void emitMainMethod(CodeBuilder code, String className) {
-        code.invokestatic(ClassDesc.of(className), "run", RUN_SIGNATURE);
+    private boolean isMethodTooLargeError(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null
+                    && message.contains("Code length")
+                    && message.contains("outside the allowed range")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private void emitMainMethod(CodeBuilder code, ClassDesc generatedClassDesc) {
+        code.invokestatic(generatedClassDesc, "run", RUN_SIGNATURE);
         code.pop();
         code.return_();
     }
 
     private void emitRunMethod(
             CodeBuilder code,
-            List<QinCfaProgram.ConstDeclaration> declarations,
-            List<QinCfaProgram.ExpressionStatement> expressionStatements,
-            List<QinCfaProgram.ConsoleLogValue> consoleValueLogs,
-            List<QinCfaProgram.ConsoleLogStatement> consoleLogs,
-            List<QinCfaProgram.ConsoleLogJavaStaticCall> javaStaticConsoleLogs,
-            List<QinCfaProgram.JavaInstanceMethodCall> javaInstanceMethodCalls,
-            List<QinCfaProgram.ConsoleLogJavaInstanceCall> javaInstanceConsoleLogs) {
-        Map<String, DeclarationBinding> bindings = new LinkedHashMap<>();
+            ClassDesc generatedClassDesc,
+            List<ChunkMethodSpec> chunkMethods,
+            BindingPlan bindingPlan) {
+        for (ChunkMethodSpec chunkMethod : chunkMethods) {
+            code.invokestatic(generatedClassDesc, chunkMethod.methodName(), RUN_CHUNK_SIGNATURE);
+        }
+        if (bindingPlan.lastDeclarationIndex() >= 0) {
+            String fieldName = bindingPlan.fieldNamesByIndex().get(bindingPlan.lastDeclarationIndex());
+            code.getstatic(generatedClassDesc, fieldName, OBJECT_DESC);
+            code.areturn();
+        }
+        code.aconst_null();
+        code.areturn();
+    }
+
+    private void emitChunkMethod(
+            CodeBuilder code,
+            ClassDesc generatedClassDesc,
+            ChunkMethodSpec chunkMethod,
+            BindingPlan bindingPlan,
+            QinCfaProgram program,
+            Set<String> eagerGlobalBindingNames) {
+        Map<String, DeclarationBinding> activeBindings =
+                new LinkedHashMap<>(chunkMethod.bindingsBeforeChunk());
+        for (int i = chunkMethod.fromInclusive(); i < chunkMethod.toExclusive(); i++) {
+            QinCfaProgram.TopLevelExecutionStep step = program.executionSteps().get(i);
+            switch (step.kind()) {
+                case DECLARATION -> {
+                    DeclarationStep declarationStep = bindingPlan.declarationSteps().get(step.index());
+                    DeclarationBinding declarationBinding =
+                            bindingPlan.declarationBindingsByStep().get(step.index());
+                    emitDeclarationInitializer(
+                            code,
+                            generatedClassDesc,
+                            activeBindings,
+                            declarationStep.initializer(),
+                            declarationBinding.fieldName());
+                    activeBindings.put(declarationStep.name(), declarationBinding);
+                    if (eagerGlobalBindingNames.contains(declarationStep.name())) {
+                        code.ldc(declarationStep.name());
+                        code.getstatic(generatedClassDesc, declarationBinding.fieldName(), OBJECT_DESC);
+                        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_bind_global__", BIND_GLOBAL_SIGNATURE);
+                        code.pop();
+                    }
+                }
+                case EXPRESSION_STATEMENT -> {
+                    emitExpressionAsObject(
+                            code,
+                            generatedClassDesc,
+                            activeBindings,
+                            program.expressionStatements().get(step.index()).expression());
+                    code.pop();
+                }
+                case CONSOLE_VALUE -> emitConsoleValueLog(
+                        code,
+                        generatedClassDesc,
+                        activeBindings,
+                        program.consoleValueLogs().get(step.index()));
+                case CONSOLE_OBJECT -> emitObjectConsoleLog(
+                        code,
+                        generatedClassDesc,
+                        activeBindings,
+                        program.consoleLogs().get(step.index()));
+                case JAVA_STATIC_CONSOLE -> emitJavaStaticConsoleLog(
+                        code,
+                        program.javaStaticConsoleLogs().get(step.index()));
+                case JAVA_INSTANCE_CALL -> emitJavaInstanceMethodCall(
+                        code,
+                        generatedClassDesc,
+                        activeBindings,
+                        program.javaInstanceMethodCalls().get(step.index()));
+                case JAVA_INSTANCE_CONSOLE -> emitJavaInstanceConsoleLog(
+                        code,
+                        generatedClassDesc,
+                        activeBindings,
+                        program.javaInstanceConsoleLogs().get(step.index()));
+            }
+        }
+        code.return_();
+    }
+
+    private Set<String> collectEagerGlobalBindingNames(QinCfaProgram program) {
+        Set<String> names = new LinkedHashSet<>();
+        for (QinCfaProgram.ExpressionStatement statement : program.expressionStatements()) {
+            QinCfaProgram.Expression expression = statement.expression();
+            if (!(expression instanceof QinCfaProgram.BuiltinCallExpression builtinCall)) {
+                continue;
+            }
+            if (!"Global".equals(builtinCall.receiverName())
+                    || !"__qin_bind_global__".equals(builtinCall.methodName())
+                    || builtinCall.arguments().isEmpty()) {
+                continue;
+            }
+            QinCfaProgram.Expression firstArgument = builtinCall.arguments().get(0);
+            if (firstArgument instanceof QinCfaProgram.StringLiteral stringLiteral
+                    && stringLiteral.value() != null
+                    && !stringLiteral.value().isBlank()) {
+                names.add(stringLiteral.value());
+            }
+        }
+        return names;
+    }
+
+    private BindingPlan buildBindingPlan(List<QinCfaProgram.ConstDeclaration> declarations) {
+        List<DeclarationStep> declarationSteps = new ArrayList<>();
+        List<DeclarationBinding> declarationBindingsByStep = new ArrayList<>();
+        List<String> fieldNamesByIndex = new ArrayList<>();
+        int nextIndex = 0;
+        int lastDeclarationIndex = -1;
 
         for (QinCfaProgram.ConstDeclaration declaration : declarations) {
-            int slot = code.allocateLocal(TypeKind.REFERENCE);
-            emitDeclarationInitializer(code, bindings, declaration.initializer(), slot);
-            bindings.put(declaration.name(), new DeclarationBinding(slot, declaration.initializer()));
+            int bindingIndex = nextIndex++;
+            String fieldName = "__qin_decl_" + bindingIndex;
+            fieldNamesByIndex.add(fieldName);
+            declarationSteps.add(new DeclarationStep(declaration.name(), declaration.initializer()));
+            declarationBindingsByStep.add(new DeclarationBinding(bindingIndex, fieldName, declaration.initializer()));
+            lastDeclarationIndex = bindingIndex;
         }
 
-        for (QinCfaProgram.ExpressionStatement expressionStatement : expressionStatements) {
-            emitExpressionAsObject(code, bindings, expressionStatement.expression());
-            code.pop();
-        }
+        return new BindingPlan(declarationSteps, declarationBindingsByStep, fieldNamesByIndex, lastDeclarationIndex);
+    }
 
-        for (QinCfaProgram.ConsoleLogValue consoleValueLog : consoleValueLogs) {
-            emitConsoleValueLog(code, bindings, consoleValueLog);
+    private void validateExecutionPlan(QinCfaProgram program) {
+        for (QinCfaProgram.TopLevelExecutionStep step : program.executionSteps()) {
+            int index = step.index();
+            int maxExclusive = switch (step.kind()) {
+                case DECLARATION -> program.declarations().size();
+                case EXPRESSION_STATEMENT -> program.expressionStatements().size();
+                case CONSOLE_VALUE -> program.consoleValueLogs().size();
+                case CONSOLE_OBJECT -> program.consoleLogs().size();
+                case JAVA_STATIC_CONSOLE -> program.javaStaticConsoleLogs().size();
+                case JAVA_INSTANCE_CALL -> program.javaInstanceMethodCalls().size();
+                case JAVA_INSTANCE_CONSOLE -> program.javaInstanceConsoleLogs().size();
+            };
+            if (index < 0 || index >= maxExclusive) {
+                throw new IllegalArgumentException(
+                        "Invalid execution step index: kind=" + step.kind() + ", index=" + index);
+            }
         }
+    }
 
-        for (QinCfaProgram.ConsoleLogStatement consoleLog : consoleLogs) {
-            emitObjectConsoleLog(code, bindings, consoleLog);
+    private List<ChunkMethodSpec> buildChunkMethods(
+            BindingPlan bindingPlan,
+            QinCfaProgram program,
+            int runtimeChunkSize) {
+        List<ChunkMethodSpec> chunkMethods = new ArrayList<>();
+        int safeChunkSize = Math.max(1, runtimeChunkSize);
+        int methodIndex = 0;
+        int statementCount = program.executionSteps().size();
+        Map<String, DeclarationBinding> currentBindings = new LinkedHashMap<>();
+        for (int from = 0; from < statementCount; from += safeChunkSize) {
+            int to = Math.min(statementCount, from + safeChunkSize);
+            Map<String, DeclarationBinding> bindingsBeforeChunk = new LinkedHashMap<>(currentBindings);
+            chunkMethods.add(new ChunkMethodSpec(
+                    "__qin_chunk_" + methodIndex,
+                    from,
+                    to,
+                    bindingsBeforeChunk));
+            for (int stepIndex = from; stepIndex < to; stepIndex++) {
+                QinCfaProgram.TopLevelExecutionStep step = program.executionSteps().get(stepIndex);
+                if (step.kind() == QinCfaProgram.TopLevelStatementKind.DECLARATION) {
+                    DeclarationStep declarationStep = bindingPlan.declarationSteps().get(step.index());
+                    DeclarationBinding declarationBinding =
+                            bindingPlan.declarationBindingsByStep().get(step.index());
+                    currentBindings.put(declarationStep.name(), declarationBinding);
+                }
+            }
+            methodIndex++;
         }
-
-        for (QinCfaProgram.JavaInstanceMethodCall javaInstanceMethodCall : javaInstanceMethodCalls) {
-            emitJavaInstanceMethodCall(code, bindings, javaInstanceMethodCall);
-        }
-
-        for (QinCfaProgram.ConsoleLogJavaStaticCall javaStaticCall : javaStaticConsoleLogs) {
-            emitJavaStaticConsoleLog(code, javaStaticCall);
-        }
-
-        for (QinCfaProgram.ConsoleLogJavaInstanceCall javaInstanceConsoleLog : javaInstanceConsoleLogs) {
-            emitJavaInstanceConsoleLog(code, bindings, javaInstanceConsoleLog);
-        }
-
-        Integer returnSlot = lastDeclarationSlot(bindings);
-        if (returnSlot != null) {
-            code.aload(returnSlot);
-            code.areturn();
-        } else {
-            code.aconst_null();
-            code.areturn();
-        }
+        return chunkMethods;
     }
 
     private void emitDeclarationInitializer(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.Expression initializer,
-            int slot) {
-        if (initializer instanceof QinCfaProgram.ObjectLiteral objectLiteral) {
-            emitObjectLiteralInitializer(code, bindings, objectLiteral, slot);
-            return;
-        }
+            String fieldName) {
         if (initializer instanceof QinCfaProgram.JavaNewExpression javaNewExpression) {
-            emitJavaNewInitializer(code, javaNewExpression, slot);
+            emitJavaNewInitializer(code, generatedClassDesc, javaNewExpression, fieldName);
             return;
         }
-        emitExpressionAsObject(code, bindings, initializer);
-        code.astore(slot);
+        emitExpressionAsObject(code, generatedClassDesc, bindings, initializer);
+        code.putstatic(generatedClassDesc, fieldName, OBJECT_DESC);
     }
 
-    private void emitObjectLiteralInitializer(
+    private void emitJavaNewInitializer(
             CodeBuilder code,
-            Map<String, DeclarationBinding> bindings,
-            QinCfaProgram.ObjectLiteral objectLiteral,
-            int slot) {
-        emitObjectLiteralAsObject(code, bindings, objectLiteral);
-        code.astore(slot);
-    }
-
-    private void emitJavaNewInitializer(CodeBuilder code, QinCfaProgram.JavaNewExpression javaNewExpression, int slot) {
+            ClassDesc generatedClassDesc,
+            QinCfaProgram.JavaNewExpression javaNewExpression,
+            String fieldName) {
         ResolvedConstructor resolvedConstructor = resolveConstructor(
                 javaNewExpression.ownerBinaryName(),
                 javaNewExpression.arguments());
@@ -179,11 +372,12 @@ public final class QinCfaJvmClassFileBackend {
         code.dup();
         emitArgumentsForParameters(code, javaNewExpression.arguments(), resolvedConstructor.parameterTypes());
         code.invokespecial(ownerDesc, "<init>", resolvedConstructor.descriptor());
-        code.astore(slot);
+        code.putstatic(generatedClassDesc, fieldName, OBJECT_DESC);
     }
 
     private void emitObjectConsoleLog(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.ConsoleLogStatement consoleLog) {
         DeclarationBinding binding = bindings.get(consoleLog.objectName());
@@ -203,7 +397,7 @@ public final class QinCfaJvmClassFileBackend {
                     "Unknown property in console.log: " + consoleLog.propertyName());
         }
 
-        code.aload(binding.slot());
+        code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
         code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_export_get__", EXPORT_GET_SIGNATURE);
         code.checkcast(LINKED_HASH_MAP_DESC);
         code.ldc(consoleLog.propertyName());
@@ -214,14 +408,16 @@ public final class QinCfaJvmClassFileBackend {
 
     private void emitConsoleValueLog(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.ConsoleLogValue consoleValueLog) {
-        emitExpressionAsObject(code, bindings, consoleValueLog.value());
+        emitExpressionAsObject(code, generatedClassDesc, bindings, consoleValueLog.value());
         code.invokestatic(JS_SDK_CONSOLE_DESC, "log", CONSOLE_LOG_SIGNATURE);
     }
 
     private void emitJavaInstanceMethodCall(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.JavaInstanceMethodCall javaInstanceMethodCall) {
         DeclarationBinding binding = requireJavaBinding(bindings, javaInstanceMethodCall.receiverName());
@@ -230,7 +426,7 @@ public final class QinCfaJvmClassFileBackend {
                 javaInstanceMethodCall.methodName(),
                 javaInstanceMethodCall.arguments());
 
-        code.aload(binding.slot());
+        code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
         emitArgumentsForParameters(code, javaInstanceMethodCall.arguments(), resolvedMethod.parameterTypes());
         invokeInstanceMethod(code, resolvedMethod);
         discardReturnValue(code, resolvedMethod.returnType());
@@ -254,6 +450,7 @@ public final class QinCfaJvmClassFileBackend {
 
     private void emitJavaInstanceConsoleLog(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.ConsoleLogJavaInstanceCall javaInstanceConsoleLog) {
         DeclarationBinding binding = requireJavaBinding(bindings, javaInstanceConsoleLog.receiverName());
@@ -262,7 +459,7 @@ public final class QinCfaJvmClassFileBackend {
                 javaInstanceConsoleLog.methodName(),
                 javaInstanceConsoleLog.arguments());
 
-        code.aload(binding.slot());
+        code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
         emitArgumentsForParameters(code, javaInstanceConsoleLog.arguments(), resolvedMethod.parameterTypes());
         invokeInstanceMethod(code, resolvedMethod);
         emitBoxIfNeeded(code, resolvedMethod.returnType());
@@ -294,6 +491,7 @@ public final class QinCfaJvmClassFileBackend {
 
     private void emitExpressionAsObject(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.Expression expression) {
         if (expression instanceof QinCfaProgram.NumberLiteral numberLiteral) {
@@ -315,28 +513,35 @@ public final class QinCfaJvmClassFileBackend {
             return;
         }
         if (expression instanceof QinCfaProgram.ObjectLiteral objectLiteral) {
-            emitObjectLiteralAsObject(code, bindings, objectLiteral);
+            emitObjectLiteralAsObject(code, generatedClassDesc, bindings, objectLiteral);
+            return;
+        }
+        if (expression instanceof QinCfaProgram.ArrayLiteral arrayLiteral) {
+            emitArrayLiteralAsObject(code, generatedClassDesc, bindings, arrayLiteral);
             return;
         }
         if (expression instanceof QinCfaProgram.FunctionLiteral functionLiteral) {
-            emitExpressionAsObject(code, bindings, functionLiteral.returnExpression());
+            emitExpressionAsObject(code, generatedClassDesc, bindings, functionLiteral.returnExpression());
             code.invokestatic(JS_SDK_FUNCTIONS_DESC, "constantReturn", FUNCTION_CONSTANT_RETURN_SIGNATURE);
             return;
         }
         if (expression instanceof QinCfaProgram.MemberAccessExpression memberAccessExpression) {
-            emitMemberAccessAsObject(code, bindings, memberAccessExpression);
+            emitMemberAccessAsObject(code, generatedClassDesc, bindings, memberAccessExpression);
             return;
         }
         if (expression instanceof QinCfaProgram.IdentifierReference identifierReference) {
             DeclarationBinding binding = bindings.get(identifierReference.name());
             if (binding == null) {
+                if (emitKnownGlobalIdentifier(code, identifierReference.name())) {
+                    return;
+                }
                 throw new IllegalArgumentException("QJS2008 unknown identifier: " + identifierReference.name());
             }
-            code.aload(binding.slot());
+            code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
             return;
         }
         if (expression instanceof QinCfaProgram.BuiltinCallExpression builtinCallExpression) {
-            emitBuiltinCallAsObject(code, bindings, builtinCallExpression);
+            emitBuiltinCallAsObject(code, generatedClassDesc, bindings, builtinCallExpression);
             return;
         }
 
@@ -344,8 +549,55 @@ public final class QinCfaJvmClassFileBackend {
                 + expression.getClass().getSimpleName());
     }
 
+    private boolean emitKnownGlobalIdentifier(CodeBuilder code, String name) {
+        if ("undefined".equals(name)) {
+            code.aconst_null();
+            return true;
+        }
+        if ("process".equals(name)
+                || "window".equals(name)
+                || "self".equals(name)
+                || "global".equals(name)
+                || "globalThis".equals(name)
+                || "Math".equals(name)
+                || "JSON".equals(name)
+                || "Number".equals(name)
+                || "Object".equals(name)
+                || "Array".equals(name)
+                || "Date".equals(name)
+                || "Uint8Array".equals(name)
+                || "String".equals(name)
+                || "Boolean".equals(name)
+                || "RegExp".equals(name)
+                || "Function".equals(name)
+                || "Map".equals(name)
+                || "Set".equals(name)
+                || "WeakMap".equals(name)
+                || "WeakSet".equals(name)
+                || "Error".equals(name)
+                || "TypeError".equals(name)
+                || "RangeError".equals(name)
+                || "Promise".equals(name)
+                || "Symbol".equals(name)
+                || "parseInt".equals(name)
+                || "parseFloat".equals(name)
+                || "isNaN".equals(name)
+                || "isFinite".equals(name)
+                || "module".equals(name)
+                || "exports".equals(name)
+                || "require".equals(name)
+                || "crypto".equals(name)
+                || "this".equals(name)) {
+            code.ldc(name);
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
+            return true;
+        }
+        return false;
+    }
+
     private void emitObjectLiteralAsObject(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.ObjectLiteral objectLiteral) {
         code.new_(LINKED_HASH_MAP_DESC);
@@ -355,31 +607,47 @@ public final class QinCfaJvmClassFileBackend {
         for (QinCfaProgram.ObjectProperty property : objectLiteral.properties()) {
             code.dup();
             code.ldc(property.key());
-            emitExpressionAsObject(code, bindings, property.value());
+            emitExpressionAsObject(code, generatedClassDesc, bindings, property.value());
             code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
+            code.pop();
+        }
+    }
+
+    private void emitArrayLiteralAsObject(
+            CodeBuilder code,
+            ClassDesc generatedClassDesc,
+            Map<String, DeclarationBinding> bindings,
+            QinCfaProgram.ArrayLiteral arrayLiteral) {
+        code.new_(ARRAY_LIST_DESC);
+        code.dup();
+        code.invokespecial(ARRAY_LIST_DESC, "<init>", VOID_INIT);
+        for (QinCfaProgram.Expression element : arrayLiteral.elements()) {
+            code.dup();
+            emitExpressionAsObject(code, generatedClassDesc, bindings, element);
+            code.invokevirtual(ARRAY_LIST_DESC, "add", LIST_ADD_SIGNATURE);
             code.pop();
         }
     }
 
     private void emitMemberAccessAsObject(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.MemberAccessExpression memberAccessExpression) {
         DeclarationBinding binding = bindings.get(memberAccessExpression.objectName());
-        if (binding == null) {
+        if (binding != null) {
+            code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
+        } else if (!emitKnownGlobalIdentifier(code, memberAccessExpression.objectName())) {
             throw new IllegalArgumentException("QJS2008 unknown identifier in member access: "
                     + memberAccessExpression.objectName());
         }
-        code.aload(binding.slot());
-        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_export_get__", EXPORT_GET_SIGNATURE);
-        code.checkcast(LINKED_HASH_MAP_DESC);
         code.ldc(memberAccessExpression.propertyName());
-        code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
-        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_export_get__", EXPORT_GET_SIGNATURE);
+        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_member_get__", MEMBER_GET_SIGNATURE);
     }
 
     private void emitBuiltinCallAsObject(
             CodeBuilder code,
+            ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.BuiltinCallExpression builtinCallExpression) {
         QinBuiltinRegistry.BuiltinMethod method = QinBuiltinRegistry
@@ -405,7 +673,7 @@ public final class QinCfaJvmClassFileBackend {
                         + i + " for " + builtinCallExpression.receiverName()
                         + "." + builtinCallExpression.methodName() + ": expected string");
             }
-            emitExpressionAsObject(code, bindings, argument);
+            emitExpressionAsObject(code, generatedClassDesc, bindings, argument);
         }
 
         code.invokestatic(
@@ -644,15 +912,34 @@ public final class QinCfaJvmClassFileBackend {
         throw new IllegalArgumentException("Unsupported primitive return type: " + returnType.getName());
     }
 
-    private Integer lastDeclarationSlot(Map<String, DeclarationBinding> bindings) {
-        Integer slot = null;
-        for (DeclarationBinding binding : bindings.values()) {
-            slot = binding.slot();
-        }
-        return slot;
+    private record ChunkMethodSpec(
+            String methodName,
+            int fromInclusive,
+            int toExclusive,
+            Map<String, DeclarationBinding> bindingsBeforeChunk) {
     }
 
-    private record DeclarationBinding(int slot, QinCfaProgram.Expression initializer) {
+    private record ChunkSizing(
+            int declarationChunkSize,
+            int runtimeChunkSize) {
+    }
+
+    private record DeclarationStep(
+            String name,
+            QinCfaProgram.Expression initializer) {
+    }
+
+    private record BindingPlan(
+            List<DeclarationStep> declarationSteps,
+            List<DeclarationBinding> declarationBindingsByStep,
+            List<String> fieldNamesByIndex,
+            int lastDeclarationIndex) {
+    }
+
+    private record DeclarationBinding(
+            int index,
+            String fieldName,
+            QinCfaProgram.Expression initializer) {
     }
 
     private record ResolvedConstructor(Class<?>[] parameterTypes, MethodTypeDesc descriptor) {

@@ -2,6 +2,7 @@ package com.qin.lang.pipeline.cfa;
 
 import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
+import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
@@ -104,6 +105,13 @@ public final class QinIrToCfaIrLowerer {
                     lowerExpressions(javaInstanceConsoleLog.arguments())));
         }
 
+        List<QinCfaProgram.TopLevelExecutionStep> executionSteps = new ArrayList<>();
+        for (QinIrProgram.TopLevelExecutionStep executionStep : program.executionSteps()) {
+            executionSteps.add(new QinCfaProgram.TopLevelExecutionStep(
+                    mapKind(executionStep.kind()),
+                    executionStep.index()));
+        }
+
         return new QinCfaProgram(
                 declarations,
                 expressionStatements,
@@ -113,7 +121,20 @@ public final class QinIrToCfaIrLowerer {
                 jsImports,
                 javaStaticConsoleLogs,
                 javaInstanceMethodCalls,
-                javaInstanceConsoleLogs);
+                javaInstanceConsoleLogs,
+                executionSteps);
+    }
+
+    private QinCfaProgram.TopLevelStatementKind mapKind(QinIrProgram.TopLevelStatementKind kind) {
+        return switch (kind) {
+            case DECLARATION -> QinCfaProgram.TopLevelStatementKind.DECLARATION;
+            case EXPRESSION_STATEMENT -> QinCfaProgram.TopLevelStatementKind.EXPRESSION_STATEMENT;
+            case CONSOLE_VALUE -> QinCfaProgram.TopLevelStatementKind.CONSOLE_VALUE;
+            case CONSOLE_OBJECT -> QinCfaProgram.TopLevelStatementKind.CONSOLE_OBJECT;
+            case JAVA_STATIC_CONSOLE -> QinCfaProgram.TopLevelStatementKind.JAVA_STATIC_CONSOLE;
+            case JAVA_INSTANCE_CALL -> QinCfaProgram.TopLevelStatementKind.JAVA_INSTANCE_CALL;
+            case JAVA_INSTANCE_CONSOLE -> QinCfaProgram.TopLevelStatementKind.JAVA_INSTANCE_CONSOLE;
+        };
     }
 
     private List<QinCfaProgram.Expression> lowerExpressions(List<QinIrExpression> expressions) {
@@ -162,6 +183,9 @@ public final class QinIrToCfaIrLowerer {
         }
         if (expression instanceof QinIrStringLiteral stringLiteral) {
             return new QinCfaProgram.StringLiteral(stringLiteral.value());
+        }
+        if (expression instanceof QinIrArrayLiteral arrayLiteral) {
+            return new QinCfaProgram.ArrayLiteral(lowerExpressions(arrayLiteral.elements()));
         }
         throw new IllegalArgumentException("Unsupported QinIr expression for CFA lowering: "
                 + expression.getClass().getName());

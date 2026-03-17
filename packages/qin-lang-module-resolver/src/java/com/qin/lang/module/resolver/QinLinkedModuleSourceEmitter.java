@@ -23,10 +23,10 @@ public final class QinLinkedModuleSourceEmitter {
             "(?m)^\\s*import\\s+(.+?)\\s+from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "(?m)^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$");
-    private static final Pattern EXPORT_CONST_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+const\\s+([A-Za-z_$][\\w$]*)\\b");
-    private static final Pattern EXPORT_DEFAULT_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+default\\s+(.+?)\\s*;?\\s*$");
+    private static final Pattern EXPORT_DECLARATION_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+(const|function|class)\\s+([A-Za-z_$][\\w$]*)\\b");
+    private static final Pattern EXPORT_DEFAULT_PREFIX_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+default\\s+");
     private static final Pattern EXPORT_DEFAULT_DECLARATION_PATTERN = Pattern.compile(
             "\\bexport\\s+default\\s+(function|class)\\b");
     private static final Pattern DEFAULT_EXPR_FUNCTION_NAMED_PATTERN = Pattern.compile(
@@ -55,6 +55,10 @@ public final class QinLinkedModuleSourceEmitter {
             Pattern.MULTILINE);
     private static final Pattern EXPORT_CONST_REWRITE_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+const\\s+");
+    private static final Pattern EXPORT_FUNCTION_REWRITE_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+function\\s+");
+    private static final Pattern EXPORT_CLASS_REWRITE_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+class\\s+");
     private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("^[A-Za-z_$][\\w$]*$");
     private static final int MAX_EXPORT_RESOLUTION_DEPTH = 128;
 
@@ -123,6 +127,8 @@ public final class QinLinkedModuleSourceEmitter {
 
     private String rewriteExports(String source, Path moduleFile, Map<Path, Integer> moduleIndex) {
         String rewritten = EXPORT_CONST_REWRITE_PATTERN.matcher(source).replaceAll("const ");
+        rewritten = EXPORT_FUNCTION_REWRITE_PATTERN.matcher(rewritten).replaceAll("function ");
+        rewritten = EXPORT_CLASS_REWRITE_PATTERN.matcher(rewritten).replaceAll("class ");
         rewritten = rewriteDefaultExports(rewritten, moduleFile, moduleIndex);
         // Local `export { ... }` has no runtime effect for flattened source.
         return EXPORT_NAMED_LOCAL_PATTERN.matcher(rewritten).replaceAll("");
@@ -131,16 +137,150 @@ public final class QinLinkedModuleSourceEmitter {
     private String rewriteDefaultExports(String source, Path moduleFile, Map<Path, Integer> moduleIndex) {
         String defaultLocal = defaultLocalSymbol(moduleFile, moduleIndex);
         String rewritten = rewriteDefaultDeclarationExports(source, defaultLocal);
-
-        Matcher matcher = EXPORT_DEFAULT_PATTERN.matcher(rewritten);
+        Matcher matcher = EXPORT_DEFAULT_PREFIX_PATTERN.matcher(rewritten);
         StringBuilder out = new StringBuilder();
+        int cursor = 0;
         while (matcher.find()) {
-            String expression = matcher.group(1).trim();
-            String replacement = "const " + defaultLocal + " = " + expression + ";";
-            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
+            int start = matcher.start();
+            int exprStart = matcher.end();
+            int exprEnd = findDefaultExpressionStatementEnd(rewritten, exprStart);
+            String expression = trimTrailingSemicolon(rewritten.substring(exprStart, exprEnd));
+            out.append(rewritten, cursor, start);
+            out.append("const ")
+                    .append(defaultLocal)
+                    .append(" = ")
+                    .append(expression)
+                    .append(";");
+            cursor = exprEnd;
+            matcher.region(cursor, rewritten.length());
         }
-        matcher.appendTail(out);
+        out.append(rewritten, cursor, rewritten.length());
         return out.toString();
+    }
+
+    private int findDefaultExpressionStatementEnd(String source, int fromIndex) {
+        int parenDepth = 0;
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+
+        for (int i = fromIndex; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (ch == '\n') {
+                    inLineComment = false;
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (ch == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                inLineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+
+            if (ch == '(') {
+                parenDepth++;
+                continue;
+            }
+            if (ch == ')' && parenDepth > 0) {
+                parenDepth--;
+                continue;
+            }
+            if (ch == '{') {
+                braceDepth++;
+                continue;
+            }
+            if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+                continue;
+            }
+            if (ch == '[') {
+                bracketDepth++;
+                continue;
+            }
+            if (ch == ']' && bracketDepth > 0) {
+                bracketDepth--;
+                continue;
+            }
+            if (ch == ';' && parenDepth == 0 && braceDepth == 0 && bracketDepth == 0) {
+                return i + 1;
+            }
+        }
+        return source.length();
     }
 
     private String rewriteDefaultDeclarationExports(String source, String defaultSymbol) {
@@ -178,7 +318,7 @@ public final class QinLinkedModuleSourceEmitter {
                 String localName = named.group(1);
                 return declaration + System.lineSeparator() + "const " + defaultSymbol + " = " + localName + ";";
             }
-            return "const " + defaultSymbol + " = null;";
+            return "const " + defaultSymbol + " = " + trimTrailingSemicolon(declaration) + ";";
         }
 
         if ("class".equals(normalizedKind)) {
@@ -187,7 +327,7 @@ public final class QinLinkedModuleSourceEmitter {
                 String localName = named.group(1);
                 return declaration + System.lineSeparator() + "const " + defaultSymbol + " = " + localName + ";";
             }
-            return "const " + defaultSymbol + " = null;";
+            return "const " + defaultSymbol + " = " + trimTrailingSemicolon(declaration) + ";";
         }
 
         return "const " + defaultSymbol + " = " + trimTrailingSemicolon(declaration) + ";";
@@ -542,6 +682,7 @@ public final class QinLinkedModuleSourceEmitter {
                             lines,
                             emittedExports,
                             parsed.sourceFile(),
+                            parsedExport.localName(),
                             moduleIndex);
                 }
                 case RE_EXPORT_NAMED -> emitReExportNamed(
@@ -591,12 +732,16 @@ public final class QinLinkedModuleSourceEmitter {
             List<String> lines,
             Set<String> emittedExports,
             Path sourceFile,
+            String localName,
             Map<Path, Integer> moduleIndex) {
         String target = exportSymbol(sourceFile, "default", moduleIndex);
         if (!emittedExports.add(target)) {
             return;
         }
-        lines.add(exportInitDeclaration(target, defaultLocalSymbol(sourceFile, moduleIndex)));
+        String valueExpr = (localName == null || localName.isBlank() || "default".equals(localName))
+                ? defaultLocalSymbol(sourceFile, moduleIndex)
+                : localName;
+        lines.add(exportInitDeclaration(target, valueExpr));
     }
 
     private void emitReExportNamed(
@@ -933,15 +1078,17 @@ public final class QinLinkedModuleSourceEmitter {
     private List<ParsedExport> parseExports(QinModuleSource module) {
         List<ParsedExport> exports = new ArrayList<>();
 
-        Matcher constMatcher = EXPORT_CONST_PATTERN.matcher(module.source());
-        while (constMatcher.find()) {
-            String name = constMatcher.group(1).trim();
+        Matcher declarationMatcher = EXPORT_DECLARATION_PATTERN.matcher(module.source());
+        while (declarationMatcher.find()) {
+            String name = declarationMatcher.group(2).trim();
             exports.add(new ParsedExport(ExportKind.LOCAL_NAMED, name, name, null));
         }
 
-        Matcher defaultMatcher = EXPORT_DEFAULT_PATTERN.matcher(module.source());
+        Matcher defaultMatcher = EXPORT_DEFAULT_PREFIX_PATTERN.matcher(module.source());
         while (defaultMatcher.find()) {
-            String defaultExpr = defaultMatcher.group(1).trim();
+            int exprStart = defaultMatcher.end();
+            int exprEnd = findDefaultExpressionStatementEnd(module.source(), exprStart);
+            String defaultExpr = trimTrailingSemicolon(module.source().substring(exprStart, exprEnd).trim());
             String localName = "default";
             Matcher functionDeclMatcher = DEFAULT_EXPR_FUNCTION_NAMED_PATTERN.matcher(defaultExpr);
             if (functionDeclMatcher.find()) {
@@ -953,6 +1100,7 @@ public final class QinLinkedModuleSourceEmitter {
                 }
             }
             exports.add(new ParsedExport(ExportKind.LOCAL_DEFAULT, "default", localName, null));
+            defaultMatcher.region(exprEnd, module.source().length());
         }
 
         Matcher namedMatcher = EXPORT_NAMED_PATTERN.matcher(module.source());

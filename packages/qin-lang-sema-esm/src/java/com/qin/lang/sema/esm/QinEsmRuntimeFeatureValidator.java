@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  */
 public final class QinEsmRuntimeFeatureValidator {
     private static final Pattern UNSUPPORTED_EXPORT_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+(let|var|function|class)\\b");
+            "(?m)^\\s*export\\s+(let|var)\\b");
 
     public void validate(QinModuleGraph graph) {
         List<QinEsmDiagnostic> diagnostics = new ArrayList<>();
@@ -26,8 +26,8 @@ public final class QinEsmRuntimeFeatureValidator {
     }
 
     private void scanOne(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
-        addIfMatched(module, diagnostics, UNSUPPORTED_EXPORT_DECLARATION_PATTERN, "ESM3004",
-                "Only `export const` / re-export forms are currently executable in Qin runtime.");
+        // Temporarily disable hard runtime pre-checks and let frontend/backend surface
+        // concrete unsupported constructs (for incremental npm compatibility work).
     }
 
     private void addIfMatched(

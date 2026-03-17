@@ -1,22 +1,23 @@
-<idea-plugin>
+﻿<idea-plugin>
     <id>com.qin.idea</id>
     <name>Qin Build Tool</name>
     <version>0.1.1</version>
     <vendor>Qin</vendor>
-    
-    <description>Qin 构建工具 IDEA 插件，支持一键 Sync/Compile/Run</description>
-    
+
+    <description>Qin IDEA integration: sync/compile diagnostics without custom run override.</description>
+
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
-    
+
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity 
-            implementation="com.qin.debug.DebugStartup"/>
-        <toolWindow id="Qin" 
-                    anchor="right"
-                    factoryClass="com.qin.debug.QinToolWindowFactory"/>
-        <notificationGroup id="Qin Notifications" 
-                           displayType="BALLOON" 
-                           toolWindowId="Qin"/>
+        <postStartupActivity implementation="com.qin.debug.DebugStartup"/>
+        <toolWindow id="Qin" anchor="right" factoryClass="com.qin.debug.QinToolWindowFactory"/>
+        <notificationGroup id="Qin Notifications" displayType="BALLOON" toolWindowId="Qin"/>
+
+        <consoleFilterProvider implementation="com.qin.debug.console.QinConsoleFilterProvider"/>
+        <externalAnnotator language="JAVA" implementationClass="com.qin.debug.annotator.QinExternalAnnotator"/>
+        <projectService serviceImplementation="com.qin.debug.annotator.QinCompileErrorService"/>
+
+        <!-- Keep IDEA native Java Run/Debug; do not inject Qin run configuration. -->
     </extensions>
 </idea-plugin>

@@ -42,6 +42,7 @@ public final class QinJvmClassFileBackend {
     private static final ClassDesc OBJECT_DESC = ClassDesc.of("java.lang.Object");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
+    private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
 
@@ -56,6 +57,10 @@ public final class QinJvmClassFileBackend {
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MAP_GET_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc MEMBER_GET_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc GLOBAL_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
 
     public byte[] compileProgram(QinIrProgram program, String className) {
@@ -335,6 +340,9 @@ public final class QinJvmClassFileBackend {
         if (expression instanceof QinIrIdentifierReference identifierReference) {
             DeclarationBinding binding = bindings.get(identifierReference.name());
             if (binding == null) {
+                if (emitKnownGlobalIdentifier(code, identifierReference.name())) {
+                    return;
+                }
                 throw new IllegalArgumentException("QJS2008 unknown identifier: " + identifierReference.name());
             }
             code.aload(binding.slot());
@@ -371,14 +379,60 @@ public final class QinJvmClassFileBackend {
             Map<String, DeclarationBinding> bindings,
             QinIrMemberAccessExpression memberAccessExpression) {
         DeclarationBinding binding = bindings.get(memberAccessExpression.objectName());
-        if (binding == null) {
+        if (binding != null) {
+            code.aload(binding.slot());
+        } else if (!emitKnownGlobalIdentifier(code, memberAccessExpression.objectName())) {
             throw new IllegalArgumentException("QJS2008 unknown identifier in member access: "
                     + memberAccessExpression.objectName());
         }
-        code.aload(binding.slot());
-        code.checkcast(LINKED_HASH_MAP_DESC);
         code.ldc(memberAccessExpression.propertyName());
-        code.invokevirtual(LINKED_HASH_MAP_DESC, "get", MAP_GET_SIGNATURE);
+        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_member_get__", MEMBER_GET_SIGNATURE);
+    }
+
+    private boolean emitKnownGlobalIdentifier(CodeBuilder code, String name) {
+        if ("undefined".equals(name)) {
+            code.aconst_null();
+            return true;
+        }
+        if ("process".equals(name)
+                || "window".equals(name)
+                || "self".equals(name)
+                || "global".equals(name)
+                || "globalThis".equals(name)
+                || "Math".equals(name)
+                || "JSON".equals(name)
+                || "Number".equals(name)
+                || "Object".equals(name)
+                || "Array".equals(name)
+                || "Date".equals(name)
+                || "Uint8Array".equals(name)
+                || "String".equals(name)
+                || "Boolean".equals(name)
+                || "RegExp".equals(name)
+                || "Function".equals(name)
+                || "Map".equals(name)
+                || "Set".equals(name)
+                || "WeakMap".equals(name)
+                || "WeakSet".equals(name)
+                || "Error".equals(name)
+                || "TypeError".equals(name)
+                || "RangeError".equals(name)
+                || "Promise".equals(name)
+                || "Symbol".equals(name)
+                || "parseInt".equals(name)
+                || "parseFloat".equals(name)
+                || "isNaN".equals(name)
+                || "isFinite".equals(name)
+                || "module".equals(name)
+                || "exports".equals(name)
+                || "require".equals(name)
+                || "crypto".equals(name)
+                || "this".equals(name)) {
+            code.ldc(name);
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
+            return true;
+        }
+        return false;
     }
 
     private void emitBuiltinCallAsObject(

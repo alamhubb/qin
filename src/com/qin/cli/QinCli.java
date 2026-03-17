@@ -47,6 +47,7 @@ public class QinCli {
                 case "fatjar" -> fatjarProject(cmdArgs);     // 妫ｅ啫鏅?闁哄倹婢橀·?
                 case "build" -> buildProject(cmdArgs);
                 case "clean" -> cleanProject();
+                case "install" -> QinInstallCommand.execute(cmdArgs);
                 case "sync" -> syncDependencies(cmdArgs);
                 case "deps" -> showDependencies(cmdArgs);    // 妫ｅ啫鏅?闁哄倹婢橀·?
                 case "dev" -> devMode(cmdArgs);
@@ -1051,7 +1052,7 @@ public class QinCli {
      * 闁告艾鏈鐐寸瑹濠靛﹦顩柣銊ュ閻楀疇绠涢崘顔瑰亾閺勫繒甯嗛柨娑樼焷缁绘垿宕堕悙鍨櫢闁瑰瓨鍔楀▓?classpath
      * 濞达綀娉曢弫銈嗘櫠閻愭彃绻侀柣妤€鐗愯闁哄鍔曞▍鎺楁晬鐏炵偓鏆滈柟闀愭祰閸ゆ粓宕濋妸褏妞介悹鍥ㄥ灦濠€浼村捶娴兼番鈧秹鎯?
      */
-    private static String syncDependenciesCore(QinConfig config) throws Exception {
+    static String syncDependenciesCore(QinConfig config) throws Exception {
         Map<String, String> deps = new HashMap<>();
         if (config.dependencies() != null) deps.putAll(config.dependencies());
         if (config.devDependencies() != null) deps.putAll(config.devDependencies());
@@ -1404,6 +1405,7 @@ public class QinCli {
                   fatjar      Build a Fat JAR (with all dependencies)
                   build       Full build (compile + test + jar)
                   clean       Clean build artifacts
+                  install     Install deps (npm first, fallback to Maven)
                   sync        Sync dependencies (auto-compiles local projects)
                   deps        Show dependency tree
                   dev         Start development mode (Qin: single-port dev server, Java: compile+run)
@@ -1441,6 +1443,9 @@ public class QinCli {
                   qin fatjar                  # Build Fat JAR (with dependencies)
                   qin build                   # Full build
                   qin build --skip-tests      # Build without running tests
+                  qin install mitt            # Install npm package and update qin.config.json
+                  qin install org.jsoup:jsoup # Install Maven dependency
+                  qin install                 # Install deps declared in qin.config.json
                   qin sync                    # Sync deps (auto-compiles local projects)
                   qin conformance             # Run conformance baseline with Chrome
                   qin conformance --chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"
