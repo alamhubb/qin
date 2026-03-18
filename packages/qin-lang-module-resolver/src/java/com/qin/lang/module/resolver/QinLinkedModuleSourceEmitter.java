@@ -23,8 +23,10 @@ public final class QinLinkedModuleSourceEmitter {
             "(?m)^\\s*import\\s+(.+?)\\s+from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "(?m)^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$");
-    private static final Pattern EXPORT_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+(const|function|class)\\s+([A-Za-z_$][\\w$]*)\\b");
+    private static final Pattern EXPORT_CALLABLE_DECLARATION_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+(function|class)\\s+([A-Za-z_$][\\w$]*)\\b");
+    private static final Pattern EXPORT_VARIABLE_PREFIX_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+(const|let|var)\\s+");
     private static final Pattern EXPORT_DEFAULT_PREFIX_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+default\\s+");
     private static final Pattern EXPORT_DEFAULT_DECLARATION_PATTERN = Pattern.compile(
@@ -55,6 +57,10 @@ public final class QinLinkedModuleSourceEmitter {
             Pattern.MULTILINE);
     private static final Pattern EXPORT_CONST_REWRITE_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+const\\s+");
+    private static final Pattern EXPORT_LET_REWRITE_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+let\\s+");
+    private static final Pattern EXPORT_VAR_REWRITE_PATTERN = Pattern.compile(
+            "(?m)^\\s*export\\s+var\\s+");
     private static final Pattern EXPORT_FUNCTION_REWRITE_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+function\\s+");
     private static final Pattern EXPORT_CLASS_REWRITE_PATTERN = Pattern.compile(
@@ -127,6 +133,8 @@ public final class QinLinkedModuleSourceEmitter {
 
     private String rewriteExports(String source, Path moduleFile, Map<Path, Integer> moduleIndex) {
         String rewritten = EXPORT_CONST_REWRITE_PATTERN.matcher(source).replaceAll("const ");
+        rewritten = EXPORT_LET_REWRITE_PATTERN.matcher(rewritten).replaceAll("let ");
+        rewritten = EXPORT_VAR_REWRITE_PATTERN.matcher(rewritten).replaceAll("var ");
         rewritten = EXPORT_FUNCTION_REWRITE_PATTERN.matcher(rewritten).replaceAll("function ");
         rewritten = EXPORT_CLASS_REWRITE_PATTERN.matcher(rewritten).replaceAll("class ");
         rewritten = rewriteDefaultExports(rewritten, moduleFile, moduleIndex);
@@ -1077,18 +1085,20 @@ public final class QinLinkedModuleSourceEmitter {
 
     private List<ParsedExport> parseExports(QinModuleSource module) {
         List<ParsedExport> exports = new ArrayList<>();
+        String source = module.source();
 
-        Matcher declarationMatcher = EXPORT_DECLARATION_PATTERN.matcher(module.source());
+        Matcher declarationMatcher = EXPORT_CALLABLE_DECLARATION_PATTERN.matcher(source);
         while (declarationMatcher.find()) {
             String name = declarationMatcher.group(2).trim();
             exports.add(new ParsedExport(ExportKind.LOCAL_NAMED, name, name, null));
         }
+        parseVariableExportDeclarations(source, exports);
 
-        Matcher defaultMatcher = EXPORT_DEFAULT_PREFIX_PATTERN.matcher(module.source());
+        Matcher defaultMatcher = EXPORT_DEFAULT_PREFIX_PATTERN.matcher(source);
         while (defaultMatcher.find()) {
             int exprStart = defaultMatcher.end();
-            int exprEnd = findDefaultExpressionStatementEnd(module.source(), exprStart);
-            String defaultExpr = trimTrailingSemicolon(module.source().substring(exprStart, exprEnd).trim());
+            int exprEnd = findDefaultExpressionStatementEnd(source, exprStart);
+            String defaultExpr = trimTrailingSemicolon(source.substring(exprStart, exprEnd).trim());
             String localName = "default";
             Matcher functionDeclMatcher = DEFAULT_EXPR_FUNCTION_NAMED_PATTERN.matcher(defaultExpr);
             if (functionDeclMatcher.find()) {
@@ -1100,10 +1110,10 @@ public final class QinLinkedModuleSourceEmitter {
                 }
             }
             exports.add(new ParsedExport(ExportKind.LOCAL_DEFAULT, "default", localName, null));
-            defaultMatcher.region(exprEnd, module.source().length());
+            defaultMatcher.region(exprEnd, source.length());
         }
 
-        Matcher namedMatcher = EXPORT_NAMED_PATTERN.matcher(module.source());
+        Matcher namedMatcher = EXPORT_NAMED_PATTERN.matcher(source);
         while (namedMatcher.find()) {
             String block = namedMatcher.group(1);
             String moduleSpecifier = namedMatcher.group(2) == null ? null : namedMatcher.group(2).trim();
@@ -1111,7 +1121,7 @@ public final class QinLinkedModuleSourceEmitter {
             parseNamedExportBlock(block, resolvedModule, exports);
         }
 
-        Matcher exportAllMatcher = EXPORT_ALL_PATTERN.matcher(module.source());
+        Matcher exportAllMatcher = EXPORT_ALL_PATTERN.matcher(source);
         while (exportAllMatcher.find()) {
             String namespace = exportAllMatcher.group(1);
             String moduleSpecifier = exportAllMatcher.group(2).trim();
@@ -1123,6 +1133,22 @@ public final class QinLinkedModuleSourceEmitter {
             }
         }
         return exports;
+    }
+
+    private void parseVariableExportDeclarations(String source, List<ParsedExport> exports) {
+        Matcher matcher = EXPORT_VARIABLE_PREFIX_PATTERN.matcher(source);
+        while (matcher.find()) {
+            int declarationStart = matcher.end();
+            int declarationEnd = findDefaultExpressionStatementEnd(source, declarationStart);
+            String declarationList = trimTrailingSemicolon(source.substring(declarationStart, declarationEnd));
+            for (String declarator : splitTopLevelByComma(declarationList)) {
+                String localName = extractExportedDeclaratorName(declarator);
+                if (localName != null && !localName.isBlank()) {
+                    exports.add(new ParsedExport(ExportKind.LOCAL_NAMED, localName, localName, null));
+                }
+            }
+            matcher.region(declarationEnd, source.length());
+        }
     }
 
     private void parseNamedExportBlock(
@@ -1164,6 +1190,197 @@ public final class QinLinkedModuleSourceEmitter {
             } else if (ch == '}' || ch == ']' || ch == ')') {
                 depth = Math.max(0, depth - 1);
             } else if (ch == ',' && depth == 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private List<String> splitTopLevelByComma(String text) {
+        List<String> parts = new ArrayList<>();
+        if (text == null || text.isBlank()) {
+            return parts;
+        }
+        int start = 0;
+        int parenDepth = 0;
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+            if (ch == '(') {
+                parenDepth++;
+                continue;
+            }
+            if (ch == ')' && parenDepth > 0) {
+                parenDepth--;
+                continue;
+            }
+            if (ch == '{') {
+                braceDepth++;
+                continue;
+            }
+            if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+                continue;
+            }
+            if (ch == '[') {
+                bracketDepth++;
+                continue;
+            }
+            if (ch == ']' && bracketDepth > 0) {
+                bracketDepth--;
+                continue;
+            }
+            if (ch == ',' && parenDepth == 0 && braceDepth == 0 && bracketDepth == 0) {
+                parts.add(text.substring(start, i));
+                start = i + 1;
+            }
+        }
+        if (start <= text.length()) {
+            parts.add(text.substring(start));
+        }
+        return parts;
+    }
+
+    private String extractExportedDeclaratorName(String declaratorSource) {
+        if (declaratorSource == null) {
+            return null;
+        }
+        String declarator = declaratorSource.trim();
+        if (declarator.isEmpty()) {
+            return null;
+        }
+        int assignmentIndex = indexOfTopLevelChar(declarator, '=');
+        String lhs = assignmentIndex >= 0 ? declarator.substring(0, assignmentIndex).trim() : declarator;
+        if (IDENTIFIER_PATTERN.matcher(lhs).matches()) {
+            return lhs;
+        }
+        return null;
+    }
+
+    private int indexOfTopLevelChar(String text, char target) {
+        int parenDepth = 0;
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+            if (ch == '(') {
+                parenDepth++;
+                continue;
+            }
+            if (ch == ')' && parenDepth > 0) {
+                parenDepth--;
+                continue;
+            }
+            if (ch == '{') {
+                braceDepth++;
+                continue;
+            }
+            if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+                continue;
+            }
+            if (ch == '[') {
+                bracketDepth++;
+                continue;
+            }
+            if (ch == ']' && bracketDepth > 0) {
+                bracketDepth--;
+                continue;
+            }
+            if (ch == target && parenDepth == 0 && braceDepth == 0 && bracketDepth == 0) {
                 return i;
             }
         }

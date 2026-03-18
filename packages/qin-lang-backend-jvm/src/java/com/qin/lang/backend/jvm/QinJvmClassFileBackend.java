@@ -44,6 +44,7 @@ public final class QinJvmClassFileBackend {
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
     private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
+    private static final ClassDesc DOUBLE_DESC = ClassDesc.of("java.lang.Double");
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
 
     private static final MethodTypeDesc VOID_INIT = MethodTypeDesc.ofDescriptor("()V");
@@ -52,6 +53,8 @@ public final class QinJvmClassFileBackend {
     private static final MethodTypeDesc CONSOLE_LOG_SIGNATURE = MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)V");
     private static final MethodTypeDesc INTEGER_VALUE_OF_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(I)Ljava/lang/Integer;");
+    private static final MethodTypeDesc DOUBLE_VALUE_OF_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(D)Ljava/lang/Double;");
     private static final MethodTypeDesc BOOLEAN_VALUE_OF_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Z)Ljava/lang/Boolean;");
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
@@ -313,7 +316,7 @@ public final class QinJvmClassFileBackend {
             QinIrExpression expression) {
         if (expression instanceof QinIrNumberLiteral numberLiteral) {
             code.loadConstant(numberLiteral.value());
-            code.invokestatic(INTEGER_DESC, "valueOf", INTEGER_VALUE_OF_SIGNATURE);
+            code.invokestatic(DOUBLE_DESC, "valueOf", DOUBLE_VALUE_OF_SIGNATURE);
             return;
         }
         if (expression instanceof QinIrStringLiteral stringLiteral) {
@@ -482,13 +485,23 @@ public final class QinJvmClassFileBackend {
         }
 
         if (expression instanceof QinIrNumberLiteral numberLiteral) {
+            double numberValue = numberLiteral.value();
             if (parameterType == int.class) {
-                code.loadConstant(numberLiteral.value());
+                code.loadConstant((int) numberValue);
                 return;
             }
             if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Integer.class)) {
-                code.loadConstant(numberLiteral.value());
+                code.loadConstant((int) numberValue);
                 code.invokestatic(INTEGER_DESC, "valueOf", INTEGER_VALUE_OF_SIGNATURE);
+                return;
+            }
+            if (parameterType == double.class) {
+                code.loadConstant(numberValue);
+                return;
+            }
+            if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Double.class)) {
+                code.loadConstant(numberValue);
+                code.invokestatic(DOUBLE_DESC, "valueOf", DOUBLE_VALUE_OF_SIGNATURE);
                 return;
             }
             throw new IllegalArgumentException("Unsupported numeric parameter type: " + parameterType.getName());
@@ -620,7 +633,13 @@ public final class QinJvmClassFileBackend {
             if (parameterType == Integer.class) {
                 return 1;
             }
-            if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Integer.class)) {
+            if (parameterType == double.class) {
+                return 0;
+            }
+            if (parameterType == Double.class) {
+                return 1;
+            }
+            if (!parameterType.isPrimitive() && Number.class.isAssignableFrom(parameterType)) {
                 return 2;
             }
             return -1;

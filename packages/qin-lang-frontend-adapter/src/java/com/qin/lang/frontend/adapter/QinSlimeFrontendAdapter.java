@@ -62,6 +62,9 @@ public final class QinSlimeFrontendAdapter {
     private static final Pattern SOURCE_CALL_ARG_AWAIT_PATTERN = Pattern.compile("\\(\\s*await\\s+([^;\\n]+)\\)");
     private static final Pattern SOURCE_SIMPLE_RETURN_FUNCTION_PATTERN = Pattern.compile(
             "(?m)^\\s*function\\s+([A-Za-z_$][A-Za-z0-9_$]*)\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+([^;{}]+?)\\s*;\\s*\\}");
+    private static final Pattern SOURCE_SIMPLE_SWITCH_PATTERN = Pattern.compile(
+            "(?s)switch\\s*\\(([^\\)]*)\\)\\s*\\{([^\\{\\}]*)\\}");
+    private static final int MAX_SIMPLE_SWITCH_REWRITES = 1;
     private static final String IMPORT_META_URL_SHIM = "__qin_import_meta_url__";
     private static final String DYNAMIC_IMPORT_SHIM = "__qin_dynamic_import__";
     private static final String TOP_LEVEL_AWAIT_SHIM = "__qin_top_level_await__";
@@ -133,10 +136,9 @@ public final class QinSlimeFrontendAdapter {
         if (sourceForSlime.isEmpty()) {
             return "Program(empty)";
         }
-        String parserInput = preprocessRuntimeSyntax(sourceForSlime);
 
         try {
-            return parseAstWithSlime(parserInput);
+            return parseAstWithSlime(sourceForSlime);
         } catch (Exception primaryError) {
             try {
                 ExtractedImports extracted = extractImports(sourceForSlime);
@@ -147,7 +149,7 @@ public final class QinSlimeFrontendAdapter {
                 if (strippedSource.isEmpty()) {
                     return "Program(import-only)";
                 }
-                return parseAstWithSlime(preprocessRuntimeSyntax(strippedSource));
+                return parseAstWithSlime(strippedSource);
             } catch (Exception fallbackError) {
                 Throwable cause = fallbackError == primaryError ? primaryError : fallbackError;
                 String message = fallbackError == primaryError
@@ -393,7 +395,7 @@ public final class QinSlimeFrontendAdapter {
 
     private String parseAstWithSlime(String source) throws ReflectiveOperationException {
         Object programAst = createProgramAst(source);
-        return AstJsonEncoder.toJson(programAst);
+        return AstJsonEncoder.toJson(programAst, source);
     }
 
     private Object createProgramAst(String source) throws ReflectiveOperationException {
@@ -402,14 +404,15 @@ public final class QinSlimeFrontendAdapter {
                 .filter(c -> c.getSimpleName().equals("SourceType"))
                 .findFirst()
                 .orElseThrow(() -> new ClassNotFoundException("SlimeJavascriptParser.SourceType not found"));
-        Object sourceType = selectSourceType(source, sourceTypeClass);
-
         Class<?> subhutiParserClass = Class.forName("com.subhuti.parser.SubhutiParser");
         Method createMethod = subhutiParserClass.getMethod("create", Class.class, Object[].class);
         Object parser = invokeStatic(createMethod, slimeParserClass, new Object[]{source});
 
+        // TS Slime's parse() defaults to module mode. Keep Java aligned and avoid
+        // the no-arg Program() overload here because the ByteBuddy rule wrapper
+        // re-enters Program() and triggers an infinite-loop guard.
         Method programMethod = findMethod(parser.getClass(), "Program", 1);
-        Object cst = invoke(programMethod, parser, sourceType);
+        Object cst = invoke(programMethod, parser, enumConstant(sourceTypeClass, "MODULE"));
         if (cst == null) {
             try {
                 Method getCstMethod = findMethod(parser.getClass(), "getCst", 0);
@@ -490,7 +493,7 @@ public final class QinSlimeFrontendAdapter {
                     declarationLookup.put(declaration.name(), declaration.initializer());
                     if (enableGlobalBinding) {
                         expressionStatements.add(createGlobalBindingStatement(declaration.name()));
-                        deferredGlobalBindingSteps.add(new QinIrProgram.TopLevelExecutionStep(
+                        executionSteps.add(new QinIrProgram.TopLevelExecutionStep(
                                 QinIrProgram.TopLevelStatementKind.EXPRESSION_STATEMENT,
                                 expressionStatements.size() - 1));
                     }
@@ -510,7 +513,7 @@ public final class QinSlimeFrontendAdapter {
                 declarationLookup.put(declaration.name(), declaration.initializer());
                 if (enableGlobalBinding) {
                     expressionStatements.add(createGlobalBindingStatement(declaration.name()));
-                    deferredGlobalBindingSteps.add(new QinIrProgram.TopLevelExecutionStep(
+                    executionSteps.add(new QinIrProgram.TopLevelExecutionStep(
                             QinIrProgram.TopLevelStatementKind.EXPRESSION_STATEMENT,
                             expressionStatements.size() - 1));
                 }
@@ -560,6 +563,20 @@ public final class QinSlimeFrontendAdapter {
                 // Temporary subset behavior: skip top-level conditional side effects we cannot lower yet.
                 continue;
             }
+            if (isTopLevelControlStatement(nodeType)) {
+                QinIrExpressionStatement loweredControl = lowerTopLevelControlStatement(
+                        statement,
+                        nodeType,
+                        javaImportLookup,
+                        declarationLookup);
+                if (loweredControl != null) {
+                    expressionStatements.add(loweredControl);
+                    executionSteps.add(new QinIrProgram.TopLevelExecutionStep(
+                            QinIrProgram.TopLevelStatementKind.EXPRESSION_STATEMENT,
+                            expressionStatements.size() - 1));
+                    continue;
+                }
+            }
             if ("ExportNamedDeclaration".equals(nodeType)) {
                 lowerExportNamedDeclaration(
                         statement,
@@ -584,8 +601,6 @@ public final class QinSlimeFrontendAdapter {
                 && javaInstanceConsoleLogs.isEmpty()) {
             throw new IllegalArgumentException("Program must contain at least one supported statement");
         }
-        executionSteps.addAll(deferredGlobalBindingSteps);
-
         return new QinIrProgram(
                 declarations,
                 expressionStatements,
@@ -597,6 +612,54 @@ public final class QinSlimeFrontendAdapter {
                 javaInstanceMethodCalls,
                 javaInstanceConsoleLogs,
                 executionSteps);
+    }
+
+    private boolean isTopLevelControlStatement(String nodeType) {
+        return "ForStatement".equals(nodeType)
+                || "WhileStatement".equals(nodeType)
+                || "DoWhileStatement".equals(nodeType)
+                || "SwitchStatement".equals(nodeType)
+                || "BlockStatement".equals(nodeType);
+    }
+
+    private QinIrExpressionStatement lowerTopLevelControlStatement(
+            Object statementAst,
+            String nodeType,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        Object syntheticFunctionAst = createSyntheticTopLevelFunctionAst(statementAst);
+        QinIrObjectLiteral runtimeDefinition = lowerFunctionRuntimeDefinition(
+                syntheticFunctionAst,
+                "TopLevel" + nodeType,
+                javaImportLookup,
+                declarationLookup);
+        if (runtimeDefinition == null) {
+            return null;
+        }
+        QinIrBuiltinCallExpression makeFunction = new QinIrBuiltinCallExpression(
+                "Global",
+                FUNCTION_MAKE_SHIM,
+                List.of(runtimeDefinition));
+        QinIrBuiltinCallExpression executeFunction = new QinIrBuiltinCallExpression(
+                "Global",
+                FUNCTION_CALL_SHIM,
+                List.of(makeFunction));
+        return new QinIrExpressionStatement(executeFunction);
+    }
+
+    private Object createSyntheticTopLevelFunctionAst(Object statementAst) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("type", "BlockStatement");
+        body.put("body", List.of(statementAst));
+
+        Map<String, Object> functionAst = new LinkedHashMap<>();
+        functionAst.put("type", "FunctionExpression");
+        functionAst.put("id", null);
+        functionAst.put("params", List.of());
+        functionAst.put("body", body);
+        functionAst.put("generator", false);
+        functionAst.put("async", false);
+        return functionAst;
     }
 
     private void predeclareTopLevelBindings(List<?> body, Map<String, QinIrExpression> declarationLookup) {
@@ -655,22 +718,23 @@ public final class QinSlimeFrontendAdapter {
 
     private static int computeFunctionModelBudget(int sourceLength) {
         if (sourceLength <= 0) {
-            return 3000;
+            return 120000;
         }
         if (sourceLength <= 25_000) {
-            return 100000;
+            return 240000;
         }
         if (sourceLength <= 80_000) {
-            return 20000;
+            return 180000;
         }
         if (sourceLength <= 300_000) {
-            return 6000;
+            return 140000;
         }
         if (sourceLength <= 500_000) {
-            return 2500;
+            return 100000;
         }
-        // Guardrail for ultra-large linked bundles to avoid JVM method-size overflow.
-        return 0;
+        // Keep function-model semantics enabled for very large bundles as well.
+        // Bytecode-size pressure is handled downstream by JSON-literal fallback in CFA backend.
+        return 80000;
     }
 
     private void lowerExportNamedDeclaration(
@@ -702,7 +766,7 @@ public final class QinSlimeFrontendAdapter {
                 declarationLookup.put(lowered.name(), lowered.initializer());
                 if (enableGlobalBinding) {
                     expressionStatements.add(createGlobalBindingStatement(lowered.name()));
-                    deferredGlobalBindingSteps.add(new QinIrProgram.TopLevelExecutionStep(
+                    executionSteps.add(new QinIrProgram.TopLevelExecutionStep(
                             QinIrProgram.TopLevelStatementKind.EXPRESSION_STATEMENT,
                             expressionStatements.size() - 1));
                 }
@@ -723,7 +787,7 @@ public final class QinSlimeFrontendAdapter {
             declarationLookup.put(lowered.name(), lowered.initializer());
             if (enableGlobalBinding) {
                 expressionStatements.add(createGlobalBindingStatement(lowered.name()));
-                deferredGlobalBindingSteps.add(new QinIrProgram.TopLevelExecutionStep(
+                executionSteps.add(new QinIrProgram.TopLevelExecutionStep(
                         QinIrProgram.TopLevelStatementKind.EXPRESSION_STATEMENT,
                         expressionStatements.size() - 1));
             }
@@ -979,9 +1043,13 @@ public final class QinSlimeFrontendAdapter {
                 return new QinIrNullLiteral();
             }
             if (value instanceof Number number) {
-                return new QinIrNumberLiteral(number.intValue());
+                return new QinIrNumberLiteral(number.doubleValue());
             }
             if (value instanceof String text) {
+                ParsedRegexLiteral regexLiteral = parseRegexLiteral(text);
+                if (regexLiteral != null) {
+                    return createRegexLiteralExpression(regexLiteral);
+                }
                 return new QinIrStringLiteral(normalizeStringLiteral(text));
             }
             if (value instanceof Boolean boolValue) {
@@ -1074,15 +1142,18 @@ public final class QinSlimeFrontendAdapter {
 
     private static int computeFunctionAstNodeLimit(int sourceLength) {
         if (sourceLength <= 0) {
-            return 10000;
+            return 14000;
         }
         if (sourceLength <= 25_000) {
-            return 10000;
+            return 18000;
         }
         if (sourceLength <= 80_000) {
-            return 5000;
+            return 14000;
         }
-        return 2200;
+        if (sourceLength <= 300_000) {
+            return 10000;
+        }
+        return 8000;
     }
 
     private QinIrObjectLiteral buildFunctionClosureObject(Map<String, QinIrExpression> declarationLookup) {
@@ -1126,7 +1197,7 @@ public final class QinSlimeFrontendAdapter {
             return new QinIrBooleanLiteral(boolValue);
         }
         if (node instanceof Number number) {
-            return new QinIrNumberLiteral(number.intValue());
+            return new QinIrNumberLiteral(number.doubleValue());
         }
         if (node instanceof Character character) {
             return new QinIrStringLiteral(String.valueOf(character));
@@ -1794,9 +1865,13 @@ public final class QinSlimeFrontendAdapter {
                 return new QinIrNullLiteral();
             }
             if (value instanceof Number number) {
-                return new QinIrNumberLiteral(number.intValue());
+                return new QinIrNumberLiteral(number.doubleValue());
             }
             if (value instanceof String text) {
+                ParsedRegexLiteral regexLiteral = parseRegexLiteral(text);
+                if (regexLiteral != null) {
+                    return createRegexLiteralExpression(regexLiteral);
+                }
                 return new QinIrStringLiteral(normalizeStringLiteral(text));
             }
             if (value instanceof Boolean boolValue) {
@@ -1806,6 +1881,10 @@ public final class QinSlimeFrontendAdapter {
         if ("Identifier".equals(nodeType)) {
             String name = extractIdentifierName(expressionAst, "Identifier");
             if (isRegexLiteralIdentifier(name)) {
+                ParsedRegexLiteral regexLiteral = parseRegexLiteral(name);
+                if (regexLiteral != null) {
+                    return createRegexLiteralExpression(regexLiteral);
+                }
                 return new QinIrStringLiteral(name);
             }
             return new QinIrIdentifierReference(name);
@@ -1915,6 +1994,10 @@ public final class QinSlimeFrontendAdapter {
                 return new QinIrStringLiteral("import.meta.url");
             }
             if (isRegexLiteralIdentifier(name)) {
+                ParsedRegexLiteral regexLiteral = parseRegexLiteral(name);
+                if (regexLiteral != null) {
+                    return createRegexLiteralExpression(regexLiteral);
+                }
                 return new QinIrStringLiteral(name);
             }
             return new QinIrIdentifierReference(name);
@@ -2320,29 +2403,6 @@ public final class QinSlimeFrontendAdapter {
         return Enum.valueOf((Class<? extends Enum>) enumClass, constantName);
     }
 
-    private static Object selectSourceType(String source, Class<?> sourceTypeClass) {
-        String trimmed = source == null ? "" : source.stripLeading();
-        boolean maybeModule = trimmed.startsWith("import ")
-                || trimmed.startsWith("export ")
-                || trimmed.contains("\nimport ")
-                || trimmed.contains("\nexport ")
-                || trimmed.contains("\r\nimport ")
-                || trimmed.contains("\r\nexport ")
-                || trimmed.contains("import.meta")
-                || trimmed.startsWith("await ")
-                || trimmed.contains("\nawait ")
-                || trimmed.contains("\r\nawait ")
-                || trimmed.contains("import(");
-        if (maybeModule) {
-            try {
-                return enumConstant(sourceTypeClass, "MODULE");
-            } catch (IllegalArgumentException ignored) {
-                // Fallback below.
-            }
-        }
-        return enumConstant(sourceTypeClass, "SCRIPT");
-    }
-
     private String preprocessRuntimeSyntax(String source) {
         String rewritten = source == null ? "" : source;
         rewritten = SOURCE_IMPORT_META_URL_PATTERN.matcher(rewritten).replaceAll(IMPORT_META_URL_SHIM);
@@ -2350,8 +2410,150 @@ public final class QinSlimeFrontendAdapter {
         rewritten = SOURCE_ASSIGN_AWAIT_PATTERN.matcher(rewritten).replaceAll("= " + TOP_LEVEL_AWAIT_SHIM + "($1)");
         rewritten = SOURCE_CALL_ARG_AWAIT_PATTERN.matcher(rewritten).replaceAll("(" + TOP_LEVEL_AWAIT_SHIM + "($1))");
         rewritten = SOURCE_TOP_LEVEL_AWAIT_PATTERN.matcher(rewritten).replaceAll(TOP_LEVEL_AWAIT_SHIM + "($1);");
+        rewritten = rewriteSimpleSwitchStatements(rewritten);
         rewritten = rewriteSimpleReturnFunctions(rewritten);
         return rewritten;
+    }
+
+    private String rewriteSimpleSwitchStatements(String source) {
+        if (source == null || source.length() > 10_000) {
+            return source;
+        }
+        Matcher matcher = SOURCE_SIMPLE_SWITCH_PATTERN.matcher(source);
+        StringBuffer out = new StringBuffer();
+        int switchId = 0;
+        int rewrittenCount = 0;
+        while (matcher.find()) {
+            String discriminant = matcher.group(1);
+            String body = matcher.group(2);
+            String lowered = lowerSimpleSwitch(discriminant, body, switchId++);
+            if (lowered == null || rewrittenCount >= MAX_SIMPLE_SWITCH_REWRITES) {
+                matcher.appendReplacement(out, Matcher.quoteReplacement(matcher.group()));
+            } else {
+                rewrittenCount++;
+                matcher.appendReplacement(out, Matcher.quoteReplacement(lowered));
+            }
+        }
+        matcher.appendTail(out);
+        return out.toString();
+    }
+
+    private String lowerSimpleSwitch(String discriminant, String body, int switchId) {
+        if (discriminant == null || body == null) {
+            return null;
+        }
+        String discriminantExpr = discriminant.trim();
+        if (discriminantExpr.isEmpty()) {
+            return null;
+        }
+        String tempName = "__qin_switch_" + switchId;
+        List<String> caseExpressions = new ArrayList<>();
+        List<String> caseReturns = new ArrayList<>();
+        int position = 0;
+        int caseCount = 0;
+        String defaultReturn = null;
+        while (position < body.length()) {
+            position = skipWhitespace(body, position);
+            if (position >= body.length()) {
+                break;
+            }
+            if (startsWithWord(body, position, "case")) {
+                int expressionStart = position + "case".length();
+                int colon = body.indexOf(':', expressionStart);
+                if (colon < 0) {
+                    return null;
+                }
+                String caseExpression = body.substring(expressionStart, colon).trim();
+                int next = findNextCaseOrDefault(body, colon + 1);
+                String caseBlock = next < 0 ? body.substring(colon + 1) : body.substring(colon + 1, next);
+                String returnExpression = extractReturnExpression(caseBlock);
+                if (returnExpression == null) {
+                    return null;
+                }
+                caseExpressions.add(caseExpression);
+                caseReturns.add(returnExpression);
+                caseCount++;
+                position = next < 0 ? body.length() : next;
+                continue;
+            }
+            if (startsWithWord(body, position, "default")) {
+                int colon = body.indexOf(':', position + "default".length());
+                if (colon < 0) {
+                    return null;
+                }
+                int next = findNextCaseOrDefault(body, colon + 1);
+                String defaultBlock = next < 0 ? body.substring(colon + 1) : body.substring(colon + 1, next);
+                defaultReturn = extractReturnExpression(defaultBlock);
+                position = next < 0 ? body.length() : next;
+                continue;
+            }
+            return null;
+        }
+        if (caseCount == 0) {
+            return null;
+        }
+        String fallback = defaultReturn == null ? "null" : defaultReturn;
+        String reduced = fallback;
+        for (int i = caseExpressions.size() - 1; i >= 0; i--) {
+            reduced = "(" + tempName + " === " + caseExpressions.get(i) + " ? "
+                    + caseReturns.get(i) + " : " + reduced + ")";
+        }
+        return "var " + tempName + " = " + discriminantExpr + "; return " + reduced + ";";
+    }
+
+    private int skipWhitespace(String text, int from) {
+        int index = Math.max(0, from);
+        while (index < text.length() && Character.isWhitespace(text.charAt(index))) {
+            index++;
+        }
+        return index;
+    }
+
+    private boolean startsWithWord(String text, int from, String word) {
+        if (from < 0 || from + word.length() > text.length()) {
+            return false;
+        }
+        if (!text.regionMatches(from, word, 0, word.length())) {
+            return false;
+        }
+        int before = from - 1;
+        int after = from + word.length();
+        boolean beforeOk = before < 0 || !Character.isLetterOrDigit(text.charAt(before)) && text.charAt(before) != '_';
+        boolean afterOk = after >= text.length()
+                || !Character.isLetterOrDigit(text.charAt(after)) && text.charAt(after) != '_';
+        return beforeOk && afterOk;
+    }
+
+    private int findNextCaseOrDefault(String body, int from) {
+        int best = -1;
+        for (int i = Math.max(0, from); i < body.length(); i++) {
+            if (startsWithWord(body, i, "case") || startsWithWord(body, i, "default")) {
+                best = i;
+                break;
+            }
+        }
+        return best;
+    }
+
+    private String extractReturnExpression(String block) {
+        if (block == null) {
+            return null;
+        }
+        String text = block.trim();
+        if (text.isEmpty() || text.startsWith("break")) {
+            return null;
+        }
+        int returnIndex = text.indexOf("return");
+        if (returnIndex < 0) {
+            return null;
+        }
+        String afterReturn = text.substring(returnIndex + "return".length()).trim();
+        int semicolon = afterReturn.indexOf(';');
+        String expression = semicolon >= 0 ? afterReturn.substring(0, semicolon).trim() : afterReturn.trim();
+        if (expression.isEmpty()) {
+            return null;
+        }
+        return expression;
     }
 
     private String rewriteSimpleReturnFunctions(String source) {
@@ -2412,6 +2614,58 @@ public final class QinSlimeFrontendAdapter {
         return candidate;
     }
 
+    private ParsedRegexLiteral parseRegexLiteral(String text) {
+        if (text == null) {
+            return null;
+        }
+        String candidate = text.strip();
+        if (candidate.length() >= 2) {
+            char first = candidate.charAt(0);
+            char last = candidate.charAt(candidate.length() - 1);
+            if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                candidate = unescapeJsString(candidate.substring(1, candidate.length() - 1));
+            }
+        }
+        if (candidate.length() < 2 || candidate.charAt(0) != '/') {
+            return null;
+        }
+        int endSlash = -1;
+        boolean escaping = false;
+        for (int i = 1; i < candidate.length(); i++) {
+            char ch = candidate.charAt(i);
+            if (escaping) {
+                escaping = false;
+                continue;
+            }
+            if (ch == '\\') {
+                escaping = true;
+                continue;
+            }
+            if (ch == '/') {
+                endSlash = i;
+            }
+        }
+        if (endSlash <= 0) {
+            return null;
+        }
+        String pattern = candidate.substring(1, endSlash);
+        String flags = candidate.substring(endSlash + 1);
+        if (!flags.chars().allMatch(ch -> Character.isLetter(ch))) {
+            return null;
+        }
+        return new ParsedRegexLiteral(pattern, flags);
+    }
+
+    private QinIrExpression createRegexLiteralExpression(ParsedRegexLiteral regexLiteral) {
+        return new QinIrBuiltinCallExpression(
+                "Global",
+                "__qin_new__",
+                List.of(
+                        new QinIrStringLiteral("RegExp"),
+                        new QinIrStringLiteral(regexLiteral.pattern()),
+                        new QinIrStringLiteral(regexLiteral.flags())));
+    }
+
     private String unescapeJsString(String text) {
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < text.length(); i++) {
@@ -2467,14 +2721,25 @@ public final class QinSlimeFrontendAdapter {
             List<QinIrJsImport> jsImports) {
     }
 
+    private record ParsedRegexLiteral(
+            String pattern,
+            String flags) {
+    }
+
     private static final class AstJsonEncoder {
         private static final int MAX_DEPTH = 128;
+        private static final Pattern REGEX_LITERAL_PATTERN = Pattern.compile("^/(.*)/([a-z]*)$");
 
         private final IdentityHashMap<Object, Boolean> seen = new IdentityHashMap<>();
         private final StringBuilder out = new StringBuilder();
+        private final String sourceText;
 
-        private static String toJson(Object value) {
-            return new AstJsonEncoder().encode(value);
+        private AstJsonEncoder(String sourceText) {
+            this.sourceText = sourceText == null ? "" : sourceText;
+        }
+
+        private static String toJson(Object value, String sourceText) {
+            return new AstJsonEncoder(sourceText).encode(value);
         }
 
         private String encode(Object value) {
@@ -2559,38 +2824,51 @@ public final class QinSlimeFrontendAdapter {
         }
 
         private void writeObject(Object value, int depth) {
-            if (seen.containsKey(value)) {
+            if (seen.put(value, Boolean.TRUE) != null) {
                 out.append("null");
                 return;
             }
-            seen.put(value, Boolean.TRUE);
-
-            out.append('{');
-            Map<String, Object> fields = extractFields(value);
-            boolean first = true;
-            for (Map.Entry<String, Object> entry : fields.entrySet()) {
-                if (!first) {
-                    out.append(',');
+            try {
+                out.append('{');
+                Map<String, Object> fields = extractFields(value);
+                boolean first = true;
+                for (Map.Entry<String, Object> entry : fields.entrySet()) {
+                    if (!first) {
+                        out.append(',');
+                    }
+                    first = false;
+                    writeString(entry.getKey());
+                    out.append(':');
+                    writeValue(entry.getValue(), depth);
                 }
-                first = false;
-                writeString(entry.getKey());
-                out.append(':');
-                writeValue(entry.getValue(), depth);
+                out.append('}');
+            } finally {
+                seen.remove(value);
             }
-            out.append('}');
         }
 
         private Map<String, Object> extractFields(Object value) {
+            Map<String, Object> special = extractSpecialFields(value);
+            if (special != null) {
+                return special;
+            }
+
             Class<?> type = value.getClass();
             LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            if (value instanceof com.slime.ast.AstNode astNode) {
+                fields.put("type", toAstTypeName(astNode.type()));
+            }
             if (type.isRecord()) {
                 RecordComponent[] components = type.getRecordComponents();
                 if (components != null) {
                     for (RecordComponent component : components) {
+                        String originalName = component.getName();
+                        String normalizedName = normalizeFieldName(originalName);
                         try {
-                            fields.put(component.getName(), component.getAccessor().invoke(value));
+                            Object rawFieldValue = component.getAccessor().invoke(value);
+                            putFieldIfVisible(fields, normalizedName, normalizeFieldValue(value, originalName, rawFieldValue));
                         } catch (Exception e) {
-                            fields.put(component.getName(), "<error:" + e.getClass().getSimpleName() + ">");
+                            putFieldIfVisible(fields, normalizedName, "<error:" + e.getClass().getSimpleName() + ">");
                         }
                     }
                     return fields;
@@ -2605,19 +2883,1553 @@ public final class QinSlimeFrontendAdapter {
                     if (Modifier.isStatic(field.getModifiers()) || field.isSynthetic()) {
                         continue;
                     }
-                    if (!visitedNames.add(field.getName())) {
+                    String originalName = field.getName();
+                    String normalizedName = normalizeFieldName(originalName);
+                    if (!visitedNames.add(normalizedName)) {
                         continue;
                     }
                     try {
                         field.setAccessible(true);
-                        fields.put(field.getName(), field.get(value));
+                        Object rawFieldValue = field.get(value);
+                        putFieldIfVisible(fields, normalizedName, normalizeFieldValue(value, originalName, rawFieldValue));
                     } catch (Exception e) {
-                        fields.put(field.getName(), "<error:" + e.getClass().getSimpleName() + ">");
+                        putFieldIfVisible(fields, normalizedName, "<error:" + e.getClass().getSimpleName() + ">");
                     }
                 }
                 current = current.getSuperclass();
             }
             return fields;
+        }
+
+        private void putFieldIfVisible(LinkedHashMap<String, Object> fields, String fieldName, Object value) {
+            if (value == null && (fieldName.endsWith("Token") || fieldName.endsWith("Tokens"))) {
+                return;
+            }
+            fields.put(fieldName, value);
+        }
+
+        private void putIfNotNull(LinkedHashMap<String, Object> fields, String fieldName, Object value) {
+            if (value != null) {
+                fields.put(fieldName, value);
+            }
+        }
+
+        private Map<String, Object> extractSpecialFields(Object value) {
+            String simpleName = value.getClass().getSimpleName();
+
+            if ("SourceLocation".equals(simpleName)) {
+                LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+                Object type = readProperty(value, "type");
+                Object locValue = readProperty(value, "value");
+                Object start = readProperty(value, "start");
+                Object end = readProperty(value, "end");
+                putLocationFields(fields, type, locValue, start, end);
+                return fields;
+            }
+
+            if ("Position".equals(simpleName)) {
+                LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+                int index = asInt(readProperty(value, "index"));
+                int rawLine = asInt(readProperty(value, "line"));
+                int rawColumn = asInt(readProperty(value, "column"));
+                fields.put("index", index);
+                if (index == 0 && rawLine == 0 && rawColumn == 0) {
+                    fields.put("line", 0);
+                    fields.put("column", 0);
+                } else {
+                    PositionInfo positionInfo = resolvePositionInfo(index, rawLine, rawColumn);
+                    fields.put("line", positionInfo.line());
+                    fields.put("column", positionInfo.column());
+                }
+                return fields;
+            }
+
+            if ("MemberExpression".equals(simpleName)) {
+                return extractMemberExpressionFields(value);
+            }
+
+            if ("CallExpression".equals(simpleName)) {
+                return extractCallExpressionFields(value);
+            }
+
+            if ("SequenceExpression".equals(simpleName)) {
+                return extractSequenceExpressionFields(value);
+            }
+
+            if ("ForOfStatement".equals(simpleName)) {
+                return extractForOfStatementFields(value);
+            }
+
+            if ("ParenthesizedExpression".equals(simpleName)) {
+                return extractParenthesizedExpressionFields(value);
+            }
+
+            if ("BlockStatement".equals(simpleName)) {
+                return extractBlockStatementFields(value);
+            }
+
+            if ("ExpressionStatement".equals(simpleName)) {
+                return extractExpressionStatementFields(value);
+            }
+
+            if ("VariableDeclaration".equals(simpleName)) {
+                return extractVariableDeclarationFields(value);
+            }
+
+            if ("VariableDeclarator".equals(simpleName)) {
+                return extractVariableDeclaratorFields(value);
+            }
+
+            if ("AssignmentExpression".equals(simpleName)) {
+                return extractAssignmentExpressionFields(value);
+            }
+
+            if ("UnaryExpression".equals(simpleName) || "UpdateExpression".equals(simpleName)) {
+                return extractUnaryLikeExpressionFields(value, simpleName);
+            }
+
+            if ("BinaryExpression".equals(simpleName) || "LogicalExpression".equals(simpleName)) {
+                return extractBinaryLikeExpressionFields(value, simpleName);
+            }
+
+            if ("ReturnStatement".equals(simpleName)) {
+                return extractReturnStatementFields(value);
+            }
+
+            if ("IfStatement".equals(simpleName)) {
+                return extractIfStatementFields(value);
+            }
+
+            if ("FunctionDeclaration".equals(simpleName)) {
+                return extractFunctionDeclarationFields(value);
+            }
+
+            if ("NewExpression".equals(simpleName)) {
+                return extractNewExpressionFields(value);
+            }
+
+        if ("ThrowStatement".equals(simpleName)) {
+            return extractThrowStatementFields(value);
+        }
+
+        if ("BreakStatement".equals(simpleName)) {
+            return extractBreakStatementFields(value);
+        }
+
+        if ("ContinueStatement".equals(simpleName)) {
+            return extractContinueStatementFields(value);
+        }
+
+        if ("ConditionalExpression".equals(simpleName)) {
+            return extractConditionalExpressionFields(value);
+        }
+
+            if ("ObjectExpression".equals(simpleName)) {
+                return extractObjectExpressionFields(value);
+            }
+
+            if ("ArrayExpression".equals(simpleName)) {
+                return extractArrayExpressionFields(value);
+            }
+
+            if ("ForStatement".equals(simpleName)) {
+                return extractForStatementFields(value);
+            }
+
+            if ("SwitchCase".equals(simpleName)) {
+                return extractSwitchCaseFields(value);
+            }
+
+            if ("SwitchStatement".equals(simpleName)) {
+                return extractSwitchStatementFields(value);
+            }
+
+            if ("ImportNamespaceSpecifier".equals(simpleName)) {
+                return extractImportNamespaceSpecifierFields(value);
+            }
+
+            if ("ExportSpecifier".equals(simpleName)) {
+                return extractExportSpecifierFields(value);
+            }
+
+            if ("ExportNamedDeclaration".equals(simpleName)) {
+                return extractExportNamedDeclarationFields(value);
+            }
+
+            if ("ExportDefaultDeclaration".equals(simpleName)) {
+                return extractExportDefaultDeclarationFields(value);
+            }
+
+            if ("SpreadElement".equals(simpleName)) {
+                return extractSpreadElementFields(value);
+            }
+
+            if ("Property".equals(simpleName)) {
+                return extractPropertyFields(value);
+            }
+
+            if ("AssignmentPattern".equals(simpleName)) {
+                return extractAssignmentPatternFields(value);
+            }
+
+            if ("Literal".equals(simpleName)) {
+                LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+                String raw = asString(readProperty(value, "raw"));
+                Object literalValue = readProperty(value, "value");
+                fields.put("type", "Literal");
+                if (looksLikeRegexLiteral(raw) && (literalValue == null || literalValue instanceof String)) {
+                    fields.put("value", new LinkedHashMap<String, Object>());
+                    fields.put("raw", raw);
+                    fields.put("regex", parseRegexLiteral(raw));
+                } else {
+                    fields.put("value", literalValue);
+                    if (raw != null && literalValue != null) {
+                        fields.put("raw", raw);
+                    }
+                    Object regex = readProperty(value, "regex");
+                    if (regex != null) {
+                        fields.put("regex", regex);
+                    }
+                    Object bigint = readProperty(value, "bigint");
+                    if (bigint != null) {
+                        fields.put("bigint", bigint);
+                    }
+                }
+                fields.put("loc", firstNonNull(
+                        createLiteralLocation(raw, literalValue, value),
+                        copyLocation(readProperty(value, "location"), null)));
+                return fields;
+            }
+
+            if ("TemplateElement".equals(simpleName)) {
+                boolean tail = asBoolean(readProperty(value, "tail"));
+                LinkedHashMap<String, Object> valueMap = new LinkedHashMap<>();
+                valueMap.put("raw", normalizeTemplateChunk(asString(readProperty(value, "raw")), tail));
+                valueMap.put("cooked", normalizeTemplateChunk(asString(readProperty(value, "cooked")), tail));
+
+                LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+                fields.put("type", "TemplateElement");
+                fields.put("tail", tail);
+                fields.put("value", valueMap);
+                fields.put("loc", readProperty(value, "location"));
+                return fields;
+            }
+
+            return null;
+        }
+
+        private String normalizeFieldName(String fieldName) {
+            if ("location".equals(fieldName)) {
+                return "loc";
+            }
+            return fieldName;
+        }
+
+        private Object normalizeFieldValue(Object owner, String originalName, Object value) {
+            if (value == null) {
+                return null;
+            }
+            if ("operator".equals(originalName)) {
+                Object token = createOperatorToken(owner, value);
+                if (token != null) {
+                    return token;
+                }
+            }
+            if (value instanceof List<?> list) {
+                String wrapperKey = wrapperKey(owner, originalName);
+                if (wrapperKey != null) {
+                    return wrapListItems(list, wrapperKey);
+                }
+            }
+            return value;
+        }
+
+        private Map<String, Object> extractMemberExpressionFields(Object value) {
+            Object object = readProperty(value, "object");
+            Object property = readProperty(value, "property");
+            boolean computed = asBoolean(readProperty(value, "computed"));
+            boolean optional = asBoolean(readProperty(value, "optional"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", optional ? "OptionalMemberExpression" : "MemberExpression");
+            fields.put("object", object);
+            if (!computed && !optional) {
+                putIfNotNull(fields, "dot", createMemberDotToken(object, property, value));
+            }
+            fields.put("property", property);
+            fields.put("computed", computed);
+            fields.put("optional", optional);
+            if (optional) {
+                putIfNotNull(fields, "optionalChainingToken", createGapToken("OptionalChaining", "?.", object, property, false));
+            }
+            if (computed) {
+                putIfNotNull(fields, "lBracketToken", createGapToken("LBracket", "[", object, property, false));
+                putIfNotNull(fields, "rBracketToken", createClosingDelimiterToken("RBracket", "]", property, value));
+            }
+            fields.put("loc", normalizeMemberExpressionLocation(object, readProperty(value, "location")));
+            return fields;
+        }
+
+        private Object createMemberDotToken(Object object, Object property, Object owner) {
+            Object direct = createGapToken("Dot", ".", object, property, false);
+            if (direct != null) {
+                return direct;
+            }
+            int propertyStart = startIndex(property);
+            if (propertyStart >= 0) {
+                return createTokenBetween("Dot", ".", Math.max(0, propertyStart - 8), propertyStart, true);
+            }
+            return createGapToken("Dot", ".", object, owner, true);
+        }
+
+        private Map<String, Object> extractCallExpressionFields(Object value) {
+            Object callee = readProperty(value, "callee");
+            List<?> arguments = asList(readProperty(value, "arguments"));
+            boolean optional = asBoolean(readProperty(value, "optional"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", optional ? "OptionalCallExpression" : "CallExpression");
+            fields.put("callee", callee);
+            fields.put("arguments", wrapListItems(arguments, "argument"));
+            fields.put("optional", optional);
+            if (optional) {
+                putIfNotNull(fields, "optionalChainingToken", createOptionalCallToken(callee, arguments, value));
+            }
+            putIfNotNull(fields, "lParenToken", createCallLParenToken(callee, arguments, value));
+            putIfNotNull(fields, "rParenToken", createCallRParenToken(arguments, value));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractSequenceExpressionFields(Object value) {
+            List<?> expressions = asList(readProperty(value, "expressions"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "SequenceExpression");
+            fields.put("expressions", expressions);
+            if (expressions.size() > 1) {
+                putIfNotNull(fields, "commaTokens", createCommaTokens(expressions));
+            }
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractForOfStatementFields(Object value) {
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ForOfStatement");
+            fields.put("left", readProperty(value, "left"));
+            fields.put("right", readProperty(value, "right"));
+            fields.put("body", readProperty(value, "body"));
+            if (asBoolean(readProperty(value, "await"))) {
+                fields.put("await", true);
+            }
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractParenthesizedExpressionFields(Object value) {
+            Object expression = readProperty(value, "expression");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ParenthesizedExpression");
+            fields.put("expression", expression);
+            fields.put("loc", readProperty(value, "location"));
+            putIfNotNull(fields, "lParenToken", createLeadingToken("LParen", "(", value, expression));
+            putIfNotNull(fields, "rParenToken", createClosingDelimiterToken("RParen", ")", expression, value));
+            return fields;
+        }
+
+        private Map<String, Object> extractBlockStatementFields(Object value) {
+            List<?> body = asList(readProperty(value, "body"));
+            Object rawLocation = readProperty(value, "location");
+            Object rawType = readProperty(rawLocation, "type");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "BlockStatement");
+            fields.put("body", body);
+            putIfNotNull(fields, "lBraceToken", createEnclosingToken("LBrace", "{", value, body, false));
+            putIfNotNull(fields, "rBraceToken", createEnclosingToken("RBrace", "}", value, body, true));
+            fields.put("loc", copyLocation(rawLocation, "BlockStatement".equals(rawType) ? "Block" : null));
+            return fields;
+        }
+
+        private Map<String, Object> extractExpressionStatementFields(Object value) {
+            Object expression = readProperty(value, "expression");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ExpressionStatement");
+            fields.put("expression", expression);
+            putIfNotNull(fields, "semicolonToken", createTrailingToken("Semicolon", ";", expression, value));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractVariableDeclarationFields(Object value) {
+            List<?> declarations = asList(readProperty(value, "declarations"));
+            String kind = asString(readProperty(value, "kind"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "VariableDeclaration");
+            fields.put("declarations", declarations);
+            Object kindToken = createVariableKindToken(kind, value, firstItem(declarations));
+            fields.put("kind", kindToken != null ? kindToken : kind);
+            fields.put("loc", readProperty(value, "location"));
+            putIfNotNull(fields, "semicolonToken", createTokenBetween("Semicolon", ";", startIndex(value), endIndex(value), true));
+            return fields;
+        }
+
+        private Map<String, Object> extractVariableDeclaratorFields(Object value) {
+            Object id = readProperty(value, "id");
+            Object init = readProperty(value, "init");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "VariableDeclarator");
+            fields.put("id", id);
+            if (init != null) {
+                putIfNotNull(fields, "eqToken", createGapToken("Assign", "=", id, init, false));
+            }
+            fields.put("init", init);
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractAssignmentExpressionFields(Object value) {
+            Object left = readProperty(value, "left");
+            Object right = readProperty(value, "right");
+            Object operator = readProperty(value, "operator");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "AssignmentExpression");
+            Object operatorToken = createOperatorToken(value, operator);
+            fields.put("operator", operatorToken != null ? operatorToken : operator);
+            fields.put("left", left);
+            fields.put("right", right);
+            fields.put("loc", copyLocation(readProperty(value, "location"), null));
+            return fields;
+        }
+
+        private Map<String, Object> extractUnaryLikeExpressionFields(Object value, String type) {
+            Object operator = readProperty(value, "operator");
+            Object argument = readProperty(value, "argument");
+            boolean prefix = asBoolean(readProperty(value, "prefix"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", type);
+            Object operatorToken = createOperatorToken(value, operator);
+            fields.put("operator", operatorToken != null ? operatorToken : operator);
+            if ("UpdateExpression".equals(type)) {
+                fields.put("argument", argument);
+                fields.put("prefix", prefix);
+            } else {
+                fields.put("prefix", prefix);
+                fields.put("argument", argument);
+            }
+            fields.put("loc", copyLocation(readProperty(value, "location"), null));
+            return fields;
+        }
+
+        private Map<String, Object> extractBinaryLikeExpressionFields(Object value, String type) {
+            Object left = readProperty(value, "left");
+            Object right = readProperty(value, "right");
+            Object operator = readProperty(value, "operator");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", type);
+            Object operatorToken = createOperatorToken(value, operator);
+            fields.put("operator", operatorToken != null ? operatorToken : operator);
+            fields.put("left", left);
+            fields.put("right", right);
+            fields.put("loc", copyLocation(readProperty(value, "location"), null));
+            return fields;
+        }
+
+        private Map<String, Object> extractReturnStatementFields(Object value) {
+            Object argument = readProperty(value, "argument");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ReturnStatement");
+            fields.put("argument", argument);
+            putIfNotNull(fields, "returnToken", createLeadingKeywordToken("Return", "return", value, argument));
+            putIfNotNull(fields, "semicolonToken", createTrailingToken("Semicolon", ";", argument, value));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractIfStatementFields(Object value) {
+            Object test = readProperty(value, "test");
+            Object consequent = readProperty(value, "consequent");
+            Object alternate = readProperty(value, "alternate");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "IfStatement");
+            fields.put("test", test);
+            fields.put("consequent", consequent);
+            fields.put("alternate", alternate);
+            Object ifToken = createLeadingKeywordToken("If", "if", value, test);
+            putIfNotNull(fields, "ifToken", ifToken);
+            if (alternate != null) {
+                putIfNotNull(fields, "elseToken", createGapToken("Else", "else", consequent, alternate, true));
+            }
+            putIfNotNull(fields, "lParenToken", createGapToken("LParen", "(", ifToken, test, false));
+            putIfNotNull(fields, "rParenToken", createGapToken("RParen", ")", test, consequent, true));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractFunctionDeclarationFields(Object value) {
+            Object id = readProperty(value, "id");
+            List<?> params = asList(readProperty(value, "params"));
+            Object body = readProperty(value, "body");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "FunctionDeclaration");
+            fields.put("id", id);
+            fields.put("params", wrapListItems(params, "param"));
+            fields.put("body", body);
+            fields.put("generator", asBoolean(readProperty(value, "generator")));
+            fields.put("async", asBoolean(readProperty(value, "async")));
+            Object functionToken = createLeadingKeywordToken("Function", "function", value, firstNonNull(id, firstItem(params), body));
+            putIfNotNull(fields, "functionToken", functionToken);
+            putIfNotNull(fields, "lParenToken", createFunctionLParenToken(id, params, body, value));
+            putIfNotNull(fields, "rParenToken", createFunctionRParenToken(params, body, value));
+            putIfNotNull(fields, "lBraceToken", createEnclosingToken("LBrace", "{", body, asList(readProperty(body, "body")), false));
+            putIfNotNull(fields, "rBraceToken", createEnclosingToken("RBrace", "}", body, asList(readProperty(body, "body")), true));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractNewExpressionFields(Object value) {
+            Object callee = readProperty(value, "callee");
+            List<?> arguments = asList(readProperty(value, "arguments"));
+            Object rawLocation = readProperty(value, "location");
+            Object rawType = readProperty(rawLocation, "type");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "NewExpression");
+            fields.put("callee", callee);
+            fields.put("arguments", wrapListItems(arguments, "argument"));
+            putIfNotNull(fields, "newToken", createLeadingKeywordToken("New", "new", value, callee));
+            putIfNotNull(fields, "lParenToken", createCallLParenToken(callee, arguments, value));
+            putIfNotNull(fields, "rParenToken", createCallRParenToken(arguments, value));
+            fields.put("loc", copyLocation(rawLocation, "NewExpression".equals(rawType) ? "MemberExpression" : null));
+            return fields;
+        }
+
+    private Map<String, Object> extractThrowStatementFields(Object value) {
+        Object argument = readProperty(value, "argument");
+        LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+        fields.put("type", "ThrowStatement");
+        fields.put("argument", argument);
+            putIfNotNull(fields, "throwToken", createLeadingKeywordToken("Throw", "throw", value, argument));
+            putIfNotNull(fields, "semicolonToken", createTrailingToken("Semicolon", ";", argument, value));
+        fields.put("loc", readProperty(value, "location"));
+        return fields;
+    }
+
+    private Map<String, Object> extractBreakStatementFields(Object value) {
+        Object label = readProperty(value, "label");
+        LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+        fields.put("type", "BreakStatement");
+        fields.put("label", label);
+        Object semicolonToken = createTokenBetween("Semicolon", ";", startIndex(value), endIndex(value), true);
+        Object breakToken = createLeadingKeywordToken("Break", "break", value, firstNonNull(label, semicolonToken, value));
+        putIfNotNull(fields, "breakToken", breakToken);
+        putIfNotNull(fields, "semicolonToken", semicolonToken);
+        fields.put("loc", readProperty(value, "location"));
+        return fields;
+    }
+
+    private Map<String, Object> extractContinueStatementFields(Object value) {
+        Object label = readProperty(value, "label");
+        LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+        fields.put("type", "ContinueStatement");
+        fields.put("label", label);
+        Object semicolonToken = createTokenBetween("Semicolon", ";", startIndex(value), endIndex(value), true);
+        Object continueToken = createLeadingKeywordToken("Continue", "continue", value, firstNonNull(label, semicolonToken, value));
+        putIfNotNull(fields, "continueToken", continueToken);
+        putIfNotNull(fields, "semicolonToken", semicolonToken);
+        fields.put("loc", readProperty(value, "location"));
+        return fields;
+    }
+
+    private Map<String, Object> extractConditionalExpressionFields(Object value) {
+        Object test = readProperty(value, "test");
+        Object consequent = readProperty(value, "consequent");
+        Object alternate = readProperty(value, "alternate");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ConditionalExpression");
+            fields.put("test", test);
+            fields.put("consequent", consequent);
+            fields.put("alternate", alternate);
+            putIfNotNull(fields, "questionToken", createGapToken("Question", "?", test, consequent, false));
+            putIfNotNull(fields, "colonToken", createGapToken("Colon", ":", consequent, alternate, false));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractObjectExpressionFields(Object value) {
+            List<?> properties = asList(readProperty(value, "properties"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ObjectExpression");
+            fields.put("properties", wrapListItems(properties, "property"));
+            putIfNotNull(fields, "lBraceToken", createEnclosingToken("LBrace", "{", value, properties, false));
+            putIfNotNull(fields, "rBraceToken", createEnclosingToken("RBrace", "}", value, properties, true));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractArrayExpressionFields(Object value) {
+            List<?> elements = asList(readProperty(value, "elements"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ArrayExpression");
+            fields.put("elements", wrapListItems(elements, "element"));
+            putIfNotNull(fields, "lBracketToken", createEnclosingToken("LBracket", "[", value, elements, false));
+            putIfNotNull(fields, "rBracketToken", createEnclosingToken("RBracket", "]", value, elements, true));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractForStatementFields(Object value) {
+            Object init = readProperty(value, "init");
+            Object test = readProperty(value, "test");
+            Object update = readProperty(value, "update");
+            Object body = readProperty(value, "body");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ForStatement");
+            fields.put("init", init);
+            fields.put("test", test);
+            fields.put("update", update);
+            fields.put("body", body);
+            Object forToken = createLeadingKeywordToken("For", "for", value, firstNonNull(init, test, update, body));
+            putIfNotNull(fields, "forToken", forToken);
+            putIfNotNull(fields, "lParenToken", createGapToken("LParen", "(", forToken, firstNonNull(init, test, update, body), false));
+            putIfNotNull(fields, "rParenToken", createGapToken("RParen", ")", lastNonNull(update, test, init), body, true));
+            putIfNotNull(fields, "semicolon1Token", createHeaderSemicolonToken(init, test, firstNonNull(update, body), value, 1));
+            putIfNotNull(fields, "semicolon2Token", createHeaderSemicolonToken(test, firstNonNull(update, body), value, 2));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractSwitchCaseFields(Object value) {
+            Object test = readProperty(value, "test");
+            List<?> consequent = asList(readProperty(value, "consequent"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "SwitchCase");
+            fields.put("test", test);
+            fields.put("consequent", consequent);
+            Object leadingToken = test != null
+                    ? createLeadingKeywordToken("Case", "case", value, test)
+                    : createLeadingKeywordToken("Default", "default", value, firstItem(consequent));
+            if (test != null) {
+                putIfNotNull(fields, "caseToken", leadingToken);
+            } else {
+                putIfNotNull(fields, "defaultToken", leadingToken);
+            }
+            putIfNotNull(fields, "colonToken", createGapToken("Colon", ":", test != null ? test : leadingToken, firstItem(consequent), false));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractSwitchStatementFields(Object value) {
+            Object discriminant = readProperty(value, "discriminant");
+            List<?> cases = asList(readProperty(value, "cases"));
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "SwitchStatement");
+            fields.put("discriminant", discriminant);
+            fields.put("cases", cases);
+            Object switchToken = createLeadingKeywordToken("Switch", "switch", value, discriminant);
+            putIfNotNull(fields, "switchToken", switchToken);
+            putIfNotNull(fields, "lParenToken", createGapToken("LParen", "(", switchToken, discriminant, false));
+            putIfNotNull(fields, "rParenToken", createGapToken("RParen", ")", discriminant, firstItem(cases), true));
+            putIfNotNull(fields, "lBraceToken", createEnclosingToken("LBrace", "{", value, cases, false));
+            putIfNotNull(fields, "rBraceToken", createEnclosingToken("RBrace", "}", value, cases, true));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractImportNamespaceSpecifierFields(Object value) {
+            Object local = readProperty(value, "local");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ImportNamespaceSpecifier");
+            fields.put("local", local);
+            Object asteriskToken = createLeadingToken("Asterisk", "*", value, local);
+            putIfNotNull(fields, "asteriskToken", asteriskToken);
+            putIfNotNull(fields, "asToken",
+                    rewriteTokenLocationType(createGapToken("as", "as", asteriskToken, local, false), "IdentifierName"));
+            fields.put("loc", copyLocation(readProperty(value, "location"), null));
+            return fields;
+        }
+
+        private Map<String, Object> extractExportSpecifierFields(Object value) {
+            Object local = readProperty(value, "local");
+            Object exported = readProperty(value, "exported");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ExportSpecifier");
+            fields.put("local", local);
+            fields.put("exported", exported);
+            if (!sameNodeSpan(local, exported) || !Objects.equals(readProperty(local, "name"), readProperty(exported, "name"))) {
+                putIfNotNull(fields, "asToken",
+                        rewriteTokenLocationType(createGapToken("as", "as", local, exported, false), "IdentifierName"));
+            }
+            fields.put("loc", firstNonNull(
+                    createSyntheticLocation("ExportSpecifier", local, exported),
+                    copyLocation(readProperty(value, "location"), "ExportSpecifier")));
+            return fields;
+        }
+
+        private Map<String, Object> extractExportDefaultDeclarationFields(Object value) {
+            Object declaration = readProperty(value, "declaration");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ExportDefaultDeclaration");
+            fields.put("declaration", declaration);
+            Object exportToken = createLeadingKeywordToken("Export", "export", value, declaration);
+            putIfNotNull(fields, "exportToken", exportToken);
+            putIfNotNull(fields, "defaultToken", createGapToken("Default", "default", exportToken, declaration, false));
+            fields.put("loc", copyLocation(readProperty(value, "location"), null));
+            String declarationType = declaration == null ? null : declaration.getClass().getSimpleName();
+            if (!"FunctionDeclaration".equals(declarationType) && !"ClassDeclaration".equals(declarationType)) {
+                putIfNotNull(fields, "semicolonToken", createTrailingToken("Semicolon", ";", declaration, value));
+            }
+            return fields;
+        }
+
+        private Map<String, Object> extractExportNamedDeclarationFields(Object value) {
+            Object declaration = readProperty(value, "declaration");
+            List<?> specifiers = asList(readProperty(value, "specifiers"));
+            Object source = readProperty(value, "source");
+            String declarationType = declaration == null ? null : declaration.getClass().getSimpleName();
+            Object semicolonToken = null;
+            if (declaration == null
+                    || (!"FunctionDeclaration".equals(declarationType) && !"ClassDeclaration".equals(declarationType))) {
+                semicolonToken = createTrailingToken(
+                        "Semicolon",
+                        ";",
+                        firstNonNull(source, lastItem(specifiers), declaration),
+                        value);
+            }
+            Object exportToken = createLeadingKeywordToken(
+                    "Export",
+                    "export",
+                    value,
+                    firstNonNull(declaration, firstItem(specifiers), source, semicolonToken, value));
+            Object fromToken = null;
+            if (source != null) {
+                Object fromAnchor = !specifiers.isEmpty() ? lastItem(specifiers) : firstNonNull(declaration, exportToken);
+                fromToken = rewriteTokenLocationType(
+                        createGapToken("from", "from", fromAnchor, source, false),
+                        "IdentifierName");
+            }
+            boolean hasBraceTokens = declaration == null;
+            Object lBraceToken = null;
+            Object rBraceToken = null;
+            if (hasBraceTokens) {
+                if (!specifiers.isEmpty()) {
+                    lBraceToken = createGapToken("LBrace", "{", exportToken, firstItem(specifiers), false);
+                    rBraceToken = createGapToken("RBrace", "}", lastItem(specifiers), firstNonNull(source, semicolonToken, value), true);
+                } else {
+                    lBraceToken = createGapToken("LBrace", "{", exportToken, firstNonNull(fromToken, semicolonToken, value), false);
+                    rBraceToken = createGapToken("RBrace", "}", firstNonNull(lBraceToken, exportToken), firstNonNull(fromToken, semicolonToken, value), true);
+                }
+            }
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "ExportNamedDeclaration");
+            fields.put("declaration", declaration);
+            fields.put("specifiers", wrapListItems(specifiers, "specifier"));
+            fields.put("source", source);
+            putIfNotNull(fields, "exportToken", exportToken);
+            putIfNotNull(fields, "fromToken", fromToken);
+            putIfNotNull(fields, "lBraceToken", lBraceToken);
+            putIfNotNull(fields, "rBraceToken", rBraceToken);
+            putIfNotNull(fields, "semicolonToken", semicolonToken);
+            fields.put("loc", copyLocation(readProperty(value, "location"), null));
+            return fields;
+        }
+
+        private Map<String, Object> extractSpreadElementFields(Object value) {
+            Object argument = readProperty(value, "argument");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "SpreadElement");
+            fields.put("argument", argument);
+            putIfNotNull(fields, "ellipsisToken", createLeadingToken("Ellipsis", "...", value, argument));
+            fields.put("loc", readProperty(value, "location"));
+            return fields;
+        }
+
+        private Map<String, Object> extractPropertyFields(Object value) {
+            Object key = readProperty(value, "key");
+            Object propertyValue = readProperty(value, "value");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "Property");
+            fields.put("key", key);
+            fields.put("value", propertyValue);
+            fields.put("kind", readProperty(value, "kind"));
+            fields.put("method", asBoolean(readProperty(value, "method")));
+            fields.put("shorthand", asBoolean(readProperty(value, "shorthand")));
+            fields.put("computed", asBoolean(readProperty(value, "computed")));
+            fields.put("loc", readProperty(value, "location"));
+            if (!asBoolean(readProperty(value, "shorthand")) && !asBoolean(readProperty(value, "method"))) {
+                putIfNotNull(fields, "colonToken", createGapToken("Colon", ":", key, propertyValue, false));
+            }
+            return fields;
+        }
+
+        private Map<String, Object> extractAssignmentPatternFields(Object value) {
+            Object left = readProperty(value, "left");
+            Object right = readProperty(value, "right");
+            LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
+            fields.put("type", "AssignmentPattern");
+            fields.put("left", left);
+            fields.put("right", right);
+            putIfNotNull(fields, "equalToken", createGapToken("Assign", "=", left, right, false));
+            fields.put("loc", firstNonNull(
+                    createSyntheticLocation("SingleNameBinding", left, right),
+                    copyLocation(readProperty(value, "location"), "SingleNameBinding")));
+            return fields;
+        }
+
+        private Object firstNonNull(Object... values) {
+            if (values == null) {
+                return null;
+            }
+            for (Object value : values) {
+                if (value != null) {
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        private Object lastNonNull(Object... values) {
+            if (values == null) {
+                return null;
+            }
+            for (int index = values.length - 1; index >= 0; index--) {
+                if (values[index] != null) {
+                    return values[index];
+                }
+            }
+            return null;
+        }
+
+        private Object firstItem(List<?> items) {
+            return items == null || items.isEmpty() ? null : items.get(0);
+        }
+
+        private Object lastItem(List<?> items) {
+            return items == null || items.isEmpty() ? null : items.get(items.size() - 1);
+        }
+
+        private Object createFunctionLParenToken(Object id, List<?> params, Object body, Object owner) {
+            Object anchor = id != null ? id : createLeadingKeywordToken("Function", "function", owner, firstNonNull(firstItem(params), body));
+            return createGapToken("LParen", "(", anchor, firstNonNull(firstItem(params), body, owner), false);
+        }
+
+        private Object createFunctionRParenToken(List<?> params, Object body, Object owner) {
+            Object anchor = lastItem(params);
+            if (anchor == null) {
+                anchor = createFunctionLParenToken(null, params, body, owner);
+            }
+            return createGapToken("RParen", ")", anchor, body != null ? body : owner, true);
+        }
+
+        private Object createOptionalCallToken(Object callee, List<?> arguments, Object owner) {
+            Object firstArgument = firstItem(arguments);
+            Object direct = createGapToken("OptionalChaining", "?.", callee, firstNonNull(firstArgument, owner), false);
+            if (direct != null) {
+                return direct;
+            }
+            int from = endIndex(callee);
+            int to = endIndex(owner);
+            if (from < 0 && to < 0) {
+                return null;
+            }
+            if (from < 0) {
+                from = Math.max(0, to - 32);
+            }
+            if (to < 0) {
+                to = Math.min(sourceText.length(), from + 32);
+            }
+            return createTokenBetween("OptionalChaining", "?.", from, to, false);
+        }
+
+        private Object createCallLParenToken(Object callee, List<?> arguments, Object owner) {
+            Object firstArgument = firstItem(arguments);
+            Object direct = createGapToken("LParen", "(", callee, firstNonNull(firstArgument, owner), false);
+            if (direct != null) {
+                return direct;
+            }
+            int ownerStart = startIndex(owner);
+            int beforeArgument = firstArgument != null ? startIndex(firstArgument) : endIndex(owner);
+            if (ownerStart >= 0 && beforeArgument >= 0) {
+                Object nearestInOwner = createTokenBetween("LParen", "(", ownerStart, beforeArgument, true);
+                if (nearestInOwner != null) {
+                    return nearestInOwner;
+                }
+            }
+            int from = endIndex(callee);
+            int to = endIndex(owner);
+            if (from < 0 && to < 0) {
+                return null;
+            }
+            if (from < 0) {
+                from = Math.max(0, to - 32);
+            }
+            if (to < 0) {
+                to = Math.min(sourceText.length(), from + 32);
+            }
+            return createTokenBetween("LParen", "(", from, to, false);
+        }
+
+        private Object createCallRParenToken(List<?> arguments, Object owner) {
+            Object anchor = lastItem(arguments);
+            if (anchor == null) {
+                anchor = createCallLParenToken(readProperty(owner, "callee"), arguments, owner);
+            }
+            return createClosingDelimiterToken("RParen", ")", anchor, owner);
+        }
+
+        private Object createClosingDelimiterToken(String type, String tokenValue, Object anchorNode, Object owner) {
+            int from = endIndex(anchorNode);
+            int to = endIndex(owner);
+            if (from < 0 && to < 0) {
+                return null;
+            }
+            if (from < 0) {
+                from = Math.max(0, to - 32);
+            }
+            if (to < 0) {
+                to = Math.min(sourceText.length(), from + 32);
+            }
+            return createTokenBetween(type, tokenValue, from, to, true);
+        }
+
+        private Object createHeaderSemicolonToken(Object left, Object right, Object fallback, Object owner, int order) {
+            if (order == 1) {
+                Object next = right != null ? right : fallback;
+                int from = startIndex(left);
+                int to = startIndex(next);
+                if (from >= 0 && to >= 0) {
+                    Object firstHeaderSemicolon = createTokenBetween("Semicolon", ";", from, to, true);
+                    if (firstHeaderSemicolon != null) {
+                        return firstHeaderSemicolon;
+                    }
+                }
+            }
+            Object next = right != null ? right : fallback;
+            Object anchor = left != null ? left : createGapToken("LParen", "(", createLeadingKeywordToken("For", "for", owner, next), next != null ? next : owner, false);
+            return createGapToken("Semicolon", ";", anchor, next != null ? next : owner, false);
+        }
+
+        private Object createHeaderSemicolonToken(Object left, Object right, Object owner, int order) {
+            return createGapToken("Semicolon", ";", left != null ? left : owner, right != null ? right : owner, false);
+        }
+
+        private Object createLeadingKeywordToken(String type, String tokenValue, Object owner, Object nextNode) {
+            return createLeadingToken(type, tokenValue, owner, nextNode);
+        }
+
+        private Object createLeadingToken(String type, String tokenValue, Object owner, Object nextNode) {
+            int ownerStart = startIndex(owner);
+            int nextStart = startIndex(nextNode);
+            if (ownerStart < 0 && nextStart < 0) {
+                return null;
+            }
+            int from = ownerStart >= 0 ? ownerStart : Math.max(0, nextStart - 32);
+            int to = nextStart >= 0 ? nextStart : Math.min(sourceText.length(), from + 32);
+            return createTokenBetween(type, tokenValue, from, to, false);
+        }
+
+        private Object createTrailingToken(String type, String tokenValue, Object anchorNode, Object owner) {
+            int anchorEnd = endIndex(anchorNode);
+            int ownerEnd = endIndex(owner);
+            if (anchorEnd < 0 && ownerEnd < 0) {
+                return null;
+            }
+            int from = anchorEnd >= 0 ? anchorEnd : Math.max(0, ownerEnd - 32);
+            int to = ownerEnd >= 0 ? Math.min(sourceText.length(), ownerEnd + tokenValue.length() + 8) : Math.min(sourceText.length(), from + 32);
+            return createTokenBetween(type, tokenValue, from, to, true);
+        }
+
+        private Object createGapToken(String type, String tokenValue, Object leftNode, Object rightNode, boolean preferLast) {
+            int from = endIndex(leftNode);
+            int to = startIndex(rightNode);
+            if (from < 0 && to < 0) {
+                return null;
+            }
+            if (from < 0) {
+                from = Math.max(0, to - 32);
+            }
+            if (to < 0) {
+                to = Math.min(sourceText.length(), from + 32);
+            }
+            return createTokenBetween(type, tokenValue, from, to, preferLast);
+        }
+
+        private Object createEnclosingToken(String type, String tokenValue, Object owner, List<?> items, boolean trailing) {
+            int ownerStart = startIndex(owner);
+            int ownerEnd = endIndex(owner);
+            Object first = firstItem(items);
+            Object last = lastItem(items);
+            if (!trailing) {
+                int to = first != null ? startIndex(first) : Math.min(sourceText.length(), ownerStart + 32);
+                return createTokenBetween(type, tokenValue, Math.max(0, ownerStart - 32), to, true);
+            }
+            int from = last != null ? endIndex(last) : Math.max(0, ownerEnd - 32);
+            return createTokenBetween(type, tokenValue, from, Math.min(sourceText.length(), ownerEnd + 32), false);
+        }
+
+        private Map<String, Object> createTokenBetween(String type, String tokenValue, int from, int to, boolean preferLast) {
+            if (sourceText.isEmpty()) {
+                return null;
+            }
+            int normalizedFrom = clampIndex(Math.min(from, to));
+            int normalizedTo = clampIndex(Math.max(from, to));
+            if (normalizedTo < normalizedFrom) {
+                return null;
+            }
+            int tokenIndex = preferLast
+                    ? findLastTokenIndex(tokenValue, normalizedFrom, normalizedTo)
+                    : findTokenIndex(tokenValue, normalizedFrom, normalizedTo);
+            if (tokenIndex < 0) {
+                return null;
+            }
+            return createToken(type, tokenValue, tokenIndex, tokenIndex + tokenValue.length());
+        }
+
+        private List<Map<String, Object>> createCommaTokens(List<?> items) {
+            List<Map<String, Object>> tokens = new ArrayList<>();
+            if (items == null) {
+                return tokens;
+            }
+            for (int index = 0; index + 1 < items.size(); index++) {
+                Map<String, Object> commaToken = createCommaToken(items.get(index), items.get(index + 1));
+                if (commaToken != null) {
+                    tokens.add(commaToken);
+                }
+            }
+            return tokens;
+        }
+
+        private Map<String, Object> createCommaToken(Object current, Object next) {
+            return createTokenBetween("Comma", ",", endIndex(current), startIndex(next), false);
+        }
+
+        private int findTokenIndex(String tokenValue, int from, int to) {
+            if (tokenValue == null || tokenValue.isEmpty() || sourceText.isEmpty()) {
+                return -1;
+            }
+            int start = clampIndex(from);
+            int end = clampIndex(to);
+            if (end < start) {
+                return -1;
+            }
+            int index = sourceText.indexOf(tokenValue, start);
+            if (index < 0) {
+                return -1;
+            }
+            return index + tokenValue.length() <= end ? index : -1;
+        }
+
+        private int findLastTokenIndex(String tokenValue, int from, int to) {
+            if (tokenValue == null || tokenValue.isEmpty() || sourceText.isEmpty()) {
+                return -1;
+            }
+            int start = clampIndex(from);
+            int end = clampIndex(to);
+            if (end < start) {
+                return -1;
+            }
+            int searchFrom = Math.max(start, end - tokenValue.length());
+            int index = sourceText.lastIndexOf(tokenValue, searchFrom);
+            if (index < start) {
+                return -1;
+            }
+            return index + tokenValue.length() <= end ? index : -1;
+        }
+
+        private int clampIndex(int index) {
+            return Math.max(0, Math.min(index, sourceText.length()));
+        }
+
+        private int startIndex(Object value) {
+            Object location = locationOf(value);
+            if (location == null) {
+                return -1;
+            }
+            Object start = readProperty(location, "start");
+            return asInt(readProperty(start, "index"));
+        }
+
+        private int endIndex(Object value) {
+            Object location = locationOf(value);
+            if (location == null) {
+                return -1;
+            }
+            Object end = readProperty(location, "end");
+            return asInt(readProperty(end, "index"));
+        }
+
+        private Object locationOf(Object value) {
+            if (value == null) {
+                return null;
+            }
+            if (value instanceof Map<?, ?> map) {
+                if (map.containsKey("loc")) {
+                    return map.get("loc");
+                }
+                if (map.containsKey("location")) {
+                    return map.get("location");
+                }
+                return value;
+            }
+            if ("SourceLocation".equals(value.getClass().getSimpleName())) {
+                return value;
+            }
+            return readProperty(value, "location");
+        }
+
+        private Map<String, Object> createToken(String type, String tokenValue, int startIndex, int endIndex) {
+            LinkedHashMap<String, Object> token = new LinkedHashMap<>();
+            token.put("type", type);
+            token.put("value", tokenValue);
+            token.put("loc", createLocation(type, tokenValue, startIndex, endIndex));
+            return token;
+        }
+
+        private Map<String, Object> createLocation(String type, String value, int startIndex, int endIndex) {
+            LinkedHashMap<String, Object> location = new LinkedHashMap<>();
+            if (type != null) {
+                location.put("type", type);
+            }
+            if (value != null) {
+                location.put("value", value);
+            }
+            location.put("start", createPosition(startIndex));
+            location.put("end", createPosition(endIndex));
+            return location;
+        }
+
+        private Object createSyntheticLocation(String type, Object startNode, Object endNode) {
+            int start = startIndex(startNode);
+            int end = endIndex(endNode);
+            if (start < 0 || end < 0 || end < start) {
+                return null;
+            }
+            return createLocation(type, null, start, end);
+        }
+
+        private Object createLiteralLocation(String raw, Object literalValue, Object owner) {
+            int start = startIndex(owner);
+            int end = endIndex(owner);
+            if (start < 0 || end < 0 || end < start) {
+                return null;
+            }
+            if (literalValue == null) {
+                return createLocation("NullLiteral", "null", start, end);
+            }
+            if (literalValue instanceof String) {
+                return createLocation("StringLiteral", raw, start, end);
+            }
+            if (literalValue instanceof Number) {
+                return createLocation("NumericLiteral", raw, start, end);
+            }
+            if (literalValue instanceof Boolean) {
+                return createLocation("BooleanLiteral", raw != null ? raw : literalValue.toString(), start, end);
+            }
+            if (raw != null && raw.startsWith("/") && raw.lastIndexOf('/') > 0) {
+                return createLocation("RegularExpressionLiteral", raw, start, end);
+            }
+            return null;
+        }
+
+        private Map<String, Object> createPosition(int index) {
+            LinkedHashMap<String, Object> position = new LinkedHashMap<>();
+            int safeIndex = clampIndex(index);
+            PositionInfo positionInfo = resolvePositionInfo(safeIndex, 0, 0);
+            position.put("index", safeIndex);
+            position.put("line", positionInfo.line());
+            position.put("column", positionInfo.column());
+            return position;
+        }
+
+        private String wrapperKey(Object owner, String originalName) {
+            String simpleName = owner.getClass().getSimpleName();
+            if ("specifiers".equals(originalName)
+                    && ("ImportDeclaration".equals(simpleName) || "ExportNamedDeclaration".equals(simpleName))) {
+                return "specifier";
+            }
+            if ("arguments".equals(originalName)
+                    && ("CallExpression".equals(simpleName) || "NewExpression".equals(simpleName))) {
+                return "argument";
+            }
+            if ("params".equals(originalName)
+                    && ("FunctionDeclaration".equals(simpleName)
+                    || "FunctionExpression".equals(simpleName)
+                    || "ArrowFunctionExpression".equals(simpleName))) {
+                return "param";
+            }
+            if ("elements".equals(originalName)
+                    && ("ArrayExpression".equals(simpleName) || "ArrayPattern".equals(simpleName))) {
+                return "element";
+            }
+            if ("properties".equals(originalName)
+                    && ("ObjectExpression".equals(simpleName) || "ObjectPattern".equals(simpleName))) {
+                return "property";
+            }
+            return null;
+        }
+
+        private String toAstTypeName(Object astType) {
+            if (astType == null) {
+                return "Unknown";
+            }
+            String rawName = astType instanceof Enum<?> e ? e.name() : String.valueOf(astType);
+            String[] parts = rawName.toLowerCase().split("_+");
+            StringBuilder out = new StringBuilder();
+            for (String part : parts) {
+                if (part.isEmpty()) {
+                    continue;
+                }
+                out.append(Character.toUpperCase(part.charAt(0)));
+                if (part.length() > 1) {
+                    out.append(part.substring(1));
+                }
+            }
+            return out.length() == 0 ? rawName : out.toString();
+        }
+
+        private List<Map<String, Object>> wrapListItems(List<?> list, String key) {
+            List<Map<String, Object>> wrapped = new ArrayList<>();
+            for (int index = 0; index < list.size(); index++) {
+                Object item = list.get(index);
+                LinkedHashMap<String, Object> itemObject = new LinkedHashMap<>();
+                itemObject.put(key, item);
+                if (index + 1 < list.size()) {
+                    Map<String, Object> commaToken = createCommaToken(item, list.get(index + 1));
+                    if (commaToken != null) {
+                        itemObject.put("commaToken", commaToken);
+                    }
+                }
+                wrapped.add(itemObject);
+            }
+            return wrapped;
+        }
+
+        private List<?> asList(Object value) {
+            if (value instanceof List<?> list) {
+                return list;
+            }
+            if (value instanceof Collection<?> collection) {
+                return new ArrayList<>(collection);
+            }
+            return List.of();
+        }
+
+        private Object readProperty(Object value, String propertyName) {
+            if (value instanceof Map<?, ?> map) {
+                return map.get(propertyName);
+            }
+            try {
+                Method method = value.getClass().getMethod(propertyName);
+                return method.invoke(value);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+
+        private boolean asBoolean(Object value) {
+            return value instanceof Boolean bool && bool;
+        }
+
+        private int asInt(Object value) {
+            return value instanceof Number number ? number.intValue() : 0;
+        }
+
+        private String asString(Object value) {
+            return value instanceof String text ? text : null;
+        }
+
+        private boolean shouldPreserveNullLocationValue(Object type, Object start, Object end) {
+            if (!(type instanceof String textType)) {
+                return false;
+            }
+            if ("ImportSpecifier".equals(textType)
+                    || "ImportDefaultSpecifier".equals(textType)
+                    || "ImportNamespaceSpecifier".equals(textType)) {
+                return true;
+            }
+            int startIndex = asInt(readProperty(start, "index"));
+            int endIndex = asInt(readProperty(end, "index"));
+            int startLine = asInt(readProperty(start, "line"));
+            int startColumn = asInt(readProperty(start, "column"));
+            int endLine = asInt(readProperty(end, "line"));
+            int endColumn = asInt(readProperty(end, "column"));
+            return startIndex == 0
+                    && endIndex == 0
+                    && startLine == 0
+                    && startColumn == 0
+                    && endLine == 0
+                    && endColumn == 0;
+        }
+
+        private Object createOperatorToken(Object owner, Object rawOperator) {
+            String operatorValue = asString(rawOperator);
+            if (operatorValue == null || operatorValue.isBlank() || owner == null) {
+                return null;
+            }
+            String simpleName = owner.getClass().getSimpleName();
+            return switch (simpleName) {
+                case "BinaryExpression", "LogicalExpression", "AssignmentExpression" -> {
+                    Object left = readProperty(owner, "left");
+                    Object right = readProperty(owner, "right");
+                    Object direct = createGapToken(operatorTokenType(operatorValue), operatorValue, left, right, false);
+                    if (direct != null) {
+                        yield direct;
+                    }
+                    int ownerStart = startIndex(owner);
+                    int rightStart = startIndex(right);
+                    if (ownerStart >= 0 && rightStart >= 0) {
+                        Object nearestInOwner = createTokenBetween(
+                                operatorTokenType(operatorValue),
+                                operatorValue,
+                                ownerStart,
+                                rightStart,
+                                true);
+                        if (nearestInOwner != null) {
+                            yield nearestInOwner;
+                        }
+                    }
+                    yield null;
+                }
+                case "UnaryExpression" -> {
+                    Object argument = readProperty(owner, "argument");
+                    yield createLeadingToken(operatorTokenType(operatorValue), operatorValue, owner, argument);
+                }
+                case "UpdateExpression" -> {
+                    Object argument = readProperty(owner, "argument");
+                    boolean prefix = asBoolean(readProperty(owner, "prefix"));
+                    yield prefix
+                            ? createLeadingToken(operatorTokenType(operatorValue), operatorValue, owner, argument)
+                            : createTrailingToken(operatorTokenType(operatorValue), operatorValue, argument, owner);
+                }
+                default -> null;
+            };
+        }
+
+        private Object createVariableKindToken(String kind, Object owner, Object firstDeclaration) {
+            if (kind == null || kind.isBlank()) {
+                return null;
+            }
+            if ("let".equals(kind)) {
+                return rewriteTokenLocationType(createLeadingKeywordToken("let", kind, owner, firstDeclaration), "IdentifierName");
+            }
+            String tokenType = switch (kind) {
+                case "const" -> "Const";
+                case "var" -> "Var";
+                default -> toAstTypeName(kind);
+            };
+            return createLeadingKeywordToken(tokenType, kind, owner, firstDeclaration);
+        }
+
+        private String operatorTokenType(String operatorValue) {
+            return switch (operatorValue) {
+                case "&&" -> "LogicalAnd";
+                case "||" -> "LogicalOr";
+                case "??" -> "NullishCoalescing";
+                case "===" -> "StrictEqual";
+                case "!==" -> "StrictNotEqual";
+                case "==" -> "Equal";
+                case "!=" -> "NotEqual";
+                case "<" -> "Less";
+                case ">" -> "Greater";
+                case "<=" -> "LessEqual";
+                case ">=" -> "GreaterEqual";
+                case "instanceof" -> "Instanceof";
+                case "in" -> "In";
+                case "<<" -> "LeftShift";
+                case ">>" -> "RightShift";
+                case ">>>" -> "UnsignedRightShift";
+                case "+" -> "Plus";
+                case "-" -> "Minus";
+                case "*" -> "Asterisk";
+                case "/" -> "Slash";
+                case "%" -> "Modulo";
+                case "&" -> "BitwiseAnd";
+                case "^" -> "BitwiseXor";
+                case "|" -> "BitwiseOr";
+                case "**" -> "Exponentiation";
+                case "=" -> "Assign";
+                case "+=" -> "PlusAssign";
+                case "-=" -> "MinusAssign";
+                case "*=" -> "MultiplyAssign";
+                case "/=" -> "DivideAssign";
+                case "%=" -> "ModuloAssign";
+                case "<<=" -> "LeftShiftAssign";
+                case ">>=" -> "RightShiftAssign";
+                case ">>>=" -> "UnsignedRightShiftAssign";
+                case "&=" -> "BitwiseAndAssign";
+                case "^=" -> "BitwiseXorAssign";
+                case "|=" -> "BitwiseOrAssign";
+                case "&&=" -> "LogicalAndAssign";
+                case "||=" -> "LogicalOrAssign";
+                case "??=" -> "NullishCoalescingAssign";
+                case "!" -> "LogicalNot";
+                case "~" -> "BitwiseNot";
+                case "typeof" -> "Typeof";
+                case "void" -> "Void";
+                case "delete" -> "Delete";
+                case "++" -> "Increment";
+                case "--" -> "Decrement";
+                default -> toAstTypeName(operatorValue);
+            };
+        }
+
+        private Object normalizeMemberExpressionLocation(Object object, Object rawLocation) {
+            Object current = object;
+            while (current != null && "MemberExpression".equals(simpleName(current))) {
+                Object next = readProperty(current, "object");
+                if (next == null) {
+                    break;
+                }
+                current = next;
+            }
+            Object objectLocation = locationOf(current);
+            if (objectLocation != null) {
+                return copyLocation(objectLocation, null);
+            }
+            return copyLocation(rawLocation, null);
+        }
+
+        private Object copyLocation(Object rawLocation, String overrideType) {
+            if (rawLocation == null) {
+                return rawLocation;
+            }
+            LinkedHashMap<String, Object> location = new LinkedHashMap<>();
+            Object currentType = readProperty(rawLocation, "type");
+            Object type = overrideType != null ? overrideType : currentType;
+            Object start = readProperty(rawLocation, "start");
+            Object end = readProperty(rawLocation, "end");
+            Object value = readProperty(rawLocation, "value");
+            putLocationFields(location, type, value, start, end);
+            return location;
+        }
+
+        private void putLocationFields(
+                LinkedHashMap<String, Object> location,
+                Object type,
+                Object value,
+                Object start,
+                Object end) {
+            boolean preserveNullValue = shouldPreserveNullLocationValue(type, start, end);
+            if (preserveNullValue) {
+                location.put("value", value);
+            }
+            if (type != null) {
+                location.put("type", type);
+            }
+            if (!preserveNullValue && value != null) {
+                location.put("value", value);
+            }
+            if (start != null) {
+                location.put("start", start);
+            }
+            if (end != null) {
+                location.put("end", end);
+            }
+        }
+
+        private Object rewriteTokenLocationType(Object rawToken, String locationType) {
+            if (!(rawToken instanceof Map<?, ?> tokenMap)) {
+                return rawToken;
+            }
+            @SuppressWarnings("unchecked")
+            LinkedHashMap<String, Object> token = new LinkedHashMap<>((Map<String, Object>) tokenMap);
+            Object rawLoc = token.get("loc");
+            if (rawLoc instanceof Map<?, ?> locMap) {
+                @SuppressWarnings("unchecked")
+                LinkedHashMap<String, Object> loc = new LinkedHashMap<>((Map<String, Object>) locMap);
+                loc.put("type", locationType);
+                token.put("loc", loc);
+            }
+            return token;
+        }
+
+        private boolean sameNodeSpan(Object left, Object right) {
+            if (left == null || right == null) {
+                return false;
+            }
+            return startIndex(left) == startIndex(right) && endIndex(left) == endIndex(right);
+        }
+
+        private PositionInfo resolvePositionInfo(int index, int fallbackLine, int fallbackColumn) {
+            if (index < 0 || sourceText.isEmpty()) {
+                return new PositionInfo(fallbackLine, fallbackColumn);
+            }
+            int safeIndex = Math.min(index, sourceText.length());
+            int line = 1;
+            int column = 1;
+            int i = 0;
+            while (i < safeIndex) {
+                char ch = sourceText.charAt(i);
+                if (ch == '\r') {
+                    if (i + 1 < safeIndex && sourceText.charAt(i + 1) == '\n') {
+                        i++;
+                    }
+                    line++;
+                    column = 1;
+                } else if (ch == '\n' || ch == '\u2028' || ch == '\u2029') {
+                    line++;
+                    column = 1;
+                } else {
+                    column++;
+                }
+                i++;
+            }
+            return new PositionInfo(line, column);
+        }
+
+        private record PositionInfo(int line, int column) {
+        }
+
+        private Map<String, Object> createToken(String type, String tokenValue) {
+            LinkedHashMap<String, Object> token = new LinkedHashMap<>();
+            token.put("type", type);
+            token.put("value", tokenValue);
+            return token;
+        }
+
+        private List<Map<String, Object>> createRepeatedTokens(String type, String tokenValue, int count) {
+            List<Map<String, Object>> tokens = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                tokens.add(createToken(type, tokenValue));
+            }
+            return tokens;
+        }
+
+        private boolean looksLikeRegexLiteral(String raw) {
+            return raw != null && REGEX_LITERAL_PATTERN.matcher(raw).matches();
+        }
+
+        private boolean looksLikeQuotedString(String raw) {
+            if (raw == null || raw.length() < 2) {
+                return false;
+            }
+            char first = raw.charAt(0);
+            char last = raw.charAt(raw.length() - 1);
+            return (first == '"' && last == '"') || (first == '\'' && last == '\'');
+        }
+
+        private Map<String, Object> parseRegexLiteral(String raw) {
+            LinkedHashMap<String, Object> regex = new LinkedHashMap<>();
+            Matcher matcher = REGEX_LITERAL_PATTERN.matcher(raw == null ? "" : raw);
+            if (matcher.matches()) {
+                regex.put("pattern", matcher.group(1));
+                regex.put("flags", matcher.group(2));
+            }
+            return regex;
+        }
+
+        private String normalizeTemplateChunk(String text, boolean tail) {
+            if (text == null) {
+                return null;
+            }
+            String normalized = text;
+            if (!normalized.isEmpty() && (normalized.charAt(0) == '`' || normalized.charAt(0) == '}')) {
+                normalized = normalized.substring(1);
+            }
+            if (tail) {
+                if (!normalized.isEmpty() && normalized.charAt(normalized.length() - 1) == '`') {
+                    normalized = normalized.substring(0, normalized.length() - 1);
+                }
+            } else if (normalized.endsWith("${")) {
+                normalized = normalized.substring(0, normalized.length() - 2);
+            }
+            return normalized;
         }
 
         private void writeString(String text) {

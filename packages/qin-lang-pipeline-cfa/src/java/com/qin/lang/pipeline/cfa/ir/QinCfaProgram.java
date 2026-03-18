@@ -284,7 +284,7 @@ public record QinCfaProgram(
     public record NullLiteral() implements Expression {
     }
 
-    public record NumberLiteral(int value) implements Expression {
+    public record NumberLiteral(double value) implements Expression {
     }
 
     public record ObjectLiteral(List<ObjectProperty> properties) implements Expression {

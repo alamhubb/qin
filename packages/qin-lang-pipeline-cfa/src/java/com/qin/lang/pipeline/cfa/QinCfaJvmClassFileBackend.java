@@ -28,8 +28,11 @@ public final class QinCfaJvmClassFileBackend {
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
     private static final ClassDesc JS_SDK_FUNCTIONS_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmFunctions");
     private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
+    private static final ClassDesc JS_SDK_JSON_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmJson");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
+    private static final ClassDesc DOUBLE_DESC = ClassDesc.of("java.lang.Double");
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
+    private static final ClassDesc STRING_BUILDER_DESC = ClassDesc.of("java.lang.StringBuilder");
 
     private static final MethodTypeDesc VOID_INIT = MethodTypeDesc.ofDescriptor("()V");
     private static final MethodTypeDesc RUN_SIGNATURE = MethodTypeDesc.ofDescriptor("()Ljava/lang/Object;");
@@ -38,6 +41,8 @@ public final class QinCfaJvmClassFileBackend {
     private static final MethodTypeDesc CONSOLE_LOG_SIGNATURE = MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)V");
     private static final MethodTypeDesc INTEGER_VALUE_OF_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(I)Ljava/lang/Integer;");
+    private static final MethodTypeDesc DOUBLE_VALUE_OF_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(D)Ljava/lang/Double;");
     private static final MethodTypeDesc BOOLEAN_VALUE_OF_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Z)Ljava/lang/Boolean;");
     private static final MethodTypeDesc FUNCTION_CONSTANT_RETURN_SIGNATURE =
@@ -56,8 +61,18 @@ public final class QinCfaJvmClassFileBackend {
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc LIST_ADD_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Z");
+    private static final MethodTypeDesc JSON_PARSE_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/String;)Ljava/lang/Object;");
+    private static final MethodTypeDesc STRING_BUILDER_INIT_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("()V");
+    private static final MethodTypeDesc STRING_BUILDER_APPEND_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+    private static final MethodTypeDesc STRING_BUILDER_TO_STRING_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("()Ljava/lang/String;");
     private static final int DECLARATION_CHUNK_SIZE = 16;
     private static final int RUNTIME_CHUNK_SIZE = 64;
+    private static final int JSON_LITERAL_EMIT_THRESHOLD = 1024;
+    private static final int STRING_CONSTANT_CHUNK_SIZE = 12_000;
     private static final List<ChunkSizing> CHUNK_SIZING_FALLBACKS = List.of(
             new ChunkSizing(DECLARATION_CHUNK_SIZE, RUNTIME_CHUNK_SIZE),
             new ChunkSizing(8, 32),
@@ -496,7 +511,7 @@ public final class QinCfaJvmClassFileBackend {
             QinCfaProgram.Expression expression) {
         if (expression instanceof QinCfaProgram.NumberLiteral numberLiteral) {
             code.loadConstant(numberLiteral.value());
-            code.invokestatic(INTEGER_DESC, "valueOf", INTEGER_VALUE_OF_SIGNATURE);
+            code.invokestatic(DOUBLE_DESC, "valueOf", DOUBLE_VALUE_OF_SIGNATURE);
             return;
         }
         if (expression instanceof QinCfaProgram.StringLiteral stringLiteral) {
@@ -513,10 +528,16 @@ public final class QinCfaJvmClassFileBackend {
             return;
         }
         if (expression instanceof QinCfaProgram.ObjectLiteral objectLiteral) {
+            if (emitLargeStaticJsonLiteralIfPossible(code, expression)) {
+                return;
+            }
             emitObjectLiteralAsObject(code, generatedClassDesc, bindings, objectLiteral);
             return;
         }
         if (expression instanceof QinCfaProgram.ArrayLiteral arrayLiteral) {
+            if (emitLargeStaticJsonLiteralIfPossible(code, expression)) {
+                return;
+            }
             emitArrayLiteralAsObject(code, generatedClassDesc, bindings, arrayLiteral);
             return;
         }
@@ -593,6 +614,126 @@ public final class QinCfaJvmClassFileBackend {
             return true;
         }
         return false;
+    }
+
+    private boolean emitLargeStaticJsonLiteralIfPossible(CodeBuilder code, QinCfaProgram.Expression expression) {
+        String json = trySerializeJsonLiteral(expression);
+        if (json == null || json.length() < JSON_LITERAL_EMIT_THRESHOLD) {
+            return false;
+        }
+        emitStringConstant(code, json);
+        code.invokestatic(JS_SDK_JSON_DESC, "parse", JSON_PARSE_SIGNATURE);
+        return true;
+    }
+
+    private void emitStringConstant(CodeBuilder code, String value) {
+        if (value.length() <= STRING_CONSTANT_CHUNK_SIZE) {
+            code.ldc(value);
+            return;
+        }
+        code.new_(STRING_BUILDER_DESC);
+        code.dup();
+        code.invokespecial(STRING_BUILDER_DESC, "<init>", STRING_BUILDER_INIT_SIGNATURE);
+        int cursor = 0;
+        while (cursor < value.length()) {
+            int next = Math.min(value.length(), cursor + STRING_CONSTANT_CHUNK_SIZE);
+            code.ldc(value.substring(cursor, next));
+            code.invokevirtual(STRING_BUILDER_DESC, "append", STRING_BUILDER_APPEND_SIGNATURE);
+            cursor = next;
+        }
+        code.invokevirtual(STRING_BUILDER_DESC, "toString", STRING_BUILDER_TO_STRING_SIGNATURE);
+    }
+
+    private String trySerializeJsonLiteral(QinCfaProgram.Expression expression) {
+        StringBuilder out = new StringBuilder();
+        if (!appendJsonLiteral(out, expression)) {
+            return null;
+        }
+        return out.toString();
+    }
+
+    private boolean appendJsonLiteral(StringBuilder out, QinCfaProgram.Expression expression) {
+        if (expression instanceof QinCfaProgram.NumberLiteral numberLiteral) {
+            out.append(numberLiteral.value());
+            return true;
+        }
+        if (expression instanceof QinCfaProgram.StringLiteral stringLiteral) {
+            out.append('"').append(escapeJsonString(stringLiteral.value())).append('"');
+            return true;
+        }
+        if (expression instanceof QinCfaProgram.BooleanLiteral booleanLiteral) {
+            out.append(booleanLiteral.value() ? "true" : "false");
+            return true;
+        }
+        if (expression instanceof QinCfaProgram.NullLiteral) {
+            out.append("null");
+            return true;
+        }
+        if (expression instanceof QinCfaProgram.ArrayLiteral arrayLiteral) {
+            out.append('[');
+            for (int i = 0; i < arrayLiteral.elements().size(); i++) {
+                if (i > 0) {
+                    out.append(',');
+                }
+                if (!appendJsonLiteral(out, arrayLiteral.elements().get(i))) {
+                    return false;
+                }
+            }
+            out.append(']');
+            return true;
+        }
+        if (expression instanceof QinCfaProgram.ObjectLiteral objectLiteral) {
+            out.append('{');
+            for (int i = 0; i < objectLiteral.properties().size(); i++) {
+                QinCfaProgram.ObjectProperty property = objectLiteral.properties().get(i);
+                if (i > 0) {
+                    out.append(',');
+                }
+                String key = property.key();
+                if (key == null) {
+                    return false;
+                }
+                out.append('"').append(escapeJsonString(key)).append('"').append(':');
+                if (!appendJsonLiteral(out, property.value())) {
+                    return false;
+                }
+            }
+            out.append('}');
+            return true;
+        }
+        return false;
+    }
+
+    private String escapeJsonString(String text) {
+        if (text == null || text.isEmpty()) {
+            return text == null ? "" : text;
+        }
+        StringBuilder escaped = new StringBuilder(text.length() + 16);
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            switch (ch) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (ch < 0x20) {
+                        escaped.append("\\u");
+                        String hex = Integer.toHexString(ch);
+                        for (int pad = hex.length(); pad < 4; pad++) {
+                            escaped.append('0');
+                        }
+                        escaped.append(hex);
+                    } else {
+                        escaped.append(ch);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
     }
 
     private void emitObjectLiteralAsObject(
@@ -693,13 +834,23 @@ public final class QinCfaJvmClassFileBackend {
         }
 
         if (expression instanceof QinCfaProgram.NumberLiteral numberLiteral) {
+            double numberValue = numberLiteral.value();
             if (parameterType == int.class) {
-                code.loadConstant(numberLiteral.value());
+                code.loadConstant((int) numberValue);
                 return;
             }
             if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Integer.class)) {
-                code.loadConstant(numberLiteral.value());
+                code.loadConstant((int) numberValue);
                 code.invokestatic(INTEGER_DESC, "valueOf", INTEGER_VALUE_OF_SIGNATURE);
+                return;
+            }
+            if (parameterType == double.class) {
+                code.loadConstant(numberValue);
+                return;
+            }
+            if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Double.class)) {
+                code.loadConstant(numberValue);
+                code.invokestatic(DOUBLE_DESC, "valueOf", DOUBLE_VALUE_OF_SIGNATURE);
                 return;
             }
             throw new IllegalArgumentException("Unsupported numeric parameter type: " + parameterType.getName());
@@ -831,7 +982,13 @@ public final class QinCfaJvmClassFileBackend {
             if (parameterType == Integer.class) {
                 return 1;
             }
-            if (!parameterType.isPrimitive() && parameterType.isAssignableFrom(Integer.class)) {
+            if (parameterType == double.class) {
+                return 0;
+            }
+            if (parameterType == Double.class) {
+                return 1;
+            }
+            if (!parameterType.isPrimitive() && Number.class.isAssignableFrom(parameterType)) {
                 return 2;
             }
             return -1;
