@@ -81,39 +81,35 @@ public final class QinCfaJvmClassFileBackend {
             new ChunkSizing(1, 4),
             new ChunkSizing(1, 2),
             new ChunkSizing(1, 1));
+    private Set<String> runtimeImportedGlobalNames = Set.of();
 
     public byte[] compileProgram(QinCfaProgram program, String className) {
         Objects.requireNonNull(program, "program cannot be null");
         Objects.requireNonNull(className, "className cannot be null");
 
-        if (program.declarations().isEmpty()
-                && program.expressionStatements().isEmpty()
-                && program.consoleValueLogs().isEmpty()
-                && program.consoleLogs().isEmpty()
-                && program.javaStaticConsoleLogs().isEmpty()
-                && program.javaInstanceMethodCalls().isEmpty()
-                && program.javaInstanceConsoleLogs().isEmpty()) {
-            throw new IllegalArgumentException("Program has no compilable statements");
-        }
-
         validateExecutionPlan(program);
         BindingPlan bindingPlan = buildBindingPlan(program.declarations());
+        runtimeImportedGlobalNames = collectRuntimeImportedGlobalNames(program);
         ClassDesc generatedClassDesc = ClassDesc.of(className);
         IllegalArgumentException lastTooLargeError = null;
-        for (ChunkSizing sizing : CHUNK_SIZING_FALLBACKS) {
-            try {
-                return buildClassBytes(program, bindingPlan, generatedClassDesc, sizing);
-            } catch (IllegalArgumentException error) {
-                if (!isMethodTooLargeError(error)) {
-                    throw error;
+        try {
+            for (ChunkSizing sizing : CHUNK_SIZING_FALLBACKS) {
+                try {
+                    return buildClassBytes(program, bindingPlan, generatedClassDesc, sizing);
+                } catch (IllegalArgumentException error) {
+                    if (!isMethodTooLargeError(error)) {
+                        throw error;
+                    }
+                    lastTooLargeError = error;
                 }
-                lastTooLargeError = error;
             }
+            if (lastTooLargeError != null) {
+                throw lastTooLargeError;
+            }
+            throw new IllegalStateException("Failed to compile program with chunk fallbacks");
+        } finally {
+            runtimeImportedGlobalNames = Set.of();
         }
-        if (lastTooLargeError != null) {
-            throw lastTooLargeError;
-        }
-        throw new IllegalStateException("Failed to compile program with chunk fallbacks");
     }
 
     private byte[] buildClassBytes(
@@ -575,6 +571,11 @@ public final class QinCfaJvmClassFileBackend {
             code.aconst_null();
             return true;
         }
+        if (runtimeImportedGlobalNames.contains(name)) {
+            code.ldc(name);
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
+            return true;
+        }
         if ("process".equals(name)
                 || "window".equals(name)
                 || "self".equals(name)
@@ -614,6 +615,23 @@ public final class QinCfaJvmClassFileBackend {
             return true;
         }
         return false;
+    }
+
+    private Set<String> collectRuntimeImportedGlobalNames(QinCfaProgram program) {
+        Set<String> names = new LinkedHashSet<>();
+        for (QinCfaProgram.JsImport jsImport : program.jsImports()) {
+            String moduleName = jsImport.moduleName();
+            if (moduleName == null || moduleName.isBlank()) {
+                continue;
+            }
+            if (moduleName.startsWith("node:")
+                    || moduleName.startsWith("js:")
+                    || moduleName.startsWith("http://")
+                    || moduleName.startsWith("https://")) {
+                names.add(jsImport.localName());
+            }
+        }
+        return names;
     }
 
     private boolean emitLargeStaticJsonLiteralIfPossible(CodeBuilder code, QinCfaProgram.Expression expression) {

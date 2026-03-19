@@ -46,10 +46,7 @@ public class ClasspathBuilder {
         // Add current project's output directory (for incremental compilation)
         // 添加当前项目的输出目录，这样编译时可以找到已编译的类
         if (outputDir != null && !outputDir.isEmpty()) {
-            Path outputPath = Paths.get(outputDir);
-            if (Files.exists(outputPath)) {
-                cpParts.add(outputDir);
-            }
+            cpParts.add(outputDir);
         }
 
         // Add local project dependencies using auto-discovery

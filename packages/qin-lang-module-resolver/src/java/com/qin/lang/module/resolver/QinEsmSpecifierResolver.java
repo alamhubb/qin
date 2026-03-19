@@ -34,7 +34,7 @@ public final class QinEsmSpecifierResolver {
         if (importerFile == null || specifier == null || specifier.isBlank()) {
             return null;
         }
-        if (specifier.startsWith("java:") || specifier.startsWith("js:")
+        if (specifier.startsWith("java:") || specifier.startsWith("js:") || specifier.startsWith("node:")
                 || specifier.startsWith("http://") || specifier.startsWith("https://")) {
             return null;
         }

@@ -3083,7 +3083,7 @@ public final class QinSlimeFrontendAdapter {
                     fields.put("regex", parseRegexLiteral(raw));
                 } else {
                     fields.put("value", literalValue);
-                    if (raw != null && literalValue != null) {
+                    if (raw != null && literalValue != null && !(literalValue instanceof Boolean)) {
                         fields.put("raw", raw);
                     }
                     Object regex = readProperty(value, "regex");
@@ -3149,6 +3149,7 @@ public final class QinSlimeFrontendAdapter {
             Object property = readProperty(value, "property");
             boolean computed = asBoolean(readProperty(value, "computed"));
             boolean optional = asBoolean(readProperty(value, "optional"));
+            Object rawLocation = readProperty(value, "location");
             LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
             fields.put("type", optional ? "OptionalMemberExpression" : "MemberExpression");
             fields.put("object", object);
@@ -3162,10 +3163,16 @@ public final class QinSlimeFrontendAdapter {
                 putIfNotNull(fields, "optionalChainingToken", createGapToken("OptionalChaining", "?.", object, property, false));
             }
             if (computed) {
-                putIfNotNull(fields, "lBracketToken", createGapToken("LBracket", "[", object, property, false));
-                putIfNotNull(fields, "rBracketToken", createClosingDelimiterToken("RBracket", "]", property, value));
+                putIfNotNull(fields, "lBracketToken", firstNonNull(
+                        createComputedMemberLBracketToken(property),
+                        createGapToken("LBracket", "[", object, property, false)));
+                putIfNotNull(fields, "rBracketToken", firstNonNull(
+                        createComputedMemberRBracketToken(property),
+                        createClosingDelimiterToken("RBracket", "]", property, value)));
             }
-            fields.put("loc", normalizeMemberExpressionLocation(object, readProperty(value, "location")));
+            fields.put("loc", optional
+                    ? copyLocationWithoutValue(rawLocation, "OptionalChain")
+                    : normalizeMemberExpressionLocation(object, rawLocation));
             return fields;
         }
 
@@ -3632,11 +3639,15 @@ public final class QinSlimeFrontendAdapter {
 
         private Map<String, Object> extractSpreadElementFields(Object value) {
             Object argument = readProperty(value, "argument");
+            Object rawLocation = readProperty(value, "location");
             LinkedHashMap<String, Object> fields = new LinkedHashMap<>();
             fields.put("type", "SpreadElement");
             fields.put("argument", argument);
-            putIfNotNull(fields, "ellipsisToken", createLeadingToken("Ellipsis", "...", value, argument));
-            fields.put("loc", readProperty(value, "location"));
+            Object ellipsisToken = createLeadingToken("Ellipsis", "...", value, argument);
+            putIfNotNull(fields, "ellipsisToken", ellipsisToken);
+            fields.put("loc", firstNonNull(
+                    copyLocation(rawLocation, null),
+                    createSyntheticLocation("PropertyDefinition", ellipsisToken, argument)));
             return fields;
         }
 
@@ -3651,7 +3662,7 @@ public final class QinSlimeFrontendAdapter {
             fields.put("method", asBoolean(readProperty(value, "method")));
             fields.put("shorthand", asBoolean(readProperty(value, "shorthand")));
             fields.put("computed", asBoolean(readProperty(value, "computed")));
-            fields.put("loc", readProperty(value, "location"));
+            fields.put("loc", createZeroLocation("Property"));
             if (!asBoolean(readProperty(value, "shorthand")) && !asBoolean(readProperty(value, "method"))) {
                 putIfNotNull(fields, "colonToken", createGapToken("Colon", ":", key, propertyValue, false));
             }
@@ -3739,20 +3750,32 @@ public final class QinSlimeFrontendAdapter {
 
         private Object createCallLParenToken(Object callee, List<?> arguments, Object owner) {
             Object firstArgument = firstItem(arguments);
-            Object direct = createGapToken("LParen", "(", callee, firstNonNull(firstArgument, owner), false);
+            Object direct = firstArgument != null
+                    ? createGapToken("LParen", "(", callee, firstArgument, false)
+                    : null;
             if (direct != null) {
                 return direct;
             }
-            int ownerStart = startIndex(owner);
-            int beforeArgument = firstArgument != null ? startIndex(firstArgument) : endIndex(owner);
+            if (firstArgument == null) {
+                int calleeEnd = contentEndIndex(callee);
+                int ownerEnd = contentEndIndex(owner);
+                if (calleeEnd >= 0 && ownerEnd >= 0) {
+                    Object afterCallee = createTokenBetween("LParen", "(", calleeEnd, ownerEnd, false);
+                    if (afterCallee != null) {
+                        return afterCallee;
+                    }
+                }
+            }
+            int ownerStart = contentStartIndex(owner);
+            int beforeArgument = firstArgument != null ? contentStartIndex(firstArgument) : contentEndIndex(owner);
             if (ownerStart >= 0 && beforeArgument >= 0) {
                 Object nearestInOwner = createTokenBetween("LParen", "(", ownerStart, beforeArgument, true);
                 if (nearestInOwner != null) {
                     return nearestInOwner;
                 }
             }
-            int from = endIndex(callee);
-            int to = endIndex(owner);
+            int from = contentEndIndex(callee);
+            int to = contentEndIndex(owner);
             if (from < 0 && to < 0) {
                 return null;
             }
@@ -3774,8 +3797,8 @@ public final class QinSlimeFrontendAdapter {
         }
 
         private Object createClosingDelimiterToken(String type, String tokenValue, Object anchorNode, Object owner) {
-            int from = endIndex(anchorNode);
-            int to = endIndex(owner);
+            int from = contentEndIndex(anchorNode);
+            int to = contentEndIndex(owner);
             if (from < 0 && to < 0) {
                 return null;
             }
@@ -3814,8 +3837,8 @@ public final class QinSlimeFrontendAdapter {
         }
 
         private Object createLeadingToken(String type, String tokenValue, Object owner, Object nextNode) {
-            int ownerStart = startIndex(owner);
-            int nextStart = startIndex(nextNode);
+            int ownerStart = contentStartIndex(owner);
+            int nextStart = contentStartIndex(nextNode);
             if (ownerStart < 0 && nextStart < 0) {
                 return null;
             }
@@ -3825,8 +3848,8 @@ public final class QinSlimeFrontendAdapter {
         }
 
         private Object createTrailingToken(String type, String tokenValue, Object anchorNode, Object owner) {
-            int anchorEnd = endIndex(anchorNode);
-            int ownerEnd = endIndex(owner);
+            int anchorEnd = contentEndIndex(anchorNode);
+            int ownerEnd = contentEndIndex(owner);
             if (anchorEnd < 0 && ownerEnd < 0) {
                 return null;
             }
@@ -3836,8 +3859,8 @@ public final class QinSlimeFrontendAdapter {
         }
 
         private Object createGapToken(String type, String tokenValue, Object leftNode, Object rightNode, boolean preferLast) {
-            int from = endIndex(leftNode);
-            int to = startIndex(rightNode);
+            int from = contentEndIndex(leftNode);
+            int to = contentStartIndex(rightNode);
             if (from < 0 && to < 0) {
                 return null;
             }
@@ -3851,16 +3874,24 @@ public final class QinSlimeFrontendAdapter {
         }
 
         private Object createEnclosingToken(String type, String tokenValue, Object owner, List<?> items, boolean trailing) {
-            int ownerStart = startIndex(owner);
-            int ownerEnd = endIndex(owner);
+            int ownerStart = contentStartIndex(owner);
+            int ownerEnd = contentEndIndex(owner);
             Object first = firstItem(items);
             Object last = lastItem(items);
+            Object boundaryToken = createBoundaryToken(type, tokenValue, owner, trailing);
             if (!trailing) {
-                int to = first != null ? startIndex(first) : Math.min(sourceText.length(), ownerStart + 32);
+                if (boundaryToken != null) {
+                    return boundaryToken;
+                }
+                int to = first != null ? contentStartIndex(first) : Math.min(sourceText.length(), ownerStart + 32);
                 return createTokenBetween(type, tokenValue, Math.max(0, ownerStart - 32), to, true);
             }
-            int from = last != null ? endIndex(last) : Math.max(0, ownerEnd - 32);
-            return createTokenBetween(type, tokenValue, from, Math.min(sourceText.length(), ownerEnd + 32), false);
+            int from = last != null ? contentEndIndex(last) : Math.max(0, ownerEnd - 32);
+            Object trailingToken = createTokenBetween(type, tokenValue, from, Math.min(sourceText.length(), ownerEnd + 32), false);
+            if (trailingToken != null) {
+                return trailingToken;
+            }
+            return boundaryToken;
         }
 
         private Map<String, Object> createTokenBetween(String type, String tokenValue, int from, int to, boolean preferLast) {
@@ -3896,7 +3927,18 @@ public final class QinSlimeFrontendAdapter {
         }
 
         private Map<String, Object> createCommaToken(Object current, Object next) {
-            return createTokenBetween("Comma", ",", endIndex(current), startIndex(next), false);
+            int from = contentEndIndex(current);
+            int to = contentStartIndex(next);
+            if (from >= 0 && to >= 0) {
+                return createTokenBetween("Comma", ",", from, to, false);
+            }
+            if (from >= 0) {
+                return createTokenBetween("Comma", ",", from, Math.min(sourceText.length(), from + 32), false);
+            }
+            if (to >= 0) {
+                return createTokenBetween("Comma", ",", Math.max(0, to - 32), to, true);
+            }
+            return null;
         }
 
         private int findTokenIndex(String tokenValue, int from, int to) {
@@ -3936,6 +3978,126 @@ public final class QinSlimeFrontendAdapter {
             return Math.max(0, Math.min(index, sourceText.length()));
         }
 
+        private int contentStartIndex(Object value) {
+            int direct = startIndex(value);
+            return switch (simpleName(value)) {
+                case "BinaryExpression", "LogicalExpression", "AssignmentExpression" -> {
+                    int infixStart = contentStartIndex(readProperty(value, "left"));
+                    yield infixStart >= 0 ? infixStart : direct;
+                }
+                case "ConditionalExpression" -> {
+                    int conditionalStart = contentStartIndex(readProperty(value, "test"));
+                    yield conditionalStart >= 0 ? conditionalStart : direct;
+                }
+                case "SequenceExpression" -> {
+                    int sequenceStart = contentStartIndex(firstItem(asList(readProperty(value, "expressions"))));
+                    yield sequenceStart >= 0 ? sequenceStart : direct;
+                }
+                case "Property" -> {
+                    int propertyStart = firstNonNegative(
+                            contentStartIndex(readProperty(value, "key")),
+                            contentStartIndex(readProperty(value, "value")));
+                    yield propertyStart >= 0 ? propertyStart : direct;
+                }
+                case "SpreadElement" -> {
+                    int argumentStart = contentStartIndex(readProperty(value, "argument"));
+                    if (argumentStart >= 3 && sourceMatches(argumentStart - 3, "...")) {
+                        yield argumentStart - 3;
+                    }
+                    yield argumentStart;
+                }
+                case "AssignmentPattern" -> {
+                    int assignmentStart = firstNonNegative(
+                            contentStartIndex(readProperty(value, "left")),
+                            contentStartIndex(readProperty(value, "right")));
+                    yield assignmentStart >= 0 ? assignmentStart : direct;
+                }
+                case "ChainExpression" -> {
+                    int chainStart = contentStartIndex(readProperty(value, "expression"));
+                    yield chainStart >= 0 ? chainStart : direct;
+                }
+                default -> direct;
+            };
+        }
+
+        private int contentEndIndex(Object value) {
+            int direct = endIndex(value);
+            return switch (simpleName(value)) {
+                case "BinaryExpression", "LogicalExpression", "AssignmentExpression" -> {
+                    int infixEnd = contentEndIndex(readProperty(value, "right"));
+                    yield infixEnd >= 0 ? infixEnd : direct;
+                }
+                case "ConditionalExpression" -> {
+                    int conditionalEnd = contentEndIndex(readProperty(value, "alternate"));
+                    yield conditionalEnd >= 0 ? conditionalEnd : direct;
+                }
+                case "SequenceExpression" -> {
+                    int sequenceEnd = contentEndIndex(lastItem(asList(readProperty(value, "expressions"))));
+                    yield sequenceEnd >= 0 ? sequenceEnd : direct;
+                }
+                case "Property" -> {
+                    int propertyEnd = firstNonNegative(
+                            contentEndIndex(readProperty(value, "value")),
+                            contentEndIndex(readProperty(value, "key")));
+                    yield propertyEnd >= 0 ? propertyEnd : direct;
+                }
+                case "SpreadElement" -> {
+                    int spreadEnd = contentEndIndex(readProperty(value, "argument"));
+                    yield spreadEnd >= 0 ? spreadEnd : direct;
+                }
+                case "AssignmentPattern" -> {
+                    int assignmentEnd = firstNonNegative(
+                            contentEndIndex(readProperty(value, "right")),
+                            contentEndIndex(readProperty(value, "left")));
+                    yield assignmentEnd >= 0 ? assignmentEnd : direct;
+                }
+                case "CallExpression", "NewExpression" -> {
+                    Object callee = readProperty(value, "callee");
+                    List<?> arguments = asList(readProperty(value, "arguments"));
+                    Object lastArgument = lastItem(arguments);
+                    int calleeEnd = contentEndIndex(callee);
+                    if (lastArgument != null) {
+                        int lastArgumentEnd = contentEndIndex(lastArgument);
+                        if (lastArgumentEnd >= 0 && sourceMatches(lastArgumentEnd, ")")) {
+                            yield lastArgumentEnd + 1;
+                        }
+                    } else if (calleeEnd >= 0 && sourceMatches(calleeEnd, "(") && sourceMatches(calleeEnd + 1, ")")) {
+                        yield calleeEnd + 2;
+                    }
+                    if (calleeEnd >= 0) {
+                        int closingParen = findTokenIndex(")", calleeEnd, Math.min(sourceText.length(), calleeEnd + 32));
+                        if (closingParen >= 0) {
+                            yield closingParen + 1;
+                        }
+                    }
+                    yield direct;
+                }
+                case "MemberExpression" -> {
+                    Object property = readProperty(value, "property");
+                    boolean computed = asBoolean(readProperty(value, "computed"));
+                    int propertyEnd = contentEndIndex(property);
+                    if (computed && propertyEnd >= 0 && sourceMatches(propertyEnd, "]")) {
+                        yield propertyEnd + 1;
+                    }
+                    yield propertyEnd >= 0 ? propertyEnd : direct;
+                }
+                case "ChainExpression" -> contentEndIndex(readProperty(value, "expression"));
+                default -> direct;
+            };
+        }
+
+        private int firstNonNegative(int... candidates) {
+            if (candidates == null) {
+                return -1;
+            }
+            for (int candidate : candidates) {
+                if (candidate >= 0) {
+                    return candidate;
+                }
+            }
+            return -1;
+        }
+
         private int startIndex(Object value) {
             Object location = locationOf(value);
             if (location == null) {
@@ -3971,6 +4133,42 @@ public final class QinSlimeFrontendAdapter {
                 return value;
             }
             return readProperty(value, "location");
+        }
+
+        private Object createComputedMemberLBracketToken(Object property) {
+            int propertyStart = contentStartIndex(property);
+            if (propertyStart > 0 && sourceMatches(propertyStart - 1, "[")) {
+                return createToken("LBracket", "[", propertyStart - 1, propertyStart);
+            }
+            return null;
+        }
+
+        private Object createComputedMemberRBracketToken(Object property) {
+            int propertyEnd = contentEndIndex(property);
+            if (propertyEnd >= 0 && sourceMatches(propertyEnd, "]")) {
+                return createToken("RBracket", "]", propertyEnd, propertyEnd + 1);
+            }
+            return null;
+        }
+
+        private Object createBoundaryToken(String type, String tokenValue, Object owner, boolean trailing) {
+            int index = trailing
+                    ? contentEndIndex(owner) - tokenValue.length()
+                    : contentStartIndex(owner);
+            if (index < 0 || !sourceMatches(index, tokenValue)) {
+                return null;
+            }
+            return createToken(type, tokenValue, index, index + tokenValue.length());
+        }
+
+        private boolean sourceMatches(int index, String tokenValue) {
+            if (tokenValue == null || tokenValue.isEmpty() || sourceText.isEmpty()) {
+                return false;
+            }
+            if (index < 0 || index + tokenValue.length() > sourceText.length()) {
+                return false;
+            }
+            return sourceText.startsWith(tokenValue, index);
         }
 
         private Map<String, Object> createToken(String type, String tokenValue, int startIndex, int endIndex) {
@@ -4012,6 +4210,9 @@ public final class QinSlimeFrontendAdapter {
             if (literalValue == null) {
                 return createLocation("NullLiteral", "null", start, end);
             }
+            if (raw != null && raw.startsWith("/") && raw.lastIndexOf('/') > 0) {
+                return createLocation("RegularExpressionLiteral", raw, start, end);
+            }
             if (literalValue instanceof String) {
                 return createLocation("StringLiteral", raw, start, end);
             }
@@ -4019,10 +4220,8 @@ public final class QinSlimeFrontendAdapter {
                 return createLocation("NumericLiteral", raw, start, end);
             }
             if (literalValue instanceof Boolean) {
-                return createLocation("BooleanLiteral", raw != null ? raw : literalValue.toString(), start, end);
-            }
-            if (raw != null && raw.startsWith("/") && raw.lastIndexOf('/') > 0) {
-                return createLocation("RegularExpressionLiteral", raw, start, end);
+                String booleanValue = raw != null ? raw : literalValue.toString();
+                return createLocation(Boolean.TRUE.equals(literalValue) ? "True" : "False", booleanValue, start, end);
             }
             return null;
         }
@@ -4171,8 +4370,8 @@ public final class QinSlimeFrontendAdapter {
                     if (direct != null) {
                         yield direct;
                     }
-                    int ownerStart = startIndex(owner);
-                    int rightStart = startIndex(right);
+                    int ownerStart = contentStartIndex(owner);
+                    int rightStart = contentStartIndex(right);
                     if (ownerStart >= 0 && rightStart >= 0) {
                         Object nearestInOwner = createTokenBetween(
                                 operatorTokenType(operatorValue),
@@ -4299,6 +4498,27 @@ public final class QinSlimeFrontendAdapter {
             return location;
         }
 
+        private Object copyLocationWithoutValue(Object rawLocation, String overrideType) {
+            if (rawLocation == null) {
+                return null;
+            }
+            LinkedHashMap<String, Object> location = new LinkedHashMap<>();
+            Object currentType = readProperty(rawLocation, "type");
+            Object type = overrideType != null ? overrideType : currentType;
+            Object start = readProperty(rawLocation, "start");
+            Object end = readProperty(rawLocation, "end");
+            if (type != null) {
+                location.put("type", type);
+            }
+            if (start != null) {
+                location.put("start", start);
+            }
+            if (end != null) {
+                location.put("end", end);
+            }
+            return location;
+        }
+
         private void putLocationFields(
                 LinkedHashMap<String, Object> location,
                 Object type,
@@ -4321,6 +4541,20 @@ public final class QinSlimeFrontendAdapter {
             if (end != null) {
                 location.put("end", end);
             }
+        }
+
+        private Object createZeroLocation(String type) {
+            LinkedHashMap<String, Object> location = new LinkedHashMap<>();
+            putLocationFields(location, type, null, createZeroPosition(), createZeroPosition());
+            return location;
+        }
+
+        private Map<String, Object> createZeroPosition() {
+            LinkedHashMap<String, Object> position = new LinkedHashMap<>();
+            position.put("index", 0);
+            position.put("line", 0);
+            position.put("column", 0);
+            return position;
         }
 
         private Object rewriteTokenLocationType(Object rawToken, String locationType) {

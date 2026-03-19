@@ -8,18 +8,18 @@ import java.util.regex.Pattern;
 
 /**
  * Extracts import declarations for policy checks.
- * This parser is intentionally lightweight and line-oriented.
+ * This parser is intentionally lightweight but supports multiline ESM imports.
  */
 public final class QinImportParser {
     private static final Pattern IMPORT_FROM_PATTERN = Pattern.compile(
-            "^\\s*import\\s+[^;\\n]*?\\s+from\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$",
+            "^\\s*import\\s+[\\s\\S]*?\\s+from\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$",
             Pattern.MULTILINE);
 
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$",
             Pattern.MULTILINE);
     private static final Pattern EXPORT_FROM_NAMED_PATTERN = Pattern.compile(
-            "^\\s*export\\s*\\{[^}\\n]*}\\s*from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$",
+            "^\\s*export\\s*\\{[\\s\\S]*?}\\s*from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$",
             Pattern.MULTILINE);
     private static final Pattern EXPORT_FROM_ALL_PATTERN = Pattern.compile(
             "^\\s*export\\s*\\*\\s*(?:as\\s+[A-Za-z_$][\\w$]*\\s*)?from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$",

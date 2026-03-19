@@ -20,22 +20,9 @@ public final class QinIrValidator {
     }
 
     public void validate(QinIrProgram program, QinBuildTarget target) {
-        validateProgramNotEmpty(program);
         validateJavaImportPolicy(program.javaImports());
         // JS imports are now allowed for backend(main/) modules. Target-specific
         // execution constraints are handled by runtime/lowering phases.
-    }
-
-    private void validateProgramNotEmpty(QinIrProgram program) {
-        if (program.declarations().isEmpty()
-                && program.expressionStatements().isEmpty()
-                && program.consoleValueLogs().isEmpty()
-                && program.consoleLogs().isEmpty()
-                && program.javaStaticConsoleLogs().isEmpty()
-                && program.javaInstanceMethodCalls().isEmpty()
-                && program.javaInstanceConsoleLogs().isEmpty()) {
-            throw new IllegalArgumentException("Program contains no supported executable statements");
-        }
     }
 
     private void validateJavaImportPolicy(List<QinIrJavaImport> javaImports) {

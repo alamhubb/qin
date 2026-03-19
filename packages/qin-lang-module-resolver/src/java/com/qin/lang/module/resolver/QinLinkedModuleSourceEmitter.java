@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
  */
 public final class QinLinkedModuleSourceEmitter {
     private static final Pattern IMPORT_FROM_PATTERN = Pattern.compile(
-            "(?m)^\\s*import\\s+(.+?)\\s+from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
+            "(?m)^\\s*import\\s+([\\s\\S]*?)\\s+from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "(?m)^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern EXPORT_CALLABLE_DECLARATION_PATTERN = Pattern.compile(
@@ -36,22 +36,10 @@ public final class QinLinkedModuleSourceEmitter {
     private static final Pattern DEFAULT_EXPR_CLASS_NAMED_PATTERN = Pattern.compile(
             "^class\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_NAMED_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s*\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?\\s*$");
+            "(?m)^\\s*export\\s*\\{([\\s\\S]*?)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?\\s*$");
     private static final Pattern EXPORT_ALL_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s*\\*\\s*(?:as\\s+([A-Za-z_$][\\w$]*)\\s*)?from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
 
-    private static final Pattern RESOLVED_IMPORT_FROM_PATTERN = Pattern.compile(
-            "^\\s*import\\s+[^;\\n]*?\\s+from\\s*[\"'](?!java:)[^\"']+[\"']\\s*;?\\s*$",
-            Pattern.MULTILINE);
-    private static final Pattern RESOLVED_IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
-            "^\\s*import\\s+[\"'](?!java:)[^\"']+[\"']\\s*;?\\s*$",
-            Pattern.MULTILINE);
-    private static final Pattern RESOLVED_EXPORT_FROM_NAMED_PATTERN = Pattern.compile(
-            "^\\s*export\\s*\\{[^}\\n]*}\\s*from\\s*[\"'](?!java:)[^\"']+[\"']\\s*;?\\s*$",
-            Pattern.MULTILINE);
-    private static final Pattern RESOLVED_EXPORT_FROM_ALL_PATTERN = Pattern.compile(
-            "^\\s*export\\s*\\*\\s*(?:as\\s+[A-Za-z_$][\\w$]*\\s*)?from\\s*[\"'](?!java:)[^\"']+[\"']\\s*;?\\s*$",
-            Pattern.MULTILINE);
     private static final Pattern EXPORT_NAMED_LOCAL_PATTERN = Pattern.compile(
             "^\\s*export\\s*\\{[^}\\n]*}\\s*;?\\s*$",
             Pattern.MULTILINE);
@@ -98,7 +86,7 @@ public final class QinLinkedModuleSourceEmitter {
                     parsed,
                     parsedModules,
                     moduleIndex);
-            String rewrittenBody = rewriteExports(stripLocalJsImports(module.source()), module.file(), moduleIndex)
+            String rewrittenBody = rewriteExports(stripModuleLinkageStatements(module.source()), module.file(), moduleIndex)
                     .trim();
             List<String> exportAliases = emitExportAliases(
                     parsed,
@@ -124,11 +112,11 @@ public final class QinLinkedModuleSourceEmitter {
                 graph);
     }
 
-    private String stripLocalJsImports(String source) {
-        String stripped = RESOLVED_IMPORT_FROM_PATTERN.matcher(source).replaceAll("");
-        stripped = RESOLVED_IMPORT_SIDE_EFFECT_PATTERN.matcher(stripped).replaceAll("");
-        stripped = RESOLVED_EXPORT_FROM_NAMED_PATTERN.matcher(stripped).replaceAll("");
-        return RESOLVED_EXPORT_FROM_ALL_PATTERN.matcher(stripped).replaceAll("");
+    private String stripModuleLinkageStatements(String source) {
+        String stripped = IMPORT_FROM_PATTERN.matcher(source).replaceAll("");
+        stripped = IMPORT_SIDE_EFFECT_PATTERN.matcher(stripped).replaceAll("");
+        stripped = EXPORT_NAMED_PATTERN.matcher(stripped).replaceAll("");
+        return EXPORT_ALL_PATTERN.matcher(stripped).replaceAll("");
     }
 
     private String rewriteExports(String source, Path moduleFile, Map<Path, Integer> moduleIndex) {
@@ -645,7 +633,12 @@ public final class QinLinkedModuleSourceEmitter {
             Map<Path, Integer> moduleIndex) {
         List<String> lines = new ArrayList<>();
         for (ParsedImport parsedImport : parsed.imports()) {
-            if (parsedImport.kind() == ImportKind.SIDE_EFFECT || parsedImport.resolvedModule() == null) {
+            if (parsedImport.kind() == ImportKind.SIDE_EFFECT) {
+                continue;
+            }
+            if (parsedImport.resolvedModule() == null) {
+                lines.add("var " + parsedImport.localName() + " = "
+                        + runtimeGlobalLookupCall(parsedImport) + ";");
                 continue;
             }
 
@@ -992,6 +985,33 @@ public final class QinLinkedModuleSourceEmitter {
             appendLines(out, exportAliases);
         }
         return out.toString();
+    }
+
+    private String runtimeGlobalLookupCall(ParsedImport parsedImport) {
+        return "__qin_global__(" + stringLiteral(runtimeGlobalName(parsedImport)) + ")";
+    }
+
+    private String runtimeGlobalName(ParsedImport parsedImport) {
+        if (parsedImport.kind() == ImportKind.NAMED) {
+            String importedName = parsedImport.importedName();
+            if (importedName != null && !importedName.isBlank()) {
+                return importedName;
+            }
+        }
+        String localName = parsedImport.localName();
+        if (localName == null || localName.isBlank()) {
+            throw new IllegalArgumentException("External import local name cannot be blank: " + parsedImport);
+        }
+        return localName;
+    }
+
+    private String stringLiteral(String value) {
+        return "\"" + value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                + "\"";
     }
 
     private void appendLines(StringBuilder out, List<String> lines) {
