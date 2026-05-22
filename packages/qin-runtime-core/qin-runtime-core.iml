@@ -228,6 +228,51 @@
           <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/subhuti-java/src" />
         </SOURCES>
       </library>
-    </orderEntry>
-  </component>
+    </orderEntry>    <!-- Qin Libraries -->
+    <orderEntry type="library" name="ch.qos.logback@logback-classic" level="project" />
+    <orderEntry type="library" name="ch.qos.logback@logback-core" level="project" />
+    <orderEntry type="library" name="com.fasterxml.jackson.core@jackson-annotations" level="project" />
+    <orderEntry type="library" name="com.github.ben-manes.caffeine@caffeine" level="project" />
+    <orderEntry type="library" name="com.google.errorprone@error_prone_annotations" level="project" />
+    <orderEntry type="library" name="commons-logging@commons-logging" level="project" />
+    <orderEntry type="library" name="io.micrometer@micrometer-commons" level="project" />
+    <orderEntry type="library" name="io.micrometer@micrometer-observation" level="project" />
+    <orderEntry type="library" name="jakarta.annotation@jakarta.annotation-api" level="project" />
+    <orderEntry type="library" name="net.bytebuddy@byte-buddy" level="project" />
+    <orderEntry type="library" name="org.apache.logging.log4j@log4j-api" level="project" />
+    <orderEntry type="library" name="org.apache.logging.log4j@log4j-to-slf4j" level="project" />
+    <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-core" level="project" />
+    <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-el" level="project" />
+    <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-websocket" level="project" />
+    <orderEntry type="library" name="org.checkerframework@checker-qual" level="project" />
+    <orderEntry type="library" name="org.jspecify@jspecify" level="project" />
+    <orderEntry type="library" name="org.slf4j@jul-to-slf4j" level="project" />
+    <orderEntry type="library" name="org.slf4j@slf4j-api" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-autoconfigure" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-http-converter" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-jackson" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-servlet" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-starter-jackson" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-starter-logging" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-starter-tomcat-runtime" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-starter-tomcat" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-starter-web" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-starter" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-tomcat" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-web-server" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot-webmvc" level="project" />
+    <orderEntry type="library" name="org.springframework.boot@spring-boot" level="project" />
+    <orderEntry type="library" name="org.springframework@spring-aop" level="project" />
+    <orderEntry type="library" name="org.springframework@spring-beans" level="project" />
+    <orderEntry type="library" name="org.springframework@spring-context" level="project" />
+    <orderEntry type="library" name="org.springframework@spring-core" level="project" />
+    <orderEntry type="library" name="org.springframework@spring-expression" level="project" />
+    <orderEntry type="library" name="org.springframework@spring-web" level="project" />
+    <orderEntry type="library" name="org.springframework@spring-webmvc" level="project" />
+    <orderEntry type="library" name="org.yaml@snakeyaml" level="project" />
+    <orderEntry type="library" name="tools.jackson.core@jackson-core" level="project" />
+    <orderEntry type="library" name="tools.jackson.core@jackson-databind" level="project" />
+    <!-- End Qin Libraries -->
+
+</component>
 </module>

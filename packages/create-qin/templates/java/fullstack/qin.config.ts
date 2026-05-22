@@ -5,7 +5,7 @@ export default defineConfig({
   port: 8080,
 
   dependencies: {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   },
 
   client: {

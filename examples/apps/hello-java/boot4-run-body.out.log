@@ -1,0 +1,71 @@
+[34m-> Loading configuration...[0m
+  [local] java-base -> java-base
+  [local] com.qin:qin-runtime-core -> qin-runtime-core
+  [local] com.qin:qin-lang-lowering-jvm -> qin-lang-lowering-jvm
+    [build] Compiling qin-lang-lowering-jvm...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-ir -> qin-lang-ir
+    [build] Compiling qin-lang-ir...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-frontend-adapter -> qin-lang-frontend-adapter
+    [build] Compiling qin-lang-frontend-adapter...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-module-resolver -> qin-lang-module-resolver
+  [local] com.qin:qin-lang-backend-jvm -> qin-lang-backend-jvm
+    [build] Compiling qin-lang-backend-jvm...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-module-policy -> qin-lang-module-policy
+  [local] com.qin:qin-lang-sema-esm -> qin-lang-sema-esm
+  [local] com.qin:qin-lang-pipeline-cfa -> qin-lang-pipeline-cfa
+    [build] Compiling qin-lang-pipeline-cfa...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-backend-js -> qin-lang-backend-js
+  [local] com.qin:qin-lang-runtime -> qin-lang-runtime
+    [build] Compiling qin-lang-runtime...
+    [ok] Compiled successfully
+  [local] com.slime:slime-parser -> slime-parser
+  [local] com.slime:slime-token -> slime-token
+  [local] com.slime:slime-ast -> slime-ast
+  [local] com.subhuti:subhuti-java -> subhuti-java
+  [ok] Auto-compiled 6 local project(s)
+[34m-> Using cached dependencies (.qin/classpath.json)[0m
+[34m-> Compiling and running...[0m
+  [OK] No Java changes detected, skip compile (cache)
+[ByteBuddy] ª∫¥Ê¥Û–°: 0, parserClass hashCode: 1612799726, ¿‡º”‘ÿ∆˜: jdk.internal.loader.ClassLoaders$AppClassLoader@2a139a55
+[ByteBuddy] ’˝‘⁄¥¥Ω®‘ˆ«ø¿‡: com.slime.parser.SlimeParser
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.parse
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.ClassTail
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.FunctionDeclaration
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.ImportSpecifier
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.FunctionExpression
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.ClassDeclaration
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.VariableDeclaration
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.MemberExpression
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.ClassExpression
+[ByteBuddy] ∑¢œ÷ @SubhutiRule ∑Ω∑®: SlimeParser.AssignmentExpression
+[ByteBuddy] π≤∑¢œ÷ 349 ∏ˆ @SubhutiRule ∑Ω∑®
+[ByteBuddy] ¥¥Ω®‘ˆ«ø¿‡≥…π¶: com.slime.parser.SlimeParser$ByteBuddy$ooxYTnsc (“—ª∫¥Ê)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.6)
+
+2026-05-22T12:12:00.189+08:00  INFO 51608 --- [           main] server.Main                              : Starting Main using Java 25.0.3 with PID 51608 (D:\project\qkyproject\qinall\qin\examples\apps\hello-java\build\classes started by qinky in D:\project\qkyproject\qinall\qin\examples\apps\hello-java)
+2026-05-22T12:12:00.193+08:00  INFO 51608 --- [           main] server.Main                              : No active profile set, falling back to 1 default profile: "default"
+2026-05-22T12:12:01.117+08:00  INFO 51608 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 18082 (http)
+2026-05-22T12:12:01.139+08:00  INFO 51608 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-22T12:12:01.140+08:00  INFO 51608 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-05-22T12:12:01.194+08:00  INFO 51608 --- [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 947 ms
+2026-05-22T12:12:01.533+08:00  INFO 51608 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 18082 (http) with context path '/'
+2026-05-22T12:12:01.541+08:00  INFO 51608 --- [           main] server.Main                              : Started Main in 1.758 seconds (process running for 3.133)
+Qin Spring Boot server started
+  url: http://localhost:18082
+  api: http://localhost:18082/api/hello
+2026-05-22T12:12:01.584+08:00  INFO 51608 --- [io-18082-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-22T12:12:01.584+08:00  INFO 51608 --- [io-18082-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-22T12:12:01.586+08:00  INFO 51608 --- [io-18082-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

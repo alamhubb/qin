@@ -1,0 +1,23 @@
+const users = [
+  { id: 1, name: "张三", role: "开发者" },
+  { id: 2, name: "李四", role: "设计师" },
+  { id: 3, name: "王五", role: "产品经理" }
+]
+
+const getUsers = () => users
+
+const greetPayload = (name) => ({
+  name: name || "世界",
+  message: "后端返回"
+})
+
+const serverMeta = () => ({
+  message: "后端返回",
+  server: "Qin Spring Boot Server"
+})
+
+const api = {
+  getUsers,
+  greetPayload,
+  serverMeta
+}

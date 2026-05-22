@@ -9,6 +9,7 @@ This document defines the near-term implementation plan for Qin as a Java-based 
 - `java:` imports are Qin language syntax, not Java source imports.
 - JVM backend is generated directly with JDK Class-File API.
 - JS backend exists for frontend targets, but Java interop remains JVM-only.
+- Spring integration direction is documented in `SPRING_QIN_ARCHITECTURE.md`.
 
 ## Near-Term Goal
 

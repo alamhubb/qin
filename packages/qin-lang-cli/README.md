@@ -10,15 +10,20 @@ CLI package for Qin language.
 
 ## Current POC Entry
 
-`QinCompileMain` compiles a tiny Qin subset into `jvm/js/both` targets:
+`QinCompileMain` compiles the current stage-1 Qin subset into `jvm/js/both` targets:
 
 ```bash
 java -cp "<cli>;<backend>;<frontend>;<ir>" com.qin.lang.cli.QinCompileMain --file test.js --target both --run
 ```
 
-Supported grammar (POC):
+Current stage-1 focus:
 
-- `const <id> = { <id>: <int> }`
+- `console.log(<number>)`
+- `console.log(<string>)`
+- `console.log(<boolean>)`
+- `console.log(null)`
+- `const <id> = () => <expr>; console.log(<id>())`
+- `const <id> = { <id>: <expr> }`
 - `console.log(<id>.<id>)`
 
 ## Fullstack Demo Serve (JDK HttpServer)

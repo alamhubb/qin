@@ -109,7 +109,7 @@ Java 版本使用 `qin.config.json` 格式：
   "version": "1.0.0",
   "entry": "src/Main.java",
   "dependencies": {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0"
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6"
   },
   "repositories": [
     "https://maven.aliyun.com/repository/public"

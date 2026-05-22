@@ -5,6 +5,7 @@ Core runtime orchestration package for Qin.
 Planning document:
 
 - `ROADMAP.md`
+- `SPRING_QIN_ARCHITECTURE.md`
 
 ## Positioning
 
@@ -15,7 +16,7 @@ Planning document:
 
 ## Current Scope (Stage 0)
 
-- Read a `.js` source file.
+- Read a `.js` or `.qin` source file.
 - Resolve local `.js` module imports.
 - Parse source via Slime frontend adapter.
 - Lower to Qin IR.
@@ -46,7 +47,7 @@ Pipeline layering:
 
 - `shared/`: shared modules and contracts.
 - `app/`: frontend static assets root.
-- `main/`: backend startup side (`main/Main.java` as preferred entry).
+- `main/`: backend startup side (`main/main.qin` as preferred entry).
 
 ## Import Policy (Zone-Based)
 
@@ -102,11 +103,15 @@ Compile-time built-in diagnostics:
 ## Run
 
 ```bash
-java -cp "<cp>" com.qin.runtime.core.QinRuntimeMain --root . --file shared/main.js --target both --print-ir
+java -cp "<cp>" com.qin.runtime.core.QinRuntimeMain --root . --file main/main.qin --target both --print-ir
 ```
 
 If `--file` is omitted, it tries:
 
+- `shared/main.qin`
+- `shared/shared.qin`
+- `main/main.qin`
+- `app/main.qin`
 - `shared/main.js`
 - `shared/shared.js`
 - `main/main.js`
@@ -175,7 +180,7 @@ java -cp "<cp>" com.qin.runtime.core.QinFullstackMain --root examples/fullstack-
 Example project layout:
 
 - `examples/fullstack-mvp/shared/shared.js`
-- `examples/fullstack-mvp/main/main.js`
+- `examples/fullstack-mvp/main/main.qin`
 - `examples/fullstack-mvp/app/main.js`
 - `examples/fullstack-mvp/app/index.html`
 

@@ -9,7 +9,7 @@ Qin 支持 Maven 依赖和本地包两种依赖方式。
 ```ts
 export default defineConfig({
   dependencies: {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
     "com.google.guava:guava": "32.1.3-jre",
     "org.projectlombok:lombok": "1.18.30",
   },
@@ -22,9 +22,9 @@ export default defineConfig({
 
 | 语法 | 含义 |
 |------|------|
-| `3.2.0` | 精确版本 |
-| `^3.2.0` | 兼容版本 (>=3.2.0 <4.0.0) |
-| `~3.2.0` | 补丁版本 (>=3.2.0 <3.3.0) |
+| `4.0.6` | 精确版本 |
+| `^4.0.6` | 兼容版本 (>=4.0.6 <5.0.0) |
+| `~4.0.6` | 补丁版本 (>=4.0.6 <4.1.0) |
 | `*` | 任意版本 |
 | `>=3.0.0` | 大于等于 |
 
@@ -89,7 +89,7 @@ Qin 采用类似 pnpm 的存储策略，支持全局缓存和本地可见两种�
 └── org/
     └── springframework/
         └── boot/
-            └── spring-boot-3.2.0.jar
+            └── spring-boot-4.0.6.jar
 ```
 
 优点：
@@ -118,7 +118,7 @@ my-app/
 │   └── org/
 │       └── springframework/
 │           └── boot/
-│               └── spring-boot-3.2.0.jar
+│               └── spring-boot-4.0.6.jar
 └── .qin/
     └── classes/             # 编译输出
 ```

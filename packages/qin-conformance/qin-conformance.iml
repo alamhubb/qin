@@ -237,6 +237,16 @@
           <root url="file://D:/project/qkyproject/slime-java/slime/java-slime/subhuti-java/src" />
         </SOURCES>
       </library>
-    </orderEntry>
+    </orderEntry>    <!-- Qin Libraries -->
+    <orderEntry type="library" name="ch.qos.logback@logback-classic" level="project" />
+    <orderEntry type="library" name="ch.qos.logback@logback-core" level="project" />
+    <orderEntry type="library" name="com.github.ben-manes.caffeine@caffeine" level="project" />
+    <orderEntry type="library" name="com.google.code.gson@gson" level="project" />
+    <orderEntry type="library" name="com.google.errorprone@error_prone_annotations" level="project" />
+    <orderEntry type="library" name="net.bytebuddy@byte-buddy" level="project" />
+    <orderEntry type="library" name="org.checkerframework@checker-qual" level="project" />
+    <orderEntry type="library" name="org.slf4j@slf4j-api" level="project" />
+    <!-- End Qin Libraries -->
+
   </component>
 </module>

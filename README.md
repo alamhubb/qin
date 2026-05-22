@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>3.2.0</version>
+            <version>4.0.6</version>
         </dependency>
     </dependencies>
     
@@ -67,7 +67,7 @@
   "name": "my-app",
   "version": "1.0.0",
   "dependencies": {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0"
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6"
   }
 }
 ```
@@ -213,7 +213,7 @@ Open [http://localhost:18080](http://localhost:18080).
   "entry": "main/main.js",
   
   "dependencies": {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
     "com.github.ben-manes.caffeine:caffeine": "3.1.8"
   },
   

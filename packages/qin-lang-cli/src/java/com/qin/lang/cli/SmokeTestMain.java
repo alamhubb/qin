@@ -17,12 +17,12 @@ public final class SmokeTestMain {
     }
 
     public static void main(String[] args) throws Exception {
-        String source = "const a = { age: 1 }";
+        String source = "const a = () => 1; console.log(a())";
         String className = "com.qin.generated.Demo";
         Path outputDir = Path.of("build", "generated-classes");
 
         QinSlimeFrontendAdapter adapter = new QinSlimeFrontendAdapter();
-        QinIrProgram program = adapter.parseConstObjectDeclaration(source);
+        QinIrProgram program = adapter.parseProgram(source);
 
         QinJvmClassFileBackend backend = new QinJvmClassFileBackend();
         byte[] classBytes = backend.compileProgram(program, className);
@@ -35,9 +35,6 @@ public final class SmokeTestMain {
         System.out.println("Source: " + source);
         System.out.println("Generated .class: " + classFile.toAbsolutePath());
         System.out.println("run() result: " + runResult);
-        if (runResult instanceof Map<?, ?> map) {
-            System.out.println("age = " + map.get("age"));
-        }
     }
 
     private static final class ByteArrayClassLoader extends ClassLoader {

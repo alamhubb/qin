@@ -31,7 +31,7 @@ public record QinConfig(
         String version,
         String description,
         DependencyScope scope,
-        int port,
+        Integer port,
         boolean localRep,
         ClientConfig client,
         List<QinPlugin> plugins,
@@ -65,7 +65,7 @@ public record QinConfig(
 
         // 提供默认值
         scope = scope != null ? scope : DependencyScope.COMPILE;
-        port = port > 0 ? port : 8080;
+        port = port != null && port > 0 ? port : null;
 
         // 确保集合不可变
         dependencies = dependencies != null ? Map.copyOf(dependencies) : Map.of();

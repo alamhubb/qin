@@ -1,0 +1,8 @@
+import { Service as S } from "java:org.springframework.stereotype"
+
+@S
+class HelloService {
+  message() {
+    return "hello from qin service"
+  }
+}

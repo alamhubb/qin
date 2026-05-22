@@ -1,0 +1,18 @@
+import { Autowired as A } from "java:org.springframework.beans.factory.annotation"
+import { RestController as RC, GetMapping as GET } from "java:org.springframework.web.bind.annotation"
+
+@RC
+class HelloController {
+  @A
+  service: HelloService
+
+  @GET("/api/hello")
+  hello() {
+    return this.service.message()
+  }
+
+  @GET("/api/ping")
+  ping() {
+    return "pong"
+  }
+}

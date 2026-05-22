@@ -9,10 +9,13 @@ public sealed interface QinIrExpression permits
         QinIrBuiltinCallExpression,
         QinIrFunctionLiteral,
         QinIrIdentifierReference,
+        QinIrInstanceMethodCallExpression,
         QinIrJavaNewExpression,
         QinIrMemberAccessExpression,
         QinIrNullLiteral,
         QinIrNumberLiteral,
         QinIrObjectLiteral,
+        QinIrPropertyAccessExpression,
+        QinIrThisExpression,
         QinIrStringLiteral {
 }

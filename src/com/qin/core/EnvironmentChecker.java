@@ -15,19 +15,24 @@ import java.util.zip.*;
 public class EnvironmentChecker {
     private final String qinHome;
     private final String csPath;
+    private final String scoopCoursierPath;
     private final boolean isWindows;
+    private String detectedCoursierCommand;
 
     public EnvironmentChecker() {
         String home = QinConstants.getHomeDir();
         this.qinHome = QinConstants.getQinHomeDir().toString();
         this.isWindows = QinConstants.isWindows();
+        this.scoopCoursierPath = isWindows
+                ? Paths.get(home, "scoop", "shims", "coursier.cmd").toString()
+                : Paths.get(home, "scoop", "shims", "coursier").toString();
         this.csPath = isWindows
                 ? Paths.get(qinHome, QinConstants.BIN_DIR, "cs.exe").toString()
                 : Paths.get(qinHome, QinConstants.BIN_DIR, "cs").toString();
     }
 
     public String getCoursierCommand() {
-        return csPath;
+        return detectedCoursierCommand != null ? detectedCoursierCommand : csPath;
     }
 
     /**
@@ -36,12 +41,26 @@ public class EnvironmentChecker {
     public boolean checkCoursier() {
         // Check global installation
         if (runCommand("cs", "--version")) {
+            detectedCoursierCommand = "cs";
+            return true;
+        }
+
+        if (runCommand("coursier", "--version")) {
+            detectedCoursierCommand = "coursier";
+            return true;
+        }
+
+        if (Files.exists(Paths.get(scoopCoursierPath)) && runCommand(scoopCoursierPath, "--version")) {
+            detectedCoursierCommand = scoopCoursierPath;
             return true;
         }
 
         // Check local installation
         if (Files.exists(Paths.get(csPath))) {
-            return runCommand(csPath, "--version");
+            if (runCommand(csPath, "--version")) {
+                detectedCoursierCommand = csPath;
+                return true;
+            }
         }
 
         return false;

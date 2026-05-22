@@ -1,10 +1,9 @@
 package com.qin.lang.cli;
 
-import com.qin.lang.backend.js.QinJsBackend;
-import com.qin.lang.backend.jvm.QinClassFileWriter;
-import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
-import com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter;
-import com.qin.lang.ir.QinIrProgram;
+import com.qin.runtime.core.QinBuildCoordinator;
+import com.qin.runtime.core.QinBuildRequest;
+import com.qin.runtime.core.QinBuildResult;
+import com.qin.runtime.core.QinBuildTarget;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,41 +23,42 @@ public final class QinCompileMain {
             return;
         }
 
-        String source = readSource(options);
+        SourceInput sourceInput = resolveSourceInput(options);
         String className = options.className;
         Path outputDir = options.outputDir;
+        Path projectRoot = Path.of("").toAbsolutePath().normalize();
 
-        QinSlimeFrontendAdapter adapter = new QinSlimeFrontendAdapter();
-        QinIrProgram program = adapter.parseConstObjectDeclaration(source);
+        QinBuildCoordinator coordinator = new QinBuildCoordinator();
+        QinBuildResult buildResult = coordinator.build(new QinBuildRequest(
+                projectRoot,
+                sourceInput.sourceFile(),
+                options.target.toBuildTarget(),
+                className,
+                outputDir,
+                options.jsOutFile,
+                false));
 
-        System.out.println("Source: " + source);
+        System.out.println("Source: " + sourceInput.sourceText());
 
         byte[] classBytes = null;
-        Path classFile = null;
-        Path jsFile = null;
+        Path classFile = buildResult.classFile();
+        Path jsFile = buildResult.jsFile();
 
-        if (options.target.emitJvm()) {
-            QinJvmClassFileBackend backend = new QinJvmClassFileBackend();
-            classBytes = backend.compileProgram(program, className);
-            classFile = QinClassFileWriter.writeClassFile(outputDir, className, classBytes);
+        if (classFile != null) {
             System.out.println("Generated .class: " + classFile.toAbsolutePath());
             System.out.println("Class name: " + className);
         }
 
-        if (options.target.emitJs()) {
-            QinJsBackend jsBackend = new QinJsBackend();
-            String jsCode = jsBackend.compileProgram(program);
-            Path parent = options.jsOutFile.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            Files.writeString(options.jsOutFile, jsCode, StandardCharsets.UTF_8);
-            jsFile = options.jsOutFile;
+        if (jsFile != null) {
             System.out.println("Generated .js: " + jsFile.toAbsolutePath());
         }
 
         if (options.runAfterCompile) {
             if (options.target.emitJvm()) {
+                if (classFile == null) {
+                    throw new IllegalStateException("Missing class output for JVM run");
+                }
+                classBytes = Files.readAllBytes(classFile);
                 Class<?> generatedClass = new ByteArrayClassLoader(QinCompileMain.class.getClassLoader())
                         .define(className, classBytes);
                 Object runResult = generatedClass.getMethod("run").invoke(null);
@@ -69,12 +69,18 @@ public final class QinCompileMain {
         }
     }
 
-    private static String readSource(Options options) throws Exception {
+    private static SourceInput resolveSourceInput(Options options) throws Exception {
         if (options.inlineSource != null) {
-            return options.inlineSource;
+            Path tempDir = Path.of("build", "generated-sources", "qin-compile-inline");
+            Files.createDirectories(tempDir);
+            Path tempFile = tempDir.resolve("inline-" + System.nanoTime() + ".js");
+            Files.writeString(tempFile, options.inlineSource, StandardCharsets.UTF_8);
+            return new SourceInput(options.inlineSource, tempFile);
         }
         if (options.sourceFile != null) {
-            return Files.readString(options.sourceFile, StandardCharsets.UTF_8);
+            Path sourceFile = options.sourceFile;
+            String sourceText = Files.readString(sourceFile, StandardCharsets.UTF_8);
+            return new SourceInput(sourceText, sourceFile);
         }
         throw new IllegalArgumentException("Missing source. Use --source or --file.");
     }
@@ -115,7 +121,7 @@ public final class QinCompileMain {
         System.out.println(
                 "  --source \"const a = { age: 1 }\" [--target jvm|js|both] [--class com.qin.generated.Demo] [--out build/generated-classes] [--js-out build/generated-js/app.js] [--run]");
         System.out.println(
-                "  --file path/to/input.js [--target jvm|js|both] [--class com.qin.generated.Demo] [--out build/generated-classes] [--js-out build/generated-js/app.js] [--run]");
+                "  --file path/to/input.(qin|js|mjs|ts) [--target jvm|js|both] [--class com.qin.generated.Demo] [--out build/generated-classes] [--js-out build/generated-js/app.js] [--run]");
     }
 
     private static final class Options {
@@ -129,6 +135,9 @@ public final class QinCompileMain {
         private boolean showHelp;
     }
 
+    private record SourceInput(String sourceText, Path sourceFile) {
+    }
+
     private enum Target {
         JVM,
         JS,
@@ -140,6 +149,14 @@ public final class QinCompileMain {
 
         private boolean emitJs() {
             return this == JS || this == BOTH;
+        }
+
+        private QinBuildTarget toBuildTarget() {
+            return switch (this) {
+                case JVM -> QinBuildTarget.JVM;
+                case JS -> QinBuildTarget.JS;
+                case BOTH -> QinBuildTarget.BOTH;
+            };
         }
 
         private static Target parse(String raw) {

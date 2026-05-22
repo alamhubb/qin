@@ -20,7 +20,7 @@ export default defineConfig({
   name: "hello-java",
   port: 8080,
   dependencies: {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   },
 });
 ```
@@ -45,7 +45,7 @@ export default defineConfig({
   name: "fullstack-app",
   port: 8080,
   dependencies: {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   },
   client: {
     root: "src/client",
@@ -87,7 +87,7 @@ export default defineConfig({
 export default defineConfig({
   name: "web-app",
   dependencies: {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
     "java-base": "*",  // 本地包
   },
 });

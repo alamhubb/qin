@@ -10,7 +10,7 @@ Maven 依赖和本地包配置。
 export default defineConfig({
   dependencies: {
     // Maven 依赖
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
     "com.google.guava:guava": "32.1.3-jre",
     
     // 本地包
@@ -39,9 +39,9 @@ groupId:artifactId:version
 
 | 语法 | 含义 | 示例 |
 |------|------|------|
-| `3.2.0` | 精确版本 | 只使用 3.2.0 |
-| `^3.2.0` | 兼容版本 | >=3.2.0 <4.0.0 |
-| `~3.2.0` | 补丁版本 | >=3.2.0 <3.3.0 |
+| `4.0.6` | 精确版本 | 只使用 4.0.6 |
+| `^4.0.6` | 兼容版本 | >=4.0.6 <5.0.0 |
+| `~4.0.6` | 补丁版本 | >=4.0.6 <4.1.0 |
 | `*` | 任意版本 | 最新版本 |
 | `>=3.0.0` | 大于等于 | 3.0.0 及以上 |
 
@@ -109,7 +109,7 @@ export default defineConfig({
 
 ```
 ~/.qin/repository/
-└── org/springframework/boot/spring-boot-3.2.0.jar
+└── org/springframework/boot/spring-boot-4.0.6.jar
 ```
 
 ### 本地模式
@@ -117,7 +117,7 @@ export default defineConfig({
 ```
 my-app/
 └── repository/
-    └── org/springframework/boot/spring-boot-3.2.0.jar
+    └── org/springframework/boot/spring-boot-4.0.6.jar
 ```
 
 ## 本地包

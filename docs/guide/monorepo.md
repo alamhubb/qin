@@ -53,7 +53,7 @@ export default defineConfig({
   name: "web-app",
   dependencies: {
     // Maven 依赖
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
     // 本地包（从 packages/ 解析）
     "java-base": "*",
     "shared-utils": "^1.0.0",
@@ -131,7 +131,7 @@ import { commonDeps } from "../../shared/config";
 export default defineConfig({
   dependencies: {
     ...commonDeps,
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   },
 });
 ```

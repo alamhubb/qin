@@ -49,7 +49,7 @@ qin build
 ```typescript
 // apps/hello-java/qin.config.ts
 dependencies: {
-  "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+  "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   "java-base": "*",  // 自动从 packages/java-base 加载
 }
 ```

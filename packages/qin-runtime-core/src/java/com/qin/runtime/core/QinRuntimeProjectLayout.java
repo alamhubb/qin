@@ -15,23 +15,31 @@ public record QinRuntimeProjectLayout(
         Path backendEntry) {
 
     private static final List<String> BACKEND_ENTRY_CANDIDATES = List.of(
+            "main/main.qin",
+            "main/Main.qin",
+            "main/main.js",
             "main/Main.java",
             "main/main.java",
             "src/Main.java");
 
     private static final List<String> SOURCE_CANDIDATES = List.of(
+            "shared/main.qin",
             "shared/main.js",
             "shared/main.mjs",
             "shared/main.ts",
+            "shared/shared.qin",
             "shared/shared.js",
             "shared/shared.mjs",
             "shared/shared.ts",
+            "main/main.qin",
             "main/main.js",
             "main/main.mjs",
             "main/main.ts",
+            "app/main.qin",
             "app/main.js",
             "app/main.mjs",
-            "app/main.ts");
+            "app/main.ts",
+            "src/main.qin");
 
     public static QinRuntimeProjectLayout discover(Path rootDir) {
         Path root = rootDir.toAbsolutePath().normalize();

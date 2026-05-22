@@ -27,7 +27,7 @@ public final class SimpleQinCompilerMain {
         Path outputDir = Path.of("build", "generated-classes");
 
         QinSlimeFrontendAdapter adapter = new QinSlimeFrontendAdapter();
-        QinIrProgram program = adapter.parseConstObjectDeclaration(source);
+        QinIrProgram program = adapter.parseProgram(source);
 
         QinJvmClassFileBackend backend = new QinJvmClassFileBackend();
         byte[] classBytes = backend.compileProgram(program, className);

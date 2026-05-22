@@ -1,0 +1,14 @@
+[DEBUG] Config dependencies: [java-base, com.qin:qin-runtime-core, org.springframework.boot:spring-boot-starter-web]
+[DEBUG] Local classpath resolved: D:\project\qkyproject\qinall\qin\examples\packages\java-base\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-lang-m
+Exception in thread "main" java.lang.IllegalStateException: Failed to compile Qin controller
+	at server.Main.compileController(Main.java:53)
+	at server.Main.main(Main.java:24)
+Caused by: java.lang.RuntimeException: Parser internal error: parsing succeeded but source code remains unconsumed. Next token: "@" (At) at position 0
+	at com.subhuti.parser.SubhutiParserCore.executeRuleWrapper(SubhutiParserCore.java:345)
+	at com.subhuti.aop.ByteBuddyRuleInterceptor.intercept(ByteBuddyRuleInterceptor.java:55)
+	at com.slime.parser.SlimeJavascriptParser$ByteBuddy$kZZlZFul.Program(Unknown Source)
+	at com.qin.runtime.core.QinSpringControllerCompiler.createProgramAst(QinSpringControllerCompiler.java:66)
+	at com.qin.runtime.core.QinSpringControllerCompiler.compile(QinSpringControllerCompiler.java:59)
+	at server.Main.compileController(Main.java:43)
+	... 1 more
+[31mError:[0mJava program exited with code 1

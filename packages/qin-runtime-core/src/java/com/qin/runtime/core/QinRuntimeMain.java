@@ -78,7 +78,7 @@ public final class QinRuntimeMain {
         System.out.println("QinRuntimeMain - parse Qin source with java-slime and emit targets");
         System.out.println("Usage:");
         System.out.println("  --root <dir>                 Project root (default: current dir)");
-        System.out.println("  --file <path.(js|mjs|ts)>    Qin source path (relative to root)");
+        System.out.println("  --file <path.(qin|js|mjs|ts)> Qin source path (relative to root)");
         System.out.println("  --target jvm|js|both         Output target (default: both)");
         System.out.println("  --class <binary.name>        JVM class name (default: com.qin.runtime.generated.App)");
         System.out.println("  --class-out <dir>            JVM .class output dir (default: build/runtime-classes)");

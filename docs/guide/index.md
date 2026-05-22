@@ -19,7 +19,7 @@ Qin 是基于 Bun 开发的**新一代跨语言构建工具**，用 TypeScript �
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-      <version>3.2.0</version>
+      <version>4.0.6</version>
     </dependency>
   </dependencies>
   <!-- 还有更多... -->
@@ -33,7 +33,7 @@ Qin 是基于 Bun 开发的**新一代跨语言构建工具**，用 TypeScript �
 export default defineConfig({
   name: "my-app",
   dependencies: {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   },
 });
 ```

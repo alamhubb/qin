@@ -15,11 +15,11 @@ public final class QinRunEntryParityTestMain {
         Path root = resolveFullstackMvpRoot();
         Path config = root.resolve("qin.config.json").normalize();
         Path launcher = root.resolve("launcher/com/qin/demo/FullstackApplication.java").normalize();
-        Path qinBackendEntry = root.resolve("main/main.js").normalize();
+        Path qinBackendEntry = root.resolve("main/main.qin").normalize();
 
         requireFile(config, "qin.config.json");
         requireFile(launcher, "launcher");
-        requireFile(qinBackendEntry, "main/main.js");
+        requireFile(qinBackendEntry, "main/main.qin");
 
         String configText = Files.readString(config, StandardCharsets.UTF_8);
         String launcherText = Files.readString(launcher, StandardCharsets.UTF_8);

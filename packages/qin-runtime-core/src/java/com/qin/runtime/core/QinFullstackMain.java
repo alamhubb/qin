@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -137,7 +138,9 @@ public final class QinFullstackMain {
                 Object result = artifacts.currentRunMethod().invoke(null);
                 sendJson(exchange, 200, toJson(result));
             } catch (Exception e) {
-                String escaped = escapeJson(Objects.toString(e.getMessage(), "unknown error"));
+                Throwable root = unwrapInvocationError(e);
+                root.printStackTrace(System.err);
+                String escaped = escapeJson(Objects.toString(root.getMessage(), root.getClass().getName()));
                 sendJson(exchange, 500, "{\"error\":\"" + escaped + "\"}");
             }
         });
@@ -379,6 +382,15 @@ public final class QinFullstackMain {
                 .replace("\t", "\\t");
     }
 
+    private static Throwable unwrapInvocationError(Throwable error) {
+        Throwable current = error;
+        while (current instanceof InvocationTargetException invocationTargetException
+                && invocationTargetException.getCause() != null) {
+            current = invocationTargetException.getCause();
+        }
+        return current;
+    }
+
     private static Method loadRunMethod(Path classOutputDir, String className) throws Exception {
         Files.createDirectories(classOutputDir);
         URL[] urls = { classOutputDir.toUri().toURL() };
@@ -399,10 +411,15 @@ public final class QinFullstackMain {
         }
 
         List<Path> candidates = List.of(
+                layout.root().resolve("main/main.qin"),
+                layout.root().resolve("main/Main.qin"),
                 layout.root().resolve("main/main.js"),
                 layout.root().resolve("main/Main.js"),
+                layout.root().resolve("shared/main.qin"),
                 layout.root().resolve("shared/main.js"),
+                layout.root().resolve("shared/shared.qin"),
                 layout.root().resolve("shared/shared.js"),
+                layout.root().resolve("app/main.qin"),
                 layout.root().resolve("app/main.js"));
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
@@ -411,7 +428,7 @@ public final class QinFullstackMain {
         }
 
         throw new IllegalArgumentException(
-                "No backend .js source found. Expected one of: main/main.js, shared/main.js, shared/shared.js, app/main.js");
+                "No backend Qin source found. Expected one of: main/main.qin, main/main.js, shared/main.qin, shared/main.js, shared/shared.qin, shared/shared.js, app/main.qin, app/main.js");
     }
 
     private static Path resolveFrontendSource(QinRuntimeProjectLayout layout, Path fromArgs) {

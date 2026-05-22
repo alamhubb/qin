@@ -8,7 +8,8 @@
                          "com.qin:qin-lang-backend-jvm":  "0.1.0",
                          "com.qin:qin-lang-backend-js":  "0.1.0",
                          "com.qin:qin-lang-ir":  "0.1.0",
-                         "com.qin:qin-lang-runtime":  "0.1.0"
+                         "com.qin:qin-lang-runtime":  "0.1.0",
+                         "com.qin:qin-runtime-core":  "0.1.0"
                      },
     "java":  {
                  "version":  "25",

@@ -234,6 +234,15 @@ public class JavaRunner {
                         errorMsg.append(diagnostic.getMessage(null)).append("\n");
                     }
                 }
+                CompileResult fallback = compileWithExternalJavac(javaFiles, fullCp);
+                if (fallback.isSuccess()) {
+                    System.out.println("  -> In-process javac failed, external javac fallback succeeded.");
+                    return fallback;
+                }
+                String externalError = fallback.getError();
+                if (externalError != null && !externalError.isBlank()) {
+                    errorMsg.append("\n[external javac]\n").append(externalError.trim());
+                }
                 return CompileResult.failure(errorMsg.toString().trim());
             }
 
@@ -241,6 +250,40 @@ public class JavaRunner {
         } catch (IOException e) {
             return CompileResult.failure(e.getMessage());
         }
+    }
+
+    private CompileResult compileWithExternalJavac(List<String> javaFiles, String fullCp) {
+        try {
+            List<String> command = new ArrayList<>();
+            command.add(currentJavacCommand());
+            command.add("-d");
+            command.add(outputDir);
+            javaCompileConfig.appendJavacOptions(command);
+            if (fullCp != null && !fullCp.isEmpty()) {
+                command.add("-cp");
+                command.add(fullCp);
+            }
+            command.addAll(javaFiles);
+
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.directory(new File(cwd));
+            pb.redirectErrorStream(true);
+
+            Process proc = pb.start();
+            String output = readStream(proc.getInputStream());
+            int exitCode = proc.waitFor();
+            if (exitCode == 0) {
+                return CompileResult.success(javaFiles.size(), outputDir);
+            }
+            return CompileResult.failure(output);
+        } catch (Exception e) {
+            return CompileResult.failure(e.getMessage());
+        }
+    }
+
+    private String currentJavacCommand() {
+        String executable = QinConstants.isWindows() ? "javac.exe" : "javac";
+        return Paths.get(System.getProperty("java.home"), "bin", executable).toString();
     }
 
     /**
@@ -265,7 +308,7 @@ public class JavaRunner {
         // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
         if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") ||
                 config.hasDependency("org.springframework.boot:spring-boot-starter")) {
-            javaArgs.add("-Dspring.classformat.ignore=true");
+            appendConfiguredSpringPort(javaArgs, jvmArgs);
         }
 
         javaArgs.add("-cp");
@@ -343,7 +386,7 @@ public class JavaRunner {
         // ✨ Java 25 适配：如果检测到是 Spring Boot 项目且版本较高，自动添加忽略类格式限制的参数
         if (config.hasDependency("org.springframework.boot:spring-boot-starter-web") ||
                 config.hasDependency("org.springframework.boot:spring-boot-starter")) {
-            javaArgs.add("-Dspring.classformat.ignore=true");
+            appendConfiguredSpringPort(javaArgs, jvmArgs);
         }
 
         javaArgs.add("-cp");
@@ -369,6 +412,27 @@ public class JavaRunner {
      * 例如: src/main/java/com/slime/parser/test/MinimalTokenTest.java ->
      * com.slime.parser.test.MinimalTokenTest
      */
+    private void appendConfiguredSpringPort(List<String> javaArgs, List<String> jvmArgs) {
+        if (containsServerPortOverride(jvmArgs)) {
+            return;
+        }
+        if (config.port() != null && config.port() > 0) {
+            javaArgs.add("-Dserver.port=" + config.port());
+        }
+    }
+
+    private boolean containsServerPortOverride(List<String> jvmArgs) {
+        if (jvmArgs == null || jvmArgs.isEmpty()) {
+            return false;
+        }
+        for (String arg : jvmArgs) {
+            if (arg != null && arg.startsWith("-Dserver.port=")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private String javaFilePathToClassName(String javaFilePath) {
         // 标准化路径分隔符
         String normalized = javaFilePath.replace('\\', '/');

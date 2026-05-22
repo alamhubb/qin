@@ -124,6 +124,7 @@ public final class QinCfaIrToQinIrAdapter {
                 javaStaticConsoleLogs,
                 javaInstanceMethodCalls,
                 javaInstanceConsoleLogs,
+                List.of(),
                 executionSteps);
     }
 

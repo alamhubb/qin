@@ -1,0 +1,111 @@
+    [error] Compilation failed: com.qin:qin-runtime-core
+[34m-> Loading configuration...[0m
+  [local] com.qin:qin-lang-module-policy -> qin-lang-module-policy
+  [local] com.qin:qin-lang-backend-jvm -> qin-lang-backend-jvm
+    [build] Compiling qin-lang-backend-jvm...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-module-resolver -> qin-lang-module-resolver
+  [local] com.qin:qin-lang-frontend-adapter -> qin-lang-frontend-adapter
+    [build] Compiling qin-lang-frontend-adapter...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-sema-esm -> qin-lang-sema-esm
+  [local] com.qin:qin-lang-ir -> qin-lang-ir
+  [local] com.qin:qin-lang-backend-js -> qin-lang-backend-js
+  [local] com.qin:qin-lang-runtime -> qin-lang-runtime
+    [build] Compiling qin-lang-runtime...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-lowering-jvm -> qin-lang-lowering-jvm
+    [build] Compiling qin-lang-lowering-jvm...
+    [ok] Compiled successfully
+  [local] com.qin:qin-lang-pipeline-cfa -> qin-lang-pipeline-cfa
+  [local] com.slime:slime-parser -> slime-parser
+    [build] Compiling slime-parser...
+    [ok] Compiled successfully
+  [local] com.slime:slime-token -> slime-token
+  [local] com.slime:slime-ast -> slime-ast
+    [build] Compiling slime-ast...
+    [ok] Compiled successfully
+  [local] com.subhuti:subhuti-java -> subhuti-java
+  [ok] Auto-compiled 6 local project(s)
+[34m-> Using cached dependencies (.qin/classpath.json)[0m
+[34m-> Compiling...[0m
+  -> Compiling 2 file(s)...
+[DEBUG] Config dependencies: [com.qin:qin-lang-module-policy, com.qin:qin-lang-backend-jvm, com.qin:qin-lang-module-resolver, com.qin:qin-lang-frontend-adapter, com.qin:qin-lang-sema-esm, com.qin:qin-lang-ir, com.qin:qin-lang-backend-js, com.qin:qin-lang-runtime, com.qin:qin-lang-lowering-jvm, com.qin:qin-lang-pipeline-cfa]
+[DEBUG] Local classpath resolved: D:\project\qkyproject\qinall\qin\packages\qin-lang-module-policy\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-lang-backend-jvm\build\classes;D:\project\qkyproject\qinall\qin\packages\qi
+  [DEBUG] Compile classpath: D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-lang-module-policy\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-la...
+[31mCompilation failed:[0m³ÌÐò°üorg.springframework.beans.factory.support²»´æÔÚ
+³ÌÐò°üorg.springframework.beans.factory.support²»´æÔÚ
+³ÌÐò°üorg.springframework.boot²»´æÔÚ
+³ÌÐò°üorg.springframework.context²»´æÔÚ
+ÕÒ²»µ½·ûºÅ
+  ·ûºÅ:   Àà SpringApplication
+  Î»ÖÃ: Àà com.qin.runtime.core.QinSpringRuntimeSupport
+ÕÒ²»µ½·ûºÅ
+  ·ûºÅ:   Àà ConfigurableApplicationContext
+  Î»ÖÃ: Àà com.qin.runtime.core.QinSpringRuntimeSupport
+ÕÒ²»µ½·ûºÅ
+  ·ûºÅ:   Àà SpringApplication
+  Î»ÖÃ: Àà com.qin.runtime.core.QinSpringRuntimeSupport
+ÕÒ²»µ½·ûºÅ
+  ·ûºÅ:   Àà SpringApplication
+  Î»ÖÃ: Àà com.qin.runtime.core.QinSpringRuntimeSupport
+ÕÒ²»µ½·ûºÅ
+  ·ûºÅ:   Àà BeanDefinitionRegistry
+  Î»ÖÃ: Àà com.qin.runtime.core.QinSpringRuntimeSupport
+ÕÒ²»µ½·ûºÅ
+  ·ûºÅ:   Àà BeanDefinitionRegistry
+  Î»ÖÃ: Àà com.qin.runtime.core.QinSpringRuntimeSupport
+ÕÒ²»µ½·ûºÅ
+  ·ûºÅ:   Àà RootBeanDefinition
+  Î»ÖÃ: Àà com.qin.runtime.core.QinSpringRuntimeSupport
+
+[external javac]
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:4: ????: ?????org.springframework.beans.factory.support??????
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+                                                ^
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:5: ????: ?????org.springframework.beans.factory.support??????
+import org.springframework.beans.factory.support.RootBeanDefinition;
+                                                ^
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:6: ????: ?????org.springframework.boot??????
+import org.springframework.boot.SpringApplication;
+                               ^
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:7: ????: ?????org.springframework.context??????
+import org.springframework.context.ConfigurableApplicationContext;
+                                  ^
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:45: ????: ?????????
+    public static SpringApplication createApplicationWithController(
+                  ^
+  ????:   ?? SpringApplication
+  ¦Ë??: ?? QinSpringRuntimeSupport
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:57: ????: ?????????
+            ConfigurableApplicationContext context,
+            ^
+  ????:   ?? ConfigurableApplicationContext
+  ¦Ë??: ?? QinSpringRuntimeSupport
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:51: ????: ?????????
+        SpringApplication application = new SpringApplication(applicationClass);
+        ^
+  ????:   ?? SpringApplication
+  ¦Ë??: ?? QinSpringRuntimeSupport
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:51: ????: ?????????
+        SpringApplication application = new SpringApplication(applicationClass);
+                                            ^
+  ????:   ?? SpringApplication
+  ¦Ë??: ?? QinSpringRuntimeSupport
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:59: ????: ?????????
+        BeanDefinitionRegistry registry = (BeanDefinitionRegistry) context.getBeanFactory();
+        ^
+  ????:   ?? BeanDefinitionRegistry
+  ¦Ë??: ?? QinSpringRuntimeSupport
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:59: ????: ?????????
+        BeanDefinitionRegistry registry = (BeanDefinitionRegistry) context.getBeanFactory();
+                                           ^
+  ????:   ?? BeanDefinitionRegistry
+  ¦Ë??: ?? QinSpringRuntimeSupport
+D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\src\java\com\qin\runtime\core\QinSpringRuntimeSupport.java:62: ????: ?????????
+            registry.registerBeanDefinition(beanName, new RootBeanDefinition(controllerClass));
+                                                          ^
+  ????:   ?? RootBeanDefinition
+  ¦Ë??: ?? QinSpringRuntimeSupport
+11 ??????
+[31mError:[0mFailed to compile: com.qin:qin-runtime-core

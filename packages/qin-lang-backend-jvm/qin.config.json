@@ -5,8 +5,8 @@
     "entry":  "src/java/com/qin/lang/backend/jvm/QinJvmClassFileBackend.java",
     "dependencies":  {
                          "com.qin:qin-lang-ir":  "0.1.0",
-                         "com.qin:esmjs-sdk":  "0.1.0",
-                         "com.qin:qin-lang-runtime":  "0.1.0"
+                         "com.qin:qin-lang-runtime":  "0.1.0",
+                         "com.qin:qin-lang-frontend-adapter":  "0.1.0"
                      },
     "java":  {
                  "version":  "25",

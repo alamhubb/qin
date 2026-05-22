@@ -1,6 +1,7 @@
 package com.qin.lang.backend.jvm;
 
 import com.qin.lang.ir.QinBuiltinRegistry;
+import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrConstDeclaration;
@@ -30,6 +31,7 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,7 @@ import java.util.Objects;
  */
 public final class QinJvmClassFileBackend {
     private static final ClassDesc OBJECT_DESC = ClassDesc.of("java.lang.Object");
+    private static final ClassDesc ARRAY_LIST_DESC = ClassDesc.of("java.util.ArrayList");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
     private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
@@ -59,6 +62,8 @@ public final class QinJvmClassFileBackend {
             MethodTypeDesc.ofDescriptor("(Z)Ljava/lang/Boolean;");
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc LIST_ADD_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Z");
     private static final MethodTypeDesc MAP_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MEMBER_GET_SIGNATURE =
@@ -336,6 +341,10 @@ public final class QinJvmClassFileBackend {
             emitObjectLiteralAsObject(code, bindings, objectLiteral);
             return;
         }
+        if (expression instanceof QinIrArrayLiteral arrayLiteral) {
+            emitArrayLiteralAsObject(code, bindings, arrayLiteral);
+            return;
+        }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
             emitMemberAccessAsObject(code, bindings, memberAccessExpression);
             return;
@@ -373,6 +382,22 @@ public final class QinJvmClassFileBackend {
             code.ldc(property.key());
             emitExpressionAsObject(code, bindings, property.value());
             code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
+            code.pop();
+        }
+    }
+
+    private void emitArrayLiteralAsObject(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrArrayLiteral arrayLiteral) {
+        code.new_(ARRAY_LIST_DESC);
+        code.dup();
+        code.invokespecial(ARRAY_LIST_DESC, "<init>", VOID_INIT);
+
+        for (QinIrExpression element : arrayLiteral.elements()) {
+            code.dup();
+            emitExpressionAsObject(code, bindings, element);
+            code.invokevirtual(ARRAY_LIST_DESC, "add", LIST_ADD_SIGNATURE);
             code.pop();
         }
     }

@@ -50,7 +50,7 @@ import { defineConfig } from "qin";
 export default defineConfig({
   name: "my-app",
   dependencies: {
-    "org.springframework.boot:spring-boot-starter-web": "3.2.0",
+    "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   },
 });
 ```

@@ -140,6 +140,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                 javaStaticConsoleLogs,
                 javaInstanceMethodCalls,
                 javaInstanceConsoleLogs,
+                program.classDeclarations(),
                 program.executionSteps());
     }
 
@@ -217,6 +218,20 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                                 liveImportAliases)));
             }
             return new QinIrObjectLiteral(rewrittenProperties);
+        }
+        if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
+            if (liveImportAliases.contains(memberAccessExpression.objectName())) {
+                return new QinIrBuiltinCallExpression(
+                        "Global",
+                        "__qin_member_get__",
+                        List.of(
+                                new QinIrBuiltinCallExpression(
+                                        "Global",
+                                        "__qin_export_get__",
+                                        List.of(new QinIrIdentifierReference(memberAccessExpression.objectName()))),
+                                new QinIrStringLiteral(memberAccessExpression.propertyName())));
+            }
+            return memberAccessExpression;
         }
         if (expression instanceof QinIrIdentifierReference identifierReference) {
             if (liveImportAliases.contains(identifierReference.name())) {

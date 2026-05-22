@@ -26,7 +26,7 @@ import java.util.zip.ZipFile;
 public class QinCli {
     private static final String VERSION = "0.1.0";
     private static final EnvironmentChecker envChecker = new EnvironmentChecker();
-    private static final List<String> QIN_SCRIPT_EXTENSIONS = List.of(".js", ".mjs", ".ts");
+    private static final List<String> QIN_SCRIPT_EXTENSIONS = List.of(".qin", ".js", ".mjs", ".ts");
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -130,13 +130,14 @@ public class QinCli {
 
             String qinFile = resolveRunTargetToQinFile(config, target);
             if (qinFile != null) {
-                runQinProject(config, qinFile);
+                String[] qinArgs = Arrays.copyOfRange(args, 1, args.length);
+                runQinRuntime(config, qinFile, false, qinArgs);
                 return;
             }
         } else {
             String qinEntry = resolveDefaultQinEntry(config);
             if (qinEntry != null) {
-                runQinProject(config, qinEntry);
+                runQinRuntime(config, qinEntry, false, args);
                 return;
             }
         }
@@ -298,12 +299,24 @@ public class QinCli {
                 options.debugPort = parsePort(nextArg(args, ++i, "--debug-port"), options.debugPort);
                 continue;
             }
+            if (arg.startsWith("--port=")) {
+                options.portOverride = Integer.parseInt(arg.substring("--port=".length()).trim());
+                continue;
+            }
+            if ("--port".equals(arg)) {
+                options.portOverride = Integer.parseInt(nextArg(args, ++i, "--port").trim());
+                continue;
+            }
 
             options.programArgs.add(arg);
         }
 
         if (options.debug) {
             options.jvmArgs.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:" + options.debugPort);
+        }
+
+        if (options.portOverride != null) {
+            options.jvmArgs.add("-Dserver.port=" + options.portOverride);
         }
 
         return options;
@@ -456,14 +469,14 @@ public class QinCli {
     }
 
     private static void runQinProject(QinConfig config, String qinFile) throws Exception {
-        runQinRuntime(config, qinFile, false);
+        runQinRuntime(config, qinFile, false, new String[0]);
     }
 
     private static void runQinDevProject(QinConfig config, String qinFile) throws Exception {
-        runQinRuntime(config, qinFile, true);
+        runQinRuntime(config, qinFile, true, new String[0]);
     }
 
-    private static void runQinRuntime(QinConfig config, String qinFile, boolean devMode) throws Exception {
+    private static void runQinRuntime(QinConfig config, String qinFile, boolean devMode, String[] args) throws Exception {
         EnvironmentStatus envStatus = envChecker.checkAll();
         if (!envStatus.hasJava()) {
             System.err.println(red("Error: java is not installed."));
@@ -484,7 +497,7 @@ public class QinCli {
                 ? compileOutputDir
                 : compileOutputDir + separator + dependencyClasspath;
 
-        int port = config.port() > 0 ? config.port() : QinConstants.DEFAULT_PORT;
+        int port = resolveQinRuntimePort(config, args);
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         Path backendSource = Paths.get(QinConstants.getCwd(), qinFile).toAbsolutePath().normalize();
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
@@ -517,6 +530,19 @@ public class QinCli {
         }
 
         System.out.println(green(devMode ? "[OK] Qin dev runtime stopped" : "[OK] Done!"));
+    }
+
+    private static int resolveQinRuntimePort(QinConfig config, String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if ("--port".equals(arg)) {
+                if (i + 1 >= args.length) {
+                    throw new IllegalArgumentException("Missing value for --port");
+                }
+                return Integer.parseInt(args[++i]);
+            }
+        }
+        return config.port() != null && config.port() > 0 ? config.port() : QinConstants.DEFAULT_PORT;
     }
 
     private static String resolveQinRuntimeMainClass(String runtimeClasspath, boolean devMode) {
@@ -628,6 +654,7 @@ public class QinCli {
         private final List<String> jvmArgs = new ArrayList<>();
         private boolean debug;
         private int debugPort = 5005;
+        private Integer portOverride;
     }
 
     private static void buildProject(String[] args) throws Exception {
@@ -792,7 +819,10 @@ public class QinCli {
             qinDevEntry = resolveDefaultQinEntry(config);
         }
         if (qinDevEntry != null) {
-            runQinDevProject(config, qinDevEntry);
+            String[] qinArgs = args.length > 0 && !args[0].startsWith("-")
+                    ? Arrays.copyOfRange(args, 1, args.length)
+                    : args;
+            runQinRuntime(config, qinDevEntry, true, qinArgs);
             return;
         }
 
@@ -849,7 +879,17 @@ public class QinCli {
 
         // 妫ｅ啯鏂€ 闁稿繑濞婇弫顓㈠绩閻熸澘袟闁挎稒鐡璷mpile 濞戞柨顑呮晶鐘绘嚊椤忓嫬袟缁绢収鍠曠换姘瑹濠靛﹦顩€瑰憡褰冮幃鎾愁潰閵夘垳绀勫璺虹Ф閺?sync 闁汇劌瀚槐锔锯偓娑欙公缁?
         String classpath = "";
-        if (!skipSync) {
+        Map<String, String> deps = collectAllDependencies(config);
+        if (skipSync) {
+            if (!deps.isEmpty()) {
+                classpath = CacheValidator.getCachedClasspath(QinConstants.getCwd());
+                if (classpath == null || classpath.isBlank()) {
+                    throw new IllegalStateException(
+                            "No cached dependencies found for --no-sync. Run `qin sync` first or remove --no-sync.");
+                }
+                System.out.println(blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
+            }
+        } else {
             classpath = ensureDependenciesSynced(config);
         }
 
@@ -970,9 +1010,11 @@ public class QinCli {
                     System.out.println(blue("  -> Syncing " + projectName + "..."));
 
                     List<String> command = new ArrayList<>();
-                    command.add(QinConstants.CMD_PREFIX);
-                    command.add(QinConstants.CMD_FLAG);
-                    command.add(QinConstants.QIN_CMD);
+                    command.add(currentJavaCommand());
+                    command.add("-Dfile.encoding=UTF-8");
+                    command.add("-cp");
+                    command.add(currentCliClasspath());
+                    command.add(QinCli.class.getName());
                     command.add("sync");
                     if (force) {
                         command.add(QinConstants.ARG_FORCE);
@@ -1047,6 +1089,15 @@ public class QinCli {
      * 闁告艾鏈鐐电磼閹惧浜?
      */
     private record SyncResult(String projectName, SyncStatus status) {}
+
+    private static String currentJavaCommand() {
+        String executable = QinConstants.isWindows() ? "java.exe" : "java";
+        return Paths.get(System.getProperty("java.home"), "bin", executable).toString();
+    }
+
+    private static String currentCliClasspath() {
+        return System.getProperty("java.class.path");
+    }
 
     /**
      * 闁告艾鏈鐐寸瑹濠靛﹦顩柣銊ュ閻楀疇绠涢崘顔瑰亾閺勫繒甯嗛柨娑樼焷缁绘垿宕堕悙鍨櫢闁瑰瓨鍔楀▓?classpath
@@ -1431,13 +1482,13 @@ public class QinCli {
 
                 Examples:
                   qin init                    # Initialize new project
-                  qin run                     # Compile and run (auto Qin runtime when entry is .js/.mjs/.ts)
-                  qin run main/main.js        # Run a specific Qin entry file
+                  qin run                     # Compile and run (auto Qin runtime when entry is .qin/.js/.mjs/.ts)
+                  qin run main/main.qin       # Run a specific Qin entry file
                   qin dev                     # Start Qin dev mode (watch + auto reload)
                   qin run src/app/Main.java   # Run a specific Java file
                   qin run com.app.Main        # Run by fully-qualified class name
                   qin compile                 # Compile only
-                  qin build main/main.js      # Build Qin fullstack artifacts to dist/fullstack
+                  qin build main/main.qin     # Build Qin fullstack artifacts to dist/fullstack
                   qin build -o dist/prod      # Override build output root
                   qin jar                     # Build JAR (without dependencies)
                   qin fatjar                  # Build Fat JAR (with dependencies)

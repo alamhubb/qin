@@ -16,6 +16,7 @@ public record QinIrProgram(
         List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs,
         List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls,
         List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs,
+        List<QinIrClassDeclaration> classDeclarations,
         List<TopLevelExecutionStep> executionSteps) {
     public QinIrProgram(
             List<QinIrConstDeclaration> declarations,
@@ -26,7 +27,8 @@ public record QinIrProgram(
             List<QinIrJsImport> jsImports,
             List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs,
             List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls,
-            List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs) {
+            List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs,
+            List<QinIrClassDeclaration> classDeclarations) {
         this(
                 declarations,
                 expressionStatements,
@@ -37,6 +39,7 @@ public record QinIrProgram(
                 javaStaticConsoleLogs,
                 javaInstanceMethodCalls,
                 javaInstanceConsoleLogs,
+                classDeclarations,
                 buildDefaultExecutionSteps(
                         declarations,
                         expressionStatements,
@@ -57,6 +60,7 @@ public record QinIrProgram(
         Objects.requireNonNull(javaStaticConsoleLogs, "javaStaticConsoleLogs cannot be null");
         Objects.requireNonNull(javaInstanceMethodCalls, "javaInstanceMethodCalls cannot be null");
         Objects.requireNonNull(javaInstanceConsoleLogs, "javaInstanceConsoleLogs cannot be null");
+        Objects.requireNonNull(classDeclarations, "classDeclarations cannot be null");
         Objects.requireNonNull(executionSteps, "executionSteps cannot be null");
         declarations = List.copyOf(declarations);
         expressionStatements = List.copyOf(expressionStatements);
@@ -67,6 +71,7 @@ public record QinIrProgram(
         javaStaticConsoleLogs = List.copyOf(javaStaticConsoleLogs);
         javaInstanceMethodCalls = List.copyOf(javaInstanceMethodCalls);
         javaInstanceConsoleLogs = List.copyOf(javaInstanceConsoleLogs);
+        classDeclarations = List.copyOf(classDeclarations);
         executionSteps = List.copyOf(executionSteps);
     }
 
