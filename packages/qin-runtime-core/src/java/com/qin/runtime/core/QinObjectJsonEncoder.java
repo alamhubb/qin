@@ -16,12 +16,22 @@ public final class QinObjectJsonEncoder {
 
     private final IdentityHashMap<Object, Boolean> seen = new IdentityHashMap<>();
     private final StringBuilder out = new StringBuilder();
+    private final int maxChars;
+    private boolean truncated;
 
-    private QinObjectJsonEncoder() {
+    private QinObjectJsonEncoder(int maxChars) {
+        this.maxChars = maxChars;
     }
 
     public static String toJson(Object value) {
-        return new QinObjectJsonEncoder().encode(value);
+        return new QinObjectJsonEncoder(-1).encode(value);
+    }
+
+    public static String toJson(Object value, int maxChars) {
+        if (maxChars <= 0) {
+            return toJson(value);
+        }
+        return new QinObjectJsonEncoder(maxChars).encode(value);
     }
 
     private String encode(Object value) {
@@ -30,6 +40,10 @@ public final class QinObjectJsonEncoder {
     }
 
     private void writeValue(Object value, int depth) {
+        if (isAtBudget()) {
+            writeTruncatedString();
+            return;
+        }
         if (depth > MAX_DEPTH) {
             writeString("<max-depth>");
             return;
@@ -66,6 +80,13 @@ public final class QinObjectJsonEncoder {
             int len = java.lang.reflect.Array.getLength(value);
             out.append('[');
             for (int i = 0; i < len; i++) {
+                if (isAtBudget()) {
+                    if (i > 0) {
+                        out.append(',');
+                    }
+                    writeTruncatedString();
+                    break;
+                }
                 if (i > 0) {
                     out.append(',');
                 }
@@ -81,6 +102,13 @@ public final class QinObjectJsonEncoder {
         out.append('[');
         boolean first = true;
         for (Object item : collection) {
+            if (isAtBudget()) {
+                if (!first) {
+                    out.append(',');
+                }
+                writeTruncatedString();
+                break;
+            }
             if (!first) {
                 out.append(',');
             }
@@ -94,6 +122,15 @@ public final class QinObjectJsonEncoder {
         out.append('{');
         boolean first = true;
         for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (isAtBudget()) {
+                if (!first) {
+                    out.append(',');
+                }
+                writeString("__qin_truncated__");
+                out.append(':');
+                out.append("true");
+                break;
+            }
             if (!first) {
                 out.append(',');
             }
@@ -116,6 +153,15 @@ public final class QinObjectJsonEncoder {
         Map<String, Object> fields = extractFields(value);
         boolean first = true;
         for (Map.Entry<String, Object> entry : fields.entrySet()) {
+            if (isAtBudget()) {
+                if (!first) {
+                    out.append(',');
+                }
+                writeString("__qin_truncated__");
+                out.append(':');
+                out.append("true");
+                break;
+            }
             if (!first) {
                 out.append(',');
             }
@@ -168,6 +214,19 @@ public final class QinObjectJsonEncoder {
     }
 
     private void writeString(String text) {
+        if (isAtBudget() && !truncated) {
+            text = "<truncated>";
+            truncated = true;
+        } else if (maxChars > 0) {
+            int remaining = maxChars - out.length();
+            if (remaining < text.length() + 16) {
+                int keep = Math.max(0, remaining - 32);
+                if (keep < text.length()) {
+                    text = text.substring(0, keep) + "<truncated>";
+                    truncated = true;
+                }
+            }
+        }
         out.append('"');
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
@@ -189,5 +248,14 @@ public final class QinObjectJsonEncoder {
             }
         }
         out.append('"');
+    }
+
+    private boolean isAtBudget() {
+        return maxChars > 0 && out.length() >= maxChars;
+    }
+
+    private void writeTruncatedString() {
+        truncated = true;
+        out.append("\"<truncated>\"");
     }
 }

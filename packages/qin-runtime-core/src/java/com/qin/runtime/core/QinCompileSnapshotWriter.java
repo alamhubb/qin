@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 public final class QinCompileSnapshotWriter {
     private static final DateTimeFormatter HOUR_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHH");
     private static final Pattern ILLEGAL_CHARS = Pattern.compile("[^A-Za-z0-9._-]");
+    private static final int SNAPSHOT_JSON_MAX_CHARS = 4 * 1024 * 1024;
 
     public Path writeSnapshot(
             Path sourceFile,
@@ -140,7 +141,7 @@ public final class QinCompileSnapshotWriter {
     }
 
     private void writeJsonObject(Path file, Object value) throws IOException {
-        writeUtf8(file, QinObjectJsonEncoder.toJson(value) + System.lineSeparator());
+        writeUtf8(file, QinObjectJsonEncoder.toJson(value, SNAPSHOT_JSON_MAX_CHARS) + System.lineSeparator());
     }
 
     private boolean looksLikeJson(String text) {
