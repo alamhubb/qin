@@ -1890,7 +1890,6 @@ public final class JavaEsmGlobal {
         @Override
         public Object call(Object... args) {
             Map<String, Object> env = new LinkedHashMap<>();
-            env.putAll(resolveClosure());
             installLocalBindings(env);
             bindParameters(env, args);
             env.put("this", thisValue);
@@ -1900,7 +1899,6 @@ public final class JavaEsmGlobal {
 
         private Object callConstructor(Object... args) {
             Map<String, Object> env = new LinkedHashMap<>();
-            env.putAll(resolveClosure());
             installLocalBindings(env);
             bindParameters(env, args);
             env.put("this", thisValue);
@@ -2429,7 +2427,8 @@ public final class JavaEsmGlobal {
             if (!(valueNode instanceof Map<?, ?>)) {
                 return null;
             }
-            Map<String, Object> env = new LinkedHashMap<>(resolveClosure());
+            Map<String, Object> env = new LinkedHashMap<>();
+            installLocalBindings(env);
             env.put("this", receiver);
             String className = classDebugName();
             if (className != null && !className.isBlank() && !"null".equals(className)) {
@@ -2486,11 +2485,7 @@ public final class JavaEsmGlobal {
         }
 
         private Map<String, Object> resolveClosure() {
-            Map<String, Object> resolved = new LinkedHashMap<>();
-            for (Map.Entry<String, Object> entry : closure.entrySet()) {
-                resolved.put(entry.getKey(), entry.getValue());
-            }
-            return resolved;
+            return closure;
         }
 
         private Object evalFunctionBody(Map<String, Object> functionAst, Map<String, Object> env) {
@@ -3661,7 +3656,7 @@ public final class JavaEsmGlobal {
             if (envRef != null) {
                 return envRef;
             }
-            return referenceName(closure.get(name));
+            return referenceName(resolveClosureValue(name));
         }
 
         private Object referenceName(Object value) {
@@ -3727,11 +3722,32 @@ public final class JavaEsmGlobal {
                 }
                 return unwrapRuntimeReferenceValue(value);
             }
+            if (closure.containsKey(name)) {
+                Object value = resolveClosureValue(name);
+                if (value instanceof Map<?, ?> descriptorMap) {
+                    Object refName = descriptorMap.get("__qin_ref_name");
+                    if (refName != null) {
+                        return resolveRuntimeReference(refName, value);
+                    }
+                }
+                return unwrapRuntimeReferenceValue(value);
+            }
             Object global = __qin_global__(name);
             if (global != null || "undefined".equals(name)) {
                 return unwrapRuntimeReferenceValue(global);
             }
             return null;
+        }
+
+        private Object resolveClosureValue(String name) {
+            Object value = closure.get(name);
+            if (value instanceof Map<?, ?> descriptorMap) {
+                Object refName = descriptorMap.get("__qin_ref_name");
+                if (refName != null) {
+                    return resolveRuntimeReference(refName, value);
+                }
+            }
+            return value;
         }
 
         private Object resolveRuntimeReference(Object refName, Object fallback) {
