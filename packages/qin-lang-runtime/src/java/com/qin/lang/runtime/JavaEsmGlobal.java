@@ -1166,6 +1166,26 @@ public final class JavaEsmGlobal {
         if (value == null) {
             return "null";
         }
+        if (value instanceof InterpretedInstance instance) {
+            Object name = instance.get("name");
+            Object message = instance.get("message");
+            return "InterpretedInstance(name="
+                    + name
+                    + ", message="
+                    + message
+                    + ", fields="
+                    + instance.fieldNames()
+                    + ", methods="
+                    + instance.methodNames()
+                    + ")";
+        }
+        if (value instanceof Map<?, ?> map) {
+            Object name = map.get("name");
+            Object message = map.get("message");
+            if (name != null || message != null) {
+                return "MapError(name=" + name + ", message=" + message + ", keys=" + map.keySet() + ")";
+            }
+        }
         String type = value.getClass().getName();
         String text = String.valueOf(value);
         if (text.length() > 240) {
@@ -1826,7 +1846,7 @@ public final class JavaEsmGlobal {
         private final Object value;
 
         private ThrownValue(Object value) {
-            super(String.valueOf(value), null, false, false);
+            super(summarizeRuntimeValue(value), null, false, false);
             this.value = value;
         }
 
