@@ -81,7 +81,7 @@ public final class QinCfaJvmClassFileBackend {
     private static final int DECLARATION_CHUNK_SIZE = 16;
     private static final int RUNTIME_CHUNK_SIZE = 64;
     private static final int JSON_LITERAL_EMIT_THRESHOLD = 1024;
-    private static final int JSON_LITERAL_SERIALIZE_LIMIT = 32_000;
+    private static final int JSON_LITERAL_SERIALIZE_LIMIT = 2_000_000;
     private static final int STRING_CONSTANT_CHUNK_SIZE = 12_000;
     private static final List<ChunkSizing> CHUNK_SIZING_FALLBACKS = List.of(
             new ChunkSizing(DECLARATION_CHUNK_SIZE, RUNTIME_CHUNK_SIZE),
