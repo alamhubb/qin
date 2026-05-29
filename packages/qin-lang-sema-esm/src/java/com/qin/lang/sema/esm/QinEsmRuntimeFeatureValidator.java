@@ -14,6 +14,20 @@ import java.util.regex.Pattern;
 public final class QinEsmRuntimeFeatureValidator {
     private static final Pattern UNSUPPORTED_EXPORT_DECLARATION_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+(let|var)\\b");
+    private static final Pattern DYNAMIC_IMPORT_PATTERN = Pattern.compile("\\bimport\\s*\\(");
+    private final boolean allowRuntimeDynamicImport;
+
+    public QinEsmRuntimeFeatureValidator() {
+        this(true);
+    }
+
+    private QinEsmRuntimeFeatureValidator(boolean allowRuntimeDynamicImport) {
+        this.allowRuntimeDynamicImport = allowRuntimeDynamicImport;
+    }
+
+    public static QinEsmRuntimeFeatureValidator forBrowserFrontend() {
+        return new QinEsmRuntimeFeatureValidator(true);
+    }
 
     public void validate(QinModuleGraph graph) {
         List<QinEsmDiagnostic> diagnostics = new ArrayList<>();
@@ -26,8 +40,27 @@ public final class QinEsmRuntimeFeatureValidator {
     }
 
     private void scanOne(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
-        // Temporarily disable hard runtime pre-checks and let frontend/backend surface
-        // concrete unsupported constructs (for incremental npm compatibility work).
+        if (!allowRuntimeDynamicImport) {
+            addDynamicImportIfMatched(module, diagnostics);
+        }
+    }
+
+    private void addDynamicImportIfMatched(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
+        Matcher matcher = DYNAMIC_IMPORT_PATTERN.matcher(module.source());
+        boolean[] code = codeMask(module.source());
+        while (matcher.find()) {
+            if (!isCodePosition(code, matcher.start())) {
+                continue;
+            }
+            int[] lineCol = lineCol(module.source(), matcher.start());
+            diagnostics.add(new QinEsmDiagnostic(
+                    "ESM3001",
+                    "dynamic import is not implemented for the JVM runtime target yet",
+                    module.file(),
+                    lineCol[0],
+                    lineCol[1]));
+            return;
+        }
     }
 
     private void addIfMatched(
@@ -62,5 +95,73 @@ public final class QinEsmRuntimeFeatureValidator {
             }
         }
         return new int[] {line, col};
+    }
+
+    private boolean[] codeMask(String source) {
+        boolean[] code = new boolean[source.length()];
+        boolean single = false;
+        boolean dbl = false;
+        boolean template = false;
+        boolean lineComment = false;
+        boolean blockComment = false;
+        for (int i = 0; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+            char previous = i > 0 ? source.charAt(i - 1) : '\0';
+
+            if (lineComment) {
+                if (ch == '\n') {
+                    lineComment = false;
+                    code[i] = true;
+                }
+                continue;
+            }
+            if (blockComment) {
+                if (ch == '*' && next == '/') {
+                    blockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (single) {
+                if (ch == '\'' && previous != '\\') {
+                    single = false;
+                }
+                continue;
+            }
+            if (dbl) {
+                if (ch == '"' && previous != '\\') {
+                    dbl = false;
+                }
+                continue;
+            }
+            if (template) {
+                if (ch == '`' && previous != '\\') {
+                    template = false;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                lineComment = true;
+                i++;
+            } else if (ch == '/' && next == '*') {
+                blockComment = true;
+                i++;
+            } else if (ch == '\'') {
+                single = true;
+            } else if (ch == '"') {
+                dbl = true;
+            } else if (ch == '`') {
+                template = true;
+            } else {
+                code[i] = true;
+            }
+        }
+        return code;
+    }
+
+    private boolean isCodePosition(boolean[] code, int index) {
+        return index >= 0 && index < code.length && code[index];
     }
 }
