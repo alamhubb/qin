@@ -6,10 +6,13 @@
   <title>Qin Fullstack MVP</title>
 </head>
 <body>
-  <h1>Qin Fullstack MVP</h1>
-  <p>Frontend script is generated to <code>/app.js</code>.</p>
-  <pre id="api-data">loading...</pre>
-  <script src="/app.js"></script>
+  <div id="app"></div>
+  <section style="padding: 24px; font-family: Arial, sans-serif;">
+    <h2>Backend API</h2>
+    <p>Frontend script is generated to <code>/app.js</code>.</p>
+    <pre id="api-data">loading...</pre>
+  </section>
+  <script type="module" src="/app.js"></script>
   <script>
     fetch("/api/result")
       .then(r => r.json())

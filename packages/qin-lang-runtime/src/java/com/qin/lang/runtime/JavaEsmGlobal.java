@@ -1098,6 +1098,9 @@ public final class JavaEsmGlobal {
         if (value instanceof JavaEsmSetObject setObject) {
             return setObject.values();
         }
+        if (value instanceof JavaEsmMapObject mapObject) {
+            return mapObject.entries();
+        }
         if (value.getClass().isArray()) {
             int length = Array.getLength(value);
             List<Object> items = new ArrayList<>(length);
