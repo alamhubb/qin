@@ -23,10 +23,11 @@ import java.util.Set;
  */
 public final class QinCfaJvmClassFileBackend {
     private static final ClassDesc OBJECT_DESC = ClassDesc.of("java.lang.Object");
+    private static final ClassDesc OBJECT_ARRAY_DESC = ClassDesc.ofDescriptor("[Ljava/lang/Object;");
+    private static final String LAST_VALUE_FIELD_NAME = "__qin_last_value";
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc ARRAY_LIST_DESC = ClassDesc.of("java.util.ArrayList");
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
-    private static final ClassDesc JS_SDK_FUNCTIONS_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmFunctions");
     private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
     private static final ClassDesc JS_SDK_JSON_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmJson");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
@@ -51,10 +52,18 @@ public final class QinCfaJvmClassFileBackend {
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc GLOBAL_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc VALUE_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MEMBER_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc BIND_GLOBAL_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc BIND_MODULE_REF_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc MARK_MODULE_REF_INITIALIZED_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc REGISTER_JS_IMPORT_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MAP_GET_SIGNATURE =
@@ -72,6 +81,7 @@ public final class QinCfaJvmClassFileBackend {
     private static final int DECLARATION_CHUNK_SIZE = 16;
     private static final int RUNTIME_CHUNK_SIZE = 64;
     private static final int JSON_LITERAL_EMIT_THRESHOLD = 1024;
+    private static final int JSON_LITERAL_SERIALIZE_LIMIT = 32_000;
     private static final int STRING_CONSTANT_CHUNK_SIZE = 12_000;
     private static final List<ChunkSizing> CHUNK_SIZING_FALLBACKS = List.of(
             new ChunkSizing(DECLARATION_CHUNK_SIZE, RUNTIME_CHUNK_SIZE),
@@ -81,26 +91,34 @@ public final class QinCfaJvmClassFileBackend {
             new ChunkSizing(1, 4),
             new ChunkSizing(1, 2),
             new ChunkSizing(1, 1));
+    private static final boolean DEBUG_BACKEND = Boolean.getBoolean("qin.debug.backend");
     private Set<String> runtimeImportedGlobalNames = Set.of();
 
     public byte[] compileProgram(QinCfaProgram program, String className) {
         Objects.requireNonNull(program, "program cannot be null");
         Objects.requireNonNull(className, "className cannot be null");
 
+        long startNanos = System.nanoTime();
+        logBackendPhase("compile start", startNanos, className);
         validateExecutionPlan(program);
         BindingPlan bindingPlan = buildBindingPlan(program.declarations());
+        logLargestDeclarationInitializers(program, startNanos);
         runtimeImportedGlobalNames = collectRuntimeImportedGlobalNames(program);
         ClassDesc generatedClassDesc = ClassDesc.of(className);
         IllegalArgumentException lastTooLargeError = null;
         try {
             for (ChunkSizing sizing : CHUNK_SIZING_FALLBACKS) {
                 try {
-                    return buildClassBytes(program, bindingPlan, generatedClassDesc, sizing);
+                    logBackendPhase("build attempt start", startNanos, sizing.toString());
+                    byte[] bytes = buildClassBytes(program, bindingPlan, generatedClassDesc, sizing);
+                    logBackendPhase("build attempt done", startNanos, "bytes=" + bytes.length + ", " + sizing);
+                    return bytes;
                 } catch (IllegalArgumentException error) {
                     if (!isMethodTooLargeError(error)) {
                         throw error;
                     }
                     lastTooLargeError = error;
+                    logBackendPhase("build attempt too large", startNanos, sizing.toString());
                 }
             }
             if (lastTooLargeError != null) {
@@ -117,13 +135,19 @@ public final class QinCfaJvmClassFileBackend {
             BindingPlan bindingPlan,
             ClassDesc generatedClassDesc,
             ChunkSizing sizing) {
+        long startNanos = System.nanoTime();
         Set<String> eagerGlobalBindingNames = collectEagerGlobalBindingNames(program);
         List<ChunkMethodSpec> chunkMethods = buildChunkMethods(
                 bindingPlan,
                 program,
                 sizing.runtimeChunkSize());
+        logBackendPhase(
+                "classfile build start",
+                startNanos,
+                "chunks=" + chunkMethods.size() + ", declarations=" + program.declarations().size()
+                        + ", steps=" + program.executionSteps().size() + ", " + sizing);
         ClassFile classFile = ClassFile.of();
-        return classFile.build(generatedClassDesc, builder -> {
+        byte[] bytes = classFile.build(generatedClassDesc, builder -> {
             builder.withFlags(ClassFile.ACC_PUBLIC | ClassFile.ACC_SUPER);
 
             builder.withMethodBody("<init>", VOID_INIT, ClassFile.ACC_PUBLIC, code -> {
@@ -138,6 +162,10 @@ public final class QinCfaJvmClassFileBackend {
                         OBJECT_DESC,
                         ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC);
             }
+            builder.withField(
+                    LAST_VALUE_FIELD_NAME,
+                    OBJECT_DESC,
+                    ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC);
 
             for (ChunkMethodSpec chunkMethod : chunkMethods) {
                 builder.withMethodBody(
@@ -154,11 +182,89 @@ public final class QinCfaJvmClassFileBackend {
             }
 
             builder.withMethodBody("run", RUN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
-                    code -> emitRunMethod(code, generatedClassDesc, chunkMethods, bindingPlan));
+                    code -> emitRunMethod(code, generatedClassDesc, chunkMethods, bindingPlan, program));
 
             builder.withMethodBody("main", MAIN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
                     code -> emitMainMethod(code, generatedClassDesc));
         });
+        logBackendPhase("classfile build done", startNanos, "bytes=" + bytes.length);
+        return bytes;
+    }
+
+    private static void logBackendPhase(String phase, long startNanos, String detail) {
+        if (!DEBUG_BACKEND) {
+            return;
+        }
+        long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000L;
+        System.out.println("[QinCfaJvmClassFileBackend] " + phase + " +" + elapsedMillis + "ms :: " + detail);
+    }
+
+    private void logLargestDeclarationInitializers(QinCfaProgram program, long startNanos) {
+        if (!DEBUG_BACKEND) {
+            return;
+        }
+        List<String> largest = new ArrayList<>();
+        for (QinCfaProgram.ConstDeclaration declaration : program.declarations()) {
+            int size = expressionSize(declaration.initializer(), 20_000);
+            largest.add(size + " :: " + declaration.name() + " :: "
+                    + declaration.initializer().getClass().getSimpleName());
+        }
+        largest.sort((left, right) -> Integer.compare(parseLeadingInt(right), parseLeadingInt(left)));
+        int limit = Math.min(10, largest.size());
+        for (int i = 0; i < limit; i++) {
+            logBackendPhase("large initializer", startNanos, largest.get(i));
+        }
+    }
+
+    private int expressionSize(QinCfaProgram.Expression expression, int limit) {
+        if (expression == null) {
+            return 0;
+        }
+        if (limit <= 0) {
+            return 1;
+        }
+        if (expression instanceof QinCfaProgram.ObjectLiteral objectLiteral) {
+            int size = 1;
+            for (QinCfaProgram.ObjectProperty property : objectLiteral.properties()) {
+                size += 1 + expressionSize(property.value(), limit - size);
+                if (size >= limit) {
+                    return size;
+                }
+            }
+            return size;
+        }
+        if (expression instanceof QinCfaProgram.ArrayLiteral arrayLiteral) {
+            int size = 1;
+            for (QinCfaProgram.Expression element : arrayLiteral.elements()) {
+                size += expressionSize(element, limit - size);
+                if (size >= limit) {
+                    return size;
+                }
+            }
+            return size;
+        }
+        if (expression instanceof QinCfaProgram.BuiltinCallExpression builtinCallExpression) {
+            int size = 1;
+            for (QinCfaProgram.Expression argument : builtinCallExpression.arguments()) {
+                size += expressionSize(argument, limit - size);
+                if (size >= limit) {
+                    return size;
+                }
+            }
+            return size;
+        }
+        if (expression instanceof QinCfaProgram.FunctionLiteral functionLiteral) {
+            return 1 + expressionSize(functionLiteral.returnExpression(), limit - 1);
+        }
+        return 1;
+    }
+
+    private static int parseLeadingInt(String text) {
+        int end = 0;
+        while (end < text.length() && Character.isDigit(text.charAt(end))) {
+            end++;
+        }
+        return end == 0 ? 0 : Integer.parseInt(text.substring(0, end));
     }
 
     private boolean isMethodTooLargeError(Throwable throwable) {
@@ -185,17 +291,44 @@ public final class QinCfaJvmClassFileBackend {
             CodeBuilder code,
             ClassDesc generatedClassDesc,
             List<ChunkMethodSpec> chunkMethods,
-            BindingPlan bindingPlan) {
+            BindingPlan bindingPlan,
+            QinCfaProgram program) {
+        emitModuleRefRegistrations(code, bindingPlan);
+        emitRuntimeJsImportRegistrations(code, program);
         for (ChunkMethodSpec chunkMethod : chunkMethods) {
             code.invokestatic(generatedClassDesc, chunkMethod.methodName(), RUN_CHUNK_SIGNATURE);
         }
-        if (bindingPlan.lastDeclarationIndex() >= 0) {
-            String fieldName = bindingPlan.fieldNamesByIndex().get(bindingPlan.lastDeclarationIndex());
-            code.getstatic(generatedClassDesc, fieldName, OBJECT_DESC);
-            code.areturn();
-        }
-        code.aconst_null();
+        code.getstatic(generatedClassDesc, LAST_VALUE_FIELD_NAME, OBJECT_DESC);
         code.areturn();
+    }
+
+    private void emitModuleRefRegistrations(CodeBuilder code, BindingPlan bindingPlan) {
+        for (int i = 0; i < bindingPlan.declarationSteps().size(); i++) {
+            DeclarationStep declarationStep = bindingPlan.declarationSteps().get(i);
+            DeclarationBinding declarationBinding =
+                    bindingPlan.declarationBindingsByStep().get(i);
+            code.ldc(declarationStep.name());
+            code.ldc(declarationBinding.fieldName());
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_bind_module_ref__", BIND_MODULE_REF_SIGNATURE);
+            code.pop();
+        }
+    }
+
+    private void emitRuntimeJsImportRegistrations(CodeBuilder code, QinCfaProgram program) {
+        for (QinCfaProgram.JsImport jsImport : program.jsImports()) {
+            String moduleName = jsImport.moduleName();
+            String localName = jsImport.localName();
+            if (moduleName == null || moduleName.isBlank()
+                    || localName == null || localName.isBlank()
+                    || !isRuntimeJsImportModule(moduleName)) {
+                continue;
+            }
+            code.ldc(localName);
+            code.ldc(moduleName);
+            code.ldc(jsImport.importedName() == null ? "" : jsImport.importedName());
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_register_js_import__", REGISTER_JS_IMPORT_SIGNATURE);
+            code.pop();
+        }
     }
 
     private void emitChunkMethod(
@@ -218,6 +351,7 @@ public final class QinCfaJvmClassFileBackend {
                             code,
                             generatedClassDesc,
                             activeBindings,
+                            declarationStep.name(),
                             declarationStep.initializer(),
                             declarationBinding.fieldName());
                     activeBindings.put(declarationStep.name(), declarationBinding);
@@ -234,6 +368,8 @@ public final class QinCfaJvmClassFileBackend {
                             generatedClassDesc,
                             activeBindings,
                             program.expressionStatements().get(step.index()).expression());
+                    code.dup();
+                    code.putstatic(generatedClassDesc, LAST_VALUE_FIELD_NAME, OBJECT_DESC);
                     code.pop();
                 }
                 case CONSOLE_VALUE -> emitConsoleValueLog(
@@ -359,20 +495,31 @@ public final class QinCfaJvmClassFileBackend {
             CodeBuilder code,
             ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
+            String declarationName,
             QinCfaProgram.Expression initializer,
             String fieldName) {
         if (initializer instanceof QinCfaProgram.JavaNewExpression javaNewExpression) {
-            emitJavaNewInitializer(code, generatedClassDesc, javaNewExpression, fieldName);
+            emitJavaNewInitializer(code, generatedClassDesc, javaNewExpression, declarationName, fieldName);
             return;
         }
-        emitExpressionAsObject(code, generatedClassDesc, bindings, initializer);
+        try {
+            emitExpressionAsObject(code, generatedClassDesc, bindings, initializer);
+        } catch (IllegalArgumentException error) {
+            throw new IllegalArgumentException(
+                    error.getMessage()
+                            + " while emitting declaration `" + declarationName + "`"
+                            + "; initializer=" + initializer,
+                    error);
+        }
         code.putstatic(generatedClassDesc, fieldName, OBJECT_DESC);
+        emitMarkModuleRefInitialized(code, declarationName, fieldName);
     }
 
     private void emitJavaNewInitializer(
             CodeBuilder code,
             ClassDesc generatedClassDesc,
             QinCfaProgram.JavaNewExpression javaNewExpression,
+            String declarationName,
             String fieldName) {
         ResolvedConstructor resolvedConstructor = resolveConstructor(
                 javaNewExpression.ownerBinaryName(),
@@ -384,6 +531,17 @@ public final class QinCfaJvmClassFileBackend {
         emitArgumentsForParameters(code, javaNewExpression.arguments(), resolvedConstructor.parameterTypes());
         code.invokespecial(ownerDesc, "<init>", resolvedConstructor.descriptor());
         code.putstatic(generatedClassDesc, fieldName, OBJECT_DESC);
+        emitMarkModuleRefInitialized(code, declarationName, fieldName);
+    }
+
+    private void emitMarkModuleRefInitialized(CodeBuilder code, String declarationName, String fieldName) {
+        code.ldc(declarationName);
+        code.ldc(fieldName);
+        code.invokestatic(
+                JS_SDK_GLOBAL_DESC,
+                "__qin_mark_module_ref_initialized__",
+                MARK_MODULE_REF_INITIALIZED_SIGNATURE);
+        code.pop();
     }
 
     private void emitObjectConsoleLog(
@@ -511,7 +669,7 @@ public final class QinCfaJvmClassFileBackend {
             return;
         }
         if (expression instanceof QinCfaProgram.StringLiteral stringLiteral) {
-            code.ldc(stringLiteral.value());
+            emitStringConstant(code, stringLiteral.value());
             return;
         }
         if (expression instanceof QinCfaProgram.BooleanLiteral booleanLiteral) {
@@ -539,7 +697,7 @@ public final class QinCfaJvmClassFileBackend {
         }
         if (expression instanceof QinCfaProgram.FunctionLiteral functionLiteral) {
             emitExpressionAsObject(code, generatedClassDesc, bindings, functionLiteral.returnExpression());
-            code.invokestatic(JS_SDK_FUNCTIONS_DESC, "constantReturn", FUNCTION_CONSTANT_RETURN_SIGNATURE);
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_constant_return_function__", FUNCTION_CONSTANT_RETURN_SIGNATURE);
             return;
         }
         if (expression instanceof QinCfaProgram.MemberAccessExpression memberAccessExpression) {
@@ -605,10 +763,13 @@ public final class QinCfaJvmClassFileBackend {
                 || "parseFloat".equals(name)
                 || "isNaN".equals(name)
                 || "isFinite".equals(name)
+                || "Infinity".equals(name)
+                || "NaN".equals(name)
                 || "module".equals(name)
                 || "exports".equals(name)
                 || "require".equals(name)
                 || "crypto".equals(name)
+                || "performance".equals(name)
                 || "this".equals(name)) {
             code.ldc(name);
             code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
@@ -624,14 +785,18 @@ public final class QinCfaJvmClassFileBackend {
             if (moduleName == null || moduleName.isBlank()) {
                 continue;
             }
-            if (moduleName.startsWith("node:")
-                    || moduleName.startsWith("js:")
-                    || moduleName.startsWith("http://")
-                    || moduleName.startsWith("https://")) {
+            if (isRuntimeJsImportModule(moduleName)) {
                 names.add(jsImport.localName());
             }
         }
         return names;
+    }
+
+    private static boolean isRuntimeJsImportModule(String moduleName) {
+        return moduleName.startsWith("node:")
+                || moduleName.startsWith("js:")
+                || moduleName.startsWith("http://")
+                || moduleName.startsWith("https://");
     }
 
     private boolean emitLargeStaticJsonLiteralIfPossible(CodeBuilder code, QinCfaProgram.Expression expression) {
@@ -663,63 +828,117 @@ public final class QinCfaJvmClassFileBackend {
     }
 
     private String trySerializeJsonLiteral(QinCfaProgram.Expression expression) {
-        StringBuilder out = new StringBuilder();
-        if (!appendJsonLiteral(out, expression)) {
+        StringBuilder out = new StringBuilder(Math.min(JSON_LITERAL_SERIALIZE_LIMIT, 4096));
+        if (!appendJsonLiteral(out, expression, JSON_LITERAL_SERIALIZE_LIMIT)) {
             return null;
         }
         return out.toString();
     }
 
-    private boolean appendJsonLiteral(StringBuilder out, QinCfaProgram.Expression expression) {
+    private boolean appendJsonLiteral(StringBuilder out, QinCfaProgram.Expression expression, int limit) {
         if (expression instanceof QinCfaProgram.NumberLiteral numberLiteral) {
-            out.append(numberLiteral.value());
-            return true;
+            return appendJsonText(out, String.valueOf(numberLiteral.value()), limit);
         }
         if (expression instanceof QinCfaProgram.StringLiteral stringLiteral) {
-            out.append('"').append(escapeJsonString(stringLiteral.value())).append('"');
-            return true;
+            return appendJsonStringLiteral(out, stringLiteral.value(), limit);
         }
         if (expression instanceof QinCfaProgram.BooleanLiteral booleanLiteral) {
-            out.append(booleanLiteral.value() ? "true" : "false");
-            return true;
+            return appendJsonText(out, booleanLiteral.value() ? "true" : "false", limit);
         }
         if (expression instanceof QinCfaProgram.NullLiteral) {
-            out.append("null");
-            return true;
+            return appendJsonText(out, "null", limit);
         }
         if (expression instanceof QinCfaProgram.ArrayLiteral arrayLiteral) {
-            out.append('[');
+            if (!appendJsonChar(out, '[', limit)) {
+                return false;
+            }
             for (int i = 0; i < arrayLiteral.elements().size(); i++) {
                 if (i > 0) {
-                    out.append(',');
+                    if (!appendJsonChar(out, ',', limit)) {
+                        return false;
+                    }
                 }
-                if (!appendJsonLiteral(out, arrayLiteral.elements().get(i))) {
+                if (!appendJsonLiteral(out, arrayLiteral.elements().get(i), limit)) {
                     return false;
                 }
             }
-            out.append(']');
-            return true;
+            return appendJsonChar(out, ']', limit);
         }
         if (expression instanceof QinCfaProgram.ObjectLiteral objectLiteral) {
-            out.append('{');
+            if (!appendJsonChar(out, '{', limit)) {
+                return false;
+            }
             for (int i = 0; i < objectLiteral.properties().size(); i++) {
                 QinCfaProgram.ObjectProperty property = objectLiteral.properties().get(i);
                 if (i > 0) {
-                    out.append(',');
+                    if (!appendJsonChar(out, ',', limit)) {
+                        return false;
+                    }
                 }
                 String key = property.key();
                 if (key == null) {
                     return false;
                 }
-                out.append('"').append(escapeJsonString(key)).append('"').append(':');
-                if (!appendJsonLiteral(out, property.value())) {
+                if (!appendJsonStringLiteral(out, key, limit) || !appendJsonChar(out, ':', limit)) {
+                    return false;
+                }
+                if (!appendJsonLiteral(out, property.value(), limit)) {
                     return false;
                 }
             }
-            out.append('}');
-            return true;
+            return appendJsonChar(out, '}', limit);
         }
         return false;
+    }
+
+    private boolean appendJsonChar(StringBuilder out, char ch, int limit) {
+        if (out.length() + 1 > limit) {
+            return false;
+        }
+        out.append(ch);
+        return true;
+    }
+
+    private boolean appendJsonText(StringBuilder out, String text, int limit) {
+        if (text == null) {
+            return true;
+        }
+        if (out.length() + text.length() > limit) {
+            return false;
+        }
+        out.append(text);
+        return true;
+    }
+
+    private boolean appendJsonStringLiteral(StringBuilder out, String text, int limit) {
+        if (!appendJsonChar(out, '"', limit)) {
+            return false;
+        }
+        if (text != null && !text.isEmpty()) {
+            for (int i = 0; i < text.length(); i++) {
+                char ch = text.charAt(i);
+                String escaped = switch (ch) {
+                    case '"' -> "\\\"";
+                    case '\\' -> "\\\\";
+                    case '\b' -> "\\b";
+                    case '\f' -> "\\f";
+                    case '\n' -> "\\n";
+                    case '\r' -> "\\r";
+                    case '\t' -> "\\t";
+                    default -> {
+                        if (ch < 0x20) {
+                            String hex = Integer.toHexString(ch);
+                            yield "\\u" + "0".repeat(4 - hex.length()) + hex;
+                        }
+                        yield String.valueOf(ch);
+                    }
+                };
+                if (!appendJsonText(out, escaped, limit)) {
+                    return false;
+                }
+            }
+        }
+        return appendJsonChar(out, '"', limit);
     }
 
     private String escapeJsonString(String text) {
@@ -766,7 +985,17 @@ public final class QinCfaJvmClassFileBackend {
         for (QinCfaProgram.ObjectProperty property : objectLiteral.properties()) {
             code.dup();
             code.ldc(property.key());
-            emitExpressionAsObject(code, generatedClassDesc, bindings, property.value());
+            try {
+                emitExpressionAsObject(code, generatedClassDesc, bindings, property.value());
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException(
+                        error.getMessage()
+                                + " while emitting object property `" + property.key() + "`"
+                                + "; property value=" + property.value()
+                                + "; visible bindings=" + bindings.keySet(),
+                        error);
+            }
+            emitRuntimeValueUnwrap(code);
             code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
             code.pop();
         }
@@ -783,9 +1012,14 @@ public final class QinCfaJvmClassFileBackend {
         for (QinCfaProgram.Expression element : arrayLiteral.elements()) {
             code.dup();
             emitExpressionAsObject(code, generatedClassDesc, bindings, element);
+            emitRuntimeValueUnwrap(code);
             code.invokevirtual(ARRAY_LIST_DESC, "add", LIST_ADD_SIGNATURE);
             code.pop();
         }
+    }
+
+    private void emitRuntimeValueUnwrap(CodeBuilder code) {
+        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_value__", VALUE_SIGNATURE);
     }
 
     private void emitMemberAccessAsObject(
@@ -809,6 +1043,12 @@ public final class QinCfaJvmClassFileBackend {
             ClassDesc generatedClassDesc,
             Map<String, DeclarationBinding> bindings,
             QinCfaProgram.BuiltinCallExpression builtinCallExpression) {
+        if (emitLocalAssignmentBuiltinAsObject(code, generatedClassDesc, bindings, builtinCallExpression)) {
+            return;
+        }
+        if (emitUnaryTypeofBuiltinAsObject(code, generatedClassDesc, bindings, builtinCallExpression)) {
+            return;
+        }
         QinBuiltinRegistry.BuiltinMethod method = QinBuiltinRegistry
                 .resolve(
                         builtinCallExpression.receiverName(),
@@ -820,25 +1060,106 @@ public final class QinCfaJvmClassFileBackend {
                                 + builtinCallExpression.methodName() + "/"
                                 + builtinCallExpression.arguments().size()));
 
-        for (int i = 0; i < builtinCallExpression.arguments().size(); i++) {
-            QinCfaProgram.Expression argument = builtinCallExpression.arguments().get(i);
+        int argumentIndex = 0;
+        for (int i = 0; i < method.argumentKinds().size(); i++) {
             QinBuiltinRegistry.BuiltinArgKind argKind = method.argumentKinds().get(i);
+            if (argKind == QinBuiltinRegistry.BuiltinArgKind.ARRAY_REST) {
+                emitRestArgumentsArray(code, generatedClassDesc, bindings, builtinCallExpression.arguments(), argumentIndex);
+                argumentIndex = builtinCallExpression.arguments().size();
+                continue;
+            }
+            QinCfaProgram.Expression argument = builtinCallExpression.arguments().get(argumentIndex);
             if (argKind == QinBuiltinRegistry.BuiltinArgKind.STRING) {
                 if (argument instanceof QinCfaProgram.StringLiteral stringLiteral) {
                     code.ldc(stringLiteral.value());
+                    argumentIndex++;
                     continue;
                 }
                 throw new IllegalArgumentException("QJS1003 builtin argument type mismatch at index "
-                        + i + " for " + builtinCallExpression.receiverName()
+                        + argumentIndex + " for " + builtinCallExpression.receiverName()
                         + "." + builtinCallExpression.methodName() + ": expected string");
             }
             emitExpressionAsObject(code, generatedClassDesc, bindings, argument);
+            argumentIndex++;
         }
 
         code.invokestatic(
                 ClassDesc.of(method.ownerBinaryName()),
                 method.jvmMethodName(),
                 method.descriptor());
+    }
+
+    private boolean emitUnaryTypeofBuiltinAsObject(
+            CodeBuilder code,
+            ClassDesc generatedClassDesc,
+            Map<String, DeclarationBinding> bindings,
+            QinCfaProgram.BuiltinCallExpression builtinCallExpression) {
+        if (!"Global".equals(builtinCallExpression.receiverName())
+                || !"__qin_unary__".equals(builtinCallExpression.methodName())
+                || builtinCallExpression.arguments().size() != 2
+                || !(builtinCallExpression.arguments().get(0) instanceof QinCfaProgram.StringLiteral operator)
+                || !"typeof".equals(operator.value())) {
+            return false;
+        }
+
+        code.ldc("typeof");
+        QinCfaProgram.Expression argument = builtinCallExpression.arguments().get(1);
+        if (argument instanceof QinCfaProgram.IdentifierReference identifierReference) {
+            DeclarationBinding binding = bindings.get(identifierReference.name());
+            if (binding != null) {
+                code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
+            } else if (!emitKnownGlobalIdentifier(code, identifierReference.name())) {
+                // JavaScript's `typeof missingIdentifier` evaluates to
+                // "undefined" instead of throwing a ReferenceError.
+                code.aconst_null();
+            }
+        } else {
+            emitExpressionAsObject(code, generatedClassDesc, bindings, argument);
+        }
+        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_unary__", MethodTypeDesc.ofDescriptor(
+                "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
+        return true;
+    }
+
+    private void emitRestArgumentsArray(
+            CodeBuilder code,
+            ClassDesc generatedClassDesc,
+            Map<String, DeclarationBinding> bindings,
+            List<QinCfaProgram.Expression> arguments,
+            int startIndex) {
+        int restCount = arguments.size() - startIndex;
+        code.loadConstant(restCount);
+        code.anewarray(OBJECT_DESC);
+        for (int i = 0; i < restCount; i++) {
+            code.dup();
+            code.loadConstant(i);
+            emitExpressionAsObject(code, generatedClassDesc, bindings, arguments.get(startIndex + i));
+            code.aastore();
+        }
+    }
+
+    private boolean emitLocalAssignmentBuiltinAsObject(
+            CodeBuilder code,
+            ClassDesc generatedClassDesc,
+            Map<String, DeclarationBinding> bindings,
+            QinCfaProgram.BuiltinCallExpression builtinCallExpression) {
+        if (!"Global".equals(builtinCallExpression.receiverName())
+                || !"__qin_assign__".equals(builtinCallExpression.methodName())
+                || builtinCallExpression.arguments().size() != 2) {
+            return false;
+        }
+        QinCfaProgram.Expression bindingNameExpression = builtinCallExpression.arguments().get(0);
+        if (!(bindingNameExpression instanceof QinCfaProgram.StringLiteral bindingNameLiteral)) {
+            throw new IllegalArgumentException("QJS1003 __qin_assign__ expects string binding name");
+        }
+        DeclarationBinding binding = bindings.get(bindingNameLiteral.value());
+        if (binding == null) {
+            throw new IllegalArgumentException("QJS2008 unknown assignment target: " + bindingNameLiteral.value());
+        }
+        emitExpressionAsObject(code, generatedClassDesc, bindings, builtinCallExpression.arguments().get(1));
+        code.dup();
+        code.putstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
+        return true;
     }
 
     private void emitExpressionForParameter(CodeBuilder code, QinCfaProgram.Expression expression, Class<?> parameterType) {
