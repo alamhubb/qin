@@ -17,7 +17,8 @@ public record QinIrProgram(
         List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls,
         List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs,
         List<QinIrClassDeclaration> classDeclarations,
-        List<TopLevelExecutionStep> executionSteps) {
+        List<TopLevelExecutionStep> executionSteps,
+        List<QinIrFunctionModelArtifact> functionModelArtifacts) {
     public QinIrProgram(
             List<QinIrConstDeclaration> declarations,
             List<QinIrExpressionStatement> expressionStatements,
@@ -47,7 +48,35 @@ public record QinIrProgram(
                         consoleLogs,
                         javaStaticConsoleLogs,
                         javaInstanceMethodCalls,
-                        javaInstanceConsoleLogs));
+                        javaInstanceConsoleLogs),
+                List.of());
+    }
+
+    public QinIrProgram(
+            List<QinIrConstDeclaration> declarations,
+            List<QinIrExpressionStatement> expressionStatements,
+            List<QinIrConsoleLogValue> consoleValueLogs,
+            List<QinIrConsoleLogStatement> consoleLogs,
+            List<QinIrJavaImport> javaImports,
+            List<QinIrJsImport> jsImports,
+            List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs,
+            List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls,
+            List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs,
+            List<QinIrClassDeclaration> classDeclarations,
+            List<TopLevelExecutionStep> executionSteps) {
+        this(
+                declarations,
+                expressionStatements,
+                consoleValueLogs,
+                consoleLogs,
+                javaImports,
+                jsImports,
+                javaStaticConsoleLogs,
+                javaInstanceMethodCalls,
+                javaInstanceConsoleLogs,
+                classDeclarations,
+                executionSteps,
+                List.of());
     }
 
     public QinIrProgram {
@@ -62,6 +91,7 @@ public record QinIrProgram(
         Objects.requireNonNull(javaInstanceConsoleLogs, "javaInstanceConsoleLogs cannot be null");
         Objects.requireNonNull(classDeclarations, "classDeclarations cannot be null");
         Objects.requireNonNull(executionSteps, "executionSteps cannot be null");
+        Objects.requireNonNull(functionModelArtifacts, "functionModelArtifacts cannot be null");
         declarations = List.copyOf(declarations);
         expressionStatements = List.copyOf(expressionStatements);
         consoleValueLogs = List.copyOf(consoleValueLogs);
@@ -73,6 +103,7 @@ public record QinIrProgram(
         javaInstanceConsoleLogs = List.copyOf(javaInstanceConsoleLogs);
         classDeclarations = List.copyOf(classDeclarations);
         executionSteps = List.copyOf(executionSteps);
+        functionModelArtifacts = List.copyOf(functionModelArtifacts);
     }
 
     private static List<TopLevelExecutionStep> buildDefaultExecutionSteps(

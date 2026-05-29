@@ -141,7 +141,8 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                 javaInstanceMethodCalls,
                 javaInstanceConsoleLogs,
                 program.classDeclarations(),
-                program.executionSteps());
+                program.executionSteps(),
+                program.functionModelArtifacts());
     }
 
     private Map<Path, Integer> buildModuleIndex(List<Path> orderedModules) {
