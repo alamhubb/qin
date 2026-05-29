@@ -122,11 +122,12 @@ final class QinJsPackageRunner {
             return;
         }
 
-        Path sourcePackageDir = resolveInstalledPackageDir(packageName, workspaceRoot);
-        boolean workspacePackage = false;
-        if (sourcePackageDir == null) {
-            sourcePackageDir = workspacePackages.get(packageName);
-            workspacePackage = sourcePackageDir != null;
+        Path workspacePackageDir = workspacePackages.get(packageName);
+        boolean workspacePackage = workspacePackageDir != null && hasDeclaredWorkspaceSourceEntry(workspacePackageDir);
+        Path sourcePackageDir = workspacePackage ? workspacePackageDir : resolveInstalledPackageDir(packageName, workspaceRoot);
+        if (sourcePackageDir == null && workspacePackageDir != null) {
+            sourcePackageDir = workspacePackageDir;
+            workspacePackage = true;
         }
         if (sourcePackageDir == null || !Files.isDirectory(sourcePackageDir)) {
             return;
@@ -137,7 +138,8 @@ final class QinJsPackageRunner {
         Files.createDirectories(targetPackageDir.getParent());
         copyPackageTree(sourcePackageDir, targetPackageDir, workspacePackage);
 
-        if (workspacePackage && readExistingPackageEntry(sourcePackageDir) == null) {
+        if (workspacePackage && (hasDeclaredWorkspaceSourceEntry(sourcePackageDir)
+                || readExistingPackageEntry(sourcePackageDir) == null)) {
             rewriteWorkspacePackageManifest(targetPackageDir, sourcePackageDir, packageName);
         }
 
@@ -216,6 +218,15 @@ final class QinJsPackageRunner {
             return "./index.js";
         }
         throw new IllegalStateException("Cannot determine workspace source entry for package: " + sourcePackageDir);
+    }
+
+    private boolean hasDeclaredWorkspaceSourceEntry(Path sourcePackageDir) throws IOException {
+        Path packageJson = sourcePackageDir.resolve("package.json");
+        if (!Files.isRegularFile(packageJson)) {
+            return false;
+        }
+        String json = Files.readString(packageJson, StandardCharsets.UTF_8);
+        return JSON_LOCAL_FIELD.matcher(json).find();
     }
 
     private String normalizeManifestRelativePath(String value) {
