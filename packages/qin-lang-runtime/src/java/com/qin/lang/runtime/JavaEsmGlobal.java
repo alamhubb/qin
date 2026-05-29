@@ -1733,6 +1733,9 @@ public final class JavaEsmGlobal {
             if ("constructor".equals(name) && constructorFunction != null) {
                 return constructorFunction;
             }
+            if ("_markParseFail".equals(name) && methods.containsKey("setParseFail")) {
+                return methods.get("setParseFail").bindThis(this);
+            }
             InterpretedFunction method = methods.get(name);
             if (method != null) {
                 return method.bindThis(this);
