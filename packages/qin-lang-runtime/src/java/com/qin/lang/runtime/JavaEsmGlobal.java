@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -1163,18 +1164,36 @@ public final class JavaEsmGlobal {
     }
 
     private static String summarizeRuntimeValue(Object value) {
+        return summarizeRuntimeValue(value, 0, new IdentityHashMap<>());
+    }
+
+    private static String summarizeRuntimeValue(Object value, int depth, IdentityHashMap<Object, Boolean> seen) {
         if (value == null) {
             return "null";
         }
+        if (depth > 3) {
+            return simpleName(value);
+        }
+        if (value instanceof String text) {
+            return "\"" + truncateRuntimeSummary(text) + "\"";
+        }
+        if (value instanceof Number || value instanceof Boolean) {
+            return String.valueOf(value);
+        }
+        if (seen.containsKey(value)) {
+            return "[Circular " + simpleName(value) + "]";
+        }
+        seen.put(value, Boolean.TRUE);
         if (value instanceof InterpretedInstance instance) {
-            Object name = instance.get("name");
-            Object message = instance.get("message");
+            Map<String, Object> fields = instance.fieldSnapshot();
+            Object name = fields.get("name");
+            Object message = fields.get("message");
             return "InterpretedInstance(name="
-                    + name
+                    + summarizeRuntimeValue(name, depth + 1, seen)
                     + ", message="
-                    + message
+                    + summarizeRuntimeValue(message, depth + 1, seen)
                     + ", fields="
-                    + instance.fieldNames()
+                    + summarizeRuntimeMap(fields, depth + 1, seen, 16)
                     + ", methods="
                     + instance.methodNames()
                     + ")";
@@ -1183,15 +1202,74 @@ public final class JavaEsmGlobal {
             Object name = map.get("name");
             Object message = map.get("message");
             if (name != null || message != null) {
-                return "MapError(name=" + name + ", message=" + message + ", keys=" + map.keySet() + ")";
+                return "MapError(name="
+                        + summarizeRuntimeValue(name, depth + 1, seen)
+                        + ", message="
+                        + summarizeRuntimeValue(message, depth + 1, seen)
+                        + ", fields="
+                        + summarizeRuntimeMap(map, depth + 1, seen, 16)
+                        + ")";
             }
+            return "Map" + summarizeRuntimeMap(map, depth + 1, seen, 10);
+        }
+        if (value instanceof Collection<?> collection) {
+            return simpleName(value) + summarizeRuntimeCollection(collection, depth + 1, seen, 10);
         }
         String type = value.getClass().getName();
         String text = String.valueOf(value);
-        if (text.length() > 240) {
-            text = text.substring(0, 240) + "...";
-        }
+        text = truncateRuntimeSummary(text);
         return type + "(" + text + ")";
+    }
+
+    private static String summarizeRuntimeMap(
+            Map<?, ?> map,
+            int depth,
+            IdentityHashMap<Object, Boolean> seen,
+            int limit) {
+        StringBuilder builder = new StringBuilder("{");
+        int index = 0;
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (index > 0) {
+                builder.append(", ");
+            }
+            if (index >= limit) {
+                builder.append("... +").append(map.size() - index).append(" more");
+                break;
+            }
+            builder.append(String.valueOf(entry.getKey()))
+                    .append("=")
+                    .append(summarizeRuntimeValue(entry.getValue(), depth + 1, seen));
+            index++;
+        }
+        return builder.append("}").toString();
+    }
+
+    private static String summarizeRuntimeCollection(
+            Collection<?> collection,
+            int depth,
+            IdentityHashMap<Object, Boolean> seen,
+            int limit) {
+        StringBuilder builder = new StringBuilder("[");
+        int index = 0;
+        for (Object item : collection) {
+            if (index > 0) {
+                builder.append(", ");
+            }
+            if (index >= limit) {
+                builder.append("... +").append(collection.size() - index).append(" more");
+                break;
+            }
+            builder.append(summarizeRuntimeValue(item, depth + 1, seen));
+            index++;
+        }
+        return builder.append("]").toString();
+    }
+
+    private static String truncateRuntimeSummary(String text) {
+        if (text.length() > 240) {
+            return text.substring(0, 240) + "...";
+        }
+        return text;
     }
 
     private static final Object BUILTIN_MISS = new Object();
@@ -1802,6 +1880,10 @@ public final class JavaEsmGlobal {
 
         private Set<String> fieldNames() {
             return fields.keySet();
+        }
+
+        private Map<String, Object> fieldSnapshot() {
+            return new LinkedHashMap<>(fields);
         }
 
         private Map<String, Object> ownEnumerableProperties() {
