@@ -1759,7 +1759,15 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             ClassExpression functionAst,
             Map<String, String> javaImportLookup,
             Map<String, QinIrExpression> declarationLookup) {
-        return lowerFunctionLikeOrNull(functionAst, "ClassExpression", javaImportLookup, declarationLookup);
+        QinIrObjectLiteral runtimeDefinition = lowerRequiredFunctionRuntimeDefinition(
+                functionAst,
+                "ClassExpression",
+                javaImportLookup,
+                declarationLookup);
+        return new QinIrBuiltinCallExpression(
+                "Global",
+                QinParserRuntimeNames.FUNCTION_MAKE_SHIM,
+                List.of(runtimeDefinition));
     }
 
     private QinIrExpression lowerFunctionLikeOrNull(
