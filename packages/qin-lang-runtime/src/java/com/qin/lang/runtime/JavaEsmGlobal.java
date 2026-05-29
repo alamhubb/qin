@@ -1839,6 +1839,12 @@ public final class JavaEsmGlobal {
         private final Map<String, Object> closure;
         private final Object thisValue;
         private final Map<String, Object> ownProperties;
+        private InterpretedFunction cachedSuperClassFunction;
+        private boolean superClassFunctionResolved;
+        private Map<String, InterpretedFunction> cachedInstanceMethods;
+        private Map<String, InterpretedFunction> cachedInheritedInstanceMethods;
+        private Map<String, AccessorProperty> cachedInstanceAccessors;
+        private Map<String, AccessorProperty> cachedInheritedInstanceAccessors;
 
         private InterpretedFunction(Map<String, Object> definition) {
             this(definition, new LinkedHashMap<>());
@@ -2183,6 +2189,9 @@ public final class JavaEsmGlobal {
         }
 
         private Map<String, InterpretedFunction> collectInstanceMethods() {
+            if (cachedInstanceMethods != null) {
+                return cachedInstanceMethods;
+            }
             LinkedHashMap<String, InterpretedFunction> methods = new LinkedHashMap<>();
             Map<String, Object> body = castMap(asMap(ast.get("body")));
             for (Object memberNode : asList(body.get("body"))) {
@@ -2201,20 +2210,28 @@ public final class JavaEsmGlobal {
                 Object decoratedFunction = applyLegacyMethodDecorators(member, name, memberFunction, null);
                 methods.put(name, toInterpretedFunction(decoratedFunction, memberFunction));
             }
-            return methods;
+            cachedInstanceMethods = Map.copyOf(methods);
+            return cachedInstanceMethods;
         }
 
         private Map<String, InterpretedFunction> collectInheritedInstanceMethods() {
+            if (cachedInheritedInstanceMethods != null) {
+                return cachedInheritedInstanceMethods;
+            }
             LinkedHashMap<String, InterpretedFunction> methods = new LinkedHashMap<>();
             InterpretedFunction parent = resolveSuperClassFunction();
             if (parent != null) {
                 methods.putAll(parent.collectInheritedInstanceMethods());
             }
             methods.putAll(collectInstanceMethods());
-            return methods;
+            cachedInheritedInstanceMethods = Map.copyOf(methods);
+            return cachedInheritedInstanceMethods;
         }
 
         private Map<String, AccessorProperty> collectInstanceAccessors() {
+            if (cachedInstanceAccessors != null) {
+                return cachedInstanceAccessors;
+            }
             LinkedHashMap<String, AccessorProperty> accessors = new LinkedHashMap<>();
             Map<String, Object> body = castMap(asMap(ast.get("body")));
             for (Object memberNode : asList(body.get("body"))) {
@@ -2233,29 +2250,39 @@ public final class JavaEsmGlobal {
                 Object decoratedFunction = applyLegacyMethodDecorators(member, name, memberFunction, null);
                 installAccessor(accessors, name, toInterpretedFunction(decoratedFunction, memberFunction), String.valueOf(member.get("kind")));
             }
-            return accessors;
+            cachedInstanceAccessors = Map.copyOf(accessors);
+            return cachedInstanceAccessors;
         }
 
         private Map<String, AccessorProperty> collectInheritedInstanceAccessors() {
+            if (cachedInheritedInstanceAccessors != null) {
+                return cachedInheritedInstanceAccessors;
+            }
             LinkedHashMap<String, AccessorProperty> accessors = new LinkedHashMap<>();
             InterpretedFunction parent = resolveSuperClassFunction();
             if (parent != null) {
                 accessors.putAll(parent.collectInheritedInstanceAccessors());
             }
             accessors.putAll(collectInstanceAccessors());
-            return accessors;
+            cachedInheritedInstanceAccessors = Map.copyOf(accessors);
+            return cachedInheritedInstanceAccessors;
         }
 
         private InterpretedFunction resolveSuperClassFunction() {
+            if (superClassFunctionResolved) {
+                return cachedSuperClassFunction;
+            }
             Object superClassNode = ast.get("superClass");
             if (!(superClassNode instanceof Map<?, ?>)) {
                 superClassNode = definition.get("ownerSuperClass");
             }
             if (!(superClassNode instanceof Map<?, ?> rawSuperClass)) {
+                superClassFunctionResolved = true;
                 return null;
             }
             String superName = extractPropertyName(rawSuperClass);
             if (superName == null || superName.isBlank() || "null".equals(superName)) {
+                superClassFunctionResolved = true;
                 return null;
             }
             Object value = resolveIdentifier(superName, resolveClosure());
@@ -2269,9 +2296,13 @@ public final class JavaEsmGlobal {
                 value = definition.get("ownerSuperClassFunction");
             }
             if (isFunctionDefinition(value)) {
-                return new InterpretedFunction(castMap((Map<?, ?>) value));
+                cachedSuperClassFunction = new InterpretedFunction(castMap((Map<?, ?>) value));
+                superClassFunctionResolved = true;
+                return cachedSuperClassFunction;
             }
-            return value instanceof InterpretedFunction interpretedFunction ? interpretedFunction : null;
+            cachedSuperClassFunction = value instanceof InterpretedFunction interpretedFunction ? interpretedFunction : null;
+            superClassFunctionResolved = true;
+            return cachedSuperClassFunction;
         }
 
         private InterpretedFunction createMemberFunction(Map<String, Object> valueAst) {
