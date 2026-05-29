@@ -18,7 +18,11 @@ classes
 
 # logs
 logs
-_.log
+*.log
+hs_err_pid*.log
+replay_pid*.log
+tmp-*.json
+.tmp*
 report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # dotenv environment variable files

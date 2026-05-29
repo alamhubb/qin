@@ -1,8 +1,0 @@
-[34m-> Loading configuration...[0m
-[34m-> Syncing dependencies...[0m
-[32m[OK] Dependencies synced (0 local, 0 remote)[0m
-[90mCache: .qin/classpath.json[0m
-[34m-> Compiling...[0m
-  -> Compiling 1 file(s)...
-  [DEBUG] Compile classpath: D:\project\qkyproject\qinall\qin\examples\packages\java-base\build\classes...
-[32m[OK] Compiled 1 files to build/classes[0m

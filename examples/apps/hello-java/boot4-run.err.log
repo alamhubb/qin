@@ -1,2 +1,0 @@
-[DEBUG] Config dependencies: [java-base, com.qin:qin-runtime-core, org.springframework.boot:spring-boot-starter-web]
-[DEBUG] Local classpath resolved: D:\project\qkyproject\qinall\qin\examples\packages\java-base\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-lang-b

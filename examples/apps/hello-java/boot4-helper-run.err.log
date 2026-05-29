@@ -1,3 +1,0 @@
-[DEBUG] Config dependencies: [org.springframework.boot:spring-boot-starter-web, com.qin:qin-runtime-core, java-base]
-[DEBUG] Local classpath resolved: D:\project\qkyproject\qinall\qin\packages\qin-runtime-core\build\classes;D:\project\qkyproject\qinall\qin\examples\packages\java-base\build\classes;D:\project\qkyproject\qinall\qin\packages\qin-lang-f
-[31mError:[0mJava program exited with code 1

@@ -1,4 +1,0 @@
-[34m-> Loading configuration...[0m
-  [local] java-base -> java-base
-  [local] com.qin:qin-runtime-core -> qin-runtime-core
-    [build] Compiling qin-runtime-core...
