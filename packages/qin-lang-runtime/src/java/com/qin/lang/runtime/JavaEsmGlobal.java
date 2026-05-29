@@ -3370,6 +3370,8 @@ public final class JavaEsmGlobal {
                     }
                     try {
                         return callMethod(target, property, evaluated);
+                    } catch (ThrownValue thrown) {
+                        throw thrown;
                     } catch (RuntimeException error) {
                         throw new IllegalArgumentException(
                                 "Failed runtime method call"
@@ -3392,6 +3394,8 @@ public final class JavaEsmGlobal {
             }
             try {
                 return callAny(callee, evaluated);
+            } catch (ThrownValue thrown) {
+                throw thrown;
             } catch (RuntimeException error) {
                 throw new IllegalArgumentException(
                         "Failed runtime callable"
