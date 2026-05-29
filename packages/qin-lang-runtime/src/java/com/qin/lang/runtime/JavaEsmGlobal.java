@@ -1171,7 +1171,7 @@ public final class JavaEsmGlobal {
         if (value == null) {
             return "null";
         }
-        if (depth > 3) {
+        if (depth > 5) {
             return simpleName(value);
         }
         if (value instanceof String text) {
@@ -1195,7 +1195,7 @@ public final class JavaEsmGlobal {
                     + ", fields="
                     + summarizeRuntimeMap(fields, depth + 1, seen, 16)
                     + ", methods="
-                    + instance.methodNames()
+                    + summarizeRuntimeCollection(instance.methodNames(), depth + 1, seen, 12)
                     + ")";
         }
         if (value instanceof Map<?, ?> map) {
