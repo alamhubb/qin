@@ -1939,6 +1939,7 @@ public final class JavaEsmGlobal {
 
     private static final class InterpretedFunction implements QinCallable, QinRuntimeObject {
         private static final String LOCAL_BINDINGS_KEY = "__qin_runtime_local_bindings__";
+        private static final String PARENT_CLOSURE_KEY = "__qin_runtime_parent_closure__";
         private final Map<String, Object> definition;
         private final Map<String, Object> ast;
         private final Map<String, Object> closure;
@@ -1996,6 +1997,7 @@ public final class JavaEsmGlobal {
         public Object call(Object... args) {
             Map<String, Object> env = new LinkedHashMap<>();
             installLocalBindings(env);
+            installClosureBindings(env);
             bindParameters(env, args);
             env.put("this", thisValue);
             Object result = evalFunctionBody(ast, env);
@@ -2005,6 +2007,7 @@ public final class JavaEsmGlobal {
         private Object callConstructor(Object... args) {
             Map<String, Object> env = new LinkedHashMap<>();
             installLocalBindings(env);
+            installClosureBindings(env);
             bindParameters(env, args);
             env.put("this", thisValue);
             return evalFunctionBody(ast, env);
@@ -2311,7 +2314,16 @@ public final class JavaEsmGlobal {
                 }
                 InterpretedFunction memberFunction = createMemberFunction(name, castMap(rawValue));
                 Object decoratedFunction = applyLegacyMethodDecorators(member, name, memberFunction, null);
-                methods.put(name, toInterpretedFunction(decoratedFunction, memberFunction));
+                InterpretedFunction loweredFunction = toInterpretedFunction(decoratedFunction, memberFunction);
+                if (asList(member.get("decorators")).isEmpty()) {
+                    InterpretedFunction prototypeFunction = toInterpretedFunction(
+                            prototypeObjectForDecorator().get(propertyKey(name)),
+                            null);
+                    if (prototypeFunction != null) {
+                        loweredFunction = prototypeFunction;
+                    }
+                }
+                methods.put(name, loweredFunction);
             }
             cachedInstanceMethods = Map.copyOf(methods);
             return cachedInstanceMethods;
@@ -2534,6 +2546,7 @@ public final class JavaEsmGlobal {
             }
             Map<String, Object> env = new LinkedHashMap<>();
             installLocalBindings(env);
+            installClosureBindings(env);
             env.put("this", receiver);
             String className = classDebugName();
             if (className != null && !className.isBlank() && !"null".equals(className)) {
@@ -2570,6 +2583,12 @@ public final class JavaEsmGlobal {
 
         private void installLocalBindings(Map<String, Object> env) {
             env.put(LOCAL_BINDINGS_KEY, new LinkedHashSet<String>());
+        }
+
+        private void installClosureBindings(Map<String, Object> env) {
+            if (!closure.isEmpty()) {
+                env.put(PARENT_CLOSURE_KEY, closure);
+            }
         }
 
         @SuppressWarnings("unchecked")
@@ -3751,9 +3770,7 @@ public final class JavaEsmGlobal {
                 env.put(name, referenceDescriptor(refName));
                 return assigned;
             }
-            if (!localBindings(env).contains(name) && closure.containsKey(name)) {
-                closure.put(name, value);
-                env.put(name, value);
+            if (!localBindings(env).contains(name) && assignOuterLexicalBinding(name, value, env)) {
                 return value;
             }
             env.put(name, value);
@@ -3761,7 +3778,7 @@ public final class JavaEsmGlobal {
         }
 
         private Object capturedReferenceName(String name, Map<String, Object> env) {
-            Object envRef = referenceName(env.get(name));
+            Object envRef = referenceName(resolveRawLexicalValue(name, env));
             if (envRef != null) {
                 return envRef;
             }
@@ -3821,18 +3838,9 @@ public final class JavaEsmGlobal {
         }
 
         private Object resolveIdentifier(String name, Map<String, Object> env) {
-            if (env.containsKey(name)) {
-                Object value = env.get(name);
-                if (value instanceof Map<?, ?> descriptorMap) {
-                    Object refName = descriptorMap.get("__qin_ref_name");
-                    if (refName != null) {
-                        return resolveRuntimeReference(refName, value);
-                    }
-                }
-                return unwrapRuntimeReferenceValue(value);
-            }
-            if (closure.containsKey(name)) {
-                Object value = resolveClosureValue(name);
+            Object lexicalValue = resolveRawLexicalValue(name, env);
+            if (lexicalValue != UNRESOLVED_MODULE_REF) {
+                Object value = lexicalValue;
                 if (value instanceof Map<?, ?> descriptorMap) {
                     Object refName = descriptorMap.get("__qin_ref_name");
                     if (refName != null) {
@@ -3849,7 +3857,10 @@ public final class JavaEsmGlobal {
         }
 
         private Object resolveClosureValue(String name) {
-            Object value = closure.get(name);
+            Object value = resolveRawLexicalValue(name, closure);
+            if (value == UNRESOLVED_MODULE_REF) {
+                return null;
+            }
             if (value instanceof Map<?, ?> descriptorMap) {
                 Object refName = descriptorMap.get("__qin_ref_name");
                 if (refName != null) {
@@ -3857,6 +3868,36 @@ public final class JavaEsmGlobal {
                 }
             }
             return value;
+        }
+
+        @SuppressWarnings("unchecked")
+        private Object resolveRawLexicalValue(String name, Map<String, Object> env) {
+            Set<Map<String, Object>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+            Map<String, Object> current = env;
+            while (current != null && visited.add(current)) {
+                if (current.containsKey(name)) {
+                    return current.get(name);
+                }
+                Object parent = current.get(PARENT_CLOSURE_KEY);
+                current = parent instanceof Map<?, ?> rawParent ? (Map<String, Object>) rawParent : null;
+            }
+            return UNRESOLVED_MODULE_REF;
+        }
+
+        @SuppressWarnings("unchecked")
+        private boolean assignOuterLexicalBinding(String name, Object value, Map<String, Object> env) {
+            Set<Map<String, Object>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+            Object parent = env.get(PARENT_CLOSURE_KEY);
+            Map<String, Object> current = parent instanceof Map<?, ?> rawParent ? (Map<String, Object>) rawParent : closure;
+            while (current != null && visited.add(current)) {
+                if (current.containsKey(name) && !LOCAL_BINDINGS_KEY.equals(name) && !PARENT_CLOSURE_KEY.equals(name)) {
+                    current.put(name, value);
+                    return true;
+                }
+                parent = current.get(PARENT_CLOSURE_KEY);
+                current = parent instanceof Map<?, ?> rawParent ? (Map<String, Object>) rawParent : null;
+            }
+            return false;
         }
 
         private Object resolveRuntimeReference(Object refName, Object fallback) {
