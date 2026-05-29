@@ -113,8 +113,11 @@ public class ConfigLoader {
 
         if (config.entry() != null &&
                 !config.entry().endsWith(".java") &&
-                !config.entry().endsWith(".qin")) {
-            errors.add("'entry' must be a .java or .qin file");
+                !config.entry().endsWith(".qin") &&
+                !config.entry().endsWith(".js") &&
+                !config.entry().endsWith(".mjs") &&
+                !config.entry().endsWith(".ts")) {
+            errors.add("'entry' must be a .java, .qin, .js, .mjs, or .ts file");
         }
 
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.failure(errors);

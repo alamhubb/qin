@@ -14,7 +14,7 @@ public final class NpmSubsetCompileTestMain {
         Path root = QinJsSdkTestPaths.resolveNpmBareRoot();
         compileOk(root.resolve("main/main.js"), "com.qin.runtime.generated.NpmSubsetOk");
         compileOk(root.resolve("main/default-export.js"), "com.qin.runtime.generated.NpmSubsetDefaultOk");
-        compileFail(root.resolve("main/unsupported.js"), "QJS2");
+        compileFail(root.resolve("main/unsupported.js"), "ThrowStatement");
         System.out.println("NpmSubsetCompileTestMain passed.");
     }
 

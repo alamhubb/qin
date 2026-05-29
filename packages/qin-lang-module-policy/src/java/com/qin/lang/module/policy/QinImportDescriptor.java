@@ -10,6 +10,7 @@ public record QinImportDescriptor(
         Path sourceFile,
         String moduleSpecifier,
         QinImportKind kind,
+        boolean typeOnly,
         int line,
         int column) {
     public QinImportDescriptor {

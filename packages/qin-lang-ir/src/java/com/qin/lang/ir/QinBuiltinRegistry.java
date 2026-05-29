@@ -11,6 +11,14 @@ import java.util.Optional;
  */
 public final class QinBuiltinRegistry {
     private static final Map<String, BuiltinMethod> METHODS = Map.ofEntries(
+            Map.entry(key("console", "log", 1),
+                    new BuiltinMethod(
+                            "console",
+                            "log",
+                            "com.qin.lang.runtime.JavaEsmConsole",
+                            "log",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)V"),
+                            List.of(BuiltinArgKind.ANY))),
             Map.entry(key("Math", "random", 0),
                     new BuiltinMethod(
                             "Math",
@@ -235,6 +243,22 @@ public final class QinBuiltinRegistry {
                             "hasOwn",
                             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
                             List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Object", "assign", 2),
+                    new BuiltinMethod(
+                            "Object",
+                            "assign",
+                            "com.qin.lang.runtime.JavaEsmObject",
+                            "assign",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Object", "fromEntry", 2),
+                    new BuiltinMethod(
+                            "Object",
+                            "fromEntry",
+                            "com.qin.lang.runtime.JavaEsmObject",
+                            "fromEntry",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
             Map.entry(key("Date", "now", 0),
                     new BuiltinMethod(
                             "Date",
@@ -305,6 +329,22 @@ public final class QinBuiltinRegistry {
                             "__qin_bind_global__",
                             "com.qin.lang.runtime.JavaEsmGlobal",
                             "__qin_bind_global__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_declare_global__", 1),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_declare_global__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_declare_global__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_assign__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_assign__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_assign__",
                             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
                             List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
             Map.entry(key("Global", "__qin_export_slot__", 0),
@@ -486,6 +526,30 @@ public final class QinBuiltinRegistry {
                             MethodTypeDesc.ofDescriptor(
                                     "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
                             List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_delete_member__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_delete_member__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_delete_member__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_array_item__", 1),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_array_item__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_array_item__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_array_spread__", 1),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_array_spread__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_array_spread__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY))),
             Map.entry(key("Global", "__qin_new__", 1),
                     new BuiltinMethod(
                             "Global",
@@ -580,7 +644,55 @@ public final class QinBuiltinRegistry {
     public static Optional<BuiltinMethod> resolve(String receiverName, String methodName, int argCount) {
         Objects.requireNonNull(receiverName, "receiverName cannot be null");
         Objects.requireNonNull(methodName, "methodName cannot be null");
-        return Optional.ofNullable(METHODS.get(key(receiverName, methodName, argCount)));
+        BuiltinMethod exact = METHODS.get(key(receiverName, methodName, argCount));
+        if (exact != null) {
+            return Optional.of(exact);
+        }
+        return resolveRestArgsBuiltin(receiverName, methodName, argCount);
+    }
+
+    private static Optional<BuiltinMethod> resolveRestArgsBuiltin(String receiverName, String methodName, int argCount) {
+        if (!"Global".equals(receiverName)) {
+            return Optional.empty();
+        }
+        if ("__qin_call__".equals(methodName) && argCount >= 1) {
+            return Optional.of(new BuiltinMethod(
+                    receiverName,
+                    methodName,
+                    "com.qin.lang.runtime.JavaEsmGlobal",
+                    "__qin_call_array__",
+                    MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"),
+                    List.of(BuiltinArgKind.ANY, BuiltinArgKind.ARRAY_REST)));
+        }
+        if ("__qin_call_method__".equals(methodName) && argCount >= 2) {
+            return Optional.of(new BuiltinMethod(
+                    receiverName,
+                    methodName,
+                    "com.qin.lang.runtime.JavaEsmGlobal",
+                    "__qin_call_method_array__",
+                    MethodTypeDesc.ofDescriptor(
+                            "(Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"),
+                    List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ARRAY_REST)));
+        }
+        if ("__qin_new__".equals(methodName) && argCount >= 1) {
+            return Optional.of(new BuiltinMethod(
+                    receiverName,
+                    methodName,
+                    "com.qin.lang.runtime.JavaEsmGlobal",
+                    "__qin_new_array__",
+                    MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"),
+                    List.of(BuiltinArgKind.ANY, BuiltinArgKind.ARRAY_REST)));
+        }
+        if ("__qin_array_literal__".equals(methodName)) {
+            return Optional.of(new BuiltinMethod(
+                    receiverName,
+                    methodName,
+                    "com.qin.lang.runtime.JavaEsmGlobal",
+                    "__qin_array_literal_array__",
+                    MethodTypeDesc.ofDescriptor("([Ljava/lang/Object;)Ljava/lang/Object;"),
+                    List.of(BuiltinArgKind.ARRAY_REST)));
+        }
+        return Optional.empty();
     }
 
     private static String key(String receiverName, String methodName, int argCount) {
@@ -589,7 +701,8 @@ public final class QinBuiltinRegistry {
 
     public enum BuiltinArgKind {
         ANY,
-        STRING
+        STRING,
+        ARRAY_REST
     }
 
     public record BuiltinMethod(

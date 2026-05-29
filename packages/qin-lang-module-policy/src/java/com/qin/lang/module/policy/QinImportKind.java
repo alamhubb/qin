@@ -16,7 +16,8 @@ public enum QinImportKind {
         String normalized = specifier.trim();
         boolean isScriptExt = normalized.endsWith(".js")
                 || normalized.endsWith(".mjs")
-                || normalized.endsWith(".ts");
+                || normalized.endsWith(".ts")
+                || normalized.endsWith(".qin");
         boolean isRelative = normalized.startsWith("./") || normalized.startsWith("../");
         if (isRelative && isScriptExt) {
             return LOCAL;

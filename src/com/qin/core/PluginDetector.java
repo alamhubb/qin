@@ -115,6 +115,8 @@ public class PluginDetector {
 
     private String findClientDir() {
         String[][] candidates = {
+                { "app", "index.html" },
+                { "app", QinConstants.PACKAGE_JSON },
                 { "src/client", "index.html" },
                 { "client", "index.html" },
                 { "web", "index.html" },

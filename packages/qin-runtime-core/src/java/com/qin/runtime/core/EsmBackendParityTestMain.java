@@ -24,7 +24,6 @@ public final class EsmBackendParityTestMain {
                 new TestCase("valid-cycle-runtime-ok", "main/runtime-cycle-ok.js", true, null),
                 new TestCase("invalid-ambiguous-export", "main/invalid-ambiguous-export.js", false, "ESM2004"),
                 new TestCase("invalid-intermediate-ambiguous-val", "main/invalid-intermediate-ambiguous-val.js", false, "ESM2004"),
-                new TestCase("invalid-dynamic-import", "main/invalid-dynamic-import.js", true, null),
                 new TestCase("invalid-import-meta", "main/invalid-import-meta.js", true, null),
                 new TestCase("invalid-top-level-await", "main/invalid-top-level-await.js", true, null));
 

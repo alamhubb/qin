@@ -1,6 +1,6 @@
 package com.qin.lang.pipeline.cfa;
 
-import com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter;
+import com.qin.lang.frontend.adapter.QinFrontendLowerer;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.lowering.jvm.QinEsmJvmLoweringContext;
 import com.qin.lang.lowering.jvm.QinStrictEsmJvmLowerer;
@@ -12,19 +12,21 @@ import java.util.Objects;
  * Stage 2: Slime AST -> QinIr -> lowered QinIr -> QinCfaProgram.
  */
 public final class QinCfaIrStage {
-    private final QinSlimeFrontendAdapter frontendAdapter;
+    private static final int FULL_AST_RENDER_SOURCE_LIMIT = 120_000;
+
+    private final QinFrontendLowerer frontendLowerer;
     private final QinStrictEsmJvmLowerer lowerer;
     private final QinIrToCfaIrLowerer cfaIrLowerer;
 
     public QinCfaIrStage() {
-        this(new QinSlimeFrontendAdapter(), new QinStrictEsmJvmLowerer(), new QinIrToCfaIrLowerer());
+        this(new QinFrontendLowerer(), new QinStrictEsmJvmLowerer(), new QinIrToCfaIrLowerer());
     }
 
     public QinCfaIrStage(
-            QinSlimeFrontendAdapter frontendAdapter,
+            QinFrontendLowerer frontendLowerer,
             QinStrictEsmJvmLowerer lowerer,
             QinIrToCfaIrLowerer cfaIrLowerer) {
-        this.frontendAdapter = Objects.requireNonNull(frontendAdapter, "frontendAdapter cannot be null");
+        this.frontendLowerer = Objects.requireNonNull(frontendLowerer, "frontendLowerer cannot be null");
         this.lowerer = Objects.requireNonNull(lowerer, "lowerer cannot be null");
         this.cfaIrLowerer = Objects.requireNonNull(cfaIrLowerer, "cfaIrLowerer cannot be null");
     }
@@ -32,8 +34,9 @@ public final class QinCfaIrStage {
     public QinCfaIrStageResult execute(QinCfaSemanticStageResult semanticStageResult) {
         Objects.requireNonNull(semanticStageResult, "semanticStageResult cannot be null");
 
-        QinIrProgram irBeforeLowering = frontendAdapter.parseProgram(semanticStageResult.linkedSource().source());
-        String astText = frontendAdapter.parseAst(semanticStageResult.linkedSource().source());
+        String linkedSource = semanticStageResult.linkedSource().source();
+        QinIrProgram irBeforeLowering = frontendLowerer.lowerSource(linkedSource);
+        String astText = renderAstTextForSnapshot(linkedSource);
 
         QinIrProgram loweredProgram = lowerer.lower(
                 irBeforeLowering,
@@ -43,5 +46,13 @@ public final class QinCfaIrStage {
                         semanticStageResult.linkedSource().modules()));
         QinCfaProgram cfaProgram = cfaIrLowerer.lower(loweredProgram);
         return new QinCfaIrStageResult(irBeforeLowering, loweredProgram, cfaProgram, astText);
+    }
+
+    private String renderAstTextForSnapshot(String source) {
+        if (source == null || source.length() <= FULL_AST_RENDER_SOURCE_LIMIT) {
+            return frontendLowerer.parseAst(source == null ? "" : source);
+        }
+        return "Program(AST snapshot skipped; sourceLength=" + source.length()
+                + ", limit=" + FULL_AST_RENDER_SOURCE_LIMIT + ")";
     }
 }

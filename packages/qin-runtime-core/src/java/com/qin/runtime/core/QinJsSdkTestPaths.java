@@ -15,6 +15,14 @@ final class QinJsSdkTestPaths {
         return resolveExample("npm-bare");
     }
 
+    static Path resolveJsBuiltinsCollectionsRoot() {
+        return resolveExample("js-builtins-collections");
+    }
+
+    static Path resolveJsBuiltinsStringRoot() {
+        return resolveExample("js-builtins-strings");
+    }
+
     private static Path resolveExample(String name) {
         Path cwd = Path.of("").toAbsolutePath().normalize();
         Path[] candidates = new Path[] {

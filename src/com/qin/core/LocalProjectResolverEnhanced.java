@@ -40,8 +40,12 @@ public class LocalProjectResolverEnhanced {
     }
 
     public ResolutionResult resolveDependencies(Map<String, String> dependencies) {
+        return resolveDependencies(dependencies, true);
+    }
+
+    public ResolutionResult resolveDependencies(Map<String, String> dependencies, boolean autoCompile) {
         if (dependencies == null || dependencies.isEmpty()) {
-            return new ResolutionResult("", new LinkedHashMap<>(), 0, 0);
+            return new ResolutionResult("", new LinkedHashMap<>(), 0, 0, List.of());
         }
 
         Map<String, ProjectInfo> localProjects = discoverLocalProjects();
@@ -88,7 +92,7 @@ public class LocalProjectResolverEnhanced {
 
         List<String> localClasspaths = new ArrayList<>();
         for (ProjectInfo project : orderProjectsForCompilation(requiredLocalProjects)) {
-            if (ensureCompiled(project)) {
+            if (autoCompile && ensureCompiled(project)) {
                 autoCompiledCount++;
             }
             String classesPath = project.buildClassesPath.toString();
@@ -106,7 +110,12 @@ public class LocalProjectResolverEnhanced {
                 ? ""
                 : String.join(separator, localClasspaths);
 
-        return new ResolutionResult(localClasspath, remoteDependencies, requiredLocalProjects.size(), autoCompiledCount);
+        return new ResolutionResult(
+                localClasspath,
+                remoteDependencies,
+                requiredLocalProjects.size(),
+                autoCompiledCount,
+                new ArrayList<>(requiredLocalProjects.values()));
     }
 
     private List<ProjectInfo> orderProjectsForCompilation(Map<String, ProjectInfo> requiredLocalProjects) {
@@ -166,6 +175,11 @@ public class LocalProjectResolverEnhanced {
         try {
             ProcessBuilder pb = new ProcessBuilder(
                     currentJavaCommand(),
+                    "-Xms16m",
+                    "-Xmx256m",
+                    "-XX:+UseSerialGC",
+                    "-XX:-UseJVMCICompiler",
+                    "-XX:TieredStopAtLevel=1",
                     "-Dfile.encoding=UTF-8",
                     "-Dstdout.encoding=UTF-8",
                     "-Dstderr.encoding=UTF-8",
@@ -436,16 +450,19 @@ public class LocalProjectResolverEnhanced {
         public final Map<String, String> remoteDependencies;
         public final int localCount;
         public final int autoCompiledCount;
+        public final List<ProjectInfo> localProjects;
 
         public ResolutionResult(
                 String localClasspath,
                 Map<String, String> remoteDependencies,
                 int localCount,
-                int autoCompiledCount) {
+                int autoCompiledCount,
+                List<ProjectInfo> localProjects) {
             this.localClasspath = localClasspath;
             this.remoteDependencies = remoteDependencies;
             this.localCount = localCount;
             this.autoCompiledCount = autoCompiledCount;
+            this.localProjects = localProjects;
         }
     }
 }

@@ -16,7 +16,7 @@ public record FrontendConfig(
      * Compact Constructor with defaults
      */
     public FrontendConfig {
-        srcDir = srcDir != null && !srcDir.isBlank() ? srcDir : "frontend";
+        srcDir = srcDir != null && !srcDir.isBlank() ? srcDir : "app";
         outDir = outDir != null && !outDir.isBlank() ? outDir : "dist/static";
         devPort = devPort > 0 ? devPort : 5173;
     }

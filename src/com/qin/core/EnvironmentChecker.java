@@ -149,14 +149,36 @@ public class EnvironmentChecker {
      * Check if javac is installed
      */
     public boolean checkJavac() {
-        return runCommand("javac", "-version");
+        String localJavac = resolveJavaTool("javac");
+        if (localJavac != null && runCommand(
+                localJavac,
+                "-J-Xms16m",
+                "-J-Xmx128m",
+                "-J-XX:+UseSerialGC",
+                "-J-XX:-UseJVMCICompiler",
+                "-J-XX:TieredStopAtLevel=1",
+                "-version")) {
+            return true;
+        }
+        return runCommand(
+                "javac",
+                "-J-Xms16m",
+                "-J-Xmx128m",
+                "-J-XX:+UseSerialGC",
+                "-J-XX:-UseJVMCICompiler",
+                "-J-XX:TieredStopAtLevel=1",
+                "-version");
     }
 
     /**
      * Check if java is installed
      */
     public boolean checkJava() {
-        return runCommand("java", "-version");
+        String localJava = resolveJavaTool("java");
+        if (localJava != null && runCommand(localJava, "-Xms32m", "-Xmx128m", "-version")) {
+            return true;
+        }
+        return runCommand("java", "-Xms32m", "-Xmx128m", "-version");
     }
 
     /**
@@ -219,6 +241,29 @@ public class EnvironmentChecker {
             }
         }
 
+        if ("java".equals(tool)) {
+            if (isWindows) {
+                return """
+                        To install Java on Windows:
+                          1. Install a full JDK, then set JAVA_HOME to the JDK directory
+                          2. Recommended distributions: GraalVM JDK 25 or Adoptium Temurin
+                          3. Ensure %JAVA_HOME%\\bin is available to Qin subprocesses
+                        """;
+            } else if (isMac) {
+                return """
+                        To install Java on macOS:
+                          1. Install a full JDK such as GraalVM JDK 25 or Temurin
+                          2. Ensure JAVA_HOME points to that JDK
+                        """;
+            } else {
+                return """
+                        To install Java on Linux:
+                          1. Install a full JDK such as GraalVM JDK 25 or Temurin
+                          2. Ensure JAVA_HOME points to that JDK and java is on PATH
+                        """;
+            }
+        }
+
         return "Unknown tool";
     }
 
@@ -232,6 +277,20 @@ public class EnvironmentChecker {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private String resolveJavaTool(String tool) {
+        try {
+            String executable = isWindows ? tool + ".exe" : tool;
+            Path javaHome = Paths.get(System.getProperty("java.home"));
+            Path candidate = javaHome.resolve("bin").resolve(executable);
+            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return candidate.toString();
+            }
+        } catch (Exception ignored) {
+            // fallback to PATH lookup below
+        }
+        return null;
     }
 
     private void downloadFile(String urlStr, Path dest) throws IOException {
@@ -254,5 +313,16 @@ public class EnvironmentChecker {
                 }
             }
         }
+    }
+
+    public static void main(String[] args) {
+        EnvironmentChecker checker = new EnvironmentChecker();
+        boolean coursier = checker.checkCoursier();
+        boolean javac = checker.checkJavac();
+        boolean java = checker.checkJava();
+        System.out.println("coursier=" + coursier);
+        System.out.println("javac=" + javac);
+        System.out.println("java=" + java);
+        System.out.println("java.home=" + System.getProperty("java.home"));
     }
 }

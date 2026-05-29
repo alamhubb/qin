@@ -1,18 +1,54 @@
 import { Autowired as A } from "java:org.springframework.beans.factory.annotation"
-import { RestController as RC, GetMapping as GET } from "java:org.springframework.web.bind.annotation"
+import { RestController as RC, GetMapping as GET, PostMapping as POST, RequestBody as Body } from "java:org.springframework.web.bind.annotation"
+
+class GreetRequest {
+  name: string = "guest"
+}
 
 @RC
 class HelloController {
   @A
   service: HelloService
 
+  @GET("/")
+  index() {
+    return "Qin Spring Boot demo is running.\n\nAvailable endpoints:\n- GET /api/hello\n- GET /api/hello/detail\n- GET /api/hello/detail/json\n- GET /api/ping\n- POST /api/greet\n- POST /api/greet/loud"
+  }
+
   @GET("/api/hello")
   hello() {
+    console.log("hello endpoint invoked")
     return this.service.message()
+  }
+
+  @GET("/api/hello/detail")
+  helloDetail() {
+    const message = this.service.message()
+    if (message == "hello from qin service") {
+      const ok = true
+      return { message: message, ok: ok }
+    }
+    const ok = false
+    return { message: message, ok: ok }
+  }
+
+  @GET("/api/hello/detail/json")
+  helloDetailJson() {
+    return JSON.stringify(this.helloDetail())
   }
 
   @GET("/api/ping")
   ping() {
     return "pong"
+  }
+
+  @POST("/api/greet")
+  greet(@Body payload: GreetRequest) {
+    return this.service.greet(payload.name)
+  }
+
+  @POST("/api/greet/loud")
+  greetLoud(@Body payload: GreetRequest) {
+    return this.service.greetLoud(payload.name)
   }
 }

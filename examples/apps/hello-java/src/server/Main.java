@@ -24,5 +24,11 @@ public class Main {
         System.out.println("Qin Spring Boot server started");
         System.out.println("  url: http://localhost:" + port);
         System.out.println("  api: http://localhost:" + port + "/api/hello");
+        System.out.println("  api: http://localhost:" + port + "/api/hello/detail");
+        System.out.println("  api: http://localhost:" + port + "/api/ping");
+        System.out.println("  api: POST http://localhost:" + port + "/api/greet");
+        System.out.println("       body: {\"name\":\"  qin  \"}");
+        System.out.println("  api: POST http://localhost:" + port + "/api/greet/loud");
+        System.out.println("       body: {\"name\":\"qin\"}");
     }
 }

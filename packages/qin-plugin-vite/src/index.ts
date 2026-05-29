@@ -54,6 +54,7 @@ let viteProcess: ReturnType<typeof Bun.spawn> | null = null;
  */
 function detectClientDir(cwd: string): string | null {
   const candidates = [
+    join(cwd, "app"),
     join(cwd, "src", "client"),
     join(cwd, "client"),
     join(cwd, "web"),

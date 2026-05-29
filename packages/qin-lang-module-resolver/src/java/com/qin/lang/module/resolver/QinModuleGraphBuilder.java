@@ -21,6 +21,7 @@ import java.util.Set;
 public final class QinModuleGraphBuilder {
     private final QinImportParser importParser = new QinImportParser();
     private final QinEsmSpecifierResolver specifierResolver = new QinEsmSpecifierResolver();
+    private static final char UTF8_BOM = '\uFEFF';
 
     public QinModuleGraph build(Path entryFile) throws IOException {
         Path entry = requireFile(entryFile);
@@ -43,12 +44,13 @@ public final class QinModuleGraphBuilder {
             return;
         }
 
-        String source = Files.readString(currentFile, StandardCharsets.UTF_8);
+        String source = stripUtf8Bom(Files.readString(currentFile, StandardCharsets.UTF_8));
         List<QinImportDescriptor> imports = importParser.parse(currentFile, source);
         List<QinResolvedImport> resolvedImports = new ArrayList<>();
         for (QinImportDescriptor descriptor : imports) {
             Path resolvedModule = null;
-            if (descriptor.kind() == QinImportKind.LOCAL || descriptor.kind() == QinImportKind.JS) {
+            if (!descriptor.typeOnly()
+                    && (descriptor.kind() == QinImportKind.LOCAL || descriptor.kind() == QinImportKind.JS)) {
                 resolvedModule = specifierResolver.resolveModule(
                         currentFile,
                         descriptor.moduleSpecifier());
@@ -61,6 +63,13 @@ public final class QinModuleGraphBuilder {
 
         ordered.put(currentFile, new QinModuleSource(currentFile, source, resolvedImports));
         visiting.remove(currentFile);
+    }
+
+    private String stripUtf8Bom(String source) {
+        if (source == null || source.isEmpty()) {
+            return source;
+        }
+        return source.charAt(0) == UTF8_BOM ? source.substring(1) : source;
     }
 
     private Path requireFile(Path file) {

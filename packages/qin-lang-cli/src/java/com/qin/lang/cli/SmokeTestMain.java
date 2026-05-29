@@ -2,7 +2,7 @@ package com.qin.lang.cli;
 
 import com.qin.lang.backend.jvm.QinClassFileWriter;
 import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
-import com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter;
+import com.qin.lang.frontend.adapter.QinFrontendLowerer;
 import com.qin.lang.ir.QinIrProgram;
 
 import java.nio.file.Path;
@@ -21,8 +21,8 @@ public final class SmokeTestMain {
         String className = "com.qin.generated.Demo";
         Path outputDir = Path.of("build", "generated-classes");
 
-        QinSlimeFrontendAdapter adapter = new QinSlimeFrontendAdapter();
-        QinIrProgram program = adapter.parseProgram(source);
+        QinFrontendLowerer lowerer = new QinFrontendLowerer();
+        QinIrProgram program = lowerer.lowerSource(source);
 
         QinJvmClassFileBackend backend = new QinJvmClassFileBackend();
         byte[] classBytes = backend.compileProgram(program, className);

@@ -1,1 +1,0 @@
-export const shared = { age: 21 };

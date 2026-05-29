@@ -69,8 +69,12 @@ public class ClasspathBuilder {
 
         // Add resolved remote dependencies (from Maven/Coursier)
         // 这个classpath参数由调用方传入,已经包含了远程依赖
-        if (externalClasspath != null && !externalClasspath.isEmpty()) {
-            cpParts.add(externalClasspath);
+        String remoteClasspath = externalClasspath;
+        if (remoteClasspath == null || remoteClasspath.isEmpty()) {
+            remoteClasspath = CacheValidator.getCachedClasspath(cwd);
+        }
+        if (remoteClasspath != null && !remoteClasspath.isEmpty()) {
+            cpParts.add(remoteClasspath);
         }
 
         if (cpParts.isEmpty()) {
@@ -86,11 +90,10 @@ public class ClasspathBuilder {
      * 包含: 当前项目输出目录 + 外部依赖classpath
      */
     public String buildRuntimeClasspath() {
-        String sep = DependencyResolver.getClasspathSeparator();
-        if (externalClasspath != null && !externalClasspath.isEmpty()) {
-            return outputDir + sep + externalClasspath;
-        }
-        return outputDir;
+        // Runtime must keep the same local-project closure as compilation,
+        // otherwise transitive workspace classes like qin-parser disappear
+        // when running Java/Spring host shells.
+        return buildCompileClasspath();
     }
 
     /**

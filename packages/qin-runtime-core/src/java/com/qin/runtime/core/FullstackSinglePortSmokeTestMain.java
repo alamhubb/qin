@@ -113,18 +113,32 @@ public final class FullstackSinglePortSmokeTestMain {
                         .timeout(Duration.ofSeconds(3))
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
-        if (appJs.statusCode() != 200 || !appJs.body().contains("/@qin-mod/")) {
+        if (appJs.statusCode() != 200 || !appJs.body().contains("/@qin-mod/app/main.vue.js")) {
             throw new IllegalStateException("Unexpected /app.js response");
         }
 
         HttpResponse<String> frontModule = client.send(
-                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/@qin-mod/app/main.js"))
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/@qin-mod/app/main.vue.js"))
                         .GET()
                         .timeout(Duration.ofSeconds(3))
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
-        if (frontModule.statusCode() != 200 || !frontModule.body().contains("console.log")) {
+        if (frontModule.statusCode() != 200
+                || !frontModule.body().contains("__qinMountVue")
+                || !frontModule.body().contains("qin-vue-cssts=style")) {
             throw new IllegalStateException("Unexpected frontend module response");
+        }
+
+        HttpResponse<String> cssModule = client.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/@qin-mod/app/main.vue.js?qin-vue-cssts=style"))
+                        .GET()
+                        .timeout(Duration.ofSeconds(3))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        if (cssModule.statusCode() != 200
+                || !cssModule.body().contains("data-qin-cssts")
+                || !cssModule.body().contains("background-color")) {
+            throw new IllegalStateException("Unexpected cssts CSS virtual module response");
         }
     }
 

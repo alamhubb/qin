@@ -10,15 +10,23 @@ This package is the runtime orchestration layer for Qin:
 
 ### Frontend (parser + lowering)
 
-- Source parser: `java-slime` (shared frontend infrastructure)
+- Shared parser infrastructure: `java-slime`
+- Qin parser frontend: `qin-parser`
 - Adapter/lowering: `qin-lang-frontend-adapter`
 - Output: `qin-lang-ir`
 
 Responsibility:
 
-- Parse `.js` source
-- Enforce language surface rules (ES subset)
-- Build IR nodes
+- `qin-parser`:
+  - parse `.qin` / `.js` Qin source
+  - own Qin parser entry and syntax extensions
+  - produce Qin parse result / AST
+  - own source preprocessing, import extraction fallback, and parser routing
+- `qin-lang-frontend-adapter`:
+  - normalize Qin frontend output
+  - expose `QinIrLowerer` as the Qin-owned lowering boundary
+  - expose `QinFrontendLowerer` as the preferred `source -> parser -> IR` façade
+  - keep `QinSlimeFrontendAdapter` as a compatibility façade during migration
 
 ### IR (semantic middle layer)
 

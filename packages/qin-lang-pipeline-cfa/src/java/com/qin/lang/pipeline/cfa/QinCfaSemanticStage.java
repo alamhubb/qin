@@ -53,14 +53,30 @@ public final class QinCfaSemanticStage {
         Objects.requireNonNull(sourceFile, "sourceFile cannot be null");
         Objects.requireNonNull(projectRoot, "projectRoot cannot be null");
 
+        long startNanos = System.nanoTime();
+        logPhase("module graph start", startNanos, sourceFile.toString());
         QinModuleGraph moduleGraph = moduleGraphBuilder.build(sourceFile);
+        logPhase("module graph done", startNanos, "modules=" + moduleGraph.modules().size());
+        logPhase("linked source start", startNanos, sourceFile.toString());
         QinLinkedModuleSource linkedSource = linkedSourceEmitter.emit(moduleGraph);
+        logPhase("linked source done", startNanos, "chars=" + linkedSource.source().length());
 
+        logPhase("policy start", startNanos, projectRoot.toString());
         importPolicyChecker.validate(projectRoot, linkedSource.imports());
+        logPhase("policy done", startNanos, "imports=" + linkedSource.imports().size());
+        logPhase("runtime feature start", startNanos, sourceFile.toString());
         runtimeFeatureValidator.validate(moduleGraph);
+        logPhase("runtime feature done", startNanos, sourceFile.toString());
 
+        logPhase("sema start", startNanos, sourceFile.toString());
         QinEsmSemanticModel semanticModel = semanticAnalyzer.analyze(moduleGraph);
         linkValidator.validate(semanticModel);
+        logPhase("sema done", startNanos, sourceFile.toString());
         return new QinCfaSemanticStageResult(linkedSource, semanticModel);
+    }
+
+    private void logPhase(String phase, long startNanos, String detail) {
+        long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
+        System.out.println("[QinCfaSemanticStage] " + phase + " +" + elapsedMs + "ms :: " + detail);
     }
 }

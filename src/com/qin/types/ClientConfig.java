@@ -20,7 +20,7 @@ public record ClientConfig(
      * Compact Constructor with defaults
      */
     public ClientConfig {
-        root = root != null && !root.isBlank() ? root : "src/client";
+        root = root != null && !root.isBlank() ? root : "app";
         port = port > 0 ? port : 5173;
         proxy = proxy != null ? Map.copyOf(proxy) : Map.of();
         outDir = outDir != null && !outDir.isBlank() ? outDir : "dist/static";

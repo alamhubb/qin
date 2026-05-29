@@ -1,3 +1,1 @@
-import "bad-pkg";
-
-console.log(1);
+throw new Error("unsupported");

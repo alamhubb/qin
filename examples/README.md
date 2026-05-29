@@ -35,6 +35,22 @@ cd apps/hello-java
 qin run
 ```
 
+运行说明：
+
+- `src/server/HelloController.qin` 是 controller 业务代码
+- `src/server/HelloService.qin` 是 service 业务代码
+- `src/server/Main.java` 只是 Spring Boot host shell
+- 默认使用随机空闲端口，启动成功后控制台会打印实际 URL
+- 根路径 `/` 返回 demo 说明，主要接口在 `/api/*`
+
+示例接口：
+
+- `GET /api/hello`
+- `GET /api/hello/detail`
+- `GET /api/ping`
+- `POST /api/greet`
+- `POST /api/greet/loud`
+
 ### 3. 构建
 
 ```bash

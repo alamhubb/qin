@@ -42,6 +42,7 @@ import java.util.Objects;
  */
 public final class QinJvmClassFileBackend {
     private static final ClassDesc OBJECT_DESC = ClassDesc.of("java.lang.Object");
+    private static final ClassDesc OBJECT_ARRAY_DESC = ClassDesc.ofDescriptor("[Ljava/lang/Object;");
     private static final ClassDesc ARRAY_LIST_DESC = ClassDesc.of("java.util.ArrayList");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
@@ -69,6 +70,8 @@ public final class QinJvmClassFileBackend {
     private static final MethodTypeDesc MEMBER_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc GLOBAL_GET_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc VALUE_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
 
     public byte[] compileProgram(QinIrProgram program, String className) {
@@ -104,7 +107,8 @@ public final class QinJvmClassFileBackend {
                             program.consoleLogs(),
                             program.javaStaticConsoleLogs(),
                             program.javaInstanceMethodCalls(),
-                            program.javaInstanceConsoleLogs()));
+                            program.javaInstanceConsoleLogs(),
+                            program.executionSteps()));
 
             builder.withMethodBody("main", MAIN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
                     code -> emitMainMethod(code, className));
@@ -125,47 +129,67 @@ public final class QinJvmClassFileBackend {
             List<QinIrConsoleLogStatement> consoleLogs,
             List<QinIrConsoleLogJavaStaticCall> javaStaticConsoleLogs,
             List<QinIrJavaInstanceMethodCall> javaInstanceMethodCalls,
-            List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs) {
+            List<QinIrConsoleLogJavaInstanceCall> javaInstanceConsoleLogs,
+            List<QinIrProgram.TopLevelExecutionStep> executionSteps) {
         Map<String, DeclarationBinding> bindings = new LinkedHashMap<>();
+        Integer lastExpressionSlot = null;
+        Integer lastDeclarationSlot = null;
 
-        for (QinIrConstDeclaration declaration : declarations) {
-            int slot = code.allocateLocal(TypeKind.REFERENCE);
-            emitDeclarationInitializer(code, bindings, declaration.initializer(), slot);
-            bindings.put(declaration.name(), new DeclarationBinding(slot, declaration.initializer()));
+        for (QinIrProgram.TopLevelExecutionStep step : executionSteps) {
+            switch (step.kind()) {
+                case DECLARATION -> {
+                    QinIrConstDeclaration declaration = declarations.get(step.index());
+                    int slot = code.allocateLocal(TypeKind.REFERENCE);
+                    emitDeclarationInitializer(code, bindings, declaration.initializer(), slot);
+                    bindings.put(declaration.name(), new DeclarationBinding(slot, declaration.initializer()));
+                    lastDeclarationSlot = slot;
+                }
+                case EXPRESSION_STATEMENT -> {
+                    QinIrExpressionStatement expressionStatement = expressionStatements.get(step.index());
+                    emitExpressionAsObject(code, bindings, expressionStatement.expression());
+                    int expressionSlot = code.allocateLocal(TypeKind.REFERENCE);
+                    code.astore(expressionSlot);
+                    syncGlobalBindingsToLocals(code, bindings);
+                    lastExpressionSlot = expressionSlot;
+                }
+                case CONSOLE_VALUE -> {
+                    emitConsoleValueLog(code, bindings, consoleValueLogs.get(step.index()));
+                    syncGlobalBindingsToLocals(code, bindings);
+                }
+                case CONSOLE_OBJECT -> {
+                    emitObjectConsoleLog(code, bindings, consoleLogs.get(step.index()));
+                    syncGlobalBindingsToLocals(code, bindings);
+                }
+                case JAVA_INSTANCE_CALL -> {
+                    emitJavaInstanceMethodCall(code, bindings, javaInstanceMethodCalls.get(step.index()));
+                    syncGlobalBindingsToLocals(code, bindings);
+                }
+                case JAVA_STATIC_CONSOLE -> {
+                    emitJavaStaticConsoleLog(code, javaStaticConsoleLogs.get(step.index()));
+                    syncGlobalBindingsToLocals(code, bindings);
+                }
+                case JAVA_INSTANCE_CONSOLE -> {
+                    emitJavaInstanceConsoleLog(code, bindings, javaInstanceConsoleLogs.get(step.index()));
+                    syncGlobalBindingsToLocals(code, bindings);
+                }
+            }
         }
 
-        for (QinIrExpressionStatement expressionStatement : expressionStatements) {
-            emitExpressionAsObject(code, bindings, expressionStatement.expression());
-            code.pop();
-        }
-
-        for (QinIrConsoleLogValue consoleValueLog : consoleValueLogs) {
-            emitConsoleValueLog(code, bindings, consoleValueLog);
-        }
-
-        for (QinIrConsoleLogStatement consoleLog : consoleLogs) {
-            emitObjectConsoleLog(code, bindings, consoleLog);
-        }
-
-        for (QinIrJavaInstanceMethodCall javaInstanceMethodCall : javaInstanceMethodCalls) {
-            emitJavaInstanceMethodCall(code, bindings, javaInstanceMethodCall);
-        }
-
-        for (QinIrConsoleLogJavaStaticCall javaStaticCall : javaStaticConsoleLogs) {
-            emitJavaStaticConsoleLog(code, javaStaticCall);
-        }
-
-        for (QinIrConsoleLogJavaInstanceCall javaInstanceConsoleLog : javaInstanceConsoleLogs) {
-            emitJavaInstanceConsoleLog(code, bindings, javaInstanceConsoleLog);
-        }
-
-        Integer returnSlot = lastDeclarationSlot(bindings);
+        Integer returnSlot = lastExpressionSlot != null ? lastExpressionSlot : lastDeclarationSlot;
         if (returnSlot != null) {
             code.aload(returnSlot);
             code.areturn();
         } else {
             code.aconst_null();
             code.areturn();
+        }
+    }
+
+    private void syncGlobalBindingsToLocals(CodeBuilder code, Map<String, DeclarationBinding> bindings) {
+        for (Map.Entry<String, DeclarationBinding> entry : bindings.entrySet()) {
+            code.ldc(entry.getKey());
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
+            code.astore(entry.getValue().slot());
         }
     }
 
@@ -381,6 +405,7 @@ public final class QinJvmClassFileBackend {
             code.dup();
             code.ldc(property.key());
             emitExpressionAsObject(code, bindings, property.value());
+            emitRuntimeValueUnwrap(code);
             code.invokevirtual(LINKED_HASH_MAP_DESC, "put", MAP_PUT_SIGNATURE);
             code.pop();
         }
@@ -397,9 +422,14 @@ public final class QinJvmClassFileBackend {
         for (QinIrExpression element : arrayLiteral.elements()) {
             code.dup();
             emitExpressionAsObject(code, bindings, element);
+            emitRuntimeValueUnwrap(code);
             code.invokevirtual(ARRAY_LIST_DESC, "add", LIST_ADD_SIGNATURE);
             code.pop();
         }
+    }
+
+    private void emitRuntimeValueUnwrap(CodeBuilder code) {
+        code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_value__", VALUE_SIGNATURE);
     }
 
     private void emitMemberAccessAsObject(
@@ -451,10 +481,13 @@ public final class QinJvmClassFileBackend {
                 || "parseFloat".equals(name)
                 || "isNaN".equals(name)
                 || "isFinite".equals(name)
+                || "Infinity".equals(name)
+                || "NaN".equals(name)
                 || "module".equals(name)
                 || "exports".equals(name)
                 || "require".equals(name)
                 || "crypto".equals(name)
+                || "performance".equals(name)
                 || "this".equals(name)) {
             code.ldc(name);
             code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
@@ -467,6 +500,9 @@ public final class QinJvmClassFileBackend {
             CodeBuilder code,
             Map<String, DeclarationBinding> bindings,
             QinIrBuiltinCallExpression builtinCallExpression) {
+        if (emitLocalAssignmentBuiltinAsObject(code, bindings, builtinCallExpression)) {
+            return;
+        }
         QinBuiltinRegistry.BuiltinMethod method = QinBuiltinRegistry
                 .resolve(
                         builtinCallExpression.receiverName(),
@@ -478,25 +514,72 @@ public final class QinJvmClassFileBackend {
                                 + builtinCallExpression.methodName() + "/"
                                 + builtinCallExpression.arguments().size()));
 
-        for (int i = 0; i < builtinCallExpression.arguments().size(); i++) {
-            QinIrExpression argument = builtinCallExpression.arguments().get(i);
+        int argumentIndex = 0;
+        for (int i = 0; i < method.argumentKinds().size(); i++) {
             QinBuiltinRegistry.BuiltinArgKind argKind = method.argumentKinds().get(i);
+            if (argKind == QinBuiltinRegistry.BuiltinArgKind.ARRAY_REST) {
+                emitRestArgumentsArray(code, bindings, builtinCallExpression.arguments(), argumentIndex);
+                argumentIndex = builtinCallExpression.arguments().size();
+                continue;
+            }
+            QinIrExpression argument = builtinCallExpression.arguments().get(argumentIndex);
             if (argKind == QinBuiltinRegistry.BuiltinArgKind.STRING) {
                 if (argument instanceof QinIrStringLiteral stringLiteral) {
                     code.ldc(stringLiteral.value());
+                    argumentIndex++;
                     continue;
                 }
                 throw new IllegalArgumentException("QJS1003 builtin argument type mismatch at index "
-                        + i + " for " + builtinCallExpression.receiverName()
+                        + argumentIndex + " for " + builtinCallExpression.receiverName()
                         + "." + builtinCallExpression.methodName() + ": expected string");
             }
             emitExpressionAsObject(code, bindings, argument);
+            argumentIndex++;
         }
 
         code.invokestatic(
                 ClassDesc.of(method.ownerBinaryName()),
                 method.jvmMethodName(),
                 method.descriptor());
+    }
+
+    private void emitRestArgumentsArray(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            List<QinIrExpression> arguments,
+            int startIndex) {
+        int restCount = arguments.size() - startIndex;
+        code.loadConstant(restCount);
+        code.anewarray(OBJECT_DESC);
+        for (int i = 0; i < restCount; i++) {
+            code.dup();
+            code.loadConstant(i);
+            emitExpressionAsObject(code, bindings, arguments.get(startIndex + i));
+            code.aastore();
+        }
+    }
+
+    private boolean emitLocalAssignmentBuiltinAsObject(
+            CodeBuilder code,
+            Map<String, DeclarationBinding> bindings,
+            QinIrBuiltinCallExpression builtinCallExpression) {
+        if (!"Global".equals(builtinCallExpression.receiverName())
+                || !"__qin_assign__".equals(builtinCallExpression.methodName())
+                || builtinCallExpression.arguments().size() != 2) {
+            return false;
+        }
+        QinIrExpression bindingNameExpression = builtinCallExpression.arguments().get(0);
+        if (!(bindingNameExpression instanceof QinIrStringLiteral bindingNameLiteral)) {
+            throw new IllegalArgumentException("QJS1003 __qin_assign__ expects string binding name");
+        }
+        DeclarationBinding binding = bindings.get(bindingNameLiteral.value());
+        if (binding == null) {
+            return false;
+        }
+        emitExpressionAsObject(code, bindings, builtinCallExpression.arguments().get(1));
+        code.dup();
+        code.astore(binding.slot());
+        return true;
     }
 
     private void emitExpressionForParameter(CodeBuilder code, QinIrExpression expression, Class<?> parameterType) {

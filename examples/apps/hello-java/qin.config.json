@@ -1,7 +1,7 @@
 {
   "name": "hello-java",
   "version": "1.0.0",
-  "port": 8080,
+  "port": 0,
   "entry": "src/server/Main.java",
   "java": {
     "sourceDir": "src/server"

@@ -274,6 +274,7 @@ public class QinConstants {
     public static final int DEFAULT_PORT = 8080;
     public static final boolean DEFAULT_LOCAL_REP = false;
     public static final String FULLSTACK_MAIN_CLASS = "com.qin.runtime.core.QinFullstackMain";
+    public static final String DEV_SERVER_MAIN_CLASS = "com.qin.runtime.core.QinDevServerMain";
     public static final String JITE_DEV_MAIN_CLASS = "com.qin.jite.JiteDevMain";
 
     /**

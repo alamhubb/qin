@@ -27,6 +27,7 @@ import com.qin.lang.sema.esm.QinEsmSemanticModel;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -75,52 +76,61 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
         Map<String, QinIrExpression> declarationLookup = new LinkedHashMap<>();
         Set<String> liveImportAliases = new LinkedHashSet<>();
 
-        List<QinIrConstDeclaration> rewrittenDeclarations = new ArrayList<>();
-        for (QinIrConstDeclaration declaration : program.declarations()) {
-            QinIrExpression rewrittenInitializer = declaration.initializer();
-            QinIrIdentifierReference liveAliasSlot = extractLiveImportAliasSlot(rewrittenInitializer);
-            if (liveAliasSlot != null) {
-                rewrittenInitializer = liveAliasSlot;
-                liveImportAliases.add(declaration.name());
-            } else {
-                rewrittenInitializer = rewriteExpression(
-                        declaration.initializer(),
+        List<QinIrConstDeclaration> rewrittenDeclarations = new ArrayList<>(
+                Collections.nCopies(program.declarations().size(), null));
+        List<QinIrExpressionStatement> rewrittenExpressionStatements = new ArrayList<>(
+                Collections.nCopies(program.expressionStatements().size(), null));
+        List<QinIrConsoleLogValue> rewrittenConsoleValueLogs = new ArrayList<>(
+                Collections.nCopies(program.consoleValueLogs().size(), null));
+
+        for (QinIrProgram.TopLevelExecutionStep step : program.executionSteps()) {
+            switch (step.kind()) {
+                case DECLARATION -> rewriteDeclarationAt(
+                        step.index(),
+                        program,
+                        rewrittenDeclarations,
                         semanticModel,
                         context,
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
                         liveImportAliases);
+                case EXPRESSION_STATEMENT -> rewriteExpressionStatementAt(
+                        step.index(),
+                        program,
+                        rewrittenExpressionStatements,
+                        semanticModel,
+                        context,
+                        moduleIndex,
+                        moduleUrl,
+                        declarationLookup,
+                        liveImportAliases);
+                case CONSOLE_VALUE -> rewriteConsoleValueAt(
+                        step.index(),
+                        program,
+                        rewrittenConsoleValueLogs,
+                        semanticModel,
+                        context,
+                        moduleIndex,
+                        moduleUrl,
+                        declarationLookup,
+                        liveImportAliases);
+                case CONSOLE_OBJECT, JAVA_STATIC_CONSOLE, JAVA_INSTANCE_CALL, JAVA_INSTANCE_CONSOLE -> {
+                    // These buckets currently do not carry target-neutral expressions that this pass rewrites.
+                }
             }
-            rewrittenDeclarations.add(new QinIrConstDeclaration(declaration.name(), rewrittenInitializer));
-            declarationLookup.put(declaration.name(), rewrittenInitializer);
         }
-
-        List<QinIrExpressionStatement> rewrittenExpressionStatements = new ArrayList<>();
-        for (QinIrExpressionStatement expressionStatement : program.expressionStatements()) {
-            rewrittenExpressionStatements.add(new QinIrExpressionStatement(
-                    rewriteExpression(
-                            expressionStatement.expression(),
-                            semanticModel,
-                            context,
-                            moduleIndex,
-                            moduleUrl,
-                            declarationLookup,
-                            liveImportAliases)));
-        }
-
-        List<QinIrConsoleLogValue> rewrittenConsoleValueLogs = new ArrayList<>();
-        for (QinIrConsoleLogValue consoleValueLog : program.consoleValueLogs()) {
-            rewrittenConsoleValueLogs.add(new QinIrConsoleLogValue(
-                    rewriteExpression(
-                            consoleValueLog.value(),
-                            semanticModel,
-                            context,
-                            moduleIndex,
-                            moduleUrl,
-                            declarationLookup,
-                            liveImportAliases)));
-        }
+        rewriteMissingBuckets(
+                program,
+                rewrittenDeclarations,
+                rewrittenExpressionStatements,
+                rewrittenConsoleValueLogs,
+                semanticModel,
+                context,
+                moduleIndex,
+                moduleUrl,
+                declarationLookup,
+                liveImportAliases);
 
         // Preserve non-expression IR buckets as-is for now.
         List<QinIrConsoleLogStatement> consoleLogs = program.consoleLogs();
@@ -143,6 +153,147 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                 program.classDeclarations(),
                 program.executionSteps(),
                 program.functionModelArtifacts());
+    }
+
+    private void rewriteMissingBuckets(
+            QinIrProgram program,
+            List<QinIrConstDeclaration> rewrittenDeclarations,
+            List<QinIrExpressionStatement> rewrittenExpressionStatements,
+            List<QinIrConsoleLogValue> rewrittenConsoleValueLogs,
+            QinEsmSemanticModel semanticModel,
+            QinEsmJvmLoweringContext context,
+            Map<Path, Integer> moduleIndex,
+            String moduleUrl,
+            Map<String, QinIrExpression> declarationLookup,
+            Set<String> liveImportAliases) {
+        for (int i = 0; i < rewrittenDeclarations.size(); i++) {
+            if (rewrittenDeclarations.get(i) == null) {
+                rewriteDeclarationAt(
+                        i,
+                        program,
+                        rewrittenDeclarations,
+                        semanticModel,
+                        context,
+                        moduleIndex,
+                        moduleUrl,
+                        declarationLookup,
+                        liveImportAliases);
+            }
+        }
+        for (int i = 0; i < rewrittenExpressionStatements.size(); i++) {
+            if (rewrittenExpressionStatements.get(i) == null) {
+                rewriteExpressionStatementAt(
+                        i,
+                        program,
+                        rewrittenExpressionStatements,
+                        semanticModel,
+                        context,
+                        moduleIndex,
+                        moduleUrl,
+                        declarationLookup,
+                        liveImportAliases);
+            }
+        }
+        for (int i = 0; i < rewrittenConsoleValueLogs.size(); i++) {
+            if (rewrittenConsoleValueLogs.get(i) == null) {
+                rewriteConsoleValueAt(
+                        i,
+                        program,
+                        rewrittenConsoleValueLogs,
+                        semanticModel,
+                        context,
+                        moduleIndex,
+                        moduleUrl,
+                        declarationLookup,
+                        liveImportAliases);
+            }
+        }
+    }
+
+    private void rewriteDeclarationAt(
+            int index,
+            QinIrProgram program,
+            List<QinIrConstDeclaration> rewrittenDeclarations,
+            QinEsmSemanticModel semanticModel,
+            QinEsmJvmLoweringContext context,
+            Map<Path, Integer> moduleIndex,
+            String moduleUrl,
+            Map<String, QinIrExpression> declarationLookup,
+            Set<String> liveImportAliases) {
+        if (index < 0 || index >= program.declarations().size() || rewrittenDeclarations.get(index) != null) {
+            return;
+        }
+        QinIrConstDeclaration declaration = program.declarations().get(index);
+        QinIrExpression rewrittenInitializer = declaration.initializer();
+        QinIrIdentifierReference liveAliasSlot = extractLiveImportAliasSlot(rewrittenInitializer);
+        if (liveAliasSlot != null) {
+            rewrittenInitializer = liveAliasSlot;
+            liveImportAliases.add(declaration.name());
+        } else {
+            liveImportAliases.remove(declaration.name());
+            rewrittenInitializer = rewriteExpression(
+                    declaration.initializer(),
+                    semanticModel,
+                    context,
+                    moduleIndex,
+                    moduleUrl,
+                    declarationLookup,
+                    liveImportAliases);
+        }
+        rewrittenDeclarations.set(index, new QinIrConstDeclaration(declaration.name(), rewrittenInitializer));
+        declarationLookup.put(declaration.name(), rewrittenInitializer);
+    }
+
+    private void rewriteExpressionStatementAt(
+            int index,
+            QinIrProgram program,
+            List<QinIrExpressionStatement> rewrittenExpressionStatements,
+            QinEsmSemanticModel semanticModel,
+            QinEsmJvmLoweringContext context,
+            Map<Path, Integer> moduleIndex,
+            String moduleUrl,
+            Map<String, QinIrExpression> declarationLookup,
+            Set<String> liveImportAliases) {
+        if (index < 0 || index >= program.expressionStatements().size()
+                || rewrittenExpressionStatements.get(index) != null) {
+            return;
+        }
+        QinIrExpressionStatement expressionStatement = program.expressionStatements().get(index);
+        rewrittenExpressionStatements.set(index, new QinIrExpressionStatement(
+                rewriteExpression(
+                        expressionStatement.expression(),
+                        semanticModel,
+                        context,
+                        moduleIndex,
+                        moduleUrl,
+                        declarationLookup,
+                        liveImportAliases)));
+    }
+
+    private void rewriteConsoleValueAt(
+            int index,
+            QinIrProgram program,
+            List<QinIrConsoleLogValue> rewrittenConsoleValueLogs,
+            QinEsmSemanticModel semanticModel,
+            QinEsmJvmLoweringContext context,
+            Map<Path, Integer> moduleIndex,
+            String moduleUrl,
+            Map<String, QinIrExpression> declarationLookup,
+            Set<String> liveImportAliases) {
+        if (index < 0 || index >= program.consoleValueLogs().size()
+                || rewrittenConsoleValueLogs.get(index) != null) {
+            return;
+        }
+        QinIrConsoleLogValue consoleValueLog = program.consoleValueLogs().get(index);
+        rewrittenConsoleValueLogs.set(index, new QinIrConsoleLogValue(
+                rewriteExpression(
+                        consoleValueLog.value(),
+                        semanticModel,
+                        context,
+                        moduleIndex,
+                        moduleUrl,
+                        declarationLookup,
+                        liveImportAliases)));
     }
 
     private Map<Path, Integer> buildModuleIndex(List<Path> orderedModules) {

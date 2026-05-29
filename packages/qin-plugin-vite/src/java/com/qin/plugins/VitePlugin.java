@@ -92,6 +92,7 @@ public class VitePlugin implements QinPlugin {
 
     private String detectClientDir() {
         String[] candidates = {
+            "app",
             "src/client",
             "client",
             "web",

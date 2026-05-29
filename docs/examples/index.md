@@ -6,7 +6,16 @@ Qin 官方示例项目。
 
 ### Hello Java
 
-最简单的 Spring Boot 应用。
+最简单的 `.qin + Spring Boot` 后端应用。
+
+当前后端示例能力：
+
+- `.qin` controller + `.qin` service
+- `GET /api/hello`
+- `GET /api/hello/detail`
+- `GET /api/ping`
+- `POST /api/greet`，请求体 `{"name":"  qin  "}`
+- `POST /api/greet/loud`，请求体 `{"name":"qin"}`
 
 ```bash
 git clone https://github.com/user/qin
@@ -14,11 +23,20 @@ cd qin/examples/apps/hello-java
 qin run
 ```
 
+运行说明：
+
+- `src/server/HelloController.qin` 是 controller 业务代码
+- `src/server/HelloService.qin` 是 service 业务代码
+- `src/server/Main.java` 只是很薄的 Spring Boot host shell，用来启动并注册 `.qin` 生成的 Spring bean
+- 默认使用随机空闲端口启动，启动成功后会在控制台打印实际 URL
+- 根路径 `/` 会返回 demo 说明；主要接口在 `/api/*`
+- 如果想固定端口，可以运行 `qin run --jvm-args=-Dserver.port=8080`
+
 ```ts
 // qin.config.ts
 export default defineConfig({
   name: "hello-java",
-  port: 8080,
+  port: 0,
   dependencies: {
     "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   },

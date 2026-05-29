@@ -3,7 +3,7 @@ package com.qin.lang.cli;
 import com.qin.lang.backend.js.QinJsBackend;
 import com.qin.lang.backend.jvm.QinClassFileWriter;
 import com.qin.lang.backend.jvm.QinJvmClassFileBackend;
-import com.qin.lang.frontend.adapter.QinSlimeFrontendAdapter;
+import com.qin.lang.frontend.adapter.QinFrontendLowerer;
 import com.qin.lang.ir.QinIrProgram;
 
 import java.io.BufferedReader;
@@ -35,10 +35,10 @@ public final class QinFullstackDemoMain {
         String serverProgramSource = sharedSource + System.lineSeparator() + System.lineSeparator() + serverSource;
         String webProgramSource = sharedSource + System.lineSeparator() + System.lineSeparator() + webSource;
 
-        QinSlimeFrontendAdapter adapter = new QinSlimeFrontendAdapter();
+        QinFrontendLowerer lowerer = new QinFrontendLowerer();
 
-        QinIrProgram serverProgram = adapter.parseProgram(serverProgramSource);
-        QinIrProgram webProgram = adapter.parseProgram(webProgramSource);
+        QinIrProgram serverProgram = lowerer.lowerSource(serverProgramSource);
+        QinIrProgram webProgram = lowerer.lowerSource(webProgramSource);
 
         Path buildDir = demoRoot.resolve("build");
         Path serverOutputDir = buildDir.resolve("server-classes");

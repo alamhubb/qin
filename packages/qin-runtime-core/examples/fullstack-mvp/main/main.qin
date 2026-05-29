@@ -1,0 +1,9 @@
+import { shared } from "../shared/shared.qin"
+
+console.log(shared.age)
+
+const result = {
+  age: shared.age,
+  message: "hello from Qin backend",
+  source: "main.qin"
+}

@@ -29,12 +29,38 @@ public final class QinEsmSpecifierResolver {
     private static final Pattern EXPORTS_STRING_ROOT = Pattern.compile(
             "\"exports\"\\s*:\\s*\"([^\"]+)\"",
             Pattern.DOTALL);
+    private static final Pattern EXPORTS_NODE_IMPORT_DEFAULT_DOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{[^}]*\"\\.\"\\s*:\\s*\\{[\\s\\S]*?\"import\"\\s*:\\s*\\{[\\s\\S]*?\"node\"\\s*:\\s*\\{[\\s\\S]*?\"default\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+    private static final Pattern EXPORTS_NODE_IMPORT_DEFAULT_ROOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{[\\s\\S]*?\"import\"\\s*:\\s*\\{[\\s\\S]*?\"node\"\\s*:\\s*\\{[\\s\\S]*?\"default\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+    private static final Pattern EXPORTS_IMPORT_DEFAULT_FALLBACK_DOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{[^}]*\"\\.\"\\s*:\\s*\\{[\\s\\S]*?\"import\"\\s*:\\s*\\{[\\s\\S]*?\"default\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+    private static final Pattern EXPORTS_IMPORT_DEFAULT_FALLBACK_ROOT = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{[\\s\\S]*?\"import\"\\s*:\\s*\\{[\\s\\S]*?\"default\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+
+    public static boolean isHostRuntimeModule(String specifier) {
+        if (specifier == null || specifier.isBlank()) {
+            return false;
+        }
+        String normalized = specifier.trim();
+        return normalized.startsWith("node:")
+                || "fs".equals(normalized)
+                || "path".equals(normalized)
+                || "url".equals(normalized)
+                || "util".equals(normalized)
+                || "process".equals(normalized)
+                || "globalthis".equals(normalized);
+    }
 
     public Path resolveModule(Path importerFile, String specifier) {
         if (importerFile == null || specifier == null || specifier.isBlank()) {
             return null;
         }
-        if (specifier.startsWith("java:") || specifier.startsWith("js:") || specifier.startsWith("node:")
+        if (specifier.startsWith("java:") || specifier.startsWith("js:") || isHostRuntimeModule(specifier)
                 || specifier.startsWith("http://") || specifier.startsWith("https://")) {
             return null;
         }
@@ -62,6 +88,9 @@ public final class QinEsmSpecifierResolver {
         Path resolved = parent.resolve(specifier).toAbsolutePath().normalize();
         Path file = resolveAsFile(resolved);
         if (file == null) {
+            if (hasDeclarationOnlyModule(resolved)) {
+                return null;
+            }
             throw new IllegalArgumentException(
                     "Cannot resolve local module import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
         }
@@ -73,6 +102,9 @@ public final class QinEsmSpecifierResolver {
         Path target = root.resolve(specifier.substring(1)).toAbsolutePath().normalize();
         Path file = resolveAsFile(target);
         if (file == null) {
+            if (hasDeclarationOnlyModule(target)) {
+                return null;
+            }
             throw new IllegalArgumentException(
                     "Cannot resolve absolute module import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
         }
@@ -111,6 +143,12 @@ public final class QinEsmSpecifierResolver {
                 String json = Files.readString(packageJson);
                 String entry = readExportsImport(json);
                 if (entry == null) {
+                    entry = readExportsNodeImportDefaultDot(json);
+                }
+                if (entry == null) {
+                    entry = readExportsImportDefaultFallbackDot(json);
+                }
+                if (entry == null) {
                     entry = readExportsDefault(json);
                 }
                 if (entry == null) {
@@ -118,6 +156,12 @@ public final class QinEsmSpecifierResolver {
                 }
                 if (entry == null) {
                     entry = readExportsImportRoot(json);
+                }
+                if (entry == null) {
+                    entry = readExportsNodeImportDefaultRoot(json);
+                }
+                if (entry == null) {
+                    entry = readExportsImportDefaultFallbackRoot(json);
                 }
                 if (entry == null) {
                     entry = readExportsDefaultRoot(json);
@@ -162,6 +206,38 @@ public final class QinEsmSpecifierResolver {
 
     private String readExportsImport(String json) {
         Matcher matcher = EXPORTS_IMPORT_DOT.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String readExportsNodeImportDefaultDot(String json) {
+        Matcher matcher = EXPORTS_NODE_IMPORT_DEFAULT_DOT.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String readExportsNodeImportDefaultRoot(String json) {
+        Matcher matcher = EXPORTS_NODE_IMPORT_DEFAULT_ROOT.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String readExportsImportDefaultFallbackDot(String json) {
+        Matcher matcher = EXPORTS_IMPORT_DEFAULT_FALLBACK_DOT.matcher(json);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String readExportsImportDefaultFallbackRoot(String json) {
+        Matcher matcher = EXPORTS_IMPORT_DEFAULT_FALLBACK_ROOT.matcher(json);
         if (matcher.find()) {
             return matcher.group(1);
         }
@@ -244,11 +320,24 @@ public final class QinEsmSpecifierResolver {
             return path.toAbsolutePath().normalize();
         }
 
+        Path sourceExtensionFallback = resolveSourceExtensionFallback(path);
+        if (sourceExtensionFallback != null) {
+            return sourceExtensionFallback;
+        }
+
         String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
         if (!fileName.contains(".")) {
             Path js = path.resolveSibling(fileName + ".js");
             if (Files.isRegularFile(js)) {
                 return js.toAbsolutePath().normalize();
+            }
+            Path qin = path.resolveSibling(fileName + ".qin");
+            if (Files.isRegularFile(qin)) {
+                return qin.toAbsolutePath().normalize();
+            }
+            Path vue = path.resolveSibling(fileName + ".vue");
+            if (Files.isRegularFile(vue)) {
+                return vue.toAbsolutePath().normalize();
             }
             Path mjs = path.resolveSibling(fileName + ".mjs");
             if (Files.isRegularFile(mjs)) {
@@ -265,6 +354,14 @@ public final class QinEsmSpecifierResolver {
             if (Files.isRegularFile(indexJs)) {
                 return indexJs.toAbsolutePath().normalize();
             }
+            Path indexQin = path.resolve("index.qin");
+            if (Files.isRegularFile(indexQin)) {
+                return indexQin.toAbsolutePath().normalize();
+            }
+            Path indexVue = path.resolve("index.vue");
+            if (Files.isRegularFile(indexVue)) {
+                return indexVue.toAbsolutePath().normalize();
+            }
             Path indexMjs = path.resolve("index.mjs");
             if (Files.isRegularFile(indexMjs)) {
                 return indexMjs.toAbsolutePath().normalize();
@@ -277,9 +374,73 @@ public final class QinEsmSpecifierResolver {
         return null;
     }
 
+    private Path resolveSourceExtensionFallback(Path path) {
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
+        int extensionIndex = fileName.lastIndexOf('.');
+        if (extensionIndex <= 0) {
+            return null;
+        }
+
+        String baseName = fileName.substring(0, extensionIndex);
+        Path sibling = path.resolveSibling(baseName);
+        Path ts = sibling.resolveSibling(baseName + ".ts");
+        if (Files.isRegularFile(ts)) {
+            return ts.toAbsolutePath().normalize();
+        }
+        Path qin = sibling.resolveSibling(baseName + ".qin");
+        if (Files.isRegularFile(qin)) {
+            return qin.toAbsolutePath().normalize();
+        }
+        Path js = sibling.resolveSibling(baseName + ".js");
+        if (Files.isRegularFile(js)) {
+            return js.toAbsolutePath().normalize();
+        }
+        Path mjs = sibling.resolveSibling(baseName + ".mjs");
+        if (Files.isRegularFile(mjs)) {
+            return mjs.toAbsolutePath().normalize();
+        }
+        Path vue = sibling.resolveSibling(baseName + ".vue");
+        if (Files.isRegularFile(vue)) {
+            return vue.toAbsolutePath().normalize();
+        }
+        return null;
+    }
+
+    private boolean hasDeclarationOnlyModule(Path path) {
+        if (path == null) {
+            return false;
+        }
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
+        if (Files.isRegularFile(path) && fileName.endsWith(".d.ts")) {
+            return true;
+        }
+        if (!fileName.contains(".")) {
+            Path dts = path.resolveSibling(fileName + ".d.ts");
+            if (Files.isRegularFile(dts)) {
+                return true;
+            }
+        }
+        int extensionIndex = fileName.lastIndexOf('.');
+        if (extensionIndex > 0) {
+            String baseName = fileName.substring(0, extensionIndex);
+            Path dts = path.resolveSibling(baseName + ".d.ts");
+            if (Files.isRegularFile(dts)) {
+                return true;
+            }
+        }
+        if (Files.isDirectory(path) && Files.isRegularFile(path.resolve("index.d.ts"))) {
+            return true;
+        }
+        return false;
+    }
+
     private boolean isSupportedScriptFile(Path path) {
         String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
-        return fileName.endsWith(".js") || fileName.endsWith(".mjs") || fileName.endsWith(".ts");
+        return fileName.endsWith(".js")
+                || fileName.endsWith(".mjs")
+                || fileName.endsWith(".ts")
+                || fileName.endsWith(".qin")
+                || fileName.endsWith(".vue");
     }
 
     private record BareSpecifier(String packageName, String subPath) {

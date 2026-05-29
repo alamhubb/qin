@@ -28,7 +28,7 @@ public final class QinEsmLinkValidator {
             List<QinEsmDiagnostic> diagnostics) {
         Set<String> seen = new HashSet<>();
         for (QinEsmExportBinding exportBinding : module.exports()) {
-            if (QinEsmExportKind.RE_EXPORT_ALL.equals(exportBinding.kind())) {
+            if (QinEsmExportKind.RE_EXPORT_ALL.equals(exportBinding.kind()) || exportBinding.typeOnly()) {
                 continue;
             }
             if (!seen.add(exportBinding.exportName())) {
@@ -117,6 +117,7 @@ public final class QinEsmLinkValidator {
             }
 
             List<QinEsmExportBinding> directMatches = new ArrayList<>();
+            List<QinEsmExportBinding> runtimeDirectMatches = new ArrayList<>();
             List<QinEsmExportBinding> exportAll = new ArrayList<>();
             for (QinEsmExportBinding exportBinding : module.exports()) {
                 if (QinEsmExportKind.RE_EXPORT_ALL.equals(exportBinding.kind())) {
@@ -125,9 +126,27 @@ public final class QinEsmLinkValidator {
                 }
                 if (exportName.equals(exportBinding.exportName())) {
                     directMatches.add(exportBinding);
+                    if (!exportBinding.typeOnly()) {
+                        runtimeDirectMatches.add(exportBinding);
+                    }
                 }
             }
 
+            if (runtimeDirectMatches.size() > 1) {
+                return ExportResolution.ambiguousResult();
+            }
+            if (runtimeDirectMatches.size() == 1) {
+                QinEsmExportBinding binding = runtimeDirectMatches.get(0);
+                if (QinEsmExportKind.RE_EXPORT_NAMED.equals(binding.kind())) {
+                    return resolveExportName(
+                            model,
+                            binding.resolvedModule(),
+                            binding.localName(),
+                            visiting,
+                            depth + 1);
+                }
+                return ExportResolution.foundResult(moduleFile, exportName);
+            }
             if (directMatches.size() > 1) {
                 return ExportResolution.ambiguousResult();
             }

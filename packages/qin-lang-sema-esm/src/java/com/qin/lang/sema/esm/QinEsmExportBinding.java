@@ -11,6 +11,7 @@ public record QinEsmExportBinding(
         QinEsmExportKind kind,
         String exportName,
         String localName,
+        boolean typeOnly,
         String moduleSpecifier,
         Path resolvedModule,
         int line,

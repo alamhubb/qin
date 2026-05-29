@@ -1,37 +1,116 @@
-# Qin - Java 25 构建工具
+# Qin - AI 时代的全栈应用语言
 
-> 纯 Java 25 实现的新一代构建工具，以 JSON 配置取代 XML，引领 Java 进入现代化时代。
+> 用一套 Qin 代码描述应用，让 AI 写代码，让 Qin 负责运行、构建和部署。
 
 [![Java Version](https://img.shields.io/badge/Java-25%20LTS-orange.svg)](https://openjdk.org/projects/jdk/25/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## 📖 Qin 是什么？
 
-**Qin** 是一个专为 Java 项目设计的**现代化构建工具**，灵感来自 npm/pnpm/yarn 等前端工具的简洁性。
+**Qin** 的目标不是再做一个“更现代的 Java 构建工具”，而是做一门 **AI-native 全栈应用语言**：
+
+- 使用 ESM 风格语法
+- 以 JVM 作为主要后端/运行时内核
+- 以前端 JS 生成为第一类目标
+- 用统一的语言模型覆盖应用、页面、接口、数据与部署
+
+对用户的理想体验是：
+
+- 用 Qin 描述应用
+- 用 AI 生成或修改 Qin 代码
+- `qin dev` 本地启动
+- `qin deploy` 一键部署
+
+用户不需要先关心：
+
+- 前端还是后端
+- controller / service / DTO 怎么拆
+- Spring / JS / 部署细节怎么接
+
+这些应该逐步由 Qin 编译器、运行时、工具链和平台来封装。
+
+### 当前现实与最终目标
+
+当前 Qin 还处在“从语言/运行时基础设施走向产品形态”的阶段：
+
+- 现在已经有统一语言模型、JVM/JS backend、`.qin + Spring Boot` demo、target zoning
+- 但最终形态不应该让普通用户长期停留在“手写前后端分层 + 宿主壳”的工作方式里
+
+当前执行优先级：
+
+- 先把 Qin 做成一门普通可用的全栈语言
+- 先完成 Stage 1 的语言、编译、运行、全栈链路稳定性
+- 更高层的 Qin 应用抽象留到 Stage 2 再系统推进
+
+更完整的产品定位见：
+
+- `packages/qin-runtime-core/QIN_APP_MODEL.md`
+- `packages/qin-runtime-core/QIN_MISSION_AND_VALUE.md`
+- `packages/qin-runtime-core/QIN_PRODUCT_POSITIONING.md`
+- `packages/qin-runtime-core/QIN_LANGUAGE_TARGET_MODEL.md`
+- `packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md`
+- `packages/qin-runtime-core/QIN_CURRENT_SUPPORT_MATRIX.md`
+- `packages/qin-runtime-core/QIN_NPM_COMPATIBILITY_POLICY.md`
+- `packages/qin-runtime-core/QIN_HOST_CAPABILITY_MODEL.md`
+- `packages/qin-runtime-core/QIN_JS_ON_JVM_FEASIBILITY.md`
+- `packages/qin-runtime-core/QIN_VITE_PLUGIN_COMPAT_MODEL.md`
+- `packages/qin-runtime-core/QIN_CSSTS_INTEGRATION_MODEL.md`
 
 ### 核心理念
 
 ```
-告别繁琐的 pom.xml，用 JSON 配置文件管理 Java 项目
+描述应用，而不是先描述前端/后端分层
 ```
+
+### 我们为什么要做 Qin
+
+Qin 的意义不在于“把 JavaScript 用 Java 重写一遍”。
+
+如果 Qin 最终只是：
+
+- 接近 JS 的语法
+- 再加上能调用 Spring Boot / JVM 生态
+
+那它的价值是不够大的。
+
+Qin 真正要证明的价值是：
+
+- 用 AI 更熟悉的现代语法，统一更多前后端开发工作
+- 直接进入 JVM / `.class` / Spring Boot / Java 生态
+- 降低多语言、多运行时、多构建链路之间的胶水复杂度
+- 最终把 `dev/build/deploy` 收成更一体化的全栈体验
+
+也就是说，Qin 不是为了“像 JS”而存在。
+Qin 只有在它能带来更强的 JVM-centered fullstack workflow 时，才值得作为一门独立语言继续发展。
 
 ### Qin 解决的问题
 
-1. **XML 配置太繁琐**
-    - Maven 的 pom.xml 冗长难读
-    - Qin 使用简洁的 JSON 格式
+1. **应用开发仍然过度分层**
+    - 用户先被迫思考前端、后端、DTO、路由、部署
+    - Qin 的目标是先描述应用意图，再由平台展开 target 细节
 
-2. **依赖管理不直观**
-    - 需要分别指定 groupId、artifactId、version
-    - Qin 使用 npm 风格：`"group:artifact": "version"`
+2. **AI 写应用代码时上下文太碎**
+    - 传统工程需要跨多个框架层手工对齐
+    - Qin 需要提供更统一、低歧义、可生成的应用模型
 
-3. **Monorepo 支持差**
-    - Maven 多模块配置复杂
-    - Qin 原生支持工作区（类似 npm workspaces）
+3. **全栈开发的运行与部署链路过重**
+    - 本地运行、依赖拼装、宿主集成、发布上线都分散
+    - Qin 目标是统一为 `dev/build/deploy`
 
-4. **启动速度慢**
-    - Maven 启动需要数秒
-    - Qin 利用 Java 25 AOT，启动只需 300ms
+4. **底层平台差异暴露过早**
+    - JVM、JS、Spring、浏览器能力本应是平台展开问题
+    - Qin 目标是对普通应用作者尽量隐藏这些实现细节
+
+### 构建工具层仍然重要
+
+Qin 依然包含很强的工程工具链能力：
+
+- JSON / TypeScript 风格配置
+- 本地依赖与 monorepo 支持
+- Java 25 / JVM 工具体系集成
+- `qin run / sync / build`
+
+但这些属于 Qin 产品的一部分，不再是 Qin 的最高层定义。
 
 ### 对比示例
 
@@ -78,7 +157,7 @@
 - ✅ **厌倦 XML 的 Java 开发者** - 简洁的 JSON/TypeScript 配置
 - ✅ **Monorepo 用户** - 原生多项目支持
 - ✅ **追求性能的开发者** - Java 25 带来 2-5x 性能提升
-- ✅ **全栈开发者** - 内置 Vite 前端集成
+- ✅ **全栈开发者** - 内置前端桥接能力（可选 Vite 子进程）
 
 ## Qin 语言定位（全栈方向）
 
@@ -203,14 +282,28 @@ Open [http://localhost:18080](http://localhost:18080).
 
 ### `qin.config.json`
 
-`entry` 同时支持 `.java` 和 `.js`。`qin run` 无参数时优先读取这里的 `entry`。
+`qin.config.json` 是 Qin 的项目 manifest。
+
+它当前同时承担四类职责：
+
+- 包清单
+- 依赖声明入口
+- workspace / module root 描述
+- runtime / build / entry 配置面
+
+`entry` 当前支持：
+
+- Qin source entry: `.qin`、`.js`、`.mjs`、`.ts`
+- Java host entry: `.java`
+
+`qin run` 无参数时优先读取这里的 `entry`。
 
 ```json
 {
   "name": "my-app",
   "version": "1.0.0",
   "description": "My awesome Java 25 app",
-  "entry": "main/main.js",
+  "entry": "main/main.qin",
   
   "dependencies": {
     "org.springframework.boot:spring-boot-starter-web": "4.0.6",
@@ -253,9 +346,9 @@ Open [http://localhost:18080](http://localhost:18080).
 | 命令 | 说明 | 示例 |
 |------|------|------|
 | `compile` | 编译 Java 项目 | `qin compile` |
-| `run` | 编译并运行 | `qin run` / `qin run Test.java` / `qin run main/main.js` |
-| `dev` | 开发模式（Qin 单端口 + 自动刷新） | `qin dev` / `qin dev main/main.js` |
-| `build` | 构建产物（Java: JAR / Qin: fullstack 产物） | `qin build` / `qin build main/main.js` |
+| `run` | 编译并运行 | `qin run` / `qin run Test.java` / `qin run main/main.qin` |
+| `dev` | 开发模式（Qin 单端口 + 自动刷新） | `qin dev` / `qin dev main/main.qin` |
+| `build` | 构建产物（Java: JAR / Qin: fullstack 产物） | `qin build` / `qin build main/main.qin` |
 | `test` | 运行测试 | `qin test` |
 | `sync` | 同步依赖 | `qin sync` |
 | `clean` | 清理构建产物 | `qin clean` |
@@ -272,7 +365,7 @@ qin run
 qin run src/main/java/com/example/Test.java
 
 # 运行指定的 Qin 文件
-qin run main/main.js
+qin run main/main.qin
 
 # 运行指定文件并传递参数
 qin run MyTest.java arg1 arg2
@@ -281,13 +374,13 @@ qin run MyTest.java arg1 arg2
 运行分发规则（统一）：
 
 - 传入目标参数时：优先插件解析，其次 `.js`，最后按 Java 入口处理。
-- 不传参数时：读取 `qin.config.json` 的 `entry`；若为 `.js` 走 Qin 运行时，否则走 Java 编译运行流程。
+- 不传参数时：优先读取 `qin.config.json` 的 `entry`；若为 `.qin/.js/.mjs/.ts` 走 Qin 运行时，否则按 Java host 入口处理。
 
 `run` / `dev` 区别：
 
 - `qin run`：一次构建后启动，不监听文件变化。
 - `qin dev`：单端口开发服务（默认同端口提供 API + 静态页面），监听 `.js/.html/.css` 变更并自动重编译与浏览器刷新。
-- 该 MVP 开发链路不依赖 Node/Vite，直接使用 Qin + Java 运行时。
+- 该 MVP 的核心链路仍以 Qin + Java 运行时为主，Vue/Vite 前端可通过可选的 Node/Vite 子进程桥接接入。
 
 构建分发规则（统一）：
 
@@ -785,7 +878,7 @@ cd examples/hello-java
 - [x] **依赖缓存** - .qin/classpath.json 自动缓存，秒级启动
 - [x] **本地依赖优先** - 自动发现本地项目，无需发布到 Maven
 - [x] **Fat JAR 构建** - 一键生成可执行 JAR
-- [x] **运行指定文件** - `qin run Test.java` / `qin run main/main.js`
+- [x] **运行指定文件** - `qin run Test.java` / `qin run main/main.qin`
 - [x] **并行编译** - Virtual Threads 加速
 - [x] **热重载** - 开发模式自动重新编译
 - [x] **Monorepo 支持** - 多项目管理
@@ -825,25 +918,154 @@ MIT License - 查看 [LICENSE](LICENSE) 文件
 Qin is an ESM-first language/runtime implemented on Java/JVM.
 It is designed as a new language platform, not a Node.js compatibility layer.
 
+More precisely:
+
+- Qin borrows ESM as a source-language and module-design inspiration.
+- Qin does not treat Node.js as its platform standard.
+- Qin defines its own runtime boundary on top of Java/JVM.
+
+### Official Project Positioning
+
+Qin should be understood as:
+
+- a Qin-owned programming language
+- whose source experience is based on ESM / modern JavaScript-style syntax
+- with Qin-specific syntax and semantic extensions
+- with JVM as the primary backend/runtime kernel
+- with fullstack targets across frontend and backend
+
+In practical terms:
+
+- backend Qin code compiles to JVM `.class`
+- frontend Qin code can compile to JS for web targets
+- Java is the host platform and ecosystem carrier
+- Qin is the business language, not "Java source with different syntax"
+
+So the most accurate short definition is:
+
+- Qin is a fullstack, ESM-style, JVM language.
+
 ### Design Direction (Current)
 
 - ESM-first: Qin source uses ES-style syntax and ESM `import/export` as the primary module model.
 - Java/JVM kernel: backend compiles to JVM `.class` (and can also emit JS for web targets).
-- Node-free by default: no Node-specific conventions (`require`, `module.exports`, `__dirname`, `process`, `Buffer`, `node:*`).
+- Mixed-source Qin input: Qin accepts `.ts`, `.js`, and `.qin` in the same workspace graph.
+- `.java` remains host/interoperability code for backend projects, not a Qin source suffix.
+- Node compatibility is optional and incremental: it is a compatibility layer for third-party packages, not the platform definition.
 - Java-backed stdlib: runtime capabilities are implemented on top of Java standard library.
 - Fullstack orientation: one language across `shared/`, frontend, and backend, with target-specific backends.
+- Qin-owned standard: language/runtime semantics are defined by Qin itself, while Node-adjacent behavior can be added when needed.
+
+Backend architecture note:
+
+- Qin user-facing application model is documented in [packages/qin-runtime-core/QIN_APP_MODEL.md](packages/qin-runtime-core/QIN_APP_MODEL.md).
+- Qin server-side code is intended to stand on JVM + `.class` ecosystem support.
+- Node is not the backend foundation of Qin.
+- Parsing ownership should belong to a Qin-owned parser layer (`qin-parser`) built on top of shared `java-slime` infrastructure.
+- Qin language/target zoning is documented in [packages/qin-runtime-core/QIN_LANGUAGE_TARGET_MODEL.md](packages/qin-runtime-core/QIN_LANGUAGE_TARGET_MODEL.md).
+- JS/TS compatibility boundary is documented in [packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md](packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md).
+- npm compatibility grading is documented in [packages/qin-runtime-core/QIN_NPM_COMPATIBILITY_POLICY.md](packages/qin-runtime-core/QIN_NPM_COMPATIBILITY_POLICY.md).
+- host/runtime capability boundary is documented in [packages/qin-runtime-core/QIN_HOST_CAPABILITY_MODEL.md](packages/qin-runtime-core/QIN_HOST_CAPABILITY_MODEL.md).
+- JS-on-JVM support priority and deferred-feature policy is documented in [packages/qin-runtime-core/QIN_JS_ON_JVM_FEASIBILITY.md](packages/qin-runtime-core/QIN_JS_ON_JVM_FEASIBILITY.md).
+- Vite plugin adaptation policy is documented in [packages/qin-runtime-core/QIN_VITE_PLUGIN_COMPAT_MODEL.md](packages/qin-runtime-core/QIN_VITE_PLUGIN_COMPAT_MODEL.md).
+- CSSTS integration policy is documented in [packages/qin-runtime-core/QIN_CSSTS_INTEGRATION_MODEL.md](packages/qin-runtime-core/QIN_CSSTS_INTEGRATION_MODEL.md).
+- See [packages/qin-runtime-core/QIN_BACKEND_MODEL.md](packages/qin-runtime-core/QIN_BACKEND_MODEL.md).
+- Builtin object strategy is documented in [packages/qin-runtime-core/QIN_BUILTINS_STRATEGY.md](packages/qin-runtime-core/QIN_BUILTINS_STRATEGY.md).
+- Async/concurrency model is documented in [packages/qin-runtime-core/QIN_ASYNC_MODEL.md](packages/qin-runtime-core/QIN_ASYNC_MODEL.md).
 
 ### Scope and Non-Goals
 
 - Phase 1: selected ES syntax + stable ESM core semantics + Java-backed runtime APIs.
 - Phase 1 non-goal: full ECMAScript and full ESM edge-case compatibility.
-- Reason: this is an engineering phasing strategy, not a JVM limitation. We prioritize a stable core first, then expand features incrementally.
+- Phase 1 non-goal: pretending Node compatibility is the platform standard.
+- Reason: this is an engineering phasing strategy, not a JVM limitation. We prioritize a stable core first, then expand compatibility incrementally where real packages require it.
+
+### Qin vs JS Runtime / Bun / Kotlin
+
+| Dimension | Browser/Node JS | Bun | Kotlin/JVM | Qin |
+| --- | --- | --- | --- | --- |
+| Source language | JavaScript / TypeScript | JavaScript / TypeScript | Kotlin | ESM-style Qin |
+| Primary goal | Run JS | Run JS faster and provide toolchain | Modern JVM language | Modern ESM-style JVM language |
+| Runtime foundation | JS engine + host runtime | JavaScriptCore + Zig host runtime | JVM | JVM |
+| Backend ecosystem | Node/npm | Node/npm | `.class` / Java ecosystem | `.class` / Java ecosystem |
+| Node compatibility pressure | High | High | None | None by default |
+| Output artifact | interpreted / bundled JS | interpreted / bundled JS | `.class` | `.class` |
+| Spring integration model | indirect bridges | indirect bridges | native | native target |
+| Language semantics owner | ECMAScript + host | ECMAScript + Bun host | Kotlin | Qin |
+
+Operationally:
+
+- Bun is best understood as a JS runtime/toolchain implemented largely in Zig.
+- Qin is best understood as an ESM-style source language compiled onto the JVM.
+- So Qin is not "Java-written Bun" and not "JVM-hosted Node".
+- Qin is closer to "ESM-syntax Kotlin-like language for the JVM" than to a JS engine.
+
+### Similar Projects In The Industry
+
+There is no mainstream language today that is exactly the same as Qin.
+
+The closest comparisons are split across different dimensions:
+
+- Kotlin: closest on backend platform strategy
+- Scala / Groovy: similar on "new language on JVM" category
+- TypeScript: closest on source authoring familiarity
+- ClojureScript / ReScript / Elm: similar in "source language compiles to JS" direction
+- Bun / Deno / Node: useful comparison targets, but not the same category
+
+Kotlin is closest on backend platform strategy: independent language, compiles to JVM `.class`, integrates naturally with Spring / Java ecosystem, but it is not ESM-style at the source language level.
+
+Scala / Groovy are close in the "new language on JVM" category: JVM-native backend language position, strong `.class` ecosystem integration, but not designed around ESM-style fullstack authoring.
+
+TypeScript is closest on source authoring familiarity: modern JS/ESM-style code organization and decorator-oriented developer expectations, but it normally targets JS runtimes rather than JVM `.class`.
+
+ClojureScript / ReScript / Elm are similar in the "source language compiles to JS" direction, but they are not trying to make JVM `.class` the primary backend artifact.
+
+Bun / Deno / Node are useful comparison targets mainly for what Qin is not: they are JS runtimes/toolchains, while Qin is a new language platform with its own runtime boundary.
+
+So the best mental model is:
+
+- backend category: closer to Kotlin than to Node
+- source-language feel: closer to ESM/TypeScript than to Kotlin syntax
+- product shape: a fullstack language with target-specific backends, not a JS runtime clone
+
+### What Qin Keeps From ESM, And What It Does Not
+
+Qin intentionally keeps:
+
+- ES-style module authoring with `import` / `export`
+- modern JS-like expression syntax
+- decorators as the source-level annotation model
+- familiar builtin names such as `console`, `JSON`, `Math`, `Array`, `Object`
+- frontend/backend authoring style convergence
+
+Qin intentionally does not promise, at least in the current architecture phase:
+
+- full ECMAScript engine parity
+- full Node runtime compatibility
+- full prototype-chain edge-case fidelity
+- CommonJS behavior
+- "any npm package should just run" without adaptation
+- browser or Node loader behavior as the definition of correctness
+- Promise-first / `async`-viral programming model for backend code
+
+The design intent is:
+
+- keep the productive parts of ESM authoring experience
+- keep Qin semantics stable and documentable
+- map backend execution cleanly to JVM + `.class`
+- avoid being trapped by Node compatibility as the platform definition
+- preserve Java/Kotlin-like synchronous backend ergonomics by default
+- add Node-adjacent compatibility only as an incremental layer when ecosystem pressure makes it worthwhile
 
 ### Convention Folders (Current Project Rule)
 
+These folders are current normative technical architecture.
+They are not the final preferred primary end-user mental model for Qin application authoring.
+See [packages/qin-runtime-core/QIN_APP_MODEL.md](packages/qin-runtime-core/QIN_APP_MODEL.md).
+
 - `shared/`: shared code and shared contracts
 - `app/`: frontend static assets root (`/index` resolves to `app/index` or `app/index.html`)
-- backend entry: Java defaults to `src/Main.java` (with compatibility candidates), Qin defaults use `main/main.js` and other built-in candidates
+- backend entry: Java defaults to `src/Main.java` (with compatibility candidates), Qin defaults use `main/main.qin` and other built-in candidates
 
 ### Import Policy by Zone (Current Rule)
 
@@ -866,7 +1088,7 @@ It is designed as a new language platform, not a Node.js compatibility layer.
 
 ### Stage 0 Entry
 
-Use `com.qin.runtime.core.QinRuntimeMain` to parse `.js` via Slime and emit `.class/.js` outputs.
+Use `com.qin.runtime.core.QinRuntimeMain` to parse `.ts`, `.js`, and `.qin` Qin source inputs through the Qin pipeline and emit `.class/.js` outputs.
 
 ## Qin Language Design (Normative)
 
@@ -874,7 +1096,9 @@ Qin is a JS/ESM-syntax, JVM-kernel compiled language.
 
 - Qin is not a full JavaScript engine.
 - Qin does not aim for Node compatibility.
+- Qin does not treat Node semantics as normative for language or runtime behavior.
 - Qin uses Class-File API to emit JVM `.class` artifacts.
+- Qin defines its own backend/runtime standard on the JVM.
 
 ### Module Semantics (Strict Rule)
 
@@ -889,6 +1113,28 @@ Qin is a JS/ESM-syntax, JVM-kernel compiled language.
 - Node runtime APIs are out of scope in this phase (`process`, `Buffer`, `__dirname`, `fs`, `path`, `node:*`, etc.).
 - `qin install` can fetch npm packages, but "can install" != "can run".
 - Runtime compatibility depends on whether package code stays inside Qin-supported ESM + syntax/runtime subset.
+- npm ecosystem behavior is never the normative definition of Qin semantics.
+
+### npm Packages As Qin Compile Inputs
+
+Qin should treat npm as a package source, not as the definition of the runtime.
+
+That means:
+
+- compatible npm packages may enter the Qin compile graph
+- `.ts/.js/.qin` package sources may be compiled by Qin
+- backend-compatible packages may be lowered into the JVM target and participate in `.class` outputs
+- frontend-compatible packages may be lowered into JS outputs
+
+Important boundary:
+
+- this does not mean every npm package is supported
+- support is source-compatibility-based, not registry-based
+- packages that depend on CJS, Node-only APIs, native addons, or unsupported JS runtime behavior may still fail by design
+
+So the correct rule is:
+
+- Qin aims to compile compatible npm packages, not to promise blind npm ecosystem parity
 
 ### Runtime Function Model (No Shim Path)
 
@@ -939,6 +1185,25 @@ Reference implementation details live in:
 2. Maven fallback when npm package cannot be resolved
 3. Automatic write-back to `qin.config.json`
 
+### `qin.config.json` as manifest and module root
+
+`qin.config.json` should be treated as the canonical Qin project manifest, not only as a loose config file.
+
+In the current architecture it defines:
+
+- project/package identity: `name`, `version`, `description`
+- source/runtime entry selection: `entry`
+- dependency surface: `dependencies`, `devDependencies`, `repositories`
+- workspace shape: `packages`
+- target/runtime/build knobs: `java`, `graalvm`, `frontend`, `output`, `port`
+
+So Qin is converging on one manifest for:
+
+- package identity
+- mixed npm + Maven dependency declaration
+- workspace package discovery
+- module-root and runtime/build coordination
+
 ### Command behavior (no options)
 
 - `qin install <pkg...>`
@@ -970,6 +1235,7 @@ This allows Qin projects to manage npm + Maven dependencies together while keepi
 - `qin install` is a dependency acquisition and lock/write-back workflow.
 - Runtime execution still follows Qin language/runtime constraints above (ESM-first, no CJS guarantee, no Node API guarantee).
 - If an npm package requires CJS or Node-only APIs, install may succeed but compile/run can still fail by design.
+- Package-manager convenience must not be confused with platform compatibility goals.
 
 Notes:
 

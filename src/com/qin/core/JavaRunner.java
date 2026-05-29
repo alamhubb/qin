@@ -323,7 +323,7 @@ public class JavaRunner {
         pb.inheritIO();
         Process proc = pb.start();
 
-        int exitCode = proc.waitFor();
+        int exitCode = ChildProcessSupport.waitFor(proc, parsed.className());
         if (exitCode != 0) {
             throw new RuntimeException("Java program exited with code " + exitCode);
         }
@@ -342,6 +342,14 @@ public class JavaRunner {
             throw new RuntimeException("Compilation failed: " + result.getError());
         }
         run(args, jvmArgs);
+    }
+
+    public void compileAndRunMainClass(String mainClass, List<String> args, List<String> jvmArgs) throws Exception {
+        CompileResult result = compile();
+        if (!result.isSuccess()) {
+            throw new RuntimeException("Compilation failed: " + result.getError());
+        }
+        runMainClass(mainClass, args, jvmArgs);
     }
 
     /**
@@ -374,7 +382,10 @@ public class JavaRunner {
 
     public void runFile(String javaFilePath, List<String> args, List<String> jvmArgs) throws Exception {
         String className = javaFilePathToClassName(javaFilePath);
+        runMainClass(className, args, jvmArgs);
+    }
 
+    public void runMainClass(String className, List<String> args, List<String> jvmArgs) throws Exception {
         String fullClasspath = buildFullClasspath();
 
         List<String> javaArgs = new ArrayList<>();
@@ -401,7 +412,7 @@ public class JavaRunner {
         pb.inheritIO();
         Process proc = pb.start();
 
-        int exitCode = proc.waitFor();
+        int exitCode = ChildProcessSupport.waitFor(proc, className);
         if (exitCode != 0) {
             throw new RuntimeException("Java program exited with code " + exitCode);
         }

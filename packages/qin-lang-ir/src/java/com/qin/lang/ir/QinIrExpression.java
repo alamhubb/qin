@@ -16,6 +16,7 @@ public sealed interface QinIrExpression permits
         QinIrNumberLiteral,
         QinIrObjectLiteral,
         QinIrPropertyAccessExpression,
+        QinIrSequenceExpression,
         QinIrThisExpression,
         QinIrStringLiteral {
 }

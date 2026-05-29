@@ -29,6 +29,7 @@ public class QinCli {
     private static final List<String> QIN_SCRIPT_EXTENSIONS = List.of(".qin", ".js", ".mjs", ".ts");
 
     public static void main(String[] args) {
+        ParentProcessWatchdog.install();
         if (args.length == 0) {
             printHelp();
             return;
@@ -242,6 +243,8 @@ public class QinCli {
 
         if (runOptions.javaFile != null) {
             runner.compileAndRunFile(runOptions.javaFile, runOptions.programArgs, runOptions.jvmArgs);
+        } else if (runOptions.mainClass != null) {
+            runner.compileAndRunMainClass(runOptions.mainClass, runOptions.programArgs, runOptions.jvmArgs);
         } else {
             runner.compileAndRun(runOptions.programArgs, runOptions.jvmArgs);
         }
@@ -270,9 +273,12 @@ public class QinCli {
                 throw new IllegalArgumentException("--main is no longer supported. Use `qin run <target>`.");
             }
 
-            if (!arg.startsWith("-") && options.javaFile == null) {
+            if (!arg.startsWith("-") && options.javaFile == null && options.mainClass == null) {
                 options.javaFile = resolveRunTargetToJavaFile(config, arg);
                 if (options.javaFile == null) {
+                    options.mainClass = resolveRunTargetToMainClass(arg);
+                }
+                if (options.javaFile == null && options.mainClass == null) {
                     throw new IllegalArgumentException("Unable to resolve run target: " + arg);
                 }
                 continue;
@@ -500,10 +506,32 @@ public class QinCli {
         int port = resolveQinRuntimePort(config, args);
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         Path backendSource = Paths.get(QinConstants.getCwd(), qinFile).toAbsolutePath().normalize();
+        Path frontendRoot = resolveQinFrontendRoot(config, root);
+        Path frontendEntry = resolveQinFrontendEntry(config, root, frontendRoot);
+        Path frontendStaticDir = frontendRoot;
+        ViteFrontendBridge viteFrontend = null;
+        if (frontendRoot != null && shouldUseViteFrontend(root, frontendRoot)) {
+            Path viteStaticDir = root.resolve(QinConstants.QIN_DIR)
+                    .resolve(devMode ? "frontend-dev" : "frontend-run")
+                    .resolve("web")
+                    .normalize();
+            viteFrontend = prepareViteFrontendBridge(root, frontendRoot, viteStaticDir, devMode);
+            frontendStaticDir = viteFrontend.staticDir();
+            frontendEntry = null;
+        }
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
 
         System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
         System.out.println(gray("  Backend entry: " + qinFile));
+        if (frontendRoot != null) {
+            System.out.println(gray("  Frontend root: " + root.relativize(frontendRoot)));
+        }
+        if (viteFrontend != null) {
+            System.out.println(gray("  Frontend pipeline: Vite bridge -> " + root.relativize(frontendStaticDir)));
+        }
+        if (frontendEntry != null) {
+            System.out.println(gray("  Frontend entry: " + root.relativize(frontendEntry)));
+        }
 
         List<String> command = new ArrayList<>();
         command.add("java");
@@ -519,12 +547,29 @@ public class QinCli {
         command.add(backendSource.toString());
         command.add("--port");
         command.add(String.valueOf(port));
+        if (frontendStaticDir != null) {
+            command.add("--static-dir");
+            command.add(frontendStaticDir.toString());
+        }
+        if (frontendEntry != null) {
+            command.add("--frontend-file");
+            command.add(frontendEntry.toString());
+        }
+
+        ViteFrontendBridge finalViteFrontend = viteFrontend;
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(root.toFile());
         pb.inheritIO();
         Process process = pb.start();
-        int exitCode = process.waitFor();
+        int exitCode = ChildProcessSupport.waitFor(
+                process,
+                runtimeMainClass,
+                () -> {
+                    if (finalViteFrontend != null) {
+                        finalViteFrontend.stop();
+                    }
+                });
         if (exitCode != 0) {
             throw new RuntimeException("Qin runtime exited with code " + exitCode + " (main class: " + runtimeMainClass + ")");
         }
@@ -548,6 +593,10 @@ public class QinCli {
     private static String resolveQinRuntimeMainClass(String runtimeClasspath, boolean devMode) {
         if (!devMode) {
             return QinConstants.FULLSTACK_MAIN_CLASS;
+        }
+
+        if (isClassAvailableOnClasspath(runtimeClasspath, QinConstants.DEV_SERVER_MAIN_CLASS)) {
+            return QinConstants.DEV_SERVER_MAIN_CLASS;
         }
 
         if (isClassAvailableOnClasspath(runtimeClasspath, QinConstants.JITE_DEV_MAIN_CLASS)) {
@@ -650,11 +699,20 @@ public class QinCli {
 
     private static final class JavaRunOptions {
         private String javaFile;
+        private String mainClass;
         private final List<String> programArgs = new ArrayList<>();
         private final List<String> jvmArgs = new ArrayList<>();
         private boolean debug;
         private int debugPort = 5005;
         private Integer portOverride;
+    }
+
+    private record ViteFrontendBridge(Path staticDir, Process watcher) {
+        private void stop() {
+            if (watcher != null) {
+                ChildProcessSupport.stop(watcher, "vite-watch");
+            }
+        }
     }
 
     private static void buildProject(String[] args) throws Exception {
@@ -749,12 +807,28 @@ public class QinCli {
 
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         Path backendSource = root.resolve(qinFile).normalize();
+        Path frontendRoot = resolveQinFrontendRoot(config, root);
+        Path frontendEntry = resolveQinFrontendEntry(config, root, frontendRoot);
         Path fullstackOutRoot = resolveQinBuildOutputRoot(config, args);
         Path classOutDir = fullstackOutRoot.resolve("server-classes").normalize();
         Path staticOutDir = fullstackOutRoot.resolve("web").normalize();
+        boolean useViteFrontend = frontendRoot != null && shouldUseViteFrontend(root, frontendRoot);
+        if (useViteFrontend) {
+            prepareViteFrontendBridge(root, frontendRoot, staticOutDir, false);
+            frontendEntry = null;
+        }
 
         System.out.println(blue("-> Building Qin fullstack artifacts..."));
         System.out.println(gray("  Backend entry: " + qinFile));
+        if (frontendRoot != null) {
+            System.out.println(gray("  Frontend root: " + root.relativize(frontendRoot)));
+        }
+        if (useViteFrontend) {
+            System.out.println(gray("  Frontend pipeline: Vite bridge -> " + root.relativize(staticOutDir)));
+        }
+        if (frontendEntry != null) {
+            System.out.println(gray("  Frontend entry: " + root.relativize(frontendEntry)));
+        }
         System.out.println(gray("  Output root: " + fullstackOutRoot));
 
         List<String> command = new ArrayList<>();
@@ -771,6 +845,10 @@ public class QinCli {
         command.add(classOutDir.toString());
         command.add("--static-dir");
         command.add(staticOutDir.toString());
+        if (frontendEntry != null) {
+            command.add("--frontend-file");
+            command.add(frontendEntry.toString());
+        }
         if (Arrays.asList(args).contains("--print-ir")) {
             command.add("--print-ir");
         }
@@ -805,6 +883,227 @@ public class QinCli {
 
         String distDir = QinConstants.getDistDir(config.output());
         return Paths.get(QinConstants.getCwd(), distDir, "fullstack").normalize();
+    }
+
+    private static Path resolveQinFrontendRoot(QinConfig config, Path projectRoot) {
+        if (config.frontend() != null && config.frontend().srcDir() != null && !config.frontend().srcDir().isBlank()) {
+            Path configured = projectRoot.resolve(config.frontend().srcDir()).normalize();
+            if (Files.isDirectory(configured)) {
+                return configured;
+            }
+        }
+
+        if (config.client() != null && config.client().root() != null && !config.client().root().isBlank()) {
+            Path configured = projectRoot.resolve(config.client().root()).normalize();
+            if (Files.isDirectory(configured)) {
+                return configured;
+            }
+        }
+
+        Path appDir = projectRoot.resolve(QinConstants.APP_DIR).normalize();
+        if (Files.isDirectory(appDir)) {
+            return appDir;
+        }
+
+        return null;
+    }
+
+    private static String resolveRunTargetToMainClass(String runTarget) {
+        if (runTarget == null || runTarget.isBlank()) {
+            return null;
+        }
+
+        String normalizedTarget = runTarget.trim();
+        if (normalizedTarget.endsWith(".java")
+                || normalizedTarget.endsWith(".qin")
+                || normalizedTarget.endsWith(".js")
+                || normalizedTarget.endsWith(".mjs")
+                || normalizedTarget.endsWith(".ts")) {
+            return null;
+        }
+
+        if (normalizedTarget.contains("/") || normalizedTarget.contains("\\")) {
+            return null;
+        }
+
+        return normalizedTarget.contains(".") ? normalizedTarget : null;
+    }
+
+    private static Path resolveQinFrontendEntry(QinConfig config, Path projectRoot, Path frontendRoot) {
+        if (frontendRoot == null) {
+            return null;
+        }
+
+        LinkedHashSet<Path> candidates = new LinkedHashSet<>();
+        addExistingFrontendEntryCandidates(candidates, frontendRoot);
+
+        if (frontendRoot.equals(projectRoot.resolve(QinConstants.APP_DIR).normalize())) {
+            addExistingFrontendEntryCandidates(candidates, projectRoot.resolve(QinConstants.SHARED_DIR).normalize());
+        }
+
+        for (Path candidate : candidates) {
+            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return candidate.toAbsolutePath().normalize();
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean shouldUseViteFrontend(Path projectRoot, Path frontendRoot) {
+        if (frontendRoot == null || !Files.isDirectory(frontendRoot)) {
+            return false;
+        }
+        if (findViteConfig(projectRoot, frontendRoot) != null) {
+            return true;
+        }
+        if (containsFrontendExtension(frontendRoot, ".vue")) {
+            return true;
+        }
+        return packageJsonSignalsVite(frontendRoot.resolve(QinConstants.PACKAGE_JSON))
+                || packageJsonSignalsVite(projectRoot.resolve(QinConstants.PACKAGE_JSON));
+    }
+
+    private static ViteFrontendBridge prepareViteFrontendBridge(
+            Path projectRoot,
+            Path frontendRoot,
+            Path staticOutDir,
+            boolean devMode) throws Exception {
+        Files.createDirectories(staticOutDir);
+        Path viteConfig = findViteConfig(projectRoot, frontendRoot);
+        Path effectiveConfig = viteConfig != null ? viteConfig : writeGeneratedViteConfig(projectRoot, frontendRoot);
+        Path workingDir = resolveViteWorkingDirectory(projectRoot, frontendRoot, viteConfig);
+
+        System.out.println(blue("-> Building frontend with Vite bridge..."));
+        runViteBuild(workingDir, effectiveConfig, staticOutDir, false);
+
+        Process watcher = null;
+        if (devMode) {
+            watcher = runViteBuild(workingDir, effectiveConfig, staticOutDir, true);
+            System.out.println(gray("  Vite watch started for " + projectRoot.relativize(frontendRoot)));
+        }
+        return new ViteFrontendBridge(staticOutDir, watcher);
+    }
+
+    private static Process runViteBuild(Path workingDir, Path viteConfig, Path staticOutDir, boolean watch) throws Exception {
+        List<String> command = new ArrayList<>();
+        if (QinConstants.isWindows()) {
+            command.add("cmd");
+            command.add("/c");
+            command.add("npx");
+        } else {
+            command.add("npx");
+        }
+        command.add("vite");
+        command.add("build");
+        if (viteConfig != null) {
+            command.add("--config");
+            command.add(viteConfig.toString());
+        }
+        command.add("--outDir");
+        command.add(staticOutDir.toString());
+        if (watch) {
+            command.add("--watch");
+        }
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.directory(workingDir.toFile());
+        pb.inheritIO();
+        Process process = pb.start();
+        if (watch) {
+            return process;
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new IllegalStateException("Vite build failed with exit code " + exitCode
+                    + ". Ensure Node.js dependencies are installed in " + workingDir + ".");
+        }
+        return null;
+    }
+
+    private static Path resolveViteWorkingDirectory(Path projectRoot, Path frontendRoot, Path viteConfig) {
+        if (viteConfig != null && viteConfig.getParent() != null) {
+            return viteConfig.getParent();
+        }
+        if (Files.exists(frontendRoot.resolve(QinConstants.PACKAGE_JSON))
+                || Files.exists(frontendRoot.resolve(QinConstants.NODE_MODULES))) {
+            return frontendRoot;
+        }
+        return projectRoot;
+    }
+
+    private static Path findViteConfig(Path projectRoot, Path frontendRoot) {
+        List<Path> candidates = new ArrayList<>();
+        addViteConfigCandidates(candidates, frontendRoot);
+        if (!frontendRoot.equals(projectRoot)) {
+            addViteConfigCandidates(candidates, projectRoot);
+        }
+        for (Path candidate : candidates) {
+            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return candidate.toAbsolutePath().normalize();
+            }
+        }
+        return null;
+    }
+
+    private static void addViteConfigCandidates(List<Path> out, Path dir) {
+        if (dir == null) {
+            return;
+        }
+        for (String fileName : List.of("vite.config.ts", "vite.config.js", "vite.config.mjs", "vite.config.cjs")) {
+            out.add(dir.resolve(fileName).normalize());
+        }
+    }
+
+    private static Path writeGeneratedViteConfig(Path projectRoot, Path frontendRoot) throws IOException {
+        Path generatedDir = projectRoot.resolve(QinConstants.QIN_DIR).resolve("vite");
+        Files.createDirectories(generatedDir);
+        Path configFile = generatedDir.resolve("generated.vite.config.mjs");
+        String config = """
+                export default {
+                  root: "%s",
+                  build: {
+                    emptyOutDir: false
+                  }
+                };
+                """.formatted(frontendRoot.toString().replace("\\", "/"));
+        Files.writeString(configFile, config);
+        return configFile.toAbsolutePath().normalize();
+    }
+
+    private static boolean containsFrontendExtension(Path dir, String extension) {
+        try (var stream = Files.walk(dir, 6)) {
+            return stream
+                    .filter(Files::isRegularFile)
+                    .anyMatch(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(extension));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static boolean packageJsonSignalsVite(Path packageJson) {
+        if (packageJson == null || !Files.exists(packageJson) || !Files.isRegularFile(packageJson)) {
+            return false;
+        }
+        try {
+            String content = Files.readString(packageJson).toLowerCase(Locale.ROOT);
+            return content.contains("\"vite\"")
+                    || content.contains("\"vue\"")
+                    || content.contains("@vitejs/plugin-vue");
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static void addExistingFrontendEntryCandidates(Set<Path> out, Path baseDir) {
+        if (baseDir == null) {
+            return;
+        }
+
+        for (String fileName : List.of("main.js", "Main.js", "main.mjs", "Main.mjs", "main.ts", "Main.ts")) {
+            out.add(baseDir.resolve(fileName).normalize());
+        }
     }
 
     private static void devMode(String[] args) throws Exception {
@@ -1011,6 +1310,11 @@ public class QinCli {
 
                     List<String> command = new ArrayList<>();
                     command.add(currentJavaCommand());
+                    command.add("-Xms16m");
+                    command.add("-Xmx256m");
+                    command.add("-XX:+UseSerialGC");
+                    command.add("-XX:-UseJVMCICompiler");
+                    command.add("-XX:TieredStopAtLevel=1");
                     command.add("-Dfile.encoding=UTF-8");
                     command.add("-cp");
                     command.add(currentCliClasspath());
@@ -1183,17 +1487,19 @@ public class QinCli {
      */
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
         String cwd = QinConstants.getCwd();
-        ensureLocalDependenciesReady(config);
+        LocalProjectResolverEnhanced.ResolutionResult localResolution = inspectLocalDependencies(config);
 
         if (CacheValidator.isCacheValid(cwd)) {
             String classpath = CacheValidator.getCachedClasspath(cwd);
-            if (classpath != null) {
+            if (classpath != null && cachedClasspathContainsLocalProjects(classpath, localResolution)) {
                 System.out.println(
                         blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
                 return classpath;
             }
+            System.out.println(yellow("-> Cached dependencies missing required local workspace entries, re-syncing..."));
         }
 
+        localResolution = ensureLocalDependenciesReady(config);
         return syncDependenciesCore(config);
     }
 
@@ -1208,14 +1514,49 @@ public class QinCli {
         return deps;
     }
 
-    private static void ensureLocalDependenciesReady(QinConfig config) {
+    private static LocalProjectResolverEnhanced.ResolutionResult ensureLocalDependenciesReady(QinConfig config) {
         Map<String, String> deps = collectAllDependencies(config);
         if (deps.isEmpty()) {
-            return;
+            return new LocalProjectResolverEnhanced.ResolutionResult("", new LinkedHashMap<>(), 0, 0, List.of());
         }
 
         LocalProjectResolverEnhanced resolver = new LocalProjectResolverEnhanced(QinConstants.getCwd());
-        resolver.resolveDependencies(deps);
+        return resolver.resolveDependencies(deps);
+    }
+
+    private static LocalProjectResolverEnhanced.ResolutionResult inspectLocalDependencies(QinConfig config) {
+        Map<String, String> deps = collectAllDependencies(config);
+        if (deps.isEmpty()) {
+            return new LocalProjectResolverEnhanced.ResolutionResult("", new LinkedHashMap<>(), 0, 0, List.of());
+        }
+
+        LocalProjectResolverEnhanced resolver = new LocalProjectResolverEnhanced(QinConstants.getCwd());
+        return resolver.resolveDependencies(deps, false);
+    }
+
+    private static boolean cachedClasspathContainsLocalProjects(
+            String classpath,
+            LocalProjectResolverEnhanced.ResolutionResult localResolution) {
+        if (localResolution == null || localResolution.localProjects == null || localResolution.localProjects.isEmpty()) {
+            return true;
+        }
+
+        Set<String> entries = new LinkedHashSet<>();
+        String separator = QinConstants.getClasspathSeparator();
+        for (String rawEntry : classpath.split(Pattern.quote(separator))) {
+            if (rawEntry == null || rawEntry.isBlank()) {
+                continue;
+            }
+            entries.add(Paths.get(rawEntry.trim()).toAbsolutePath().normalize().toString());
+        }
+
+        for (LocalProjectResolverEnhanced.ProjectInfo project : localResolution.localProjects) {
+            String expected = project.buildClassesPath.toAbsolutePath().normalize().toString();
+            if (!entries.contains(expected)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
