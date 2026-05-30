@@ -403,10 +403,42 @@ public class LocalProjectResolverEnhanced {
                 topMost = current;
             }
 
+            Path parent = current.getParent();
+            if (parent != null && hasSiblingQinProjects(parent, current)) {
+                topMost = parent;
+            }
+
             current = current.getParent();
         }
 
         return topMost;
+    }
+
+    private boolean hasSiblingQinProjects(Path candidateRoot, Path currentChildOrDescendant) {
+        if (candidateRoot == null || currentChildOrDescendant == null || !Files.isDirectory(candidateRoot)) {
+            return false;
+        }
+        Path currentNormalized = currentChildOrDescendant.toAbsolutePath().normalize();
+        int qinProjectChildren = 0;
+        boolean containsCurrentProject = false;
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(candidateRoot, Files::isDirectory)) {
+            for (Path child : stream) {
+                String dirName = child.getFileName().toString();
+                if (QinConstants.EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
+                    continue;
+                }
+                if (!Files.exists(child.resolve(QinConstants.CONFIG_FILE))) {
+                    continue;
+                }
+                qinProjectChildren++;
+                if (currentNormalized.startsWith(child.toAbsolutePath().normalize())) {
+                    containsCurrentProject = true;
+                }
+            }
+        } catch (IOException ignored) {
+            return false;
+        }
+        return containsCurrentProject && qinProjectChildren >= 2;
     }
 
     private void scanProjects(Path dir, List<Path> projects, int depth, int maxDepth) {

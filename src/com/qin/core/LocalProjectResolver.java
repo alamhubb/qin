@@ -323,6 +323,11 @@ public class LocalProjectResolver {
                 topMost = current; // 缁х画鍚戜笂锛屽彇鏈€椤跺眰鐨?
             }
 
+            Path parent = current.getParent();
+            if (parent != null && hasSiblingQinProjects(parent, current)) {
+                topMost = parent;
+            }
+
             current = current.getParent();
         }
 
@@ -332,6 +337,33 @@ public class LocalProjectResolver {
     /**
      * 閫掑綊鎵弿鐩綍鏌ユ壘 qin.config.json
      */
+    private boolean hasSiblingQinProjects(Path candidateRoot, Path currentChildOrDescendant) {
+        if (candidateRoot == null || currentChildOrDescendant == null || !Files.isDirectory(candidateRoot)) {
+            return false;
+        }
+        Path currentNormalized = currentChildOrDescendant.toAbsolutePath().normalize();
+        int qinProjectChildren = 0;
+        boolean containsCurrentProject = false;
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(candidateRoot, Files::isDirectory)) {
+            for (Path child : stream) {
+                String dirName = child.getFileName().toString();
+                if (QinConstants.EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
+                    continue;
+                }
+                if (!Files.exists(child.resolve(QinConstants.CONFIG_FILE))) {
+                    continue;
+                }
+                qinProjectChildren++;
+                if (currentNormalized.startsWith(child.toAbsolutePath().normalize())) {
+                    containsCurrentProject = true;
+                }
+            }
+        } catch (IOException ignored) {
+            return false;
+        }
+        return containsCurrentProject && qinProjectChildren >= 2;
+    }
+
     public void scanProjects(Path dir, List<Path> projects, int depth, int maxDepth) {
         if (depth >= maxDepth || !Files.exists(dir)) {
             return;
