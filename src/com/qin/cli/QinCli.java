@@ -36,10 +36,14 @@ public class QinCli {
             return;
         }
 
-        String command = args[0];
-        String[] cmdArgs = Arrays.copyOfRange(args, 1, args.length);
+        CliInvocation invocation = parseInvocation(args);
+        String command = invocation.command;
+        String[] cmdArgs = invocation.args;
 
         try {
+            if (invocation.root != null) {
+                System.setProperty("user.dir", invocation.root.toString());
+            }
             switch (command) {
                 case "init" -> initProject();
                 case "run" -> runProject(cmdArgs);
@@ -108,6 +112,44 @@ public class QinCli {
         System.out.println(green("[OK] Project initialized!"));
         System.out.println(gray("  Run 'qin run' to start"));
     }
+
+    private static CliInvocation parseInvocation(String[] args) {
+        String command = args[0];
+        List<String> commandArgs = new ArrayList<>();
+        Path root = null;
+
+        for (int i = 1; i < args.length; i++) {
+            String arg = args[i];
+            if ("--root".equals(arg)) {
+                if (i + 1 >= args.length) {
+                    throw new IllegalArgumentException("Missing value for --root");
+                }
+                root = resolveCliRoot(args[++i]);
+                continue;
+            }
+            commandArgs.add(arg);
+        }
+
+        return new CliInvocation(command, commandArgs.toArray(String[]::new), root);
+    }
+
+    private static Path resolveCliRoot(String rawRoot) {
+        if (rawRoot == null || rawRoot.isBlank()) {
+            throw new IllegalArgumentException("--root must not be empty");
+        }
+
+        Path root = Paths.get(rawRoot);
+        if (!root.isAbsolute()) {
+            root = Paths.get(QinConstants.getCwd()).resolve(root);
+        }
+        root = root.toAbsolutePath().normalize();
+        if (!Files.isDirectory(root)) {
+            throw new IllegalArgumentException("--root does not exist or is not a directory: " + root);
+        }
+        return root;
+    }
+
+    private record CliInvocation(String command, String[] args, Path root) {}
 
     private static void runProject(String[] args) throws Exception {
         System.out.println(blue("-> Loading configuration..."));
@@ -1321,7 +1363,6 @@ public class QinCli {
             System.out.println(yellow("-> Cached dependencies missing required local workspace entries, re-syncing..."));
         }
 
-        localResolution = ensureLocalDependenciesReady(config);
         return syncDependenciesCore(config);
     }
 
