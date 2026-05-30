@@ -18,14 +18,14 @@ public final class QinCsstsCompiler {
     private String buildWrapperSource(String source) {
         String sourceLiteral = QinJsPackageRunner.renderJsLiteral(source);
         return """
-                import { CsstsInit, transformCssTs, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
-                CsstsInit.init();
-                const __qin_result__ = transformCssTs(%s);
+                import { transformCssTs, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
+                const __qin_context__ = { styles: new Set() };
+                const __qin_result__ = transformCssTs(%s, __qin_context__);
                 ({
                   code: __qin_result__.code,
                   hasStyles: __qin_result__.hasStyles,
-                  css: __qin_result__.hasStyles ? generateStylesCss() : "",
-                  atomModule: __qin_result__.hasStyles ? generateCsstsAtomModule() : ""
+                  css: __qin_result__.hasStyles ? generateStylesCss(__qin_context__.styles) : "",
+                  atomModule: __qin_result__.hasStyles ? generateCsstsAtomModule(__qin_context__.styles) : ""
                 });
                 """.formatted(sourceLiteral);
     }
