@@ -1313,6 +1313,7 @@ public class QinCli {
         if (CacheValidator.isCacheValid(cwd)) {
             String classpath = CacheValidator.getCachedClasspath(cwd);
             if (classpath != null && cachedClasspathContainsLocalProjects(classpath, localResolution)) {
+                ensureLocalDependenciesReady(config);
                 System.out.println(
                         blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
                 return classpath;
