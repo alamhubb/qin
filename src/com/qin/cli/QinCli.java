@@ -11,6 +11,7 @@ import com.qin.core.*;
 import com.qin.types.*;
 import com.qin.plugins.*;
 import com.qin.constants.QinConstants;
+import com.qin.npm.NpmPackageManager;
 import com.qin.utils.QinUtils;
 
 import java.io.*;
@@ -1307,6 +1308,7 @@ public class QinCli {
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
         String cwd = QinConstants.getCwd();
         LocalProjectResolverEnhanced.ResolutionResult localResolution = inspectLocalDependencies(config);
+        ensureNpmDependenciesInstalled(config);
 
         if (CacheValidator.isCacheValid(cwd)) {
             String classpath = CacheValidator.getCachedClasspath(cwd);
@@ -1320,6 +1322,47 @@ public class QinCli {
 
         localResolution = ensureLocalDependenciesReady(config);
         return syncDependenciesCore(config);
+    }
+
+    private static void ensureNpmDependenciesInstalled(QinConfig config) throws IOException {
+        Map<String, String> deps = collectAllDependencies(config);
+        if (deps.isEmpty()) {
+            return;
+        }
+
+        NpmPackageManager npm = new NpmPackageManager(QinConstants.getCwd());
+        int installed = 0;
+        for (Map.Entry<String, String> dep : deps.entrySet()) {
+            String name = dep.getKey();
+            if (!isNpmDependency(name) || isNpmDependencyInstalled(name)) {
+                continue;
+            }
+            boolean ok = npm.install(name, dep.getValue());
+            if (!ok) {
+                throw new IOException("Failed to install npm dependency: " + name);
+            }
+            installed++;
+        }
+        if (installed > 0) {
+            System.out.println(green("[OK] Installed " + installed + " npm dependency package(s)"));
+        }
+    }
+
+    private static boolean isNpmDependency(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        if (name.startsWith("@")) {
+            return name.contains("/");
+        }
+        return !name.contains(":") && !name.contains("@");
+    }
+
+    private static boolean isNpmDependencyInstalled(String name) {
+        Path packageJson = Path.of(QinConstants.getCwd(), QinConstants.NODE_MODULES)
+                .resolve(name.replace('/', java.io.File.separatorChar))
+                .resolve(QinConstants.PACKAGE_JSON);
+        return Files.isRegularFile(packageJson);
     }
 
     private static Map<String, String> collectAllDependencies(QinConfig config) {
