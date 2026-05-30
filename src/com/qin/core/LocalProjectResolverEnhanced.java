@@ -404,6 +404,11 @@ public class LocalProjectResolverEnhanced {
             }
 
             Path parent = current.getParent();
+            if (parent != null && Files.exists(current.resolve(QinConstants.CONFIG_FILE))) {
+                // Promote the direct parent of a Qin project so sibling workspaces can be discovered
+                // without requiring IDE/VCS markers on that parent itself.
+                topMost = parent;
+            }
             if (parent != null && hasSiblingQinProjects(parent, current)) {
                 topMost = parent;
             }

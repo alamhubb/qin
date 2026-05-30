@@ -324,6 +324,11 @@ public class LocalProjectResolver {
             }
 
             Path parent = current.getParent();
+            if (parent != null && Files.exists(current.resolve(QinConstants.CONFIG_FILE))) {
+                // A Qin project should let its direct parent participate in workspace discovery,
+                // even when that parent has no IDE/VCS marker of its own.
+                topMost = parent;
+            }
             if (parent != null && hasSiblingQinProjects(parent, current)) {
                 topMost = parent;
             }
