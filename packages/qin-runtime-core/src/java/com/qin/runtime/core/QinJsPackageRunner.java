@@ -122,9 +122,10 @@ final class QinJsPackageRunner {
             return;
         }
 
+        Path installedPackageDir = resolveInstalledPackageDir(packageName, workspaceRoot);
         Path workspacePackageDir = workspacePackages.get(packageName);
-        boolean workspacePackage = workspacePackageDir != null && hasDeclaredWorkspaceSourceEntry(workspacePackageDir);
-        Path sourcePackageDir = workspacePackage ? workspacePackageDir : resolveInstalledPackageDir(packageName, workspaceRoot);
+        boolean workspacePackage = false;
+        Path sourcePackageDir = installedPackageDir;
         if (sourcePackageDir == null && workspacePackageDir != null) {
             sourcePackageDir = workspacePackageDir;
             workspacePackage = true;
