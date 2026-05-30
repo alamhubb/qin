@@ -5,7 +5,7 @@ package com.qin.types;
  * 
  * @param srcDir  前端源码目录
  * @param outDir  构建输出目录
- * @param devPort Vite 开发服务器端口
+ * @param devPort Qin dev server port
  */
 public record FrontendConfig(
         String srcDir,

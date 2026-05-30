@@ -18,7 +18,7 @@ This document defines the near-term implementation plan for Qin as an independen
 - Qin npm package compatibility policy is documented in `QIN_NPM_COMPATIBILITY_POLICY.md`.
 - Qin host/runtime capability boundary is documented in `QIN_HOST_CAPABILITY_MODEL.md`.
 - Qin JS-on-JVM support-vs-deferred feature policy is documented in `QIN_JS_ON_JVM_FEASIBILITY.md`.
-- Qin Vite plugin compatibility direction is documented in `QIN_VITE_PLUGIN_COMPAT_MODEL.md`.
+- Qin frontend lifecycle direction is Qin-owned; Vite is a reference point for lifecycle concepts, not a dependency or compatibility target.
 - Qin CSSTS integration direction is documented in `QIN_CSSTS_INTEGRATION_MODEL.md`.
 - Spring integration direction is documented in `SPRING_QIN_ARCHITECTURE.md`.
 - Backend support layering is documented in `QIN_BACKEND_MODEL.md`.
@@ -80,7 +80,7 @@ Immediate priority:
 - improve module policy, diagnostics, and target consistency
 - push npm/package support first through Class-A Qin-compatible packages, then selective host-adapter work
 - actively support the ESM/JVM-friendly feature set; do not burn Stage-1 effort on engine-parity work
-- Vue frontend integration should prefer a minimal adapter path for `@vitejs/plugin-vue`, not a full Vite host clone
+- Vue frontend integration should run through Qin's native frontend pipeline, not through Vite or `@vitejs/plugin-vue`
 - `lang=cssts` should resolve to the npm `cssts` package as the only formal implementation source
 
 Explicitly not the current primary implementation focus:
@@ -225,7 +225,7 @@ Responsibilities:
 - Node platform compatibility as a product requirement
 - universal npm parity without compatibility classification
 - Promise-first / JavaScript-event-loop-style async runtime
-- Vite reimplementation
+- Vite dependency, bridge, fallback, or compatibility runtime
 - automatic translation from Qin source to Java source
 
 Also not the final product goal:

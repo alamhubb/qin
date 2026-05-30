@@ -3,7 +3,7 @@ package com.qin.types;
 import java.util.Map;
 
 /**
- * 前端配置 (Java 25 Record) - 内置 Vite 支持
+ * Frontend config for the Qin native dev/build pipeline.
  * 
  * @param root   前端源码目录
  * @param port   前端开发服务器端口

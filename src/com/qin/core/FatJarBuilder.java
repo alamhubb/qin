@@ -306,7 +306,7 @@ public class FatJarBuilder {
         Files.createDirectories(metaInf);
 
         String content = String.format(
-                "Manifest-Version: 1.0\nMain-Class: %s\nCreated-By: Qin (Java-Vite Build Tool)\n",
+                "Manifest-Version: 1.0\nMain-Class: %s\nCreated-By: Qin (Native Build Tool)\n",
                 mainClass);
 
         Files.writeString(metaInf.resolve("MANIFEST.MF"), content);

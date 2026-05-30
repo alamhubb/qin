@@ -16,7 +16,6 @@ Related documents:
 
 - `QIN_JS_COMPATIBILITY_MODEL.md`
 - `QIN_NPM_COMPATIBILITY_POLICY.md`
-- `QIN_VITE_PLUGIN_COMPAT_MODEL.md`
 - `QIN_DEV_SERVER_STAGE1.md`
 
 ## 1. Core Rule
@@ -65,7 +64,7 @@ If npm `cssts` requires:
 - unsupported JS syntax
 - unsupported runtime semantics
 - unsupported host capability
-- unsupported Vite/plugin integration behavior
+- unsupported Qin frontend pipeline integration behavior
 
 then Qin must:
 
@@ -100,9 +99,8 @@ For Vue SFC processing, the intended formal chain is:
 
 This keeps Vue/cssts behavior aligned with ecosystem reality instead of growing a separate Qin-only branch.
 
-`@vitejs/plugin-vue` remains a useful design reference and possible future adapter target, but it is not required for
-the Stage-1 formal chain. Qin should compile and invoke the needed npm packages directly through its own package/module
-compiler path.
+Vite and `@vitejs/plugin-vue` are not part of the Stage-1 formal chain. Qin should compile and invoke the needed npm
+packages directly through its own package/module compiler path.
 
 ## 7. Definition Of Success
 

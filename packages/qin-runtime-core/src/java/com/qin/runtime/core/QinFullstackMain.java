@@ -157,10 +157,6 @@ public final class QinFullstackMain {
             return resolved;
         }
 
-        if (isViteManagedFrontend(layout.root(), layout.appDir())) {
-            return null;
-        }
-
         List<Path> candidates = List.of(
                 layout.root().resolve("app/main.vue"),
                 layout.root().resolve("app/Main.vue"),
@@ -205,39 +201,6 @@ public final class QinFullstackMain {
             }
         }
         return null;
-    }
-
-    private static boolean isViteManagedFrontend(Path root, Path appDir) {
-        return hasViteConfig(root, appDir);
-    }
-
-    private static boolean hasViteConfig(Path root, Path appDir) {
-        for (Path dir : List.of(appDir, root)) {
-            if (dir == null) {
-                continue;
-            }
-            for (String fileName : List.of("vite.config.ts", "vite.config.js", "vite.config.mjs", "vite.config.cjs")) {
-                Path candidate = dir.resolve(fileName).normalize();
-                if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasVitePackageJson(Path packageJson) {
-        if (packageJson == null || !Files.exists(packageJson) || !Files.isRegularFile(packageJson)) {
-            return false;
-        }
-        try {
-            String content = Files.readString(packageJson).toLowerCase();
-            return content.contains("\"vite\"")
-                    || content.contains("\"vue\"")
-                    || content.contains("@vitejs/plugin-vue");
-        } catch (IOException e) {
-            return false;
-        }
     }
 
     private static boolean hasFrontendModuleExtension(String fileName) {

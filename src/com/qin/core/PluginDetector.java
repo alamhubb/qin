@@ -43,7 +43,7 @@ public class PluginDetector {
         String clientDir = findClientDir();
         if (clientDir != null) {
             result.addFeature("frontend");
-            result.addSuggestedPlugin("qin-plugin-vite");
+            result.addSuggestedPlugin("qin-plugin-frontend");
             result.setClientDir(clientDir);
         }
 

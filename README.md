@@ -53,7 +53,6 @@
 - `packages/qin-runtime-core/QIN_NPM_COMPATIBILITY_POLICY.md`
 - `packages/qin-runtime-core/QIN_HOST_CAPABILITY_MODEL.md`
 - `packages/qin-runtime-core/QIN_JS_ON_JVM_FEASIBILITY.md`
-- `packages/qin-runtime-core/QIN_VITE_PLUGIN_COMPAT_MODEL.md`
 - `packages/qin-runtime-core/QIN_CSSTS_INTEGRATION_MODEL.md`
 
 ### 核心理念
@@ -157,7 +156,7 @@ Qin 依然包含很强的工程工具链能力：
 - ✅ **厌倦 XML 的 Java 开发者** - 简洁的 JSON/TypeScript 配置
 - ✅ **Monorepo 用户** - 原生多项目支持
 - ✅ **追求性能的开发者** - Java 25 带来 2-5x 性能提升
-- ✅ **全栈开发者** - 内置前端桥接能力（可选 Vite 子进程）
+- ✅ **全栈开发者** - 内置 Qin 原生前端开发服务器，不依赖 Vite 子进程
 
 ## Qin 语言定位（全栈方向）
 
@@ -380,7 +379,7 @@ qin run MyTest.java arg1 arg2
 
 - `qin run`：一次构建后启动，不监听文件变化。
 - `qin dev`：单端口开发服务（默认同端口提供 API + 静态页面），监听 `.js/.html/.css` 变更并自动重编译与浏览器刷新。
-- 该 MVP 的核心链路仍以 Qin + Java 运行时为主，Vue/Vite 前端可通过可选的 Node/Vite 子进程桥接接入。
+- 该 MVP 的核心链路以 Qin + Java 运行时为主，前端由 Qin 原生 dev server 和 Qin frontend pipeline 承载，不通过 Node/Vite 子进程桥接。
 
 构建分发规则（统一）：
 
@@ -967,7 +966,7 @@ Backend architecture note:
 - npm compatibility grading is documented in [packages/qin-runtime-core/QIN_NPM_COMPATIBILITY_POLICY.md](packages/qin-runtime-core/QIN_NPM_COMPATIBILITY_POLICY.md).
 - host/runtime capability boundary is documented in [packages/qin-runtime-core/QIN_HOST_CAPABILITY_MODEL.md](packages/qin-runtime-core/QIN_HOST_CAPABILITY_MODEL.md).
 - JS-on-JVM support priority and deferred-feature policy is documented in [packages/qin-runtime-core/QIN_JS_ON_JVM_FEASIBILITY.md](packages/qin-runtime-core/QIN_JS_ON_JVM_FEASIBILITY.md).
-- Vite plugin adaptation policy is documented in [packages/qin-runtime-core/QIN_VITE_PLUGIN_COMPAT_MODEL.md](packages/qin-runtime-core/QIN_VITE_PLUGIN_COMPAT_MODEL.md).
+- Qin frontend lifecycle policy is Qin-owned; Vite can be studied as prior art, but Qin does not use it as a bridge or fallback.
 - CSSTS integration policy is documented in [packages/qin-runtime-core/QIN_CSSTS_INTEGRATION_MODEL.md](packages/qin-runtime-core/QIN_CSSTS_INTEGRATION_MODEL.md).
 - See [packages/qin-runtime-core/QIN_BACKEND_MODEL.md](packages/qin-runtime-core/QIN_BACKEND_MODEL.md).
 - Builtin object strategy is documented in [packages/qin-runtime-core/QIN_BUILTINS_STRATEGY.md](packages/qin-runtime-core/QIN_BUILTINS_STRATEGY.md).

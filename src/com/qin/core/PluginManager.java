@@ -11,7 +11,7 @@ import java.util.*;
 
 /**
  * Plugin Manager for Qin
- * Vite-style plugin architecture
+ * Qin native plugin lifecycle architecture
  */
 public class PluginManager {
     private final List<QinPlugin> plugins = new ArrayList<>();

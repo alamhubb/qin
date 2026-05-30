@@ -17,11 +17,11 @@ This is the current implementation target for HTML/JS fullstack, with Vue suppor
 
 ## Positioning
 
-Qin should learn from Vite's useful architecture shape, but should not copy Vite as a product.
+Qin owns its frontend dev/build lifecycle. Vite can be studied as prior art, but it is not a dependency, bridge, fallback, or compatibility runtime.
 
 Stage 1 means:
 
-- Qin does not reimplement the full Vite ecosystem
+- Qin does not run or adapt Vite as part of the Stage-1 platform
 - Qin does not depend on Node runtime semantics for its core server
 - Qin does not need HMR graph sophistication first
 - Qin does need the part of the model that is strategically valuable:
@@ -113,12 +113,12 @@ Stage 1 frontend model is intentionally simple:
 - browser JS modules are first-class
 - Qin frontend modules are now accepted for Stage-1 fullstack examples
 - Vue frontends should flow through the official Vue SFC compiler (`@vue/compiler-sfc`) under Qin orchestration
-- Vite may still be reused selectively as a compatibility/tooling source, but it is not the Qin platform core
+- Vue and frontend module processing must run through Qin's native frontend pipeline
 
 Not yet in Stage 1 baseline:
 
 - full HMR graph
-- advanced plugin container parity with Vite
+- advanced third-party plugin-container parity
 - full Vue template codegen/runtime parity
 
 ## Why HTML First
@@ -165,7 +165,7 @@ Next refactor sequence:
    - transform
 4. keep build/rebuild orchestration in `QinFullstackMain` for now
 5. integrate official Vue SFC compilation into the Qin frontend request/build pipeline
-6. retain Vite compatibility only as an opt-in bridge, not as the platform definition
+6. keep lifecycle concepts Qin-owned, with no Vite bridge or fallback path
 
 Important transition note:
 
@@ -176,7 +176,7 @@ Important transition note:
 
 ## Non-Goals For This Stage
 
-- full Vite reimplementation
+- Vite dependency, bridge, fallback, or compatibility runtime
 - Node-compatible dev server semantics
 - complete Vue ecosystem support
 - advanced HMR invalidation graph

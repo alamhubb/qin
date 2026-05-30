@@ -96,7 +96,7 @@ java -cp build/classes:lib/gson-2.10.1.jar cli.QinCli help
 | 热重载 | ✅ | ⏳ 待实现 |
 | 插件系统 | ✅ | ✅ 基础实现 |
 | Monorepo | ✅ | ✅ |
-| 前端集成 | ✅ Vite | ⏳ 待实现 |
+| 前端集成 | Qin native dev server | Qin frontend pipeline |
 | GraalVM JS | ✅ | ⏳ 待实现 |
 
 ## 配置文件格式

@@ -1,1 +1,1 @@
-import("/@qin-mod/app/main.js");
+import("/@qin-mod/app/main.vue.js");

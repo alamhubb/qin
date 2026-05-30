@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 /**
- * Qin CLI - Java-Vite Build Tool
+ * Qin CLI - Qin native build tool
  * A modern Java build tool with zero XML configuration
  */
 public class QinCli {
@@ -509,25 +509,12 @@ public class QinCli {
         Path frontendRoot = resolveQinFrontendRoot(config, root);
         Path frontendEntry = resolveQinFrontendEntry(config, root, frontendRoot);
         Path frontendStaticDir = frontendRoot;
-        ViteFrontendBridge viteFrontend = null;
-        if (frontendRoot != null && shouldUseViteFrontend(root, frontendRoot)) {
-            Path viteStaticDir = root.resolve(QinConstants.QIN_DIR)
-                    .resolve(devMode ? "frontend-dev" : "frontend-run")
-                    .resolve("web")
-                    .normalize();
-            viteFrontend = prepareViteFrontendBridge(root, frontendRoot, viteStaticDir, devMode);
-            frontendStaticDir = viteFrontend.staticDir();
-            frontendEntry = null;
-        }
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
 
         System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
         System.out.println(gray("  Backend entry: " + qinFile));
         if (frontendRoot != null) {
             System.out.println(gray("  Frontend root: " + root.relativize(frontendRoot)));
-        }
-        if (viteFrontend != null) {
-            System.out.println(gray("  Frontend pipeline: Vite bridge -> " + root.relativize(frontendStaticDir)));
         }
         if (frontendEntry != null) {
             System.out.println(gray("  Frontend entry: " + root.relativize(frontendEntry)));
@@ -556,8 +543,6 @@ public class QinCli {
             command.add(frontendEntry.toString());
         }
 
-        ViteFrontendBridge finalViteFrontend = viteFrontend;
-
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(root.toFile());
         pb.inheritIO();
@@ -565,11 +550,7 @@ public class QinCli {
         int exitCode = ChildProcessSupport.waitFor(
                 process,
                 runtimeMainClass,
-                () -> {
-                    if (finalViteFrontend != null) {
-                        finalViteFrontend.stop();
-                    }
-                });
+                () -> {});
         if (exitCode != 0) {
             throw new RuntimeException("Qin runtime exited with code " + exitCode + " (main class: " + runtimeMainClass + ")");
         }
@@ -707,14 +688,6 @@ public class QinCli {
         private Integer portOverride;
     }
 
-    private record ViteFrontendBridge(Path staticDir, Process watcher) {
-        private void stop() {
-            if (watcher != null) {
-                ChildProcessSupport.stop(watcher, "vite-watch");
-            }
-        }
-    }
-
     private static void buildProject(String[] args) throws Exception {
         boolean clean = Arrays.asList(args).contains("--clean");
         boolean skipTests = Arrays.asList(args).contains("--skip-tests") ||
@@ -812,19 +785,11 @@ public class QinCli {
         Path fullstackOutRoot = resolveQinBuildOutputRoot(config, args);
         Path classOutDir = fullstackOutRoot.resolve("server-classes").normalize();
         Path staticOutDir = fullstackOutRoot.resolve("web").normalize();
-        boolean useViteFrontend = frontendRoot != null && shouldUseViteFrontend(root, frontendRoot);
-        if (useViteFrontend) {
-            prepareViteFrontendBridge(root, frontendRoot, staticOutDir, false);
-            frontendEntry = null;
-        }
 
         System.out.println(blue("-> Building Qin fullstack artifacts..."));
         System.out.println(gray("  Backend entry: " + qinFile));
         if (frontendRoot != null) {
             System.out.println(gray("  Frontend root: " + root.relativize(frontendRoot)));
-        }
-        if (useViteFrontend) {
-            System.out.println(gray("  Frontend pipeline: Vite bridge -> " + root.relativize(staticOutDir)));
         }
         if (frontendEntry != null) {
             System.out.println(gray("  Frontend entry: " + root.relativize(frontendEntry)));
@@ -948,152 +913,6 @@ public class QinCli {
         }
 
         return null;
-    }
-
-    private static boolean shouldUseViteFrontend(Path projectRoot, Path frontendRoot) {
-        if (frontendRoot == null || !Files.isDirectory(frontendRoot)) {
-            return false;
-        }
-        if (findViteConfig(projectRoot, frontendRoot) != null) {
-            return true;
-        }
-        if (containsFrontendExtension(frontendRoot, ".vue")) {
-            return true;
-        }
-        return packageJsonSignalsVite(frontendRoot.resolve(QinConstants.PACKAGE_JSON))
-                || packageJsonSignalsVite(projectRoot.resolve(QinConstants.PACKAGE_JSON));
-    }
-
-    private static ViteFrontendBridge prepareViteFrontendBridge(
-            Path projectRoot,
-            Path frontendRoot,
-            Path staticOutDir,
-            boolean devMode) throws Exception {
-        Files.createDirectories(staticOutDir);
-        Path viteConfig = findViteConfig(projectRoot, frontendRoot);
-        Path effectiveConfig = viteConfig != null ? viteConfig : writeGeneratedViteConfig(projectRoot, frontendRoot);
-        Path workingDir = resolveViteWorkingDirectory(projectRoot, frontendRoot, viteConfig);
-
-        System.out.println(blue("-> Building frontend with Vite bridge..."));
-        runViteBuild(workingDir, effectiveConfig, staticOutDir, false);
-
-        Process watcher = null;
-        if (devMode) {
-            watcher = runViteBuild(workingDir, effectiveConfig, staticOutDir, true);
-            System.out.println(gray("  Vite watch started for " + projectRoot.relativize(frontendRoot)));
-        }
-        return new ViteFrontendBridge(staticOutDir, watcher);
-    }
-
-    private static Process runViteBuild(Path workingDir, Path viteConfig, Path staticOutDir, boolean watch) throws Exception {
-        List<String> command = new ArrayList<>();
-        if (QinConstants.isWindows()) {
-            command.add("cmd");
-            command.add("/c");
-            command.add("npx");
-        } else {
-            command.add("npx");
-        }
-        command.add("vite");
-        command.add("build");
-        if (viteConfig != null) {
-            command.add("--config");
-            command.add(viteConfig.toString());
-        }
-        command.add("--outDir");
-        command.add(staticOutDir.toString());
-        if (watch) {
-            command.add("--watch");
-        }
-
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.directory(workingDir.toFile());
-        pb.inheritIO();
-        Process process = pb.start();
-        if (watch) {
-            return process;
-        }
-
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new IllegalStateException("Vite build failed with exit code " + exitCode
-                    + ". Ensure Node.js dependencies are installed in " + workingDir + ".");
-        }
-        return null;
-    }
-
-    private static Path resolveViteWorkingDirectory(Path projectRoot, Path frontendRoot, Path viteConfig) {
-        if (viteConfig != null && viteConfig.getParent() != null) {
-            return viteConfig.getParent();
-        }
-        if (Files.exists(frontendRoot.resolve(QinConstants.PACKAGE_JSON))
-                || Files.exists(frontendRoot.resolve(QinConstants.NODE_MODULES))) {
-            return frontendRoot;
-        }
-        return projectRoot;
-    }
-
-    private static Path findViteConfig(Path projectRoot, Path frontendRoot) {
-        List<Path> candidates = new ArrayList<>();
-        addViteConfigCandidates(candidates, frontendRoot);
-        if (!frontendRoot.equals(projectRoot)) {
-            addViteConfigCandidates(candidates, projectRoot);
-        }
-        for (Path candidate : candidates) {
-            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                return candidate.toAbsolutePath().normalize();
-            }
-        }
-        return null;
-    }
-
-    private static void addViteConfigCandidates(List<Path> out, Path dir) {
-        if (dir == null) {
-            return;
-        }
-        for (String fileName : List.of("vite.config.ts", "vite.config.js", "vite.config.mjs", "vite.config.cjs")) {
-            out.add(dir.resolve(fileName).normalize());
-        }
-    }
-
-    private static Path writeGeneratedViteConfig(Path projectRoot, Path frontendRoot) throws IOException {
-        Path generatedDir = projectRoot.resolve(QinConstants.QIN_DIR).resolve("vite");
-        Files.createDirectories(generatedDir);
-        Path configFile = generatedDir.resolve("generated.vite.config.mjs");
-        String config = """
-                export default {
-                  root: "%s",
-                  build: {
-                    emptyOutDir: false
-                  }
-                };
-                """.formatted(frontendRoot.toString().replace("\\", "/"));
-        Files.writeString(configFile, config);
-        return configFile.toAbsolutePath().normalize();
-    }
-
-    private static boolean containsFrontendExtension(Path dir, String extension) {
-        try (var stream = Files.walk(dir, 6)) {
-            return stream
-                    .filter(Files::isRegularFile)
-                    .anyMatch(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(extension));
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private static boolean packageJsonSignalsVite(Path packageJson) {
-        if (packageJson == null || !Files.exists(packageJson) || !Files.isRegularFile(packageJson)) {
-            return false;
-        }
-        try {
-            String content = Files.readString(packageJson).toLowerCase(Locale.ROOT);
-            return content.contains("\"vite\"")
-                    || content.contains("\"vue\"")
-                    || content.contains("@vitejs/plugin-vue");
-        } catch (IOException e) {
-            return false;
-        }
     }
 
     private static void addExistingFrontendEntryCandidates(Set<Path> out, Path baseDir) {
@@ -1783,7 +1602,7 @@ public class QinCli {
 
     private static void printHelp() {
         System.out.println("""
-                Qin - Java-Vite Build Tool
+                Qin - Qin Native Build Tool
                 A modern Java build tool with zero XML configuration
 
                 Usage: qin <command> [options]

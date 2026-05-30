@@ -15,7 +15,6 @@ Planning document:
 - `QIN_NPM_COMPATIBILITY_POLICY.md`
 - `QIN_HOST_CAPABILITY_MODEL.md`
 - `QIN_JS_ON_JVM_FEASIBILITY.md`
-- `QIN_VITE_PLUGIN_COMPAT_MODEL.md`
 - `QIN_CSSTS_INTEGRATION_MODEL.md`
 - `SPRING_QIN_ARCHITECTURE.md`
 - `QIN_BACKEND_MODEL.md`
@@ -44,13 +43,13 @@ Product-direction summary:
 - `shared/main/app` remains an important target-zoning model, but not the final primary product mental model.
 - See `QIN_APP_MODEL.md` for the intended user-facing application layer above target zoning.
 - See `QIN_MISSION_AND_VALUE.md` for why Qin is worth building beyond syntax similarity to JavaScript.
-- Stage-1 frontend support includes a single-port Qin dev server plus official Vue SFC compilation under Qin orchestration, with Vite compatibility retained only as an optional bridge.
+- Stage-1 frontend support uses a single-port Qin dev server plus Qin-owned Vue SFC compilation orchestration; Vite is not a runtime, bridge, fallback, or compatibility layer.
 - JS/TS compatibility is defined by Qin's own supported subset, not by full engine parity; see `QIN_JS_COMPATIBILITY_MODEL.md`.
 - The current verified support matrix is tracked in `QIN_CURRENT_SUPPORT_MATRIX.md`.
 - npm package support is graded by compatibility class rather than treated as universal; see `QIN_NPM_COMPATIBILITY_POLICY.md`.
 - Host/runtime capability boundaries are Qin-defined and target-mapped; see `QIN_HOST_CAPABILITY_MODEL.md`.
 - JS-on-JVM support priorities versus deferred engine-fidelity work are documented in `QIN_JS_ON_JVM_FEASIBILITY.md`.
-- Vite plugin adaptation policy is documented in `QIN_VITE_PLUGIN_COMPAT_MODEL.md`.
+- Qin may align with useful dev lifecycle concepts from Vite, but the implementation is Qin-owned and does not invoke Vite.
 - CSSTS integration policy is documented in `QIN_CSSTS_INTEGRATION_MODEL.md`.
 
 Backend model summary:
