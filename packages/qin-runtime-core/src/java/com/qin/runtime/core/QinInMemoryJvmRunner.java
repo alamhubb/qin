@@ -28,6 +28,8 @@ import java.util.Map;
  * Compiles Qin source to JVM bytecode and executes the generated run() method in-memory.
  */
 public final class QinInMemoryJvmRunner {
+    private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
+
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
 
@@ -78,9 +80,41 @@ public final class QinInMemoryJvmRunner {
         Class<?> generatedClass = new ByteArrayClassLoader(getClass().getClassLoader()).define(className, classBytes);
         registerFunctionModelArtifacts(compileResult);
         logPhase("run start", startNanos, className);
-        Object result = generatedClass.getMethod("run").invoke(null);
+        Object result = invokeRunWithRuntimeStack(generatedClass, className);
         logPhase("run done", startNanos, className);
         return result;
+    }
+
+    private Object invokeRunWithRuntimeStack(Class<?> generatedClass, String className) throws Exception {
+        long stackBytes = Long.getLong("qin.runtime.jsRunStackBytes", DEFAULT_JS_RUN_STACK_BYTES);
+        if (stackBytes <= 0) {
+            return generatedClass.getMethod("run").invoke(null);
+        }
+        Object[] result = new Object[1];
+        Throwable[] failure = new Throwable[1];
+        Thread runThread = new Thread(
+                null,
+                () -> {
+                    try {
+                        result[0] = generatedClass.getMethod("run").invoke(null);
+                    } catch (Throwable error) {
+                        failure[0] = error;
+                    }
+                },
+                "qin-js-runtime-" + className,
+                stackBytes);
+        runThread.start();
+        runThread.join();
+        if (failure[0] == null) {
+            return result[0];
+        }
+        if (failure[0] instanceof Exception exception) {
+            throw exception;
+        }
+        if (failure[0] instanceof Error error) {
+            throw error;
+        }
+        throw new IllegalStateException("Qin runtime execution failed", failure[0]);
     }
 
     private void registerFunctionModelArtifacts(QinCfaCompileResult compileResult) {

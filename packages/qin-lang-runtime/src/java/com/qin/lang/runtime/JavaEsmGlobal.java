@@ -34,6 +34,10 @@ public final class JavaEsmGlobal {
             StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
     private static final ThreadLocal<List<String>> CONSTRUCT_STACK =
             ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<List<String>> INTERPRETED_CALL_STACK =
+            ThreadLocal.withInitial(ArrayList::new);
+    private static final int MAX_INTERPRETED_CALL_DEPTH =
+            Integer.getInteger("qin.runtime.maxInterpretedCallDepth", 2048);
 
     private JavaEsmGlobal() {
     }
@@ -2056,22 +2060,54 @@ public final class JavaEsmGlobal {
 
         @Override
         public Object call(Object... args) {
+            enterInterpretedCall(functionDebugName());
             Map<String, Object> env = new LinkedHashMap<>();
-            installLocalBindings(env);
-            installClosureBindings(env);
-            bindParameters(env, args);
-            env.put("this", thisValue);
-            Object result = evalFunctionBody(ast, env);
-            return result instanceof ReturnSignal signal ? signal.value() : result;
+            try {
+                installLocalBindings(env);
+                installClosureBindings(env);
+                bindParameters(env, args);
+                env.put("this", thisValue);
+                Object result = evalFunctionBody(ast, env);
+                return result instanceof ReturnSignal signal ? signal.value() : result;
+            } finally {
+                exitInterpretedCall();
+            }
         }
 
         private Object callConstructor(Object... args) {
+            enterInterpretedCall(functionDebugName() + ".constructor");
             Map<String, Object> env = new LinkedHashMap<>();
-            installLocalBindings(env);
-            installClosureBindings(env);
-            bindParameters(env, args);
-            env.put("this", thisValue);
-            return evalFunctionBody(ast, env);
+            try {
+                installLocalBindings(env);
+                installClosureBindings(env);
+                bindParameters(env, args);
+                env.put("this", thisValue);
+                return evalFunctionBody(ast, env);
+            } finally {
+                exitInterpretedCall();
+            }
+        }
+
+        private static void enterInterpretedCall(String label) {
+            List<String> stack = INTERPRETED_CALL_STACK.get();
+            stack.add(label == null || label.isBlank() ? "<anonymous>" : label);
+            if (stack.size() > MAX_INTERPRETED_CALL_DEPTH) {
+                int from = Math.max(0, stack.size() - 48);
+                throw new IllegalStateException(
+                        "Interpreted JS call depth exceeded "
+                                + MAX_INTERPRETED_CALL_DEPTH
+                                + "; recentCalls=" + stack.subList(from, stack.size()));
+            }
+        }
+
+        private static void exitInterpretedCall() {
+            List<String> stack = INTERPRETED_CALL_STACK.get();
+            if (!stack.isEmpty()) {
+                stack.remove(stack.size() - 1);
+            }
+            if (stack.isEmpty()) {
+                INTERPRETED_CALL_STACK.remove();
+            }
         }
 
         @Override
@@ -2332,6 +2368,10 @@ public final class JavaEsmGlobal {
         }
 
         private String functionDebugName() {
+            Object explicitName = definition.get("functionName");
+            if (explicitName != null) {
+                return String.valueOf(explicitName);
+            }
             Object idNode = ast.get("id");
             String name = idNode instanceof Map<?, ?> rawId
                     ? extractPropertyName(rawId)

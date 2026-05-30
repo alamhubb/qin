@@ -40,6 +40,7 @@ public final class QinFrontendEsmService {
     private final Map<Path, String> moduleUrlMap;
     private final Map<String, Path> requestPathMap;
     private final Map<String, String> virtualModuleContentMap;
+    private final Map<Path, String> transpiledModuleCache = new LinkedHashMap<>();
     private final String entryModuleUrl;
     private final QinVueSfcCompiler vueSfcCompiler;
 
@@ -144,20 +145,29 @@ public final class QinFrontendEsmService {
         Files.writeString(staticRoot.resolve("app.js"), bootstrapJs(), StandardCharsets.UTF_8);
     }
 
-    private String transpileModule(Path moduleFile) throws IOException {
+    private synchronized String transpileModule(Path moduleFile) throws IOException {
+        Path normalizedModuleFile = moduleFile.toAbsolutePath().normalize();
+        String cached = transpiledModuleCache.get(normalizedModuleFile);
+        if (cached != null) {
+            return cached;
+        }
         QinModuleSource module = moduleSourceMap.get(moduleFile.toAbsolutePath().normalize());
         if (module == null) {
             throw new IllegalArgumentException("Unknown frontend module: " + moduleFile.toAbsolutePath());
         }
 
         String source = module.source();
+        String transpiled;
         if (isVueModuleFile(moduleFile)) {
-            return transpileVueModule(moduleFile, source);
+            transpiled = transpileVueModule(moduleFile, source);
+        } else {
+            source = rewriteSpecifiers(module, source, IMPORT_FROM_PATTERN);
+            source = rewriteSpecifiers(module, source, EXPORT_FROM_PATTERN);
+            source = rewriteSpecifiers(module, source, IMPORT_SIDE_EFFECT_PATTERN);
+            transpiled = source;
         }
-        source = rewriteSpecifiers(module, source, IMPORT_FROM_PATTERN);
-        source = rewriteSpecifiers(module, source, EXPORT_FROM_PATTERN);
-        source = rewriteSpecifiers(module, source, IMPORT_SIDE_EFFECT_PATTERN);
-        return source;
+        transpiledModuleCache.put(normalizedModuleFile, transpiled);
+        return transpiled;
     }
 
     private String transpileVueModule(Path moduleFile, String source) {
@@ -357,21 +367,126 @@ public final class QinFrontendEsmService {
     }
 
     private String readCsstsRuntimeModule() {
-        Path runtimeModule = projectRoot
-                .resolve("node_modules")
-                .resolve("cssts-ts")
-                .resolve("dist")
-                .resolve("index.mjs")
-                .toAbsolutePath()
-                .normalize();
+        Path runtimeModule = resolveCsstsRuntimeModule();
         if (!Files.exists(runtimeModule) || !Files.isRegularFile(runtimeModule)) {
             throw new IllegalStateException("Missing cssts-ts browser runtime module: " + runtimeModule);
         }
         try {
-            return Files.readString(runtimeModule, StandardCharsets.UTF_8);
+            String source = Files.readString(runtimeModule, StandardCharsets.UTF_8);
+            return runtimeModule.toString().endsWith(".ts")
+                    ? transpileTypescriptRuntimeModule(source)
+                    : source;
         } catch (IOException error) {
             throw new IllegalStateException("Failed to read cssts-ts browser runtime module: " + runtimeModule, error);
         }
+    }
+
+    private Path resolveCsstsRuntimeModule() {
+        List<Path> candidates = List.of(
+                projectRoot.resolve("node_modules"),
+                projectRoot.resolve(".qin").resolve("runtime").resolve("npm-host").resolve("node_modules"));
+        for (Path nodeModules : candidates) {
+            for (String entry : List.of("dist/index.mjs", "src/index.js", "src/index.ts")) {
+                Path runtimeModule = nodeModules
+                        .resolve("cssts-ts")
+                        .resolve(entry)
+                        .toAbsolutePath()
+                        .normalize();
+                if (Files.exists(runtimeModule) && Files.isRegularFile(runtimeModule)) {
+                    return runtimeModule;
+                }
+            }
+        }
+        return candidates.get(candidates.size() - 1)
+                .resolve("cssts-ts")
+                .resolve("src")
+                .resolve("index.ts")
+                .toAbsolutePath()
+                .normalize();
+    }
+
+    private static String transpileTypescriptRuntimeModule(String source) {
+        String js = stripTypescriptDeclarations(source);
+        js = js.replace("\uFEFF", "");
+        js = js.replace("} as const", "}");
+        js = js.replaceAll("new Map<[^\\n]+>\\(\\)", "new Map()");
+        js = stripFunctionTypeAnnotations(js);
+        js = js.replaceAll("(?m)^(\\s*(?:const|let|var)\\s+[$A-Za-z_][\\w$]*)\\s*:[^=;]+=", "$1 =");
+        return js;
+    }
+
+    private static String stripTypescriptDeclarations(String source) {
+        String[] lines = source.split("\\R", -1);
+        StringBuilder js = new StringBuilder(source.length());
+        boolean skippingTypeAlias = false;
+        boolean skippingInterface = false;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (skippingTypeAlias) {
+                if (trimmed.isEmpty()) {
+                    skippingTypeAlias = false;
+                }
+                continue;
+            }
+            if (skippingInterface) {
+                if (trimmed.equals("}")) {
+                    skippingInterface = false;
+                }
+                continue;
+            }
+            if (trimmed.startsWith("export type ")) {
+                skippingTypeAlias = true;
+                continue;
+            }
+            if (trimmed.startsWith("interface ")) {
+                skippingInterface = true;
+                continue;
+            }
+            js.append(line).append('\n');
+        }
+        return js.toString();
+    }
+
+    private static String stripFunctionTypeAnnotations(String source) {
+        String[] lines = source.split("\\R", -1);
+        StringBuilder js = new StringBuilder(source.length());
+        boolean inFunctionParameters = false;
+        for (String line : lines) {
+            String next = line;
+            String trimmed = line.trim();
+            if ((trimmed.startsWith("function ") || trimmed.startsWith("export function ")) && line.contains("(")) {
+                if (line.contains(")")) {
+                    next = stripInlineFunctionSignature(line);
+                } else {
+                    inFunctionParameters = true;
+                }
+            } else if (inFunctionParameters) {
+                if (trimmed.startsWith(")")) {
+                    next = line.replaceAll("^(\\s*\\))\\s*:.*\\{\\s*$", "$1 {");
+                    inFunctionParameters = false;
+                } else {
+                    next = stripParameterTypeAnnotation(line);
+                }
+            }
+            js.append(next).append('\n');
+        }
+        return js.toString();
+    }
+
+    private static String stripInlineFunctionSignature(String line) {
+        int open = line.indexOf('(');
+        int close = line.lastIndexOf(')');
+        if (open < 0 || close < open) {
+            return line;
+        }
+        String before = line.substring(0, open + 1);
+        String parameters = stripParameterTypeAnnotation(line.substring(open + 1, close));
+        String after = line.substring(close + 1).replaceAll("^\\s*:\\s*[^\\{]+\\{", " {");
+        return before + parameters + ")" + after;
+    }
+
+    private static String stripParameterTypeAnnotation(String text) {
+        return text.replaceAll("(\\.\\.\\.\\s*)?([$A-Za-z_][\\w$]*)\\s*:\\s*[^,)=]+", "$1$2");
     }
 
     private static String renderCssInjectionModule(String css) {

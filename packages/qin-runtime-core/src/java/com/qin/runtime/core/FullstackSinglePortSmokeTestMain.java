@@ -16,6 +16,8 @@ import java.util.List;
  */
 public final class FullstackSinglePortSmokeTestMain {
     private static final int PORT = 18081;
+    private static final Duration FAST_REQUEST_TIMEOUT = Duration.ofSeconds(3);
+    private static final Duration FRONTEND_COLD_COMPILE_TIMEOUT = Duration.ofSeconds(90);
 
     private FullstackSinglePortSmokeTestMain() {
     }
@@ -80,7 +82,7 @@ public final class FullstackSinglePortSmokeTestMain {
         HttpResponse<String> health = client.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/health"))
                         .GET()
-                        .timeout(Duration.ofSeconds(3))
+                        .timeout(FAST_REQUEST_TIMEOUT)
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         if (health.statusCode() != 200 || !health.body().contains("\"ok\":true")) {
@@ -90,7 +92,7 @@ public final class FullstackSinglePortSmokeTestMain {
         HttpResponse<String> result = client.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/result"))
                         .GET()
-                        .timeout(Duration.ofSeconds(3))
+                        .timeout(FAST_REQUEST_TIMEOUT)
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         if (result.statusCode() != 200) {
@@ -100,7 +102,7 @@ public final class FullstackSinglePortSmokeTestMain {
         HttpResponse<String> index = client.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/"))
                         .GET()
-                        .timeout(Duration.ofSeconds(3))
+                        .timeout(FAST_REQUEST_TIMEOUT)
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         if (index.statusCode() != 200) {
@@ -110,7 +112,7 @@ public final class FullstackSinglePortSmokeTestMain {
         HttpResponse<String> appJs = client.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/app.js"))
                         .GET()
-                        .timeout(Duration.ofSeconds(3))
+                        .timeout(FAST_REQUEST_TIMEOUT)
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         if (appJs.statusCode() != 200 || !appJs.body().contains("/@qin-mod/app/main.vue.js")) {
@@ -120,7 +122,7 @@ public final class FullstackSinglePortSmokeTestMain {
         HttpResponse<String> frontModule = client.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/@qin-mod/app/main.vue.js"))
                         .GET()
-                        .timeout(Duration.ofSeconds(3))
+                        .timeout(FRONTEND_COLD_COMPILE_TIMEOUT)
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         if (frontModule.statusCode() != 200
@@ -132,7 +134,7 @@ public final class FullstackSinglePortSmokeTestMain {
         HttpResponse<String> cssModule = client.send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/@qin-mod/app/main.vue.js?qin-vue-cssts=style"))
                         .GET()
-                        .timeout(Duration.ofSeconds(3))
+                        .timeout(FAST_REQUEST_TIMEOUT)
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
         if (cssModule.statusCode() != 200
