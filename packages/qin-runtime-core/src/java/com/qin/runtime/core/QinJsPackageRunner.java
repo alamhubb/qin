@@ -46,6 +46,7 @@ final class QinJsPackageRunner {
             ".git", ".idea", ".qin", "node_modules");
 
     private final QinInMemoryJvmRunner runner = new QinInMemoryJvmRunner();
+    private final QinNpmDependencyMaterializer npmDependencyMaterializer = new QinNpmDependencyMaterializer();
 
     Object invokeNamedExport(
             Path projectRoot,
@@ -104,6 +105,7 @@ final class QinJsPackageRunner {
         Map<String, Path> workspacePackages = indexWorkspacePackages(workspaceRoot);
         Path runtimeNodeModules = wrapperDir.resolve("node_modules");
         Files.createDirectories(runtimeNodeModules);
+        npmDependencyMaterializer.materializeProjectDependencies(projectRoot, runtimeNodeModules);
 
         Set<String> materialized = new LinkedHashSet<>();
         for (String specifier : bareSpecifiers) {

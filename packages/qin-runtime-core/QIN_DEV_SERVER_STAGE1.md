@@ -23,6 +23,7 @@ Stage 1 means:
 
 - Qin does not run or adapt Vite as part of the Stage-1 platform
 - Qin does not depend on Node runtime semantics for its core server
+- Qin may host the subset of Vite plugin APIs required by Qin-supported plugins, but those APIs are Qin-owned shims
 - Qin does not need HMR graph sophistication first
 - Qin does need the part of the model that is strategically valuable:
   - single-process dev server
@@ -113,6 +114,8 @@ Stage 1 frontend model is intentionally simple:
 - browser JS modules are first-class
 - Qin frontend modules are now accepted for Stage-1 fullstack examples
 - Vue frontends should flow through the official Vue SFC compiler (`@vue/compiler-sfc`) under Qin orchestration
+- `@vitejs/plugin-vue` is supported only for the lifecycle/API subset Qin currently needs
+- npm packages needed by this pipeline are materialized by Qin from `qin.config.json`; Qin must not shell out to `npm`, Node, or Vite
 - Vue and frontend module processing must run through Qin's native frontend pipeline
 
 Not yet in Stage 1 baseline:
@@ -172,6 +175,7 @@ Important transition note:
 - local Qin-owned Vue code should stay limited to orchestration, descriptor assembly, import rewriting, and virtual module serving
 - Qin must not maintain a second primary Vue parser/compiler as a fallback path
 - the intended steady-state path is `@vue/compiler-sfc` executed under Qin's own package/module/compiler system
+- the intended plugin path is Qin-hosted plugin lifecycle compatibility for required plugins, not a generic Vite runtime
 - `lang=cssts` is handled through npm `cssts-compiler` and `cssts-ts`, not a local Qin-only CSSTS branch
 
 ## Non-Goals For This Stage
@@ -182,6 +186,7 @@ Important transition note:
 - advanced HMR invalidation graph
 - multi-process frontend/backend model as the long-term Qin default
 - making a Qin-native Vue parser the primary Stage-1 path
+- complete Vite plugin API parity beyond the subset required by Qin-supported plugins
 
 ## Success Criteria
 
@@ -193,6 +198,8 @@ Stage 1 is considered successful when:
 - `app/index.html + app/main.qin` frontend works
 - `app/index.html + app/main.ts/.js` frontend works
 - `.vue` modules can be compiled under Qin orchestration via the official Vue compiler path
+- Qin can host the `@vitejs/plugin-vue` lifecycle subset needed by the current Vue SFC path
+- Qin can materialize declared npm dependencies for the Vue/CSSTS pipeline without invoking Node/npm/Vite
 - `shared/shared.qin` can be shared by frontend and backend
 - browser reload works after source changes
 - `qin build` produces usable backend/frontend outputs
