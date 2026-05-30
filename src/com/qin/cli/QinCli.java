@@ -526,7 +526,7 @@ public class QinCli {
         command.add("-cp");
         command.add(runtimeClasspath);
         command.add(runtimeMainClass);
-        if (devMode && QinConstants.FULLSTACK_MAIN_CLASS.equals(runtimeMainClass)) {
+        if (devMode) {
             command.add("--dev");
         }
         command.add("--root");
