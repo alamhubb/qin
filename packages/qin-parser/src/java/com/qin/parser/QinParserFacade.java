@@ -39,9 +39,6 @@ public final class QinParserFacade {
     private static final Pattern SOURCE_DYNAMIC_IMPORT_PATTERN = Pattern.compile("\\bimport\\s*\\(([^\\n\\)]*)\\)");
     private static final Pattern SOURCE_TYPEOF_DYNAMIC_IMPORT_SHIM_PATTERN = Pattern.compile(
             "\\btypeof\\s+" + Pattern.quote(QinParserRuntimeNames.DYNAMIC_IMPORT_SHIM) + "\\s*\\(");
-    private static final Pattern SOURCE_TOP_LEVEL_AWAIT_PATTERN = Pattern.compile("(?m)^\\s*await\\s+([^;\\n]+)\\s*;?\\s*$");
-    private static final Pattern SOURCE_ASSIGN_AWAIT_PATTERN = Pattern.compile("=\\s*await\\s+([^;\\n]+)");
-    private static final Pattern SOURCE_CALL_ARG_AWAIT_PATTERN = Pattern.compile("\\(\\s*await\\s+([^;\\n]+)\\)");
     private static final Pattern SOURCE_SIMPLE_SWITCH_PATTERN = Pattern.compile(
             "(?s)switch\\s*\\(([^\\)]*)\\)\\s*\\{([^\\{\\}]*)\\}");
     private static final Pattern SOURCE_HASHBANG_PATTERN = Pattern.compile("\\A#![^\\r\\n]*(\\r?\\n|\\z)");
@@ -328,12 +325,6 @@ public final class QinParserFacade {
         rewritten = SOURCE_DYNAMIC_IMPORT_PATTERN.matcher(rewritten)
                 .replaceAll(QinParserRuntimeNames.DYNAMIC_IMPORT_SHIM + "($1)");
         rewritten = restoreTypeofImportQueries(rewritten);
-        rewritten = SOURCE_ASSIGN_AWAIT_PATTERN.matcher(rewritten)
-                .replaceAll("= " + QinParserRuntimeNames.TOP_LEVEL_AWAIT_SHIM + "($1)");
-        rewritten = SOURCE_CALL_ARG_AWAIT_PATTERN.matcher(rewritten)
-                .replaceAll("(" + QinParserRuntimeNames.TOP_LEVEL_AWAIT_SHIM + "($1))");
-        rewritten = SOURCE_TOP_LEVEL_AWAIT_PATTERN.matcher(rewritten)
-                .replaceAll(QinParserRuntimeNames.TOP_LEVEL_AWAIT_SHIM + "($1);");
         rewritten = rewriteSimpleSwitchStatements(rewritten);
         return rewritten;
     }

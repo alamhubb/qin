@@ -105,6 +105,9 @@ public final class JavaEsmGlobal {
             case "url", "node:url" -> NodeHostRuntime.urlNamespace();
             case "util", "node:util" -> NodeHostRuntime.utilNamespace();
             case "process", "node:process" -> NodeHostRuntime.processNamespace();
+            case "module", "node:module" -> NodeHostRuntime.moduleNamespace();
+            case "crypto", "node:crypto" -> NodeHostRuntime.cryptoNamespace();
+            case "tty", "node:tty" -> NodeHostRuntime.ttyNamespace();
             case "diagnostics_channel", "node:diagnostics_channel" -> NodeHostRuntime.diagnosticsChannelNamespace();
             case "performance" -> JavaEsmPerformance.class;
             case "parseInt" -> methodHandle(JavaEsmGlobal.class, "parseInt", Object.class, Object.class);
@@ -112,19 +115,54 @@ public final class JavaEsmGlobal {
             case "isNaN" -> methodHandle(JavaEsmGlobal.class, "isNaN", Object.class);
             case "isFinite" -> methodHandle(JavaEsmGlobal.class, "isFinite", Object.class);
             case "globalthis" -> methodHandle(NodeHostRuntime.class, "globalThis");
+            case "node:fs.default" -> NodeHostRuntime.fsNamespace();
+            case "node:path.default" -> NodeHostRuntime.pathNamespace();
+            case "node:crypto.default" -> NodeHostRuntime.cryptoNamespace();
+            case "node:util.default" -> NodeHostRuntime.utilNamespace();
+            case "node:module.default" -> NodeHostRuntime.moduleNamespace();
+            case "node:tty.default" -> NodeHostRuntime.ttyNamespace();
+            case "node:fs.readFileSync" -> methodHandle(NodeHostRuntime.class, "readFileSync", Object.class, Object.class);
             case "node:fs.existsSync" -> methodHandle(NodeHostRuntime.class, "existsSync", Object.class);
             case "node:fs.writeFileSync" -> methodHandle(NodeHostRuntime.class, "writeFileSync", Object.class, Object.class);
             case "node:fs.appendFileSync" -> methodHandle(NodeHostRuntime.class, "appendFileSync", Object.class, Object.class);
             case "node:fs.mkdirSync" -> methodHandle(NodeHostRuntime.class, "mkdirSync", Object.class);
             case "node:fs.createWriteStream" -> methodHandle(NodeHostRuntime.class, "createWriteStream", Object.class);
             case "node:path.dirname" -> methodHandle(NodeHostRuntime.class, "dirname", Object.class);
+            case "node:path.relative" -> methodHandle(NodeHostRuntime.class, "relative", Object.class, Object.class);
             case "node:path.join" -> methodHandle(NodeHostRuntime.class, "join", Object[].class);
             case "node:path.resolve" -> methodHandle(NodeHostRuntime.class, "resolve", Object[].class);
             case "node:url.fileURLToPath" -> methodHandle(NodeHostRuntime.class, "fileURLToPath", Object.class);
+            case "node:module.createRequire" -> methodHandle(NodeHostRuntime.class, "createRequire", Object.class);
+            case "node:crypto.hash" -> methodHandle(NodeHostRuntime.class, "hash", Object.class, Object.class, Object.class);
+            case "node:tty.isatty" -> methodHandle(NodeHostRuntime.class, "isatty", Object.class);
             case "node:util.deprecate" -> methodHandle(NodeHostRuntime.class, "deprecate", Object.class, Object.class);
+            case "node:util.formatWithOptions" -> methodHandle(NodeHostRuntime.class, "formatWithOptions", Object.class, Object[].class);
+            case "node:util.inspect" -> methodHandle(NodeHostRuntime.class, "inspect", Object.class);
             case "node:process.cwd" -> methodHandle(NodeHostRuntime.class, "cwd");
             case "node:diagnostics_channel.channel" -> methodHandle(NodeHostRuntime.class, "channel", Object.class);
             case "node:diagnostics_channel.tracingChannel" -> methodHandle(NodeHostRuntime.class, "tracingChannel", Object.class);
+            // The current linked-source emitter lowers host named imports to bare global lookups.
+            // Keep these aliases until host import lowering preserves module-qualified names.
+            case "createRequire" -> methodHandle(NodeHostRuntime.class, "createRequire", Object.class);
+            case "readFileSync" -> methodHandle(NodeHostRuntime.class, "readFileSync", Object.class, Object.class);
+            case "existsSync" -> methodHandle(NodeHostRuntime.class, "existsSync", Object.class);
+            case "writeFileSync" -> methodHandle(NodeHostRuntime.class, "writeFileSync", Object.class, Object.class);
+            case "appendFileSync" -> methodHandle(NodeHostRuntime.class, "appendFileSync", Object.class, Object.class);
+            case "mkdirSync" -> methodHandle(NodeHostRuntime.class, "mkdirSync", Object.class);
+            case "createWriteStream" -> methodHandle(NodeHostRuntime.class, "createWriteStream", Object.class);
+            case "dirname" -> methodHandle(NodeHostRuntime.class, "dirname", Object.class);
+            case "relative" -> methodHandle(NodeHostRuntime.class, "relative", Object.class, Object.class);
+            case "join" -> methodHandle(NodeHostRuntime.class, "join", Object[].class);
+            case "resolve" -> methodHandle(NodeHostRuntime.class, "resolve", Object[].class);
+            case "fileURLToPath" -> methodHandle(NodeHostRuntime.class, "fileURLToPath", Object.class);
+            case "hash" -> methodHandle(NodeHostRuntime.class, "hash", Object.class, Object.class, Object.class);
+            case "isatty" -> methodHandle(NodeHostRuntime.class, "isatty", Object.class);
+            case "deprecate" -> methodHandle(NodeHostRuntime.class, "deprecate", Object.class, Object.class);
+            case "formatWithOptions" -> methodHandle(NodeHostRuntime.class, "formatWithOptions", Object.class, Object[].class);
+            case "inspect" -> methodHandle(NodeHostRuntime.class, "inspect", Object.class);
+            case "cwd" -> methodHandle(NodeHostRuntime.class, "cwd");
+            case "channel" -> methodHandle(NodeHostRuntime.class, "channel", Object.class);
+            case "tracingChannel" -> methodHandle(NodeHostRuntime.class, "tracingChannel", Object.class);
             case "Math", "JSON", "Number", "Object", "Array", "Map", "Set", "Proxy", "Promise", "Symbol",
                     "WeakMap", "WeakSet", "Date", "String", "Boolean",
                     "Uint8Array", "Uint16Array", "Uint32Array", "TextDecoder",
@@ -651,7 +689,8 @@ public final class JavaEsmGlobal {
         String specifier = String.valueOf(source);
         return switch (specifier) {
             case "fs", "node:fs", "path", "node:path", "url", "node:url", "util", "node:util",
-                    "process", "node:process", "diagnostics_channel", "node:diagnostics_channel" ->
+                    "process", "node:process", "module", "node:module", "crypto", "node:crypto",
+                    "tty", "node:tty", "diagnostics_channel", "node:diagnostics_channel" ->
                     __qin_global__(specifier);
             default -> null;
         };
@@ -1291,7 +1330,8 @@ public final class JavaEsmGlobal {
             case "Symbol" -> invokeSymbolNamespace(methodName, args);
             case "Promise" -> invokePromiseNamespace(methodName, args);
             case "fs", "node:fs", "path", "node:path", "url", "node:url", "util", "node:util",
-                    "process", "node:process" -> invokeHostRuntimeNamespace(builtinName, methodName, args);
+                    "process", "node:process", "module", "node:module", "crypto", "node:crypto",
+                    "tty", "node:tty" -> invokeHostRuntimeNamespace(builtinName, methodName, args);
             default -> BUILTIN_MISS;
         };
     }
@@ -1308,6 +1348,10 @@ public final class JavaEsmGlobal {
         return switch (builtinName) {
             case "Number" -> {
                 Object value = JavaEsmNumber.staticMemberGet(property);
+                yield value == null ? BUILTIN_MISS : value;
+            }
+            case "process", "node:process" -> {
+                Object value = NodeHostRuntime.processMember(key);
                 yield value == null ? BUILTIN_MISS : value;
             }
             default -> BUILTIN_MISS;
@@ -1402,6 +1446,9 @@ public final class JavaEsmGlobal {
             Method method = switch (builtinName) {
                 case "fs", "node:fs" -> findHostMethod(NodeHostRuntime.class, methodName, args,
                         Map.of(
+                                "readFileSync", args.length >= 2
+                                        ? new Class<?>[] {Object.class, Object.class}
+                                        : new Class<?>[] {Object.class},
                                 "existsSync", new Class<?>[] {Object.class},
                                 "writeFileSync", new Class<?>[] {Object.class, Object.class},
                                 "appendFileSync", new Class<?>[] {Object.class, Object.class},
@@ -1415,15 +1462,26 @@ public final class JavaEsmGlobal {
                 case "path", "node:path" -> findHostMethod(NodeHostRuntime.class, methodName, args,
                         Map.of(
                                 "dirname", new Class<?>[] {Object.class},
+                                "relative", new Class<?>[] {Object.class, Object.class},
                                 "join", new Class<?>[] {Object[].class},
                                 "resolve", new Class<?>[] {Object[].class}
                         ));
                 case "url", "node:url" -> findHostMethod(NodeHostRuntime.class, methodName, args,
                         Map.of("fileURLToPath", new Class<?>[] {Object.class}));
                 case "util", "node:util" -> findHostMethod(NodeHostRuntime.class, methodName, args,
-                        Map.of("deprecate", new Class<?>[] {Object.class, Object.class}));
+                        Map.of(
+                                "deprecate", new Class<?>[] {Object.class, Object.class},
+                                "formatWithOptions", new Class<?>[] {Object.class, Object[].class},
+                                "inspect", new Class<?>[] {Object.class}
+                        ));
                 case "process", "node:process" -> findHostMethod(NodeHostRuntime.class, methodName, args,
                         Map.of("cwd", new Class<?>[] {}));
+                case "module", "node:module" -> findHostMethod(NodeHostRuntime.class, methodName, args,
+                        Map.of("createRequire", new Class<?>[] {Object.class}));
+                case "crypto", "node:crypto" -> findHostMethod(NodeHostRuntime.class, methodName, args,
+                        Map.of("hash", new Class<?>[] {Object.class, Object.class, Object.class}));
+                case "tty", "node:tty" -> findHostMethod(NodeHostRuntime.class, methodName, args,
+                        Map.of("isatty", new Class<?>[] {Object.class}));
                 default -> null;
             };
             if (method == null) {

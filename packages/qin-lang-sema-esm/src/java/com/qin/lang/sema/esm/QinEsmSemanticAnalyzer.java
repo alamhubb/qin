@@ -50,7 +50,7 @@ public final class QinEsmSemanticAnalyzer {
         boolean[] code = codeMask(module.source());
         Matcher matcher = IMPORT_FROM_PATTERN.matcher(module.source());
         while (matcher.find()) {
-            if (!isCodeStart(module.source(), matcher.start())) {
+            if (!isCodePosition(code, matcher.start())) {
                 continue;
             }
             String clause = matcher.group(1).trim();
@@ -113,7 +113,7 @@ public final class QinEsmSemanticAnalyzer {
 
         Matcher defaultMatcher = EXPORT_DEFAULT_PATTERN.matcher(module.source());
         while (defaultMatcher.find()) {
-            if (!isCodeStart(module.source(), defaultMatcher.start())) {
+            if (!isCodePosition(code, defaultMatcher.start())) {
                 continue;
             }
             int[] lineCol = lineCol(module.source(), defaultMatcher.start());
@@ -132,7 +132,7 @@ public final class QinEsmSemanticAnalyzer {
 
         Matcher namedMatcher = EXPORT_NAMED_PATTERN.matcher(module.source());
         while (namedMatcher.find()) {
-            if (!isCodeStart(module.source(), exportKeywordIndex(module.source(), namedMatcher.start(), namedMatcher.end()))) {
+            if (!isCodePosition(code, exportKeywordIndex(module.source(), namedMatcher.start(), namedMatcher.end()))) {
                 continue;
             }
             boolean statementTypeOnly = namedMatcher.group(1) != null && !namedMatcher.group(1).isBlank();
@@ -154,7 +154,7 @@ public final class QinEsmSemanticAnalyzer {
 
         Matcher exportAllMatcher = EXPORT_ALL_PATTERN.matcher(module.source());
         while (exportAllMatcher.find()) {
-            if (!isCodeStart(module.source(), exportKeywordIndex(module.source(), exportAllMatcher.start(), exportAllMatcher.end()))) {
+            if (!isCodePosition(code, exportKeywordIndex(module.source(), exportAllMatcher.start(), exportAllMatcher.end()))) {
                 continue;
             }
             String namespace = exportAllMatcher.group(1);
@@ -194,7 +194,7 @@ public final class QinEsmSemanticAnalyzer {
             List<QinEsmExportBinding> exports) {
         Matcher matcher = EXPORT_DEFAULT_DECLARATION_PATTERN.matcher(module.source());
         while (matcher.find()) {
-            if (!isCodeStart(module.source(), matcher.start())) {
+            if (!isCodePosition(code, matcher.start())) {
                 continue;
             }
             String name = matcher.group(1).trim();
@@ -520,19 +520,19 @@ public final class QinEsmSemanticAnalyzer {
                 continue;
             }
             if (single) {
-                if (ch == '\'' && previous != '\\') {
+                if (ch == '\'' && !isEscaped(source, i)) {
                     single = false;
                 }
                 continue;
             }
             if (dbl) {
-                if (ch == '"' && previous != '\\') {
+                if (ch == '"' && !isEscaped(source, i)) {
                     dbl = false;
                 }
                 continue;
             }
             if (template) {
-                if (ch == '$' && next == '{' && previous != '\\') {
+                if (ch == '$' && next == '{' && !isEscaped(source, i)) {
                     code[i] = true;
                     code[i + 1] = true;
                     templateExpressionDepth = 1;
@@ -540,7 +540,7 @@ public final class QinEsmSemanticAnalyzer {
                     i++;
                     continue;
                 }
-                if (ch == '`' && previous != '\\') {
+                if (ch == '`' && !isEscaped(source, i)) {
                     template = false;
                 }
                 continue;
@@ -559,7 +559,11 @@ public final class QinEsmSemanticAnalyzer {
             } else if (ch == '"') {
                 dbl = true;
             } else if (ch == '`') {
-                template = true;
+                if (templateExpressionDepth > 0) {
+                    i = skipTemplateLiteral(source, i);
+                } else {
+                    template = true;
+                }
             } else {
                 code[i] = true;
                 if (templateExpressionDepth > 0) {
@@ -579,77 +583,6 @@ public final class QinEsmSemanticAnalyzer {
 
     private boolean isCodePosition(boolean[] code, int index) {
         return index >= 0 && index < code.length && code[index];
-    }
-
-    private boolean isCodeStart(String source, int index) {
-        if (index < 0 || index >= source.length()) {
-            return false;
-        }
-        if (isLineCodeStart(source, index)) {
-            return true;
-        }
-        boolean single = false;
-        boolean dbl = false;
-        boolean template = false;
-        boolean lineComment = false;
-        boolean blockComment = false;
-        for (int i = 0; i < index; i++) {
-            char ch = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
-            char previous = i > 0 ? source.charAt(i - 1) : '\0';
-
-            if (lineComment) {
-                if (ch == '\n') {
-                    lineComment = false;
-                }
-                continue;
-            }
-            if (blockComment) {
-                if (ch == '*' && next == '/') {
-                    blockComment = false;
-                    i++;
-                }
-                continue;
-            }
-            if (single) {
-                if (ch == '\'' && previous != '\\') {
-                    single = false;
-                }
-                continue;
-            }
-            if (dbl) {
-                if (ch == '"' && previous != '\\') {
-                    dbl = false;
-                }
-                continue;
-            }
-            if (template) {
-                if (ch == '`' && previous != '\\') {
-                    template = false;
-                }
-                continue;
-            }
-            if (ch == '/' && next == '/') {
-                lineComment = true;
-                i++;
-            } else if (ch == '/' && next == '*') {
-                blockComment = true;
-                i++;
-            } else if (ch == '\'') {
-                single = true;
-            } else if (ch == '"') {
-                dbl = true;
-            } else if (ch == '`') {
-                template = true;
-            }
-        }
-        return !single && !dbl && !template && !lineComment && !blockComment;
-    }
-
-    private boolean isLineCodeStart(String source, int index) {
-        int lineStart = source.lastIndexOf('\n', Math.max(0, index - 1)) + 1;
-        String prefix = source.substring(lineStart, index).trim();
-        return prefix.isEmpty();
     }
 
     private int exportKeywordIndex(String source, int start, int end) {
@@ -677,11 +610,11 @@ public final class QinEsmSemanticAnalyzer {
             if (ch == '\n' || ch == '\r') {
                 return i - 1;
             }
-            if (ch == '[' && previous != '\\') {
+            if (ch == '[' && !isEscaped(source, i)) {
                 inClass = true;
-            } else if (ch == ']' && previous != '\\') {
+            } else if (ch == ']' && !isEscaped(source, i)) {
                 inClass = false;
-            } else if (ch == '/' && previous != '\\' && !inClass) {
+            } else if (ch == '/' && !isEscaped(source, i) && !inClass) {
                 while (i + 1 < source.length() && Character.isLetter(source.charAt(i + 1))) {
                     i++;
                 }
@@ -689,5 +622,33 @@ public final class QinEsmSemanticAnalyzer {
             }
         }
         return slashIndex;
+    }
+
+    private int skipTemplateLiteral(String source, int startIndex) {
+        int expressionDepth = 0;
+        for (int i = startIndex + 1; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+            if (ch == '`' && expressionDepth == 0 && !isEscaped(source, i)) {
+                return i;
+            }
+            if (ch == '$' && next == '{' && !isEscaped(source, i)) {
+                expressionDepth++;
+                i++;
+                continue;
+            }
+            if (ch == '}' && expressionDepth > 0 && !isEscaped(source, i)) {
+                expressionDepth--;
+            }
+        }
+        return startIndex;
+    }
+
+    private boolean isEscaped(String source, int index) {
+        int backslashes = 0;
+        for (int i = index - 1; i >= 0 && source.charAt(i) == '\\'; i--) {
+            backslashes++;
+        }
+        return (backslashes & 1) == 1;
     }
 }

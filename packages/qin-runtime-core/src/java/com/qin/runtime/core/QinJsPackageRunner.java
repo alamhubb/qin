@@ -109,6 +109,7 @@ final class QinJsPackageRunner {
         for (String specifier : bareSpecifiers) {
             materializeDependency(specifier, runtimeNodeModules, workspaceRoot, workspacePackages, materialized);
         }
+        materializeQinViteShimIfNeeded(bareSpecifiers, runtimeNodeModules);
     }
 
     private void materializeDependency(
@@ -119,6 +120,10 @@ final class QinJsPackageRunner {
             Set<String> materialized) throws IOException {
         String packageName = parseBarePackageName(specifier);
         if (packageName == null || packageName.isBlank() || !materialized.add(packageName)) {
+            return;
+        }
+        if ("vite".equals(packageName)) {
+            materializeQinViteShim(runtimeNodeModules);
             return;
         }
 
@@ -147,6 +152,122 @@ final class QinJsPackageRunner {
         for (String dependencyName : readDependencyNames(sourcePackageDir.resolve("package.json"))) {
             materializeDependency(dependencyName, runtimeNodeModules, workspaceRoot, workspacePackages, materialized);
         }
+    }
+
+    private void materializeQinViteShimIfNeeded(Set<String> bareSpecifiers, Path runtimeNodeModules) throws IOException {
+        if (bareSpecifiers == null || bareSpecifiers.isEmpty()) {
+            return;
+        }
+        if (bareSpecifiers.contains("vite") || bareSpecifiers.contains("@vitejs/plugin-vue")) {
+            materializeQinViteShim(runtimeNodeModules);
+        }
+        if (bareSpecifiers.contains("@vitejs/plugin-vue")) {
+            materializeQinVuePluginHostShim(runtimeNodeModules);
+        }
+    }
+
+    private void materializeQinViteShim(Path runtimeNodeModules) throws IOException {
+        Path shimDir = runtimeNodeModules.resolve("vite").normalize();
+        Files.createDirectories(shimDir);
+        Files.writeString(shimDir.resolve("package.json"), """
+                {
+                  "name": "vite",
+                  "version": "0.0.0-qin-shim",
+                  "type": "module",
+                  "exports": {
+                    ".": "./index.js"
+                  },
+                  "main": "./index.js",
+                  "module": "./index.js"
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(shimDir.resolve("index.js"), qinViteShimSource(), StandardCharsets.UTF_8);
+    }
+
+    private String qinViteShimSource() {
+        return """
+                function __qin_to_array(value) {
+                  if (value == null) return [];
+                  return Array.isArray(value) ? value : [value];
+                }
+
+                function __qin_match(pattern, id) {
+                  if (pattern == null) return false;
+                  if (typeof pattern === "function") return !!pattern(id);
+                  if (pattern instanceof RegExp) return pattern.test(id);
+                  const text = String(pattern);
+                  if (text === id) return true;
+                  if (text.includes("*")) {
+                    const escaped = text
+                      .replace(/[.+?^${}()|[\\]\\\\]/g, "\\\\$&")
+                      .replace(/\\\\\\*/g, ".*");
+                    return new RegExp("^" + escaped + "$").test(id);
+                  }
+                  return id.includes(text);
+                }
+
+                export function createFilter(include, exclude) {
+                  const includes = __qin_to_array(include);
+                  const excludes = __qin_to_array(exclude);
+                  return function qinViteFilter(id) {
+                    const text = String(id || "");
+                    for (const pattern of excludes) {
+                      if (__qin_match(pattern, text)) return false;
+                    }
+                    if (includes.length === 0) return true;
+                    for (const pattern of includes) {
+                      if (__qin_match(pattern, text)) return true;
+                    }
+                    return false;
+                  };
+                }
+
+                export function normalizePath(path) {
+                  return String(path || "").replace(/\\\\/g, "/");
+                }
+
+                export function isCSSRequest(id) {
+                  return /(?:\\.css|\\.less|\\.sass|\\.scss|\\.styl|\\.stylus|\\.pcss|\\.postcss)(?:$|\\?)/.test(String(id || ""));
+                }
+
+                export function formatPostcssSourceMap(map, filename) {
+                  return map || { mappings: "" };
+                }
+
+                export function transformWithEsbuild(code, filename, options) {
+                  return { code: String(code || ""), map: { mappings: "" } };
+                }
+                """;
+    }
+
+    private void materializeQinVuePluginHostShim(Path runtimeNodeModules) throws IOException {
+        Path shimDir = runtimeNodeModules.resolve("vue").normalize();
+        Files.createDirectories(shimDir);
+        Files.writeString(shimDir.resolve("package.json"), """
+                {
+                  "name": "vue",
+                  "version": "0.0.0-qin-plugin-host-shim",
+                  "type": "module",
+                  "exports": {
+                    ".": "./index.js"
+                  },
+                  "main": "./index.js",
+                  "module": "./index.js"
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(shimDir.resolve("index.js"), """
+                export function shallowRef(value) {
+                  return { value };
+                }
+
+                export function computed(factory) {
+                  return {
+                    get value() {
+                      return factory();
+                    }
+                  };
+                }
+                """, StandardCharsets.UTF_8);
     }
 
     private void rewriteWorkspacePackageManifest(Path targetPackageDir, Path sourcePackageDir, String packageName)

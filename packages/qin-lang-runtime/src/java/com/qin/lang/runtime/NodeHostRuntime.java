@@ -3,6 +3,8 @@ package com.qin.lang.runtime;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -16,6 +18,10 @@ import java.util.Map;
  * Minimal Java-backed Node-style host builtins needed by current Qin npm source execution.
  */
 final class NodeHostRuntime {
+    private static final Map<String, Object> PROCESS_ENV = new LinkedHashMap<>(System.getenv());
+    private static final NodeProcessStream STDOUT = new NodeProcessStream(1, System.out);
+    private static final NodeProcessStream STDERR = new NodeProcessStream(2, System.err);
+
     private NodeHostRuntime() {
     }
 
@@ -39,6 +45,30 @@ final class NodeHostRuntime {
         return "node:process";
     }
 
+    static Object processMember(Object property) {
+        String key = String.valueOf(property);
+        return switch (key) {
+            case "env" -> PROCESS_ENV;
+            case "stdout" -> STDOUT;
+            case "stderr" -> STDERR;
+            case "platform" -> System.getProperty("os.name", "").toLowerCase().contains("win") ? "win32" : "linux";
+            case "version" -> "v" + System.getProperty("java.version", "");
+            default -> null;
+        };
+    }
+
+    static Object moduleNamespace() {
+        return "node:module";
+    }
+
+    static Object cryptoNamespace() {
+        return "node:crypto";
+    }
+
+    static Object ttyNamespace() {
+        return "node:tty";
+    }
+
     static Object diagnosticsChannelNamespace() {
         return "node:diagnostics_channel";
     }
@@ -49,6 +79,27 @@ final class NodeHostRuntime {
 
     static Object existsSync(Object pathLike) {
         return Files.exists(asPath(pathLike));
+    }
+
+    static Object readFileSync(Object pathLike) {
+        return readFileSync(pathLike, null);
+    }
+
+    static Object readFileSync(Object pathLike, Object encoding) {
+        Path path = asPath(pathLike);
+        try {
+            byte[] bytes = Files.readAllBytes(path);
+            if (encoding == null || String.valueOf(encoding).isBlank()) {
+                return new String(bytes, StandardCharsets.UTF_8);
+            }
+            String normalized = String.valueOf(encoding).trim().toLowerCase();
+            if ("utf8".equals(normalized) || "utf-8".equals(normalized)) {
+                return new String(bytes, StandardCharsets.UTF_8);
+            }
+            throw new IllegalArgumentException("Unsupported fs.readFileSync encoding: " + encoding);
+        } catch (IOException error) {
+            throw new IllegalArgumentException("fs.readFileSync failed: " + path, error);
+        }
     }
 
     static Object writeFileSync(Object pathLike, Object content) {
@@ -115,6 +166,12 @@ final class NodeHostRuntime {
         return parent == null ? path.toString() : parent.toString();
     }
 
+    static Object relative(Object from, Object to) {
+        Path fromPath = asPath(from);
+        Path toPath = asPath(to);
+        return fromPath.relativize(toPath).toString();
+    }
+
     static Object join(Object... parts) {
         if (parts == null || parts.length == 0) {
             return "";
@@ -155,8 +212,88 @@ final class NodeHostRuntime {
         return Paths.get("").toAbsolutePath().normalize().toString();
     }
 
+    static Object createRequire(Object url) {
+        return new NodeRequire(String.valueOf(url));
+    }
+
+    static Object hash(Object algorithm, Object data, Object encoding) {
+        String normalizedAlgorithm = String.valueOf(algorithm).replace("-", "").toUpperCase();
+        String javaAlgorithm = switch (normalizedAlgorithm) {
+            case "SHA256" -> "SHA-256";
+            case "SHA1" -> "SHA-1";
+            case "MD5" -> "MD5";
+            default -> throw new IllegalArgumentException("Unsupported crypto.hash algorithm: " + algorithm);
+        };
+        String normalizedEncoding = encoding == null ? "hex" : String.valueOf(encoding).toLowerCase();
+        if (!"hex".equals(normalizedEncoding)) {
+            throw new IllegalArgumentException("Unsupported crypto.hash output encoding: " + encoding);
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance(javaAlgorithm);
+            byte[] hashed = digest.digest(String.valueOf(data).getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(hashed.length * 2);
+            for (byte value : hashed) {
+                hex.append(String.format("%02x", value & 0xff));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalArgumentException("Unsupported crypto.hash algorithm: " + algorithm, error);
+        }
+    }
+
+    static Object isatty(Object fd) {
+        return false;
+    }
+
+    static final class NodeProcessStream {
+        public final int fd;
+        public final boolean isTTY = false;
+        private final OutputStream output;
+
+        private NodeProcessStream(int fd, OutputStream output) {
+            this.fd = fd;
+            this.output = output;
+        }
+
+        public Object getColorDepth() {
+            return 1.0d;
+        }
+
+        public Object write(Object value) {
+            try {
+                output.write(String.valueOf(value).getBytes(StandardCharsets.UTF_8));
+                output.flush();
+                return true;
+            } catch (IOException error) {
+                throw new IllegalArgumentException("process stream write failed", error);
+            }
+        }
+    }
+
     static Object deprecate(Object function, Object message) {
         return function;
+    }
+
+    static Object formatWithOptions(Object options, Object... values) {
+        return format(values);
+    }
+
+    static Object inspect(Object value) {
+        return String.valueOf(value);
+    }
+
+    static Object format(Object... values) {
+        if (values == null || values.length == 0) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            if (i > 0) {
+                builder.append(' ');
+            }
+            builder.append(String.valueOf(values[i]));
+        }
+        return builder.toString();
     }
 
     static Object channel(Object name) {
@@ -293,6 +430,26 @@ final class NodeHostRuntime {
 
         public Object tracePromise(Object callback, Object context) {
             return JavaEsmGlobal.callRuntimeCallable(callback);
+        }
+    }
+
+    public static final class NodeRequire {
+        private final String baseUrl;
+
+        NodeRequire(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public Object resolve(Object id) {
+            return resolve(id, null);
+        }
+
+        public Object resolve(Object id, Object options) {
+            return String.valueOf(id);
+        }
+
+        public Object baseUrl() {
+            return baseUrl;
         }
     }
 }
