@@ -1,105 +1,66 @@
 package com.qin.parser;
 
-import com.slime.parser.base.SlimeJavascriptParserBase.DeclarationParams;
-import com.slime.parser.base.SlimeJavascriptParserBase.ExpressionParams;
-import com.slime.parser.base.SlimeJavascriptParserBase.StatementParams;
-import com.subhuti.parser.SubhutiParser;
-import com.subhuti.struct.SubhutiMatchToken;
+import com.slime.ast.nodes.misc.Program;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Packaged parser smoke/probe entry.
+ *
+ * <p>This class intentionally uses the stable Qin parser facade. Low-level
+ * grammar-rule probes depend on Slime internals and belong in parser-dev
+ * workspaces, not in the production package compile graph.
+ */
 public final class QinParserRuleProbeMain {
+    private QinParserRuleProbeMain() {
+    }
+
     public static void main(String[] args) throws Exception {
         if (args == null || args.length < 2) {
-            throw new IllegalArgumentException("Usage: QinParserRuleProbeMain <rule> <source>|--file <path> [--no-cache]");
+            throw new IllegalArgumentException("Usage: QinParserRuleProbeMain <Program|QinModule> <source>|--file <path>");
         }
 
         String rule = args[0];
         String source;
-        int optionStart;
         if ("--file".equals(args[1])) {
             if (args.length < 3) {
-                throw new IllegalArgumentException("Usage: QinParserRuleProbeMain <rule> --file <path> [--no-cache]");
+                throw new IllegalArgumentException("Usage: QinParserRuleProbeMain <Program|QinModule> --file <path>");
             }
             source = Files.readString(Path.of(args[2]), StandardCharsets.UTF_8);
-            optionStart = 3;
         } else {
             source = args[1];
-            optionStart = 2;
         }
-        QinParser parser = SubhutiParser.create(QinParser.class, source);
-        boolean cacheEnabled = true;
-        for (int i = optionStart; i < args.length; i++) {
-            if ("--no-cache".equals(args[i])) {
-                cacheEnabled = false;
-            }
-        }
-        parser.cache(cacheEnabled);
+
         try {
-            switch (rule) {
-                case "Program" -> parser.Program();
-                case "ClassDeclaration" ->
-                    parser.ClassDeclaration(new DeclarationParams(false, true, false));
-                case "ClassBody" ->
-                    parser.ClassBody(new DeclarationParams(false, true, false));
-                case "ClassElement" ->
-                    parser.ClassElement(new DeclarationParams(false, true, false));
-                case "MethodDefinition" ->
-                    parser.MethodDefinition(new ExpressionParams(true, false, true));
-                case "FieldDefinition" ->
-                    parser.FieldDefinition(new DeclarationParams(false, true, false));
-                case "FunctionDeclaration" ->
-                    parser.FunctionDeclaration(new DeclarationParams(false, true, false));
-                case "FunctionBody" -> parser.FunctionBody();
-                case "ReturnStatement" ->
-                    parser.ReturnStatement(new StatementParams(false, true, true));
-                case "Expression" ->
-                    parser.Expression(new ExpressionParams(true, false, true));
-                case "ObjectLiteral" ->
-                    parser.ObjectLiteral(new ExpressionParams(true, false, true));
-                case "AssignmentExpression" ->
-                    parser.AssignmentExpression(new ExpressionParams(true, false, true));
-                case "LeftHandSideExpression" ->
-                    parser.LeftHandSideExpression(new ExpressionParams(true, false, true));
-                case "MemberExpression" ->
-                    parser.MemberExpression(new ExpressionParams(true, false, true));
-                case "NewExpression" ->
-                    parser.NewExpression(new ExpressionParams(true, false, true));
-                case "PrimaryExpression" ->
-                    parser.PrimaryExpression(new ExpressionParams(true, false, true));
-                case "PropertyDefinition" ->
-                    parser.PropertyDefinition(new ExpressionParams(true, false, true));
-                case "LiteralPropertyName" -> parser.LiteralPropertyName();
-                case "StringLiteral" -> parser.StringLiteral();
-                case "IdentifierReference" ->
-                    parser.IdentifierReference(new ExpressionParams(true, false, true));
-                case "Identifier" -> parser.Identifier();
-                case "Arguments" ->
-                    parser.Arguments(new ExpressionParams(true, false, true));
-                default -> throw new IllegalArgumentException("Unsupported rule: " + rule);
-            }
-            printState(rule, parser);
+            Program program = parseSupportedRule(rule, source);
+            printState(rule, source, program);
         } catch (Exception e) {
-            printFailure(rule, parser, e);
+            printFailure(rule, source, e);
         }
     }
 
-    private static void printState(String rule, QinParser parser) {
-        SubhutiMatchToken token = parser.curToken();
-        System.out.println("rule=" + rule);
-        System.out.println("success=" + !parser.isParserFail());
-        System.out.println("index=" + parser.getCurrentIndex());
-        System.out.println("next=" + (token == null ? "null" : token.tokenName() + ":" + token.value()));
+    private static Program parseSupportedRule(String rule, String source) {
+        if (!"Program".equals(rule) && !"QinModule".equals(rule)) {
+            throw new IllegalArgumentException(
+                    "Unsupported packaged probe rule: " + rule
+                            + ". Packaged probes intentionally support only Program/QinModule via QinParserFacade.");
+        }
+        return new QinParserFacade().parseProgram(source);
     }
 
-    private static void printFailure(String rule, QinParser parser, Exception e) {
-        SubhutiMatchToken token = parser.curToken();
+    private static void printState(String rule, String source, Program program) {
+        System.out.println("rule=" + rule);
+        System.out.println("success=true");
+        System.out.println("sourceLength=" + (source == null ? 0 : source.length()));
+        System.out.println("program=" + (program == null ? "null" : program.getClass().getName()));
+    }
+
+    private static void printFailure(String rule, String source, Exception e) {
         System.out.println("rule=" + rule);
         System.out.println("success=false");
-        System.out.println("index=" + parser.getCurrentIndex());
-        System.out.println("next=" + (token == null ? "null" : token.tokenName() + ":" + token.value()));
+        System.out.println("sourceLength=" + (source == null ? 0 : source.length()));
         System.out.println("error=" + e.getClass().getSimpleName() + ": " + e.getMessage());
         e.printStackTrace(System.out);
     }
