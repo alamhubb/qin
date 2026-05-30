@@ -51,6 +51,7 @@ Product-direction summary:
 - JS-on-JVM support priorities versus deferred engine-fidelity work are documented in `QIN_JS_ON_JVM_FEASIBILITY.md`.
 - Qin may align with useful dev lifecycle concepts from Vite, but the implementation is Qin-owned and does not invoke Vite.
 - CSSTS integration policy is documented in `QIN_CSSTS_INTEGRATION_MODEL.md`.
+- Current Stage-1 local development expects sibling `qin/` and `slime/` repositories in one workspace so `qin-parser` can resolve local `java-slime` parser sources; see `QIN_DEV_SERVER_STAGE1.md`.
 
 Backend model summary:
 

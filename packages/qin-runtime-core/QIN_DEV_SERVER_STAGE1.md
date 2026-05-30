@@ -33,6 +33,30 @@ Stage 1 means:
   - build/dev path alignment
 - Vue `.vue` SFC parsing and module serving, owned by Qin orchestration but backed by the official Vue compiler
 
+## Local Workspace Shape
+
+Current Stage-1 development expects a sibling multi-repo workspace:
+
+```text
+workspace/
+  qin/
+  slime/
+```
+
+`qin` owns the language, CLI, runtime, dev server, and fullstack examples. `slime` owns the shared parser infrastructure used by `qin-parser`.
+
+This is intentionally a workspace-level dependency, not a hidden runtime fallback. Qin discovers sibling projects by scanning upward to the parent workspace and then recursively finding `qin.config.json` files. A clean machine should clone both repositories under the same parent directory before running the current fullstack dev server:
+
+```powershell
+git clone https://gitee.com/alamhubb/qin.git qin
+git clone https://gitee.com/alamhubb/slime.git slime
+cd qin
+powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
+.\qin.bat dev --root packages\qin-runtime-core\examples\fullstack-mvp --port 19095 --dev
+```
+
+The long-term packaging goal is to make this dependency boundary smoother, but Stage 1 should keep it explicit rather than pretending `qin-parser` can compile without the local `java-slime` sources.
+
 ## Runtime Roles
 
 ### `qin-cli`
