@@ -3,7 +3,6 @@ package com.qin.parser;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJsImport;
 import com.slime.ast.nodes.misc.Program;
-import com.slime.parser.SlimeJavascriptParser;
 import com.slime.parser.cstToAst.SlimeCstToAstUtils;
 import com.subhuti.parser.SubhutiParser;
 import com.subhuti.struct.SubhutiCst;
@@ -46,12 +45,6 @@ public final class QinParserFacade {
     private static final Pattern SOURCE_SIMPLE_SWITCH_PATTERN = Pattern.compile(
             "(?s)switch\\s*\\(([^\\)]*)\\)\\s*\\{([^\\{\\}]*)\\}");
     private static final Pattern SOURCE_HASHBANG_PATTERN = Pattern.compile("\\A#![^\\r\\n]*(\\r?\\n|\\z)");
-    private static final Pattern SOURCE_DECORATOR_PATTERN = Pattern.compile(
-            "(?m)^\\s*@\\w[\\w$]*(?:\\([^\\n]*\\))?\\s*$");
-    private static final Pattern SOURCE_TYPED_CLASS_FIELD_PATTERN = Pattern.compile(
-            "(?m)^\\s*(?:public|private|protected|readonly|static|override\\s+)+[A-Za-z_$][A-Za-z0-9_$]*\\s*\\??\\s*:\\s*[A-Za-z_$][A-Za-z0-9_$.<>]*\\s*(?:=|$)");
-    private static final Pattern SOURCE_TS_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*(?:export\\s+)?(?:declare\\s+)?(?:interface|enum|namespace|module)\\s+[A-Za-z_$][A-Za-z0-9_$]*\\b|^\\s*(?:export\\s+)?(?:declare\\s+)?type\\s+[A-Za-z_$][A-Za-z0-9_$]*\\s*=|^\\s*declare\\s+(?:class|function|const|let|var)\\s+");
     private static final int MAX_SIMPLE_SWITCH_REWRITES = 1;
     public Program parseProgram(String source) {
         return parseSource(source).requireProgram();
@@ -107,26 +100,6 @@ public final class QinParserFacade {
     }
 
     Program createProgramAst(String source) {
-        if (requiresDeclarationParser(source)) {
-            return createProgramAstWithDeclarationSupport(source);
-        }
-
-        SlimeJavascriptParser parser = SubhutiParser.create(SlimeJavascriptParser.class, source);
-        SubhutiCst cst = parser.Program(SlimeJavascriptParser.SourceType.MODULE);
-        if (cst == null) {
-            cst = parser.getCst();
-        }
-        if (cst == null) {
-            throw new IllegalArgumentException("Slime parser returned null CST");
-        }
-        Program programAst = SlimeCstToAstUtils.createProgramAst(cst);
-        if (programAst == null) {
-            throw new IllegalArgumentException("Slime CST->AST returned null Program");
-        }
-        return programAst;
-    }
-
-    private Program createProgramAstWithDeclarationSupport(String source) {
         QinParser parser = SubhutiParser.create(QinParser.class, source);
         parser.cache(true);
         SubhutiCst cst = parser.Program(QinParser.SourceType.MODULE);
@@ -141,15 +114,6 @@ public final class QinParserFacade {
             throw new IllegalArgumentException("Slime CST->AST returned null Program");
         }
         return programAst;
-    }
-
-    private boolean requiresDeclarationParser(String source) {
-        if (source == null || source.isBlank()) {
-            return false;
-        }
-        return SOURCE_DECORATOR_PATTERN.matcher(source).find()
-                || SOURCE_TYPED_CLASS_FIELD_PATTERN.matcher(source).find()
-                || SOURCE_TS_DECLARATION_PATTERN.matcher(source).find();
     }
 
     private ExtractedImports extractImports(String source) {
