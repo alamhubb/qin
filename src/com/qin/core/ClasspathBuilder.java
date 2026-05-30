@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Classpath构建器
@@ -49,6 +50,10 @@ public class ClasspathBuilder {
             cpParts.add(outputDir);
         }
 
+        // Vendored jars in project lib/ are available before dependency sync
+        // has populated .qin/classpath.json.
+        cpParts.addAll(resolveVendoredJarClasspath());
+
         // Add local project dependencies using auto-discovery
         Map<String, String> deps = config.dependencies();
         System.err.println("[DEBUG] Config dependencies: " + (deps != null ? deps.keySet() : "null"));
@@ -83,6 +88,26 @@ public class ClasspathBuilder {
 
         String sep = DependencyResolver.getClasspathSeparator();
         return String.join(sep, cpParts);
+    }
+
+    private List<String> resolveVendoredJarClasspath() {
+        List<String> jars = new ArrayList<>();
+        Path libDir = Paths.get(cwd, "lib");
+        if (!Files.isDirectory(libDir)) {
+            return jars;
+        }
+
+        try (Stream<Path> walk = Files.walk(libDir, 1)) {
+            walk
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".jar"))
+                    .sorted()
+                    .map(path -> path.toAbsolutePath().normalize().toString())
+                    .forEach(jars::add);
+        } catch (Exception e) {
+            System.err.println("Warning: Failed to scan project lib jars: " + e.getMessage());
+        }
+        return jars;
     }
 
     /**
