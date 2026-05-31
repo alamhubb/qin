@@ -261,6 +261,7 @@ public final class QinFrontendEsmService {
 
     private String templateToRenderFunctionBody(String templateSource) {
         String template = templateSource == null ? "" : templateSource;
+        template = renderStage1ComponentPlaceholders(template);
         String escaped = escapeTemplateLiteral(template);
         String rendered = escaped.replaceAll("\\{\\{\\s*([^}]+?)\\s*\\}\\}", "\\${__qinEscapeHtml(($1))}");
         return """
@@ -277,6 +278,12 @@ public final class QinFrontendEsmService {
                   return `%s`;
                 }
                 """.formatted(rendered);
+    }
+
+    private String renderStage1ComponentPlaceholders(String template) {
+        return template.replaceAll(
+                "<\\s*([A-Z][A-Za-z0-9_$]*)\\s*/\\s*>",
+                "<section data-qin-component=\"$1\"></section>");
     }
 
     private String escapeTemplateLiteral(String text) {
@@ -432,7 +439,7 @@ public final class QinFrontendEsmService {
                 %s
                 function __qinMountOvs() {
                   if (typeof document === 'undefined') return null;
-                  const __qinOvsTarget = document.querySelector('#ovs-demo') || document.querySelector('#app');
+                  const __qinOvsTarget = document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo');
                   if (!__qinOvsTarget) return null;
                   __qinOvsTarget.innerHTML = '';
                   return __qinCreateApp(__qinOvsDefault).mount(__qinOvsTarget);

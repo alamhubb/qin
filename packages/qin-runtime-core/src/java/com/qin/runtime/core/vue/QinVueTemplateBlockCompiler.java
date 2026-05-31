@@ -7,12 +7,15 @@ final class QinVueTemplateBlockCompiler {
     private static final Pattern INTERPOLATION_PATTERN = Pattern.compile("\\{\\{\\s*([^}]+?)\\s*\\}\\}");
     private static final Pattern CLASS_BINDING_PATTERN = Pattern.compile(
             "(?i)(:class|v-bind:class)\\s*=\\s*(\"([^\"]*)\"|'([^']*)')");
+    private static final Pattern STAGE1_COMPONENT_PLACEHOLDER_PATTERN = Pattern.compile(
+            "<\\s*([A-Z][A-Za-z0-9_$]*)\\s*/\\s*>");
 
     private QinVueTemplateBlockCompiler() {
     }
 
     static String compile(Object templateBlock) {
         String template = QinVueSfcBlockSupport.extractBlockContent(templateBlock);
+        template = rewriteStage1ComponentPlaceholders(template);
         String escaped = escapeTemplateLiteral(template);
         escaped = rewriteClassBindings(escaped);
         String rendered = rewriteInterpolations(escaped);
@@ -50,6 +53,18 @@ final class QinVueTemplateBlockCompiler {
         while (matcher.find()) {
             String expr = matcher.group(1);
             String replacement = "${__qinEscapeHtml((" + expr + "))}";
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(buffer);
+        return buffer.toString();
+    }
+
+    private static String rewriteStage1ComponentPlaceholders(String template) {
+        Matcher matcher = STAGE1_COMPONENT_PLACEHOLDER_PATTERN.matcher(template == null ? "" : template);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String componentName = matcher.group(1);
+            String replacement = "<section data-qin-component=\"" + componentName + "\"></section>";
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(buffer);

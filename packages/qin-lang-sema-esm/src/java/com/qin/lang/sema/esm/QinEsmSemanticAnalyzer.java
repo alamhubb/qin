@@ -90,6 +90,18 @@ public final class QinEsmSemanticAnalyzer {
 
     private List<QinEsmExportBinding> parseExports(QinModuleSource module) {
         List<QinEsmExportBinding> exports = new ArrayList<>();
+        if (isVirtualDefaultExportModule(module)) {
+            exports.add(new QinEsmExportBinding(
+                    module.file(),
+                    QinEsmExportKind.LOCAL_DEFAULT,
+                    "default",
+                    "default",
+                    false,
+                    null,
+                    null,
+                    1,
+                    1));
+        }
         boolean[] code = codeMask(module.source());
         Matcher matcher = EXPORT_DECLARATION_PATTERN.matcher(module.source());
         while (matcher.find()) {
@@ -186,6 +198,14 @@ public final class QinEsmSemanticAnalyzer {
             }
         }
         return deduplicateExports(exports);
+    }
+
+    private boolean isVirtualDefaultExportModule(QinModuleSource module) {
+        if (module == null || module.file() == null || module.file().getFileName() == null) {
+            return false;
+        }
+        String fileName = module.file().getFileName().toString().toLowerCase();
+        return fileName.endsWith(".ovs");
     }
 
     private void addDefaultDeclarationNamedExports(

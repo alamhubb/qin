@@ -5,13 +5,13 @@
       <h1 :class="titleStyle">{{ title }}</h1>
       <p :class="subtitleStyle">{{ subtitle }}</p>
       <button :class="buttonStyle">Rendered from lang=cssts</button>
-      <section id="ovs-demo"></section>
+      <OvsDemo />
     </section>
   </main>
 </template>
 
 <script setup lang="cssts">
-import "./OvsDemo.ovs";
+import OvsDemo from "./OvsDemo.ovs";
 
 const title = "Hello from .vue";
 const subtitle = "Rendered by Qin dev server on one port.";
