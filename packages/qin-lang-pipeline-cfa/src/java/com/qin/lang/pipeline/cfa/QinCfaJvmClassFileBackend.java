@@ -596,6 +596,7 @@ public final class QinCfaJvmClassFileBackend {
                 javaInstanceMethodCall.arguments());
 
         code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
+        emitJavaReceiverCast(code, resolvedMethod);
         emitArgumentsForParameters(code, javaInstanceMethodCall.arguments(), resolvedMethod.parameterTypes());
         invokeInstanceMethod(code, resolvedMethod);
         discardReturnValue(code, resolvedMethod.returnType());
@@ -629,6 +630,7 @@ public final class QinCfaJvmClassFileBackend {
                 javaInstanceConsoleLog.arguments());
 
         code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
+        emitJavaReceiverCast(code, resolvedMethod);
         emitArgumentsForParameters(code, javaInstanceConsoleLog.arguments(), resolvedMethod.parameterTypes());
         invokeInstanceMethod(code, resolvedMethod);
         emitBoxIfNeeded(code, resolvedMethod.returnType());
@@ -1347,6 +1349,10 @@ public final class QinCfaJvmClassFileBackend {
                 ClassDesc.of(resolvedMethod.method().getDeclaringClass().getName()),
                 resolvedMethod.method().getName(),
                 resolvedMethod.descriptor());
+    }
+
+    private void emitJavaReceiverCast(CodeBuilder code, ResolvedMethod resolvedMethod) {
+        code.checkcast(ClassDesc.of(resolvedMethod.method().getDeclaringClass().getName()));
     }
 
     private void discardReturnValue(CodeBuilder code, Class<?> returnType) {

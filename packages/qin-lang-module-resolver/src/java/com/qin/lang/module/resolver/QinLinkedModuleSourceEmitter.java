@@ -1283,6 +1283,18 @@ public final class QinLinkedModuleSourceEmitter {
             Map<Path, Integer> moduleIndex) {
         List<String> lines = new ArrayList<>();
         for (ParsedImport parsedImport : parsed.imports()) {
+            if (isJavaModuleSpecifier(parsedImport.moduleSpecifier())) {
+                if (parsedImport.kind() == ImportKind.SIDE_EFFECT || isRuntimeTypeOnlyImport(parsedImport)) {
+                    continue;
+                }
+                if (parsedImport.kind() != ImportKind.NAMED) {
+                    throw new IllegalArgumentException(
+                            "java: imports in linked source must use named specifiers: "
+                                    + parsedImport.moduleSpecifier());
+                }
+                lines.add(javaImportDeclaration(parsedImport));
+                continue;
+            }
             if (parsedImport.kind() == ImportKind.SIDE_EFFECT || isRuntimeTypeOnlyImport(parsedImport)) {
                 continue;
             }
@@ -1312,6 +1324,26 @@ public final class QinLinkedModuleSourceEmitter {
                     + ";");
         }
         return lines;
+    }
+
+    private boolean isJavaModuleSpecifier(String moduleSpecifier) {
+        return moduleSpecifier != null && moduleSpecifier.trim().startsWith("java:");
+    }
+
+    private String javaImportDeclaration(ParsedImport parsedImport) {
+        String specifier = parsedImport.importedName().equals(parsedImport.localName())
+                ? parsedImport.importedName()
+                : parsedImport.importedName() + " as " + parsedImport.localName();
+        return "import { " + specifier + " } from " + quoteJavaScriptString(parsedImport.moduleSpecifier()) + ";";
+    }
+
+    private String quoteJavaScriptString(String value) {
+        String text = value == null ? "" : value;
+        return "\"" + text
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n") + "\"";
     }
 
     private List<String> emitExportAliases(

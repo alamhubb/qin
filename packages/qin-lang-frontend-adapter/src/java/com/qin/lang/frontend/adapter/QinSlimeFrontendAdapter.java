@@ -4525,7 +4525,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 List.of(test, consequent, alternate));
     }
 
-    private QinIrBuiltinCallExpression lowerRuntimeNewExpression(
+    private QinIrExpression lowerRuntimeNewExpression(
             Object expressionAst,
             Map<String, String> javaImportLookup,
             Map<String, QinIrExpression> declarationLookup) {
@@ -4533,7 +4533,9 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         QinIrExpression callee;
         if ("Identifier".equals(simpleName(calleeAst))) {
             String calleeName = extractIdentifierName(calleeAst, "NewExpression.callee");
-            if (declarationLookup.containsKey(calleeName)) {
+            if (javaImportLookup.containsKey(calleeName)) {
+                return lowerJavaNewExpression(expressionAst, javaImportLookup);
+            } else if (declarationLookup.containsKey(calleeName)) {
                 callee = new QinIrIdentifierReference(calleeName);
             } else if (isKnownGlobalConstructor(calleeName)) {
                 callee = new QinIrStringLiteral(calleeName);
@@ -4552,14 +4554,16 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         return new QinIrBuiltinCallExpression("Global", "__qin_new__", arguments);
     }
 
-    private QinIrBuiltinCallExpression lowerRuntimeNewExpression(
+    private QinIrExpression lowerRuntimeNewExpression(
             NewExpression expressionAst,
             Map<String, String> javaImportLookup,
             Map<String, QinIrExpression> declarationLookup) {
         QinIrExpression callee;
         if (expressionAst.callee() instanceof Identifier calleeIdentifier) {
             String calleeName = calleeIdentifier.name();
-            if (declarationLookup.containsKey(calleeName)) {
+            if (javaImportLookup.containsKey(calleeName)) {
+                return lowerJavaNewExpression(expressionAst, javaImportLookup);
+            } else if (declarationLookup.containsKey(calleeName)) {
                 callee = new QinIrIdentifierReference(calleeName);
             } else if (isKnownGlobalConstructor(calleeName)) {
                 callee = new QinIrStringLiteral(calleeName);

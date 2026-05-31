@@ -137,10 +137,29 @@ final class QinDeclarationIrLowerer {
         return new QinIrClassDeclaration(
                 null,
                 classDeclaration.id().name(),
-                QinIrTypeRef.classType("java.lang.Object"),
+                lowerSuperType(classDeclaration, javaImportLookup, localDeclarationNames),
                 lowerAnnotations(classDeclaration.decorators(), javaImportLookup),
                 fields,
                 methods);
+    }
+
+    private QinIrTypeRef lowerSuperType(
+            ClassDeclaration classDeclaration,
+            Map<String, String> javaImportLookup,
+            Set<String> localDeclarationNames) {
+        if (classDeclaration.superClass() == null) {
+            return QinIrTypeRef.classType("java.lang.Object");
+        }
+        if (classDeclaration.superClass() instanceof Identifier identifier) {
+            String importedBinaryName = javaImportLookup.get(identifier.name());
+            if (importedBinaryName != null) {
+                return QinIrTypeRef.classType(importedBinaryName);
+            }
+            if (localDeclarationNames != null && localDeclarationNames.contains(identifier.name())) {
+                return QinIrTypeRef.classType(identifier.name());
+            }
+        }
+        throw qjsError("QJS2011", "Unsupported class extends target: " + classDeclaration.superClass());
     }
 
     List<QinIrConstDeclaration> lowerVariableDeclaration(
@@ -257,7 +276,8 @@ final class QinDeclarationIrLowerer {
         if (classDeclaration == null || classDeclaration.id() == null || classDeclaration.body() == null) {
             return false;
         }
-        if (classDeclaration.superClass() != null) {
+        if (classDeclaration.superClass() != null
+                && !isResolvableSuperClass(classDeclaration.superClass(), javaImportLookup)) {
             return false;
         }
         if (classDeclaration.body().body() == null || classDeclaration.body().body().isEmpty()) {
@@ -301,6 +321,14 @@ final class QinDeclarationIrLowerer {
             hasJvmSignal = hasJvmSignal || hasResolvableJavaDecorator(classDeclaration.decorators(), javaImportLookup);
         }
         return hasJvmSignal;
+    }
+
+    private boolean isResolvableSuperClass(
+            Expression superClass,
+            Map<String, String> javaImportLookup) {
+        return superClass instanceof Identifier identifier
+                && javaImportLookup != null
+                && javaImportLookup.containsKey(identifier.name());
     }
 
     private boolean isDeclarationCompatibleMethodBody(FunctionExpression function) {

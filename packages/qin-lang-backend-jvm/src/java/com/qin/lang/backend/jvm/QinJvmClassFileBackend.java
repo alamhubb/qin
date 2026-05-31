@@ -220,6 +220,11 @@ public final class QinJvmClassFileBackend {
     }
 
     private void emitJavaNewInitializer(CodeBuilder code, QinIrJavaNewExpression javaNewExpression, int slot) {
+        emitJavaNewAsObject(code, javaNewExpression);
+        code.astore(slot);
+    }
+
+    private void emitJavaNewAsObject(CodeBuilder code, QinIrJavaNewExpression javaNewExpression) {
         ResolvedConstructor resolvedConstructor = resolveConstructor(
                 javaNewExpression.ownerBinaryName(),
                 javaNewExpression.arguments());
@@ -229,7 +234,6 @@ public final class QinJvmClassFileBackend {
         code.dup();
         emitArgumentsForParameters(code, javaNewExpression.arguments(), resolvedConstructor.parameterTypes());
         code.invokespecial(ownerDesc, "<init>", resolvedConstructor.descriptor());
-        code.astore(slot);
     }
 
     private void emitObjectConsoleLog(
@@ -278,6 +282,7 @@ public final class QinJvmClassFileBackend {
                 javaInstanceMethodCall.arguments());
 
         code.aload(binding.slot());
+        emitJavaReceiverCast(code, resolvedMethod);
         emitArgumentsForParameters(code, javaInstanceMethodCall.arguments(), resolvedMethod.parameterTypes());
         invokeInstanceMethod(code, resolvedMethod);
         discardReturnValue(code, resolvedMethod.returnType());
@@ -310,6 +315,7 @@ public final class QinJvmClassFileBackend {
                 javaInstanceConsoleLog.arguments());
 
         code.aload(binding.slot());
+        emitJavaReceiverCast(code, resolvedMethod);
         emitArgumentsForParameters(code, javaInstanceConsoleLog.arguments(), resolvedMethod.parameterTypes());
         invokeInstanceMethod(code, resolvedMethod);
         emitBoxIfNeeded(code, resolvedMethod.returnType());
@@ -367,6 +373,10 @@ public final class QinJvmClassFileBackend {
         }
         if (expression instanceof QinIrArrayLiteral arrayLiteral) {
             emitArrayLiteralAsObject(code, bindings, arrayLiteral);
+            return;
+        }
+        if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
+            emitJavaNewAsObject(code, javaNewExpression);
             return;
         }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
@@ -767,6 +777,10 @@ public final class QinJvmClassFileBackend {
                 ClassDesc.of(resolvedMethod.method().getDeclaringClass().getName()),
                 resolvedMethod.method().getName(),
                 resolvedMethod.descriptor());
+    }
+
+    private void emitJavaReceiverCast(CodeBuilder code, ResolvedMethod resolvedMethod) {
+        code.checkcast(ClassDesc.of(resolvedMethod.method().getDeclaringClass().getName()));
     }
 
     private void discardReturnValue(CodeBuilder code, Class<?> returnType) {
