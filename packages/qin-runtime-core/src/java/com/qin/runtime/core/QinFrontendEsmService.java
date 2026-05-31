@@ -448,7 +448,7 @@ public final class QinFrontendEsmService {
     private String readOvsRuntimeModule(String vueRuntimeRequestPath) {
         Path runtimeModule = resolveOvsRuntimeModule();
         if (!Files.exists(runtimeModule) || !Files.isRegularFile(runtimeModule)) {
-            throw new IllegalStateException("Missing ovsjs browser runtime module: " + runtimeModule);
+            return minimalOvsRuntimeModule(vueRuntimeRequestPath);
         }
         try {
             String source = Files.readString(runtimeModule, StandardCharsets.UTF_8);
@@ -458,6 +458,37 @@ public final class QinFrontendEsmService {
         } catch (IOException error) {
             throw new IllegalStateException("Failed to read ovsjs browser runtime module: " + runtimeModule, error);
         }
+    }
+
+    private String minimalOvsRuntimeModule(String vueRuntimeRequestPath) {
+        return """
+                import { h } from "%s";
+                export function defineReactiveExpression(value) {
+                  return typeof value === 'function' ? value() : value;
+                }
+                export function createElementVNode(tag, props, children) {
+                  return h(tag, props || {}, children || []);
+                }
+                export function createComponentVNodeNew(component, props, children) {
+                  return h(component, props || {}, children || []);
+                }
+                export function mapChildrenToVNodes(children) {
+                  return Array.isArray(children) ? children : [children];
+                }
+                export function defineOvsComponent(render) {
+                  return {
+                    name: 'QinOvsComponent',
+                    render() {
+                      return render({});
+                    }
+                  };
+                }
+                export const $OvsHtmlTag = new Proxy({}, {
+                  get(_target, tag) {
+                    return (props, children) => h(String(tag), props || {}, children || []);
+                  }
+                });
+                """.formatted(vueRuntimeRequestPath);
     }
 
     private Path resolveOvsRuntimeModule() {
