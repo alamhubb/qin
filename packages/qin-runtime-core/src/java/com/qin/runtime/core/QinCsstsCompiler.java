@@ -18,9 +18,8 @@ public final class QinCsstsCompiler {
     private String buildWrapperSource(String source) {
         String sourceLiteral = QinJsPackageRunner.renderJsLiteral(source);
         return """
-                import { CsstsInit, transformCssTs, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
+                import { transformCssTs, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
                 const __qin_context__ = { styles: new Set() };
-                CsstsInit.init({ dts: false });
                 const __qin_result__ = transformCssTs(%s, __qin_context__);
                 ({
                   code: __qin_result__.code,
