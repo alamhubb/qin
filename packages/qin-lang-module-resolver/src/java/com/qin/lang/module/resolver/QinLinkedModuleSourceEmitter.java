@@ -27,7 +27,7 @@ public final class QinLinkedModuleSourceEmitter {
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "(?m)^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern EXPORT_CALLABLE_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+(function|class)\\s+([A-Za-z_$][\\w$]*)\\b");
+            "(?m)^\\s*export\\s+(function|(?:abstract\\s+)?class)\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_VARIABLE_PREFIX_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+(const|let|var)\\s+");
     private static final Pattern VARIABLE_DECLARATION_PREFIX_PATTERN = Pattern.compile(
@@ -35,11 +35,11 @@ public final class QinLinkedModuleSourceEmitter {
     private static final Pattern EXPORT_DEFAULT_PREFIX_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+default\\s+");
     private static final Pattern EXPORT_DEFAULT_DECLARATION_PATTERN = Pattern.compile(
-            "\\bexport\\s+default\\s+(function|class)\\b");
+            "\\bexport\\s+default\\s+(?:abstract\\s+)?(function|class)\\b");
     private static final Pattern DEFAULT_EXPR_FUNCTION_NAMED_PATTERN = Pattern.compile(
             "^function\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern DEFAULT_EXPR_CLASS_NAMED_PATTERN = Pattern.compile(
-            "^class\\s+([A-Za-z_$][\\w$]*)\\b");
+            "^(?:abstract\\s+)?class\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_NAMED_PATTERN = Pattern.compile(
             "(?:^|[;\\n])\\s*export\\s*\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?",
             Pattern.MULTILINE);
@@ -79,7 +79,9 @@ public final class QinLinkedModuleSourceEmitter {
     private static final Pattern EXPORT_FUNCTION_REWRITE_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+function\\s+");
     private static final Pattern EXPORT_CLASS_REWRITE_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+class\\s+");
+            "(?m)^\\s*export\\s+(?:abstract\\s+)?class\\s+");
+    private static final Pattern ABSTRACT_CLASS_REWRITE_PATTERN = Pattern.compile(
+            "(?m)^\\s*abstract\\s+class\\s+");
     private static final Pattern IDENTIFIER_PATTERN = Pattern.compile("^[A-Za-z_$][\\w$]*$");
     private static final int MAX_EXPORT_RESOLUTION_DEPTH = 128;
     private static final Set<String> TOP_LEVEL_ASI_BOUNDARY_KEYWORDS = Set.of(
@@ -201,6 +203,7 @@ public final class QinLinkedModuleSourceEmitter {
         rewritten = EXPORT_VAR_REWRITE_PATTERN.matcher(rewritten).replaceAll("var ");
         rewritten = EXPORT_FUNCTION_REWRITE_PATTERN.matcher(rewritten).replaceAll("function ");
         rewritten = EXPORT_CLASS_REWRITE_PATTERN.matcher(rewritten).replaceAll("class ");
+        rewritten = ABSTRACT_CLASS_REWRITE_PATTERN.matcher(rewritten).replaceAll("class ");
         rewritten = rewriteDefaultExports(rewritten, moduleFile, moduleIndex);
         rewritten = appendInlineExportInitializers(rewritten, moduleFile, moduleIndex, parsedExports);
         // Local `export { ... }` has no runtime effect for flattened source.
@@ -958,6 +961,7 @@ public final class QinLinkedModuleSourceEmitter {
         }
 
         if ("class".equals(normalizedKind)) {
+            declaration = declaration.replaceFirst("^\\s*abstract\\s+class\\s+", "class ");
             Matcher named = DEFAULT_EXPR_CLASS_NAMED_PATTERN.matcher(declaration);
             if (named.find()) {
                 String localName = named.group(1);

@@ -320,37 +320,14 @@ public final class QinEsmSpecifierResolver {
             return path.toAbsolutePath().normalize();
         }
 
+        Path appendedExtensionFallback = resolveByAppendingSourceExtension(path);
+        if (appendedExtensionFallback != null) {
+            return appendedExtensionFallback;
+        }
+
         Path sourceExtensionFallback = resolveSourceExtensionFallback(path);
         if (sourceExtensionFallback != null) {
             return sourceExtensionFallback;
-        }
-
-        String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
-        if (!fileName.contains(".")) {
-            Path js = path.resolveSibling(fileName + ".js");
-            if (Files.isRegularFile(js)) {
-                return js.toAbsolutePath().normalize();
-            }
-            Path qin = path.resolveSibling(fileName + ".qin");
-            if (Files.isRegularFile(qin)) {
-                return qin.toAbsolutePath().normalize();
-            }
-            Path vue = path.resolveSibling(fileName + ".vue");
-            if (Files.isRegularFile(vue)) {
-                return vue.toAbsolutePath().normalize();
-            }
-            Path ovs = path.resolveSibling(fileName + ".ovs");
-            if (Files.isRegularFile(ovs)) {
-                return ovs.toAbsolutePath().normalize();
-            }
-            Path mjs = path.resolveSibling(fileName + ".mjs");
-            if (Files.isRegularFile(mjs)) {
-                return mjs.toAbsolutePath().normalize();
-            }
-            Path ts = path.resolveSibling(fileName + ".ts");
-            if (Files.isRegularFile(ts)) {
-                return ts.toAbsolutePath().normalize();
-            }
         }
 
         if (Files.isDirectory(path)) {
@@ -382,8 +359,26 @@ public final class QinEsmSpecifierResolver {
         return null;
     }
 
+    private Path resolveByAppendingSourceExtension(Path path) {
+        String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
+        if (fileName.isBlank() || hasSupportedScriptExtension(fileName)) {
+            return null;
+        }
+        String[] extensions = {".js", ".qin", ".vue", ".ovs", ".mjs", ".ts"};
+        for (String extension : extensions) {
+            Path candidate = path.resolveSibling(fileName + extension);
+            if (Files.isRegularFile(candidate)) {
+                return candidate.toAbsolutePath().normalize();
+            }
+        }
+        return null;
+    }
+
     private Path resolveSourceExtensionFallback(Path path) {
         String fileName = path.getFileName() == null ? "" : path.getFileName().toString();
+        if (!hasSupportedScriptExtension(fileName)) {
+            return null;
+        }
         int extensionIndex = fileName.lastIndexOf('.');
         if (extensionIndex <= 0) {
             return null;
@@ -448,6 +443,11 @@ public final class QinEsmSpecifierResolver {
 
     private boolean isSupportedScriptFile(Path path) {
         String fileName = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
+        return hasSupportedScriptExtension(fileName);
+    }
+
+    private boolean hasSupportedScriptExtension(String fileName) {
+        fileName = fileName == null ? "" : fileName.toLowerCase();
         return fileName.endsWith(".js")
                 || fileName.endsWith(".mjs")
                 || fileName.endsWith(".ts")
