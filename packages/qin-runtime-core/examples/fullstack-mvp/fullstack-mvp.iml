@@ -194,8 +194,16 @@
     <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-core" level="project" />
     <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-el" level="project" />
     <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-websocket" level="project" />
+    <orderEntry type="library" name="org.apiguardian@apiguardian-api" level="project" />
     <orderEntry type="library" name="org.checkerframework@checker-qual" level="project" />
     <orderEntry type="library" name="org.jspecify@jspecify" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-api" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-engine" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-params" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter" level="project" />
+    <orderEntry type="library" name="org.junit.platform@junit-platform-commons" level="project" />
+    <orderEntry type="library" name="org.junit.platform@junit-platform-engine" level="project" />
+    <orderEntry type="library" name="org.opentest4j@opentest4j" level="project" />
     <orderEntry type="library" name="org.slf4j@jul-to-slf4j" level="project" />
     <orderEntry type="library" name="org.slf4j@slf4j-api" level="project" />
     <orderEntry type="library" name="org.springframework.boot@spring-boot-autoconfigure" level="project" />
