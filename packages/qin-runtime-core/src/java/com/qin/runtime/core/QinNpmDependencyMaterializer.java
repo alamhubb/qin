@@ -60,6 +60,14 @@ final class QinNpmDependencyMaterializer {
         }
     }
 
+    void materializePackageDependency(String packageName, String versionRange, Path nodeModulesRoot) throws IOException {
+        if (packageName == null || packageName.isBlank()) {
+            return;
+        }
+        Files.createDirectories(nodeModulesRoot);
+        installPackage(packageName, versionRange, nodeModulesRoot, new LinkedHashSet<>());
+    }
+
     private void installPackage(
             String packageName,
             String versionRange,

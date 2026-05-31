@@ -37,6 +37,7 @@ final class QinJsPackageRunner {
             "\"dependencies\"\\s*:\\s*\\{([^}]*)\\}",
             Pattern.DOTALL);
     private static final Pattern JSON_DEPENDENCY_NAME = Pattern.compile("\"([^\"]+)\"\\s*:");
+    private static final Pattern JSON_STRING_FIELD = Pattern.compile("\"([^\"]+)\"\\s*:\\s*\"([^\"]*)\"");
     private static final Pattern FROM_IMPORT_PATTERN = Pattern.compile("\\bfrom\\s+[\"']([^\"']+)[\"']");
     private static final Pattern SIDE_EFFECT_IMPORT_PATTERN = Pattern.compile(
             "\\bimport\\s+[\"']([^\"']+)[\"']");
@@ -109,13 +110,14 @@ final class QinJsPackageRunner {
 
         Set<String> materialized = new LinkedHashSet<>();
         for (String specifier : bareSpecifiers) {
-            materializeDependency(specifier, runtimeNodeModules, workspaceRoot, workspacePackages, materialized);
+            materializeDependency(specifier, null, runtimeNodeModules, workspaceRoot, workspacePackages, materialized);
         }
         materializeQinViteShimIfNeeded(bareSpecifiers, runtimeNodeModules);
     }
 
     private void materializeDependency(
             String specifier,
+            String versionRange,
             Path runtimeNodeModules,
             Path workspaceRoot,
             Map<String, Path> workspacePackages,
@@ -128,16 +130,20 @@ final class QinJsPackageRunner {
             materializeQinViteShim(runtimeNodeModules);
             return;
         }
-
-        Path installedPackageDir = resolveInstalledPackageDir(packageName, workspaceRoot);
-        Path workspacePackageDir = workspacePackages.get(packageName);
-        boolean workspacePackage = false;
-        Path sourcePackageDir = installedPackageDir;
-        if (sourcePackageDir == null && workspacePackageDir != null) {
-            sourcePackageDir = workspacePackageDir;
-            workspacePackage = true;
+        if ("glogjs".equals(packageName)) {
+            materializeQinGlogShim(runtimeNodeModules);
+            return;
         }
+
+        Path workspacePackageDir = workspacePackages.get(packageName);
+        boolean workspacePackage = workspacePackageDir != null;
+        Path sourcePackageDir = workspacePackage
+                ? workspacePackageDir
+                : resolveInstalledPackageDir(packageName, workspaceRoot);
         if (sourcePackageDir == null || !Files.isDirectory(sourcePackageDir)) {
+            if (versionRange != null && !versionRange.isBlank()) {
+                npmDependencyMaterializer.materializePackageDependency(packageName, versionRange, runtimeNodeModules);
+            }
             return;
         }
 
@@ -151,8 +157,14 @@ final class QinJsPackageRunner {
             rewriteWorkspacePackageManifest(targetPackageDir, sourcePackageDir, packageName);
         }
 
-        for (String dependencyName : readDependencyNames(sourcePackageDir.resolve("package.json"))) {
-            materializeDependency(dependencyName, runtimeNodeModules, workspaceRoot, workspacePackages, materialized);
+        for (Map.Entry<String, String> dependency : readDependencyVersions(sourcePackageDir.resolve("package.json")).entrySet()) {
+            materializeDependency(
+                    dependency.getKey(),
+                    dependency.getValue(),
+                    runtimeNodeModules,
+                    workspaceRoot,
+                    workspacePackages,
+                    materialized);
         }
     }
 
@@ -240,6 +252,39 @@ final class QinJsPackageRunner {
                   return { code: String(code || ""), map: { mappings: "" } };
                 }
                 """;
+    }
+
+    private void materializeQinGlogShim(Path runtimeNodeModules) throws IOException {
+        Path shimDir = runtimeNodeModules.resolve("glogjs").normalize();
+        Files.createDirectories(shimDir);
+        Files.writeString(shimDir.resolve("package.json"), """
+                {
+                  "name": "glogjs",
+                  "version": "0.0.0-qin-shim",
+                  "type": "module",
+                  "exports": {
+                    ".": "./index.js"
+                  },
+                  "main": "./index.js",
+                  "module": "./index.js"
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(shimDir.resolve("index.js"), """
+                function noop() {}
+                const Glog = {
+                  debug: noop,
+                  info: noop,
+                  warn: noop,
+                  error: noop,
+                  log: noop
+                };
+                export const debug = Glog.debug;
+                export const info = Glog.info;
+                export const warn = Glog.warn;
+                export const error = Glog.error;
+                export const log = Glog.log;
+                export default Glog;
+                """, StandardCharsets.UTF_8);
     }
 
     private void materializeQinVuePluginHostShim(Path runtimeNodeModules) throws IOException {
@@ -535,8 +580,7 @@ final class QinJsPackageRunner {
         Path current = Path.of("").toAbsolutePath().normalize();
         while (current != null) {
             if (Files.isDirectory(current.resolve("qin"))
-                    && Files.isDirectory(current.resolve("slime"))
-                    && Files.isDirectory(current.resolve("subhuti"))) {
+                    && Files.isDirectory(current.resolve("slime"))) {
                 return current;
             }
             current = current.getParent();
@@ -598,6 +642,24 @@ final class QinJsPackageRunner {
             names.add(dependencyMatcher.group(1));
         }
         return names;
+    }
+
+    private Map<String, String> readDependencyVersions(Path packageJson) throws IOException {
+        if (!Files.isRegularFile(packageJson)) {
+            return Map.of();
+        }
+        String json = Files.readString(packageJson, StandardCharsets.UTF_8);
+        Matcher blockMatcher = JSON_DEPENDENCIES_BLOCK.matcher(json);
+        if (!blockMatcher.find()) {
+            return Map.of();
+        }
+
+        Map<String, String> dependencies = new LinkedHashMap<>();
+        Matcher fieldMatcher = JSON_STRING_FIELD.matcher(blockMatcher.group(1));
+        while (fieldMatcher.find()) {
+            dependencies.put(fieldMatcher.group(1), fieldMatcher.group(2));
+        }
+        return dependencies;
     }
 
     private Set<String> scanPackageBareModuleSpecifiers(Path packageDir) throws IOException {

@@ -1,0 +1,3 @@
+div(class = css { displayFlex, padding16px, borderRadius8px, backgroundColorBlue, colorWhite }) {
+  "Qin OVS + CSSTS rendered from app/OvsDemo.ovs"
+}

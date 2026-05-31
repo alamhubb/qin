@@ -1396,6 +1396,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 || "WhileStatement".equals(nodeType)
                 || "DoWhileStatement".equals(nodeType)
                 || "SwitchStatement".equals(nodeType)
+                || "TryStatement".equals(nodeType)
                 || "BlockStatement".equals(nodeType);
     }
 

@@ -339,6 +339,10 @@ public final class QinEsmSpecifierResolver {
             if (Files.isRegularFile(vue)) {
                 return vue.toAbsolutePath().normalize();
             }
+            Path ovs = path.resolveSibling(fileName + ".ovs");
+            if (Files.isRegularFile(ovs)) {
+                return ovs.toAbsolutePath().normalize();
+            }
             Path mjs = path.resolveSibling(fileName + ".mjs");
             if (Files.isRegularFile(mjs)) {
                 return mjs.toAbsolutePath().normalize();
@@ -361,6 +365,10 @@ public final class QinEsmSpecifierResolver {
             Path indexVue = path.resolve("index.vue");
             if (Files.isRegularFile(indexVue)) {
                 return indexVue.toAbsolutePath().normalize();
+            }
+            Path indexOvs = path.resolve("index.ovs");
+            if (Files.isRegularFile(indexOvs)) {
+                return indexOvs.toAbsolutePath().normalize();
             }
             Path indexMjs = path.resolve("index.mjs");
             if (Files.isRegularFile(indexMjs)) {
@@ -403,6 +411,10 @@ public final class QinEsmSpecifierResolver {
         if (Files.isRegularFile(vue)) {
             return vue.toAbsolutePath().normalize();
         }
+        Path ovs = sibling.resolveSibling(baseName + ".ovs");
+        if (Files.isRegularFile(ovs)) {
+            return ovs.toAbsolutePath().normalize();
+        }
         return null;
     }
 
@@ -440,7 +452,8 @@ public final class QinEsmSpecifierResolver {
                 || fileName.endsWith(".mjs")
                 || fileName.endsWith(".ts")
                 || fileName.endsWith(".qin")
-                || fileName.endsWith(".vue");
+                || fileName.endsWith(".vue")
+                || fileName.endsWith(".ovs");
     }
 
     private record BareSpecifier(String packageName, String subPath) {

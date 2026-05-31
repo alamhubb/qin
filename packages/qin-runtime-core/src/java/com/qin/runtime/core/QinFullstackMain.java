@@ -25,7 +25,7 @@ public final class QinFullstackMain {
     private static final String INDEX_HTML = "index.html";
     private static final String INDEX = "index";
     private static final List<String> DEV_WATCH_EXTENSIONS = List.of(
-            ".html", ".css", ".js", ".mjs", ".ts", ".qin", ".vue");
+            ".html", ".css", ".js", ".mjs", ".ts", ".qin", ".vue", ".ovs");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
             ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
 
@@ -160,6 +160,8 @@ public final class QinFullstackMain {
         List<Path> candidates = List.of(
                 layout.root().resolve("app/main.vue"),
                 layout.root().resolve("app/Main.vue"),
+                layout.root().resolve("app/main.ovs"),
+                layout.root().resolve("app/Main.ovs"),
                 layout.root().resolve("app/main.qin"),
                 layout.root().resolve("app/Main.qin"),
                 layout.root().resolve("app/main.js"),
@@ -177,7 +179,9 @@ public final class QinFullstackMain {
                 layout.root().resolve("shared/main.ts"),
                 layout.root().resolve("shared/shared.ts"),
                 layout.root().resolve("shared/main.vue"),
-                layout.root().resolve("shared/shared.vue"));
+                layout.root().resolve("shared/shared.vue"),
+                layout.root().resolve("shared/main.ovs"),
+                layout.root().resolve("shared/shared.ovs"));
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
                 return candidate.toAbsolutePath().normalize();
@@ -208,7 +212,8 @@ public final class QinFullstackMain {
                 || fileName.endsWith(".mjs")
                 || fileName.endsWith(".ts")
                 || fileName.endsWith(".qin")
-                || fileName.endsWith(".vue");
+                || fileName.endsWith(".vue")
+                || fileName.endsWith(".ovs");
     }
 
     private static Path resolveStaticRoot(QinRuntimeProjectLayout layout, Path root, Path fromArgs) throws IOException {
