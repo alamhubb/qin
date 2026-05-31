@@ -604,8 +604,16 @@ final class QinJsPackageRunner {
     }
 
     private boolean isIgnoredPath(Path path) {
+        String normalized = path.toAbsolutePath().normalize().toString().replace('\\', '/');
         for (Path part : path) {
-            if (IGNORED_COPY_DIRS.contains(String.valueOf(part))) {
+            String name = String.valueOf(part);
+            if (IGNORED_COPY_DIRS.contains(name)) {
+                return true;
+            }
+        }
+        for (String ignoredDir : IGNORED_COPY_DIRS) {
+            if (normalized.contains("/" + ignoredDir + "/")
+                    || normalized.endsWith("/" + ignoredDir)) {
                 return true;
             }
         }
