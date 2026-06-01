@@ -87,7 +87,7 @@ final class QinDevServer {
         System.out.println("Health endpoint: http://localhost:" + port + "/api/health");
         System.out.println("Result endpoint: http://localhost:" + port + "/api/result");
         if (devMode) {
-            System.out.println("Dev mode enabled: browser auto-reloads when source files change.");
+            System.out.println("Dev mode enabled: browser applies Qin HMR updates when possible, then falls back to reload.");
         }
         System.out.println("Press Ctrl+C to stop.");
     }
@@ -346,11 +346,45 @@ final class QinDevServer {
         return """
                 const POLL_INTERVAL = 1000;
                 let currentVersion = null;
+                let entryModuleUrl = null;
 
                 async function fetchVersion() {
                   const response = await fetch('/@qin/version?ts=' + Date.now(), { cache: 'no-store' });
                   if (!response.ok) return null;
                   return (await response.text()).trim();
+                }
+
+                async function fetchEntryModuleUrl() {
+                  const response = await fetch('/app.js?ts=' + Date.now(), { cache: 'no-store' });
+                  if (!response.ok) return null;
+                  const source = await response.text();
+                  const match = source.match(/import\\s*["']([^"']+)["']/);
+                  return match ? match[1] : null;
+                }
+
+                function withQinHmr(url, version) {
+                  const separator = url.includes('?') ? '&' : '?';
+                  return url + separator + 'qin-hmr=' + encodeURIComponent(version);
+                }
+
+                async function applyQinHmr(nextVersion) {
+                  entryModuleUrl = entryModuleUrl || await fetchEntryModuleUrl();
+                  if (!entryModuleUrl) {
+                    window.location.reload();
+                    return;
+                  }
+                  try {
+                    const module = await import(withQinHmr(entryModuleUrl, nextVersion));
+                    if (module && typeof module.__qinMountVue === 'function') {
+                      module.__qinMountVue();
+                      console.info('[Qin HMR] updated', entryModuleUrl);
+                      return;
+                    }
+                    window.location.reload();
+                  } catch (error) {
+                    console.warn('[Qin HMR] update failed, reloading page', error);
+                    window.location.reload();
+                  }
                 }
 
                 async function tick() {
@@ -363,7 +397,7 @@ final class QinDevServer {
                     }
                     if (next !== currentVersion) {
                       currentVersion = next;
-                      window.location.reload();
+                      await applyQinHmr(next);
                     }
                   } catch (_) {
                     // keep polling

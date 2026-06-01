@@ -27,12 +27,22 @@ public final class QinVueMinimalFrontendSmokeTestMain {
             throw new IllegalStateException("Vue minimal module missing Qin/Vue/CSSTS wiring:\n" + module);
         }
 
+        String hmrModule = service.transpileByRequestPath("/@qin-mod/app/main.vue.js?qin-hmr=123");
+        if (hmrModule == null || !hmrModule.contains("Hello from Qin Vue Minimal")) {
+            throw new IllegalStateException("Vue minimal HMR module request did not resolve:\n" + hmrModule);
+        }
+
         String style = service.transpileByRequestPath("/@qin-mod/app/main.vue.js?qin-vue-cssts=style");
         if (style == null
                 || !style.contains("data-qin-cssts")
                 || !style.contains("display: flex")
                 || !style.contains("min-height: 100vh")) {
             throw new IllegalStateException("Vue minimal CSSTS style module missing expected CSS:\n" + style);
+        }
+
+        String hmrStyle = service.transpileByRequestPath("/@qin-mod/app/main.vue.js?qin-vue-cssts=style&qin-hmr=123");
+        if (hmrStyle == null || !hmrStyle.contains("min-height: 100vh")) {
+            throw new IllegalStateException("Vue minimal HMR style request did not resolve:\n" + hmrStyle);
         }
 
         System.out.println("QinVueMinimalFrontendSmokeTestMain passed.");

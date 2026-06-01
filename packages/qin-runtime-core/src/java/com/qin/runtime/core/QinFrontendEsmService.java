@@ -111,11 +111,12 @@ public final class QinFrontendEsmService {
     }
 
     public String transpileByRequestPath(String requestPath) throws IOException {
-        String virtualContent = resolveVirtualModuleContent(requestPath);
+        String normalizedRequestPath = stripQinHmrQuery(requestPath);
+        String virtualContent = resolveVirtualModuleContent(normalizedRequestPath);
         if (virtualContent != null) {
             return virtualContent;
         }
-        Path moduleFile = resolveRequestToModuleFile(requestPath);
+        Path moduleFile = resolveRequestToModuleFile(normalizedRequestPath);
         if (moduleFile == null) {
             return null;
         }
@@ -379,6 +380,40 @@ public final class QinFrontendEsmService {
             return null;
         }
         return virtualModuleContentMap.get(requestPath);
+    }
+
+    private static String stripQinHmrQuery(String requestPath) {
+        if (requestPath == null) {
+            return null;
+        }
+        int queryIndex = requestPath.indexOf('?');
+        if (queryIndex < 0) {
+            return requestPath;
+        }
+        String path = requestPath.substring(0, queryIndex);
+        String query = requestPath.substring(queryIndex + 1);
+        StringBuilder kept = new StringBuilder();
+        for (String part : query.split("&")) {
+            if (part.isBlank()) {
+                continue;
+            }
+            String key = part;
+            int equalsIndex = part.indexOf('=');
+            if (equalsIndex >= 0) {
+                key = part.substring(0, equalsIndex);
+            }
+            if ("qin-hmr".equals(key)) {
+                continue;
+            }
+            if (!kept.isEmpty()) {
+                kept.append('&');
+            }
+            kept.append(part);
+        }
+        if (kept.isEmpty()) {
+            return path;
+        }
+        return path + "?" + kept;
     }
 
     private void registerVueVirtualModules(Path moduleFile, QinVueSfcModuleResult result) {
