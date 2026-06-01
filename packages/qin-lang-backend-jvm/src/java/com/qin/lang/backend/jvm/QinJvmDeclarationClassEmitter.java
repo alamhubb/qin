@@ -142,7 +142,7 @@ public final class QinJvmDeclarationClassEmitter {
                         code -> emitFieldSetterBody(code, binaryClassName, field));
             }
 
-            if (hasNoArgSuperclassConstructor(declaration.superType())) {
+            if (hasNoArgSuperclassConstructor(declaration.superType(), declarationIndex)) {
                 builder.withMethodBody("<init>", VOID_INIT, ClassFile.ACC_PUBLIC, code -> {
                     code.aload(0);
                     code.invokespecial(resolveSuperclass(declaration.superType()), "<init>", VOID_INIT);
@@ -154,8 +154,9 @@ public final class QinJvmDeclarationClassEmitter {
             }
 
             emitJavaSuperclassConstructors(builder, declaration, binaryClassName);
+            emitLocalSuperclassConstructors(builder, declaration, binaryClassName, declarationIndex);
 
-            if (!declaration.fields().isEmpty() && hasNoArgSuperclassConstructor(declaration.superType())) {
+            if (!declaration.fields().isEmpty() && hasNoArgSuperclassConstructor(declaration.superType(), declarationIndex)) {
                 builder.withMethod(
                         "<init>",
                         toConstructorDescriptor(declaration.fields()),
@@ -232,6 +233,22 @@ public final class QinJvmDeclarationClassEmitter {
         }
     }
 
+    private boolean hasNoArgSuperclassConstructor(
+            QinIrTypeRef superType,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (hasNoArgSuperclassConstructor(superType)) {
+            return true;
+        }
+        QinIrClassDeclaration localSuperclass = superType == null ? null : declarationIndex.get(superType.binaryName());
+        if (localSuperclass == null) {
+            return false;
+        }
+        return constructorParameterListsForLocalDeclaration(
+                localSuperclass,
+                declarationIndex,
+                new java.util.LinkedHashSet<>()).stream().anyMatch(List::isEmpty);
+    }
+
     private void emitJavaSuperclassConstructors(
             ClassBuilder builder,
             QinIrClassDeclaration declaration,
@@ -272,8 +289,102 @@ public final class QinJvmDeclarationClassEmitter {
                             emitFieldInitializer(code, binaryClassName, field);
                         }
                         code.return_();
+            });
+        }
+    }
+
+    private void emitLocalSuperclassConstructors(
+            ClassBuilder builder,
+            QinIrClassDeclaration declaration,
+            String binaryClassName,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        QinIrClassDeclaration localSuperclass = declaration.superType() == null
+                ? null
+                : declarationIndex.get(declaration.superType().binaryName());
+        if (localSuperclass == null) {
+            return;
+        }
+        for (List<QinIrTypeRef> parameterTypes : constructorParameterListsForLocalDeclaration(
+                localSuperclass,
+                declarationIndex,
+                new java.util.LinkedHashSet<>())) {
+            builder.withMethodBody(
+                    "<init>",
+                    toConstructorDescriptorForTypes(parameterTypes),
+                    ClassFile.ACC_PUBLIC,
+                    code -> {
+                        code.aload(0);
+                        int localSlot = 1;
+                        for (QinIrTypeRef parameterType : parameterTypes) {
+                            loadLocalForType(code, parameterType, localSlot, "super");
+                            localSlot += localSlotWidth(parameterType);
+                        }
+                        code.invokespecial(
+                                ClassDesc.of(localSuperclass.binaryName()),
+                                "<init>",
+                                toConstructorDescriptorForTypes(parameterTypes));
+                        for (QinIrFieldDeclaration field : declaration.fields()) {
+                            emitFieldInitializer(code, binaryClassName, field);
+                        }
+                        code.return_();
                     });
         }
+    }
+
+    private List<List<QinIrTypeRef>> constructorParameterListsForLocalDeclaration(
+            QinIrClassDeclaration declaration,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            java.util.Set<String> visitedLocalTypes) {
+        if (declaration == null || !visitedLocalTypes.add(declaration.binaryName())) {
+            return List.of();
+        }
+        List<List<QinIrTypeRef>> constructors = new ArrayList<>();
+        if (hasNoArgSuperclassConstructor(declaration.superType(), declarationIndex)) {
+            constructors.add(List.of());
+        }
+        constructors.addAll(javaSuperclassConstructorParameterLists(declaration.superType()));
+        QinIrClassDeclaration localSuperclass = declaration.superType() == null
+                ? null
+                : declarationIndex.get(declaration.superType().binaryName());
+        constructors.addAll(constructorParameterListsForLocalDeclaration(
+                localSuperclass,
+                declarationIndex,
+                visitedLocalTypes));
+        if (!declaration.fields().isEmpty() && hasNoArgSuperclassConstructor(declaration.superType(), declarationIndex)) {
+            List<QinIrTypeRef> fieldTypes = new ArrayList<>();
+            for (QinIrFieldDeclaration field : declaration.fields()) {
+                fieldTypes.add(field.type());
+            }
+            constructors.add(List.copyOf(fieldTypes));
+        }
+        return List.copyOf(constructors);
+    }
+
+    private List<List<QinIrTypeRef>> javaSuperclassConstructorParameterLists(QinIrTypeRef superType) {
+        if (superType == null
+                || superType.binaryName() == null
+                || superType.binaryName().isBlank()
+                || "java.lang.Object".equals(superType.binaryName())) {
+            return List.of();
+        }
+        Class<?> superClass;
+        try {
+            superClass = Class.forName(superType.binaryName());
+        } catch (ReflectiveOperationException ignored) {
+            return List.of();
+        }
+        List<List<QinIrTypeRef>> constructors = new ArrayList<>();
+        for (Constructor<?> constructor : superClass.getConstructors()) {
+            if (constructor.getParameterCount() == 0 || !isSupportedPassThroughConstructor(constructor)) {
+                continue;
+            }
+            List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+            for (Class<?> parameterType : constructor.getParameterTypes()) {
+                parameterTypes.add(toQinTypeRef(parameterType));
+            }
+            constructors.add(List.copyOf(parameterTypes));
+        }
+        return List.copyOf(constructors);
     }
 
     private boolean isSupportedPassThroughConstructor(Constructor<?> constructor) {
@@ -342,6 +453,15 @@ public final class QinJvmDeclarationClassEmitter {
             parameterDescs.add(toClassDesc(field.type()));
         }
         return MethodTypeDesc.ofDescriptor(MethodTypeDesc.of(ClassDesc.ofDescriptor("V"), parameterDescs).descriptorString());
+    }
+
+    private MethodTypeDesc toConstructorDescriptorForTypes(List<QinIrTypeRef> parameterTypes) {
+        List<ClassDesc> parameterDescs = new ArrayList<>();
+        for (QinIrTypeRef parameterType : parameterTypes) {
+            parameterDescs.add(toClassDesc(parameterType));
+        }
+        return MethodTypeDesc.ofDescriptor(
+                MethodTypeDesc.of(ClassDesc.ofDescriptor("V"), parameterDescs).descriptorString());
     }
 
     private ClassDesc toClassDesc(QinIrTypeRef type) {
@@ -1190,18 +1310,35 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrTypeRef ownerType,
             String propertyName,
             Map<String, QinIrClassDeclaration> declarationIndex) {
+        return resolvePropertyAccess(ownerType, propertyName, declarationIndex, new java.util.LinkedHashSet<>());
+    }
+
+    private ResolvedPropertyAccess resolvePropertyAccess(
+            QinIrTypeRef ownerType,
+            String propertyName,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            java.util.Set<String> visitedLocalTypes) {
         if (ownerType.kind() != QinIrTypeKind.CLASS && ownerType.kind() != QinIrTypeKind.STRING) {
             return null;
         }
 
         QinIrClassDeclaration localDeclaration = declarationIndex.get(ownerType.binaryName());
         if (localDeclaration != null) {
+            if (!visitedLocalTypes.add(ownerType.binaryName())) {
+                return null;
+            }
             for (QinIrFieldDeclaration field : localDeclaration.fields()) {
                 if (field.name().equals(propertyName)) {
                     return new ResolvedPropertyAccess(ownerType.binaryName(), getterName(field), field.type(), false);
                 }
             }
-            return null;
+            return localDeclaration.superType() == null
+                    ? null
+                    : resolvePropertyAccess(
+                            localDeclaration.superType(),
+                            propertyName,
+                            declarationIndex,
+                            visitedLocalTypes);
         }
 
         try {
@@ -1232,12 +1369,29 @@ public final class QinJvmDeclarationClassEmitter {
             String methodName,
             int argumentCount,
             Map<String, QinIrClassDeclaration> declarationIndex) {
+        return resolveInstanceMethodCall(
+                ownerType,
+                methodName,
+                argumentCount,
+                declarationIndex,
+                new java.util.LinkedHashSet<>());
+    }
+
+    private ResolvedInstanceMethodCall resolveInstanceMethodCall(
+            QinIrTypeRef ownerType,
+            String methodName,
+            int argumentCount,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            java.util.Set<String> visitedLocalTypes) {
         if (ownerType.kind() != QinIrTypeKind.CLASS && ownerType.kind() != QinIrTypeKind.STRING) {
             return null;
         }
 
         QinIrClassDeclaration localDeclaration = declarationIndex.get(ownerType.binaryName());
         if (localDeclaration != null) {
+            if (!visitedLocalTypes.add(ownerType.binaryName())) {
+                return null;
+            }
             QinIrMethodDeclaration matched = null;
             for (QinIrMethodDeclaration candidate : localDeclaration.methods()) {
                 if (!candidate.name().equals(methodName) || candidate.parameters().size() != argumentCount) {
@@ -1249,19 +1403,26 @@ public final class QinJvmDeclarationClassEmitter {
                 }
                 matched = candidate;
             }
-            if (matched == null) {
-                return null;
+            if (matched != null) {
+                List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+                for (var parameter : matched.parameters()) {
+                    parameterTypes.add(parameter.type());
+                }
+                return new ResolvedInstanceMethodCall(
+                        ownerType.binaryName(),
+                        matched.name(),
+                        List.copyOf(parameterTypes),
+                        matched.returnType(),
+                        false);
             }
-            List<QinIrTypeRef> parameterTypes = new ArrayList<>();
-            for (var parameter : matched.parameters()) {
-                parameterTypes.add(parameter.type());
-            }
-            return new ResolvedInstanceMethodCall(
-                    ownerType.binaryName(),
-                    matched.name(),
-                    List.copyOf(parameterTypes),
-                    matched.returnType(),
-                    false);
+            return localDeclaration.superType() == null
+                    ? null
+                    : resolveInstanceMethodCall(
+                            localDeclaration.superType(),
+                            methodName,
+                            argumentCount,
+                            declarationIndex,
+                            visitedLocalTypes);
         }
 
         try {

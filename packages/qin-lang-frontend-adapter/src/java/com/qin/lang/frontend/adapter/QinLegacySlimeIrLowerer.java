@@ -67,8 +67,13 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
     QinIrClassDeclaration lowerClassDeclarationOrNull(
             com.slime.ast.nodes.declarations.ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
-            Set<String> localDeclarationNames) {
-        return declarationIrLowerer.lowerClassDeclarationOrNull(classDeclaration, javaImportLookup, localDeclarationNames);
+            Set<String> localDeclarationNames,
+            Set<String> localJvmDeclarationNames) {
+        return declarationIrLowerer.lowerClassDeclarationOrNull(
+                classDeclaration,
+                javaImportLookup,
+                localDeclarationNames,
+                localJvmDeclarationNames);
     }
 
     List<QinIrConstDeclaration> lowerVariableDeclaration(

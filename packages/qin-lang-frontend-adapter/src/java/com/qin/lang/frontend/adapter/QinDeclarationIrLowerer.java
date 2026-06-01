@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.lang.reflect.Method;
 
 /**
  * Qin-owned boundary for declaration-oriented IR lowering.
@@ -82,17 +83,20 @@ final class QinDeclarationIrLowerer {
     QinIrClassDeclaration lowerClassDeclarationOrNull(
             ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
-            Set<String> localDeclarationNames) {
-        boolean javaSuperclass = classDeclaration.superClass() != null
-                && isResolvableSuperClass(classDeclaration.superClass(), javaImportLookup);
-        if (!isDeclarationCompatibleClass(classDeclaration, javaImportLookup)) {
-            if (javaSuperclass) {
-                String className = classDeclaration.id() == null ? "<anonymous>" : classDeclaration.id().name();
-                throw qjsError(
-                        "QJS2030",
-                        "Class `" + className + "` extends a java: class and must be emitted as a JVM class, "
-                                + "but its body is outside the current declaration IR subset. "
-                                + "Add IR/classfile support instead of falling back to interpreted inheritance.");
+            Set<String> localDeclarationNames,
+            Set<String> localJvmDeclarationNames) {
+        boolean jvmSuperclass = classDeclaration.superClass() != null
+                && isResolvableJvmSuperClass(classDeclaration.superClass(), javaImportLookup, localJvmDeclarationNames);
+        if (!isDeclarationCompatibleClass(
+                classDeclaration,
+                javaImportLookup,
+                localDeclarationNames,
+                localJvmDeclarationNames)) {
+            if (jvmSuperclass) {
+                return lowerJavaSuperclassClassWithRuntimeMethods(
+                        classDeclaration,
+                        javaImportLookup,
+                        localDeclarationNames);
             }
             return null;
         }
@@ -100,7 +104,7 @@ final class QinDeclarationIrLowerer {
             return lowerClassDeclarationAsDeclaration(classDeclaration, javaImportLookup, localDeclarationNames);
         } catch (IllegalArgumentException error) {
             if (isDeclarationSubsetError(error)) {
-                if (javaSuperclass) {
+                if (jvmSuperclass) {
                     throw error;
                 }
                 return null;
@@ -121,7 +125,8 @@ final class QinDeclarationIrLowerer {
                     QinIrFieldDeclaration loweredField = lowerFieldDeclarationOrNull(
                             propertyDefinition,
                             javaImportLookup,
-                            localDeclarationNames);
+                            localDeclarationNames,
+                            classDeclaration.id().name());
                     if (loweredField != null) {
                         fields.add(loweredField);
                     }
@@ -157,6 +162,163 @@ final class QinDeclarationIrLowerer {
                 lowerAnnotations(classDeclaration.decorators(), javaImportLookup),
                 fields,
                 methods);
+    }
+
+    private QinIrClassDeclaration lowerJavaSuperclassClassWithRuntimeMethods(
+            ClassDeclaration classDeclaration,
+            Map<String, String> javaImportLookup,
+            Set<String> localDeclarationNames) {
+        if (classDeclaration == null || classDeclaration.id() == null || classDeclaration.body() == null) {
+            throw qjsError("QJS2030", "java: superclass class declaration is missing id/body");
+        }
+        QinIrTypeRef superType = lowerSuperType(classDeclaration, javaImportLookup, localDeclarationNames);
+        List<QinIrMethodDeclaration> methods = new ArrayList<>();
+        if (classDeclaration.body().body() != null) {
+            for (AstNode member : classDeclaration.body().body()) {
+                if (member instanceof MethodDefinition methodDefinition) {
+                    if (methodDefinition.isStatic() || methodDefinition.computed()) {
+                        throw qjsError("QJS2030", "Static/computed java: subclass methods are not supported yet");
+                    }
+                    if (isConstructorMethod(methodDefinition)) {
+                        continue;
+                    }
+                    methods.add(lowerRuntimeBackedJavaSubclassMethod(
+                            classDeclaration.id().name(),
+                            superType,
+                            methodDefinition,
+                            javaImportLookup));
+                    continue;
+                }
+                if (member instanceof PropertyDefinition propertyDefinition) {
+                    QinIrFieldDeclaration loweredField = lowerFieldDeclarationOrNull(
+                            propertyDefinition,
+                            javaImportLookup,
+                            localDeclarationNames,
+                            classDeclaration.id().name());
+                    if (loweredField == null) {
+                        throw qjsError("QJS2030", "Unsupported java: subclass field: " + propertyDefinition);
+                    }
+                    continue;
+                }
+                throw qjsError("QJS2030", "Unsupported java: subclass member: "
+                        + QinSlimeFrontendAdapter.simpleName(member));
+            }
+        }
+        return new QinIrClassDeclaration(
+                null,
+                classDeclaration.id().name(),
+                superType,
+                lowerAnnotations(classDeclaration.decorators(), javaImportLookup),
+                List.of(),
+                methods);
+    }
+
+    private QinIrMethodDeclaration lowerRuntimeBackedJavaSubclassMethod(
+            String className,
+            QinIrTypeRef superType,
+            MethodDefinition methodDefinition,
+            Map<String, String> javaImportLookup) {
+        if (!(methodDefinition.key() instanceof Identifier identifier)) {
+            throw qjsError("QJS2030", "Only identifier java: subclass method names are supported");
+        }
+        FunctionExpression function = methodDefinition.value();
+        List<String> parameterNames = runtimeMethodParameterNames(function);
+        Method reflected = findReflectedMethod(superType.binaryName(), identifier.name(), parameterNames.size());
+        List<QinIrParameter> parameters = new ArrayList<>();
+        for (int i = 0; i < parameterNames.size(); i++) {
+            QinIrTypeRef parameterType = reflected == null
+                    ? QinIrTypeRef.classType("java.lang.Object")
+                    : toQinTypeRef(reflected.getParameterTypes()[i]);
+            parameters.add(new QinIrParameter(parameterNames.get(i), parameterType, List.of()));
+        }
+        QinIrTypeRef returnType = reflected == null
+                ? QinIrTypeRef.classType("java.lang.Object")
+                : toQinTypeRef(reflected.getReturnType());
+        QinIrObjectLiteral runtimeDefinition = adapter.lowerRequiredFunctionRuntimeDefinition(
+                function,
+                className + "." + identifier.name(),
+                javaImportLookup,
+                Map.of());
+        return new QinIrMethodDeclaration(
+                identifier.name(),
+                returnType,
+                List.copyOf(parameters),
+                withSubhutiRuleAnnotation(lowerAnnotations(methodDefinition.decorators(), javaImportLookup)),
+                null,
+                runtimeDefinition);
+    }
+
+    private List<String> runtimeMethodParameterNames(FunctionExpression function) {
+        if (function == null || function.params() == null || function.params().isEmpty()) {
+            return List.of();
+        }
+        List<String> names = new ArrayList<>();
+        for (com.slime.ast.Pattern pattern : function.params()) {
+            if (pattern instanceof Identifier identifier) {
+                names.add(identifier.name());
+                continue;
+            }
+            if (pattern instanceof AssignmentPattern assignmentPattern
+                    && assignmentPattern.left() instanceof Identifier identifier) {
+                names.add(identifier.name());
+                continue;
+            }
+            throw qjsError("QJS2030", "Unsupported java: subclass runtime method parameter: "
+                    + QinSlimeFrontendAdapter.simpleName(pattern));
+        }
+        return List.copyOf(names);
+    }
+
+    private Method findReflectedMethod(String ownerBinaryName, String methodName, int parameterCount) {
+        if (ownerBinaryName == null || ownerBinaryName.isBlank()) {
+            return null;
+        }
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Method matched = null;
+            for (Method method : ownerClass.getMethods()) {
+                if (!method.getName().equals(methodName) || method.getParameterCount() != parameterCount) {
+                    continue;
+                }
+                if (matched != null) {
+                    throw qjsError("QJS2030", "Ambiguous java: superclass method: "
+                            + ownerBinaryName + "." + methodName + "/" + parameterCount);
+                }
+                matched = method;
+            }
+            return matched;
+        } catch (ClassNotFoundException ignored) {
+            return null;
+        }
+    }
+
+    private QinIrTypeRef toQinTypeRef(Class<?> type) {
+        if (type == void.class || type == Void.class) {
+            return QinIrTypeRef.voidType();
+        }
+        if (type == boolean.class || type == Boolean.class) {
+            return QinIrTypeRef.booleanType();
+        }
+        if (type == int.class || type == Integer.class) {
+            return QinIrTypeRef.intType();
+        }
+        if (type == double.class || type == Double.class) {
+            return QinIrTypeRef.doubleType();
+        }
+        if (type == String.class) {
+            return QinIrTypeRef.stringType();
+        }
+        return QinIrTypeRef.classType(type.getName());
+    }
+
+    private List<QinIrAnnotation> withSubhutiRuleAnnotation(List<QinIrAnnotation> annotations) {
+        List<QinIrAnnotation> result = new ArrayList<>(annotations == null ? List.of() : annotations);
+        boolean hasRule = result.stream()
+                .anyMatch(annotation -> "com.subhuti.parser.SubhutiRule".equals(annotation.ownerBinaryName()));
+        if (!hasRule) {
+            result.add(new QinIrAnnotation("com.subhuti.parser.SubhutiRule", List.of()));
+        }
+        return List.copyOf(result);
     }
 
     private QinIrTypeRef lowerSuperType(
@@ -297,12 +459,18 @@ final class QinDeclarationIrLowerer {
 
     boolean isDeclarationCompatibleClass(
             ClassDeclaration classDeclaration,
-            Map<String, String> javaImportLookup) {
+            Map<String, String> javaImportLookup,
+            Set<String> localDeclarationNames,
+            Set<String> localJvmDeclarationNames) {
         if (classDeclaration == null || classDeclaration.id() == null || classDeclaration.body() == null) {
             return false;
         }
         if (classDeclaration.superClass() != null
-                && !isResolvableSuperClass(classDeclaration.superClass(), javaImportLookup)) {
+                && !isResolvableDeclarationSuperClass(
+                classDeclaration.superClass(),
+                javaImportLookup,
+                localDeclarationNames,
+                localJvmDeclarationNames)) {
             return false;
         }
         if (classDeclaration.body().body() == null || classDeclaration.body().body().isEmpty()) {
@@ -388,6 +556,33 @@ final class QinDeclarationIrLowerer {
         return superClass instanceof Identifier identifier
                 && javaImportLookup != null
                 && javaImportLookup.containsKey(identifier.name());
+    }
+
+    private boolean isResolvableJvmSuperClass(
+            Expression superClass,
+            Map<String, String> javaImportLookup,
+            Set<String> localJvmDeclarationNames) {
+        if (isResolvableSuperClass(superClass, javaImportLookup)) {
+            return true;
+        }
+        return superClass instanceof Identifier identifier
+                && localJvmDeclarationNames != null
+                && localJvmDeclarationNames.contains(identifier.name());
+    }
+
+    private boolean isResolvableDeclarationSuperClass(
+            Expression superClass,
+            Map<String, String> javaImportLookup,
+            Set<String> localDeclarationNames,
+            Set<String> localJvmDeclarationNames) {
+        if (isResolvableSuperClass(superClass, javaImportLookup)) {
+            return true;
+        }
+        if (!(superClass instanceof Identifier identifier)) {
+            return false;
+        }
+        String name = identifier.name();
+        return localJvmDeclarationNames != null && localJvmDeclarationNames.contains(name);
     }
 
     private boolean isDeclarationCompatibleMethodBody(FunctionExpression function) {
@@ -488,7 +683,8 @@ final class QinDeclarationIrLowerer {
     private QinIrFieldDeclaration lowerFieldDeclarationOrNull(
             PropertyDefinition propertyDefinition,
             Map<String, String> javaImportLookup,
-            Set<String> localDeclarationNames) {
+            Set<String> localDeclarationNames,
+            String className) {
         if (propertyDefinition == null || !(propertyDefinition.key() instanceof Identifier identifier)) {
             return null;
         }
@@ -496,12 +692,14 @@ final class QinDeclarationIrLowerer {
                 identifier.name(),
                 lowerParameterType(propertyDefinition.typeAnnotation(), javaImportLookup, localDeclarationNames),
                 lowerAnnotations(propertyDefinition.decorators(), javaImportLookup),
-                lowerFieldInitializer(propertyDefinition.value(), javaImportLookup));
+                lowerFieldInitializer(propertyDefinition.value(), javaImportLookup, className, identifier.name()));
     }
 
     private QinIrExpression lowerFieldInitializer(
             AstNode valueAst,
-            Map<String, String> javaImportLookup) {
+            Map<String, String> javaImportLookup,
+            String className,
+            String fieldName) {
         if (valueAst == null) {
             return null;
         }
@@ -512,7 +710,8 @@ final class QinDeclarationIrLowerer {
                 || initializer instanceof QinIrNullLiteral) {
             return initializer;
         }
-        throw qjsError("QJS2013", "Only literal field initializers are supported in declaration subset");
+        throw qjsError("QJS2013", "Only literal field initializers are supported in declaration subset: "
+                + className + "." + fieldName + " uses " + QinSlimeFrontendAdapter.simpleName(valueAst));
     }
 
     private QinIrMethodDeclaration lowerMethodDeclarationOrNull(

@@ -6,6 +6,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.RecordComponent;
+import java.lang.reflect.Type;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.AbstractMap;
@@ -21,11 +25,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Minimal JS-like global runtime used by JVM-emitted Qin programs.
  */
 public final class JavaEsmGlobal {
+    private static final String SUBHUTI_ALTERNATIVE_CLASS_NAME = "com.subhuti.parser.Alternative";
+    private static final Set<String> SLIME_PARSER_PARAM_BOUNDARY_KEYS =
+            Set.of("In", "Yield", "Await", "Return", "Default");
     private static final Map<String, Object> GLOBAL_BINDINGS = new NullFriendlyConcurrentMap();
     private static final Map<String, Object> GLOBAL_OBJECT = new NullFriendlyConcurrentMap();
     private static final Object UNRESOLVED_MODULE_REF = new Object();
@@ -576,6 +584,10 @@ public final class JavaEsmGlobal {
             List<Object> mutable = (List<Object>) list;
             return JavaEsmArray.memberSet(mutable, property, value);
         }
+        String name = String.valueOf(property);
+        if (tryWriteField(target, name, value)) {
+            return value;
+        }
         throw new IllegalArgumentException("Unsupported member set target: " + simpleName(target));
     }
 
@@ -713,6 +725,10 @@ public final class JavaEsmGlobal {
         return value instanceof QinCallable || value instanceof Method || isFunctionDefinition(value);
     }
 
+    private static boolean isRuntimeCallableValue(Object value) {
+        return isRuntimeCallable(unwrapExportSlotValue(value));
+    }
+
     static Object bindRuntimeCallableThis(Object callable, Object thisArg) {
         callable = unwrapExportSlotValue(callable);
         if (callable instanceof InterpretedFunction interpretedFunction) {
@@ -836,7 +852,7 @@ public final class JavaEsmGlobal {
         }
         Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
         boolean staticOnly = target instanceof Class<?>;
-        Method method = findCompatibleMethod(ownerClass, name, args.length, staticOnly);
+        Method method = findCompatibleMethod(ownerClass, name, args, staticOnly);
         if (method == null) {
             throw new IllegalArgumentException(
                     "Unknown method: "
@@ -846,8 +862,8 @@ public final class JavaEsmGlobal {
         }
         try {
             Object[] invokeArgs = method.isVarArgs()
-                    ? adaptVarArgs(args, method.getParameterTypes())
-                    : coerceArguments(args, method.getParameterTypes());
+                    ? adaptVarArgs(args, method.getParameterTypes(), method.getGenericParameterTypes())
+                    : coerceArguments(args, method.getParameterTypes(), method.getGenericParameterTypes());
             return method.invoke(staticOnly ? null : target, invokeArgs);
         } catch (IllegalArgumentException error) {
             throw new IllegalArgumentException(
@@ -890,7 +906,7 @@ public final class JavaEsmGlobal {
     }
 
     private static Method findCompatibleMethod(Class<?> ownerClass, String name, int argCount, boolean staticOnly) {
-        for (Method method : ownerClass.getMethods()) {
+        for (Method method : candidateMethods(ownerClass)) {
             if (!method.getName().equals(name) || !isCompatibleArity(method, argCount)) {
                 continue;
             }
@@ -902,15 +918,76 @@ public final class JavaEsmGlobal {
         return null;
     }
 
+    private static Method findCompatibleMethod(Class<?> ownerClass, String name, Object[] args, boolean staticOnly) {
+        Method varArgsCandidate = null;
+        for (Method method : candidateMethods(ownerClass)) {
+            if (!method.getName().equals(name) || !isCompatibleArity(method, args.length)) {
+                continue;
+            }
+            if (staticOnly && !Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
+            if (!areCompatibleArguments(args, method)) {
+                continue;
+            }
+            if (!method.isVarArgs()) {
+                return method;
+            }
+            if (varArgsCandidate == null) {
+                varArgsCandidate = method;
+            }
+        }
+        return varArgsCandidate;
+    }
+
+    private static List<Method> candidateMethods(Class<?> ownerClass) {
+        List<Method> methods = new ArrayList<>();
+        for (Method method : ownerClass.getMethods()) {
+            methods.add(method);
+        }
+        for (Class<?> current = ownerClass;
+                current != null && current != Object.class;
+                current = current.getSuperclass()) {
+            for (Method method : current.getDeclaredMethods()) {
+                int modifiers = method.getModifiers();
+                if (!Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers)) {
+                    continue;
+                }
+                try {
+                    method.setAccessible(true);
+                } catch (RuntimeException ignored) {
+                    continue;
+                }
+                methods.add(method);
+            }
+        }
+        return methods;
+    }
+
     private static Object[] coerceArguments(Object[] args, Class<?>[] parameterTypes) {
+        return coerceArguments(args, parameterTypes, parameterTypes);
+    }
+
+    private static Object[] coerceArguments(Object[] args, Class<?>[] parameterTypes, Type[] genericParameterTypes) {
         Object[] coerced = Arrays.copyOf(args, args.length);
         for (int i = 0; i < coerced.length; i++) {
-            coerced[i] = coerceArgument(coerced[i], parameterTypes[i]);
+            Type genericParameterType = genericParameterTypes == null || i >= genericParameterTypes.length
+                    ? parameterTypes[i]
+                    : genericParameterTypes[i];
+            coerced[i] = coerceArgument(coerced[i], parameterTypes[i], genericParameterType);
         }
         return coerced;
     }
 
     private static Object coerceArgument(Object value, Class<?> parameterType) {
+        return coerceArgument(value, parameterType, parameterType);
+    }
+
+    private static Object coerceArgument(Object value, Class<?> parameterType, Type genericParameterType) {
+        Object ffiValue = coerceTypedFfiArgument(value, parameterType, genericParameterType);
+        if (ffiValue != value) {
+            return ffiValue;
+        }
         if (value == null || !parameterType.isPrimitive()) {
             if (parameterType == String.class && value != null) {
                 return String.valueOf(value);
@@ -934,6 +1011,292 @@ public final class JavaEsmGlobal {
             return truthy(value);
         }
         return value;
+    }
+
+    private static Object coerceTypedFfiArgument(Object value, Class<?> parameterType, Type genericParameterType) {
+        if (value == null) {
+            return null;
+        }
+        if (isJavaFunctionalInterface(parameterType)) {
+            return coerceJavaFunctionalInterface(value, parameterType);
+        }
+        if (parameterType.isRecord()) {
+            return coerceJavaRecord(value, parameterType);
+        }
+        if (isSubhutiAlternativeType(parameterType)) {
+            return coerceSubhutiAlternative(value);
+        }
+        if (List.class.isAssignableFrom(parameterType) && isSubhutiAlternativeType(listElementType(genericParameterType))) {
+            if (!(value instanceof List<?> list)) {
+                throw new IllegalArgumentException("Expected List for typed Alternative FFI argument: " + simpleName(value));
+            }
+            List<Object> alternatives = new ArrayList<>(list.size());
+            for (Object item : list) {
+                alternatives.add(coerceSubhutiAlternative(item));
+            }
+            return alternatives;
+        }
+        return value;
+    }
+
+    private static Object coerceJavaRecord(Object value, Class<?> recordType) {
+        if (recordType.isInstance(value)) {
+            return value;
+        }
+        if (value != null && value.getClass().isRecord()) {
+            return coerceJavaRecordFromMap(javaRecordEntries(value), recordType, false);
+        }
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            throw new IllegalArgumentException("Expected object literal for Java record "
+                    + recordType.getName() + ", got: " + simpleName(value));
+        }
+        return coerceJavaRecordFromMap(castMap(rawMap), recordType, true);
+    }
+
+    private static Object coerceJavaRecordFromMap(Map<String, Object> map, Class<?> recordType, boolean validateUnknownKeys) {
+        RecordComponent[] components = recordType.getRecordComponents();
+        Object defaultRecord = instantiateDefaultRecord(recordType);
+        if (validateUnknownKeys) {
+            validateJavaRecordKeys(map, components, recordType);
+        }
+        Object[] args = new Object[components.length];
+        Class<?>[] parameterTypes = new Class<?>[components.length];
+        Type[] genericParameterTypes = new Type[components.length];
+        for (int i = 0; i < components.length; i++) {
+            RecordComponent component = components[i];
+            parameterTypes[i] = component.getType();
+            genericParameterTypes[i] = component.getGenericType();
+            Object componentValue = readJavaRecordComponentValue(map, component, defaultRecord);
+            args[i] = coerceArgument(componentValue, parameterTypes[i], genericParameterTypes[i]);
+        }
+        try {
+            Constructor<?> constructor = recordType.getDeclaredConstructor(parameterTypes);
+            constructor.setAccessible(true);
+            return constructor.newInstance(args);
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalArgumentException("Failed to lower object literal to Java record "
+                    + recordType.getName(), error);
+        }
+    }
+
+    private static Object instantiateDefaultRecord(Class<?> recordType) {
+        try {
+            Constructor<?> constructor = recordType.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalArgumentException("Failed to instantiate default Java record "
+                    + recordType.getName(), error);
+        }
+    }
+
+    private static void validateJavaRecordKeys(
+            Map<String, Object> map,
+            RecordComponent[] components,
+            Class<?> recordType) {
+        for (String key : map.keySet()) {
+            boolean matched = false;
+            for (RecordComponent component : components) {
+                if (javaRecordComponentKeys(component).contains(key)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched
+                    && isSlimeParserParamsRecord(recordType)
+                    && SLIME_PARSER_PARAM_BOUNDARY_KEYS.contains(key)) {
+                matched = true;
+            }
+            if (!matched) {
+                throw new IllegalArgumentException("Unknown key '" + key + "' for Java record "
+                        + recordType.getName());
+            }
+        }
+    }
+
+    private static boolean isSlimeParserParamsRecord(Class<?> recordType) {
+        return recordType.getName().startsWith("com.slime.parser.base.SlimeJavascriptParserBase$")
+                && recordType.getSimpleName().endsWith("Params");
+    }
+
+    private static Object readJavaRecordComponentValue(
+            Map<String, Object> map,
+            RecordComponent component,
+            Object defaultRecord) {
+        for (String key : javaRecordComponentKeys(component)) {
+            if (map.containsKey(key)) {
+                return JavaEsmObject.resolveStoredPropertyValue(map.get(key));
+            }
+        }
+        if (defaultRecord != null) {
+            try {
+                return component.getAccessor().invoke(defaultRecord);
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalArgumentException("Failed to read default Java record component "
+                        + component.getName(), error);
+            }
+        }
+        if (component.getType().isPrimitive()) {
+            throw new IllegalArgumentException("Missing required Java record component " + component.getName());
+        }
+        return null;
+    }
+
+    private static Set<String> javaRecordComponentKeys(RecordComponent component) {
+        String name = component.getName();
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        keys.add(name);
+        keys.add(javaRecordComponentSpreadKey(component));
+        keys.add(upperCamel(name));
+        if (name.endsWith("Allowed") && name.length() > "Allowed".length()) {
+            keys.add(upperCamel(name.substring(0, name.length() - "Allowed".length())));
+        }
+        if (name.startsWith("is") && name.length() > 2 && Character.isUpperCase(name.charAt(2))) {
+            keys.add(name.substring(2));
+        }
+        return keys;
+    }
+
+    private static String javaRecordComponentSpreadKey(RecordComponent component) {
+        String name = component.getName();
+        if (name.endsWith("Allowed") && name.length() > "Allowed".length()) {
+            return upperCamel(name.substring(0, name.length() - "Allowed".length()));
+        }
+        if (name.startsWith("is") && name.length() > 2 && Character.isUpperCase(name.charAt(2))) {
+            return name.substring(2);
+        }
+        return upperCamel(name);
+    }
+
+    private static Map<String, Object> javaRecordEntries(Object record) {
+        LinkedHashMap<String, Object> entries = new LinkedHashMap<>();
+        for (RecordComponent component : record.getClass().getRecordComponents()) {
+            try {
+                entries.put(javaRecordComponentSpreadKey(component), component.getAccessor().invoke(record));
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalArgumentException("Failed to read Java record component "
+                        + component.getName(), error);
+            }
+        }
+        return entries;
+    }
+
+    private static String upperCamel(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
+    private static Object coerceJavaFunctionalInterface(Object value, Class<?> parameterType) {
+        if (parameterType.isInstance(value)) {
+            return value;
+        }
+        Method functionalMethod = functionalInterfaceMethod(parameterType);
+        if (functionalMethod == null) {
+            return value;
+        }
+        Object callable = unwrapExportSlotValue(value);
+        if (!isRuntimeCallable(callable)) {
+            throw new IllegalArgumentException("Expected callable for Java functional interface "
+                    + parameterType.getName() + ", got: " + simpleName(value));
+        }
+        return Proxy.newProxyInstance(
+                parameterType.getClassLoader(),
+                new Class<?>[]{parameterType},
+                (proxy, method, args) -> {
+                    if (method.getDeclaringClass() == Object.class) {
+                        return switch (method.getName()) {
+                            case "toString" -> "QinFunctionalInterfaceProxy(" + parameterType.getName() + ")";
+                            case "hashCode" -> System.identityHashCode(proxy);
+                            case "equals" -> proxy == (args == null || args.length == 0 ? null : args[0]);
+                            default -> throw new UnsupportedOperationException(method.getName());
+                        };
+                    }
+                    Object result = callAny(callable, args == null ? new Object[0] : args);
+                    if (method.getReturnType() == void.class) {
+                        return null;
+                    }
+                    return coerceArgument(result, method.getReturnType(), method.getGenericReturnType());
+                });
+    }
+
+    private static boolean isJavaFunctionalInterface(Class<?> type) {
+        return functionalInterfaceMethod(type) != null;
+    }
+
+    private static Method functionalInterfaceMethod(Class<?> type) {
+        if (!type.isInterface()) {
+            return null;
+        }
+        Method functionalMethod = null;
+        for (Method method : type.getMethods()) {
+            int modifiers = method.getModifiers();
+            if (method.getDeclaringClass() == Object.class
+                    || Modifier.isStatic(modifiers)
+                    || method.isDefault()
+                    || !Modifier.isAbstract(modifiers)) {
+                continue;
+            }
+            if (functionalMethod != null && !sameMethodSignature(functionalMethod, method)) {
+                return null;
+            }
+            functionalMethod = method;
+        }
+        return functionalMethod;
+    }
+
+    private static boolean sameMethodSignature(Method left, Method right) {
+        return left.getName().equals(right.getName())
+                && Arrays.equals(left.getParameterTypes(), right.getParameterTypes());
+    }
+
+    private static Type listElementType(Type genericParameterType) {
+        if (!(genericParameterType instanceof ParameterizedType parameterizedType)) {
+            return null;
+        }
+        Type rawType = parameterizedType.getRawType();
+        if (!(rawType instanceof Class<?> rawClass) || !List.class.isAssignableFrom(rawClass)) {
+            return null;
+        }
+        Type[] arguments = parameterizedType.getActualTypeArguments();
+        return arguments.length == 1 ? arguments[0] : null;
+    }
+
+    private static boolean isSubhutiAlternativeType(Type type) {
+        if (type instanceof Class<?> clazz) {
+            return SUBHUTI_ALTERNATIVE_CLASS_NAME.equals(clazz.getName());
+        }
+        if (type instanceof ParameterizedType parameterizedType) {
+            return isSubhutiAlternativeType(parameterizedType.getRawType());
+        }
+        return false;
+    }
+
+    private static Object coerceSubhutiAlternative(Object value) {
+        try {
+            Class<?> alternativeClass = Class.forName(SUBHUTI_ALTERNATIVE_CLASS_NAME);
+            if (alternativeClass.isInstance(value)) {
+                return value;
+            }
+            if (!(value instanceof Map<?, ?> rawMap)) {
+                throw new IllegalArgumentException("Expected { alt: () => ... } for Alternative, got: "
+                        + simpleName(value));
+            }
+            Map<String, Object> map = castMap(rawMap);
+            if (map.size() != 1 || !map.containsKey("alt")) {
+                throw new IllegalArgumentException("Alternative object literal must have exact shape { alt: callable }");
+            }
+            Object callable = JavaEsmObject.resolveStoredPropertyValue(map.get("alt"));
+            Supplier<Object> supplier = () -> callAny(callable);
+            Method ofMethod = alternativeClass.getMethod("of", Supplier.class);
+            return ofMethod.invoke(null, supplier);
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalArgumentException("Failed to lower JS Alternative object to "
+                    + SUBHUTI_ALTERNATIVE_CLASS_NAME, error);
+        }
     }
 
     private static Object construct(Object callee, Object... args) {
@@ -992,14 +1355,67 @@ public final class JavaEsmGlobal {
     }
 
     private static Object tryReadField(Object target, String name) {
-        try {
-            if (target instanceof Class<?> clazz) {
-                return clazz.getField(name).get(null);
-            }
-            return target.getClass().getField(name).get(target);
-        } catch (ReflectiveOperationException ignored) {
+        Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
+        boolean staticOnly = target instanceof Class<?>;
+        Field field = findAccessibleField(ownerClass, name, staticOnly);
+        if (field == null) {
             return null;
         }
+        try {
+            return field.get(staticOnly ? null : target);
+        } catch (IllegalAccessException ignored) {
+            return null;
+        }
+    }
+
+    private static boolean tryWriteField(Object target, String name, Object value) {
+        Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
+        boolean staticOnly = target instanceof Class<?>;
+        Field field = findAccessibleField(ownerClass, name, staticOnly);
+        if (field == null || Modifier.isFinal(field.getModifiers())) {
+            return false;
+        }
+        try {
+            Object coerced = coerceArgument(value, field.getType(), field.getGenericType());
+            field.set(staticOnly ? null : target, coerced);
+            return true;
+        } catch (IllegalAccessException | IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private static Field findAccessibleField(Class<?> ownerClass, String name, boolean staticOnly) {
+        try {
+            Field field = ownerClass.getField(name);
+            if (!staticOnly || Modifier.isStatic(field.getModifiers())) {
+                return field;
+            }
+        } catch (NoSuchFieldException ignored) {
+            // Try declared public/protected fields below.
+        }
+        for (Class<?> current = ownerClass;
+                current != null && current != Object.class;
+                current = current.getSuperclass()) {
+            try {
+                Field field = current.getDeclaredField(name);
+                int modifiers = field.getModifiers();
+                if (staticOnly && !Modifier.isStatic(modifiers)) {
+                    continue;
+                }
+                if (!Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers)) {
+                    continue;
+                }
+                try {
+                    field.setAccessible(true);
+                } catch (RuntimeException ignored) {
+                    continue;
+                }
+                return field;
+            } catch (NoSuchFieldException ignored) {
+                // Continue searching the superclass chain.
+            }
+        }
+        return null;
     }
 
     private static int toIndex(Object value) {
@@ -1526,19 +1942,26 @@ public final class JavaEsmGlobal {
     }
 
     private static Object[] adaptVarArgs(Object[] args, Class<?>[] parameterTypes) {
+        return adaptVarArgs(args, parameterTypes, parameterTypes);
+    }
+
+    private static Object[] adaptVarArgs(Object[] args, Class<?>[] parameterTypes, Type[] genericParameterTypes) {
         int varArgIndex = parameterTypes.length - 1;
         if (varArgIndex < 0 || !parameterTypes[varArgIndex].isArray()) {
-            return coerceArguments(args, parameterTypes);
+            return coerceArguments(args, parameterTypes, genericParameterTypes);
         }
         Object[] adapted = new Object[parameterTypes.length];
         for (int i = 0; i < varArgIndex; i++) {
-            adapted[i] = coerceArgument(i < args.length ? args[i] : null, parameterTypes[i]);
+            Type genericParameterType = genericParameterTypes == null || i >= genericParameterTypes.length
+                    ? parameterTypes[i]
+                    : genericParameterTypes[i];
+            adapted[i] = coerceArgument(i < args.length ? args[i] : null, parameterTypes[i], genericParameterType);
         }
         Class<?> componentType = parameterTypes[varArgIndex].getComponentType();
         int varArgLength = Math.max(0, args.length - varArgIndex);
         Object packed = Array.newInstance(componentType, varArgLength);
         for (int i = 0; i < varArgLength; i++) {
-            Array.set(packed, i, coerceArgument(args[varArgIndex + i], componentType));
+            Array.set(packed, i, coerceArgument(args[varArgIndex + i], componentType, componentType));
         }
         adapted[varArgIndex] = packed;
         return adapted;
@@ -1549,6 +1972,196 @@ public final class JavaEsmGlobal {
             return method.getParameterCount() == argCount;
         }
         return argCount >= method.getParameterCount() - 1;
+    }
+
+    private static boolean areCompatibleArguments(Object[] args, Method method) {
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        Type[] genericParameterTypes = method.getGenericParameterTypes();
+        if (!method.isVarArgs()) {
+            if (args.length != parameterTypes.length) {
+                return false;
+            }
+            for (int i = 0; i < args.length; i++) {
+                Type genericParameterType = genericParameterTypes == null || i >= genericParameterTypes.length
+                        ? parameterTypes[i]
+                        : genericParameterTypes[i];
+                if (!canCoerceArgument(args[i], parameterTypes[i], genericParameterType)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        int fixedCount = parameterTypes.length - 1;
+        if (args.length < fixedCount) {
+            return false;
+        }
+        for (int i = 0; i < fixedCount; i++) {
+            Type genericParameterType = genericParameterTypes == null || i >= genericParameterTypes.length
+                    ? parameterTypes[i]
+                    : genericParameterTypes[i];
+            if (!canCoerceArgument(args[i], parameterTypes[i], genericParameterType)) {
+                return false;
+            }
+        }
+        Class<?> componentType = parameterTypes[fixedCount].getComponentType();
+        for (int i = fixedCount; i < args.length; i++) {
+            if (!canCoerceArgument(args[i], componentType, componentType)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean canCoerceArgument(Object value, Class<?> parameterType) {
+        return canCoerceArgument(value, parameterType, parameterType);
+    }
+
+    private static boolean canCoerceArgument(Object value, Class<?> parameterType, Type genericParameterType) {
+        if (value == null) {
+            return !parameterType.isPrimitive();
+        }
+        if (canCoerceTypedFfiArgument(value, parameterType, genericParameterType)) {
+            return true;
+        }
+        if (parameterType.isInstance(value)) {
+            return true;
+        }
+        if (parameterType == String.class) {
+            return true;
+        }
+        if (parameterType.isPrimitive()) {
+            return primitiveWrapperType(parameterType).isInstance(value) || value instanceof Number;
+        }
+        return false;
+    }
+
+    private static boolean canCoerceTypedFfiArgument(Object value, Class<?> parameterType, Type genericParameterType) {
+        if (isJavaFunctionalInterface(parameterType)) {
+            return parameterType.isInstance(value) || isRuntimeCallableValue(value);
+        }
+        if (parameterType.isRecord()) {
+            return isJavaRecordObjectShape(value, parameterType);
+        }
+        if (isSubhutiAlternativeType(parameterType)) {
+            return isSubhutiAlternativeShape(value);
+        }
+        if (List.class.isAssignableFrom(parameterType) && isSubhutiAlternativeType(listElementType(genericParameterType))) {
+            if (!(value instanceof List<?> list)) {
+                return false;
+            }
+            for (Object item : list) {
+                if (!isSubhutiAlternativeShape(item)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isJavaRecordObjectShape(Object value, Class<?> recordType) {
+        if (recordType.isInstance(value)) {
+            return true;
+        }
+        if (value != null && value.getClass().isRecord()) {
+            return true;
+        }
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            return false;
+        }
+        Map<String, Object> map = castMap(rawMap);
+        RecordComponent[] components = recordType.getRecordComponents();
+        for (String key : map.keySet()) {
+            boolean matched = false;
+            for (RecordComponent component : components) {
+                if (javaRecordComponentKeys(component).contains(key)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched
+                    && isSlimeParserParamsRecord(recordType)
+                    && SLIME_PARSER_PARAM_BOUNDARY_KEYS.contains(key)) {
+                matched = true;
+            }
+            if (!matched) {
+                return false;
+            }
+        }
+        if (hasDefaultConstructor(recordType)) {
+            return true;
+        }
+        for (RecordComponent component : components) {
+            boolean present = false;
+            for (String key : javaRecordComponentKeys(component)) {
+                if (map.containsKey(key)) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present && component.getType().isPrimitive()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean hasDefaultConstructor(Class<?> type) {
+        try {
+            type.getDeclaredConstructor();
+            return true;
+        } catch (NoSuchMethodException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isSubhutiAlternativeShape(Object value) {
+        if (value == null) {
+            return false;
+        }
+        try {
+            Class<?> alternativeClass = Class.forName(SUBHUTI_ALTERNATIVE_CLASS_NAME);
+            if (alternativeClass.isInstance(value)) {
+                return true;
+            }
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        }
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            return false;
+        }
+        Map<String, Object> map = castMap(rawMap);
+        return map.size() == 1
+                && map.containsKey("alt")
+                && isRuntimeCallableValue(JavaEsmObject.resolveStoredPropertyValue(map.get("alt")));
+    }
+
+    private static Class<?> primitiveWrapperType(Class<?> primitiveType) {
+        if (primitiveType == boolean.class) {
+            return Boolean.class;
+        }
+        if (primitiveType == byte.class) {
+            return Byte.class;
+        }
+        if (primitiveType == short.class) {
+            return Short.class;
+        }
+        if (primitiveType == int.class) {
+            return Integer.class;
+        }
+        if (primitiveType == long.class) {
+            return Long.class;
+        }
+        if (primitiveType == float.class) {
+            return Float.class;
+        }
+        if (primitiveType == double.class) {
+            return Double.class;
+        }
+        if (primitiveType == char.class) {
+            return Character.class;
+        }
+        return Void.class;
     }
 
     private static Method methodHandle(Class<?> owner, String name, Class<?>... parameterTypes) {
@@ -3687,6 +4300,10 @@ public final class JavaEsmGlobal {
                     }
                     if (spreadValue instanceof InterpretedInstance instance) {
                         object.putAll(instance.ownEnumerableProperties());
+                        continue;
+                    }
+                    if (spreadValue != null && spreadValue.getClass().isRecord()) {
+                        object.putAll(javaRecordEntries(spreadValue));
                         continue;
                     }
                     throw new IllegalArgumentException("Object spread expects a map-like value");

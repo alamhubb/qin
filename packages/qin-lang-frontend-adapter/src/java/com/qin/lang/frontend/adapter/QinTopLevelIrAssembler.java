@@ -57,6 +57,7 @@ final class QinTopLevelIrAssembler {
         Map<String, String> javaImportLookup = new HashMap<>();
         Map<String, QinIrExpression> declarationLookup = new HashMap<>();
         Set<String> localDeclarationNames = legacyLowerer.collectTopLevelClassNames(body);
+        Set<String> localJvmDeclarationNames = new LinkedHashSet<>();
         boolean enableGlobalBinding = sourceLength <= 200_000;
         legacyLowerer.predeclareTopLevelBindings(body, declarationLookup);
         if (enableGlobalBinding) {
@@ -136,9 +137,11 @@ final class QinTopLevelIrAssembler {
                 QinIrClassDeclaration loweredClass = legacyLowerer.lowerClassDeclarationOrNull(
                         classDeclaration,
                         javaImportLookup,
-                        localDeclarationNames);
+                        localDeclarationNames,
+                        localJvmDeclarationNames);
                 if (loweredClass != null) {
                     assembly.classDeclarations().add(loweredClass);
+                    localJvmDeclarationNames.add(loweredClass.simpleName());
                 }
                 QinIrConstDeclaration declaration = legacyLowerer.lowerClassDeclarationValue(
                         classDeclaration,
