@@ -12,6 +12,7 @@ import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
@@ -47,6 +48,7 @@ public final class QinJvmClassFileBackend {
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
     private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
+    private static final ClassDesc CLASS_DESC = ClassDesc.of("java.lang.Class");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
     private static final ClassDesc DOUBLE_DESC = ClassDesc.of("java.lang.Double");
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
@@ -71,6 +73,10 @@ public final class QinJvmClassFileBackend {
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc GLOBAL_GET_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc BIND_GLOBAL_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc CLASS_FOR_NAME_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/String;)Ljava/lang/Class;");
     private static final MethodTypeDesc VALUE_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;");
 
@@ -101,6 +107,7 @@ public final class QinJvmClassFileBackend {
             builder.withMethodBody("run", RUN_SIGNATURE, ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC,
                     code -> emitRunMethod(
                             code,
+                            program.javaImports(),
                             program.declarations(),
                             program.expressionStatements(),
                             program.consoleValueLogs(),
@@ -123,6 +130,7 @@ public final class QinJvmClassFileBackend {
 
     private void emitRunMethod(
             CodeBuilder code,
+            List<QinIrJavaImport> javaImports,
             List<QinIrConstDeclaration> declarations,
             List<QinIrExpressionStatement> expressionStatements,
             List<QinIrConsoleLogValue> consoleValueLogs,
@@ -134,6 +142,7 @@ public final class QinJvmClassFileBackend {
         Map<String, DeclarationBinding> bindings = new LinkedHashMap<>();
         Integer lastExpressionSlot = null;
         Integer lastDeclarationSlot = null;
+        bindJavaImports(code, javaImports);
 
         for (QinIrProgram.TopLevelExecutionStep step : executionSteps) {
             switch (step.kind()) {
@@ -182,6 +191,16 @@ public final class QinJvmClassFileBackend {
         } else {
             code.aconst_null();
             code.areturn();
+        }
+    }
+
+    private void bindJavaImports(CodeBuilder code, List<QinIrJavaImport> javaImports) {
+        for (QinIrJavaImport javaImport : javaImports) {
+            code.ldc(javaImport.localName());
+            code.ldc(javaImport.ownerBinaryName());
+            code.invokestatic(CLASS_DESC, "forName", CLASS_FOR_NAME_SIGNATURE);
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_bind_global__", BIND_GLOBAL_SIGNATURE);
+            code.pop();
         }
     }
 

@@ -83,13 +83,26 @@ final class QinDeclarationIrLowerer {
             ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
             Set<String> localDeclarationNames) {
+        boolean javaSuperclass = classDeclaration.superClass() != null
+                && isResolvableSuperClass(classDeclaration.superClass(), javaImportLookup);
         if (!isDeclarationCompatibleClass(classDeclaration, javaImportLookup)) {
+            if (javaSuperclass) {
+                String className = classDeclaration.id() == null ? "<anonymous>" : classDeclaration.id().name();
+                throw qjsError(
+                        "QJS2030",
+                        "Class `" + className + "` extends a java: class and must be emitted as a JVM class, "
+                                + "but its body is outside the current declaration IR subset. "
+                                + "Add IR/classfile support instead of falling back to interpreted inheritance.");
+            }
             return null;
         }
         try {
             return lowerClassDeclarationAsDeclaration(classDeclaration, javaImportLookup, localDeclarationNames);
         } catch (IllegalArgumentException error) {
             if (isDeclarationSubsetError(error)) {
+                if (javaSuperclass) {
+                    throw error;
+                }
                 return null;
             }
             throw error;
@@ -121,6 +134,9 @@ final class QinDeclarationIrLowerer {
         if (classDeclaration.body() != null && classDeclaration.body().body() != null) {
             for (AstNode member : classDeclaration.body().body()) {
                 if (member instanceof MethodDefinition methodDefinition) {
+                    if (isConstructorMethod(methodDefinition)) {
+                        continue;
+                    }
                     QinIrMethodDeclaration loweredMethod = lowerMethodDeclarationOrNull(
                             methodDefinition,
                             javaImportLookup,
@@ -261,9 +277,18 @@ final class QinDeclarationIrLowerer {
     QinIrConstDeclaration lowerClassDeclarationValue(
             ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
-            Map<String, QinIrExpression> declarationLookup) {
+            Map<String, QinIrExpression> declarationLookup,
+            boolean useJvmClassValue) {
         if (classDeclaration == null || classDeclaration.id() == null) {
             throw qjsError("QJS2010", "Anonymous ClassDeclaration is not supported in Qin subset");
+        }
+        if (useJvmClassValue) {
+            return new QinIrConstDeclaration(
+                    classDeclaration.id().name(),
+                    new QinIrBuiltinCallExpression(
+                            "Global",
+                            "__qin_global__",
+                            List.of(new QinIrStringLiteral(classDeclaration.id().name()))));
         }
         return new QinIrConstDeclaration(
                 classDeclaration.id().name(),
@@ -283,7 +308,7 @@ final class QinDeclarationIrLowerer {
         if (classDeclaration.body().body() == null || classDeclaration.body().body().isEmpty()) {
             return false;
         }
-        boolean hasJvmSignal = false;
+        boolean hasJvmSignal = classDeclaration.superClass() != null;
         for (AstNode member : classDeclaration.body().body()) {
             if (member instanceof PropertyDefinition propertyDefinition) {
                 if (propertyDefinition.isStatic() || propertyDefinition.computed()) {
@@ -296,10 +321,14 @@ final class QinDeclarationIrLowerer {
                 continue;
             }
             if (member instanceof MethodDefinition methodDefinition) {
-                if (methodDefinition.isStatic()
-                        || methodDefinition.computed()
-                        || "constructor".equals(methodDefinition.kind())) {
+                if (methodDefinition.isStatic() || methodDefinition.computed()) {
                     return false;
+                }
+                if (isConstructorMethod(methodDefinition)) {
+                    if (!isDeclarationCompatibleConstructorBody(methodDefinition.value())) {
+                        return false;
+                    }
+                    continue;
                 }
                 if (methodDefinition.value() != null
                         && ((methodDefinition.value().parameterMetadata() != null
@@ -321,6 +350,36 @@ final class QinDeclarationIrLowerer {
             hasJvmSignal = hasJvmSignal || hasResolvableJavaDecorator(classDeclaration.decorators(), javaImportLookup);
         }
         return hasJvmSignal;
+    }
+
+    private boolean isConstructorMethod(MethodDefinition methodDefinition) {
+        if (methodDefinition == null) {
+            return false;
+        }
+        if ("constructor".equals(methodDefinition.kind())) {
+            return true;
+        }
+        return methodDefinition.key() instanceof Identifier identifier
+                && "constructor".equals(identifier.name());
+    }
+
+    private boolean isDeclarationCompatibleConstructorBody(FunctionExpression function) {
+        if (function == null || function.body() == null || function.body().body() == null) {
+            return true;
+        }
+        List<? extends Statement> statements = function.body().body();
+        if (statements.isEmpty()) {
+            return true;
+        }
+        if (statements.size() != 1 || !(statements.get(0) instanceof ExpressionStatement expressionStatement)) {
+            return false;
+        }
+        Object expression = expressionStatement.expression();
+        if (!(expression instanceof CallExpression callExpression)) {
+            return false;
+        }
+        return "Super".equals(callExpression.callee().getClass().getSimpleName())
+                && callExpression.arguments().isEmpty();
     }
 
     private boolean isResolvableSuperClass(

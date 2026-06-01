@@ -69,14 +69,23 @@ public final class QinObjectJsonEncoder {
             return;
         }
         if (value instanceof Collection<?> collection) {
+            if (markSeen(value)) {
+                return;
+            }
             writeCollection(collection, depth + 1);
             return;
         }
         if (value instanceof Map<?, ?> map) {
+            if (markSeen(value)) {
+                return;
+            }
             writeMap(map, depth + 1);
             return;
         }
         if (value.getClass().isArray()) {
+            if (markSeen(value)) {
+                return;
+            }
             int len = java.lang.reflect.Array.getLength(value);
             out.append('[');
             for (int i = 0; i < len; i++) {
@@ -143,11 +152,9 @@ public final class QinObjectJsonEncoder {
     }
 
     private void writeObject(Object value, int depth) {
-        if (seen.containsKey(value)) {
-            out.append("null");
+        if (markSeen(value)) {
             return;
         }
-        seen.put(value, Boolean.TRUE);
 
         out.append('{');
         Map<String, Object> fields = extractFields(value);
@@ -171,6 +178,15 @@ public final class QinObjectJsonEncoder {
             writeValue(entry.getValue(), depth);
         }
         out.append('}');
+    }
+
+    private boolean markSeen(Object value) {
+        if (seen.containsKey(value)) {
+            writeString("<cycle>");
+            return true;
+        }
+        seen.put(value, Boolean.TRUE);
+        return false;
     }
 
     private Map<String, Object> extractFields(Object value) {

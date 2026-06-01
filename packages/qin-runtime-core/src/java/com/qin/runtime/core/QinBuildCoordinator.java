@@ -2,6 +2,7 @@ package com.qin.runtime.core;
 
 import com.qin.lang.backend.js.QinJsBackend;
 import com.qin.lang.backend.jvm.QinClassFileWriter;
+import com.qin.lang.backend.jvm.QinJvmDeclarationClassEmitter;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
 import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
@@ -11,6 +12,7 @@ import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 /**
  * Coordinates source resolution, frontend compile, IR validation and backend emissions.
@@ -72,6 +74,12 @@ public final class QinBuildCoordinator {
         if (request.target().emitJvm()) {
             if (classBytes == null || classBytes.length == 0) {
                 throw new IllegalStateException("CFA compiler returned empty class bytes");
+            }
+            Map<String, byte[]> declarationClassBytes = program.classDeclarations().isEmpty()
+                    ? Map.of()
+                    : new QinJvmDeclarationClassEmitter().compileAllClasses(program);
+            for (var entry : declarationClassBytes.entrySet()) {
+                QinClassFileWriter.writeClassFile(request.classOutputDir(), entry.getKey(), entry.getValue());
             }
             classFile = QinClassFileWriter.writeClassFile(request.classOutputDir(), request.className(), classBytes);
         }

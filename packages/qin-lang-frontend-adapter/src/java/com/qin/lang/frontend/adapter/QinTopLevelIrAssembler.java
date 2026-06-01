@@ -143,7 +143,8 @@ final class QinTopLevelIrAssembler {
                 QinIrConstDeclaration declaration = legacyLowerer.lowerClassDeclarationValue(
                         classDeclaration,
                         javaImportLookup,
-                        declarationLookup);
+                        declarationLookup,
+                        loweredClass != null);
                 assembly.declarations().add(declaration);
                 assembly.executionSteps().add(new QinIrProgram.TopLevelExecutionStep(
                         QinIrProgram.TopLevelStatementKind.DECLARATION,

@@ -30,6 +30,7 @@ public final class QinCfaJvmClassFileBackend {
     private static final ClassDesc JS_SDK_CONSOLE_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmConsole");
     private static final ClassDesc JS_SDK_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
     private static final ClassDesc JS_SDK_JSON_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmJson");
+    private static final ClassDesc CLASS_DESC = ClassDesc.of("java.lang.Class");
     private static final ClassDesc INTEGER_DESC = ClassDesc.of("java.lang.Integer");
     private static final ClassDesc DOUBLE_DESC = ClassDesc.of("java.lang.Double");
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
@@ -64,6 +65,8 @@ public final class QinCfaJvmClassFileBackend {
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc REGISTER_JS_IMPORT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    private static final MethodTypeDesc CLASS_FOR_NAME_SIGNATURE =
+            MethodTypeDesc.ofDescriptor("(Ljava/lang/String;)Ljava/lang/Class;");
     private static final MethodTypeDesc MAP_PUT_SIGNATURE =
             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     private static final MethodTypeDesc MAP_GET_SIGNATURE =
@@ -294,6 +297,7 @@ public final class QinCfaJvmClassFileBackend {
             BindingPlan bindingPlan,
             QinCfaProgram program) {
         emitModuleRefRegistrations(code, bindingPlan);
+        emitRuntimeJavaImportRegistrations(code, program);
         emitRuntimeJsImportRegistrations(code, program);
         for (ChunkMethodSpec chunkMethod : chunkMethods) {
             code.invokestatic(generatedClassDesc, chunkMethod.methodName(), RUN_CHUNK_SIGNATURE);
@@ -327,6 +331,22 @@ public final class QinCfaJvmClassFileBackend {
             code.ldc(moduleName);
             code.ldc(jsImport.importedName() == null ? "" : jsImport.importedName());
             code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_register_js_import__", REGISTER_JS_IMPORT_SIGNATURE);
+            code.pop();
+        }
+    }
+
+    private void emitRuntimeJavaImportRegistrations(CodeBuilder code, QinCfaProgram program) {
+        for (QinCfaProgram.JavaImport javaImport : program.javaImports()) {
+            String localName = javaImport.localName();
+            String ownerBinaryName = javaImport.ownerBinaryName();
+            if (localName == null || localName.isBlank()
+                    || ownerBinaryName == null || ownerBinaryName.isBlank()) {
+                continue;
+            }
+            code.ldc(localName);
+            code.ldc(ownerBinaryName);
+            code.invokestatic(CLASS_DESC, "forName", CLASS_FOR_NAME_SIGNATURE);
+            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_bind_global__", BIND_GLOBAL_SIGNATURE);
             code.pop();
         }
     }
