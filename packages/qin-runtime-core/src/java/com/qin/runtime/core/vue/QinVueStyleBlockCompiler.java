@@ -28,10 +28,19 @@ final class QinVueStyleBlockCompiler {
         return """
                 (function __qinInjectVueStyle() {
                   if (typeof document === 'undefined') return;
-                  const style = document.createElement('style');
+                  const styleId = import.meta.url
+                    .replace(/[?&]qin-hmr=[^&]+/g, '')
+                    .replace(/[?&]$/, '') + '#vue-style';
+                  let style = Array.from(document.querySelectorAll('style[data-qin-vue]'))
+                    .find(candidate => candidate.getAttribute('data-qin-style-id') === styleId);
+                  if (!style) {
+                    style = document.createElement('style');
+                    style.setAttribute('data-qin-vue', 'true');
+                    style.setAttribute('data-qin-style-id', styleId);
+                    document.head.appendChild(style);
+                  }
                   style.setAttribute('data-qin-vue', 'true');
                   style.textContent = "%s";
-                  document.head.appendChild(style);
                 })();
                 """.formatted(escaped);
     }

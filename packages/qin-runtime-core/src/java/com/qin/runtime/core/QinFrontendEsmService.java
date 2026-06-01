@@ -120,7 +120,20 @@ public final class QinFrontendEsmService {
         if (moduleFile == null) {
             return null;
         }
-        return transpileModule(moduleFile);
+        return injectQinHmrPrelude(normalizedRequestPath, moduleFile, transpileModule(moduleFile));
+    }
+
+    private String injectQinHmrPrelude(String requestPath, Path moduleFile, String transpiled) {
+        if (transpiled == null || requestPath == null || requestPath.contains("?")) {
+            return transpiled;
+        }
+        String moduleUrl = toModuleUrl(projectRoot, moduleFile.toAbsolutePath().normalize());
+        String escapedModuleUrl = escapeJsStringLiteral(moduleUrl);
+        return """
+                import { createHotContext as __qinCreateHotContext } from "/@qin/dev-client.js";
+                import.meta.hot = __qinCreateHotContext("%s");
+                %s
+                """.formatted(escapedModuleUrl, transpiled);
     }
 
     public void emitProduction(Path staticRoot) throws IOException {
@@ -720,10 +733,19 @@ public final class QinFrontendEsmService {
         return """
                 const css = "%s";
                 if (typeof document !== 'undefined') {
-                  const style = document.createElement('style');
+                  const styleId = import.meta.url
+                    .replace(/[?&]qin-hmr=[^&]+/g, '')
+                    .replace(/[?&]$/, '');
+                  let style = Array.from(document.querySelectorAll('style[data-qin-cssts]'))
+                    .find(candidate => candidate.getAttribute('data-qin-style-id') === styleId);
+                  if (!style) {
+                    style = document.createElement('style');
+                    style.setAttribute('data-qin-cssts', 'true');
+                    style.setAttribute('data-qin-style-id', styleId);
+                    document.head.appendChild(style);
+                  }
                   style.setAttribute('data-qin-cssts', 'true');
                   style.textContent = css;
-                  document.head.appendChild(style);
                 }
                 export default css;
                 """.formatted(escaped);

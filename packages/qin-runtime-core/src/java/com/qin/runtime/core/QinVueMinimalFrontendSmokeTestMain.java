@@ -21,6 +21,7 @@ public final class QinVueMinimalFrontendSmokeTestMain {
         String module = service.transpileByRequestPath("/@qin-mod/app/main.vue.js");
         if (module == null
                 || !module.contains("__qinMountVue")
+                || !module.contains("import.meta.hot")
                 || !module.contains("Qin Vue without Vite")
                 || !module.contains("Hello from Qin Vue Minimal")
                 || !module.contains("qin-vue-cssts=style")) {
@@ -28,13 +29,16 @@ public final class QinVueMinimalFrontendSmokeTestMain {
         }
 
         String hmrModule = service.transpileByRequestPath("/@qin-mod/app/main.vue.js?qin-hmr=123");
-        if (hmrModule == null || !hmrModule.contains("Hello from Qin Vue Minimal")) {
+        if (hmrModule == null
+                || !hmrModule.contains("import.meta.hot")
+                || !hmrModule.contains("Hello from Qin Vue Minimal")) {
             throw new IllegalStateException("Vue minimal HMR module request did not resolve:\n" + hmrModule);
         }
 
         String style = service.transpileByRequestPath("/@qin-mod/app/main.vue.js?qin-vue-cssts=style");
         if (style == null
                 || !style.contains("data-qin-cssts")
+                || !style.contains("data-qin-style-id")
                 || !style.contains("display: flex")
                 || !style.contains("min-height: 100vh")) {
             throw new IllegalStateException("Vue minimal CSSTS style module missing expected CSS:\n" + style);
