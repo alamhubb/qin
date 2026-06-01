@@ -11,7 +11,17 @@ public record QinIrMethodDeclaration(
         QinIrTypeRef returnType,
         List<QinIrParameter> parameters,
         List<QinIrAnnotation> annotations,
-        QinIrExpression returnExpression) {
+        QinIrExpression returnExpression,
+        QinIrObjectLiteral runtimeFunctionDefinition) {
+    public QinIrMethodDeclaration(
+            String name,
+            QinIrTypeRef returnType,
+            List<QinIrParameter> parameters,
+            List<QinIrAnnotation> annotations,
+            QinIrExpression returnExpression) {
+        this(name, returnType, parameters, annotations, returnExpression, null);
+    }
+
     public QinIrMethodDeclaration {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");

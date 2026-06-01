@@ -53,6 +53,7 @@ public final class QinJvmDeclarationClassEmitter {
     private static final ClassDesc NUMBER_DESC = ClassDesc.of("java.lang.Number");
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
     private static final ClassDesc STRING_DESC = ClassDesc.of("java.lang.String");
+    private static final ClassDesc OBJECT_ARRAY_DESC = ClassDesc.ofDescriptor("[Ljava/lang/Object;");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc ESM_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
     private static final MethodTypeDesc VOID_INIT = MethodTypeDesc.ofDescriptor("()V");
@@ -375,6 +376,10 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrClassDeclaration ownerDeclaration,
             QinIrMethodDeclaration method,
             Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (method.runtimeFunctionDefinition() != null) {
+            emitRuntimeFunctionMethodBody(code, ownerDeclaration, method, declarationIndex);
+            return;
+        }
         QinIrExpression returnExpression = method.returnExpression();
         if (returnExpression == null || returnExpression instanceof QinIrNullLiteral) {
             if (method.returnType().kind() == QinIrTypeKind.VOID) {
@@ -388,6 +393,39 @@ public final class QinJvmDeclarationClassEmitter {
 
         QinIrTypeRef actualType = emitDeclarationExpression(code, ownerDeclaration, method, declarationIndex, returnExpression);
         emitReturnForType(code, actualType, method.returnType());
+    }
+
+    private void emitRuntimeFunctionMethodBody(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        emitObjectLiteral(code, ownerDeclaration, method, declarationIndex, method.runtimeFunctionDefinition());
+        code.aload(0);
+        emitObjectArrayFromParameters(code, method);
+        code.invokestatic(
+                ESM_GLOBAL_DESC,
+                "__qin_call_function_definition__",
+                MethodTypeDesc.of(OBJECT_DESC, OBJECT_DESC, OBJECT_DESC, OBJECT_ARRAY_DESC));
+        coerceObjectResultForType(code, method.returnType());
+        emitObjectCoercedReturn(code, method.returnType());
+    }
+
+    private void emitObjectArrayFromParameters(
+            java.lang.classfile.CodeBuilder code,
+            QinIrMethodDeclaration method) {
+        code.loadConstant(method.parameters().size());
+        code.anewarray(OBJECT_DESC);
+        int localSlot = 1;
+        for (int i = 0; i < method.parameters().size(); i++) {
+            var parameter = method.parameters().get(i);
+            code.dup();
+            code.loadConstant(i);
+            loadLocalForType(code, parameter.type(), localSlot, parameter.name());
+            boxValueForObjectTarget(code, parameter.type());
+            code.aastore();
+            localSlot += localSlotWidth(parameter.type());
+        }
     }
 
     private QinIrTypeRef emitDeclarationExpression(
@@ -745,6 +783,20 @@ public final class QinJvmDeclarationClassEmitter {
             case DOUBLE -> code.dreturn();
             case STRING, CLASS -> code.areturn();
             case VOID -> code.return_();
+        }
+    }
+
+    private void emitObjectCoercedReturn(
+            java.lang.classfile.CodeBuilder code,
+            QinIrTypeRef returnType) {
+        switch (returnType.kind()) {
+            case BOOLEAN, INT -> code.ireturn();
+            case DOUBLE -> code.dreturn();
+            case STRING, CLASS -> code.areturn();
+            case VOID -> {
+                code.pop();
+                code.return_();
+            }
         }
     }
 

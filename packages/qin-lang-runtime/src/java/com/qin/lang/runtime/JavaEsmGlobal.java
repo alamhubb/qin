@@ -91,6 +91,11 @@ public final class JavaEsmGlobal {
         throw new IllegalArgumentException("Unsupported function definition: " + simpleName(definition));
     }
 
+    public static Object __qin_call_function_definition__(Object definition, Object thisArg, Object[] args) {
+        Object function = bindRuntimeCallableThis(__qin_make_function__(definition), thisArg);
+        return callAny(function, args == null ? new Object[0] : args);
+    }
+
     public static Object __qin_constant_return_function__(Object value) {
         return new NativeFunction("constant", args -> value);
     }
