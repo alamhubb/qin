@@ -1,0 +1,4 @@
+const result = {
+  message: "hello from Qin Vue minimal backend",
+  source: "main.qin"
+}
