@@ -26,6 +26,7 @@ import com.qin.lang.ir.QinIrTypeRef;
 import com.qin.lang.ir.QinBuiltinRegistry;
 
 import java.lang.classfile.Annotation;
+import java.lang.classfile.ClassBuilder;
 import java.lang.classfile.AnnotationElement;
 import java.lang.classfile.AnnotationValue;
 import java.lang.classfile.ClassFile;
@@ -35,6 +36,7 @@ import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
 import java.lang.classfile.attribute.RuntimeVisibleParameterAnnotationsAttribute;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
@@ -140,16 +142,20 @@ public final class QinJvmDeclarationClassEmitter {
                         code -> emitFieldSetterBody(code, binaryClassName, field));
             }
 
-            builder.withMethodBody("<init>", VOID_INIT, ClassFile.ACC_PUBLIC, code -> {
-                code.aload(0);
-                code.invokespecial(resolveSuperclass(declaration.superType()), "<init>", VOID_INIT);
-                for (QinIrFieldDeclaration field : declaration.fields()) {
-                    emitFieldInitializer(code, binaryClassName, field);
-                }
-                code.return_();
-            });
+            if (hasNoArgSuperclassConstructor(declaration.superType())) {
+                builder.withMethodBody("<init>", VOID_INIT, ClassFile.ACC_PUBLIC, code -> {
+                    code.aload(0);
+                    code.invokespecial(resolveSuperclass(declaration.superType()), "<init>", VOID_INIT);
+                    for (QinIrFieldDeclaration field : declaration.fields()) {
+                        emitFieldInitializer(code, binaryClassName, field);
+                    }
+                    code.return_();
+                });
+            }
 
-            if (!declaration.fields().isEmpty()) {
+            emitJavaSuperclassConstructors(builder, declaration, binaryClassName);
+
+            if (!declaration.fields().isEmpty() && hasNoArgSuperclassConstructor(declaration.superType())) {
                 builder.withMethod(
                         "<init>",
                         toConstructorDescriptor(declaration.fields()),
@@ -209,6 +215,117 @@ public final class QinJvmDeclarationClassEmitter {
             return OBJECT_DESC;
         }
         return ClassDesc.of(superType.binaryName());
+    }
+
+    private boolean hasNoArgSuperclassConstructor(QinIrTypeRef superType) {
+        if (superType == null
+                || superType.binaryName() == null
+                || superType.binaryName().isBlank()
+                || "java.lang.Object".equals(superType.binaryName())) {
+            return true;
+        }
+        try {
+            Class.forName(superType.binaryName()).getConstructor();
+            return true;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
+        }
+    }
+
+    private void emitJavaSuperclassConstructors(
+            ClassBuilder builder,
+            QinIrClassDeclaration declaration,
+            String binaryClassName) {
+        if (declaration.superType() == null
+                || declaration.superType().binaryName() == null
+                || declaration.superType().binaryName().isBlank()
+                || "java.lang.Object".equals(declaration.superType().binaryName())) {
+            return;
+        }
+        Class<?> superClass;
+        try {
+            superClass = Class.forName(declaration.superType().binaryName());
+        } catch (ReflectiveOperationException ignored) {
+            return;
+        }
+        for (Constructor<?> constructor : superClass.getConstructors()) {
+            if (constructor.getParameterCount() == 0 || !isSupportedPassThroughConstructor(constructor)) {
+                continue;
+            }
+            Class<?>[] parameterTypes = constructor.getParameterTypes();
+            builder.withMethodBody(
+                    "<init>",
+                    toJavaConstructorDescriptor(parameterTypes),
+                    ClassFile.ACC_PUBLIC,
+                    code -> {
+                        code.aload(0);
+                        int localSlot = 1;
+                        for (Class<?> parameterType : parameterTypes) {
+                            loadJavaLocal(code, parameterType, localSlot);
+                            localSlot += javaLocalSlotWidth(parameterType);
+                        }
+                        code.invokespecial(
+                                ClassDesc.of(superClass.getName()),
+                                "<init>",
+                                toJavaConstructorDescriptor(parameterTypes));
+                        for (QinIrFieldDeclaration field : declaration.fields()) {
+                            emitFieldInitializer(code, binaryClassName, field);
+                        }
+                        code.return_();
+                    });
+        }
+    }
+
+    private boolean isSupportedPassThroughConstructor(Constructor<?> constructor) {
+        for (Class<?> parameterType : constructor.getParameterTypes()) {
+            if (parameterType == long.class || parameterType == float.class || parameterType == short.class
+                    || parameterType == byte.class || parameterType == char.class) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private MethodTypeDesc toJavaConstructorDescriptor(Class<?>[] parameterTypes) {
+        List<ClassDesc> parameterDescs = new ArrayList<>();
+        for (Class<?> parameterType : parameterTypes) {
+            parameterDescs.add(toClassDesc(parameterType));
+        }
+        return MethodTypeDesc.ofDescriptor(
+                MethodTypeDesc.of(ClassDesc.ofDescriptor("V"), parameterDescs).descriptorString());
+    }
+
+    private ClassDesc toClassDesc(Class<?> type) {
+        if (type == void.class) {
+            return ClassDesc.ofDescriptor("V");
+        }
+        if (type == boolean.class) {
+            return ClassDesc.ofDescriptor("Z");
+        }
+        if (type == int.class) {
+            return ClassDesc.ofDescriptor("I");
+        }
+        if (type == double.class) {
+            return ClassDesc.ofDescriptor("D");
+        }
+        if (type.isArray()) {
+            return ClassDesc.ofDescriptor(type.descriptorString());
+        }
+        return ClassDesc.of(type.getName());
+    }
+
+    private void loadJavaLocal(java.lang.classfile.CodeBuilder code, Class<?> type, int localSlot) {
+        if (type == boolean.class || type == int.class) {
+            code.iload(localSlot);
+        } else if (type == double.class) {
+            code.dload(localSlot);
+        } else {
+            code.aload(localSlot);
+        }
+    }
+
+    private int javaLocalSlotWidth(Class<?> type) {
+        return type == double.class || type == long.class ? 2 : 1;
     }
 
     private MethodTypeDesc toMethodDescriptor(QinIrMethodDeclaration method) {
