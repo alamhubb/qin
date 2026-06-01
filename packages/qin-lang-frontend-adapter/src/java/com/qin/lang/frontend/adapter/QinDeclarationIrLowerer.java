@@ -84,19 +84,20 @@ final class QinDeclarationIrLowerer {
             ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
             Set<String> localDeclarationNames,
-            Set<String> localJvmDeclarationNames) {
+            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
         boolean jvmSuperclass = classDeclaration.superClass() != null
-                && isResolvableJvmSuperClass(classDeclaration.superClass(), javaImportLookup, localJvmDeclarationNames);
+                && isResolvableJvmSuperClass(classDeclaration.superClass(), javaImportLookup, localJvmDeclarations);
         if (!isDeclarationCompatibleClass(
                 classDeclaration,
                 javaImportLookup,
                 localDeclarationNames,
-                localJvmDeclarationNames)) {
+                localJvmDeclarations)) {
             if (jvmSuperclass) {
                 return lowerJavaSuperclassClassWithRuntimeMethods(
                         classDeclaration,
                         javaImportLookup,
-                        localDeclarationNames);
+                        localDeclarationNames,
+                        localJvmDeclarations);
             }
             return null;
         }
@@ -167,7 +168,8 @@ final class QinDeclarationIrLowerer {
     private QinIrClassDeclaration lowerJavaSuperclassClassWithRuntimeMethods(
             ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
-            Set<String> localDeclarationNames) {
+            Set<String> localDeclarationNames,
+            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
         if (classDeclaration == null || classDeclaration.id() == null || classDeclaration.body() == null) {
             throw qjsError("QJS2030", "java: superclass class declaration is missing id/body");
         }
@@ -186,7 +188,8 @@ final class QinDeclarationIrLowerer {
                             classDeclaration.id().name(),
                             superType,
                             methodDefinition,
-                            javaImportLookup));
+                            javaImportLookup,
+                            localJvmDeclarations));
                     continue;
                 }
                 if (member instanceof PropertyDefinition propertyDefinition) {
@@ -217,23 +220,28 @@ final class QinDeclarationIrLowerer {
             String className,
             QinIrTypeRef superType,
             MethodDefinition methodDefinition,
-            Map<String, String> javaImportLookup) {
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
         if (!(methodDefinition.key() instanceof Identifier identifier)) {
             throw qjsError("QJS2030", "Only identifier java: subclass method names are supported");
         }
         FunctionExpression function = methodDefinition.value();
         List<String> parameterNames = runtimeMethodParameterNames(function);
-        Method reflected = findReflectedMethod(superType.binaryName(), identifier.name(), parameterNames.size());
+        ResolvedJvmMethodSignature inherited = findInheritedJvmMethod(
+                superType.binaryName(),
+                identifier.name(),
+                parameterNames.size(),
+                localJvmDeclarations);
         List<QinIrParameter> parameters = new ArrayList<>();
         for (int i = 0; i < parameterNames.size(); i++) {
-            QinIrTypeRef parameterType = reflected == null
+            QinIrTypeRef parameterType = inherited == null
                     ? QinIrTypeRef.classType("java.lang.Object")
-                    : toQinTypeRef(reflected.getParameterTypes()[i]);
+                    : inherited.parameterTypes().get(i);
             parameters.add(new QinIrParameter(parameterNames.get(i), parameterType, List.of()));
         }
-        QinIrTypeRef returnType = reflected == null
+        QinIrTypeRef returnType = inherited == null
                 ? QinIrTypeRef.classType("java.lang.Object")
-                : toQinTypeRef(reflected.getReturnType());
+                : inherited.returnType();
         QinIrObjectLiteral runtimeDefinition = adapter.lowerRequiredFunctionRuntimeDefinition(
                 function,
                 className + "." + identifier.name(),
@@ -269,9 +277,61 @@ final class QinDeclarationIrLowerer {
         return List.copyOf(names);
     }
 
-    private Method findReflectedMethod(String ownerBinaryName, String methodName, int parameterCount) {
+    private ResolvedJvmMethodSignature findInheritedJvmMethod(
+            String ownerBinaryName,
+            String methodName,
+            int parameterCount,
+            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
+        return findInheritedJvmMethod(
+                ownerBinaryName,
+                methodName,
+                parameterCount,
+                localJvmDeclarations,
+                new java.util.LinkedHashSet<>());
+    }
+
+    private ResolvedJvmMethodSignature findInheritedJvmMethod(
+            String ownerBinaryName,
+            String methodName,
+            int parameterCount,
+            Map<String, QinIrClassDeclaration> localJvmDeclarations,
+            Set<String> visitedLocalTypes) {
         if (ownerBinaryName == null || ownerBinaryName.isBlank()) {
             return null;
+        }
+        QinIrClassDeclaration localDeclaration = localJvmDeclarations == null
+                ? null
+                : localJvmDeclarations.get(ownerBinaryName);
+        if (localDeclaration != null) {
+            if (!visitedLocalTypes.add(ownerBinaryName)) {
+                return null;
+            }
+            QinIrMethodDeclaration matched = null;
+            for (QinIrMethodDeclaration candidate : localDeclaration.methods()) {
+                if (!candidate.name().equals(methodName) || candidate.parameters().size() != parameterCount) {
+                    continue;
+                }
+                if (matched != null) {
+                    throw qjsError("QJS2030", "Ambiguous local java: superclass method: "
+                            + ownerBinaryName + "." + methodName + "/" + parameterCount);
+                }
+                matched = candidate;
+            }
+            if (matched != null) {
+                List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+                for (QinIrParameter parameter : matched.parameters()) {
+                    parameterTypes.add(parameter.type());
+                }
+                return new ResolvedJvmMethodSignature(List.copyOf(parameterTypes), matched.returnType());
+            }
+            return localDeclaration.superType() == null
+                    ? null
+                    : findInheritedJvmMethod(
+                            localDeclaration.superType().binaryName(),
+                            methodName,
+                            parameterCount,
+                            localJvmDeclarations,
+                            visitedLocalTypes);
         }
         try {
             Class<?> ownerClass = Class.forName(ownerBinaryName);
@@ -286,10 +346,24 @@ final class QinDeclarationIrLowerer {
                 }
                 matched = method;
             }
-            return matched;
+            if (matched == null) {
+                return null;
+            }
+            List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+            for (Class<?> parameterType : matched.getParameterTypes()) {
+                parameterTypes.add(toQinTypeRef(parameterType));
+            }
+            return new ResolvedJvmMethodSignature(
+                    List.copyOf(parameterTypes),
+                    toQinTypeRef(matched.getReturnType()));
         } catch (ClassNotFoundException ignored) {
             return null;
         }
+    }
+
+    private record ResolvedJvmMethodSignature(
+            List<QinIrTypeRef> parameterTypes,
+            QinIrTypeRef returnType) {
     }
 
     private QinIrTypeRef toQinTypeRef(Class<?> type) {
@@ -461,7 +535,7 @@ final class QinDeclarationIrLowerer {
             ClassDeclaration classDeclaration,
             Map<String, String> javaImportLookup,
             Set<String> localDeclarationNames,
-            Set<String> localJvmDeclarationNames) {
+            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
         if (classDeclaration == null || classDeclaration.id() == null || classDeclaration.body() == null) {
             return false;
         }
@@ -470,7 +544,7 @@ final class QinDeclarationIrLowerer {
                 classDeclaration.superClass(),
                 javaImportLookup,
                 localDeclarationNames,
-                localJvmDeclarationNames)) {
+                localJvmDeclarations)) {
             return false;
         }
         if (classDeclaration.body().body() == null || classDeclaration.body().body().isEmpty()) {
@@ -561,20 +635,20 @@ final class QinDeclarationIrLowerer {
     private boolean isResolvableJvmSuperClass(
             Expression superClass,
             Map<String, String> javaImportLookup,
-            Set<String> localJvmDeclarationNames) {
+            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
         if (isResolvableSuperClass(superClass, javaImportLookup)) {
             return true;
         }
         return superClass instanceof Identifier identifier
-                && localJvmDeclarationNames != null
-                && localJvmDeclarationNames.contains(identifier.name());
+                && localJvmDeclarations != null
+                && localJvmDeclarations.containsKey(identifier.name());
     }
 
     private boolean isResolvableDeclarationSuperClass(
             Expression superClass,
             Map<String, String> javaImportLookup,
             Set<String> localDeclarationNames,
-            Set<String> localJvmDeclarationNames) {
+            Map<String, QinIrClassDeclaration> localJvmDeclarations) {
         if (isResolvableSuperClass(superClass, javaImportLookup)) {
             return true;
         }
@@ -582,7 +656,7 @@ final class QinDeclarationIrLowerer {
             return false;
         }
         String name = identifier.name();
-        return localJvmDeclarationNames != null && localJvmDeclarationNames.contains(name);
+        return localJvmDeclarations != null && localJvmDeclarations.containsKey(name);
     }
 
     private boolean isDeclarationCompatibleMethodBody(FunctionExpression function) {

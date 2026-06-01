@@ -26,6 +26,7 @@ import com.slime.ast.nodes.statements.IfStatement;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ final class QinTopLevelIrAssembler {
         Map<String, String> javaImportLookup = new HashMap<>();
         Map<String, QinIrExpression> declarationLookup = new HashMap<>();
         Set<String> localDeclarationNames = legacyLowerer.collectTopLevelClassNames(body);
-        Set<String> localJvmDeclarationNames = new LinkedHashSet<>();
+        Map<String, QinIrClassDeclaration> localJvmDeclarations = new LinkedHashMap<>();
         boolean enableGlobalBinding = sourceLength <= 200_000;
         legacyLowerer.predeclareTopLevelBindings(body, declarationLookup);
         if (enableGlobalBinding) {
@@ -138,10 +139,10 @@ final class QinTopLevelIrAssembler {
                         classDeclaration,
                         javaImportLookup,
                         localDeclarationNames,
-                        localJvmDeclarationNames);
+                        localJvmDeclarations);
                 if (loweredClass != null) {
                     assembly.classDeclarations().add(loweredClass);
-                    localJvmDeclarationNames.add(loweredClass.simpleName());
+                    localJvmDeclarations.put(loweredClass.simpleName(), loweredClass);
                 }
                 QinIrConstDeclaration declaration = legacyLowerer.lowerClassDeclarationValue(
                         classDeclaration,

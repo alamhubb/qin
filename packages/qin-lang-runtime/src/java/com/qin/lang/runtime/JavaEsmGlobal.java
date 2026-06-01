@@ -36,6 +36,13 @@ public final class JavaEsmGlobal {
             Set.of("In", "Yield", "Await", "Return", "Default");
     private static final Map<String, Object> GLOBAL_BINDINGS = new NullFriendlyConcurrentMap();
     private static final Map<String, Object> GLOBAL_OBJECT = new NullFriendlyConcurrentMap();
+    private static final Object FIELD_LOOKUP_MISS = new Object();
+    private static final Map<FieldLookupKey, Object> FIELD_LOOKUP_CACHE = new ConcurrentHashMap<>();
+    private static final Object METHOD_LOOKUP_MISS = new Object();
+    private static final Map<Class<?>, List<Method>> METHOD_CANDIDATE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<MethodCandidateKey, List<Method>> METHOD_CANDIDATE_BY_NAME_CACHE = new ConcurrentHashMap<>();
+    private static final Map<MethodLookupKey, Object> METHOD_LOOKUP_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, JavaRecordInfo> JAVA_RECORD_INFO_CACHE = new ConcurrentHashMap<>();
     private static final Object UNRESOLVED_MODULE_REF = new Object();
     private static final Map<String, List<ModuleFieldRef>> MODULE_REFS = new ConcurrentHashMap<>();
     private static final StackWalker CALLER_CLASS_WALKER =
@@ -906,27 +913,22 @@ public final class JavaEsmGlobal {
     }
 
     private static Method findCompatibleMethod(Class<?> ownerClass, String name, int argCount, boolean staticOnly) {
-        for (Method method : candidateMethods(ownerClass)) {
-            if (!method.getName().equals(name) || !isCompatibleArity(method, argCount)) {
-                continue;
-            }
-            if (staticOnly && !Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
+        MethodLookupKey cacheKey = new MethodLookupKey(ownerClass, name, argCount, staticOnly);
+        Object cached = METHOD_LOOKUP_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached == METHOD_LOOKUP_MISS ? null : (Method) cached;
+        }
+        for (Method method : candidateMethods(ownerClass, name, argCount, staticOnly)) {
+            METHOD_LOOKUP_CACHE.put(cacheKey, method);
             return method;
         }
+        METHOD_LOOKUP_CACHE.put(cacheKey, METHOD_LOOKUP_MISS);
         return null;
     }
 
     private static Method findCompatibleMethod(Class<?> ownerClass, String name, Object[] args, boolean staticOnly) {
         Method varArgsCandidate = null;
-        for (Method method : candidateMethods(ownerClass)) {
-            if (!method.getName().equals(name) || !isCompatibleArity(method, args.length)) {
-                continue;
-            }
-            if (staticOnly && !Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
+        for (Method method : candidateMethods(ownerClass, name, args.length, staticOnly)) {
             if (!areCompatibleArguments(args, method)) {
                 continue;
             }
@@ -941,6 +943,27 @@ public final class JavaEsmGlobal {
     }
 
     private static List<Method> candidateMethods(Class<?> ownerClass) {
+        return METHOD_CANDIDATE_CACHE.computeIfAbsent(ownerClass, JavaEsmGlobal::computeCandidateMethods);
+    }
+
+    private static List<Method> candidateMethods(Class<?> ownerClass, String name, int argCount, boolean staticOnly) {
+        MethodCandidateKey cacheKey = new MethodCandidateKey(ownerClass, name, argCount, staticOnly);
+        return METHOD_CANDIDATE_BY_NAME_CACHE.computeIfAbsent(cacheKey, key -> {
+            List<Method> methods = new ArrayList<>();
+            for (Method method : candidateMethods(key.ownerClass())) {
+                if (!method.getName().equals(key.name()) || !isCompatibleArity(method, key.argCount())) {
+                    continue;
+                }
+                if (key.staticOnly() && !Modifier.isStatic(method.getModifiers())) {
+                    continue;
+                }
+                methods.add(method);
+            }
+            return List.copyOf(methods);
+        });
+    }
+
+    private static List<Method> computeCandidateMethods(Class<?> ownerClass) {
         List<Method> methods = new ArrayList<>();
         for (Method method : ownerClass.getMethods()) {
             methods.add(method);
@@ -961,7 +984,7 @@ public final class JavaEsmGlobal {
                 methods.add(method);
             }
         }
-        return methods;
+        return List.copyOf(methods);
     }
 
     private static Object[] coerceArguments(Object[] args, Class<?>[] parameterTypes) {
@@ -1054,30 +1077,61 @@ public final class JavaEsmGlobal {
     }
 
     private static Object coerceJavaRecordFromMap(Map<String, Object> map, Class<?> recordType, boolean validateUnknownKeys) {
-        RecordComponent[] components = recordType.getRecordComponents();
-        Object defaultRecord = instantiateDefaultRecord(recordType);
+        JavaRecordInfo recordInfo = javaRecordInfo(recordType);
         if (validateUnknownKeys) {
-            validateJavaRecordKeys(map, components, recordType);
+            validateJavaRecordKeys(map, recordInfo);
         }
-        Object[] args = new Object[components.length];
-        Class<?>[] parameterTypes = new Class<?>[components.length];
-        Type[] genericParameterTypes = new Type[components.length];
-        for (int i = 0; i < components.length; i++) {
-            RecordComponent component = components[i];
-            parameterTypes[i] = component.getType();
-            genericParameterTypes[i] = component.getGenericType();
-            Object componentValue = readJavaRecordComponentValue(map, component, defaultRecord);
-            args[i] = coerceArgument(componentValue, parameterTypes[i], genericParameterTypes[i]);
+        Object[] args = new Object[recordInfo.components().length];
+        for (int i = 0; i < recordInfo.components().length; i++) {
+            JavaRecordComponentInfo component = recordInfo.components()[i];
+            Object componentValue = readJavaRecordComponentValue(map, component);
+            args[i] = coerceArgument(componentValue, component.type(), component.genericType());
         }
         try {
-            Constructor<?> constructor = recordType.getDeclaredConstructor(parameterTypes);
-            constructor.setAccessible(true);
-            return constructor.newInstance(args);
+            return recordInfo.constructor().newInstance(args);
         } catch (ReflectiveOperationException error) {
             throw new IllegalArgumentException("Failed to lower object literal to Java record "
                     + recordType.getName(), error);
         }
     }
+
+    private static JavaRecordInfo javaRecordInfo(Class<?> recordType) {
+        return JAVA_RECORD_INFO_CACHE.computeIfAbsent(recordType, JavaEsmGlobal::computeJavaRecordInfo);
+    }
+
+    private static JavaRecordInfo computeJavaRecordInfo(Class<?> recordType) {
+        try {
+            RecordComponent[] recordComponents = recordType.getRecordComponents();
+            JavaRecordComponentInfo[] components = new JavaRecordComponentInfo[recordComponents.length];
+            Class<?>[] parameterTypes = new Class<?>[recordComponents.length];
+            Object defaultRecord = instantiateDefaultRecord(recordType);
+            for (int i = 0; i < recordComponents.length; i++) {
+                RecordComponent component = recordComponents[i];
+                Method accessor = component.getAccessor();
+                accessor.setAccessible(true);
+                Object defaultValue = NO_DEFAULT_RECORD_VALUE;
+                if (defaultRecord != null) {
+                    defaultValue = accessor.invoke(defaultRecord);
+                }
+                parameterTypes[i] = component.getType();
+                components[i] = new JavaRecordComponentInfo(
+                        component.getName(),
+                        component.getType(),
+                        component.getGenericType(),
+                        accessor,
+                        javaRecordComponentKeys(component),
+                        javaRecordComponentSpreadKey(component),
+                        defaultValue);
+            }
+            Constructor<?> canonicalConstructor = recordType.getDeclaredConstructor(parameterTypes);
+            canonicalConstructor.setAccessible(true);
+            return new JavaRecordInfo(recordType, components, canonicalConstructor, defaultRecord != null);
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalArgumentException("Failed to inspect Java record " + recordType.getName(), error);
+        }
+    }
+
+    private static final Object NO_DEFAULT_RECORD_VALUE = new Object();
 
     private static Object instantiateDefaultRecord(Class<?> recordType) {
         try {
@@ -1094,24 +1148,23 @@ public final class JavaEsmGlobal {
 
     private static void validateJavaRecordKeys(
             Map<String, Object> map,
-            RecordComponent[] components,
-            Class<?> recordType) {
+            JavaRecordInfo recordInfo) {
         for (String key : map.keySet()) {
             boolean matched = false;
-            for (RecordComponent component : components) {
-                if (javaRecordComponentKeys(component).contains(key)) {
+            for (JavaRecordComponentInfo component : recordInfo.components()) {
+                if (component.keys().contains(key)) {
                     matched = true;
                     break;
                 }
             }
             if (!matched
-                    && isSlimeParserParamsRecord(recordType)
+                    && isSlimeParserParamsRecord(recordInfo.recordType())
                     && SLIME_PARSER_PARAM_BOUNDARY_KEYS.contains(key)) {
                 matched = true;
             }
             if (!matched) {
                 throw new IllegalArgumentException("Unknown key '" + key + "' for Java record "
-                        + recordType.getName());
+                        + recordInfo.recordType().getName());
             }
         }
     }
@@ -1123,23 +1176,17 @@ public final class JavaEsmGlobal {
 
     private static Object readJavaRecordComponentValue(
             Map<String, Object> map,
-            RecordComponent component,
-            Object defaultRecord) {
-        for (String key : javaRecordComponentKeys(component)) {
+            JavaRecordComponentInfo component) {
+        for (String key : component.keys()) {
             if (map.containsKey(key)) {
                 return JavaEsmObject.resolveStoredPropertyValue(map.get(key));
             }
         }
-        if (defaultRecord != null) {
-            try {
-                return component.getAccessor().invoke(defaultRecord);
-            } catch (ReflectiveOperationException error) {
-                throw new IllegalArgumentException("Failed to read default Java record component "
-                        + component.getName(), error);
-            }
+        if (component.defaultValue() != NO_DEFAULT_RECORD_VALUE) {
+            return component.defaultValue();
         }
-        if (component.getType().isPrimitive()) {
-            throw new IllegalArgumentException("Missing required Java record component " + component.getName());
+        if (component.type().isPrimitive()) {
+            throw new IllegalArgumentException("Missing required Java record component " + component.name());
         }
         return null;
     }
@@ -1172,12 +1219,12 @@ public final class JavaEsmGlobal {
 
     private static Map<String, Object> javaRecordEntries(Object record) {
         LinkedHashMap<String, Object> entries = new LinkedHashMap<>();
-        for (RecordComponent component : record.getClass().getRecordComponents()) {
+        for (JavaRecordComponentInfo component : javaRecordInfo(record.getClass()).components()) {
             try {
-                entries.put(javaRecordComponentSpreadKey(component), component.getAccessor().invoke(record));
+                entries.put(component.spreadKey(), component.accessor().invoke(record));
             } catch (ReflectiveOperationException error) {
                 throw new IllegalArgumentException("Failed to read Java record component "
-                        + component.getName(), error);
+                        + component.name(), error);
             }
         }
         return entries;
@@ -1385,13 +1432,22 @@ public final class JavaEsmGlobal {
     }
 
     private static Field findAccessibleField(Class<?> ownerClass, String name, boolean staticOnly) {
-        try {
-            Field field = ownerClass.getField(name);
-            if (!staticOnly || Modifier.isStatic(field.getModifiers())) {
+        FieldLookupKey cacheKey = new FieldLookupKey(ownerClass, name, staticOnly);
+        Object cached = FIELD_LOOKUP_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached == FIELD_LOOKUP_MISS ? null : (Field) cached;
+        }
+        Field field = findAccessibleFieldUncached(ownerClass, name, staticOnly);
+        FIELD_LOOKUP_CACHE.put(cacheKey, field == null ? FIELD_LOOKUP_MISS : field);
+        return field;
+    }
+
+    private static Field findAccessibleFieldUncached(Class<?> ownerClass, String name, boolean staticOnly) {
+        for (Field field : ownerClass.getFields()) {
+            if (field.getName().equals(name)
+                    && (!staticOnly || Modifier.isStatic(field.getModifiers()))) {
                 return field;
             }
-        } catch (NoSuchFieldException ignored) {
-            // Try declared public/protected fields below.
         }
         for (Class<?> current = ownerClass;
                 current != null && current != Object.class;
@@ -1416,6 +1472,32 @@ public final class JavaEsmGlobal {
             }
         }
         return null;
+    }
+
+    private record FieldLookupKey(Class<?> ownerClass, String name, boolean staticOnly) {
+    }
+
+    private record MethodLookupKey(Class<?> ownerClass, String name, int argCount, boolean staticOnly) {
+    }
+
+    private record MethodCandidateKey(Class<?> ownerClass, String name, int argCount, boolean staticOnly) {
+    }
+
+    private record JavaRecordInfo(
+            Class<?> recordType,
+            JavaRecordComponentInfo[] components,
+            Constructor<?> constructor,
+            boolean hasDefaultRecord) {
+    }
+
+    private record JavaRecordComponentInfo(
+            String name,
+            Class<?> type,
+            Type genericType,
+            Method accessor,
+            Set<String> keys,
+            String spreadKey,
+            Object defaultValue) {
     }
 
     private static int toIndex(Object value) {
@@ -2070,11 +2152,11 @@ public final class JavaEsmGlobal {
             return false;
         }
         Map<String, Object> map = castMap(rawMap);
-        RecordComponent[] components = recordType.getRecordComponents();
+        JavaRecordInfo recordInfo = javaRecordInfo(recordType);
         for (String key : map.keySet()) {
             boolean matched = false;
-            for (RecordComponent component : components) {
-                if (javaRecordComponentKeys(component).contains(key)) {
+            for (JavaRecordComponentInfo component : recordInfo.components()) {
+                if (component.keys().contains(key)) {
                     matched = true;
                     break;
                 }
@@ -2088,31 +2170,22 @@ public final class JavaEsmGlobal {
                 return false;
             }
         }
-        if (hasDefaultConstructor(recordType)) {
+        if (recordInfo.hasDefaultRecord()) {
             return true;
         }
-        for (RecordComponent component : components) {
+        for (JavaRecordComponentInfo component : recordInfo.components()) {
             boolean present = false;
-            for (String key : javaRecordComponentKeys(component)) {
+            for (String key : component.keys()) {
                 if (map.containsKey(key)) {
                     present = true;
                     break;
                 }
             }
-            if (!present && component.getType().isPrimitive()) {
+            if (!present && component.type().isPrimitive()) {
                 return false;
             }
         }
         return true;
-    }
-
-    private static boolean hasDefaultConstructor(Class<?> type) {
-        try {
-            type.getDeclaredConstructor();
-            return true;
-        } catch (NoSuchMethodException ignored) {
-            return false;
-        }
     }
 
     private static boolean isSubhutiAlternativeShape(Object value) {

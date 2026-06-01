@@ -40,7 +40,7 @@ public class LocalProjectResolverEnhanced {
     }
 
     public ResolutionResult resolveDependencies(Map<String, String> dependencies) {
-        return resolveDependencies(dependencies, true);
+        return resolveDependencies(dependencies, !isLocalAutoCompileDisabled());
     }
 
     public ResolutionResult resolveDependencies(Map<String, String> dependencies, boolean autoCompile) {
@@ -188,6 +188,7 @@ public class LocalProjectResolverEnhanced {
                     "com.qin.cli.QinCli",
                     "compile");
             pb.directory(project.projectDir.toFile());
+            pb.environment().put("QIN_DISABLE_LOCAL_AUTO_COMPILE", "1");
             pb.redirectErrorStream(true);
 
             Process process = pb.start();
@@ -222,6 +223,14 @@ public class LocalProjectResolverEnhanced {
 
     private String currentCliClasspath() {
         return System.getProperty("java.class.path");
+    }
+
+    private boolean isLocalAutoCompileDisabled() {
+        String envValue = System.getenv("QIN_DISABLE_LOCAL_AUTO_COMPILE");
+        if (envValue != null && (envValue.equals("1") || envValue.equalsIgnoreCase("true"))) {
+            return true;
+        }
+        return Boolean.getBoolean("qin.disableLocalAutoCompile");
     }
 
     private boolean needsRecompilation(ProjectInfo project) {
