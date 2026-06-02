@@ -242,8 +242,20 @@ public final class QinFrontendEsmService {
                 source,
                 sourceModule,
                 specifier -> rewriteSpecifier(sourceModule, specifier));
+        registerViteVirtualModules(result);
         registerVueVirtualModules(moduleFile, result);
         return result.moduleCode();
+    }
+
+    private void registerViteVirtualModules(QinVueSfcModuleResult result) {
+        if (result == null || result.virtualModules() == null || result.virtualModules().isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : result.virtualModules().entrySet()) {
+            if (entry.getKey() != null && !entry.getKey().isBlank() && entry.getValue() != null) {
+                virtualModuleContentMap.put(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     private String transpileVuePluginQueryModule(String requestPath) {
@@ -265,13 +277,16 @@ public final class QinFrontendEsmService {
         QinModuleSource sourceModule = module != null
                 ? module
                 : new QinModuleSource(moduleFile.toAbsolutePath().normalize(), source, List.of());
-        String transformed = vueSfcCompiler.transpileVueQueryModule(
+        QinVueSfcModuleResult result = vueSfcCompiler.transpileVueQueryModule(
                 moduleFile,
                 source,
                 query,
                 sourceModule,
                 specifier -> rewriteSpecifier(sourceModule, specifier));
-        return transformed == null || transformed.isBlank() ? null : transformed;
+        registerViteVirtualModules(result);
+        return result == null || result.moduleCode() == null || result.moduleCode().isBlank()
+                ? null
+                : result.moduleCode();
     }
 
     private String transpileOvsModule(Path moduleFile, String source) {

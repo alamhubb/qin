@@ -70,8 +70,22 @@ public final class QinEsmSpecifierResolver {
                 || "globalthis".equals(normalized);
     }
 
+    public static boolean isViteVirtualModule(String specifier) {
+        if (specifier == null || specifier.isBlank()) {
+            return false;
+        }
+        if (specifier.startsWith("\0")) {
+            return true;
+        }
+        String normalized = specifier.trim();
+        return normalized.startsWith("virtual:");
+    }
+
     public Path resolveModule(Path importerFile, String specifier) {
         if (importerFile == null || specifier == null || specifier.isBlank()) {
+            return null;
+        }
+        if (isViteVirtualModule(specifier)) {
             return null;
         }
         if ("vue".equals(specifier.trim())) {

@@ -91,10 +91,12 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
             if (!(code instanceof String text) || text.isBlank()) {
                 throw new IllegalStateException("plugin-vue transform returned empty code: " + result);
             }
-            String rewritten = rewriteSpecifiers(text, specifierRewriter, IMPORT_FROM_PATTERN);
-            rewritten = rewriteSpecifiers(rewritten, specifierRewriter, EXPORT_FROM_PATTERN);
-            rewritten = rewriteSpecifiers(rewritten, specifierRewriter, IMPORT_SIDE_EFFECT_PATTERN);
-            return new QinVueSfcModuleResult(rewritten, "", "");
+            Map<String, String> specifierRewrites = decodeStringMap(map.get("specifierRewrites"));
+            Map<String, String> virtualModules = decodeStringMap(map.get("virtualModules"));
+            String rewritten = rewriteSpecifiers(text, specifierRewrites, specifierRewriter, IMPORT_FROM_PATTERN);
+            rewritten = rewriteSpecifiers(rewritten, specifierRewrites, specifierRewriter, EXPORT_FROM_PATTERN);
+            rewritten = rewriteSpecifiers(rewritten, specifierRewrites, specifierRewriter, IMPORT_SIDE_EFFECT_PATTERN);
+            return new QinVueSfcModuleResult(rewritten, "", "", virtualModules);
         } catch (IllegalStateException error) {
             throw error;
         } catch (Exception error) {
@@ -105,7 +107,7 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
     }
 
     @Override
-    public String transpileVueQueryModule(
+    public QinVueSfcModuleResult transpileVueQueryModule(
             Path moduleFile,
             String source,
             String query,
@@ -124,12 +126,19 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
             if (!(code instanceof String text) || text.isBlank()) {
                 return null;
             }
+            Map<String, String> virtualModules = decodeStringMap(map.get("virtualModules"));
             if (query.contains("type=style")) {
-                return renderCssInjectionModule(text, moduleFile, query);
+                return new QinVueSfcModuleResult(
+                        renderCssInjectionModule(text, moduleFile, query),
+                        "",
+                        "",
+                        virtualModules);
             }
-            String rewritten = rewriteSpecifiers(text, specifierRewriter, IMPORT_FROM_PATTERN);
-            rewritten = rewriteSpecifiers(rewritten, specifierRewriter, EXPORT_FROM_PATTERN);
-            return rewriteSpecifiers(rewritten, specifierRewriter, IMPORT_SIDE_EFFECT_PATTERN);
+            Map<String, String> specifierRewrites = decodeStringMap(map.get("specifierRewrites"));
+            String rewritten = rewriteSpecifiers(text, specifierRewrites, specifierRewriter, IMPORT_FROM_PATTERN);
+            rewritten = rewriteSpecifiers(rewritten, specifierRewrites, specifierRewriter, EXPORT_FROM_PATTERN);
+            rewritten = rewriteSpecifiers(rewritten, specifierRewrites, specifierRewriter, IMPORT_SIDE_EFFECT_PATTERN);
+            return new QinVueSfcModuleResult(rewritten, "", "", virtualModules);
         } catch (IllegalStateException error) {
             throw error;
         } catch (Exception error) {
@@ -140,7 +149,11 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
         }
     }
 
-    private String rewriteSpecifiers(String source, QinVueSpecifierRewriter specifierRewriter, Pattern pattern) {
+    private String rewriteSpecifiers(
+            String source,
+            Map<String, String> pluginSpecifierRewrites,
+            QinVueSpecifierRewriter specifierRewriter,
+            Pattern pattern) {
         if (source == null || source.isBlank() || specifierRewriter == null) {
             return source;
         }
@@ -150,12 +163,29 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
             String prefix = matcher.group(1);
             String specifier = matcher.group(2);
             String suffix = matcher.group(3);
+            String rewrittenSpecifier = pluginSpecifierRewrites.get(specifier);
+            if (rewrittenSpecifier == null) {
+                rewrittenSpecifier = specifierRewriter.rewrite(specifier);
+            }
             matcher.appendReplacement(
                     out,
-                    Matcher.quoteReplacement(prefix + specifierRewriter.rewrite(specifier) + suffix));
+                    Matcher.quoteReplacement(prefix + rewrittenSpecifier + suffix));
         }
         matcher.appendTail(out);
         return out.toString();
+    }
+
+    private Map<String, String> decodeStringMap(Object value) {
+        if (!(value instanceof Map<?, ?> raw) || raw.isEmpty()) {
+            return Map.of();
+        }
+        java.util.LinkedHashMap<String, String> out = new java.util.LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : raw.entrySet()) {
+            if (entry.getKey() instanceof String key && entry.getValue() instanceof String text) {
+                out.put(key, text);
+            }
+        }
+        return out;
     }
 
     private String buildWrapperSource(Path projectRoot, Path moduleFile, String source) {
@@ -172,9 +202,18 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   ? %s
                   : (typeof qinLoaded === "string" ? qinLoaded : qinLoaded.code);
                 const qinTransformResult = qinApplyTransforms(qinPlugins, qinPluginContext, qinInitialCode, qinMainId);
+                const qinVirtualModules = qinCollectVirtualModules(
+                  qinPlugins,
+                  qinPluginContext,
+                  qinResolvedConfig,
+                  typeof qinTransformResult === "string" ? qinTransformResult : qinTransformResult.code,
+                  qinMainId
+                );
                 ({
                   code: typeof qinTransformResult === "string" ? qinTransformResult : qinTransformResult.code,
                   map: typeof qinTransformResult === "string" ? null : qinTransformResult.map,
+                  specifierRewrites: qinVirtualModules.specifierRewrites,
+                  virtualModules: qinVirtualModules.virtualModules,
                   configMarker: qinResolvedConfig && qinResolvedConfig.__qinConfigMarker
                 });
                 """.formatted(
@@ -198,9 +237,18 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                 let code = typeof loaded === "string" ? loaded : loaded && loaded.code;
                 const transformed = code == null ? null : qinApplyTransforms(qinPlugins, qinPluginContext, code, id);
                 const finalResult = transformed || loaded;
+                const qinVirtualModules = qinCollectVirtualModules(
+                  qinPlugins,
+                  qinPluginContext,
+                  qinResolvedConfig,
+                  finalResult && (typeof finalResult === "string" ? finalResult : finalResult.code),
+                  id
+                );
                 ({
                   code: typeof finalResult === "string" ? finalResult : finalResult && finalResult.code,
                   map: typeof finalResult === "string" ? null : finalResult && finalResult.map,
+                  specifierRewrites: qinVirtualModules.specifierRewrites,
+                  virtualModules: qinVirtualModules.virtualModules,
                   loadedType: typeof loaded,
                   transformedType: typeof transformed,
                   configMarker: qinResolvedConfig && qinResolvedConfig.__qinConfigMarker
@@ -475,6 +523,45 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                     code = typeof result === "string" ? result : result.code;
                   }
                   return lastResult || { code, map: null };
+                }
+                function qinCollectImportSpecifiers(source) {
+                  const text = String(source || "");
+                  const specifiers = [];
+                  const patterns = [
+                    /import\\s+[^"'\\n]*?\\s+from\\s*["']([^"']+)["']/g,
+                    /import\\s*["']([^"']+)["']/g,
+                    /export\\s+(?:\\*\\s*(?:as\\s+[A-Za-z_$][\\w$]*\\s*)?|\\{[^}\\n]*})\\s*from\\s*["']([^"']+)["']/g
+                  ];
+                  for (const pattern of patterns) {
+                    let match;
+                    while ((match = pattern.exec(text))) specifiers.push(match[1]);
+                  }
+                  return Array.from(new Set(specifiers));
+                }
+                function qinVirtualRequestPath(id, index) {
+                  const clean = String(id || "virtual")
+                    .replace(/^\\u0000+/, "virtual_")
+                    .replace(/[^A-Za-z0-9_$.-]/g, "_");
+                  return "/@qin-mod/__vite_virtual/" + clean + "-" + index + ".js";
+                }
+                function qinCollectVirtualModules(plugins, context, config, source, importer) {
+                  const specifierRewrites = {};
+                  const virtualModules = {};
+                  let index = 0;
+                  for (const specifier of qinCollectImportSpecifiers(source)) {
+                    const resolved = qinResolveWithPlugins(plugins, context, specifier, importer, config, null);
+                    if (!resolved || !resolved.id) continue;
+                    const resolvedId = String(resolved.id);
+                    if (!(resolvedId.startsWith("virtual:") || resolvedId.startsWith("\\u0000"))) continue;
+                    const loaded = qinApplyLoad(plugins, context, resolvedId);
+                    if (loaded == null) continue;
+                    const code = typeof loaded === "string" ? loaded : loaded.code;
+                    if (code == null) continue;
+                    const requestPath = qinVirtualRequestPath(resolvedId, index++);
+                    specifierRewrites[specifier] = requestPath;
+                    virtualModules[requestPath] = String(code);
+                  }
+                  return { specifierRewrites, virtualModules };
                 }
                 function qinApplyHotUpdate(plugins, server, file) {
                   const normalizedFile = qinNormalizePath(file);

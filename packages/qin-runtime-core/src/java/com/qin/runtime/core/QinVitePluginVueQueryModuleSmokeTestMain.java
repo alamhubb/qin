@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 public final class QinVitePluginVueQueryModuleSmokeTestMain {
     private static final Pattern STYLE_IMPORT = Pattern.compile(
             "import(?:\\s+[^\"'\\n]+\\s+from)?\\s+[\"']([^\"']*\\?vue&type=style[^\"']*)[\"']");
+    private static final Pattern VIRTUAL_IMPORT = Pattern.compile(
+            "from\\s+[\"']([^\"']*/__vite_virtual/[^\"']+)[\"']");
 
     private QinVitePluginVueQueryModuleSmokeTestMain() {
     }
@@ -47,6 +49,12 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                     resolveId(id, importer) {
                       if (id === './dep.js' && String(importer).includes('Comp.vue')) {
                         return { id: 'virtual:qin-dep', meta: { marker: 'resolve-hook-ran' } }
+                      }
+                      if (id === 'virtual:qin-query-message') return id
+                    },
+                    load(id) {
+                      if (id === 'virtual:qin-query-message') {
+                        return 'export const message = "hello from query virtual module"'
                       }
                     }
                   }
@@ -95,6 +103,12 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                         }
                       }
                       if (textId.includes('Comp.vue')) {
+                        if (textId.includes('?vue&type=template')) {
+                          return String(code)
+                            .replace('Pre Works', 'Config Works')
+                            + "\\nimport { message as qinQueryMessage } from 'virtual:qin-query-message'"
+                            + "\\nexport const qinQueryVirtualMessage = qinQueryMessage"
+                        }
                         return String(code).replace('Pre Works', 'Config Works')
                       }
                     }
@@ -159,6 +173,16 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                 || !templateModule.contains("Config Works")) {
             throw new IllegalStateException("Expected template query module from plugin-vue, got:\n"
                     + templateModule);
+        }
+        Matcher virtualMatcher = VIRTUAL_IMPORT.matcher(templateModule);
+        if (!virtualMatcher.find()) {
+            throw new IllegalStateException("Expected template query virtual import rewrite, got:\n"
+                    + templateModule);
+        }
+        String queryVirtualModule = service.transpileByRequestPath(virtualMatcher.group(1));
+        if (queryVirtualModule == null || !queryVirtualModule.contains("hello from query virtual module")) {
+            throw new IllegalStateException("Expected query virtual module content, got:\n"
+                    + queryVirtualModule);
         }
 
         String scriptModule = service.transpileByRequestPath("/@qin-mod/src/Comp.vue.js?vue&type=script&lang.js");

@@ -21,7 +21,7 @@ interface QinVueSfcCompiler {
             QinModuleSource sourceModule,
             QinVueSpecifierRewriter specifierRewriter);
 
-    default String transpileVueQueryModule(
+    default QinVueSfcModuleResult transpileVueQueryModule(
             Path moduleFile,
             String source,
             String query,

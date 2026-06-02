@@ -7,13 +7,20 @@ public enum QinImportKind {
     JAVA,
     JS,
     LOCAL,
+    VIRTUAL,
     UNKNOWN;
 
     public static QinImportKind fromSpecifier(String specifier) {
         if (specifier == null || specifier.isBlank()) {
             return UNKNOWN;
         }
+        if (specifier.startsWith("\0")) {
+            return VIRTUAL;
+        }
         String normalized = specifier.trim();
+        if (normalized.startsWith("virtual:")) {
+            return VIRTUAL;
+        }
         boolean isScriptExt = normalized.endsWith(".js")
                 || normalized.endsWith(".mjs")
                 || normalized.endsWith(".ts")
