@@ -10,7 +10,7 @@ public final class QinJsMultiLevelSuperOptionsSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-multi-super-options-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-multi-super-options\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-multi-super-options\" }\n", StandardCharsets.UTF_8);
         String source = """
                 class Lexer {
                   constructor(tokens) {
@@ -58,3 +58,4 @@ public final class QinJsMultiLevelSuperOptionsSmokeTestMain {
         System.out.println("QinJsMultiLevelSuperOptionsSmokeTestMain OK");
     }
 }
+

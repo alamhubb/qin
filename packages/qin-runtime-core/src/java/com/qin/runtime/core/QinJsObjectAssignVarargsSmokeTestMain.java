@@ -11,7 +11,7 @@ public final class QinJsObjectAssignVarargsSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-object-assign-varargs-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-object-assign-varargs\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-object-assign-varargs\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const target = { a: 1 };
                 const result = Object.assign(target, { b: 2 }, { c: 3 });
@@ -40,3 +40,4 @@ public final class QinJsObjectAssignVarargsSmokeTestMain {
         }
     }
 }
+

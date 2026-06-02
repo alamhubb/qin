@@ -305,7 +305,7 @@ public final class QinFullstackServeMain {
                 cwd.resolve("examples/qin-fullstack-demo")
         };
         for (Path candidate : candidates) {
-            if (Files.exists(candidate.resolve("qin.config.json"))) {
+            if (Files.exists(candidate.resolve("qin.config.js"))) {
                 return candidate;
             }
         }

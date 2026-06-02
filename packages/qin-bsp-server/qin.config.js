@@ -1,4 +1,4 @@
-{
+export default {
     "name":  "com.qin:qin-bsp-server",
     "version":  "0.1.0",
     "description":  "Qin BSP Server - Build Server Protocol for Qin",
@@ -15,3 +15,4 @@
                  "target":  "21"
              }
 }
+

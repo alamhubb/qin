@@ -20,7 +20,7 @@ public final class QinJsTextDecoderSmokeTestMain {
                 text === "Hello" ? 42 : 0;
                 """;
         Path root = Files.createTempDirectory("qin-js-text-decoder-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-text-decoder\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-text-decoder\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "text_decoder");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -28,3 +28,4 @@ public final class QinJsTextDecoderSmokeTestMain {
         System.out.println("QinJsTextDecoderSmokeTestMain OK");
     }
 }
+

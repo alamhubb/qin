@@ -13,18 +13,18 @@ public final class QinRunEntryParityTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = resolveFullstackMvpRoot();
-        Path config = root.resolve("qin.config.json").normalize();
+        Path config = root.resolve("qin.config.js").normalize();
         Path launcher = root.resolve("launcher/com/qin/demo/FullstackApplication.java").normalize();
         Path qinBackendEntry = root.resolve("main/main.qin").normalize();
 
-        requireFile(config, "qin.config.json");
+        requireFile(config, "qin.config.js");
         requireFile(launcher, "launcher");
         requireFile(qinBackendEntry, "main/main.qin");
 
         String configText = Files.readString(config, StandardCharsets.UTF_8);
         String launcherText = Files.readString(launcher, StandardCharsets.UTF_8);
         if (!configText.contains("\"entry\"")) {
-            throw new IllegalStateException("qin.config.json missing entry field");
+            throw new IllegalStateException("qin.config.js missing entry field");
         }
         if (!launcherText.contains("QinRuntimeApi.runFullstack")) {
             throw new IllegalStateException("launcher does not delegate to QinRuntimeApi");
@@ -62,4 +62,5 @@ public final class QinRunEntryParityTestMain {
         }
     }
 }
+
 

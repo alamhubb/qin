@@ -11,7 +11,7 @@ public final class QinJsRuntimeForInSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-runtime-for-in-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-runtime-for-in\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-runtime-for-in\" }\n", StandardCharsets.UTF_8);
         String source = """
                 function collect(input) {
                   let result = "";
@@ -37,3 +37,4 @@ public final class QinJsRuntimeForInSmokeTestMain {
         }
     }
 }
+

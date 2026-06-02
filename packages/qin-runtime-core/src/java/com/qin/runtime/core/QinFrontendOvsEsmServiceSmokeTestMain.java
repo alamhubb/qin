@@ -10,7 +10,7 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-frontend-ovs-");
-        Files.writeString(root.resolve("qin.config.json"), """
+        Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "qin-frontend-ovs-smoke",
                   "dependencies": {
@@ -72,3 +72,4 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
         System.out.println("QinFrontendOvsEsmServiceSmokeTestMain passed.");
     }
 }
+

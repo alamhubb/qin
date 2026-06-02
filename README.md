@@ -1,48 +1,34 @@
-# Qin - AI 时代的全栈应用语言
+﻿# Qin - AI 鏃朵唬鐨勫叏鏍堝簲鐢ㄨ瑷€
 
-> 用一套 Qin 代码描述应用，让 AI 写代码，让 Qin 负责运行、构建和部署。
-
+> 鐢ㄤ竴濂?Qin 浠ｇ爜鎻忚堪搴旂敤锛岃 AI 鍐欎唬鐮侊紝璁?Qin 璐熻矗杩愯銆佹瀯寤哄拰閮ㄧ讲銆?
 [![Java Version](https://img.shields.io/badge/Java-25%20LTS-orange.svg)](https://openjdk.org/projects/jdk/25/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## 📖 Qin 是什么？
+## 馃摉 Qin 鏄粈涔堬紵
 
-**Qin** 的目标不是再做一个“更现代的 Java 构建工具”，而是做一门 **AI-native 全栈应用语言**：
+**Qin** 鐨勭洰鏍囦笉鏄啀鍋氫竴涓€滄洿鐜颁唬鐨?Java 鏋勫缓宸ュ叿鈥濓紝鑰屾槸鍋氫竴闂?**AI-native 鍏ㄦ爤搴旂敤璇█**锛?
+- 浣跨敤 ESM 椋庢牸璇硶
+- 浠?JVM 浣滀负涓昏鍚庣/杩愯鏃跺唴鏍?- 浠ュ墠绔?JS 鐢熸垚涓虹涓€绫荤洰鏍?- 鐢ㄧ粺涓€鐨勮瑷€妯″瀷瑕嗙洊搴旂敤銆侀〉闈€佹帴鍙ｃ€佹暟鎹笌閮ㄧ讲
 
-- 使用 ESM 风格语法
-- 以 JVM 作为主要后端/运行时内核
-- 以前端 JS 生成为第一类目标
-- 用统一的语言模型覆盖应用、页面、接口、数据与部署
+瀵圭敤鎴风殑鐞嗘兂浣撻獙鏄細
 
-对用户的理想体验是：
+- 鐢?Qin 鎻忚堪搴旂敤
+- 鐢?AI 鐢熸垚鎴栦慨鏀?Qin 浠ｇ爜
+- `qin dev` 鏈湴鍚姩
+- `qin deploy` 涓€閿儴缃?
+鐢ㄦ埛涓嶉渶瑕佸厛鍏冲績锛?
+- 鍓嶇杩樻槸鍚庣
+- controller / service / DTO 鎬庝箞鎷?- Spring / JS / 閮ㄧ讲缁嗚妭鎬庝箞鎺?
+杩欎簺搴旇閫愭鐢?Qin 缂栬瘧鍣ㄣ€佽繍琛屾椂銆佸伐鍏烽摼鍜屽钩鍙版潵灏佽銆?
+### 褰撳墠鐜板疄涓庢渶缁堢洰鏍?
+褰撳墠 Qin 杩樺鍦ㄢ€滀粠璇█/杩愯鏃跺熀纭€璁炬柦璧板悜浜у搧褰㈡€佲€濈殑闃舵锛?
+- 鐜板湪宸茬粡鏈夌粺涓€璇█妯″瀷銆丣VM/JS backend銆乣.qin + Spring Boot` demo銆乼arget zoning
+- 浣嗘渶缁堝舰鎬佷笉搴旇璁╂櫘閫氱敤鎴烽暱鏈熷仠鐣欏湪鈥滄墜鍐欏墠鍚庣鍒嗗眰 + 瀹夸富澹斥€濈殑宸ヤ綔鏂瑰紡閲?
+褰撳墠鎵ц浼樺厛绾э細
 
-- 用 Qin 描述应用
-- 用 AI 生成或修改 Qin 代码
-- `qin dev` 本地启动
-- `qin deploy` 一键部署
-
-用户不需要先关心：
-
-- 前端还是后端
-- controller / service / DTO 怎么拆
-- Spring / JS / 部署细节怎么接
-
-这些应该逐步由 Qin 编译器、运行时、工具链和平台来封装。
-
-### 当前现实与最终目标
-
-当前 Qin 还处在“从语言/运行时基础设施走向产品形态”的阶段：
-
-- 现在已经有统一语言模型、JVM/JS backend、`.qin + Spring Boot` demo、target zoning
-- 但最终形态不应该让普通用户长期停留在“手写前后端分层 + 宿主壳”的工作方式里
-
-当前执行优先级：
-
-- 先把 Qin 做成一门普通可用的全栈语言
-- 先完成 Stage 1 的语言、编译、运行、全栈链路稳定性
-- 更高层的 Qin 应用抽象留到 Stage 2 再系统推进
-
-更完整的产品定位见：
+- 鍏堟妸 Qin 鍋氭垚涓€闂ㄦ櫘閫氬彲鐢ㄧ殑鍏ㄦ爤璇█
+- 鍏堝畬鎴?Stage 1 鐨勮瑷€銆佺紪璇戙€佽繍琛屻€佸叏鏍堥摼璺ǔ瀹氭€?- 鏇撮珮灞傜殑 Qin 搴旂敤鎶借薄鐣欏埌 Stage 2 鍐嶇郴缁熸帹杩?
+鏇村畬鏁寸殑浜у搧瀹氫綅瑙侊細
 
 - `packages/qin-runtime-core/QIN_APP_MODEL.md`
 - `packages/qin-runtime-core/QIN_MISSION_AND_VALUE.md`
@@ -55,65 +41,47 @@
 - `packages/qin-runtime-core/QIN_JS_ON_JVM_FEASIBILITY.md`
 - `packages/qin-runtime-core/QIN_CSSTS_INTEGRATION_MODEL.md`
 
-### 核心理念
+### 鏍稿績鐞嗗康
 
 ```
-描述应用，而不是先描述前端/后端分层
+鎻忚堪搴旂敤锛岃€屼笉鏄厛鎻忚堪鍓嶇/鍚庣鍒嗗眰
 ```
 
-### 我们为什么要做 Qin
+### 鎴戜滑涓轰粈涔堣鍋?Qin
 
-Qin 的意义不在于“把 JavaScript 用 Java 重写一遍”。
+Qin 鐨勬剰涔変笉鍦ㄤ簬鈥滄妸 JavaScript 鐢?Java 閲嶅啓涓€閬嶁€濄€?
+濡傛灉 Qin 鏈€缁堝彧鏄細
 
-如果 Qin 最终只是：
+- 鎺ヨ繎 JS 鐨勮娉?- 鍐嶅姞涓婅兘璋冪敤 Spring Boot / JVM 鐢熸€?
+閭ｅ畠鐨勪环鍊兼槸涓嶅澶х殑銆?
+Qin 鐪熸瑕佽瘉鏄庣殑浠峰€兼槸锛?
+- 鐢?AI 鏇寸啛鎮夌殑鐜颁唬璇硶锛岀粺涓€鏇村鍓嶅悗绔紑鍙戝伐浣?- 鐩存帴杩涘叆 JVM / `.class` / Spring Boot / Java 鐢熸€?- 闄嶄綆澶氳瑷€銆佸杩愯鏃躲€佸鏋勫缓閾捐矾涔嬮棿鐨勮兌姘村鏉傚害
+- 鏈€缁堟妸 `dev/build/deploy` 鏀舵垚鏇翠竴浣撳寲鐨勫叏鏍堜綋楠?
+涔熷氨鏄锛孮in 涓嶆槸涓轰簡鈥滃儚 JS鈥濊€屽瓨鍦ㄣ€?Qin 鍙湁鍦ㄥ畠鑳藉甫鏉ユ洿寮虹殑 JVM-centered fullstack workflow 鏃讹紝鎵嶅€煎緱浣滀负涓€闂ㄧ嫭绔嬭瑷€缁х画鍙戝睍銆?
+### Qin 瑙ｅ喅鐨勯棶棰?
+1. **搴旂敤寮€鍙戜粛鐒惰繃搴﹀垎灞?*
+    - 鐢ㄦ埛鍏堣杩€濊€冨墠绔€佸悗绔€丏TO銆佽矾鐢便€侀儴缃?    - Qin 鐨勭洰鏍囨槸鍏堟弿杩板簲鐢ㄦ剰鍥撅紝鍐嶇敱骞冲彴灞曞紑 target 缁嗚妭
 
-- 接近 JS 的语法
-- 再加上能调用 Spring Boot / JVM 生态
+2. **AI 鍐欏簲鐢ㄤ唬鐮佹椂涓婁笅鏂囧お纰?*
+    - 浼犵粺宸ョ▼闇€瑕佽法澶氫釜妗嗘灦灞傛墜宸ュ榻?    - Qin 闇€瑕佹彁渚涙洿缁熶竴銆佷綆姝т箟銆佸彲鐢熸垚鐨勫簲鐢ㄦā鍨?
+3. **鍏ㄦ爤寮€鍙戠殑杩愯涓庨儴缃查摼璺繃閲?*
+    - 鏈湴杩愯銆佷緷璧栨嫾瑁呫€佸涓婚泦鎴愩€佸彂甯冧笂绾块兘鍒嗘暎
+    - Qin 鐩爣鏄粺涓€涓?`dev/build/deploy`
 
-那它的价值是不够大的。
-
-Qin 真正要证明的价值是：
-
-- 用 AI 更熟悉的现代语法，统一更多前后端开发工作
-- 直接进入 JVM / `.class` / Spring Boot / Java 生态
-- 降低多语言、多运行时、多构建链路之间的胶水复杂度
-- 最终把 `dev/build/deploy` 收成更一体化的全栈体验
-
-也就是说，Qin 不是为了“像 JS”而存在。
-Qin 只有在它能带来更强的 JVM-centered fullstack workflow 时，才值得作为一门独立语言继续发展。
-
-### Qin 解决的问题
-
-1. **应用开发仍然过度分层**
-    - 用户先被迫思考前端、后端、DTO、路由、部署
-    - Qin 的目标是先描述应用意图，再由平台展开 target 细节
-
-2. **AI 写应用代码时上下文太碎**
-    - 传统工程需要跨多个框架层手工对齐
-    - Qin 需要提供更统一、低歧义、可生成的应用模型
-
-3. **全栈开发的运行与部署链路过重**
-    - 本地运行、依赖拼装、宿主集成、发布上线都分散
-    - Qin 目标是统一为 `dev/build/deploy`
-
-4. **底层平台差异暴露过早**
-    - JVM、JS、Spring、浏览器能力本应是平台展开问题
-    - Qin 目标是对普通应用作者尽量隐藏这些实现细节
-
-### 构建工具层仍然重要
-
-Qin 依然包含很强的工程工具链能力：
-
-- JSON / TypeScript 风格配置
-- 本地依赖与 monorepo 支持
-- Java 25 / JVM 工具体系集成
+4. **搴曞眰骞冲彴宸紓鏆撮湶杩囨棭**
+    - JVM銆丣S銆丼pring銆佹祻瑙堝櫒鑳藉姏鏈簲鏄钩鍙板睍寮€闂
+    - Qin 鐩爣鏄鏅€氬簲鐢ㄤ綔鑰呭敖閲忛殣钘忚繖浜涘疄鐜扮粏鑺?
+### 鏋勫缓宸ュ叿灞備粛鐒堕噸瑕?
+Qin 渚濈劧鍖呭惈寰堝己鐨勫伐绋嬪伐鍏烽摼鑳藉姏锛?
+- JSON / TypeScript 椋庢牸閰嶇疆
+- 鏈湴渚濊禆涓?monorepo 鏀寔
+- Java 25 / JVM 宸ュ叿浣撶郴闆嗘垚
 - `qin run / sync / build`
 
-但这些属于 Qin 产品的一部分，不再是 Qin 的最高层定义。
+浣嗚繖浜涘睘浜?Qin 浜у搧鐨勪竴閮ㄥ垎锛屼笉鍐嶆槸 Qin 鐨勬渶楂樺眰瀹氫箟銆?
+### 瀵规瘮绀轰緥
 
-### 对比示例
-
-**Maven pom.xml** (30+ 行):
+**Maven pom.xml** (30+ 琛?:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0">
@@ -139,7 +107,7 @@ Qin 依然包含很强的工程工具链能力：
 </project>
 ```
 
-**Qin qin.config.json** (10 行):
+**Qin qin.config.js** (10 琛?:
 ```json
 {
   "name": "my-app",
@@ -150,71 +118,70 @@ Qin 依然包含很强的工程工具链能力：
 }
 ```
 
-### Qin 适合谁？
+### Qin 閫傚悎璋侊紵
 
-- ✅ **前端转 Java 开发者** - 熟悉的 npm 风格配置
-- ✅ **厌倦 XML 的 Java 开发者** - 简洁的 JSON/TypeScript 配置
-- ✅ **Monorepo 用户** - 原生多项目支持
-- ✅ **追求性能的开发者** - Java 25 带来 2-5x 性能提升
-- ✅ **全栈开发者** - 内置 Qin 原生前端开发服务器，不依赖 Vite 子进程
+- 鉁?**鍓嶇杞?Java 寮€鍙戣€?* - 鐔熸倝鐨?npm 椋庢牸閰嶇疆
+- 鉁?**鍘屽€?XML 鐨?Java 寮€鍙戣€?* - 绠€娲佺殑 JSON/TypeScript 閰嶇疆
+- 鉁?**Monorepo 鐢ㄦ埛** - 鍘熺敓澶氶」鐩敮鎸?
+- 鉁?**杩芥眰鎬ц兘鐨勫紑鍙戣€?* - Java 25 甯︽潵 2-5x 鎬ц兘鎻愬崌
+- 鉁?**鍏ㄦ爤寮€鍙戣€?* - 鍐呯疆 Qin 鍘熺敓鍓嶇寮€鍙戞湇鍔″櫒锛屼笉渚濊禆 Vite 瀛愯繘绋?
+## Qin 璇█瀹氫綅锛堝叏鏍堟柟鍚戯級
 
-## Qin 语言定位（全栈方向）
+Qin 鐨勬牳蹇冨畾浣嶏細
 
-Qin 的核心定位：
+- **Qin = JS/ESM 璇硶椋庢牸鐨勭紪璇戝瀷璇█锛圝VM 鍐呮牳锛?*
+- 涓嶆槸瀹屾暣 JS 寮曟搸锛屼笉鍏煎 Node 涓撴湁 API
+- 鐩爣鏄€滀竴濂楄瑷€鍐欏墠鍚庣鈥濓紝鑰屼笉鏄€滃鍒?Node 鐢熸€佲€?
 
-- **Qin = JS/ESM 语法风格的编译型语言（JVM 内核）**
-- 不是完整 JS 引擎，不兼容 Node 专有 API
-- 目标是“一套语言写前后端”，而不是“复刻 Node 生态”
+涓轰粈涔堣鍦?Java 渚у疄鐜?JS-SDK锛堝 `console` / `Math` / `JSON`锛夛細
 
-为什么要在 Java 侧实现 JS-SDK（如 `console` / `Math` / `JSON`）：
+- Qin 鍚庣鐩爣鏄?`.class`锛岃繍琛屽湪 JVM锛屼笉鏄洿鎺ヨ窇鍦ㄦ祻瑙堝櫒閲?
+- 浣嗚瑷€灞傞噰鐢?JS/ESM 璇硶锛屽紑鍙戣€呭ぉ鐒朵細浣跨敤 JS 鍐呭缓鑳藉姏
+- 濡傛灉娌℃湁 JS-SDK锛岃娉曡櫧鐒跺儚 JS锛岃繍琛屾椂琛屼负灏变細鏂眰
+- 鍥犳闇€瑕佲€滅紪璇戞湡鏄犲皠 + 杩愯鏃跺疄鐜扳€濈殑 JS-SDK 浣滀负璇█鍩虹璁炬柦
 
-- Qin 后端目标是 `.class`，运行在 JVM，不是直接跑在浏览器里
-- 但语言层采用 JS/ESM 语法，开发者天然会使用 JS 内建能力
-- 如果没有 JS-SDK，语法虽然像 JS，运行时行为就会断层
-- 因此需要“编译期映射 + 运行时实现”的 JS-SDK 作为语言基础设施
+Qin 鐨勫垎灞傝璁★細
 
-Qin 的分层设计：
+1. 璇█灞傦細JS/ESM 璇硶瀛愰泦锛坧arser/AST/璇箟妫€鏌ワ級
+2. 杩愯鏃跺眰锛氬钩鍙版棤鍏?JS-SDK锛堝 `console` / `Math` / `JSON` / `Object`锛?
+3. 骞冲彴灞傦紙鍚庣锛夛細JVM 杩愯锛堝彲璋冪敤 Java/JDK 鑳藉姏锛?
+4. 骞冲彴灞傦紙鍓嶇锛夛細娴忚鍣ㄨ繍琛岋紙Web 骞冲彴鑳藉姏锛?
 
-1. 语言层：JS/ESM 语法子集（parser/AST/语义检查）
-2. 运行时层：平台无关 JS-SDK（如 `console` / `Math` / `JSON` / `Object`）
-3. 平台层（后端）：JVM 运行（可调用 Java/JDK 能力）
-4. 平台层（前端）：浏览器运行（Web 平台能力）
+璁捐鍘熷垯锛?
 
-设计原则：
+- 璇硶灏介噺 JS 涓€鑷达紝璇箟淇濇寔鍙帶瀛愰泦
+- 骞冲彴鑳藉姏鍒嗗眰闅旂锛屼笉鎶?Node 瑙勫垯寮鸿甯﹀叆 Qin
+- 鍏堜繚璇佸墠鍚庣涓€鑷寸殑寮€鍙戜綋楠岋紝鍐嶉€愭鎵╁睍鏍囧噯搴撹鐩栭潰
 
-- 语法尽量 JS 一致，语义保持可控子集
-- 平台能力分层隔离，不把 Node 规则强行带入 Qin
-- 先保证前后端一致的开发体验，再逐步扩展标准库覆盖面
+## 馃帀 What's New in Java 25 Version
 
-## 🎉 What's New in Java 25 Version
+### 鉁?鏍稿績鍗囩骇
 
-### ✨ 核心升级
+- **Java 25 LTS** - 鏈€鏂伴暱鏈熸敮鎸佺増鏈紙鏀寔鍒?2033 骞达級
+- **Flexible Constructor Bodies (JEP 513)** - 閰嶇疆楠岃瘉鏇村畨鍏?
+- **Module Import Declarations (JEP 511)** - 浠ｇ爜鏇寸畝娲?
+- **Primitive Patterns (JEP 507)** - 绫诲瀷瀹夊叏鎬у寮?
+- **Structured Concurrency (JEP 505)** - 骞跺彂鎬ц兘鎻愬崌 3-5x
+- **AOT Method Profiling (JEP 515)** - 鍚姩閫熷害鎻愬崌 2-3x
+- **Compact Object Headers (JEP 519)** - 鍐呭瓨鍗犵敤鍑忓皯 20-30%
 
-- **Java 25 LTS** - 最新长期支持版本（支持到 2033 年）
-- **Flexible Constructor Bodies (JEP 513)** - 配置验证更安全
-- **Module Import Declarations (JEP 511)** - 代码更简洁
-- **Primitive Patterns (JEP 507)** - 类型安全性增强
-- **Structured Concurrency (JEP 505)** - 并发性能提升 3-5x
-- **AOT Method Profiling (JEP 515)** - 启动速度提升 2-3x
-- **Compact Object Headers (JEP 519)** - 内存占用减少 20-30%
+### 馃搳 鎬ц兘鎻愬崌
 
-### 📊 性能提升
-
-| 指标 | Java 17 | Java 25 | 提升 |
+| 鎸囨爣 | Java 17 | Java 25 | 鎻愬崌 |
 |------|---------|---------|------|
-| CLI 启动时间 | 800ms | 300ms | **2.7x** ⚡ |
-| 并行编译 (10 文件) | 5.2s | 1.8s | **2.9x** 🚀 |
-| 内存占用 | 180MB | 135MB | **-25%** 💾 |
-| 代码量 | 3500 行 | 2100 行 | **-40%** 📝 |
+| CLI 鍚姩鏃堕棿 | 800ms | 300ms | **2.7x** 鈿?|
+| 骞惰缂栬瘧 (10 鏂囦欢) | 5.2s | 1.8s | **2.9x** 馃殌 |
+| 鍐呭瓨鍗犵敤 | 180MB | 135MB | **-25%** 馃捑 |
+| 浠ｇ爜閲?| 3500 琛?| 2100 琛?| **-40%** 馃摑 |
 
-## 🚀 快速开始
+## 馃殌 蹇€熷紑濮?
 
-### 前置要求
+### 鍓嶇疆瑕佹眰
 
 - **Java 25** or higher ([Download](https://jdk.java.net/25/))
-- **Maven** 3.8+ (可选，用于依赖下载)
+- **Maven** 3.8+ (鍙€夛紝鐢ㄤ簬渚濊禆涓嬭浇)
 
-### 编译 Qin
+### 缂栬瘧 Qin
 
 ```bash
 # Windows
@@ -224,34 +191,34 @@ Qin 的分层设计：
 ./build-java.sh
 ```
 
-###  运行 Qin
+###  杩愯 Qin
 
 ```bash
-# 查看帮助
+# 鏌ョ湅甯姪
 java -cp ".qin\classes;lib\gson-2.10.1.jar" com.qin.cli.QinCli help
 
-# 编译项目
+# 缂栬瘧椤圭洰
 java -cp ".qin\classes;lib\gson-2.10.1.jar" com.qin.cli.QinCli compile
 
-# 运行项目
+# 杩愯椤圭洰
 java -cp ".qin\classes;lib\gson-2.10.1.jar" com.qin.cli.QinCli run
 ```
 
-### 创建快捷命令（推荐）
+### 鍒涘缓蹇嵎鍛戒护锛堟帹鑽愶級
 
 **Windows (PowerShell)**:
 ```powershell
-# 添加到 PowerShell Profile
+# 娣诲姞鍒?PowerShell Profile
 function qin { java -cp "D:\path\to\qin\.qin\classes;D:\path\to\qin\lib\gson-2.10.1.jar" com.qin.cli.QinCli $args }
 ```
 
 **Linux/macOS (Bash)**:
 ```bash
-# 添加到 ~/.bashrc or ~/.zshrc
+# 娣诲姞鍒?~/.bashrc or ~/.zshrc
 alias qin='java -cp "/path/to/qin/build/classes:/path/to/qin/lib/gson-2.10.1.jar" com.qin.cli.QinCli'
 ```
 
-然后就可以直接使用：
+鐒跺悗灏卞彲浠ョ洿鎺ヤ娇鐢細
 ```bash
 qin compile
 qin run
@@ -277,26 +244,21 @@ qin dev
 
 Open [http://localhost:18080](http://localhost:18080).
 
-## 📝 配置文件
+## 馃摑 閰嶇疆鏂囦欢
 
-### `qin.config.json`
+### `qin.config.js`
 
-`qin.config.json` 是 Qin 的项目 manifest。
+`qin.config.js` 鏄?Qin 鐨勯」鐩?manifest銆?
+瀹冨綋鍓嶅悓鏃舵壙鎷呭洓绫昏亴璐ｏ細
 
-它当前同时承担四类职责：
-
-- 包清单
-- 依赖声明入口
-- workspace / module root 描述
-- runtime / build / entry 配置面
-
-`entry` 当前支持：
-
-- Qin source entry: `.qin`、`.js`、`.mjs`、`.ts`
+- 鍖呮竻鍗?- 渚濊禆澹版槑鍏ュ彛
+- workspace / module root 鎻忚堪
+- runtime / build / entry 閰嶇疆闈?
+`entry` 褰撳墠鏀寔锛?
+- Qin source entry: `.qin`銆乣.js`銆乣.mjs`銆乣.ts`
 - Java host entry: `.java`
 
-`qin run` 无参数时优先读取这里的 `entry`。
-
+`qin run` 鏃犲弬鏁版椂浼樺厛璇诲彇杩欓噷鐨?`entry`銆?
 ```json
 {
   "name": "my-app",
@@ -340,88 +302,86 @@ Open [http://localhost:18080](http://localhost:18080).
 }
 ```
 
-## 🛠️ CLI 命令
+## 馃洜锔?CLI 鍛戒护
 
-| 命令 | 说明 | 示例 |
+| 鍛戒护 | 璇存槑 | 绀轰緥 |
 |------|------|------|
-| `compile` | 编译 Java 项目 | `qin compile` |
-| `run` | 编译并运行 | `qin run` / `qin run Test.java` / `qin run main/main.qin` |
-| `dev` | 开发模式（Qin 单端口 + 自动刷新） | `qin dev` / `qin dev main/main.qin` |
-| `build` | 构建产物（Java: JAR / Qin: fullstack 产物） | `qin build` / `qin build main/main.qin` |
-| `test` | 运行测试 | `qin test` |
-| `sync` | 同步依赖 | `qin sync` |
-| `clean` | 清理构建产物 | `qin clean` |
-| `init` | 初始化项目 | `qin init` |
-| `env` | 环境检查 | `qin env` |
+| `compile` | 缂栬瘧 Java 椤圭洰 | `qin compile` |
+| `run` | 缂栬瘧骞惰繍琛?| `qin run` / `qin run Test.java` / `qin run main/main.qin` |
+| `dev` | 寮€鍙戞ā寮忥紙Qin 鍗曠鍙?+ 鑷姩鍒锋柊锛?| `qin dev` / `qin dev main/main.qin` |
+| `build` | 鏋勫缓浜х墿锛圝ava: JAR / Qin: fullstack 浜х墿锛?| `qin build` / `qin build main/main.qin` |
+| `test` | 杩愯娴嬭瘯 | `qin test` |
+| `sync` | 鍚屾渚濊禆 | `qin sync` |
+| `clean` | 娓呯悊鏋勫缓浜х墿 | `qin clean` |
+| `init` | 鍒濆鍖栭」鐩?| `qin init` |
+| `env` | 鐜妫€鏌?| `qin env` |
 
-### 运行指定文件
+### 杩愯鎸囧畾鏂囦欢
 
 ```bash
-# 运行项目入口（qin.config.json 中的 entry）
+# 杩愯椤圭洰鍏ュ彛锛坬in.config.json 涓殑 entry锛?
 qin run
 
-# 运行指定的 Java 文件
+# 杩愯鎸囧畾鐨?Java 鏂囦欢
 qin run src/main/java/com/example/Test.java
 
-# 运行指定的 Qin 文件
+# 杩愯鎸囧畾鐨?Qin 鏂囦欢
 qin run main/main.qin
 
-# 运行指定文件并传递参数
+# 杩愯鎸囧畾鏂囦欢骞朵紶閫掑弬鏁?
 qin run MyTest.java arg1 arg2
 ```
 
-运行分发规则（统一）：
+杩愯鍒嗗彂瑙勫垯锛堢粺涓€锛夛細
 
-- 传入目标参数时：优先插件解析，其次 `.js`，最后按 Java 入口处理。
-- 不传参数时：优先读取 `qin.config.json` 的 `entry`；若为 `.qin/.js/.mjs/.ts` 走 Qin 运行时，否则按 Java host 入口处理。
+- 浼犲叆鐩爣鍙傛暟鏃讹細浼樺厛鎻掍欢瑙ｆ瀽锛屽叾娆?`.js`锛屾渶鍚庢寜 Java 鍏ュ彛澶勭悊銆?
+- 涓嶄紶鍙傛暟鏃讹細浼樺厛璇诲彇 `qin.config.js` 鐨?`entry`锛涜嫢涓?`.qin/.js/.mjs/.ts` 璧?Qin 杩愯鏃讹紝鍚﹀垯鎸?Java host 鍏ュ彛澶勭悊銆?
+`run` / `dev` 鍖哄埆锛?
 
-`run` / `dev` 区别：
+- `qin run`锛氫竴娆℃瀯寤哄悗鍚姩锛屼笉鐩戝惉鏂囦欢鍙樺寲銆?
+- `qin dev`锛氬崟绔彛寮€鍙戞湇鍔★紙榛樿鍚岀鍙ｆ彁渚?API + 闈欐€侀〉闈級锛岀洃鍚?`.js/.html/.css` 鍙樻洿骞惰嚜鍔ㄩ噸缂栬瘧涓庢祻瑙堝櫒鍒锋柊銆?
+- 璇?MVP 鐨勬牳蹇冮摼璺互 Qin + Java 杩愯鏃朵负涓伙紝鍓嶇鐢?Qin 鍘熺敓 dev server 鍜?Qin frontend pipeline 鎵胯浇锛屼笉閫氳繃 Node/Vite 瀛愯繘绋嬫ˉ鎺ャ€?
+鏋勫缓鍒嗗彂瑙勫垯锛堢粺涓€锛夛細
 
-- `qin run`：一次构建后启动，不监听文件变化。
-- `qin dev`：单端口开发服务（默认同端口提供 API + 静态页面），监听 `.js/.html/.css` 变更并自动重编译与浏览器刷新。
-- 该 MVP 的核心链路以 Qin + Java 运行时为主，前端由 Qin 原生 dev server 和 Qin frontend pipeline 承载，不通过 Node/Vite 子进程桥接。
+- `qin build` 鍦ㄦ娴嬪埌 `.js` 鍏ュ彛鏃讹紝浼氳蛋 Qin fullstack build-only 娴佺▼銆?
+- 榛樿杈撳嚭鐩綍锛歚dist/fullstack`锛屽叾涓?`server-classes/` 瀛樻斁鍚庣 `.class`锛宍web/` 瀛樻斁鍓嶇鏋勫缓浜х墿锛堝惈 `app.js`锛夈€?
+- 鍙敤 `-o/--output` 瑕嗙洊杈撳嚭鏍圭洰褰曘€?
 
-构建分发规则（统一）：
+## 馃殌 楂樼骇鐗规€?
 
-- `qin build` 在检测到 `.js` 入口时，会走 Qin fullstack build-only 流程。
-- 默认输出目录：`dist/fullstack`，其中 `server-classes/` 存放后端 `.class`，`web/` 存放前端构建产物（含 `app.js`）。
-- 可用 `-o/--output` 覆盖输出根目录。
+### 1. 澧為噺缂栬瘧
 
-## 🚀 高级特性
+Qin 浣跨敤 **javax.tools API + 鏃堕棿鎴虫瘮杈?* 瀹炵幇鏅鸿兘澧為噺缂栬瘧锛?
 
-### 1. 增量编译
+- 鉁?**鏅鸿兘妫€娴?* - 鍙紪璇戜慨鏀硅繃鐨勬枃浠讹紙姣旇緝 `.java` 鍜?`.class` 鐨勪慨鏀规椂闂达級
+- 鉁?**鑷姩渚濊禆** - `javac` 鑷姩澶勭悊渚濊禆鏂囦欢鐨勭紪璇?
+- 鉁?**闆堕厤缃?* - 鏃犻渶棰濆閰嶇疆锛屽紑绠卞嵆鐢?
+- 鉁?**蹇€熷搷搴?* - 鏃犱慨鏀规椂璺宠繃缂栬瘧锛岀珛鍗宠繍琛?
 
-Qin 使用 **javax.tools API + 时间戳比较** 实现智能增量编译：
-
-- ✅ **智能检测** - 只编译修改过的文件（比较 `.java` 和 `.class` 的修改时间）
-- ✅ **自动依赖** - `javac` 自动处理依赖文件的编译
-- ✅ **零配置** - 无需额外配置，开箱即用
-- ✅ **快速响应** - 无修改时跳过编译，立即运行
-
-**实现原理：**
+**瀹炵幇鍘熺悊锛?*
 ```java
-// 比较每个 .java 文件和对应 .class 文件的时间戳
+// 姣旇緝姣忎釜 .java 鏂囦欢鍜屽搴?.class 鏂囦欢鐨勬椂闂存埑
 private boolean isModified(String javaFilePath) {
     Path classFile = getClassFilePath(javaFilePath);
     if (!Files.exists(classFile)) return true;
     return Files.getLastModifiedTime(javaFile) > Files.getLastModifiedTime(classFile);
 }
 
-// 使用 javax.tools API 编译
+// 浣跨敤 javax.tools API 缂栬瘧
 JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 compiler.getTask(...).call();
 ```
 
-**性能提升：**
-| 场景 | 全量编译 | 增量编译 | 提升 |
+**鎬ц兘鎻愬崌锛?*
+| 鍦烘櫙 | 鍏ㄩ噺缂栬瘧 | 澧為噺缂栬瘧 | 鎻愬崌 |
 |------|----------|----------|------|
-| 无修改 | 3.2s | 0.1s | **32x** ⚡ |
-| 修改 1 个文件 | 3.2s | 0.5s | **6.4x** 🚀 |
-| 修改 10 个文件 | 3.2s | 1.8s | **1.8x** ⚡ |
+| 鏃犱慨鏀?| 3.2s | 0.1s | **32x** 鈿?|
+| 淇敼 1 涓枃浠?| 3.2s | 0.5s | **6.4x** 馃殌 |
+| 淇敼 10 涓枃浠?| 3.2s | 1.8s | **1.8x** 鈿?|
 
-### 2. 依赖缓存机制
+### 2. 渚濊禆缂撳瓨鏈哄埗
 
-Qin 在每个项目的 `.qin/classpath.json` 中缓存依赖解析结果：
+Qin 鍦ㄦ瘡涓」鐩殑 `.qin/classpath.json` 涓紦瀛樹緷璧栬В鏋愮粨鏋滐細
 
 ```json
 {
@@ -433,47 +393,47 @@ Qin 在每个项目的 `.qin/classpath.json` 中缓存依赖解析结果：
 }
 ```
 
-**工作流程：**
+**宸ヤ綔娴佺▼锛?*
 ```
 qin run/sync
-  ↓
-检查 .qin/classpath.json 是否存在
-  ↓
-比较缓存时间 vs qin.config.json 修改时间
-  ↓
-缓存有效 → 直接使用（快速启动）
-缓存无效 → 重新解析依赖并更新缓存
+  鈫?
+妫€鏌?.qin/classpath.json 鏄惁瀛樺湪
+  鈫?
+姣旇緝缂撳瓨鏃堕棿 vs qin.config.js 淇敼鏃堕棿
+  鈫?
+缂撳瓨鏈夋晥 鈫?鐩存帴浣跨敤锛堝揩閫熷惎鍔級
+缂撳瓨鏃犳晥 鈫?閲嶆柊瑙ｆ瀽渚濊禆骞舵洿鏂扮紦瀛?
 ```
 
-**优势：**
-- ⚡ **首次运行** - 解析依赖 + 生成缓存
-- 🚀 **后续运行** - 直接读缓存，秒级启动
-- 🔄 **自动刷新** - 修改 `qin.config.json` 后自动重新解析
+**浼樺娍锛?*
+- 鈿?**棣栨杩愯** - 瑙ｆ瀽渚濊禆 + 鐢熸垚缂撳瓨
+- 馃殌 **鍚庣画杩愯** - 鐩存帴璇荤紦瀛橈紝绉掔骇鍚姩
+- 馃攧 **鑷姩鍒锋柊** - 淇敼 `qin.config.js` 鍚庤嚜鍔ㄩ噸鏂拌В鏋?
 
-### 3. 本地依赖优先解析
+### 3. 鏈湴渚濊禆浼樺厛瑙ｆ瀽
 
-Qin 自动发现并优先使用本地项目依赖，避免从 Maven 下载：
+Qin 鑷姩鍙戠幇骞朵紭鍏堜娇鐢ㄦ湰鍦伴」鐩緷璧栵紝閬垮厤浠?Maven 涓嬭浇锛?
 
-**自动发现策略：**
-1. 从当前目录向上查找所有包含 `qin.config.json` 的目录
-2. 扫描每个目录的同级项目
-3. 匹配依赖的 `groupId:artifactId`
-4. 就近优先（近的项目覆盖远的同名项目）
+**鑷姩鍙戠幇绛栫暐锛?*
+1. 浠庡綋鍓嶇洰褰曞悜涓婃煡鎵炬墍鏈夊寘鍚?`qin.config.js` 鐨勭洰褰?
+2. 鎵弿姣忎釜鐩綍鐨勫悓绾ч」鐩?
+3. 鍖归厤渚濊禆鐨?`groupId:artifactId`
+4. 灏辫繎浼樺厛锛堣繎鐨勯」鐩鐩栬繙鐨勫悓鍚嶉」鐩級
 
-**示例：**
+**绀轰緥锛?*
 ```
 d:/project/
-├── slime-java/
-│   ├── subhuti-java/         # com.subhuti:subhuti-java
-│   │   ├── qin.config.json
-│   │   └── build/classes/    ← 本地依赖路径
-│   ├── slime-token/          # com.slime:slime-token
-│   │   └── build/classes/
-│   └── slime-parser/         # 依赖上面两个项目
-│       └── qin.config.json
+鈹溾攢鈹€ slime-java/
+鈹?  鈹溾攢鈹€ subhuti-java/         # com.subhuti:subhuti-java
+鈹?  鈹?  鈹溾攢鈹€ qin.config.js
+鈹?  鈹?  鈹斺攢鈹€ build/classes/    鈫?鏈湴渚濊禆璺緞
+鈹?  鈹溾攢鈹€ slime-token/          # com.slime:slime-token
+鈹?  鈹?  鈹斺攢鈹€ build/classes/
+鈹?  鈹斺攢鈹€ slime-parser/         # 渚濊禆涓婇潰涓や釜椤圭洰
+鈹?      鈹斺攢鈹€ qin.config.js
 ```
 
-在 `slime-parser` 中：
+鍦?`slime-parser` 涓細
 ```json
 {
   "dependencies": {
@@ -483,175 +443,175 @@ d:/project/
 }
 ```
 
-执行 `qin sync` 输出：
+鎵ц `qin sync` 杈撳嚭锛?
 ```
-→ Syncing dependencies...
-  → Found 2 local dependencies
-✓ Dependencies synced (2 local, 0 remote)
+鈫?Syncing dependencies...
+  鈫?Found 2 local dependencies
+鉁?Dependencies synced (2 local, 0 remote)
   Cache: .qin/classpath.json
 ```
 
-**优势：**
-- 🚀 **无需发布** - 本地开发无需发布到 Maven
-- 🔄 **实时更新** - 修改依赖项目立即生效
-- 💾 **节省带宽** - 不下载本地已有的项目
-- 🎯 **Monorepo 友好** - 天然支持多项目工作区
+**浼樺娍锛?*
+- 馃殌 **鏃犻渶鍙戝竷** - 鏈湴寮€鍙戞棤闇€鍙戝竷鍒?Maven
+- 馃攧 **瀹炴椂鏇存柊** - 淇敼渚濊禆椤圭洰绔嬪嵆鐢熸晥
+- 馃捑 **鑺傜渷甯﹀** - 涓嶄笅杞芥湰鍦板凡鏈夌殑椤圭洰
+- 馃幆 **Monorepo 鍙嬪ソ** - 澶╃劧鏀寔澶氶」鐩伐浣滃尯
 
-### 4. 依赖解析流程
+### 4. 渚濊禆瑙ｆ瀽娴佺▼
 
 ```
 qin run / qin sync
-  ↓
-检查依赖缓存 (.qin/classpath.json)
-  ↓
-[缓存有效]───────────────┐
-  ↓                     ↓
-[缓存无效]          使用缓存
-  ↓                     ↓
-本地依赖解析          直接运行
+  鈫?
+妫€鏌ヤ緷璧栫紦瀛?(.qin/classpath.json)
+  鈫?
+[缂撳瓨鏈夋晥]鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
+  鈫?                    鈫?
+[缂撳瓨鏃犳晥]          浣跨敤缂撳瓨
+  鈫?                    鈫?
+鏈湴渚濊禆瑙ｆ瀽          鐩存帴杩愯
 (LocalProjectResolver)
-  ↓
-找到 → 使用 build/classes 路径
-未找到 → 标记为远程依赖
-  ↓
-远程依赖解析
+  鈫?
+鎵惧埌 鈫?浣跨敤 build/classes 璺緞
+鏈壘鍒?鈫?鏍囪涓鸿繙绋嬩緷璧?
+  鈫?
+杩滅▼渚濊禆瑙ｆ瀽
 (DependencyResolver + Coursier)
-  ↓
-合并本地+远程 classpath
-  ↓
-写入 .qin/classpath.json
-  ↓
-运行程序
+  鈫?
+鍚堝苟鏈湴+杩滅▼ classpath
+  鈫?
+鍐欏叆 .qin/classpath.json
+  鈫?
+杩愯绋嬪簭
 ```
 
-### 5. 代码复用设计
+### 5. 浠ｇ爜澶嶇敤璁捐
 
-`run` 命令和 `sync` 命令共享核心依赖解析逻辑：
+`run` 鍛戒护鍜?`sync` 鍛戒护鍏变韩鏍稿績渚濊禆瑙ｆ瀽閫昏緫锛?
 
 ```java
-// run 命令
+// run 鍛戒护
 private static void runProject(String[] args) {
-    String classpath = ensureDependenciesSynced(config);  // 复用
+    String classpath = ensureDependenciesSynced(config);  // 澶嶇敤
     runner.compileAndRun(classpath);
 }
 
-// sync 命令  
+// sync 鍛戒护  
 private static void syncDependencies() {
-    syncDependenciesCore(config);  // 核心逻辑
+    syncDependenciesCore(config);  // 鏍稿績閫昏緫
 }
 
-// 共享的核心逻辑
+// 鍏变韩鐨勬牳蹇冮€昏緫
 private static String syncDependenciesCore(QinConfig config) {
-    // 1. 本地依赖解析
+    // 1. 鏈湴渚濊禆瑙ｆ瀽
     LocalProjectResolver.ResolutionResult localResult = ...;
     
-    // 2. 远程依赖解析（仅未在本地找到的）
+    // 2. 杩滅▼渚濊禆瑙ｆ瀽锛堜粎鏈湪鏈湴鎵惧埌鐨勶級
     if (!localResult.remoteDependencies.isEmpty()) {
         DependencyResolver resolver = ...;
     }
     
-    // 3. 生成并缓存 classpath
+    // 3. 鐢熸垚骞剁紦瀛?classpath
     return classpath;
 }
 ```
 
-### 6. IDEA 集成
+### 6. IDEA 闆嗘垚
 
-Qin 提供 IntelliJ IDEA 插件，实现 IDE 无缝集成：
+Qin 鎻愪緵 IntelliJ IDEA 鎻掍欢锛屽疄鐜?IDE 鏃犵紳闆嗘垚锛?
 
-**自动功能：**
-- ✅ **自动同步** - 打开项目时自动执行 `qin sync`
-- ✅ **库配置生成** - 自动生成 `.idea/libraries/*.xml`
-- ✅ **编译输出配置** - 自动使用 `build/classes`（与 qin 一致）
-- ✅ **Monorepo 支持** - 自动扫描所有子项目
+**鑷姩鍔熻兘锛?*
+- 鉁?**鑷姩鍚屾** - 鎵撳紑椤圭洰鏃惰嚜鍔ㄦ墽琛?`qin sync`
+- 鉁?**搴撻厤缃敓鎴?* - 鑷姩鐢熸垚 `.idea/libraries/*.xml`
+- 鉁?**缂栬瘧杈撳嚭閰嶇疆** - 鑷姩浣跨敤 `build/classes`锛堜笌 qin 涓€鑷达級
+- 鉁?**Monorepo 鏀寔** - 鑷姩鎵弿鎵€鏈夊瓙椤圭洰
 
-**安装：**
+**瀹夎锛?*
 ```bash
-# 构建插件
+# 鏋勫缓鎻掍欢
 cd packages/qin-idea-plugin-debug
 ./gradlew buildPlugin
 
-# 安装：IDEA → Settings → Plugins → ⚙️ → Install from Disk
-# 选择 build/distributions/qin-idea-plugin-debug-x.x.x.zip
+# 瀹夎锛欼DEA 鈫?Settings 鈫?Plugins 鈫?鈿欙笍 鈫?Install from Disk
+# 閫夋嫨 build/distributions/qin-idea-plugin-debug-x.x.x.zip
 ```
 
-**工作原理：**
+**宸ヤ綔鍘熺悊锛?*
 ```
-IDEA 打开项目
-     ↓
-向上查找 workspace root（.idea/.vscode/.git）
-     ↓
-向下递归扫描所有 qin.config.json（最多 5 层）
-     ↓
-为每个项目执行 qin sync
-     ↓
-生成 .idea/libraries/*.xml
-     ↓
-更新 .iml 文件（添加库引用 + 配置输出路径）
-     ↓
-刷新 IDEA 项目模型
+IDEA 鎵撳紑椤圭洰
+     鈫?
+鍚戜笂鏌ユ壘 workspace root锛?idea/.vscode/.git锛?
+     鈫?
+鍚戜笅閫掑綊鎵弿鎵€鏈?qin.config.js锛堟渶澶?5 灞傦級
+     鈫?
+涓烘瘡涓」鐩墽琛?qin sync
+     鈫?
+鐢熸垚 .idea/libraries/*.xml
+     鈫?
+鏇存柊 .iml 鏂囦欢锛堟坊鍔犲簱寮曠敤 + 閰嶇疆杈撳嚭璺緞锛?
+     鈫?
+鍒锋柊 IDEA 椤圭洰妯″瀷
 ```
 
-### 7. Monorepo 支持
+### 7. Monorepo 鏀寔
 
-Qin 原生支持 Monorepo（单仓库多项目）模式：
+Qin 鍘熺敓鏀寔 Monorepo锛堝崟浠撳簱澶氶」鐩級妯″紡锛?
 
-**目录结构：**
+**鐩綍缁撴瀯锛?*
 ```
 workspace/
-├── .git/
-├── .idea/             # IDEA 项目标志
-├── project-a/
-│   └── qin.config.json
-├── project-b/
-│   └── qin.config.json
-├── packages/
-│   ├── lib-1/
-│   │   └── qin.config.json
-│   └── lib-2/
-│       └── qin.config.json
-└── apps/
-    └── app-1/
-        └── qin.config.json
+鈹溾攢鈹€ .git/
+鈹溾攢鈹€ .idea/             # IDEA 椤圭洰鏍囧織
+鈹溾攢鈹€ project-a/
+鈹?  鈹斺攢鈹€ qin.config.js
+鈹溾攢鈹€ project-b/
+鈹?  鈹斺攢鈹€ qin.config.js
+鈹溾攢鈹€ packages/
+鈹?  鈹溾攢鈹€ lib-1/
+鈹?  鈹?  鈹斺攢鈹€ qin.config.js
+鈹?  鈹斺攢鈹€ lib-2/
+鈹?      鈹斺攢鈹€ qin.config.js
+鈹斺攢鈹€ apps/
+    鈹斺攢鈹€ app-1/
+        鈹斺攢鈹€ qin.config.js
 ```
 
-**本地依赖解析策略：**
-1. 从当前目录向上查找所有 `qin.config.json`
-2. 扫描同级目录的其他项目
-3. 就近优先：近的项目覆盖远的同名项目
+**鏈湴渚濊禆瑙ｆ瀽绛栫暐锛?*
+1. 浠庡綋鍓嶇洰褰曞悜涓婃煡鎵炬墍鏈?`qin.config.js`
+2. 鎵弿鍚岀骇鐩綍鐨勫叾浠栭」鐩?
+3. 灏辫繎浼樺厛锛氳繎鐨勯」鐩鐩栬繙鐨勫悓鍚嶉」鐩?
 
-**IDEA 插件扫描策略：**
-1. 向上找到 workspace root（最顶层的 `.idea`/`.vscode`/`.git` 目录）
-2. 从 workspace root 向下递归扫描所有 `qin.config.json`
-3. 为每个发现的项目自动执行 sync
+**IDEA 鎻掍欢鎵弿绛栫暐锛?*
+1. 鍚戜笂鎵惧埌 workspace root锛堟渶椤跺眰鐨?`.idea`/`.vscode`/`.git` 鐩綍锛?
+2. 浠?workspace root 鍚戜笅閫掑綊鎵弿鎵€鏈?`qin.config.js`
+3. 涓烘瘡涓彂鐜扮殑椤圭洰鑷姩鎵ц sync
 
-**配置示例：**
+**閰嶇疆绀轰緥锛?*
 ```json
-// project-a/qin.config.json
+// project-a/qin.config.js
 {
   "name": "com.example:project-a",
   "version": "1.0.0",
   "dependencies": {
-    "com.example:lib-1": "1.0.0",  // 自动使用本地 ../packages/lib-1
-    "com.example:lib-2": "1.0.0"   // 自动使用本地 ../packages/lib-2
+    "com.example:lib-1": "1.0.0",  // 鑷姩浣跨敤鏈湴 ../packages/lib-1
+    "com.example:lib-2": "1.0.0"   // 鑷姩浣跨敤鏈湴 ../packages/lib-2
   }
 }
 ```
 
-## 🎯 Java 25 特性展示
+## 馃幆 Java 25 鐗规€у睍绀?
 
 ### 1. Flexible Constructor Bodies
 
 ```java
-// ✨ Java 25 新特性
+// 鉁?Java 25 鏂扮壒鎬?
 public record QinConfig(String name, String version, Map<String, String> dependencies) {
     public QinConfig {
-        // 可以在 super() 前验证参数！
+        // 鍙互鍦?super() 鍓嶉獙璇佸弬鏁帮紒
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");
         }
         
-        // 提供默认值
+        // 鎻愪緵榛樿鍊?
         dependencies = dependencies != null ? Map.copyOf(dependencies) : Map.of();
     }
 }
@@ -660,7 +620,7 @@ public record QinConfig(String name, String version, Map<String, String> depende
 ### 2. Primitive Patterns in Switch
 
 ```java
-// ✨ Java 25 - 基本类型模式匹配
+// 鉁?Java 25 - 鍩烘湰绫诲瀷妯″紡鍖归厤
 String result = switch (value) {
     case int i when i > 0 -> "positive: " + i;
     case long l -> "long value: " + l;
@@ -672,153 +632,153 @@ String result = switch (value) {
 ### 3. Structured Concurrency
 
 ```java
-// ✨ Java 25 - 结构化并发
+// 鉁?Java 25 - 缁撴瀯鍖栧苟鍙?
 try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
     var task1 = scope.fork(() -> downloadDependency("lib1"));
     var task2 = scope.fork(() -> downloadDependency("lib2"));
     
-    scope.join().throwIfFailed();  // 统一异常处理
+    scope.join().throwIfFailed();  // 缁熶竴寮傚父澶勭悊
     
     return List.of(task1.get(), task2.get());
 }
 ```
 
-## 📦 项目结构
+## 馃摝 椤圭洰缁撴瀯
 
-### 用户项目结构
+### 鐢ㄦ埛椤圭洰缁撴瀯
 
 ```
 my-project/
-├── qin.config.json          # Qin 配置
-├── src/
-│   ├── main/java/           # 源码
-│   │   └── com/myapp/
-│   │       └── Main.java
-│   └── test/java/           # 测试
-├── build/
-│   └── classes/             # 编译输出 (OUTPUT_DIR)
-├── .qin/                    # Qin 配置目录
-│   ├── classpath.json       # 依赖缓存 (CLASSPATH_CACHE)
-│   └── libs/                # 本地依赖链接 (LIBS_DIR)
-│       └── com.google.code.gson/
-│           └── gson-2.10.1/ -> ~/.qin/libs/.../
-└── dist/
-    └── my-app.jar           # Fat JAR
+鈹溾攢鈹€ qin.config.js          # Qin 閰嶇疆
+鈹溾攢鈹€ src/
+鈹?  鈹溾攢鈹€ main/java/           # 婧愮爜
+鈹?  鈹?  鈹斺攢鈹€ com/myapp/
+鈹?  鈹?      鈹斺攢鈹€ Main.java
+鈹?  鈹斺攢鈹€ test/java/           # 娴嬭瘯
+鈹溾攢鈹€ build/
+鈹?  鈹斺攢鈹€ classes/             # 缂栬瘧杈撳嚭 (OUTPUT_DIR)
+鈹溾攢鈹€ .qin/                    # Qin 閰嶇疆鐩綍
+鈹?  鈹溾攢鈹€ classpath.json       # 渚濊禆缂撳瓨 (CLASSPATH_CACHE)
+鈹?  鈹斺攢鈹€ libs/                # 鏈湴渚濊禆閾炬帴 (LIBS_DIR)
+鈹?      鈹斺攢鈹€ com.google.code.gson/
+鈹?          鈹斺攢鈹€ gson-2.10.1/ -> ~/.qin/libs/.../
+鈹斺攢鈹€ dist/
+    鈹斺攢鈹€ my-app.jar           # Fat JAR
 ```
 
-### 全局目录结构
+### 鍏ㄥ眬鐩綍缁撴瀯
 
 ```
 ~/.qin/
-└── libs/                    # 全局依赖缓存 (GLOBAL_LIBS_DIR)
-    └── com.google.code.gson/
-        └── gson-2.10.1/
-            └── gson-2.10.1.jar
+鈹斺攢鈹€ libs/                    # 鍏ㄥ眬渚濊禆缂撳瓨 (GLOBAL_LIBS_DIR)
+    鈹斺攢鈹€ com.google.code.gson/
+        鈹斺攢鈹€ gson-2.10.1/
+            鈹斺攢鈹€ gson-2.10.1.jar
 ```
 
-### 路径常量配置 (QinPaths.java)
+### 璺緞甯搁噺閰嶇疆 (QinPaths.java)
 
-| 常量 | 值 | 说明 |
+| 甯搁噺 | 鍊?| 璇存槑 |
 |------|-----|------|
-| OUTPUT_DIR | `build/classes` | 编译输出目录 |
-| QIN_DIR | `.qin` | Qin配置目录 |
-| CLASSPATH_CACHE | `.qin/classpath.json` | 依赖缓存文件 |
-| LIBS_DIR | `.qin/libs` | 依赖库目录 |
+| OUTPUT_DIR | `build/classes` | 缂栬瘧杈撳嚭鐩綍 |
+| QIN_DIR | `.qin` | Qin閰嶇疆鐩綍 |
+| CLASSPATH_CACHE | `.qin/classpath.json` | 渚濊禆缂撳瓨鏂囦欢 |
+| LIBS_DIR | `.qin/libs` | 渚濊禆搴撶洰褰?|
 
-## 🔧 开发
+## 馃敡 寮€鍙?
 
-### 项目结构
+### 椤圭洰缁撴瀯
 
 ```
 qin/
-├── src/java-rewrite/        # Java 25 源码
-│   └── com/qin/
-│       ├── types/           # 配置类型（Records）
-│       ├── core/            # 核心模块
-│       ├── commands/        # 命令实现
-│       ├── cli/             # CLI 入口
-│       └── java/            # Java 工具
-├── .qin/
-│   └── classes/             # 编译输出
-├── lib/
-│   └── gson-2.10.1.jar      # 唯一依赖
-└── build-java.bat           # 构建脚本
+鈹溾攢鈹€ src/java-rewrite/        # Java 25 婧愮爜
+鈹?  鈹斺攢鈹€ com/qin/
+鈹?      鈹溾攢鈹€ types/           # 閰嶇疆绫诲瀷锛圧ecords锛?
+鈹?      鈹溾攢鈹€ core/            # 鏍稿績妯″潡
+鈹?      鈹溾攢鈹€ commands/        # 鍛戒护瀹炵幇
+鈹?      鈹溾攢鈹€ cli/             # CLI 鍏ュ彛
+鈹?      鈹斺攢鈹€ java/            # Java 宸ュ叿
+鈹溾攢鈹€ .qin/
+鈹?  鈹斺攢鈹€ classes/             # 缂栬瘧杈撳嚭
+鈹溾攢鈹€ lib/
+鈹?  鈹斺攢鈹€ gson-2.10.1.jar      # 鍞竴渚濊禆
+鈹斺攢鈹€ build-java.bat           # 鏋勫缓鑴氭湰
 ```
 
-### 核心模块架构
+### 鏍稿績妯″潡鏋舵瀯
 
-#### 1. **路径管理** - `QinPaths.java`
-**功能**: 统一管理所有路径常量
+#### 1. **璺緞绠＄悊** - `QinPaths.java`
+**鍔熻兘**: 缁熶竴绠＄悊鎵€鏈夎矾寰勫父閲?
 ```java
 public static final String OUTPUT_DIR = "build/classes";
 public static final String LIBS_DIR = ".qin/libs";
 ```
-**为什么需要**: 避免硬编码，统一路径配置，方便维护和修改
+**涓轰粈涔堥渶瑕?*: 閬垮厤纭紪鐮侊紝缁熶竴璺緞閰嶇疆锛屾柟渚跨淮鎶ゅ拰淇敼
 
-#### 2. **编译系统** - 职责分离设计
+#### 2. **缂栬瘧绯荤粺** - 鑱岃矗鍒嗙璁捐
 
-##### ClasspathBuilder - classpath构建
-**功能**: 构建编译和运行时的classpath
-- `buildCompileClasspath()` - 编译时classpath（包含本地项目+远程依赖）
-- `buildRuntimeClasspath()` - 运行时classpath
+##### ClasspathBuilder - classpath鏋勫缓
+**鍔熻兘**: 鏋勫缓缂栬瘧鍜岃繍琛屾椂鐨刢lasspath
+- `buildCompileClasspath()` - 缂栬瘧鏃禼lasspath锛堝寘鍚湰鍦伴」鐩?杩滅▼渚濊禆锛?
+- `buildRuntimeClasspath()` - 杩愯鏃禼lasspath
 
-**为什么需要**: classpath构建逻辑复杂（本地项目发现、依赖解析），独立出来提高可维护性
+**涓轰粈涔堥渶瑕?*: classpath鏋勫缓閫昏緫澶嶆潅锛堟湰鍦伴」鐩彂鐜般€佷緷璧栬В鏋愶級锛岀嫭绔嬪嚭鏉ユ彁楂樺彲缁存姢鎬?
 
-##### Compiler - 编译逻辑
-**功能**: Java源文件编译
-- `compile()` - 使用javax.tools API编译
-- `filterModifiedFiles()` - 增量编译（只编译修改的文件）
-- `findJavaFiles()` - 查找Java文件
+##### Compiler - 缂栬瘧閫昏緫
+**鍔熻兘**: Java婧愭枃浠剁紪璇?
+- `compile()` - 浣跨敤javax.tools API缂栬瘧
+- `filterModifiedFiles()` - 澧為噺缂栬瘧锛堝彧缂栬瘧淇敼鐨勬枃浠讹級
+- `findJavaFiles()` - 鏌ユ壘Java鏂囦欢
 
-**为什么需要**: 封装复杂的编译逻辑，支持增量编译提升性能
+**涓轰粈涔堥渶瑕?*: 灏佽澶嶆潅鐨勭紪璇戦€昏緫锛屾敮鎸佸閲忕紪璇戞彁鍗囨€ц兘
 
-##### ResourceCopier - 资源复制
-**功能**: 复制资源文件到输出目录
-- 查找多个可能的资源目录（`src/resources`, `src/main/resources`）
-- 递归复制目录
+##### ResourceCopier - 璧勬簮澶嶅埗
+**鍔熻兘**: 澶嶅埗璧勬簮鏂囦欢鍒拌緭鍑虹洰褰?
+- 鏌ユ壘澶氫釜鍙兘鐨勮祫婧愮洰褰曪紙`src/resources`, `src/main/resources`锛?
+- 閫掑綊澶嶅埗鐩綍
 
-**为什么需要**: 资源文件处理是独立的功能，与编译逻辑分离
+**涓轰粈涔堥渶瑕?*: 璧勬簮鏂囦欢澶勭悊鏄嫭绔嬬殑鍔熻兘锛屼笌缂栬瘧閫昏緫鍒嗙
 
-##### Runner - 程序运行
-**功能**: 运行编译后的Java程序
-- `run()` - 运行指定类
-- `runFile()` - 运行指定Java文件
-- `javaFilePathToClassName()` - 路径转类名
+##### Runner - 绋嬪簭杩愯
+**鍔熻兘**: 杩愯缂栬瘧鍚庣殑Java绋嬪簭
+- `run()` - 杩愯鎸囧畾绫?
+- `runFile()` - 杩愯鎸囧畾Java鏂囦欢
+- `javaFilePathToClassName()` - 璺緞杞被鍚?
 
-**为什么需要**: 运行逻辑独立，支持多种运行方式
+**涓轰粈涔堥渶瑕?*: 杩愯閫昏緫鐙珛锛屾敮鎸佸绉嶈繍琛屾柟寮?
 
-##### JavaRunner - 门面协调器
-**功能**: 协调上述4个类，提供统一接口
+##### JavaRunner - 闂ㄩ潰鍗忚皟鍣?
+**鍔熻兘**: 鍗忚皟涓婅堪4涓被锛屾彁渚涚粺涓€鎺ュ彛
 ```java
 public CompileResult compile() {
-    // 1. 编译依赖
-    // 2. 查找Java文件
-    // 3. 复制资源
-    // 4. 增量编译
+    // 1. 缂栬瘧渚濊禆
+    // 2. 鏌ユ壘Java鏂囦欢
+    // 3. 澶嶅埗璧勬簮
+    // 4. 澧為噺缂栬瘧
 }
 ```
-**为什么需要**: 保持简单的调用接口，隐藏内部复杂性
+**涓轰粈涔堥渶瑕?*: 淇濇寔绠€鍗曠殑璋冪敤鎺ュ彛锛岄殣钘忓唴閮ㄥ鏉傛€?
 
-#### 3. **依赖管理**
+#### 3. **渚濊禆绠＄悊**
 
-##### LocalProjectResolver - 本地项目发现
-**功能**: 自动发现本地项目依赖
-- 向上查找所有qin.config.json
-- 匹配groupId:artifactId
-- 就近优先
+##### LocalProjectResolver - 鏈湴椤圭洰鍙戠幇
+**鍔熻兘**: 鑷姩鍙戠幇鏈湴椤圭洰渚濊禆
+- 鍚戜笂鏌ユ壘鎵€鏈塹in.config.json
+- 鍖归厤groupId:artifactId
+- 灏辫繎浼樺厛
 
-**为什么需要**: Monorepo支持，避免发布到Maven仓库
+**涓轰粈涔堥渶瑕?*: Monorepo鏀寔锛岄伩鍏嶅彂甯冨埌Maven浠撳簱
 
-##### DependencyResolver - 远程依赖解析
-**功能**: 使用Coursier解析Maven依赖
-- 下载jar到~/.qin/libs
-- 缓存依赖解析结果
+##### DependencyResolver - 杩滅▼渚濊禆瑙ｆ瀽
+**鍔熻兘**: 浣跨敤Coursier瑙ｆ瀽Maven渚濊禆
+- 涓嬭浇jar鍒皛/.qin/libs
+- 缂撳瓨渚濊禆瑙ｆ瀽缁撴灉
 
-**为什么需要**: 自动下载和管理远程依赖
+**涓轰粈涔堥渶瑕?*: 鑷姩涓嬭浇鍜岀鐞嗚繙绋嬩緷璧?
 
-#### 4. **配置系统** - `types/`
+#### 4. **閰嶇疆绯荤粺** - `types/`
 
-使用Java 25 Records定义配置类型：
+浣跨敤Java 25 Records瀹氫箟閰嶇疆绫诲瀷锛?
 ```java
 public record QinConfig(
     String name,
@@ -826,91 +786,91 @@ public record QinConfig(
     Map<String, String> dependencies
 ) {}
 ```
-**为什么需要**: 不可变配置，类型安全，代码简洁
+**涓轰粈涔堥渶瑕?*: 涓嶅彲鍙橀厤缃紝绫诲瀷瀹夊叏锛屼唬鐮佺畝娲?
 
-#### 5. **CLI系统** - `QinCli.java`
+#### 5. **CLI绯荤粺** - `QinCli.java`
 
-**功能**: 命令行入口，解析命令和参数
+**鍔熻兘**: 鍛戒护琛屽叆鍙ｏ紝瑙ｆ瀽鍛戒护鍜屽弬鏁?
 ```
-qin compile → CompileCommand
-qin run     → RunCommand
-qin build   → BuildCommand
+qin compile 鈫?CompileCommand
+qin run     鈫?RunCommand
+qin build   鈫?BuildCommand
 ```
-**为什么需要**: 统一的命令行接口，用户友好
+**涓轰粈涔堥渶瑕?*: 缁熶竴鐨勫懡浠よ鎺ュ彛锛岀敤鎴峰弸濂?
 
 ---
 
-### 设计原则
+### 璁捐鍘熷垯
 
-1. **职责单一**: 每个类只负责一件事
-2. **依赖注入**: 通过构造函数传递依赖
-3. **面向接口**: 使用抽象类型，便于测试和扩展
-4. **常量管理**: 所有路径通过QinPaths统一管理
+1. **鑱岃矗鍗曚竴**: 姣忎釜绫诲彧璐熻矗涓€浠朵簨
+2. **渚濊禆娉ㄥ叆**: 閫氳繃鏋勯€犲嚱鏁颁紶閫掍緷璧?
+3. **闈㈠悜鎺ュ彛**: 浣跨敤鎶借薄绫诲瀷锛屼究浜庢祴璇曞拰鎵╁睍
+4. **甯搁噺绠＄悊**: 鎵€鏈夎矾寰勯€氳繃QinPaths缁熶竴绠＄悊
 ```
 
-### 编译
+### 缂栬瘧
 
 ```bash
-# 编译 Qin 本身
+# 缂栬瘧 Qin 鏈韩
 .\build-java.bat
 
-# 输出：build/classes/
+# 杈撳嚭锛歜uild/classes/
 ```
 
-### 测试
+### 娴嬭瘯
 
 ```bash
-# 使用 Qin 编译测试项目
+# 浣跨敤 Qin 缂栬瘧娴嬭瘯椤圭洰
 cd examples/hello-java
 ..\..\qin.bat compile
 ..\..\qin.bat run
 ```
 
-## 🌟 特性
+## 馃専 鐗规€?
 
-### ✅ 核心功能
-
-
-- [x] **JSON 配置** - 告别 XML，拥抱 JSON
-- [x] **依赖管理** - npm 风格的依赖语法
-- [x] **增量编译** - javax.tools API + 时间戳，32x 性能提升
-- [x] **依赖缓存** - .qin/classpath.json 自动缓存，秒级启动
-- [x] **本地依赖优先** - 自动发现本地项目，无需发布到 Maven
-- [x] **Fat JAR 构建** - 一键生成可执行 JAR
-- [x] **运行指定文件** - `qin run Test.java` / `qin run main/main.qin`
-- [x] **并行编译** - Virtual Threads 加速
-- [x] **热重载** - 开发模式自动重新编译
-- [x] **Monorepo 支持** - 多项目管理
+### 鉁?鏍稿績鍔熻兘
 
 
-### ✅ Java 25 优化
+- [x] **JSON 閰嶇疆** - 鍛婂埆 XML锛屾嫢鎶?JSON
+- [x] **渚濊禆绠＄悊** - npm 椋庢牸鐨勪緷璧栬娉?
+- [x] **澧為噺缂栬瘧** - javax.tools API + 鏃堕棿鎴筹紝32x 鎬ц兘鎻愬崌
+- [x] **渚濊禆缂撳瓨** - .qin/classpath.json 鑷姩缂撳瓨锛岀绾у惎鍔?
+- [x] **鏈湴渚濊禆浼樺厛** - 鑷姩鍙戠幇鏈湴椤圭洰锛屾棤闇€鍙戝竷鍒?Maven
+- [x] **Fat JAR 鏋勫缓** - 涓€閿敓鎴愬彲鎵ц JAR
+- [x] **杩愯鎸囧畾鏂囦欢** - `qin run Test.java` / `qin run main/main.qin`
+- [x] **骞惰缂栬瘧** - Virtual Threads 鍔犻€?
+- [x] **鐑噸杞?* - 寮€鍙戞ā寮忚嚜鍔ㄩ噸鏂扮紪璇?
+- [x] **Monorepo 鏀寔** - 澶氶」鐩鐞?
 
-- [x] Records 代替 POJO - 代码减少 60%
-- [x] Flexible Constructors - 更安全的验证
-- [x] Pattern Matching - 更优雅的类型处理
-- [x] Virtual Threads - 3-5x 并发性能
-- [x] Structured Concurrency - 更可靠的异步
-- [x] AOT Profiling - 2-3x 启动速度
-- [x] Compact Headers - 20-30% 内存节省
 
-## 📚 文档
+### 鉁?Java 25 浼樺寲
 
-- [Java 25 重写计划](./JAVA25_REWRITE_PLAN.md)
-- [Java 25 特性详解](./docs/JAVA25_FEATURES.md)
-- [配置参考](./docs/CONFIG_REFERENCE.md)
-- [插件开发](./docs/PLUGIN_DEVELOPMENT.md)
+- [x] Records 浠ｆ浛 POJO - 浠ｇ爜鍑忓皯 60%
+- [x] Flexible Constructors - 鏇村畨鍏ㄧ殑楠岃瘉
+- [x] Pattern Matching - 鏇翠紭闆呯殑绫诲瀷澶勭悊
+- [x] Virtual Threads - 3-5x 骞跺彂鎬ц兘
+- [x] Structured Concurrency - 鏇村彲闈犵殑寮傛
+- [x] AOT Profiling - 2-3x 鍚姩閫熷害
+- [x] Compact Headers - 20-30% 鍐呭瓨鑺傜渷
 
-## 🤝 贡献
+## 馃摎 鏂囨。
 
-欢迎贡献代码、报告 Bug 或提出建议！
+- [Java 25 閲嶅啓璁″垝](./JAVA25_REWRITE_PLAN.md)
+- [Java 25 鐗规€ц瑙(./docs/JAVA25_FEATURES.md)
+- [閰嶇疆鍙傝€僝(./docs/CONFIG_REFERENCE.md)
+- [鎻掍欢寮€鍙慮(./docs/PLUGIN_DEVELOPMENT.md)
 
-## 📄 License
+## 馃 璐＄尞
 
-MIT License - 查看 [LICENSE](LICENSE) 文件
+娆㈣繋璐＄尞浠ｇ爜銆佹姤鍛?Bug 鎴栨彁鍑哄缓璁紒
+
+## 馃搫 License
+
+MIT License - 鏌ョ湅 [LICENSE](LICENSE) 鏂囦欢
 
 ---
 
-**Built with ❤️ using Java 25**  
+**Built with 鉂わ笍 using Java 25**  
 **Powered by Flexible Constructors, Virtual Threads, and Structured Concurrency**
 ## Qin Language Positioning (v0.2)
 
@@ -1161,7 +1121,7 @@ Project zoning rules (compile-time hard rules):
 
 Run model:
 
-- `qin run` without args follows `qin.config.json` and convention candidates.
+- `qin run` without args follows `qin.config.js` and convention candidates.
 - `.js` entries run through Qin runtime (`qin-runtime-core`).
 - `.java` entries run through Java compile/run flow.
 
@@ -1182,11 +1142,11 @@ Reference implementation details live in:
 
 1. npm-first resolution (Node-free installer implemented in Java)
 2. Maven fallback when npm package cannot be resolved
-3. Automatic write-back to `qin.config.json`
+3. Automatic write-back to `qin.config.js`
 
-### `qin.config.json` as manifest and module root
+### `qin.config.js` as manifest and module root
 
-`qin.config.json` should be treated as the canonical Qin project manifest, not only as a loose config file.
+`qin.config.js` should be treated as the canonical Qin project manifest, not only as a loose config file.
 
 In the current architecture it defines:
 
@@ -1208,19 +1168,19 @@ So Qin is converging on one manifest for:
 - `qin install <pkg...>`
   - For bare package names (for example `mitt`, `lodash-es`), Qin tries npm first.
   - If npm cannot resolve that package, Qin falls back to Maven Central lookup.
-  - Installed dependencies are recorded into `qin.config.json`.
+  - Installed dependencies are recorded into `qin.config.js`.
 
 - `qin install org.example:artifact[:version]`
   - Explicit Maven coordinates go directly to Maven resolution.
-  - Added to `qin.config.json`, then resolved by `qin sync` logic.
+  - Added to `qin.config.js`, then resolved by `qin sync` logic.
 
 - `qin install` (no package names)
-  - Executes install using dependencies already declared in `qin.config.json`.
+  - Executes install using dependencies already declared in `qin.config.js`.
   - npm-style entries are installed to `node_modules` by Qin's Java npm installer.
   - Maven-style entries are resolved using the existing `sync` pipeline.
   - This is the unified update path for `main/` backend JS + Java dependency environment.
 
-### `qin.config.json` dependency shape
+### `qin.config.js` dependency shape
 
 - npm dependencies: key is npm package name, value is npm version
   - Example: `"mitt": "3.0.1"`
@@ -1240,3 +1200,4 @@ Notes:
 
 - `app/` frontend package behavior is intentionally not changed in this phase.
 - `main/` backend JS and Java now follow one dependency update entrypoint: `qin install`.
+

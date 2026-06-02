@@ -4,7 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Verifies Qin can materialize npm dependencies declared in qin.config.json
+ * Verifies Qin can materialize npm dependencies declared in qin.config.js
  * without using npm, Node, or Vite.
  */
 public final class QinNpmDependencyMaterializerSmokeTestMain {
@@ -13,7 +13,7 @@ public final class QinNpmDependencyMaterializerSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-npm-materializer-smoke-");
-        Files.writeString(root.resolve("qin.config.json"), """
+        Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "qin-npm-materializer-smoke",
                   "dependencies": {
@@ -34,3 +34,4 @@ public final class QinNpmDependencyMaterializerSmokeTestMain {
         System.out.println("QinNpmDependencyMaterializerSmokeTestMain passed.");
     }
 }
+

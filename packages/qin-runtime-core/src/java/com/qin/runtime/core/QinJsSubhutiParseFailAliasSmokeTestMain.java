@@ -10,7 +10,7 @@ public final class QinJsSubhutiParseFailAliasSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-subhuti-parse-fail-alias-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-subhuti-parse-fail-alias\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-subhuti-parse-fail-alias\" }\n",
                 StandardCharsets.UTF_8);
 
         String source = """
@@ -36,3 +36,4 @@ public final class QinJsSubhutiParseFailAliasSmokeTestMain {
         System.out.println("QinJsSubhutiParseFailAliasSmokeTestMain OK");
     }
 }
+

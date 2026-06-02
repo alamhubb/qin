@@ -10,7 +10,7 @@ public final class QinCsstsCompilerNumericAtomSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-cssts-numeric-atoms-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-cssts-numeric-atoms\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-cssts-numeric-atoms\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const panel = css { padding32px, borderRadius16px, padding24px }
                 """;
@@ -33,3 +33,4 @@ public final class QinCsstsCompilerNumericAtomSmokeTestMain {
         System.out.println("QinCsstsCompilerNumericAtomSmokeTestMain passed.");
     }
 }
+

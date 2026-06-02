@@ -1,4 +1,4 @@
-# qin-runtime-core
+﻿# qin-runtime-core
 
 Core runtime orchestration package for Qin.
 
@@ -33,7 +33,7 @@ Planning document:
 - Backend foundation is JVM + `.class` ecosystem, not Node compatibility.
 - Qin accepts mixed Qin source inputs across `.ts`, `.js`, and `.qin`.
 - `.java` remains host/interoperability code, not a Qin source suffix.
-- `qin.config.json` is the Qin package manifest, workspace/module-root descriptor, and runtime/build config surface.
+- `qin.config.js` is the Qin package manifest, workspace/module-root descriptor, and runtime/build config surface.
 - This package is the bootstrap/orchestration layer for Qin-on-JVM runtime workflows.
 
 Product-direction summary:
@@ -111,7 +111,7 @@ Normative target model summary:
 - `app/`: Qin frontend zone, JS target
 - Mixed-source Qin authoring is allowed; target legality still comes from zoning.
 - Java host code may coexist in backend projects, but it is outside the Qin source-suffix set.
-- `qin.config.json` is the project-level manifest that binds entry, dependencies, workspace packages, and target/runtime config together.
+- `qin.config.js` is the project-level manifest that binds entry, dependencies, workspace packages, and target/runtime config together.
 
 See `QIN_LANGUAGE_TARGET_MODEL.md` for the full language/target rules.
 See `QIN_APP_MODEL.md` for the intended application-first user model that sits above these zones.
@@ -331,3 +331,4 @@ Verified by `QinNpmParitySmokeTestMain`:
 
 This is not a claim of broad npm parity.
 It is the current proven floor for Qin-compiled npm package execution on JVM.
+

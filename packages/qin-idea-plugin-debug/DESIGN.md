@@ -1,65 +1,32 @@
-# Qin IDEA Plugin 设计文档
+﻿# Qin IDEA Plugin 璁捐鏂囨。
 
-## 概述
+## 姒傝堪
 
-Qin IDEA Plugin 是一个 IntelliJ IDEA 插件，用于让 IDEA 识别和支持 Qin 项目。它会自动：
-1. 检测 Qin 项目（包含 `qin.config.json` 的目录）
-2. 生成 `.iml` 模块文件
-3. 配置源代码目录、输出目录和依赖
-4. 注册模块到 IDEA 项目
+Qin IDEA Plugin 鏄竴涓?IntelliJ IDEA 鎻掍欢锛岀敤浜庤 IDEA 璇嗗埆鍜屾敮鎸?Qin 椤圭洰銆傚畠浼氳嚜鍔細
+1. 妫€娴?Qin 椤圭洰锛堝寘鍚?`qin.config.js` 鐨勭洰褰曪級
+2. 鐢熸垚 `.iml` 妯″潡鏂囦欢
+3. 閰嶇疆婧愪唬鐮佺洰褰曘€佽緭鍑虹洰褰曞拰渚濊禆
+4. 娉ㄥ唽妯″潡鍒?IDEA 椤圭洰
 
-## 核心流程
+## 鏍稿績娴佺▼
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                        打开 IDEA 项目                              │
-│                             ↓                                    │
-│              DebugStartup.execute() 自动触发                       │
-│                             ↓                                    │
-│              扫描所有 Qin 项目 (qin.config.json)                    │
-│                             ↓                                    │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │  阶段1: 快速生成 .iml（让 IDEA 立即识别源代码目录）              │ │
-│  │    - 生成 {project}.iml                                     │ │
-│  │    - 配置 sourceFolder (src/main/java 或 src)               │ │
-│  │    - 配置 excludeFolder (.qin, build, libs...)             │ │
-│  │    - 注册到 .idea/modules.xml                               │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-│                             ↓                                    │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │  阶段2: 执行 qin sync（解析依赖）                              │ │
-│  │    - 调用 qin sync 命令                                      │ │
-│  │    - 生成 .qin/classpath.json                               │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-│                             ↓                                    │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │  阶段3: 重新生成 .iml（添加依赖配置）                           │ │
-│  │    - 读取 .qin/classpath.json                               │ │
-│  │    - 添加 module-library 依赖条目                            │ │
-│  │    - 支持 JAR 文件和本地类路径                                │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-│                             ↓                                    │
-│                    刷新 IDEA 项目模型                              │
-└──────────────────────────────────────────────────────────────────┘
-```
+鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?                       鎵撳紑 IDEA 椤圭洰                              鈹?鈹?                            鈫?                                   鈹?鈹?             DebugStartup.execute() 鑷姩瑙﹀彂                       鈹?鈹?                            鈫?                                   鈹?鈹?             鎵弿鎵€鏈?Qin 椤圭洰 (qin.config.js)                    鈹?鈹?                            鈫?                                   鈹?鈹? 鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?鈹? 鈹? 闃舵1: 蹇€熺敓鎴?.iml锛堣 IDEA 绔嬪嵆璇嗗埆婧愪唬鐮佺洰褰曪級              鈹?鈹?鈹? 鈹?   - 鐢熸垚 {project}.iml                                     鈹?鈹?鈹? 鈹?   - 閰嶇疆 sourceFolder (src/main/java 鎴?src)               鈹?鈹?鈹? 鈹?   - 閰嶇疆 excludeFolder (.qin, build, libs...)             鈹?鈹?鈹? 鈹?   - 娉ㄥ唽鍒?.idea/modules.xml                               鈹?鈹?鈹? 鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?鈹?                            鈫?                                   鈹?鈹? 鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?鈹? 鈹? 闃舵2: 鎵ц qin sync锛堣В鏋愪緷璧栵級                              鈹?鈹?鈹? 鈹?   - 璋冪敤 qin sync 鍛戒护                                      鈹?鈹?鈹? 鈹?   - 鐢熸垚 .qin/classpath.json                               鈹?鈹?鈹? 鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?鈹?                            鈫?                                   鈹?鈹? 鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?鈹? 鈹? 闃舵3: 閲嶆柊鐢熸垚 .iml锛堟坊鍔犱緷璧栭厤缃級                           鈹?鈹?鈹? 鈹?   - 璇诲彇 .qin/classpath.json                               鈹?鈹?鈹? 鈹?   - 娣诲姞 module-library 渚濊禆鏉＄洰                            鈹?鈹?鈹? 鈹?   - 鏀寔 JAR 鏂囦欢鍜屾湰鍦扮被璺緞                                鈹?鈹?鈹? 鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?鈹?                            鈫?                                   鈹?鈹?                   鍒锋柊 IDEA 椤圭洰妯″瀷                              鈹?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?```
 
-## 文件结构
+## 鏂囦欢缁撴瀯
 
-### 生成的文件
-
+### 鐢熸垚鐨勬枃浠?
 ```
 {qin-project}/
-├── qin.config.json          # Qin 配置（源文件）
-├── {project-name}.iml       # IDEA 模块文件（生成）
-├── .qin/
-│   ├── classpath.json       # 依赖路径（qin sync 生成）
-│   └── logs/                # 插件日志
-│       └── YYYY-MM-DD-HH.log
-└── .idea/
-    └── modules.xml          # 模块注册（更新）
+鈹溾攢鈹€ qin.config.js          # Qin 閰嶇疆锛堟簮鏂囦欢锛?鈹溾攢鈹€ {project-name}.iml       # IDEA 妯″潡鏂囦欢锛堢敓鎴愶級
+鈹溾攢鈹€ .qin/
+鈹?  鈹溾攢鈹€ classpath.json       # 渚濊禆璺緞锛坬in sync 鐢熸垚锛?鈹?  鈹斺攢鈹€ logs/                # 鎻掍欢鏃ュ織
+鈹?      鈹斺攢鈹€ YYYY-MM-DD-HH.log
+鈹斺攢鈹€ .idea/
+    鈹斺攢鈹€ modules.xml          # 妯″潡娉ㄥ唽锛堟洿鏂帮級
 ```
 
-### .iml 文件结构
+### .iml 鏂囦欢缁撴瀯
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -76,7 +43,7 @@ Qin IDEA Plugin 是一个 IntelliJ IDEA 插件，用于让 IDEA 识别和支持 
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <!-- 依赖条目 -->
+    <!-- 渚濊禆鏉＄洰 -->
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -88,65 +55,63 @@ Qin IDEA Plugin 是一个 IntelliJ IDEA 插件，用于让 IDEA 识别和支持 
 </module>
 ```
 
-## 配置来源对照
+## 閰嶇疆鏉ユ簮瀵圭収
 
-| .iml 配置项 | 数据来源 |
+| .iml 閰嶇疆椤?| 鏁版嵁鏉ユ簮 |
 |---|---|
-| `sourceFolder` | 自动检测 `src/main/java` 或 `src` |
-| `output` | `qin.config.json` → `java.outputDir` |
+| `sourceFolder` | 鑷姩妫€娴?`src/main/java` 鎴?`src` |
+| `output` | `qin.config.js` 鈫?`java.outputDir` |
 | `excludeFolder` | `QinConstants.IML_EXCLUDED_DIRS` |
-| 依赖 | `.qin/classpath.json` |
+| 渚濊禆 | `.qin/classpath.json` |
 
-## 与 Maven 的对比
-
-| 特性 | Maven | Qin |
+## 涓?Maven 鐨勫姣?
+| 鐗规€?| Maven | Qin |
 |---|---|---|
-| 配置文件 | `pom.xml` | `qin.config.json` |
-| IDEA 支持 | 原生支持 | 自定义插件 |
-| 模块文件 | IDEA 自动生成 | 插件生成 |
-| 依赖解析 | Maven 仓库 | Coursier |
-| 依赖配置 | `External Libraries` | `.iml` 中的 `module-library` |
+| 閰嶇疆鏂囦欢 | `pom.xml` | `qin.config.js` |
+| IDEA 鏀寔 | 鍘熺敓鏀寔 | 鑷畾涔夋彃浠?|
+| 妯″潡鏂囦欢 | IDEA 鑷姩鐢熸垚 | 鎻掍欢鐢熸垚 |
+| 渚濊禆瑙ｆ瀽 | Maven 浠撳簱 | Coursier |
+| 渚濊禆閰嶇疆 | `External Libraries` | `.iml` 涓殑 `module-library` |
 
-## 常量配置
+## 甯搁噺閰嶇疆
 
-### 通用常量（com.qin.constants.QinConstants）
-
-| 常量 | 值 | 说明 |
+### 閫氱敤甯搁噺锛坈om.qin.constants.QinConstants锛?
+| 甯搁噺 | 鍊?| 璇存槑 |
 |---|---|---|
-| `CONFIG_FILE` | `qin.config.json` | 配置文件名 |
-| `QIN_DIR` | `.qin` | 缓存目录 |
-| `LOG_SUBDIR` | `logs` | 日志子目录 |
-| `MAX_SCAN_DEPTH` | `20` | 最大扫描深度 |
-| `EXCLUDED_DIRS` | Set | 扫描排除目录 |
+| `CONFIG_FILE` | `qin.config.js` | 閰嶇疆鏂囦欢鍚?|
+| `QIN_DIR` | `.qin` | 缂撳瓨鐩綍 |
+| `LOG_SUBDIR` | `logs` | 鏃ュ織瀛愮洰褰?|
+| `MAX_SCAN_DEPTH` | `20` | 鏈€澶ф壂鎻忔繁搴?|
+| `EXCLUDED_DIRS` | Set | 鎵弿鎺掗櫎鐩綍 |
 
-### IDEA 插件特有常量（com.qin.debug.QinConstants）
-
-| 常量 | 值 | 说明 |
+### IDEA 鎻掍欢鐗规湁甯搁噺锛坈om.qin.debug.QinConstants锛?
+| 甯搁噺 | 鍊?| 璇存槑 |
 |---|---|---|
-| `IML_EXCLUDED_DIRS` | Set | .iml 排除目录 |
-| `NODE_TASKS` | `Tasks` | 树节点名 |
-| `NODE_DEPENDENCIES` | `Dependencies` | 树节点名 |
+| `IML_EXCLUDED_DIRS` | Set | .iml 鎺掗櫎鐩綍 |
+| `NODE_TASKS` | `Tasks` | 鏍戣妭鐐瑰悕 |
+| `NODE_DEPENDENCIES` | `Dependencies` | 鏍戣妭鐐瑰悕 |
 
-## 版本历史
+## 鐗堟湰鍘嗗彶
 
-| 版本 | 更新内容 |
+| 鐗堟湰 | 鏇存柊鍐呭 |
 |---|---|
-| 0.1.1 | 初始版本 |
-| 0.1.2 | 修复 Java 版本兼容性（--release 21） |
-| 0.1.3 | 添加日志记录 |
-| 0.1.4 | 自动注册模块到 modules.xml |
-| 0.1.5 | 自动创建 modules.xml |
-| 0.1.6 | 读取 classpath.json 配置依赖 |
+| 0.1.1 | 鍒濆鐗堟湰 |
+| 0.1.2 | 淇 Java 鐗堟湰鍏煎鎬э紙--release 21锛?|
+| 0.1.3 | 娣诲姞鏃ュ織璁板綍 |
+| 0.1.4 | 鑷姩娉ㄥ唽妯″潡鍒?modules.xml |
+| 0.1.5 | 鑷姩鍒涘缓 modules.xml |
+| 0.1.6 | 璇诲彇 classpath.json 閰嶇疆渚濊禆 |
 
-## 插件位置
+## 鎻掍欢浣嶇疆
 
 ```
 qin/packages/qin-idea-plugin-debug/build/distributions/qin-idea-plugin-debug-{version}.zip
 ```
 
-## 安装方法
+## 瀹夎鏂规硶
 
-1. 打开 IDEA → Settings → Plugins
-2. 点击齿轮图标 → Install Plugin from Disk
-3. 选择 `qin-idea-plugin-debug-{version}.zip`
-4. 重启 IDEA
+1. 鎵撳紑 IDEA 鈫?Settings 鈫?Plugins
+2. 鐐瑰嚮榻胯疆鍥炬爣 鈫?Install Plugin from Disk
+3. 閫夋嫨 `qin-idea-plugin-debug-{version}.zip`
+4. 閲嶅惎 IDEA
+

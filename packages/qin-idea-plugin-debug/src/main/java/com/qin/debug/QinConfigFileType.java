@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 
 /**
- * qin.config.json 文件类型
+ * qin.config.js 鏂囦欢绫诲瀷
  */
 public class QinConfigFileType implements FileType {
     public static final QinConfigFileType INSTANCE = new QinConfigFileType();
@@ -35,3 +35,4 @@ public class QinConfigFileType implements FileType {
         return false;
     }
 }
+

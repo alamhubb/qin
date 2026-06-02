@@ -7,7 +7,7 @@ import com.qin.types.QinConfig;
 import java.util.List;
 
 /**
- * Normalized Java compilation settings derived from qin.config.json.
+ * Normalized Java compilation settings derived from qin.config.js.
  */
 public record JavaCompileConfig(
         String version,
@@ -98,3 +98,4 @@ public record JavaCompileConfig(
         return value == null || value.isBlank();
     }
 }
+

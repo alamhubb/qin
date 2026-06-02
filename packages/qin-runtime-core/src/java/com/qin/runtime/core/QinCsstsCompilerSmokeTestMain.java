@@ -10,7 +10,7 @@ public final class QinCsstsCompilerSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-cssts-compiler-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-cssts-compiler-smoke\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-cssts-compiler-smoke\" }\n", StandardCharsets.UTF_8);
 
         String source = """
                 const buttonBase = css { colorRed, fontBold }
@@ -39,3 +39,4 @@ public final class QinCsstsCompilerSmokeTestMain {
         }
     }
 }
+

@@ -10,7 +10,7 @@ public final class QinJsObjectValuesSpreadSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-object-values-spread-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-object-values-spread\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-object-values-spread\" }\n",
                 StandardCharsets.UTF_8);
 
         String wrapper = """
@@ -31,3 +31,4 @@ public final class QinJsObjectValuesSpreadSmokeTestMain {
         System.out.println(QinObjectJsonEncoder.toJson(result));
     }
 }
+

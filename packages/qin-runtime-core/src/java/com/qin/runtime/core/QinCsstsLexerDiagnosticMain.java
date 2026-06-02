@@ -10,7 +10,7 @@ public final class QinCsstsLexerDiagnosticMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-cssts-lexer-diagnostic-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-cssts-lexer-diagnostic\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-cssts-lexer-diagnostic\" }\n", StandardCharsets.UTF_8);
 
         String wrapper = """
                 import CssTsParser from "cssts-compiler/src/parser/CssTsParser.js";
@@ -86,3 +86,4 @@ public final class QinCsstsLexerDiagnosticMain {
         System.out.println(QinObjectJsonEncoder.toJson(result));
     }
 }
+

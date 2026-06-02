@@ -1,11 +1,10 @@
-{
-    "name":  "com.qin:qin-lang-frontend-adapter",
+export default {
+    "name":  "com.qin:qin-parser",
     "version":  "0.1.0",
-    "description":  "Adapter from source frontend to Qin language IR",
-    "entry":  "src/java/com/qin/lang/frontend/adapter/QinFrontendLowerer.java",
+    "description":  "Qin language parser frontend built on top of java-slime",
+    "entry":  "src/java/com/qin/parser/QinParserFacade.java",
     "dependencies":  {
                          "com.qin:qin-lang-ir":  "0.1.0",
-                         "com.qin:qin-parser":  "0.1.0",
                          "com.slime:slime-parser":  "1.0.0"
                      },
     "java":  {
@@ -19,6 +18,7 @@
              },
     "output":  {
                    "dir":  "build",
-                   "jarName":  "qin-lang-frontend-adapter.jar"
+                   "jarName":  "qin-parser.jar"
                }
 }
+

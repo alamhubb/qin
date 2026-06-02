@@ -456,7 +456,7 @@ final class QinOfficialVueSfcCompiler implements QinVueSfcCompiler {
     private Path findProjectRoot(Path moduleFile) {
         Path current = moduleFile.toAbsolutePath().normalize().getParent();
         while (current != null) {
-            if (Files.exists(current.resolve("qin.config.json"))
+            if (Files.exists(current.resolve("qin.config.js"))
                     || Files.isDirectory(current.resolve("node_modules"))
                     || Files.isDirectory(current.resolve(".qin"))) {
                 return current;

@@ -1,0 +1,20 @@
+export default {
+    "name":  "com.qin:qin-lang-ir",
+    "version":  "0.1.0",
+    "description":  "Qin language intermediate representation and semantic model",
+    "entry":  "src/java/com/qin/lang/ir/IrPackageMarker.java",
+    "java":  {
+                 "version":  "21",
+                 "sourceDir":  "src/java",
+                 "outputDir":  "build/classes",
+                 "encoding":  "UTF-8",
+                 "release":  "21",
+                 "source":  "21",
+                 "target":  "21"
+             },
+    "output":  {
+                   "dir":  "build",
+                   "jarName":  "qin-lang-ir.jar"
+               }
+}
+

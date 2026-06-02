@@ -1,6 +1,6 @@
-# Qin Package Manifest Model
+﻿# Qin Package Manifest Model
 
-This document defines the role of `qin.config.json` in the Qin architecture.
+This document defines the role of `qin.config.js` in the Qin architecture.
 
 It is the normative project-manifest layer that sits between:
 
@@ -11,7 +11,7 @@ It is the normative project-manifest layer that sits between:
 
 ## 1. Core Definition
 
-`qin.config.json` is the canonical Qin project manifest.
+`qin.config.js` is the canonical Qin project manifest.
 
 It is not only a config file.
 It is also:
@@ -25,7 +25,7 @@ It is also:
 In short:
 
 - source files define Qin code
-- `qin.config.json` defines the project/package that owns that code
+- `qin.config.js` defines the project/package that owns that code
 
 ## 2. What The Manifest Owns
 
@@ -50,7 +50,7 @@ Current manifest responsibilities are:
   - `output`
   - `port`
 
-This means `qin.config.json` is where package-management policy and module-system policy begin to meet.
+This means `qin.config.js` is where package-management policy and module-system policy begin to meet.
 
 ## 3. Entry Model
 
@@ -81,7 +81,7 @@ depending on the project mode.
 
 ## 4. Dependency Model
 
-`qin.config.json` is also the unified dependency declaration surface.
+`qin.config.js` is also the unified dependency declaration surface.
 
 Current shape:
 
@@ -128,7 +128,7 @@ Target-facing clarification:
 
 `packages` defines workspace package discovery.
 
-This gives `qin.config.json` a second role beyond a single package:
+This gives `qin.config.js` a second role beyond a single package:
 
 - it can describe one package
 - or it can describe a workspace root containing many Qin packages
@@ -142,7 +142,7 @@ That makes it the root descriptor for:
 
 ## 6. Relationship To The Language Model
 
-`qin.config.json` does not replace the Qin language model.
+`qin.config.js` does not replace the Qin language model.
 
 The language model still defines:
 
@@ -182,4 +182,5 @@ It is intended to become:
 - a runtime/toolchain
 - a fullstack application platform
 
-`qin.config.json` is the project boundary where those concerns meet.
+`qin.config.js` is the project boundary where those concerns meet.
+

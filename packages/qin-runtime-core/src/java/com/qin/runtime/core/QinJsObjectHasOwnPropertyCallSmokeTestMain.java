@@ -11,7 +11,7 @@ public final class QinJsObjectHasOwnPropertyCallSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-has-own-property-call-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-has-own-property-call\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-has-own-property-call\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const hasOwn = {}.hasOwnProperty;
                 const source = { a: 1 };
@@ -32,3 +32,4 @@ public final class QinJsObjectHasOwnPropertyCallSmokeTestMain {
         }
     }
 }
+

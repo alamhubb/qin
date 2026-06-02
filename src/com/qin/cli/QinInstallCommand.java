@@ -16,7 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Minimal install command that wires existing npm and qin.config.json support
+ * Minimal install command that wires existing npm and qin.config.js support
  * back into the CLI.
  */
 public final class QinInstallCommand {
@@ -58,7 +58,7 @@ public final class QinInstallCommand {
         }
 
         if (requested.keySet().stream().anyMatch(name -> !isNpmDependency(name))) {
-            System.out.println("Maven dependencies were recorded to qin.config.json. Run `qin sync` to resolve them.");
+            System.out.println("Maven dependencies were recorded to qin.config.js. Run `qin sync` to resolve them.");
         }
     }
 
@@ -166,3 +166,4 @@ public final class QinInstallCommand {
     private record DependencySpec(String name, String version) {
     }
 }
+

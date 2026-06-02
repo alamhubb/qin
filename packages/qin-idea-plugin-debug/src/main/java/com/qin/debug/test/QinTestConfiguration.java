@@ -78,7 +78,7 @@ public class QinTestConfiguration extends RunConfigurationBase<QinTestConfigurat
         applyResolvedDefaults();
         if (getResolvedProjectPath() == null || getResolvedProjectPath().isBlank()) {
             throw new RuntimeConfigurationError(
-                    "Project path is not specified and could not be inferred from qin.config.json");
+                    "Project path is not specified and could not be inferred from qin.config.js");
         }
     }
 
@@ -89,3 +89,4 @@ public class QinTestConfiguration extends RunConfigurationBase<QinTestConfigurat
         }
     }
 }
+

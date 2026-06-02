@@ -11,7 +11,7 @@ public final class QinJsNumberStaticSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-number-static-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-number-static\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-number-static\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const a = Number.MAX_SAFE_INTEGER;
                 const b = Math.floor(2);
@@ -44,3 +44,4 @@ public final class QinJsNumberStaticSmokeTestMain {
         }
     }
 }
+

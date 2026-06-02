@@ -15,7 +15,7 @@ public final class QinVitePluginServerApiSmokeTestMain {
         Path root = Files.createTempDirectory("qin-plugin-server-api-");
         Path src = root.resolve("src");
         Files.createDirectories(src);
-        Files.writeString(root.resolve("qin.config.json"), """
+        Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "com.qin.smoke:plugin-server-api",
                   "version": "0.1.0",
@@ -107,3 +107,4 @@ public final class QinVitePluginServerApiSmokeTestMain {
         System.out.println("QinVitePluginServerApiSmokeTestMain OK");
     }
 }
+

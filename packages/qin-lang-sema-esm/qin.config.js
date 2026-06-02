@@ -1,0 +1,23 @@
+export default {
+    "name":  "com.qin:qin-lang-sema-esm",
+    "version":  "0.1.0",
+    "description":  "ESM semantic analysis for Qin module graph",
+    "entry":  "src/java/com/qin/lang/sema/esm/EsmSemaPackageMarker.java",
+    "dependencies":  {
+                         "com.qin:qin-lang-module-resolver":  "0.1.0"
+                     },
+    "java":  {
+                 "version":  "21",
+                 "sourceDir":  "src/java",
+                 "outputDir":  "build/classes",
+                 "encoding":  "UTF-8",
+                 "release":  "21",
+                 "source":  "21",
+                 "target":  "21"
+             },
+    "output":  {
+                   "dir":  "build",
+                   "jarName":  "qin-lang-sema-esm.jar"
+               }
+}
+

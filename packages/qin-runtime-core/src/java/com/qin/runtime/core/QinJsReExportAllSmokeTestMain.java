@@ -10,7 +10,7 @@ public final class QinJsReExportAllSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-re-export-all-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-re-export-all\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-re-export-all\" }\n",
                 StandardCharsets.UTF_8);
         Path packageDir = root.resolve("node_modules").resolve("local-barrel");
         Files.createDirectories(packageDir.resolve("src"));
@@ -43,3 +43,4 @@ public final class QinJsReExportAllSmokeTestMain {
         System.out.println(QinObjectJsonEncoder.toJson(result));
     }
 }
+

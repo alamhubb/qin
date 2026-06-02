@@ -1,0 +1,20 @@
+export default {
+    "name":  "com.qin:qin-lang-module-policy",
+    "version":  "0.1.0",
+    "description":  "Zone-based import policy checker for Qin modules",
+    "entry":  "src/java/com/qin/lang/module/policy/ModulePolicyPackageMarker.java",
+    "java":  {
+                 "version":  "21",
+                 "sourceDir":  "src/java",
+                 "outputDir":  "build/classes",
+                 "encoding":  "UTF-8",
+                 "release":  "21",
+                 "source":  "21",
+                 "target":  "21"
+             },
+    "output":  {
+                   "dir":  "build",
+                   "jarName":  "qin-lang-module-policy.jar"
+               }
+}
+

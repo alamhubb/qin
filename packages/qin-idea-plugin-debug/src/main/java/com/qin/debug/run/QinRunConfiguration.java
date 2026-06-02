@@ -13,8 +13,8 @@ import org.jetbrains.annotations.Nullable;
 import static com.qin.constants.QinConstants.CONFIG_FILE;
 
 /**
- * Qin 杩愯閰嶇疆
- * 瀛樺偍鍜岀鐞?Qin 椤圭洰鐨勮繍琛岄厤缃俊鎭?
+ * Qin 鏉╂劘顢戦柊宥囩枂
+ * 鐎涙ê鍋嶉崪宀€顓搁悶?Qin 妞ゅ湱娲伴惃鍕箥鐞涘矂鍘ょ純顔讳繆閹?
  */
 public class QinRunConfiguration extends RunConfigurationBase<QinRunConfigurationOptions> {
 
@@ -108,11 +108,10 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
         QinLogger.info("[RUN] Checking configuration: projectPath=" + projectPath + ", mainClass=" + getResolvedMainClass());
         if (projectPath == null || projectPath.isEmpty()) {
             QinLogger.error("[RUN] Configuration check failed: project path is empty");
-            throw new RuntimeConfigurationError("Project path is not specified and could not be inferred from qin.config.json");
+            throw new RuntimeConfigurationError("Project path is not specified and could not be inferred from qin.config.js");
         }
 
-        // 妫€鏌?qin.config.json 鏄惁瀛樺湪
-        java.nio.file.Path configPath = java.nio.file.Paths.get(projectPath, CONFIG_FILE);
+        // 濡偓閺?qin.config.js 閺勵垰鎯佺€涙ê婀?        java.nio.file.Path configPath = java.nio.file.Paths.get(projectPath, CONFIG_FILE);
         if (!java.nio.file.Files.exists(configPath)) {
             QinLogger.error("[RUN] Configuration check failed: " + CONFIG_FILE + " missing at " + configPath);
             throw new RuntimeConfigurationError(CONFIG_FILE + " not found in: " + projectPath);
@@ -131,3 +130,4 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
         }
     }
 }
+

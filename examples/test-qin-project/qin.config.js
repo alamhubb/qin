@@ -1,0 +1,14 @@
+export default {
+    "name":  "test-qin-project",
+    "version":  "1.0.0",
+    "entry":  "com.example.Main",
+    "dependencies":  {
+                         "com.google.code.gson@gson":  "2.10.1"
+                     },
+    "java":  {
+                 "version":  "21",
+                 "sourceDir":  "src",
+                 "outputDir":  "build/classes"
+             }
+}
+

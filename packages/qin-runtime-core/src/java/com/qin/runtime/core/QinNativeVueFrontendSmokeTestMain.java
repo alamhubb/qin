@@ -10,7 +10,7 @@ public final class QinNativeVueFrontendSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-native-vue-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-native-vue-smoke\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-native-vue-smoke\" }\n", StandardCharsets.UTF_8);
         Path packageDir = Files.createDirectories(
                 root.resolve("node_modules").resolve("@vue").resolve("compiler-sfc").resolve("dist"));
         Files.writeString(packageDir.getParent().resolve("package.json"), """
@@ -166,3 +166,4 @@ public final class QinNativeVueFrontendSmokeTestMain {
         return bootstrap.substring(start + 1, end);
     }
 }
+

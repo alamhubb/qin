@@ -10,7 +10,7 @@ public final class QinJsStringRawTaggedTemplateSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-string-raw-tagged-template-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-string-raw-tagged-template\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-string-raw-tagged-template\" }\n",
                 StandardCharsets.UTF_8);
 
         String wrapper = """
@@ -27,3 +27,4 @@ public final class QinJsStringRawTaggedTemplateSmokeTestMain {
         System.out.println(QinObjectJsonEncoder.toJson(result));
     }
 }
+

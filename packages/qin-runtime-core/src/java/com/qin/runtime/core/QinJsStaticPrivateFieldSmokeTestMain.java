@@ -10,7 +10,7 @@ public final class QinJsStaticPrivateFieldSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-static-private-field-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-static-private-field\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-static-private-field\" }\n", StandardCharsets.UTF_8);
         String source = """
                 class Stack {
                   static #constructing = false;
@@ -41,3 +41,4 @@ public final class QinJsStaticPrivateFieldSmokeTestMain {
         System.out.println("QinJsStaticPrivateFieldSmokeTestMain OK");
     }
 }
+

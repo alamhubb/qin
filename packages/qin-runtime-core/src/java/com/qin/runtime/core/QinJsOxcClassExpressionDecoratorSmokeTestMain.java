@@ -11,7 +11,7 @@ public final class QinJsOxcClassExpressionDecoratorSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-oxc-class-expression-decorator-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-oxc-class-expression-decorator\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-oxc-class-expression-decorator\" }\n",
                 StandardCharsets.UTF_8);
 
         String source = """
@@ -57,3 +57,4 @@ public final class QinJsOxcClassExpressionDecoratorSmokeTestMain {
         System.out.println("QinJsOxcClassExpressionDecoratorSmokeTestMain OK");
     }
 }
+

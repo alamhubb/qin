@@ -10,7 +10,7 @@ public final class QinJsStringStrictEqualitySmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-string-strict-equality-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-string-strict-equality\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-string-strict-equality\" }\n",
                 StandardCharsets.UTF_8);
 
         String wrapper = """
@@ -34,3 +34,4 @@ public final class QinJsStringStrictEqualitySmokeTestMain {
         System.out.println(QinObjectJsonEncoder.toJson(result));
     }
 }
+

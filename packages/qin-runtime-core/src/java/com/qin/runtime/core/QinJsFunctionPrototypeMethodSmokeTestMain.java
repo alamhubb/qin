@@ -21,7 +21,7 @@ public final class QinJsFunctionPrototypeMethodSmokeTestMain {
                 box.read();
                 """;
         Path root = Files.createTempDirectory("qin-js-function-prototype-method-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-function-prototype-method\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-function-prototype-method\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "function_prototype_method");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -29,3 +29,4 @@ public final class QinJsFunctionPrototypeMethodSmokeTestMain {
         System.out.println("QinJsFunctionPrototypeMethodSmokeTestMain OK");
     }
 }
+

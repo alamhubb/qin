@@ -11,7 +11,7 @@ public final class QinJsRuntimeClassDeclarationSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-runtime-class-declaration-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-runtime-class-declaration\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-runtime-class-declaration\" }\n", StandardCharsets.UTF_8);
         String source = """
                 function makeValue() {
                   class Box {
@@ -37,3 +37,4 @@ public final class QinJsRuntimeClassDeclarationSmokeTestMain {
         System.out.println("QinJsRuntimeClassDeclarationSmokeTestMain OK");
     }
 }
+

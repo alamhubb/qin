@@ -26,7 +26,7 @@ public class QinTestConfigurationEditor extends SettingsEditor<QinTestConfigurat
         projectPathField = new TextFieldWithBrowseButton();
         var descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
         descriptor.setTitle("Select Qin Project");
-        descriptor.setDescription("Select the directory containing qin.config.json");
+        descriptor.setDescription("Select the directory containing qin.config.js");
         projectPathField.addBrowseFolderListener(new TextBrowseFolderListener(descriptor, project));
         projectPathField.getTextField().setToolTipText("Auto-detect nearest Qin project");
 
@@ -64,3 +64,4 @@ public class QinTestConfigurationEditor extends SettingsEditor<QinTestConfigurat
         return mainPanel;
     }
 }
+

@@ -4,7 +4,7 @@ import com.qin.constants.QinConstants;
 import java.util.Map;
 
 /**
- * BSP-facing project metadata derived from qin.config.json.
+ * BSP-facing project metadata derived from qin.config.js.
  */
 public class QinProjectInfo {
     public String name;
@@ -53,3 +53,4 @@ public class QinProjectInfo {
         return QinConstants.DEFAULT_JAVA_VERSION;
     }
 }
+

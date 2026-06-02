@@ -94,7 +94,7 @@ public final class QinCompileSnapshotWriter {
     private Path findProjectRoot(Path start) {
         Path current = start == null ? Path.of("").toAbsolutePath().normalize() : start;
         while (current != null) {
-            if (Files.exists(current.resolve("qin.config.json")) || Files.isDirectory(current.resolve(".qin"))) {
+            if (Files.exists(current.resolve("qin.config.js")) || Files.isDirectory(current.resolve(".qin"))) {
                 return current;
             }
             current = current.getParent();

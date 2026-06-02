@@ -28,12 +28,12 @@ public class QinRunConfigurationEditor extends SettingsEditor<QinRunConfiguratio
         projectPathField = new TextFieldWithBrowseButton();
         var descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
         descriptor.setTitle("Select Qin Project");
-        descriptor.setDescription("Select the directory containing qin.config.json");
+        descriptor.setDescription("Select the directory containing qin.config.js");
         projectPathField.addBrowseFolderListener(new TextBrowseFolderListener(descriptor, project));
         projectPathField.getTextField().setToolTipText("Auto-detect nearest Qin project");
 
         mainClassField = new JBTextField();
-        mainClassField.getEmptyText().setText("Optional, defaults to qin.config.json entry");
+        mainClassField.getEmptyText().setText("Optional, defaults to qin.config.js entry");
 
         programArgsField = new JBTextField();
         programArgsField.getEmptyText().setText("Optional");
@@ -83,3 +83,4 @@ public class QinRunConfigurationEditor extends SettingsEditor<QinRunConfiguratio
         return mainPanel;
     }
 }
+

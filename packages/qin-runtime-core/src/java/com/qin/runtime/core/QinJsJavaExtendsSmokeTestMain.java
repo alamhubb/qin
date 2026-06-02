@@ -10,7 +10,7 @@ public final class QinJsJavaExtendsSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-java-extends-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-java-extends\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-java-extends\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, """
                 import { ArrayList } from "java:java.util";
 
@@ -30,3 +30,4 @@ public final class QinJsJavaExtendsSmokeTestMain {
         System.out.println("QinJsJavaExtendsSmokeTestMain passed.");
     }
 }
+

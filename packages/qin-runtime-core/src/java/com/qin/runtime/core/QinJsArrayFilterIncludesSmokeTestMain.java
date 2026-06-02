@@ -17,7 +17,7 @@ public final class QinJsArrayFilterIncludesSmokeTestMain {
                 """;
         Path root = Files.createTempDirectory("qin-js-array-filter-includes-");
         Files.writeString(
-                root.resolve("qin.config.json"),
+                root.resolve("qin.config.js"),
                 "{ \"name\": \"qin-js-array-filter-includes\" }\n",
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "array_filter_includes");
@@ -27,3 +27,4 @@ public final class QinJsArrayFilterIncludesSmokeTestMain {
         System.out.println("QinJsArrayFilterIncludesSmokeTestMain OK");
     }
 }
+

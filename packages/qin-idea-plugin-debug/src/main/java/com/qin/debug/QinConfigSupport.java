@@ -26,8 +26,8 @@ public final class QinConfigSupport {
             return loader.load();
         } catch (Exception e) {
             String message = e.getMessage() == null ? "" : e.getMessage();
-            if (message.contains("qin.config.json is empty")
-                    || message.contains("qin.config.json parsed to null")
+            if (message.contains("qin.config.js is empty")
+                    || message.contains("qin.config.js parsed to null")
                     || message.contains("No project detected")) {
                 QinLogger.debug("[Config] Ignore invalid config at " + projectPath + ": " + message);
             } else {
@@ -104,3 +104,4 @@ public final class QinConfigSupport {
         return value != null && !value.isBlank();
     }
 }
+

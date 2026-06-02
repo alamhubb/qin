@@ -1,9 +1,0 @@
-{
-    "name": "com.qin.demo:server",
-    "version": "0.1.0",
-    "description": "Server Qin module",
-    "entry": "src/qin/server.qin",
-    "dependencies": {
-        "com.qin.demo:shared": "0.1.0"
-    }
-}

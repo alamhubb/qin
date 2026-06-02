@@ -1,6 +1,5 @@
 package com.qin.core;
 
-import com.google.gson.Gson;
 import com.qin.constants.QinConstants;
 import com.qin.types.QinConfig;
 
@@ -9,53 +8,50 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * 鏈湴椤圭洰瑙ｆ瀽鍣?
- * 鍙傝€僯smanyprojectmanager-cli鐨勯€昏緫,鑷姩鍙戠幇鍜岃В鏋愭湰鍦伴」鐩緷璧?
+ * 閺堫剙婀存い鍦窗鐟欙絾鐎介崳?
+ * 閸欏倽鈧儻smanyprojectmanager-cli閻ㄥ嫰鈧槒绶?閼奉亜濮╅崣鎴犲箛閸滃矁袙閺嬫劖婀伴崷浼淬€嶉惄顔荤贩鐠?
  * 
- * 鏍稿績閫昏緫:
- * 1. 浠庡綋鍓嶇洰褰曞悜涓婃煡鎵炬墍鏈夊寘鍚玵in.config.json鐨勭洰褰?
- * 2. 瀵规瘡涓猣ound鐨勭洰褰?鎵弿鍏跺悓绾х洰褰曟煡鎵惧叾浠栭」鐩?
- * 3. 灏辫繎浼樺厛:杩戠殑椤圭洰瑕嗙洊杩滅殑鍚屽悕椤圭洰
- * 4. 鍖归厤dependencies涓殑瀹屾暣Maven鍧愭爣(groupId:artifactId)
+ * 閺嶇绺鹃柅鏄忕帆:
+ * 1. 娴犲骸缍嬮崜宥囨窗瑜版洖鎮滄稉濠冪叀閹电偓澧嶉張澶婂瘶閸氱幍in.config.json閻ㄥ嫮娲拌ぐ?
+ * 2. 鐎佃鐦℃稉鐚und閻ㄥ嫮娲拌ぐ?閹殿偅寮块崗璺烘倱缁狙呮窗瑜版洘鐓￠幍鎯у従娴犳牠銆嶉惄?
+ * 3. 鐏忚精绻庢导妯哄帥:鏉╂垹娈戞い鍦窗鐟曞棛娲婃潻婊呮畱閸氬苯鎮曟い鍦窗
+ * 4. 閸栧綊鍘ependencies娑擃厾娈戠€瑰本鏆aven閸ф劖鐖?groupId:artifactId)
  */
 public class LocalProjectResolver {
     private static final boolean DEBUG = isDebugEnabled();
 
     private final Path startDir;
-    private final Gson gson;
-
     public LocalProjectResolver(String workingDir) {
         this.startDir = Paths.get(workingDir).toAbsolutePath();
-        this.gson = new Gson();
     }
 
-    // ==================== 鍏紑鐨勯潤鎬佹柟娉?====================
+    // ==================== 閸忣剙绱戦惃鍕饯閹焦鏌熷▔?====================
 
     /**
-     * 鎵弿宸ヤ綔鐩綍涓嬬殑鎵€鏈?Qin 椤圭洰璺緞
-     * 渚?IDEA 鎻掍欢绛夊閮ㄨ皟鐢?
+     * 閹殿偅寮垮銉ょ稊閻╊喖缍嶆稉瀣畱閹碘偓閺?Qin 妞ゅ湱娲扮捄顖氱窞
+     * 娓?IDEA 閹绘帊娆㈢粵澶婎樆闁劏鐨熼悽?
      * 
-     * @param workingDir 宸ヤ綔鐩綍
-     * @return 鎵€鏈夊彂鐜扮殑 Qin 椤圭洰璺緞鍒楄〃
+     * @param workingDir 瀹搞儰缍旈惄顔肩秿
+     * @return 閹碘偓閺堝褰傞悳鎵畱 Qin 妞ゅ湱娲扮捄顖氱窞閸掓銆?
      */
     public static List<Path> scanAllProjects(String workingDir) {
         LocalProjectResolver resolver = new LocalProjectResolver(workingDir);
         List<Path> projects = new ArrayList<>();
 
-        // 鍚戜笂鏌ユ壘 workspace root
+        // 閸氭垳绗傞弻銉﹀ workspace root
         Path workspaceRoot = resolver.findWorkspaceRoot(resolver.startDir);
 
-        // 浠?workspace root 鍚戜笅鎵弿
+        // 娴?workspace root 閸氭垳绗呴幍顐ｅ伎
         resolver.scanProjects(workspaceRoot, projects, 0, QinConstants.MAX_SCAN_DEPTH);
 
         return projects;
     }
 
     /**
-     * 瑙ｆ瀽渚濊禆map,鍖哄垎鏈湴椤圭洰鍜岃繙绋嬩緷璧?
+     * 鐟欙絾鐎芥笟婵婄map,閸栧搫鍨庨張顒€婀存い鍦窗閸滃矁绻欑粙瀣╃贩鐠?
      * 
-     * @param dependencies Maven鍧愭爣鏍煎紡鐨勪緷璧?{"com.slime:slime-token": "1.0.0"}
-     * @return ResolutionResult 鍖呭惈鏈湴classpath鍜岄渶瑕佷粠杩滅▼涓嬭浇鐨勪緷璧?
+     * @param dependencies Maven閸ф劖鐖ｉ弽鐓庣础閻ㄥ嫪绶风挧?{"com.slime:slime-token": "1.0.0"}
+     * @return ResolutionResult 閸栧懎鎯堥張顒€婀碿lasspath閸滃矂娓剁憰浣风矤鏉╂粎鈻兼稉瀣祰閻ㄥ嫪绶风挧?
      */
     public ResolutionResult resolveDependencies(Map<String, String> dependencies) {
         if (dependencies == null || dependencies.isEmpty()) {
@@ -113,24 +109,24 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 鍙戠幇鎵€鏈夋湰鍦伴」鐩?
+     * 閸欐垹骞囬幍鈧張澶嬫拱閸︿即銆嶉惄?
      * 
-     * 鏂扮瓥鐣ワ細
-     * 1. 鍚戜笂鏌ユ壘 workspace root
-     * 2. 浠?workspace root 閫掑綊鍚戜笅鎵弿鎵€鏈夐」鐩?
-     * 3. 鎸夎窛绂绘帓搴忥紙杩戠殑浼樺厛锛?
+     * 閺傛壆鐡ラ悾銉窗
+     * 1. 閸氭垳绗傞弻銉﹀ workspace root
+     * 2. 娴?workspace root 闁帒缍婇崥鎴滅瑓閹殿偅寮块幍鈧張澶愩€嶉惄?
+     * 3. 閹稿绐涚粋缁樺笓鎼村骏绱欐潻鎴犳畱娴兼ê鍘涢敍?
      * 
-     * 杩斿洖Map: fullName -> ProjectInfo
+     * 鏉╂柨娲朚ap: fullName -> ProjectInfo
      */
     private Map<String, ProjectInfo> discoverLocalProjects() {
-        // 浣跨敤 LinkedHashMap 淇濇寔鎻掑叆椤哄簭锛堣繎 -> 杩滐級
+        // 娴ｈ法鏁?LinkedHashMap 娣囨繃瀵旈幓鎺戝弳妞ゅ搫绨敍鍫ｇ箮 -> 鏉╂粣绱?
         Map<String, ProjectInfo> projects = new LinkedHashMap<>();
 
-        // 1. 鍚戜笂鏌ユ壘 workspace root
+        // 1. 閸氭垳绗傞弻銉﹀ workspace root
         Path workspaceRoot = findWorkspaceRoot(startDir);
         debug("Workspace root: " + workspaceRoot);
 
-        // 2. 浠?workspace root 閫掑綊鍚戜笅鎵弿鎵€鏈夐」鐩?
+        // 2. 娴?workspace root 闁帒缍婇崥鎴滅瑓閹殿偅寮块幍鈧張澶愩€嶉惄?
         List<Path> projectPaths = new ArrayList<>();
         scanProjects(workspaceRoot, projectPaths, 0, QinConstants.MAX_SCAN_DEPTH);
 
@@ -139,23 +135,23 @@ public class LocalProjectResolver {
             debug("  - " + p);
         }
 
-        // 3. 鎸夎窛绂绘帓搴忥紙杩戠殑浼樺厛锛?
+        // 3. 閹稿绐涚粋缁樺笓鎼村骏绱欐潻鎴犳畱娴兼ê鍘涢敍?
         projectPaths.sort(Comparator.comparingInt(p -> startDir.toAbsolutePath().normalize()
                 .relativize(p.toAbsolutePath().normalize())
                 .getNameCount()));
 
-        // 4. 鍔犺浇椤圭洰淇℃伅锛堝氨杩戜紭鍏堬紝宸插瓨鍦ㄧ殑涓嶈鐩栵級
+        // 4. 閸旂姾娴囨い鍦窗娣団剝浼呴敍鍫濇皑鏉╂垳绱崗鍫礉瀹告彃鐡ㄩ崷銊ф畱娑撳秷顩惄鏍电礆
         for (Path projectPath : projectPaths) {
             try {
                 Path configPath = projectPath.resolve(QinConstants.CONFIG_FILE);
                 QinConfig config = loadConfig(configPath);
                 if (config == null || config.name() == null || config.name().isBlank()) {
-                    debug("Skip invalid qin.config.json: " + projectPath);
+                    debug("Skip invalid qin.config.js: " + projectPath);
                     continue;
                 }
                 String fullName = config.name(); // "com.slime:slime-token"
 
-                // 灏辫繎浼樺厛: 濡傛灉宸插瓨鍦紝涓嶈鐩?
+                // 鐏忚精绻庢导妯哄帥: 婵″倹鐏夊鎻掔摠閸︻煉绱濇稉宥堫洬閻?
                 Path buildPath = projectPath.resolve(QinConstants.BUILD_CLASSES_DIR);
                 ProjectInfo projectInfo = new ProjectInfo(fullName, projectPath, buildPath);
                 for (String alias : collectProjectAliases(fullName, projectPath)) {
@@ -250,18 +246,14 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 鍔犺浇qin.config.json
+     * 閸旂姾娴噏in.config.json
      */
     private QinConfig loadConfig(Path configPath) throws IOException {
-        String json = Files.readString(configPath);
-        if (json == null || json.isBlank()) {
-            throw new IOException("qin.config.json is empty");
+        Path projectDir = configPath == null ? null : configPath.getParent();
+        if (projectDir == null) {
+            throw new IOException("qin.config.js path has no parent");
         }
-        QinConfig config = gson.fromJson(json, QinConfig.class);
-        if (config == null) {
-            throw new IOException("qin.config.json parsed to null");
-        }
-        return config;
+        return new ConfigLoader(projectDir.toString()).load();
     }
 
     private static boolean isDebugEnabled() {
@@ -279,19 +271,19 @@ public class LocalProjectResolver {
         }
     }
 
-    // ==================== workspace 鎵弿閫昏緫 ====================
-    // 浣跨敤 QinConstants.PROJECT_ROOT_MARKERS 鍜?QinConstants.MAX_SCAN_DEPTH
+    // ==================== workspace 閹殿偅寮块柅鏄忕帆 ====================
+    // 娴ｈ法鏁?QinConstants.PROJECT_ROOT_MARKERS 閸?QinConstants.MAX_SCAN_DEPTH
 
     /**
-     * 鍚戜笂鏌ユ壘 workspace root
+     * 閸氭垳绗傞弻銉﹀ workspace root
      * 
-     * 浼樺厛绾э細
-     * 1. IDEA 鐜鍙橀噺锛圛DEA_INITIAL_DIRECTORY锛?
-     * 2. VSCode 鐜鍙橀噺锛圴SCODE_CWD锛?
-     * 3. 鍚戜笂鏌ユ壘锛屽彇鏈€杩滅殑 .idea/.vscode/.git
+     * 娴兼ê鍘涚痪褝绱?
+     * 1. IDEA 閻滎垰顣ㄩ崣姗€鍣洪敍鍦汥EA_INITIAL_DIRECTORY閿?
+     * 2. VSCode 閻滎垰顣ㄩ崣姗€鍣洪敍鍦碨CODE_CWD閿?
+     * 3. 閸氭垳绗傞弻銉﹀閿涘苯褰囬張鈧潻婊呮畱 .idea/.vscode/.git
      */
     public Path findWorkspaceRoot(Path startDir) {
-        // 1. 浼樺厛浣跨敤 IDEA 鐜鍙橀噺
+        // 1. 娴兼ê鍘涙担璺ㄦ暏 IDEA 閻滎垰顣ㄩ崣姗€鍣?
         String ideaDir = System.getenv("IDEA_INITIAL_DIRECTORY");
         if (ideaDir != null && !ideaDir.isEmpty()) {
             Path ideaPath = Path.of(ideaDir).toAbsolutePath().normalize();
@@ -300,7 +292,7 @@ public class LocalProjectResolver {
             }
         }
 
-        // 2. 鍏舵浣跨敤 VSCode 鐜鍙橀噺
+        // 2. 閸忚埖顐兼担璺ㄦ暏 VSCode 閻滎垰顣ㄩ崣姗€鍣?
         String vscodeCwd = System.getenv("VSCODE_CWD");
         if (vscodeCwd != null && !vscodeCwd.isEmpty()) {
             Path vscodePath = Path.of(vscodeCwd).toAbsolutePath().normalize();
@@ -309,18 +301,18 @@ public class LocalProjectResolver {
             }
         }
 
-        // 2. 鍚戜笂鏌ユ壘锛屽彇鏈€杩滅殑锛堟渶椤跺眰鐨勶級
+        // 2. 閸氭垳绗傞弻銉﹀閿涘苯褰囬張鈧潻婊呮畱閿涘牊娓舵い璺虹湴閻ㄥ嫸绱?
         Path current = startDir.toAbsolutePath().normalize();
-        Path topMost = startDir; // 榛樿浣跨敤璧峰鐩綍
+        Path topMost = startDir; // 姒涙顓绘担璺ㄦ暏鐠у嘲顫愰惄顔肩秿
 
         while (current != null && current.getParent() != null) {
-            // 妫€鏌ユ槸鍚︽湁椤圭洰鏍囧織
-            final Path finalCurrent = current; // lambda 闇€瑕?final
+            // 濡偓閺屻儲妲搁崥锔芥箒妞ゅ湱娲伴弽鍥х箶
+            final Path finalCurrent = current; // lambda 闂団偓鐟?final
             boolean isProjectRoot = QinConstants.WORKSPACE_ROOT_MARKERS.stream()
                     .anyMatch(marker -> Files.exists(finalCurrent.resolve(marker)));
 
             if (isProjectRoot) {
-                topMost = current; // 缁х画鍚戜笂锛屽彇鏈€椤跺眰鐨?
+                topMost = current; // 缂佈呯敾閸氭垳绗傞敍灞藉絿閺堚偓妞よ泛鐪伴惃?
             }
 
             Path parent = current.getParent();
@@ -340,7 +332,7 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 閫掑綊鎵弿鐩綍鏌ユ壘 qin.config.json
+     * 闁帒缍婇幍顐ｅ伎閻╊喖缍嶉弻銉﹀ qin.config.js
      */
     private boolean hasSiblingQinProjects(Path candidateRoot, Path currentChildOrDescendant) {
         if (candidateRoot == null || currentChildOrDescendant == null || !Files.isDirectory(candidateRoot)) {
@@ -374,17 +366,17 @@ public class LocalProjectResolver {
             return;
         }
 
-        // 鍏堟鏌ュ綋鍓嶇洰褰曟槸鍚︽湁閰嶇疆鏂囦欢
+        // 閸忓牊顥呴弻銉ョ秼閸撳秶娲拌ぐ鏇熸Ц閸氾附婀侀柊宥囩枂閺傚洣娆?
         if (Files.exists(dir.resolve(QinConstants.CONFIG_FILE)) && !projects.contains(dir)) {
             projects.add(dir);
         }
 
-        // 鎵弿瀛愮洰褰?
+        // 閹殿偅寮跨€涙劗娲拌ぐ?
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
             for (Path subDir : stream) {
                 String dirName = subDir.getFileName().toString();
 
-                // 浣跨敤甯搁噺鎺掗櫎鐗规畩鐩綍
+                // 娴ｈ法鏁ょ敮鎼佸櫤閹烘帡娅庨悧瑙勭暕閻╊喖缍?
                 if (QinConstants.EXCLUDED_DIRS.contains(dirName) ||
                         dirName.startsWith(QinConstants.HIDDEN_PREFIX)) {
                     continue;
@@ -393,17 +385,17 @@ public class LocalProjectResolver {
                 scanProjects(subDir, projects, depth + 1, maxDepth);
             }
         } catch (IOException e) {
-            // 蹇界暐鐩綍閬嶅巻閿欒
+            // 韫囩晫鏆愰惄顔肩秿闁秴宸婚柨娆掝嚖
         }
     }
 
     /**
-     * 鏈湴椤圭洰淇℃伅
+     * 閺堫剙婀存い鍦窗娣団剝浼?
      */
     public static class ProjectInfo {
         public final String fullName; // "com.slime:slime-token"
-        public final Path projectDir; // 椤圭洰鏍圭洰褰?
-        public final Path buildClassesPath; // build/classes璺緞
+        public final Path projectDir; // 妞ゅ湱娲伴弽鍦窗瑜?
+        public final Path buildClassesPath; // build/classes鐠侯垰绶?
 
         public ProjectInfo(String fullName, Path projectDir, Path buildClassesPath) {
             this.fullName = fullName;
@@ -418,12 +410,12 @@ public class LocalProjectResolver {
     }
 
     /**
-     * 渚濊禆瑙ｆ瀽缁撴灉
-     * 鍖呭惈鏈湴classpath鍜岄渶瑕佷粠杩滅▼涓嬭浇鐨勪緷璧?
+     * 娓氭繆绂嗙憴锝嗙€界紒鎾寸亯
+     * 閸栧懎鎯堥張顒€婀碿lasspath閸滃矂娓剁憰浣风矤鏉╂粎鈻兼稉瀣祰閻ㄥ嫪绶风挧?
      */
     public static class ResolutionResult {
-        public final String localClasspath; // 鏈湴椤圭洰鐨刢lasspath瀛楃涓?
-        public final Map<String, String> remoteDependencies; // 闇€瑕佷粠Maven涓嬭浇鐨勪緷璧?
+        public final String localClasspath; // 閺堫剙婀存い鍦窗閻ㄥ垻lasspath鐎涙顑佹稉?
+        public final Map<String, String> remoteDependencies; // 闂団偓鐟曚椒绮燤aven娑撳娴囬惃鍕贩鐠?
 
         public ResolutionResult(String localClasspath, Map<String, String> remoteDependencies) {
             this.localClasspath = localClasspath;
@@ -431,3 +423,4 @@ public class LocalProjectResolver {
         }
     }
 }
+

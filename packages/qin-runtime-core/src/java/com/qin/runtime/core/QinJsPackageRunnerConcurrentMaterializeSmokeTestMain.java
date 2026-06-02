@@ -22,7 +22,7 @@ public final class QinJsPackageRunnerConcurrentMaterializeSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-package-concurrent-");
-        Files.writeString(root.resolve("qin.config.json"), """
+        Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "com.qin.smoke:js-package-concurrent",
                   "version": "0.1.0",
@@ -70,3 +70,4 @@ public final class QinJsPackageRunnerConcurrentMaterializeSmokeTestMain {
         System.out.println("QinJsPackageRunnerConcurrentMaterializeSmokeTestMain OK");
     }
 }
+

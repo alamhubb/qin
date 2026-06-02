@@ -1,4 +1,4 @@
-{
+export default {
     "name":  "com.qin:qin-lang-cli",
     "version":  "0.1.0",
     "description":  "CLI entrypoint for Qin language toolchain",
@@ -25,3 +25,4 @@
                    "jarName":  "qin-lang-cli.jar"
                }
 }
+

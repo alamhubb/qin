@@ -1,0 +1,15 @@
+export default {
+    "name":  "hello-java",
+    "version":  "1.0.0",
+    "port":  0,
+    "entry":  "src/server/Main.java",
+    "java":  {
+                 "sourceDir":  "src/server"
+             },
+    "dependencies":  {
+                         "com.qin:qin-runtime-core":  "0.1.0",
+                         "org.springframework.boot:spring-boot-starter-web":  "4.0.6",
+                         "java-base":  "*"
+                     }
+}
+

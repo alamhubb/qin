@@ -15,7 +15,7 @@ public final class QinJsNodeUtilDeprecateSmokeTestMain {
                 wrapped(41);
                 """;
         Path root = Files.createTempDirectory("qin-js-node-util-deprecate-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-node-util-deprecate\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-node-util-deprecate\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "node_util_deprecate");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -23,3 +23,4 @@ public final class QinJsNodeUtilDeprecateSmokeTestMain {
         System.out.println("QinJsNodeUtilDeprecateSmokeTestMain OK");
     }
 }
+

@@ -15,7 +15,7 @@ public final class QinVitePluginConfigureServerPostHookSmokeTestMain {
         Path root = Files.createTempDirectory("qin-plugin-configure-post-");
         Path src = root.resolve("src");
         Files.createDirectories(src);
-        Files.writeString(root.resolve("qin.config.json"), """
+        Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "com.qin.smoke:configure-server-post-hook",
                   "version": "0.1.0",
@@ -81,3 +81,4 @@ public final class QinVitePluginConfigureServerPostHookSmokeTestMain {
         System.out.println("QinVitePluginConfigureServerPostHookSmokeTestMain OK");
     }
 }
+

@@ -1,4 +1,4 @@
-{
+export default {
     "name":  "com.qin:qin-lang-backend-jvm",
     "version":  "0.1.0",
     "description":  "JVM backend for Qin language using JDK Class-File API",
@@ -22,3 +22,4 @@
                    "jarName":  "qin-lang-backend-jvm.jar"
                }
 }
+

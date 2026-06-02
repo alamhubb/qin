@@ -52,7 +52,7 @@ public class QinConstants {
     /**
      * 配置文件名
      */
-    public static final String CONFIG_FILE = "qin.config.json";
+    public static final String CONFIG_FILE = "qin.config.js";
 
     /**
      * 最大扫描深度
@@ -68,13 +68,12 @@ public class QinConstants {
 
     /**
      * 工作区/项目根目录标志（用于识别和向上查找根目录）
-     * 优先级: .idea > .vscode > qin.config.json > package.json > .git
+     * 优先级: .idea > .vscode > qin.config.js > .git
      */
     public static final java.util.List<String> WORKSPACE_ROOT_MARKERS = java.util.List.of(
             ".idea", // IDEA 项目
             ".vscode", // VS Code 项目
-            "qin.config.json", // Qin 项目
-            "package.json", // JS/TS 项目
+            "qin.config.js", // Qin 项目
             ".git" // Git 仓库根
     );
 

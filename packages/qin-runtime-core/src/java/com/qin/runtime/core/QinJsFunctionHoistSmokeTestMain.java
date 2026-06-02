@@ -11,7 +11,7 @@ public final class QinJsFunctionHoistSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-function-hoist-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-function-hoist\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-function-hoist\" }\n", StandardCharsets.UTF_8);
         String source = """
                 function outer() {
                   return before(2);
@@ -32,3 +32,4 @@ public final class QinJsFunctionHoistSmokeTestMain {
         System.out.println("QinJsFunctionHoistSmokeTestMain OK");
     }
 }
+

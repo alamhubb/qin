@@ -1,4 +1,4 @@
-# Qin Product Positioning
+﻿# Qin Product Positioning
 
 This document defines Qin as a product, not only as a parser/backend stack.
 
@@ -24,7 +24,7 @@ Qin should be positioned as:
 - a unified application model, not a frontend/backend split-first tool
 - a language/runtime/toolchain that lets users describe products, data, pages, actions, and deployment in one system
 - a multi-suffix compiler platform that accepts `.ts`, `.js`, and `.qin` as Qin source inputs
-- a package-manifest-driven platform where `qin.config.json` defines package identity, dependencies, workspace shape, and runtime/build entry
+- a package-manifest-driven platform where `qin.config.js` defines package identity, dependencies, workspace shape, and runtime/build entry
 
 The intended user experience is:
 
@@ -33,7 +33,7 @@ The intended user experience is:
 - `qin dev` runs the app locally
 - `qin deploy` deploys the app
 - users can keep existing `.ts`, `.js`, and `.qin` source files in one Qin workspace
-- users manage package/workspace/runtime entry through one `qin.config.json` manifest
+- users manage package/workspace/runtime entry through one `qin.config.js` manifest
 - Java code may still coexist as host/interoperability code, but not as a Qin source suffix
 - users do not need to manually design controller/service/frontend/backend boundaries first
 
@@ -120,7 +120,7 @@ Practical shape:
 - one language across `shared/`, `main/`, and `app`
 - backend emitted to JVM
 - frontend emitted to JS
-- `qin.config.json` acts as the canonical manifest for package identity, dependency declaration, workspace discovery, and entry selection
+- `qin.config.js` acts as the canonical manifest for package identity, dependency declaration, workspace discovery, and entry selection
 - frontend framework integration is orchestrated by Qin, while mature ecosystem compilers such as the official Vue SFC compiler may be reused
 - framework-host bridges still visible where needed
 
@@ -302,7 +302,7 @@ Before Qin reaches the final product shape, the biggest gaps are:
 
 1. missing Qin-owned app abstraction layer above framework-shaped code
 2. missing first-class deploy story
-3. missing “one command” app lifecycle polish
+3. missing 鈥渙ne command鈥?app lifecycle polish
 4. missing clearer separation between:
    - user model
    - target model
@@ -318,8 +318,8 @@ This means the immediate strategy is:
 
 Qin succeeds in its intended final form when:
 
-1. users think “I am building an app,” not “I am wiring frontend and backend.”
-2. AI can generate useful Qin application code without hand-assembling infrastructure layers.
+1. users think 鈥淚 am building an app,鈥?not 鈥淚 am wiring frontend and backend.鈥?2. AI can generate useful Qin application code without hand-assembling infrastructure layers.
 3. `qin dev` and `qin deploy` are the default operational story.
 4. target-specific backends remain powerful but mostly invisible for common workflows.
 5. Spring/JVM and JS/web remain implementation targets, not the primary mental model.
+

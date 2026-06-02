@@ -3,6 +3,7 @@ package com.qin.core;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.qin.constants.QinConstants;
+import com.qin.types.FrontendConfig;
 import com.qin.types.JavaConfig;
 import com.qin.types.OutputConfig;
 import com.qin.types.ParsedEntry;
@@ -15,7 +16,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,18 +39,18 @@ public class ConfigLoader {
     }
 
     /**
-     * Load configuration from qin.config.json.
+     * Load configuration from qin.config.js.
      */
     public QinConfig load() throws IOException {
-        Path jsonConfig = Paths.get(cwd, QinConstants.CONFIG_FILE);
-        if (Files.exists(jsonConfig)) {
-            String content = Files.readString(jsonConfig);
+        Path configFile = Paths.get(cwd, QinConstants.CONFIG_FILE);
+        if (Files.exists(configFile)) {
+            String content = Files.readString(configFile);
             if (content == null || content.isBlank()) {
-                throw new IOException("qin.config.json is empty");
+                throw new IOException("qin.config.js is empty");
             }
-            QinConfig config = gson.fromJson(content, QinConfig.class);
+            QinConfig config = parseJavaScriptConfig(content);
             if (config == null) {
-                throw new IOException("qin.config.json parsed to null");
+                throw new IOException("qin.config.js parsed to null");
             }
             return applyDefaults(config);
         }
@@ -55,10 +58,120 @@ public class ConfigLoader {
         PluginDetector detector = new PluginDetector(cwd);
         DetectionResult detection = detector.detect();
         if (detection.getLanguages().isEmpty() && detection.getFeatures().isEmpty()) {
-            throw new IOException("No project detected. Create " + QinConstants.DEFAULT_ENTRY + " or create qin.config.json");
+            throw new IOException("No project detected. Create " + QinConstants.DEFAULT_ENTRY + " or create qin.config.js");
         }
 
         return applyDefaults(new QinConfig(detectProjectName(), "1.0.0"));
+    }
+
+    private QinConfig parseJavaScriptConfig(String content) {
+        String source = content
+                .replaceFirst("(?s)^\\s*(?:import\\s+[^\\n]+\\n\\s*)*", "")
+                .replaceFirst("(?s)^\\s*export\\s+default\\s+", "")
+                .trim();
+        if (source.endsWith(";")) {
+            source = source.substring(0, source.length() - 1).trim();
+        }
+        if (source.startsWith("{") && source.endsWith("}") && isJsonLike(source)) {
+            return gson.fromJson(source, QinConfig.class);
+        }
+        return new QinConfig(
+                stringField(source, "name", detectProjectName()),
+                stringField(source, "version", "1.0.0"),
+                stringField(source, "description", null),
+                null,
+                null,
+                false,
+                null,
+                null,
+                stringField(source, "entry", null),
+                stringMapField(source, "dependencies"),
+                stringMapField(source, "devDependencies"),
+                null,
+                null,
+                javaConfigField(source),
+                null,
+                frontendConfigField(source),
+                stringMapField(source, "scripts"),
+                null);
+    }
+
+    private boolean isJsonLike(String source) {
+        return source.contains("\"name\"") || source.contains("\"dependencies\"") || source.contains("\"frontend\"");
+    }
+
+    private String stringField(String source, String key, String fallback) {
+        Matcher matcher = Pattern.compile("(?:\"%s\"|%s)\\s*:\\s*[\"']([^\"']*)[\"']".formatted(key, key))
+                .matcher(source);
+        return matcher.find() ? matcher.group(1) : fallback;
+    }
+
+    private int intField(String source, String key, int fallback) {
+        Matcher matcher = Pattern.compile("(?:\"%s\"|%s)\\s*:\\s*(\\d+)".formatted(key, key))
+                .matcher(source);
+        return matcher.find() ? Integer.parseInt(matcher.group(1)) : fallback;
+    }
+
+    private Map<String, String> stringMapField(String source, String key) {
+        String block = objectBlock(source, key);
+        if (block == null) {
+            return Map.of();
+        }
+        Map<String, String> out = new LinkedHashMap<>();
+        Matcher matcher = Pattern.compile("[\"']([^\"']+)[\"']\\s*:\\s*[\"']([^\"']*)[\"']")
+                .matcher(block);
+        while (matcher.find()) {
+            out.put(matcher.group(1), matcher.group(2));
+        }
+        return out;
+    }
+
+    private JavaConfig javaConfigField(String source) {
+        String block = objectBlock(source, "java");
+        if (block == null) {
+            return null;
+        }
+        return new JavaConfig(
+                stringField(block, "version", null),
+                stringField(block, "release", null),
+                stringField(block, "source", null),
+                stringField(block, "target", null),
+                stringField(block, "sourceDir", null),
+                stringField(block, "testDir", null),
+                stringField(block, "outputDir", null),
+                stringField(block, "encoding", null));
+    }
+
+    private FrontendConfig frontendConfigField(String source) {
+        String block = objectBlock(source, "frontend");
+        if (block == null) {
+            return null;
+        }
+        return new FrontendConfig(
+                stringField(block, "srcDir", null),
+                stringField(block, "outDir", null),
+                intField(block, "devPort", 0));
+    }
+
+    private String objectBlock(String source, String key) {
+        Matcher matcher = Pattern.compile("(?:\"%s\"|%s)\\s*:\\s*\\{".formatted(key, key)).matcher(source);
+        if (!matcher.find()) {
+            return null;
+        }
+        int start = matcher.end();
+        int depth = 1;
+        for (int index = start; index < source.length(); index++) {
+            char ch = source.charAt(index);
+            if (ch == '{') {
+                depth++;
+            } else if (ch == '}') {
+                depth--;
+                if (depth == 0) {
+                    return source.substring(start, index);
+                }
+            }
+        }
+        return null;
     }
 
     private String detectProjectName() {

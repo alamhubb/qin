@@ -142,7 +142,7 @@ public final class QinConformanceRunner {
                     && java.nio.file.Files.isDirectory(current.resolve("shared"))) {
                 return current;
             }
-            if (java.nio.file.Files.exists(current.resolve("qin.config.json"))) {
+            if (java.nio.file.Files.exists(current.resolve("qin.config.js"))) {
                 return current;
             }
             current = current.getParent();
@@ -157,3 +157,4 @@ public final class QinConformanceRunner {
         return error.trim().toLowerCase(Locale.ROOT);
     }
 }
+

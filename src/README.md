@@ -1,47 +1,47 @@
-
+﻿
 # Qin Java Rewrite
 
-这是 Qin 构建工具的 Java 重写版本。
+杩欐槸 Qin 鏋勫缓宸ュ叿鐨?Java 閲嶅啓鐗堟湰銆?
 
-## 项目结构
+## 椤圭洰缁撴瀯
 
 ```
 src/java-rewrite/
-├── com/qin/
-│   ├── cli/                    # CLI 入口
-│   │   └── QinCli.java         # 主命令行入口
-│   ├── commands/               # 命令实现
-│   │   ├── InitCommand.java    # init 命令
-│   │   └── EnvCommand.java     # env 命令
-│   ├── core/                   # 核心模块
-│   │   ├── ConfigLoader.java   # 配置加载器
-│   │   ├── DependencyResolver.java  # 依赖解析器
-│   │   ├── EnvironmentChecker.java  # 环境检查器
-│   │   ├── FatJarBuilder.java  # Fat Jar 构建器
-│   │   ├── JavaRunner.java     # Java 运行器
-│   │   ├── PluginDetector.java # 插件检测器
-│   │   ├── PluginManager.java  # 插件管理器
-│   │   ├── WorkspaceLoader.java # 工作区加载器
-│   │   ├── WorkspacePackage.java # 工作区包
-│   │   └── DetectionResult.java # 检测结果
-│   ├── java/                   # Java 工具
-│   │   ├── ClasspathUtils.java # Classpath 工具
-│   │   ├── JavaBuilder.java    # Java 构建器
-│   │   └── PackageManager.java # 包管理器
-│   └── types/                  # 类型定义
-│       ├── QinConfig.java      # 配置类
-│       ├── QinPlugin.java      # 插件接口
-│       ├── PluginContext.java  # 插件上下文
-│       ├── BuildResult.java    # 构建结果
-│       ├── CompileResult.java  # 编译结果
-│       ├── ResolveResult.java  # 解析结果
-│       └── ...                 # 其他类型
-└── README.md
+鈹溾攢鈹€ com/qin/
+鈹?  鈹溾攢鈹€ cli/                    # CLI 鍏ュ彛
+鈹?  鈹?  鈹斺攢鈹€ QinCli.java         # 涓诲懡浠よ鍏ュ彛
+鈹?  鈹溾攢鈹€ commands/               # 鍛戒护瀹炵幇
+鈹?  鈹?  鈹溾攢鈹€ InitCommand.java    # init 鍛戒护
+鈹?  鈹?  鈹斺攢鈹€ EnvCommand.java     # env 鍛戒护
+鈹?  鈹溾攢鈹€ core/                   # 鏍稿績妯″潡
+鈹?  鈹?  鈹溾攢鈹€ ConfigLoader.java   # 閰嶇疆鍔犺浇鍣?
+鈹?  鈹?  鈹溾攢鈹€ DependencyResolver.java  # 渚濊禆瑙ｆ瀽鍣?
+鈹?  鈹?  鈹溾攢鈹€ EnvironmentChecker.java  # 鐜妫€鏌ュ櫒
+鈹?  鈹?  鈹溾攢鈹€ FatJarBuilder.java  # Fat Jar 鏋勫缓鍣?
+鈹?  鈹?  鈹溾攢鈹€ JavaRunner.java     # Java 杩愯鍣?
+鈹?  鈹?  鈹溾攢鈹€ PluginDetector.java # 鎻掍欢妫€娴嬪櫒
+鈹?  鈹?  鈹溾攢鈹€ PluginManager.java  # 鎻掍欢绠＄悊鍣?
+鈹?  鈹?  鈹溾攢鈹€ WorkspaceLoader.java # 宸ヤ綔鍖哄姞杞藉櫒
+鈹?  鈹?  鈹溾攢鈹€ WorkspacePackage.java # 宸ヤ綔鍖哄寘
+鈹?  鈹?  鈹斺攢鈹€ DetectionResult.java # 妫€娴嬬粨鏋?
+鈹?  鈹溾攢鈹€ java/                   # Java 宸ュ叿
+鈹?  鈹?  鈹溾攢鈹€ ClasspathUtils.java # Classpath 宸ュ叿
+鈹?  鈹?  鈹溾攢鈹€ JavaBuilder.java    # Java 鏋勫缓鍣?
+鈹?  鈹?  鈹斺攢鈹€ PackageManager.java # 鍖呯鐞嗗櫒
+鈹?  鈹斺攢鈹€ types/                  # 绫诲瀷瀹氫箟
+鈹?      鈹溾攢鈹€ QinConfig.java      # 閰嶇疆绫?
+鈹?      鈹溾攢鈹€ QinPlugin.java      # 鎻掍欢鎺ュ彛
+鈹?      鈹溾攢鈹€ PluginContext.java  # 鎻掍欢涓婁笅鏂?
+鈹?      鈹溾攢鈹€ BuildResult.java    # 鏋勫缓缁撴灉
+鈹?      鈹溾攢鈹€ CompileResult.java  # 缂栬瘧缁撴灉
+鈹?      鈹溾攢鈹€ ResolveResult.java  # 瑙ｆ瀽缁撴灉
+鈹?      鈹斺攢鈹€ ...                 # 鍏朵粬绫诲瀷
+鈹斺攢鈹€ README.md
 ```
 
-## 与 TypeScript 版本的对应关系
+## 涓?TypeScript 鐗堟湰鐨勫搴斿叧绯?
 
-| TypeScript 文件 | Java 文件 |
+| TypeScript 鏂囦欢 | Java 鏂囦欢 |
 |----------------|-----------|
 | src/types.ts | com/qin/types/*.java |
 | src/cli.ts | com/qin/cli/QinCli.java |
@@ -59,49 +59,49 @@ src/java-rewrite/
 | src/commands/init.ts | com/qin/commands/InitCommand.java |
 | src/commands/env.ts | com/qin/commands/EnvCommand.java |
 
-## 编译和运行
+## 缂栬瘧鍜岃繍琛?
 
-### 依赖
+### 渚濊禆
 
-需要 Gson 库用于 JSON 解析：
+闇€瑕?Gson 搴撶敤浜?JSON 瑙ｆ瀽锛?
 - com.google.code.gson:gson:2.10.1
 
-### 编译
+### 缂栬瘧
 
 ```bash
-# 创建输出目录
+# 鍒涘缓杈撳嚭鐩綍
 mkdir -p build/classes
 
-# 下载 Gson
+# 涓嬭浇 Gson
 curl -L -o lib/gson-2.10.1.jar https://repo1.maven.org/maven2/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar
 
-# 编译
+# 缂栬瘧
 javac -d build/classes -cp lib/gson-2.10.1.jar $(find src/java-rewrite -name "*.java")
 ```
 
-### 运行
+### 杩愯
 
 ```bash
 java -cp build/classes:lib/gson-2.10.1.jar cli.QinCli help
 ```
 
-## 功能对比
+## 鍔熻兘瀵规瘮
 
-| 功能 | TypeScript 版本 | Java 版本 |
+| 鍔熻兘 | TypeScript 鐗堟湰 | Java 鐗堟湰 |
 |------|----------------|-----------|
-| 配置加载 | ✅ c12 多格式 | ✅ JSON 格式 |
-| 依赖解析 | ✅ Coursier | ✅ Coursier |
-| Java 编译 | ✅ | ✅ |
-| Fat Jar 构建 | ✅ | ✅ |
-| 热重载 | ✅ | ⏳ 待实现 |
-| 插件系统 | ✅ | ✅ 基础实现 |
-| Monorepo | ✅ | ✅ |
-| 前端集成 | Qin native dev server | Qin frontend pipeline |
-| GraalVM JS | ✅ | ⏳ 待实现 |
+| 閰嶇疆鍔犺浇 | 鉁?c12 澶氭牸寮?| 鉁?JSON 鏍煎紡 |
+| 渚濊禆瑙ｆ瀽 | 鉁?Coursier | 鉁?Coursier |
+| Java 缂栬瘧 | 鉁?| 鉁?|
+| Fat Jar 鏋勫缓 | 鉁?| 鉁?|
+| 鐑噸杞?| 鉁?| 鈴?寰呭疄鐜?|
+| 鎻掍欢绯荤粺 | 鉁?| 鉁?鍩虹瀹炵幇 |
+| Monorepo | 鉁?| 鉁?|
+| 鍓嶇闆嗘垚 | Qin native dev server | Qin frontend pipeline |
+| GraalVM JS | 鉁?| 鈴?寰呭疄鐜?|
 
-## 配置文件格式
+## 閰嶇疆鏂囦欢鏍煎紡
 
-Java 版本使用 `qin.config.json` 格式：
+Java 鐗堟湰浣跨敤 `qin.config.js` 鏍煎紡锛?
 
 ```json
 {
@@ -117,15 +117,16 @@ Java 版本使用 `qin.config.json` 格式：
 }
 ```
 
-## 命令
+## 鍛戒护
 
 ```bash
-qin init      # 初始化项目
-qin run       # 编译并运行
-qin build     # 构建 Fat Jar
-qin dev       # 开发模式
-qin compile   # 仅编译
-qin clean     # 清理构建
-qin sync      # 同步依赖
-qin test      # 运行测试
+qin init      # 鍒濆鍖栭」鐩?
+qin run       # 缂栬瘧骞惰繍琛?
+qin build     # 鏋勫缓 Fat Jar
+qin dev       # 寮€鍙戞ā寮?
+qin compile   # 浠呯紪璇?
+qin clean     # 娓呯悊鏋勫缓
+qin sync      # 鍚屾渚濊禆
+qin test      # 杩愯娴嬭瘯
 ```
+

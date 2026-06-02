@@ -10,7 +10,7 @@ public final class QinLruCacheNamedExportSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-lru-cache-named-export-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-lru-cache-named-export\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-lru-cache-named-export\" }\n", StandardCharsets.UTF_8);
         String wrapper = """
                 import { LRUCache } from "lru-cache";
                 const cache = new LRUCache({ max: 2 });
@@ -24,3 +24,4 @@ public final class QinLruCacheNamedExportSmokeTestMain {
         System.out.println("QinLruCacheNamedExportSmokeTestMain OK");
     }
 }
+

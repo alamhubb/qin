@@ -20,7 +20,7 @@ public final class QinJsSetObjectIdentitySmokeTestMain {
                 set.has(a) && set.has(b) && set.size === 2 ? 42 : 0;
                 """;
         Path root = Files.createTempDirectory("qin-js-set-object-identity-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-set-object-identity\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-set-object-identity\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "set_object_identity");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -28,3 +28,4 @@ public final class QinJsSetObjectIdentitySmokeTestMain {
         System.out.println("QinJsSetObjectIdentitySmokeTestMain OK");
     }
 }
+

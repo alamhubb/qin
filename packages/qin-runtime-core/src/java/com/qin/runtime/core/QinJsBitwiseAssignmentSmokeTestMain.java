@@ -17,7 +17,7 @@ public final class QinJsBitwiseAssignmentSmokeTestMain {
                 value === 2147483647 && mask === 8 ? 42 : 0;
                 """;
         Path root = Files.createTempDirectory("qin-js-bitwise-assignment-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-bitwise-assignment\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-bitwise-assignment\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "bitwise_assignment");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -25,3 +25,4 @@ public final class QinJsBitwiseAssignmentSmokeTestMain {
         System.out.println("QinJsBitwiseAssignmentSmokeTestMain OK");
     }
 }
+

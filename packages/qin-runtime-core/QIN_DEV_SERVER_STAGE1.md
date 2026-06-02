@@ -1,4 +1,4 @@
-# Qin Dev Server Stage 1 Design
+﻿# Qin Dev Server Stage 1 Design
 
 This document defines the Stage-1 design for Qin's single-process dev/fullstack server.
 
@@ -45,7 +45,7 @@ workspace/
 
 `qin` owns the language, CLI, runtime, dev server, and fullstack examples. `slime` owns the shared parser infrastructure used by `qin-parser`.
 
-This is intentionally a workspace-level dependency, not a hidden runtime fallback. Qin discovers sibling projects by scanning upward to the parent workspace and then recursively finding `qin.config.json` files. A clean machine should clone both repositories under the same parent directory before running the current fullstack dev server:
+This is intentionally a workspace-level dependency, not a hidden runtime fallback. Qin discovers sibling projects by scanning upward to the parent workspace and then recursively finding `qin.config.js` files. A clean machine should clone both repositories under the same parent directory before running the current fullstack dev server:
 
 ```powershell
 git clone https://gitee.com/alamhubb/qin.git qin
@@ -139,7 +139,7 @@ Stage 1 frontend model is intentionally simple:
 - Qin frontend modules are now accepted for Stage-1 fullstack examples
 - Vue frontends should flow through the official Vue SFC compiler (`@vue/compiler-sfc`) under Qin orchestration
 - `@vitejs/plugin-vue` is supported only for the lifecycle/API subset Qin currently needs
-- npm packages needed by this pipeline are materialized by Qin from `qin.config.json`; Qin must not shell out to `npm`, Node, or Vite
+- npm packages needed by this pipeline are materialized by Qin from `qin.config.js`; Qin must not shell out to `npm`, Node, or Vite
 - Vue and frontend module processing must run through Qin's native frontend pipeline
 
 Not yet in Stage 1 baseline:
@@ -228,3 +228,4 @@ Stage 1 is considered successful when:
 - browser reload works after source changes
 - `qin build` produces usable backend/frontend outputs
 - the implementation surface is clearly Qin-owned, not hidden inside accidental compatibility classes
+

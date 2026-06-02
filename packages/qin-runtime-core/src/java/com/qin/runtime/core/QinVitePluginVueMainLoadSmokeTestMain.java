@@ -15,7 +15,7 @@ public final class QinVitePluginVueMainLoadSmokeTestMain {
         Path root = Files.createTempDirectory("qin-plugin-vue-main-load-");
         Path src = root.resolve("src");
         Files.createDirectories(src);
-        Files.writeString(root.resolve("qin.config.json"), """
+        Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "com.qin.smoke:plugin-vue-main-load",
                   "version": "0.1.0",
@@ -75,3 +75,4 @@ public final class QinVitePluginVueMainLoadSmokeTestMain {
         System.out.println("QinVitePluginVueMainLoadSmokeTestMain OK");
     }
 }
+

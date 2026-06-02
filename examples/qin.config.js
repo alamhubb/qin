@@ -1,0 +1,9 @@
+export default {
+    "name":  "qin-examples",
+    "version":  "1.0.0",
+    "packages":  [
+                     "apps/*",
+                     "packages/*"
+                 ]
+}
+

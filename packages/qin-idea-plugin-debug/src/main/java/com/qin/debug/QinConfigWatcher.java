@@ -74,7 +74,7 @@ public class QinConfigWatcher {
 
                     if (fileName.equals(CONFIG_FILE)) {
                         workspaceConfigChanged = true;
-                        QinLogger.info("[Watcher] Detected qin.config.json change: " + filePath);
+                        QinLogger.info("[Watcher] Detected qin.config.js change: " + filePath);
                     } else if (fileName.endsWith(".iml")) {
                         imlChangedCount++;
                         if (sampleImlPath == null) {
@@ -161,3 +161,4 @@ public class QinConfigWatcher {
         }
     }
 }
+

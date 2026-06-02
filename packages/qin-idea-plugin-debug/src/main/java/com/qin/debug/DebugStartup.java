@@ -18,13 +18,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-// 闂備礁鎲＄敮鈺呭磻閸曨垰绠栭柡鍥ュ灪閺咁剚鎱ㄥ鍡椾簻闁宠绻橀弻?qin-cli 闂備焦鐪归崝宀€鈧矮鍗抽崺鈧い鎺嶇劍閻ㄦ垿鏌℃担闈涒偓妤呭极椤曗偓楠炴牗鎷呴崨濠庝画
-import static com.qin.constants.QinConstants.*;
+// 闂傚倷绀侀幉锛勬暜閳哄懎纾婚柛鏇ㄥ灠缁犳牠鏌￠崶銉ョ仾闁哄拋鍓氶幈銊ヮ潨閸℃ぞ绨婚梺瀹狀嚙缁绘﹢寮?qin-cli 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佺煯閸楁娊宕洪埀顒併亜閹哄秶鍔嶉柣銊﹀灴閺屸剝鎷呴棃娑掑亾濡ゅ懎鏋佹い鏇楀亾妤犵偞鐗楅幏鍛村川婵犲簼鐢?import static com.qin.constants.QinConstants.*;
 
 /**
- * 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺閺夋垼袝濡炪倖鐗楅懝鎹愵杽闂備胶鍎甸弲婊堝垂閻㈢绠氬鑸靛姇闂?
- * 闂備胶鍘ч〃搴㈢濠婂嫭鍙忛柍杞扮导濞戙垹鐒垫い鎺嗗亾闂?Qin 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺鐎电绁﹂梺鍏兼倐濞佳囧煕閺冨牊鍋?sync
- * 闂備浇銆€閸嬫挻銇勯弽銊р槈闁?Monorepo闂備焦瀵х粙鎺撶┍濞差亜鍚规繝濠傜墕缁€澶愭煏婵犲繒鐣辨い銉ユ喘閺岀喓鎷犻懠顒傤唹婵犫拃鍐х€殿喖鐏氬鍕節閸曨剚鍟㈠┑锛勫亼閸婃洖锕㈤崡鐏?
+ * 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍柡澶嬪灱琚濇俊鐐€栭悧妤呮嚌閹规劦鏉介梻鍌欒兌閸庣敻寮插鍫濆瀭闁汇垻顭堢粻姘熆閼搁潧濮囬梻?
+ * 闂傚倷鑳堕崢褔銆冩惔銏㈩洸婵犲﹤瀚崣蹇涙煃鏉炴壆瀵兼繛鎴欏灩閻掑灚銇勯幒鍡椾壕闂?Qin 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍悗鐢殿焾缁侊箓姊洪崗鍏煎€愭繛浣冲洤鐓曢柡鍐ㄧ墛閸?sync
+ * 闂傚倷娴囬妴鈧柛瀣尰閵囧嫰寮介妸褉妲堥梺?Monorepo闂傚倷鐒︾€笛呯矙閹烘挾鈹嶆繛宸簻閸氳绻濇繝鍌滃缂佲偓婢舵劖鐓忓┑鐘茬箳閻ｈ鲸銇勯妷銉﹀枠闁哄瞼鍠撻幏鐘绘嚑椤掑偆鍞瑰┑鐘媰閸愵€呪偓娈垮枛閻忔艾顕ラ崟顒傜瘈闁告洦鍓氶崯銏犫攽閿涘嫬浜奸柛濠冩礀閿曘垽宕￠悘?
  */
 public class DebugStartup implements ProjectActivity {
     private static final String LEGACY_QIN_RUN_CONFIG_ID = "QinRunConfiguration";
@@ -39,25 +38,24 @@ public class DebugStartup implements ProjectActivity {
         if (basePath == null)
             return Unit.INSTANCE;
 
-        // 闂備礁鎲＄敮妤冩崲閸岀儑缍栭柟鐗堟緲缁€宀勬煛瀹ュ骸骞楀Δ妤婂灦閺岀喖顢栫捄銊ュ濠碘槅鍋€閺呯偟绮诲☉妯滄棃鍩€椤掆偓閳?
+        // 闂傚倷绀侀幉锛勬暜濡ゅ啯宕查柛宀€鍎戠紞鏍煙閻楀牊绶茬紒鈧畝鍕厸鐎广儱楠搁獮妤€螖濡ゅ﹤鐏﹂柡宀€鍠栭、鏍崉閵娿儱顬夋繝纰樻閸嬧偓闁哄懐鍋熺划璇测槈濡粍妫冮崺鈧い鎺嗗亾闁?
         QinLogger.init(basePath, project);
         QinLogger.info("[STARTUP] Qin plugin startup: " + project.getName());
         QinLogger.info("[STARTUP] Project base path: " + basePath);
         removeLegacyQinRunConfigurations(project);
 
-        // 根据 Qin 配置链自动补齐 Project SDK。已有用户配置时不覆盖。
-        if (hasQinSdkContext(Paths.get(basePath))) {
+        // 鏍规嵁 Qin 閰嶇疆閾捐嚜鍔ㄨˉ榻?Project SDK銆傚凡鏈夌敤鎴烽厤缃椂涓嶈鐩栥€?        if (hasQinSdkContext(Paths.get(basePath))) {
             ApplicationManager.getApplication().invokeLater(() -> configureProjectSdk(project));
         } else {
             QinLogger.info("[SDK] Skipping project SDK auto-configuration because no Qin config context was found");
         }
 
-        // 闂備線娼荤拹鐔煎礉瀹€鍕畺婵°倕鎳庨惌妤呮煙濞堝灝鏋涙繛鍫㈠Х缁辨帞鈧綆浜堕崕搴♀攽閻愬弶鍠橀柟顔荤矙婵℃瓕顦撮柛鈺冨Т閳藉骞橀姘闂?QinProjectSync 闂備礁婀遍悷鎶藉幢閳哄倹鏉搁梻浣告啞閼归箖寮甸鍕垫晢闁绘劗鍎ら弲顒勬煕椤愮姴鍔滃Δ妤婂灠椤鈽夊▍铏灱閸燁垶鎮楀▓鍨灈濡ょ姴绻掑Σ鎰攽閸狀喗鐩崺鈧い鎺戝閽冪喖鏌曟竟顖氭噹椤︹晠鏌ｆ惔銏⑩姇闁挎洦鍋嗗Σ?
+        // 闂傚倷绶氬鑽ゆ嫻閻旂厧绀夌€光偓閸曨偆鐣哄┑掳鍊曢幊搴ㄦ儗濡ゅ懏鐓欐繛鍫濈仢閺嬫稒绻涢崼銏犘ョ紒杈ㄥ笧閳ь剨缍嗘禍鍫曞磿鎼粹檧鏀介柣鎰级閸犳﹢鏌熼鑽ょ煓濠碘剝鐡曢ˇ鎾煕閳哄啫孝闁宠棄顦甸獮姗€顢涘顐㈩棜闂?QinProjectSync 闂傚倷绀佸﹢閬嶆偡閹惰棄骞㈤柍鍝勫€归弶鎼佹⒒娴ｅ憡鍟為柤褰掔畺瀵敻顢楅崟鍨櫌闂佺粯鍔楅崕銈夊疾椤掑嫭鐓曟い鎰Т閸旀粌螖濡ゅ﹤鐏犳い顐ｎ殔閳藉鈻嶉搹顐㈢伇闁哥噥鍨堕幃妤€鈻撻崹顔界亪婵°倗濮寸换鎺懳ｉ幇顑芥斀闁哥媭鍠楅惄顖炲春閳ь剚銇勯幒鎴濐仼闁藉啰鍠栭弻鏇熺珶椤栨碍鍣规い锔规櫊閺岋絾鎯旈姀鈶╁闂佹寧娲﹂崑鍡椢?
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 QinLogger.info("[STARTUP] Background sync started");
                 QinProjectSync projectSync = new QinProjectSync(project);
-                // 濠殿喗甯楃粙鎺椻€﹂崼銉晣濠电姵纰嶉ˉ鍫熺箾閸℃ɑ灏甸悽顖涚⊕娣囧﹪顢涘璇蹭壕鐎规洖娲ㄩ、鍛存⒑閹稿海鈽夐柡鍫墴钘熼柛娑欐綑閽冪喖鏌曟竟顖氭噹椤︹晠鏌ｆ惔銏⑩姇閽冭鲸绻濋埀顒佺瑹閳ь剙顕ｉ锕€閱囬柣鏃€褰冩禍?
+                // 婵犳鍠楃敮妤冪矙閹烘せ鈧箓宕奸妷顔芥櫍婵犵數濮电喊宥壦夐崼鐔虹闁糕剝蓱鐏忕敻鎮介娑氣姇濞ｅ洤锕、娑橆渻鐠囪弓澹曢悗瑙勬礀濞层劑銆侀崨瀛樷拺闁圭娴烽埥澶愭煛閸偄澧撮挊鐔兼煕濞戞瑦缍戦柦鍐枛閺屾洘绔熼姘櫣妞わ腹鏅犻弻锝嗘償閵忊懇濮囬柦鍐哺缁绘繈鍩€椤掍胶鐟归柍褜鍓欓锝夘敃閿曗偓闁卞洭鏌ｉ弮鈧ぐ鍐╃?
                 projectSync.setSilentMode(true).syncAllProjects(true);
                 QinLogger.info("[STARTUP] Background sync finished");
             } catch (Exception e) {
@@ -65,15 +63,15 @@ public class DebugStartup implements ProjectActivity {
             }
         });
 
-        // 濠电偞鍨堕幐鍝ョ矓閹绢喖鐤柍褜鍓熼弻銈嗙附婢跺鐩庢繝娈垮枓閺呯娀鐛澶婄鐎规洖娲ㄩ敍?Qin 闁诲氦顫夐幃鍫曞磿闁秴鐭楅悹鎭掑妿閻滅粯淇婇妶鍌氫壕閻熸粎澧楅惄顖炲极瀹ュ懐鏆嗛柛鏇ㄤ簽缁辨岸姊虹粙璺ㄧ缂佸鎳撹灋妞ゆ牜鍋為崐?
-        // 闂備焦妞垮鍧楀礉瀹ュ鏄ユ繛鎴欏灩閻銇勯弽銊ф噥缂併劋鍗抽弻鐔兼濞戝崬鍓版繝娈垮枓閺呯娀骞冨▎鎾村仭闁哄瀵ч惁鏍⒑閻熸壆浠涢柟绋挎憸濡?
+        // 婵犵數鍋為崹鍫曞箰閸濄儳鐭撻柟缁㈠枛閻ゎ噣鏌嶈閸撶喖寮婚妶鍡欓檮濠㈣泛顦遍惄搴㈢節濞堝灝鏋撻柡鍛█閻涱喖顓兼径濠勵啋閻庤娲栧ú銊╂晬?Qin 闂佽姘﹂～澶愬箖閸洖纾块梺顒€绉撮惌妤呮偣閹帒濡块柣婊呯帛娣囧﹪濡堕崒姘闁荤喐绮庢晶妤呮儎椤栫偛鏋佺€广儱鎳愰弳鍡涙煕閺囥劋绨界紒杈ㄥ哺濮婅櫣绮欑捄銊ь唶缂備礁顦遍幊鎾圭亱濡炪倖鐗滈崑鐐哄磹?
+        // 闂傚倷鐒﹀鍨焽閸ф绀夌€广儱顦弰銉︾箾閹存瑥鐏╅柣顓燁殕閵囧嫰寮介妸褎鍣ョ紓浣靛妺閸楁娊寮婚悢鍏碱棃婵炴垵宕崜鐗堢節濞堝灝鏋撻柡鍛█楠炲啫鈻庨幘鏉戜画闂佸搫顦扮€笛囨儊閺嶎厽鈷戦柣鐔稿娴犳盯鏌熺粙鎸庢喐婵?
 
-        // 闂備礁鎲￠崙褰掑垂閻楀牊鍙忛柍鍝勬噺閻撯偓閻庡箍鍎卞ú銊╁几閸岀偞鐓涢柛灞剧閻绻涢崱鎰伈闁诡垰瀚伴獮瀣攽閸パ冨闂備線娼荤紞鍡涙偂婢跺本顫曟繛鍡樻尰閸庡酣鏌熺€涙绠栭柛?qin.config.json 闂備礁鎲￠悷锕傛晪闁诲骸鐏氶悡锟犲极?
+        // 闂傚倷绀侀幉锟犲礄瑜版帒鍨傞柣妤€鐗婇崣蹇涙煃閸濆嫭鍣洪柣鎾亾闁诲骸绠嶉崕鍗灻洪妸鈺佸嚑闁稿瞼鍋為悡娑㈡煕鐏炲墽顣查柣顓燁殕缁绘盯宕遍幇顒備紙闂佽鍨扮€氫即鐛€ｎ亖鏀介柛銉戝啫顥撻梻鍌欑窔濞艰崵绱為崱娑欏亗濠㈣泛鏈～鏇熺箾閸℃ɑ灏伴柛搴￠叄閺岀喓鈧稒顭囩粻鏍煕?qin.config.js 闂傚倷绀侀幉锟犳偡閿曞倹鏅梺璇查閻忔岸鎮￠敓鐘叉瀬?
         QinConfigWatcher configWatcher = new QinConfigWatcher(project);
         configWatcher.startWatching();
         QinLogger.info("[STARTUP] Config watcher started");
 
-        // 婵☆偓绲介崯顐﹀疾?闂備礁鎲￠崙褰掑垂閻楀牊鍙?Java 闂備礁鎼崐绋棵洪敐鍛瀻闁靛繈鍊栭崕搴ㄦ煙鐎涙绠栭柛搴㈡閺屾盯鏁愭惔锝呭辅缂備浇椴搁悷鈺呭箚閸曨垰绠ｆ繝闈涙搐閸?.java 闂備礁鎼崐绋棵洪敐鍛瀻闁靛繈鍊曢惌妤佷繆椤栨碍鎯堟い鏇嗗洦鐓ユ繛鎴烆焽閻掔兘鏌涢妶鍡欑煉鐎规洘绻堟俊姝岊槾婵＄偘绮欓幃褰掑炊閵娿儳鍘愮紓?
+        // 濠碘槅鍋撶徊浠嬪疮椤愶箑鐤?闂傚倷绀侀幉锟犲礄瑜版帒鍨傞柣妤€鐗婇崣?Java 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涚箞閸婃牠宕曟惔銊︾厵閻庢稒顭囩粻鏍煕鎼淬垺顥堥柡灞剧洴閺佹劖鎯旈敐鍛緟缂傚倷娴囨ご鎼佹偡閳哄懎绠氶柛鏇ㄥ灠缁狅絾绻濋棃娑欐悙闁?.java 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涚箞閸婃洟鎯屽Δ浣风箚妞ゆ牗纰嶉幆鍫熴亜閺囧棗娲﹂悡銉︾箾閹寸儐鐒介柣鎺斿厴閺屾盯濡堕崱娆戠厜閻庤娲樼换鍫熶繆濮濆矈妲惧┑锛勫仒缁瑩骞冭ぐ鎺戠倞闁靛鍎抽崢鎰磽?
         QinJavaFileWatcher javaWatcher = new QinJavaFileWatcher(project);
         javaWatcher.startWatching();
         QinLogger.info("[STARTUP] Java file watcher started (incremental compile + debounce)");
@@ -104,15 +102,15 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 闂備礁鎲￠悷锕傚垂瑜版帞宓侀柛銉墮缁犮儵鏌嶈閸撶喎顕?Qin 濠碉紕鍋戦崐鏇烇耿閸楃伝?
-     * 濠电偠鎻紞鈧繛澶嬫礋瀵?qin-cli 闂?LocalProjectResolver
+     * 闂傚倷绀侀幉锟犳偡閿曞倸鍨傜憸鐗堝笧瀹撲線鏌涢妷顔煎缂佺姰鍎甸弻宥堫檨闁告挾鍠庨?Qin 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳?
+     * 婵犵數鍋犻幓顏嗙礊閳ь剚绻涙径瀣鐎?qin-cli 闂?LocalProjectResolver
      */
     public static List<Path> discoverQinProjects(Path ideaProjectDir) {
         return com.qin.core.LocalProjectResolver.scanAllProjects(ideaProjectDir.toString());
     }
 
     /**
-     * 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑闂佺儵鍓濋悷鈺呭箚閸曨垼鏁婇柤娴嬫櫇鍗忓┑鐐村灦閹尖晠宕㈤挊澹╋綁骞栨担姝屝曢梺鎸庢婵倗绮?Qin 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺鐎涙ɑ娅栭梺鍓插亝缁诲啳銇愰妷鈺傗拺妞ゆ劑鍊曢弸鎴炪亜閵夈儲鍤囩€殿喖顭锋俊鐑筋敍濠婂拋妲烽梻浣告啞閻燁垱绂嶉悙璇ц€块柛娑卞枤閳绘棃鏌嶈閸撴稒绂掗敃鍌氱＜闁挎柨澧介ˇ?
+     * 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺戭潛闂備胶鍎甸崜婵嬫偡閳哄懎绠氶柛鏇ㄥ灱閺佸﹪鏌ゅù瀣珖閸楀繐鈹戦悙鏉戠仸闁瑰皷鏅犲畷銏ゆ寠婢光晪缍侀獮鏍ㄦ媴濮濆睗鏇㈡⒑閹稿孩顥嗗┑顔哄€楃划?Qin 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍悗娑櫳戝▍鏍⒑閸撴彃浜濈紒璇插暢閵囨劙濡烽埡鍌楁嫼濡炪倖鍔戦崐鏇㈠几閹寸偑浜滈柕澶堝劜閸ゅ洨鈧鍠栭…閿嬩繆閻戠瓔鏁嶆繝濠傛媼濡茬兘姊绘担鍛婂暈闁荤噥鍨辩粋宥夋倷鐠囇嗏偓鍧楁煕濞戝崬鏋ら柍缁樻閺屽秷顧侀柛鎾寸⊕缁傛帡鏁冮崒姘憋紲闂佹寧鏌ㄦ晶浠嬎?
      */
     private boolean hasQinProjectInSubdirs(Path dir) {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
@@ -125,20 +123,20 @@ public class DebugStartup implements ProjectActivity {
                 }
             }
         } catch (IOException e) {
-            // 闂傚鍋勫ú銊╁疾椤愶箑姹?
+            // 闂傚倸顭崑鍕洪妸鈺佺柧妞ゆ劧绠戝Ч?
         }
         return false;
     }
 
     /**
-     * 闂備礁婀遍悷鎶藉幢閳哄倹鏉?qin sync 闂備礁鎲＄粙鎺楀垂濠靛绠?
+     * 闂傚倷绀佸﹢閬嶆偡閹惰棄骞㈤柍鍝勫€归弶?qin sync 闂傚倷绀侀幉锛勭矙閹烘鍨傛繝闈涱儏缁?
      */
     private void runQinSync(String projectPath) throws IOException, InterruptedException {
         ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath, "sync");
 
         Process process = pb.start();
 
-        // 闂佽崵濮村ú鈺咁敋瑜戦妵鎰板炊閵婏妇绉堕梺瑙勫劤閸熷灝袙?
+        // 闂備浇宕垫慨鏉懨洪埡鍜佹晪鐟滄垿濡甸幇鏉跨倞闁靛濡囩粔鍫曟⒑鐟欏嫬鍔ら柛鐔风仢琚?
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
@@ -154,8 +152,8 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 闂備胶鍘ч〃搴㈢濠婂嫭鍙忛柍鍝勬噺閻撯偓閻庡箍鍎卞ú銊╁几?Project SDK
-     * 婵犵妲呴崑鈧柛瀣尰缁绘盯寮堕幋顓炲壋闂備緡鍠栭顓犳?JDK 婵°倗濮烽崑鐐哄磿婵傚壊鏁婇柡鍥╁Х绾剧偓銇勯弮鈧Σ鎺旂矆鐎ｎ亶娓婚柕鍫濇噺鐠愨剝绻?SDK
+     * 闂傚倷鑳堕崢褔銆冩惔銏㈩洸婵犲﹤瀚崣蹇涙煃閸濆嫭鍣洪柣鎾亾闁诲骸绠嶉崕鍗灻洪妸鈺佸嚑?Project SDK
+     * 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅灏扮紒缁樼洴瀵爼骞嬮鐐插闂傚倷绶￠崰鏍敋椤撶姵顫?JDK 濠德板€楁慨鐑藉磻閻愬搫纾垮┑鍌氬閺佸﹪鏌￠崶鈺佇ョ痪鍓у亾閵囧嫰寮埀顒€危閹烘梻鐭嗛悗锝庝憾濞撳鏌曢崼婵囧櫤閻犳劏鍓濈换?SDK
      */
     private static void configureProjectSdk(Project project) {
         try {
@@ -166,7 +164,7 @@ public class DebugStartup implements ProjectActivity {
                 return;
             }
 
-            // 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉簵娴滃綊鏌熼幆褍鏆辨い?Project SDK
+            // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷顔荤暗濞存粌缍婇弻鐔煎箚瑜嶉弳杈ㄣ亜?Project SDK
             com.intellij.openapi.projectRoots.ProjectJdkTable jdkTable = com.intellij.openapi.projectRoots.ProjectJdkTable
                     .getInstance();
             com.intellij.openapi.projectRoots.Sdk[] allJdks = jdkTable.getAllJdks();
@@ -175,7 +173,7 @@ public class DebugStartup implements ProjectActivity {
                 QinLogger.info("[SDK]   - " + sdk.getName() + " (" + sdk.getHomePath() + ")");
             }
 
-            // 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉ｅ妸娴滄粓鏌涢敂璇插箺缂佹劖顨婇弻?SDK 闂傚倷鐒﹀妯肩矓閸洘鍋?
+            // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷锝呭Ω濞存粍绮撻弻娑㈡晜鐠囨彃绠虹紓浣瑰姈椤ㄥ﹪寮?SDK 闂傚倸鍊烽悞锕€顭垮Ο鑲╃煋闁割偅娲橀崑?
             com.intellij.openapi.roots.ProjectRootManager rootManager = com.intellij.openapi.roots.ProjectRootManager
                     .getInstance(project);
             com.intellij.openapi.projectRoots.Sdk currentSdk = rootManager.getProjectSdk();
@@ -220,33 +218,33 @@ public class DebugStartup implements ProjectActivity {
                             + selectedVersion + ", required: " + desiredVersion + ")");
                 }
 
-                // 闂佽崵濮崇粈浣规櫠娴犲鍋?Project SDK闂備焦瀵х粙鎴︽偋閸涱喚绠鹃柛銉墯閸嬨劑鏌曟繛鍨姎鐟滄澘妫濋弻锝夛綖椤掆偓婵′粙鏌″畝鈧崰搴ㄥ煝閺冨牆鍗虫い蹇撴椤?
+                // 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?Project SDK闂傚倷鐒︾€笛呯矙閹达附鍋嬮柛娑卞枤缁犻箖鏌涢妷顔煎闁稿鍔戦弻鏇熺箾閸喖濮庨悷婊勬緲濡繈寮婚敐澶涚稏妞ゆ巻鍋撳┑鈥茬矙閺屸€崇暆閳ь剟宕版惔銊ョ厺闁哄啫鐗嗛崡铏亜韫囨挻顥犳い?
                 QinLogger.info("[SDK] Applying selected Project SDK...");
                 applyAndPersistSdk(project, rootManager, sdkToSet);
             } else {
-                // 婵犵數鍋涙径鍥礈濠靛棴鑰垮〒姘ｅ亾妤犵偛绉归獮鍡氼槻闁绘挸鍊婚埀顒€婀遍…鍫濐嚕閸洖鏋侀柣鎰惈缁€鍐偓鍏夊亾闁逞屽墮閳?JDK闂備焦瀵х粙鎴︽嚐椤栫偞鍎嶉柛鎾楀嫬鐝伴梺鍝勬处濮樸劑鎯?JAVA_HOME 闂備胶鍘ч〃搴㈢濠婂嫭鍙忛柍杞拌剨鎼达絾瀚氶柟缁樺俯濞?
+                // 濠电姷鏁搁崑娑欏緞閸ヮ剙绀堟繝闈涙４閼板灝銆掑锝呬壕濡ょ姷鍋涚粔褰掔嵁閸℃凹妲婚梺缁樻尭閸婂鍩€椤掆偓濠€閬嶁€﹂崼婵愬殨闁割偅娲栭弸渚€鏌ｉ幇顒佹儓缂佲偓閸愵亖鍋撻崗澶婁壕闂侀€炲苯澧柍?JDK闂傚倷鐒︾€笛呯矙閹达附鍤愭い鏍仦閸庡秹鏌涢幘妤€瀚悵浼存⒑閸濆嫭澶勬慨妯稿姂閹?JAVA_HOME 闂傚倷鑳堕崢褔銆冩惔銏㈩洸婵犲﹤瀚崣蹇涙煃鏉炴媽鍓ㄩ幖杈剧稻鐎氭岸鏌熺紒妯轰刊婵?
                 String javaHome = System.getenv("JAVA_HOME");
                 if (javaHome != null && !javaHome.isEmpty() && Files.exists(Paths.get(javaHome))) {
                     QinLogger.info("[SDK] No registered JDK found, trying JAVA_HOME: " + javaHome);
 
-                    // 闂備礁鎲＄敮妤冪矙閹寸姷纾介柟鎹愵嚙濡﹢鏌熷▓鍨灍闁?JDK
+                    // 闂傚倷绀侀幉锛勬暜濡ゅ啰鐭欓柟瀵稿Х绾句粙鏌熼幑鎰靛殭婵☆偅锕㈤弻鐔封枔閸喗鐏嶉梺?JDK
                     com.intellij.openapi.projectRoots.JavaSdk javaSdkType = com.intellij.openapi.projectRoots.JavaSdk
                             .getInstance();
 
-                    // 闂備焦鐪归崹濠氬窗閹版澘鍨?SDK 闂備礁鎲￠懝鍓х矓閹壋鍙?
+                    // 闂傚倷鐒﹂惇褰掑垂婵犳艾绐楅柟鐗堟緲閸?SDK 闂傚倷绀侀幉锟犳嚌閸撗呯煋闁诡垱澹嬮崣?
                     String sdkName = "JDK-" + System.getProperty("java.version", "auto");
 
-                    // 闂備礁鎲＄敮妤冪矙閹寸姷纾?SDK
+                    // 闂傚倷绀侀幉锛勬暜濡ゅ啰鐭欓柟瀵稿Х绾?SDK
                     com.intellij.openapi.projectRoots.Sdk newSdk = javaSdkType.createJdk(sdkName, javaHome, false);
 
                     if (newSdk != null) {
-                        // 闂備胶顭堢换鎰版偋婵犲洤閿ゅ┑鐘叉搐缁€澶愭煟濡绲婚柣?JDK 闂?
+                        // 闂傚倷鑳堕…鍫㈡崲閹扮増鍋嬪┑鐘叉搐闁裤倕鈹戦悩鍙夋悙缂佲偓婢舵劖鐓熸俊顖濐嚙缁插鏌?JDK 闂?
                         ApplicationManager.getApplication().runWriteAction(() -> {
                             jdkTable.addJdk(newSdk);
                         });
                         QinLogger.info("[SDK]   Registered new JDK in IDE: " + sdkName);
 
-                        // 闂佽崵濮崇粈浣规櫠娴犲鍋?Project SDK闂備焦瀵х粙鎴︽偋閸涱喚绠鹃柛銉墯閸嬨劑鏌曟繛鍨姎鐟滄澘妫濋弻锝夛綖椤掆偓婵′粙鏌″畝鈧崰搴ㄥ煝閺冨牆鍗虫い蹇撴椤?
+                        // 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?Project SDK闂傚倷鐒︾€笛呯矙閹达附鍋嬮柛娑卞枤缁犻箖鏌涢妷顔煎闁稿鍔戦弻鏇熺箾閸喖濮庨悷婊勬緲濡繈寮婚敐澶涚稏妞ゆ巻鍋撳┑鈥茬矙閺屸€崇暆閳ь剟宕版惔銊ョ厺闁哄啫鐗嗛崡铏亜韫囨挻顥犳い?
                         applyAndPersistSdk(project, rootManager, newSdk);
                     } else {
                         QinLogger.error("[SDK] Unable to create JDK automatically, please configure it manually");
@@ -257,7 +255,7 @@ public class DebugStartup implements ProjectActivity {
                 }
             }
 
-            // 闂備礁鎲＄敮锟犲绩闁秴钃熷┑鐘插暔娴滄粓鏌涢敂璇插箺缂佹劖顨堢槐鎾存媴鐟欏嫬闉嶉梺璇插瘨閸ㄥ爼寮鍛殕闁告劖鍎抽弫?IDEA UI 闂備礁鎼ú銈夋偤閵娾晛钃?
+            // 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樻彃鏆斿ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃鍫㈡閹惧瓨濯撮悷娆忓闂夊秹姊虹拠鎻掔槰闁搞劌鐖煎顐㈩吋閸涱垱娈曢梺鍛婂姈閸庢娊寮?IDEA UI 闂傚倷绀侀幖顐⒚洪妶澶嬪仱闁靛ň鏅涢拑?
             QinLogger.info("[SDK] Refreshing IDEA project structure after SDK update...");
             refreshProjectStructure(project);
 
@@ -269,14 +267,14 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 闂備礁鎲＄敮锟犲绩闁秴钃熷┑鐘插暔娴滄粓鏌涢敂璇插箺缂佹劖顨堢槐鎾存媴鐟欏嫬闉嶉梺?
-     * 闂?IDEA 闂傚倷鐒﹁ぐ鍐矓閻㈢钃熷┑鐘叉搐缁€澶愭煟濡厧鍔嬬紒浣规緲椤啴濡堕崨顔跨濠电偠寮撻崡鎶藉蓟婵犲偆鍚嬮柛銉㈡櫆閻?
+     * 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樻彃鏆斿ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃鍫㈡閹惧瓨濯撮悷娆忓闂夊秹姊?
+     * 闂?IDEA 闂傚倸鍊烽悞锕併亹閸愵亞鐭撻柣銏㈩焾閽冪喎鈹戦悩鍙夋悙缂佲偓婢舵劖鐓熸俊顖滃帶閸斿绱掓担瑙勭凡妞ゎ亜鍟存俊鍫曞川椤旇法顢呮繝鐢靛仩瀵捇宕￠幎钘夎摕濠电姴鍋嗛崥瀣煕閵夈垺娅嗛柣?
      */
     private static void refreshProjectStructure(Project project) {
         try {
             String basePath = project.getBasePath();
 
-            // 1. 闂備胶顭堢换鎰版偋閸℃稑鏄ユ繛鎴欏灩濡?misc.xml 闂備礁鎼崐绋棵洪敐鍛瀻闁靛繈鍊栭弲顒傗偓鍏夊亾闁逞屽墴閸ㄦ儳螣閼姐倐鏀?IDEA 闂備胶鍘х壕顓㈠疾椤愵澁鑰块柛娑欐綑缁€鍡涙煟濡も偓閻楀棝鎮樻径濞掑綊鎮埀顒勫礈濞戞ǚ鏋旈柟瀵稿仧閳瑰秵銇勯弮鍥撻柡?
+            // 1. 闂傚倷鑳堕…鍫㈡崲閹扮増鍋嬮柛鈩冪☉閺勩儲绻涢幋娆忕仼婵?misc.xml 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涚箞閸婃牠寮查鍌楀亾閸忓浜鹃梺閫炲苯澧撮柛銊﹀劤铻ｉ柤濮愬€愰弨?IDEA 闂傚倷鑳堕崢褏澹曢銏犵柧妞ゆ劦婢侀懓鍧楁煕濞戞瑦缍戠紒鈧崱娑欑厽婵°倐鍋撻柣妤€妫濋幃妯诲緞婵炴帒缍婇幃顏堝焵椤掑嫬绀堟繛鎴炃氶弸鏃堟煙鐎电浠ч柍鐟扮У閵囧嫰寮崶顬捇鏌?
             if (basePath != null) {
                 Path miscXmlPath = Paths.get(basePath, ".idea", "misc.xml");
                 com.intellij.openapi.vfs.VirtualFile miscVf = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
@@ -287,21 +285,21 @@ public class DebugStartup implements ProjectActivity {
                 }
             }
 
-            // 2. 闂備礁鎲＄敮锟犲绩闁秴钃熷┑鐘叉搐閺嬩胶绱撻崼銏犫枅闁搞倕顑夐弻褑绠涢弮鍌ゆ殹闁诲孩纰嶉悷鈺侇嚕椤掑嫬鐐婇柨鏃傜摂閸嬨劎绱撴笟鍥х仴鐎规洜鏁搁崚?
+            // 2. 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樺弶鎼愰柡瀣╄兌缁辨捇宕奸姀鐘瀰闂佹悶鍊曢澶愬蓟瑜戠粻娑㈠籍閸屻倖娈归梺璇插绾板秹鎮烽埡渚囧殨妞ゆ帒瀚悙濠囨煥閺冨倻鎽傞柛瀣ㄥ妿缁辨挻绗熼崶褏浠撮悗瑙勬礈閺佹悂宕?
             com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
             QinLogger.info("[SDK]   VirtualFileManager refresh complete");
 
-            // 3. 闂備礁鎲＄敮锟犲绩闁秴钃熷┑鐘插暔娴滄粓鏌涢敂璇插箺缂佹劖顨嗘穱濠囶敍濡炶浜剧€规洖娲犻崑?
+            // 3. 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樻彃鏆斿ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃鍡樼┍婵犲浂鏁嶆俊鐐额嚙娴滃墽鈧娲栧ú鐘诲磻?
             ApplicationManager.getApplication().invokeLater(() -> {
                 try {
-                    // 闂佽崵鍠愰悷杈╃不閹达絻浜归柛灞剧◤娴滄粓鏌涢敂璇插箺缂佹劖顨婂娲箵閹烘枬锝夋煛鐏炴枻韬€规洏鍎虫禒锔剧磼閵忕姴巍
+                    // 闂備浇宕甸崰鎰版偡鏉堚晝涓嶉柟杈剧祷娴滃綊鏌涚仦鍓р棨濞存粍绮撻弻娑㈡晜鐠囨彃绠虹紓浣瑰姈椤ㄥ﹤顫忓ú顏勭闁圭儤鏋敐澶嬬厸閻忕偞鏋婚煬顒傗偓瑙勬磸閸庤櫕绂掗敂鍓х＜闁靛繒濮村穽
                     com.intellij.openapi.project.DumbService dumbService = com.intellij.openapi.project.DumbService
                             .getInstance(project);
 
                     dumbService.runWhenSmart(() -> {
                         QinLogger.info("[SDK]   Project index rebuild complete");
 
-                        // 闂備礁鎲￠崝鏇犵矓閻㈠壊鏁冮柛蹇曗拡濞堢晫鈧厜鍋撻柛鎰典簼椤?SDK 闂佽崵濮崇粈浣规櫠娴犲鍋?
+                        // 闂傚倷绀侀幉锟犲礉閺囩姷鐭撻柣銏犲閺佸啴鏌涜箛鏇楁嫛婵炲牏鏅埀顒€鍘滈崑鎾绘煕閹板吀绨兼い?SDK 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?
                         com.intellij.openapi.roots.ProjectRootManager rootManager = com.intellij.openapi.roots.ProjectRootManager
                                 .getInstance(project);
                         com.intellij.openapi.projectRoots.Sdk sdk = rootManager.getProjectSdk();
@@ -317,8 +315,8 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 濠电儑绲藉ú锔炬崲閸岀偞鍋ら柕濠忚礋娴滄粓鏌涢敂璇插箺缂佹劖顨婇幃瑙勬媴缁嬪簱鎸冮梺姹囧€曞Λ婵嗙暦濮樿泛绠ユい鏇炴噺閳锋牠姊?
-     * 闂傚鍋勫ú銈夊箠濮椻偓婵＄绠涘☉妯诲祶?write action 濠电姰鍨奸崺鏍偋閻樿纾块悗闈涙啞鐎氼剟鏌涢幇鍏哥凹闁?
+     * 婵犵數鍎戠徊钘壝洪敂鐐床闁稿瞼鍋為崑銈夋煏婵犲繗绀嬪ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃濠囧箖鐟欏嫭濯寸紒瀣氨閹稿啴姊哄Ч鍥р偓鏇炍涘┑鍡欐殾婵娉涚粻銉︺亜閺囩偞鍣洪柍閿嬬墵濮?
+     * 闂傚倸顭崑鍕洪妶澶婄疇婵せ鍋撳┑锛勵棎缁犳稑鈽夊Ο璇茬ザ?write action 婵犵數濮伴崹濂稿春閺嶎厽鍋嬮柣妯款嚙绾惧潡鎮楅棃娑欏暈閻庢凹鍓熼弻娑㈠箛閸忓摜鍑归梺?
      */
     private static void saveProjectToDisk(Project project) {
         ApplicationManager.getApplication().invokeLater(() -> {
@@ -332,12 +330,12 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 闂佸湱鍘ч悺銊ヮ潖婵犳艾鏋侀柕鍫濐槺瀹撲線鏌ら幖浣规锭闁伙富鍠栭埥澶愬棘閹稿骸娅ｉ柣?SDK 闂佽崵濮崇粈浣规櫠娴犲鍋?
-     * 闂佸搫顦弲婊堟偡閿曗偓鍗遍柛婵勫劜婵ジ鏌涢幘妤€鎳忛悗?Project SDK 闂備焦鐪归崝宀€鈧凹鍠氶崚鎺楁倻濡皷鏋栭梺閫炲苯澧寸€殿噮鍓涢幉鎾礋椤撴壕鍋?
+     * 闂備礁婀遍崢褔鎮洪妸銉綎濠电姵鑹鹃弸渚€鏌曢崼婵愭Ш鐎规挷绶氶弻銈夊箹娴ｈ閿梺浼欏瘜閸犳牠鍩ユ径鎰闁圭楠稿▍锝夋煟?SDK 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?
+     * 闂備礁鎼ˇ顐﹀疾濠婂牊鍋￠柨鏇楀亾閸楅亶鏌涘┑鍕姕濠殿垰銈搁弻娑㈠箻濡も偓閹冲繘鎮?Project SDK 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佸嚬閸犳岸宕氶幒妤佸€绘俊顖氱毞閺嬫牠姊洪柅鐐茶嫰婢у鈧鍣崜娑㈠箟閹绢喖绀嬫い鎾村閸?
      * 
-     * @param project     濠碉紕鍋戦崐鏇烇耿閸楃伝?
-     * @param rootManager 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺閺夋垵鍞ㄩ梺闈╁瘜閸欏酣宕ラ埀顒勬⒑閼姐倕浠滄俊顐ｎ殔閳?
-     * @param sdk         闂佽崵鍠愬ú鎴澝归崶顒夋晩闁哄洨濮风壕鐐亜閺冨倸浜鹃柣?SDK
+     * @param project     婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳?
+     * @param rootManager 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍柡澶嬪灥閸炪劑姊洪棃鈺佺槣闁告瑥閰ｅ畷銉╁焵椤掑嫭鈷戦柤濮愬€曟禒婊勪繆椤愶綆娈旈柍?
+     * @param sdk         闂備浇宕甸崰鎰洪幋婢濆綊宕堕澶嬫櫓闂佸搫娲ㄦ慨椋庡閻愵兙浜滈柡鍐ㄥ€告禍楣冩煟?SDK
      */
     private static void applyAndPersistSdk(Project project,
             com.intellij.openapi.roots.ProjectRootManager rootManager,
@@ -345,23 +343,23 @@ public class DebugStartup implements ProjectActivity {
         String sdkName = sdk.getName();
         QinLogger.info("[SDK]   Applying SDK: " + sdkName);
 
-        // 1. 濠电偠鎻紞鈧繛澶嬫礋瀵?IDEA API 闂佽崵濮崇粈浣规櫠娴犲鍋柛鈩冪☉缁€鍐煕濞戝崬骞橀柟鐣屽Т閳藉骞欓崘銊ョ濠电偛鐗婇崹鍨暦?
+        // 1. 婵犵數鍋犻幓顏嗙礊閳ь剚绻涙径瀣鐎?IDEA API 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸嬵亪鏌涢埄鍐槈缂佲偓閸愵喗鐓曟繛鎴濆船楠炴﹢鏌熼悾灞叫㈤柍钘夘樀楠炴瑩宕橀妸銉ь啋婵犵數鍋涢悧濠囧垂閸喚鏆?
         ApplicationManager.getApplication().runWriteAction(() -> {
             rootManager.setProjectSdk(sdk);
         });
         QinLogger.info("[SDK]   Writing Project SDK to misc.xml");
 
-        // 2. 闂備胶鍎甸弲娑㈡偤閵娧勬殰閻庢稒顭囬埞宥嗐亜閺冨洤袚闁?misc.xml 缂備胶铏庨崣搴ㄥ窗閺囩姵宕叉慨妯挎硾缁犳澘霉閿濆妫戦柣锝勭矙閺?
+        // 2. 闂傚倷鑳堕崕鐢稿疾濞戙垺鍋ら柕濞у嫭娈伴柣搴㈢⊕椤洭鍩炲鍡愪簻闁哄啫娲よ闂?misc.xml 缂傚倷鑳堕搹搴ㄥ矗鎼淬劌绐楅柡鍥╁У瀹曞弶鎱ㄥΟ鎸庣【缂佺姵婢橀湁闁挎繂顦藉Λ鎴︽煟閿濆嫮鐭欓柡?
         String basePath = project.getBasePath();
         if (basePath != null) {
             Path miscXml = Paths.get(basePath, ".idea", "misc.xml");
             updateMiscXmlWithSdk(miscXml, sdkName);
         }
 
-        // 3. 闂備礁鎲＄敮锟犲绩闁秴钃?IDEA
+        // 3. 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑?IDEA
         refreshProjectStructure(project);
 
-        // 4. 濠德板€楁慨鎾儗娓氣偓閹?
+        // 4. 婵犲痉鏉库偓妤佹叏閹绢喗鍎楀〒姘ｅ亾闁?
         com.intellij.openapi.projectRoots.Sdk afterSdk = rootManager.getProjectSdk();
         if (afterSdk != null && afterSdk.getName().equals(sdkName)) {
             QinLogger.info("[SDK] Project SDK persisted to misc.xml: " + sdkName);
@@ -371,8 +369,8 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 闂備胶鍎甸弲娑㈡偤閵娧勬殰閻庢稒顭囬埞宥嗐亜閺冨洤袚闁?misc.xml 闂備礁鎼崐绋棵洪敐鍛瀻闁靛繈鍨烘刊濂告煕閹炬鎳忛悗?Project SDK
-     * 闂佸搫顦弲婊堟偡閿曗偓鍗遍柟闂寸鐎氬鏌嶈閸撶喎鐣烽敐澶樻晬闁绘劕鐡ㄧ粊顕€姊哄Ч鍥у閻庢凹鍙冨濠氭偄婵傚娈ㄩ棅顐㈡储閸庡磭绮堟径宀€妫い鎾楀啯鐏嗙紓?SDK 闂佽崵濮崇粈浣规櫠娴犲鍋柛鈩冪懄閸嬫牗銇勯幇鍓佸埌闁伙富鍠栭埥澶愬棘閹稿骸娅ｉ柣?
+     * 闂傚倷鑳堕崕鐢稿疾濞戙垺鍋ら柕濞у嫭娈伴柣搴㈢⊕椤洭鍩炲鍡愪簻闁哄啫娲よ闂?misc.xml 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涚箞閸ㄧ儤鍒婃總鍛婄厱闁圭偓顨呴幊蹇涙倵?Project SDK
+     * 闂備礁鎼ˇ顐﹀疾濠婂牊鍋￠柨鏇楀亾閸楅亶鏌熼梻瀵割槮閻庢艾顦甸弻宥堫檨闁告挾鍠庨悾鐑芥晲婢舵ɑ鏅梺缁樺姇閻°劎绮婇鈧鍝勑ч崶褍顬堥柣搴㈠嚬閸欏啫顕ｆ繝姘亜濠靛倸顦▓銊╂椤愩垺鍌ㄩ柛搴＄－缁牊寰勫畝鈧Λ顖涖亜閹炬鍟悘鍡欑磽?SDK 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸嬵亪鏌涢埄鍐噭闁稿鐗楅妵鍕箛閸撲礁鍩岄梺浼欏瘜閸犳牠鍩ユ径鎰闁圭楠稿▍锝夋煟?
      */
     private static void updateMiscXmlWithSdk(Path miscXml, String sdkName) {
         try {
@@ -391,11 +389,11 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 闂佽崵鍠愰悷杈╁緤妤ｅ啯鍊?Java 闂備胶绮〃鍛存偋婵犲偊鑰垮ù鍏兼綑閻?
+     * 闂備浇宕甸崰鎰版偡鏉堚晛绶ゅΔ锝呭暞閸?Java 闂傚倷鑳剁划顖炪€冮崨瀛樺亱濠电姴鍋婇懓鍨归崗鍏肩稇闁?
      */
     private static int parseJavaVersion(String versionStr) {
         try {
-            // 闂備礁鎲￠悧鏇犵礊婵犲洤鍌ㄩ柕鍫濐槹閸嬪鏌涢銈呮瀾闁圭兘浜堕弻娑樷枎韫囨挻顔€缂備浇椴哥换鍐╃┍?"21", "17", "1.8"
+            // 闂傚倷绀侀幉锟犳偋閺囩姷绀婂┑鐘叉搐閸屻劑鏌曢崼婵愭Ч闁稿顑夐弻娑㈩敃閵堝懏鐎鹃梺鍦厴娴滃爼寮诲☉妯锋瀻闊洦鎸婚鈧紓鍌欐祰妞村摜鎹㈤崘鈺冣攳?"21", "17", "1.8"
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)");
             java.util.regex.Matcher matcher = pattern.matcher(versionStr);
             if (matcher.find()) {
@@ -407,22 +405,22 @@ public class DebugStartup implements ProjectActivity {
                 return version;
             }
         } catch (Exception e) {
-            // 闂傚鍋勫ú銊╁疾椤愶箑姹?
+            // 闂傚倸顭崑鍕洪妸鈺佺柧妞ゆ劧绠戝Ч?
         }
         return 0;
     }
 
     /**
-     * 闂備礁鎼悮顐﹀磿閸欏鐝舵俊顖氱毞閸嬫捇鎮介崹顐㈡畬缂備降鍔嶉悡锟犲箚?sources jar 闂備礁鎼崐绋棵洪敐鍛瀻?
-     * 濠电偞鎸婚懝楣冾敄閸涙番鈧? xxx.jar -> xxx-sources.jar
+     * 闂傚倷绀侀幖顐ゆ偖椤愶箑纾块柛娆忣槺閻濊埖淇婇姘辨癁闁稿鎹囬幃浠嬪垂椤愩垺鐣紓鍌欓檷閸斿秹鎮￠敓鐘茬畾?sources jar 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎?
+     * 婵犵數鍋為幐濠氭嚌妤ｅ喚鏁勯柛娑欑暘閳? xxx.jar -> xxx-sources.jar
      */
     private static String findSourcesJar(String jarPath) {
         if (jarPath == null || !jarPath.endsWith(".jar")) {
             return null;
         }
 
-        // 闂佽绻愮换鎴犳崲閸℃稒鍎婃い鏍仜閹瑰爼鏌曟繛鍨姕闁稿﹤宕埥澶愬箻椤栨矮澹曢梻浣哄劦閺呪晠宕伴弽顐ょ鐎广儱妫涢埢鏃堟倵閿濆骸浜為柛娆屽亾闂?-sources.jar
-        String basePath = jarPath.substring(0, jarPath.length() - 4); // 缂傚倷绀侀ˇ顖炩€﹀畡鎵虫瀺?.jar
+        // 闂備浇顕х换鎰崲閹寸姵宕查柛鈩冪⊕閸庡﹥銇勯弽顐粶闁圭懓鐖奸弻鏇熺箾閸喖濮曢梺绋匡工瀹曨剟鍩ユ径鎰妞ゆ牗鐭竟鏇㈡⒒娴ｅ搫鍔﹂柡鍛櫊瀹曚即寮介銈囶槸閻庡箍鍎卞Λ娑㈠煝閺冨牊鍊甸柨婵嗛娴滅偤鏌涘▎灞戒壕闂?-sources.jar
+        String basePath = jarPath.substring(0, jarPath.length() - 4); // 缂傚倸鍊风粈渚€藝椤栫偐鈧箑鐣￠幍铏€?.jar
         String sourcesPath = basePath + "-sources.jar";
 
         if (java.nio.file.Files.exists(java.nio.file.Paths.get(sourcesPath))) {
@@ -433,16 +431,16 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 闂備礁鎼悮顐﹀磿閸欏鐝舵俊顖氱毞閸嬫捇鎮介崹顐㈡畬缂備降鍔嶉悡锟犲箚?javadoc jar 闂備礁鎼崐绋棵洪敐鍛瀻?
-     * 濠电偞鎸婚懝楣冾敄閸涙番鈧? xxx.jar -> xxx-javadoc.jar
+     * 闂傚倷绀侀幖顐ゆ偖椤愶箑纾块柛娆忣槺閻濊埖淇婇姘辨癁闁稿鎹囬幃浠嬪垂椤愩垺鐣紓鍌欓檷閸斿秹鎮￠敓鐘茬畾?javadoc jar 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎?
+     * 婵犵數鍋為幐濠氭嚌妤ｅ喚鏁勯柛娑欑暘閳? xxx.jar -> xxx-javadoc.jar
      */
     private static String findJavadocJar(String jarPath) {
         if (jarPath == null || !jarPath.endsWith(".jar")) {
             return null;
         }
 
-        // 闂佽绻愮换鎴犳崲閸℃稒鍎婃い鏍仜閹瑰爼鏌曟繛鍨姕闁稿﹤宕埥澶愬箻椤栨矮澹曢梻浣哄劦閺呪晠宕伴弽顐ょ鐎广儱妫涢埢鏃堟倵閿濆骸浜為柛娆屽亾闂?-javadoc.jar
-        String basePath = jarPath.substring(0, jarPath.length() - 4); // 缂傚倷绀侀ˇ顖炩€﹀畡鎵虫瀺?.jar
+        // 闂備浇顕х换鎰崲閹寸姵宕查柛鈩冪⊕閸庡﹥銇勯弽顐粶闁圭懓鐖奸弻鏇熺箾閸喖濮曢梺绋匡工瀹曨剟鍩ユ径鎰妞ゆ牗鐭竟鏇㈡⒒娴ｅ搫鍔﹂柡鍛櫊瀹曚即寮介銈囶槸閻庡箍鍎卞Λ娑㈠煝閺冨牊鍊甸柨婵嗛娴滅偤鏌涘▎灞戒壕闂?-javadoc.jar
+        String basePath = jarPath.substring(0, jarPath.length() - 4); // 缂傚倸鍊风粈渚€藝椤栫偐鈧箑鐣￠幍铏€?.jar
         String javadocPath = basePath + "-javadoc.jar";
 
         if (java.nio.file.Files.exists(java.nio.file.Paths.get(javadocPath))) {
@@ -453,21 +451,21 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 濠?Qin 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺鐎涙ê浠洪梺缁樻⒒椤牓鎮?.iml 闂備礁鎼崐绋棵洪敐鍛瀻?
-     * 闂?IDEA 闂佽崵濮村ú銈呂涘Δ鍛槬闁糕剝銇涢弨锕傛煙闁缚绨婚柡浣叉櫊閺岋綁顢欓弰蹇撳帯濠电偛寮舵刊浠嬪Φ?
+     * 婵?Qin 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍悗娑櫭禒娲⒑缂佹ɑ鈷掓い顓炵墦閹?.iml 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎?
+     * 闂?IDEA 闂備浇宕垫慨鏉懨洪妶鍛傛稑螖閸涱厽妲梺绯曞墲閵囨盯寮ㄩ敃鍌涚厵闂侇叏缂氱花濠氭煛娴ｅ弶娅婇柡宀嬬秮椤㈡瑩寮拌箛鎾冲腐婵犵數鍋涘鑸靛垔娴犲桅?
      * 
-     * @param forceOverwrite true=闁诲孩顔栭崰鏍箹椤愶箑鏄ユ俊銈呭暞閸熸椽鏌涢埄鍐噭缁惧彞鍗抽弻銊モ槈濡厧顤€婵犫拃鍕煉鐎?sync闂備焦瀵х粙鎴βㄩ埀顒傜磼鏉堛劎鍚筧lse=闁诲海鎳撻幉陇銇愰崘顔藉仱闁靛ň鏅涢幑鍫曟煏婵炲灝濡块柛搴㈢叀瀵爼鍩℃担鍦偒缂備浇椴搁悷鈺呭箠濞戙埄鏁傞柛鏇ㄥ€ｅΔ鍛厱婵鍘ч悘鐘测攽椤旇娅婇柡?
+     * @param forceOverwrite true=闂佽瀛╅鏍窗閺嶎厼绠规い鎰剁畱閺勩儲淇婇妶鍛殲闁哥喐妞介弻娑㈠焺閸愵亝鍣紒鎯у綖閸楁娊寮婚妸銉㈡婵☆垳鍘ч·鈧┑鐘媰閸曨厾鐓夐悗?sync闂傚倷鐒︾€笛呯矙閹次层劑鍩€椤掑倻纾奸弶鍫涘妿閸氱lse=闂佽娴烽幊鎾诲箟闄囬妵鎰板礃椤旇棄浠遍梺闈浥堥弲娑㈠箲閸洘鐓忓┑鐐茬仢婵″潡鏌涙惔銏㈠弨鐎殿喖鐖奸崺鈩冩媴閸︻厹鍋掔紓鍌欐祰妞存悂鎮烽埡鍛疇婵炴垯鍩勯弫鍌炴煕閺囥劌鈧絽螖閸涱喚鍘卞┑顔筋焽閸樠囨倶閻樻祴鏀芥い鏃囶潐濞呭﹪鏌?
      */
     public static void generateImlFile(Path projectPath, boolean forceOverwrite) {
         generateImlFile(projectPath, forceOverwrite, null);
     }
 
     /**
-     * 濠?Qin 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺鐎涙ê浠洪梺缁樻⒒椤牓鎮?.iml 闂備礁鎼崐绋棵洪敐鍛瀻?
-     * 闂?IDEA 闂佽崵濮村ú銈呂涘Δ鍛槬闁糕剝銇涢弨锕傛煙闁缚绨婚柡浣叉櫊閺岋綁顢欓弰蹇撳帯濠电偛寮舵刊浠嬪Φ?
+     * 婵?Qin 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍悗娑櫭禒娲⒑缂佹ɑ鈷掓い顓炵墦閹?.iml 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎?
+     * 闂?IDEA 闂備浇宕垫慨鏉懨洪妶鍛傛稑螖閸涱厽妲梺绯曞墲閵囨盯寮ㄩ敃鍌涚厵闂侇叏缂氱花濠氭煛娴ｅ弶娅婇柡宀嬬秮椤㈡瑩寮拌箛鎾冲腐婵犵數鍋涘鑸靛垔娴犲桅?
      * 
-     * @param forceOverwrite true=闁诲孩顔栭崰鏍箹椤愶箑鏄ユ俊銈呭暞閸熸椽鏌涢埄鍐噭缁惧彞鍗抽弻銊モ槈濡厧顤€婵犫拃鍕煉鐎?sync闂備焦瀵х粙鎴βㄩ埀顒傜磼鏉堛劎鍚筧lse=闁诲海鎳撻幉陇銇愰崘顔藉仱闁靛ň鏅涢幑鍫曟煏婵炲灝濡块柛搴㈢叀瀵爼鍩℃担鍦偒缂備浇椴搁悷鈺呭箠濞戙埄鏁傞柛鏇ㄥ€ｅΔ鍛厱婵鍘ч悘鐘测攽椤旇娅婇柡?
-     * @param ideaDir        IDEA 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺鐎涙ê鍓?.idea 闂備胶鍎甸弲鈺呭窗閺嶎偆绀婄€广儱娲﹀畷澶嬨亜閺嶃劍鐨戠紒鎰仱閺屻劌鈽夊Ο鐓庘叡闂佽桨闄嶉崐鏍矉瀹ュ棙鍎熼柕蹇婂墲濞堟﹢姊洪崨濠傚闁哄牜鍓濋崯顖炴⒑缁夊棗瀚峰▓锝囩磼?
+     * @param forceOverwrite true=闂佽瀛╅鏍窗閺嶎厼绠规い鎰剁畱閺勩儲淇婇妶鍛殲闁哥喐妞介弻娑㈠焺閸愵亝鍣紒鎯у綖閸楁娊寮婚妸銉㈡婵☆垳鍘ч·鈧┑鐘媰閸曨厾鐓夐悗?sync闂傚倷鐒︾€笛呯矙閹次层劑鍩€椤掑倻纾奸弶鍫涘妿閸氱lse=闂佽娴烽幊鎾诲箟闄囬妵鎰板礃椤旇棄浠遍梺闈浥堥弲娑㈠箲閸洘鐓忓┑鐐茬仢婵″潡鏌涙惔銏㈠弨鐎殿喖鐖奸崺鈩冩媴閸︻厹鍋掔紓鍌欐祰妞存悂鎮烽埡鍛疇婵炴垯鍩勯弫鍌炴煕閺囥劌鈧絽螖閸涱喚鍘卞┑顔筋焽閸樠囨倶閻樻祴鏀芥い鏃囶潐濞呭﹪鏌?
+     * @param ideaDir        IDEA 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍悗娑櫭崜?.idea 闂傚倷鑳堕崕鐢稿疾閳哄懎绐楅柡宥庡亞缁€濠勨偓骞垮劚濞诧箑鐣锋径瀣ㄤ簻闁哄秲鍔嶉惃鎴犵磼閹邦喖浠遍柡灞诲妼閳藉螣閻撳簶鍙￠梻浣芥〃闂勫秹宕愰弽顐ょ焿鐎广儱妫欓崕鐔兼煏韫囧﹤澧叉繛鍫燂耿濮婃椽宕ㄦ繝鍌氼潓闂佸搫鐗滈崜婵嬪疮椤栫偞鈷戠紒澶婃鐎氬嘲鈻撻敐鍥╃＜?
      */
     public static void generateImlFile(Path projectPath, boolean forceOverwrite, Path ideaDir) {
         try {
@@ -476,7 +474,7 @@ public class DebugStartup implements ProjectActivity {
                 return;
             }
 
-            // 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉ｅ妸娴滄粓鏌涢敂璇插箺缂佹劖顨婇弻娑橆潩椤掑倐銈囨偖?
+            // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷锝呭Ω濞存粍绮撻弻娑㈡晜鐠囨彃绠虹紓浣瑰姈椤ㄥ﹪寮诲☉姗嗘僵妞ゆ帒鍊愰妶鍥ㄥ仏?
             String projectName = projectPath.getFileName().toString();
             Path imlPath = projectPath.resolve(projectName + ".iml");
 
@@ -484,12 +482,12 @@ public class DebugStartup implements ProjectActivity {
             QinLogger.info("[iml]   iml path: " + imlPath);
             QinLogger.info("[iml]   forceOverwrite: " + forceOverwrite);
 
-            // 濠电姷顣介埀顒€鍟块埀顒€缍婇幃妯诲緞婵犲骸鏅犻梺鍦帛鐢偤骞楅悩缁樼厱闁挎柨鎼俊铏圭磼濡や胶澧紒瀣槸椤撳ジ宕ㄩ鐘电暢闂備礁鎲＄敮妤呭磿婵傛悶鈧懘顢曢敂钘夊壆闂佸搫绉堕弫鍝ョ矆婢跺绻嗘い鎰枎娴滈箖姊洪崫鍕潶闁稿孩褰冨嵄闁归棿绀佺憴锕傛煥閺囩偛鈧绂掑鈧幃鐑藉即濮橆収妯傞梺閫涚┒閸斿秴顕?sourceFolder
+            // 婵犵數濮烽。浠嬪焵椤掆偓閸熷潡鍩€椤掆偓缂嶅﹪骞冨Ο璇茬窞濠电姴楠搁弲鐘绘⒑閸︻厾甯涢悽顖滃仱楠炴鎮╃紒妯煎幈闂佹寧鏌ㄩ幖顐ｄ繆閾忓湱纾兼俊銈勮兌婢ь剛绱掔€ｎ亶妲告い鎾炽偢瀹曘劑顢橀悩鐢垫殺闂傚倷绀侀幉锛勬暜濡ゅ懎纾垮┑鍌涙偠閳ь剙鎳橀、鏇㈡晜閽樺澹嗛梻浣告惈缁夊爼寮崫銉х焼濠㈣泛顑勭换鍡樸亜閹邦喖鏋庡ù婊堢畺濮婃椽宕崟顕呮蕉闂佺瀛╄ぐ鍐ㄥ祫闂佸綊妫跨粈浣烘喆閿曞倹鐓ラ柡鍥╁仜閳ь剝顫夌粋鎺戭潨閳ь剟骞冮悜钘夊嵆婵﹩鍙庡Ο鍌炴⒑闁稓鈹掗柛鏂跨Т椤?sourceFolder
             boolean needGenerate = !Files.exists(imlPath) || forceOverwrite;
 
             if (!needGenerate) {
                 QinLogger.info("[iml]   Existing .iml found, checking whether repair is needed...");
-                // 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑Б濡ょ姷鍋涘ú顓烆嚕?.iml 闂備礁鎼€氱兘宕规导鏉戠畾濞达綀娅ｇ壕浠嬫煕濠靛棗顏慨?sourceFolder
+                // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺懶戞俊銈囧Х閸嬫稑煤椤撶儐鍤?.iml 闂傚倷绀侀幖顐も偓姘卞厴瀹曡瀵奸弶鎴犵暰婵炶揪缍€濞咃絿澹曟禒瀣厱婵犻潧妫楅顐ｆ叏?sourceFolder
                 String existingContent = Files.readString(imlPath);
                 if (!existingContent.contains("<sourceFolder")) {
                     QinLogger.info("[iml]   Missing sourceFolder configuration, attempting repair...");
@@ -502,16 +500,16 @@ public class DebugStartup implements ProjectActivity {
                     QinLogger.info("[iml]   sourceFolder configuration already present");
                 }
             } else {
-                // 濠电偠鎻紞鈧繛澶嬫礋瀵?BSP 濠电姰鍨煎▔娑氣偓姘煎櫍楠炲啯绻濋崶褔妫烽梺闈涱焾閸斿瞼绮婚鐐寸厱婵炲棙鍔楁晶鐢告煏閸℃效闁诡垰瀚伴、娆戞媼瀹曞洨鐣鹃梻?
+                // 婵犵數鍋犻幓顏嗙礊閳ь剚绻涙径瀣鐎?BSP 婵犵數濮伴崹鐓庘枖濞戞埃鍋撳鐓庢珝妤犵偛鍟换婵嬪炊瑜斿Λ鐑芥⒑闂堟侗鐒鹃柛鏂跨灱缁顢涢悙瀵稿幈濠电偛妫欓崝妤佹櫠閻㈠憡鐓忛柛鈩冾殘鏁堥梺璇″灠鐎氫即銆佸▎鎴炲鐎规洖娲ㄩ悾楣冩⒒?
                 com.qin.bsp.BspHandler bspHandler = new com.qin.bsp.BspHandler(projectPath.toString());
 
-                // 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉戔偓閺€锕傛煙闁缚绨婚柡浣叉櫊閺岋綁顢欓弰蹇撳帯濠电偛寮舵刊浠嬪Φ閹版澘鍗虫い蹇撴椤︹晜绻涢弶鎴濇倯闁挎岸鏌涘Ο鑽も姇缂?qin.config.json闂?
+                // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷鎴斿亾闁衡偓閿曞倹鐓欓梺顓ㄧ細缁ㄥ鏌℃担鍙夋珚闁哄矉缍侀、娆撳及韫囨挸甯繝鐢靛仜瀵埖鍒婃禒瀣﹂柟鐗堟緲閸楄櫕銇勮箛鎾搭棤妞わ腹鏅滅换娑㈠级閹存繃鍊梺鎸庡哺閺屾稑螣閼姐倐濮囩紓?qin.config.js闂?
                 String sourceDir = bspHandler.getSourceDir();
                 String testDir = bspHandler.getTestDir();
 
-                // 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑Б濠电偛寮舵刊浠嬪Φ閹版澘鍗抽柣鏃€鍔呴敃鍌涚厱婵ê澧介悾閬嶆煟閵堝懎顏慨濠佺矙瀹曘劑顢橀悩铏枛闂?
+                // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺懶戞繝鐢靛仜瀵埖鍒婃禒瀣﹂柟鐗堟緲閸楁娊鏌ｉ弮鈧崝鍛存晝閸屾稓鍘卞┑顔矫晶浠嬫偩闁秵鐓熼柕鍫濇噹椤忣厽鎱ㄦ繝浣虹煓鐎规洏鍔戦、姗€鎮╅搹顐㈡灈闂?
                 if (!Files.exists(projectPath.resolve(sourceDir))) {
-                    // 闂備焦鎮堕崕鎶藉磻閵堝鐒垫い鎴ｆ娴滈箖姊洪崨濠傜瑲濠殿垯绮欏畷闈涱煥閸繄顦梺闈涱煭鐎靛苯顫忛悙顒傜?
+                    // 闂傚倷鐒﹂幃鍫曞磿閹惰棄纾婚柕鍫濐槸閻掑灚銇勯幋锝嗩棄濞存粓绠栧娲川婵犲倻鐟叉繝娈垮灟缁瑥鐣烽棃娑辩叆闁割偅绻勯ˇ顕€姊洪棃娑辩叚閻庨潧鑻～蹇涙倷椤掑倻顔?
                     sourceDir = detectSourceDir(projectPath);
                 }
                 QinLogger.info("[iml]   sourceDir: " + sourceDir);
@@ -522,11 +520,11 @@ public class DebugStartup implements ProjectActivity {
                     return;
                 }
 
-                // 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉ｅ妽缂嶅洭鏌熼幆褍鏆辨慨锝咁樀閺岋綁鍩℃繝鍌涚亪缂?
+                // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷锝呭缂傚秴娲弻鐔煎箚瑜嶉弳杈ㄦ叏閿濆拋妯€闁哄矉缍侀崺鈩冪節閸屾稓浜紓?
                 String outputDir = bspHandler.getOutputDir();
                 QinLogger.info("[iml]   outputDir: " + outputDir);
 
-                // 闂備焦鐪归崹濠氬窗閹版澘鍨傛慨妯挎硾缁犳娊鏌熼悜姗嗘畷闁绘繄鍠栭弻锝夊煛婵犲倹鐏堢紓?XML
+                // 闂傚倷鐒﹂惇褰掑垂婵犳艾绐楅柟鐗堟緲閸ㄥ倹鎱ㄥΟ鎸庣【缂佺姵濞婇弻鐔兼倻濮楀棙鐣烽梺缁樼箘閸犳牠寮婚敐澶婄厸濠电姴鍊归悘鍫㈢磽?XML
                 StringBuilder excludeFolders = new StringBuilder();
                 for (String excludeDir : IML_EXCLUDED_DIRS) {
                     excludeFolders.append("          <excludeFolder url=\"file://$MODULE_DIR$/")
@@ -534,7 +532,7 @@ public class DebugStartup implements ProjectActivity {
                             .append("\" />\n");
                 }
 
-                // 闂備焦鐪归崹濠氬窗閹版澘鍨傛慨姗嗗厴閺€锕傛煙闁箑骞楅柣搴枛闇夐柣妯煎劋绾箖鏌?XML
+                // 闂傚倷鐒﹂惇褰掑垂婵犳艾绐楅柟鐗堟緲閸ㄥ倹鎱ㄥ鍡楀幋闁衡偓閿曞倹鐓欓梺顓ㄧ畱楠炴鏌ｆ惔顔兼灈闂囧鏌ｅΟ鐓庡妺缁绢參绠栭弻?XML
                 StringBuilder sourceFolders = new StringBuilder();
                 sourceFolders.append("      <sourceFolder url=\"file://$MODULE_DIR$/").append(sourceDir)
                         .append("\" isTestSource=\"false\" />\n");
@@ -543,7 +541,7 @@ public class DebugStartup implements ProjectActivity {
                             .append("\" isTestSource=\"true\" />\n");
                 }
 
-                // 闂傚倷绶￠崑鍛┍閾忚宕?BSP 闂備礁鍚嬮崕鎶藉床閼艰翰浜归柛銉ｅ妿閻熻绻濋棃娑冲姛妞も晩鍋婇弻銊モ槈濡崵绉秎asspath闂?
+                // 闂傚倸鍊风欢锟犲磻閸涱喚鈹嶉柧蹇氼潐瀹?BSP 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷锝呭闁荤喕顫夌换婵嬫濞戝啿濮涘銈傛櫓閸嬪﹪寮婚妸銉㈡婵☆垵宕电粔绉巃sspath闂?
                 List<String> classpath = bspHandler.getClasspath();
                 StringBuilder dependencyEntries = new StringBuilder();
 
@@ -551,7 +549,7 @@ public class DebugStartup implements ProjectActivity {
                     String entryPath = path.replace("\\", "/");
 
                     if (entryPath.endsWith(".jar")) {
-                        // JAR 闂備礁鎼崐绋棵洪敐鍛瀻闁靛骏绱曢悷瑙勭節闂堟冻鍔熸い?- 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑濠碘€冲级閹倸鐣烽妷鈺傛櫆闁兼亽鍎抽悾鎶芥煟鎼达絾鏆╅柟铏尵閼洪亶寮婚妷锕€鍓?sources 闂?javadoc
+                        // JAR 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涢獜缁辨洟鎮风憴鍕瘈闂傚牊鍐婚崝鐔搞亜?- 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺戭潥婵犵鈧啿绾ч柟顔煎€搁悾鐑藉Ψ閳哄倹娅嗛梺鍏间航閸庢娊鎮鹃幎鑺ョ厽閹艰揪绲鹃弳鈺呮煙閾忣偅灏甸柤娲憾瀵濡烽敃鈧崜?sources 闂?javadoc
                         String sourcesPath = findSourcesJar(entryPath);
                         String javadocPath = findJavadocJar(entryPath);
 
@@ -561,7 +559,7 @@ public class DebugStartup implements ProjectActivity {
                                 .append("          <root url=\"jar://").append(entryPath).append("!/\" />\n")
                                 .append("        </CLASSES>\n");
 
-                        // 婵犵數鍎戠紞鈧い鏇嗗嫭鍙?JAVADOC 闂備胶鍘ч幖顐﹀磹婵犳艾纾?
+                        // 濠电姷鏁搁崕鎴犵礊閳ь剚銇勯弴鍡楀閸?JAVADOC 闂傚倷鑳堕崢褔骞栭锕€纾瑰┑鐘宠壘绾?
                         if (javadocPath != null) {
                             dependencyEntries.append("        <JAVADOC>\n")
                                     .append("          <root url=\"jar://").append(javadocPath).append("!/\" />\n")
@@ -570,7 +568,7 @@ public class DebugStartup implements ProjectActivity {
                             dependencyEntries.append("        <JAVADOC />\n");
                         }
 
-                        // 婵犵數鍎戠紞鈧い鏇嗗嫭鍙?SOURCES 闂備胶鍘ч幖顐﹀磹婵犳艾纾?
+                        // 濠电姷鏁搁崕鎴犵礊閳ь剚銇勯弴鍡楀閸?SOURCES 闂傚倷鑳堕崢褔骞栭锕€纾瑰┑鐘宠壘绾?
                         if (sourcesPath != null) {
                             dependencyEntries.append("        <SOURCES>\n")
                                     .append("          <root url=\"jar://").append(sourcesPath).append("!/\" />\n")
@@ -585,7 +583,7 @@ public class DebugStartup implements ProjectActivity {
                                 (sourcesPath != null ? " (+sources)" : "") +
                                 (javadocPath != null ? " (+javadoc)" : ""));
                     } else {
-                        // 闂備礁鎼悧婊堝礈濞嗗骏鑰块悗闈涙憸鐏忕敻鏌ゆ慨鎰偓鏍玻濡ゅ啯鍠?- 闂佽崵濮崇欢銈囨閺囥垺鍋╅柤濮愬€愰崑鎾绘偨閸偄娈岀紓浣靛妽閻擄繝骞嗛崘顔肩妞ゆ帒鍊婚崺宥夋⒑濞茶鏋欓柤瀹犳硾鐓ら柟宄拌娴?
+                        // 闂傚倷绀侀幖顐︽偋濠婂牆绀堟繛鍡楅獜閼板潡鎮楅棃娑欐喐閻忓繒鏁婚弻銈嗘叏閹邦兘鍋撻弽顐ょ幓婵°倕鍟崰?- 闂備浇宕垫慨宕囨閵堝洦顫曢柡鍥ュ灪閸嬧晠鏌ゆ慨鎰偓鎰板磻閹剧粯鍋ㄩ柛顭戝亜濞堝瞼绱撴担闈涘闁绘搫绻濋獮鍡涘礃椤旇偐顦板銈嗗笒閸婂宕哄澶嬧拺婵炶尪顕ч弸娆撴煠鐎圭姵纭鹃悡銈夋煙瀹勬媽顫﹀ù?
                         String sourcePath = computeSourcePath(entryPath);
 
                         dependencyEntries.append("    <orderEntry type=\"module-library\">\n")
@@ -594,7 +592,7 @@ public class DebugStartup implements ProjectActivity {
                                 .append("          <root url=\"file://").append(entryPath).append("\" />\n")
                                 .append("        </CLASSES>\n");
 
-                        // 濠电姷顣介埀顒€鍟块埀顒€缍婇幃妯诲緞閹邦剛顓奸梺璇″瀻閸愵亜甯撴繝鐢靛閸曨偄顫庨梺缁樼墬缁捇骞嗛崟顖ｆ晩闁兼祴鏅濆崗闂備焦瀵х粙鎴﹀嫉椤掑嫬閿ゅ┑鐘叉搐缁€?SOURCES 闂傚倷鐒﹀妯肩矓閸洘鍋?
+                        // 婵犵數濮烽。浠嬪焵椤掆偓閸熷潡鍩€椤掆偓缂嶅﹪骞冨Ο璇茬窞闁归偊鍓涢濂告⒑鐠団€崇€婚柛鎰典簻鐢挻绻濋悽闈涱潚闁告洦鍋勯～搴ㄦ⒑缂佹澧紒顔芥崌楠炲棝宕熼锝嗘櫓闂佸吋绁撮弲婵嗗礂闂傚倷鐒︾€笛呯矙閹达箑瀚夋い鎺戝闁裤倕鈹戦悩鍙夋悙缂佲偓?SOURCES 闂傚倸鍊烽悞锕€顭垮Ο鑲╃煋闁割偅娲橀崑?
                         if (sourcePath != null) {
                             dependencyEntries.append("        <SOURCES>\n")
                                     .append("          <root url=\"file://").append(sourcePath).append("\" />\n")
@@ -609,7 +607,7 @@ public class DebugStartup implements ProjectActivity {
                     }
                 }
 
-                // 闂備焦鐪归崹濠氬窗閹版澘鍨?.iml 闂備礁鎲￠崝鏇㈠箠鎼搭煈鏁?
+                // 闂傚倷鐒﹂惇褰掑垂婵犳艾绐楅柟鐗堟緲閸?.iml 闂傚倷绀侀幉锟犲礉閺囥垹绠犻幖鎼厛閺?
                 String imlContent = """
                         <?xml version="1.0" encoding="UTF-8"?>
                         <module type="JAVA_MODULE" version="4">
@@ -630,7 +628,7 @@ public class DebugStartup implements ProjectActivity {
                 QinLogger.info("Generated .iml file via BSP: " + projectName + ".iml");
             }
 
-            // 婵犵數鍋涢ˇ顓㈠礉瀹€鍕埞闁芥ê锛夐悢鐓庣伋闁惧浚鍋勬禒鎾⒑?modules.xml
+            // 濠电姷鏁搁崑娑⑺囬銏犵鐎光偓閸曨偉鍩為梺鑺ッ敍澶愭偄閻撳海浼嬮梺鎯ф禋閸嬪嫭绂掗幘顔解拺?modules.xml
             if (ideaDir != null) {
                 registerModuleToIdeaProject(imlPath, ideaDir);
             }
@@ -772,20 +770,20 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 婵犵數鍋涢ˇ顓㈠礉瀹€鍕埞闁芥ê锛夐悢鐓庣伋闁惧浚鍋勬禒鎾⒑?IDEA 闂?modules.xml
+     * 濠电姷鏁搁崑娑⑺囬銏犵鐎光偓閸曨偉鍩為梺鑺ッ敍澶愭偄閻撳海浼嬮梺鎯ф禋閸嬪嫭绂掗幘顔解拺?IDEA 闂?modules.xml
      */
     private static void registerModuleToIdeaProject(Path imlPath, Path ideaDir) {
         try {
             Path modulesXml = ideaDir.resolve("modules.xml");
 
-            // 闂佽崵濮崇欢銈囨閺囥垺鍋╁┑鐘崇閸庡海绱掔€ｎ偒鍎ラ柛銈囧█閹绗熼姘变哗缂?
-            Path ideaParent = ideaDir.getParent(); // 濠碉紕鍋戦崐鏇烇耿閸楃伝鐑樺閺夋垵鍞ㄩ梺闈╁瘜閸樼晫绮ｅΔ鍐╁枑?
+            // 闂備浇宕垫慨宕囨閵堝洦顫曢柡鍥ュ灪閸嬧晛鈹戦悩宕囶暡闁稿骸娴风槐鎺斺偓锝庡亽閸庛儵鏌涢妶鍥р枅闁诡喛顫夌粭鐔碱敍濮樺彉鍝楃紓?
+            Path ideaParent = ideaDir.getParent(); // 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍柡澶嬪灥閸炪劑姊洪棃鈺佺槣闁告鏅划锝呂旈崘鈺佹瀾?
             Path relativePath = ideaParent.relativize(imlPath);
             String moduleEntry = relativePath.toString().replace("\\", "/");
 
             String content;
             if (!Files.exists(modulesXml)) {
-                // modules.xml 濠电偞鍨堕幐鍝ョ矓閹绢喗鍋ら柕濞炬櫅閹硅埖銇勯鐔风缂佲偓婢舵劖鐓曢柟鐑樻尵閳藉绱撻崒娑欏磳鐎殿噮鍓熼獮宥夘敊閻ｅ本娈?
+                // modules.xml 婵犵數鍋為崹鍫曞箰閸濄儳鐭撻柟缁㈠枟閸嬨倝鏌曟繛鐐珔闁圭鍩栭妵鍕敇閻旈顑傜紓浣插亾濠㈣埖鍔栭悡鏇㈡煙閻戞ɑ灏甸柍钘夘槺缁辨捇宕掑☉娆忕３閻庢鍣崜鐔肩嵁瀹ュ鏁婇柣锝呮湰濞?
                 QinLogger.info("[iml]   modules.xml not found, creating a new file");
                 content = """
                         <?xml version="1.0" encoding="UTF-8"?>
@@ -800,18 +798,18 @@ public class DebugStartup implements ProjectActivity {
                 content = Files.readString(modulesXml);
             }
 
-            // 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑濠碘€冲级閹倸鐣烽妷鈺傛櫇闁逞屽墴瀹曟瑩鏁嶉崟顓狅紲闂婎偄娲﹀褰掑汲閸儲鐓?
+            // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺戭潥婵犵鈧啿绾ч柟顔煎€搁悾鐑藉Ψ閳哄倹娅囬梺閫炲苯澧寸€规洘鐟╅弫宥夊礋椤撶媴绱查梻濠庡亜濞诧箑顫忚ぐ鎺戞辈闁割偁鍎查悡?
             if (content.contains(moduleEntry)) {
                 QinLogger.info("[iml]   Module already registered in modules.xml");
                 return;
             }
 
-            // 闂備礁鎼鍛偓姘煎墰缁辨捇骞樼拠鍙夘棟闂佽顔栭崰妤呮偩?module 闂備礁鎼¨鈧紒杈ㄦ礀鐓?
+            // 闂傚倷绀侀幖顐︻敄閸涱垪鍋撳鐓庡缂佽鲸鎹囬獮妯兼嫚閸欏妫熼梻浣筋潐椤旀牠宕板Δ鍛仼?module 闂傚倷绀侀幖顐βㄩ埀顒傜磼鏉堛劍绀€閻?
             String newModule = String.format(
                     "      <module fileurl=\"file://$PROJECT_DIR$/%s\" filepath=\"$PROJECT_DIR$/%s\" />",
                     moduleEntry, moduleEntry);
 
-            // 闂?</modules> 濠电偞鍨堕弻銊╊敄閸涱喗娅犻柣妯款嚙缁犵敻鏌熼悜妯虹仴鐎?
+            // 闂?</modules> 婵犵數鍋為崹鍫曞蓟閵娾晩鏁勯柛娑卞枟濞呯娀鏌ｅΟ娆惧殭缂佺姷鏁婚弻鐔兼倻濡櫣浠撮悗?
             String newContent = content.replace("    </modules>", newModule + "\n    </modules>");
 
             Files.writeString(modulesXml, newContent);
@@ -823,34 +821,34 @@ public class DebugStartup implements ProjectActivity {
     }
 
     /**
-     * 婵犵妲呴崑鈧柛瀣尰缁绘盯寮堕幋顓炲壉缂備緡鐓堥崰妤冪矉閹烘鏅查柛銉㈡櫅閻忥綁姊洪悜鈺傛珦闁哥姵鐗滅槐?
+     * 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅灏扮紒缁樼洴瀵爼骞嬮鐐插缂傚倷绶￠悡鍫ュ窗濡ゅ啰鐭夐柟鐑橆殕閺呮煡鏌涢妷銏℃珔闁诲骏缍佸娲倻閳哄倹鐝﹂梺鍝ュУ閻楁粎妲?
      */
     private static String detectSourceDir(Path projectPath) {
-        // 濠电偞娼欓崥瀣晪闂佸憡蓱缁嬫垼鐏嬮梺閫炲苯澧棁澶愭倵閿濆骸浜為柛銊ャ偢閺?Maven 缂傚倸鍊烽悞锕傚箰婵犳碍鍊?
+        // 婵犵數鍋炲娆撳触鐎ｎ喗鏅梻浣告啞钃辩紒瀣灱閻忓姊洪柅鐐茶嫰婢ь噣妫佹径鎰€甸柨婵嗛娴滅偤鏌涢妸銉ｅ仮闁?Maven 缂傚倸鍊搁崐鐑芥倿閿曞倸绠板┑鐘崇閸?
         Path mavenSrc = projectPath.resolve(DEFAULT_SOURCE_DIR);
         if (Files.exists(mavenSrc)) {
             return DEFAULT_SOURCE_DIR;
         }
-        // 闂備胶顭堢换妤呭春閺嶎収鏁冮柣鎾冲濞戙垹鐒垫い鎺嗗亾闂囧鎮楅敐搴″闁哄棗妫濋弻娑樜旀担鍦槶缂備緡鍠撻崝鎴濐嚕?
+        // 闂傚倷鑳堕…鍫㈡崲濡ゅ懎鏄ラ柡宥庡弾閺佸啴鏌ｉ幘鍐差唫婵炴垯鍨归悞鍨亜閹哄棗浜鹃梻鍥ь樀閹鏁愭惔鈥愁潾闂佸搫妫楀Λ婵嬪蓟濞戞鏃€鎷呴崷顓фФ缂傚倷绶￠崰鎾诲礉閹存繍鍤?
         Path simpleSrc = projectPath.resolve("src");
         if (Files.exists(simpleSrc) && Files.isDirectory(simpleSrc)) {
             return "src";
         }
-        // 婵犵數鍋涙径鍥礈濠靛洨鐝舵慨妞诲亾鐎规洘宀搁幃褔宕奸姀銏犵厓濠电偛顕刊瀵稿緤閸ф鍋夋繝濠傜墛閸庡孩銇勯弮鍥т汗缂?
+        // 濠电姷鏁搁崑娑欏緞閸ヮ剙绀堟繝闈涙川閻濊埖鎱ㄥ璇蹭壕閻庤娲樺畝鎼佸箖瑜斿畷濂稿閵忕姷鍘撴繝鐢靛仜椤曨厽鍒婄€电绶ら柛褎顨嗛崑澶嬬節婵犲倻澧涢柛搴″閵囧嫰寮崶褌姹楃紓?
         return null;
     }
 
     /**
-     * 闂備礁鎼粔鐑斤綖婢跺﹦鏆ゅù锝堟鐏忕敻鏌￠崟顐ょ缂傚牆顭烽弻娑㈠箣閿濆棭浠╁┑鐐插级婵粙濡甸幇鏉垮嵆闁宠棄妫楅幃浣虹磽娴ｅ搫校妞ゃ劌妫涢懞閬嶎敋閳ь剟骞嗗鍡樺闁绘垶顭囬悰銉╂偡?
-     * 濠电偞鎸婚懝楣冾敄閸涙番鈧? D:/project/subhuti-java/build/classes ->
+     * 闂傚倷绀侀幖顐ょ矓閻戞枻缍栧璺猴功閺嗐倕霉閿濆牊顏犻悘蹇曟暬閺岋繝宕熼銈囶唺缂傚倸鐗嗛…鐑藉蓟濞戙垹绠ｉ柨婵嗘－娴犫晛鈹戦悙鎻掔骇濠殿垯绮欐俊鐢稿箛閺夊灝宓嗛梺瀹犳濡骞冩担铏圭＝濞达絽鎼牎濡炪們鍔屽Λ娑㈡嚍闁稁鏁嬮柍褜鍓熼獮鍡楊吋閸℃ê顎撻梺缁樺灦椤洭鎮伴妷鈺傚仭?
+     * 婵犵數鍋為幐濠氭嚌妤ｅ喚鏁勯柛娑欑暘閳? D:/project/subhuti-java/build/classes ->
      * D:/project/subhuti-java/src/main/java
      */
     private static String computeSourcePath(String classPath) {
         try {
-            // 闂?build/classes 闂備礁鎼ú锔锯偓绗涘啰鏆﹂柛娆忣槺閳绘棃鏌ｉ幋鐑嗙劷闁绘牠浜堕弻锝夘敊閺勫繐鍘″┑鐐插级婵粙濡?
+            // 闂?build/classes 闂傚倷绀侀幖顐⒚洪敂閿亾缁楁稑鍟伴弳锕傛煕濞嗗浚妲洪柍缁樻閺岋綁骞嬮悜鍡欏姺闂佺粯鐗犳禍鍫曞蓟閿濆鏁婇柡鍕箰閸樷€斥攽閻愭彃绾у┑顖欑矙婵?
             Path classDir = Paths.get(classPath);
 
-            // 闂備礁鎲＄喊宥夊垂瀹曞洨绠旈柛宀€鍋涚粻銉╂煙椤栧棗鍟伴崢鎺撲繆閻愵亜鈧洖锕㈤崡鐏荤儤瀵奸弶鎴濆敤闂侀潻瀵岄崢鐣岀玻濡ゅ啯鍠愰柣妤€鐗婄粚璺ㄧ磼鏉堛劎鎳囩€规洜濞€瀹曘劑顢橀悢宄板 build 闂備焦鐪归崝宀€鈧凹鍣ｅ畷鍝勎旈崨顔煎壆濡炪倖妫侀崑鎰矓閸ф鐓?
+            // 闂傚倷绀侀幉锛勫枈瀹ュ鍨傜€规洖娲ㄧ粻鏃堟煕瀹€鈧崑娑氱不閵夆晜鐓欐い鏍ф閸熶即宕㈤幒鎾茬箚闁绘劦浜滈埀顒佹礀閿曘垽宕￠悘鑽ゅ劋鐎靛ジ寮堕幋婵嗘暏闂備線娼荤€靛矂宕㈤悾宀€鐜绘俊銈呭暞閸犳劙鏌ｅΔ鈧悧濠勭矚鐠恒劎纾奸弶鍫涘妿閹冲洨鈧娲滄繛鈧€规洏鍔戦、姗€鎮㈠畡鏉款棐 build 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佸嚬閸ｏ絽鐣烽崫鍕庢棃宕ㄩ鐓庡婵＄偑鍊栧Λ渚€宕戦幇顔剧煋闁秆勵殕閻?
             Path current = classDir;
             while (current != null && !current.getFileName().toString().equals("build")) {
                 current = current.getParent();
@@ -859,63 +857,63 @@ public class DebugStartup implements ProjectActivity {
             if (current != null && current.getParent() != null) {
                 Path projectRoot = current.getParent();
 
-                // 婵犵妲呴崑鈧柛瀣崌閺?src/main/java
+                // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡?src/main/java
                 Path mavenSrc = projectRoot.resolve(DEFAULT_SOURCE_DIR);
                 if (Files.exists(mavenSrc)) {
                     return mavenSrc.toString().replace("\\", "/");
                 }
 
-                // 婵犵妲呴崑鈧柛瀣崌閺?src
+                // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡?src
                 Path simpleSrc = projectRoot.resolve("src");
                 if (Files.exists(simpleSrc) && Files.isDirectory(simpleSrc)) {
                     return simpleSrc.toString().replace("\\", "/");
                 }
             }
         } catch (Exception e) {
-            // 闂傚鍋勫ú銊╁疾椤愶箑姹?
+            // 闂傚倸顭崑鍕洪妸鈺佺柧妞ゆ劧绠戝Ч?
         }
         return null;
     }
 
     /**
-     * 濠电儑绲藉ù鍌炲窗閺嶎厔鍥嚑椤掑倻锛濋梺鍛婄箓鐎氼喖袙?sourceFolder 闂?.iml 闂備礁鎼崐绋棵洪敐鍛瀻闁靛繈鍊曠粈鍐煕濞戝崬寮鹃柛?
-     * 闂佽绻愮换鎰涘鍫濆惞婵犲﹤鐗婇埛鎺撱亜閹捐泛浠﹂柛濞垮€濋弻?<content url="..." /> 闂佸搫顦遍崕鎰板礈濮橆剛鏆﹂柛娆忣槺閳绘棃鏌涘┑鍡楊仼闁伙箑鐖奸弻?sourceFolder 闂備焦鐪归崝宀€鈧凹鍓熼幃楣冾敆閸曨偅鐎梺鍝勵槹閸ㄥジ宕哄畝鈧埀?
+     * 婵犵數鍎戠徊钘壝归崒鐐茬獥闁哄稁鍘旈崶顒佸殤妞ゆ帒鍊婚敍婵嬫⒑閸涘﹦绠撻悗姘煎枛琚?sourceFolder 闂?.iml 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涚箞閸婃洜绮堥崘顔界厱婵炴垵宕楣冩煕?
+     * 闂備浇顕х换鎰崲閹邦儵娑橆煥閸繂鎯炲┑鐘诧工閻楀﹪鍩涢幒鎾变簻闁规崘娉涙禒锕傛煕婵炲灝鈧繈寮?<content url="..." /> 闂備礁鎼ˇ閬嶅磿閹版澘绀堟慨姗嗗墰閺嗭箓鏌涘▎蹇ｆШ闁崇粯妫冮弻娑樷攽閸℃浠奸梺浼欑畱閻栧ジ寮?sourceFolder 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佸嚬閸撶喖骞冩ィ鍐炬晢闁告洦鍋呴悗顒勬⒑閸濆嫷妲归柛銊ャ偢瀹曞搫鐣濋埀顒勫焵?
      */
     private static String fixMissingSourceFolder(String imlContent, Path projectPath) {
         try {
-            // 婵犵妲呴崑鈧柛瀣尰缁绘盯寮堕幋顓炲壉缂備緡鐓堥崰妤冪矉閹烘鏅查柛銉㈡櫅閻忥綁姊洪悜鈺傛珦闁哥姵鐗滅槐?
+            // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅灏扮紒缁樼洴瀵爼骞嬮鐐插缂傚倷绶￠悡鍫ュ窗濡ゅ啰鐭夐柟鐑橆殕閺呮煡鏌涢妷銏℃珔闁诲骏缍佸娲倻閳哄倹鐝﹂梺鍝ュУ閻楁粎妲?
             String sourceDir = detectSourceDir(projectPath);
             if (sourceDir == null) {
                 QinLogger.info("[iml]   Could not detect source directory, skipping sourceFolder repair");
                 return imlContent;
             }
 
-            // 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑濠碘€冲级閹倸鐣烽妷鈺傛櫆闁兼亽鍎涢敃鍌涚厾濠靛倸顦柇顖涗繆椤愶絾灏︾€规洏鍎靛畷濂稿閿涘嫭娈?content 闂備礁鎼粔鏉懨洪妸鈺婃晢?
+            // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺戭潥婵犵鈧啿绾ч柟顔煎€搁悾鐑藉Ψ閳哄倹娅嗛梺鍏间航閸庢盯鏁冮崒娑氬幘婵犻潧鍊搁ˇ顕€鏌囬娑楃箚妞ゆ劧绲剧亸锔锯偓瑙勬磸閸庨潧鐣锋總绋款潊闁挎稑瀚▓?content 闂傚倷绀侀幖顐ょ矓閺夋嚚娲Ω閳哄﹥鏅?
             java.util.regex.Pattern selfClosingPattern = java.util.regex.Pattern.compile(
                     "<content\\s+url=\"[^\"]*\"\\s*/>");
             java.util.regex.Matcher matcher = selfClosingPattern.matcher(imlContent);
 
             if (matcher.find()) {
-                // 闂備胶鎳撻悘姘跺磿閹惰棄鏄ョ€光偓閸曨剙娈滃銈呯箰閻楀﹪鏁嶉弮鍫熺厱婵﹩鍓涙晶銏＄箾?content 闂備礁鎼粔鏉懨洪妸鈺婃晢闁绘垼濮ら弲顒傗偓鍏夊亾闁告洦鍏涚划顖炴煟閻斿憡纾婚柣鎺炵畱闇夋繛鎴欏灩缁犲弶銇勯顐㈠绩缂佲偓鐎ｎ喗鍊甸柣鐔哄濠€浼存煛閸☆厾绉柕鍥ㄥ姍婵偓闁绘鏁搁、?
+                // 闂傚倷鑳堕幊鎾绘倶濮樿泛纾块柟鎯版閺勩儳鈧厜鍋撻柛鏇ㄥ墮濞堟粌顪冮妶鍛闁绘锕弫宥夊籍閸喓鍘卞┑顔斤供閸撴稒鏅堕姀锛勭?content 闂傚倷绀侀幖顐ょ矓閺夋嚚娲Ω閳哄﹥鏅㈤梺缁樺灱婵倝寮查鍌楀亾閸忓浜鹃梺鍛婃处閸忔稓鍒掗鐐寸厽闁绘柨鎲＄壕濠氭煟閹虹偟鐣遍棁澶嬬箾閹存瑥鐏╃紒鐘插级閵囧嫰顢曢銏犵哗缂備讲鍋撻悗锝庡枟閸婄敻鏌ｉ悢鍝勵暭婵犫偓娴煎瓨鐓涢柛鈽嗗幘缁夘剟鏌曢崶銊ュ濠殿喒鍋撻梺缁橆焽閺佹悂銆?
                 String originalTag = matcher.group();
                 int urlStart = originalTag.indexOf("url=\"") + 5;
                 int urlEnd = originalTag.indexOf("\"", urlStart);
                 String url = originalTag.substring(urlStart, urlEnd);
 
-                // 闂備礁鎼鍛偓姘煎墰缁辨捇骞橀崹娑樹壕闁荤喓澧楀﹢浼存煛閸☆厾绉柟?content 闂備礁鎼粔鏉懨洪妸鈺婃晢?
+                // 闂傚倷绀侀幖顐︻敄閸涱垪鍋撳鐓庡缂佽鲸鎹囬獮姗€宕瑰☉妯瑰闂佽崵鍠撴晶妤€锕㈡导瀛樼厸闁糕槅鍘剧粔顕€鏌?content 闂傚倷绀侀幖顐ょ矓閺夋嚚娲Ω閳哄﹥鏅?
                 StringBuilder newContent = new StringBuilder();
                 newContent.append("<content url=\"").append(url).append("\">\n");
                 newContent.append("      <sourceFolder url=\"file://$MODULE_DIR$/")
                         .append(sourceDir).append("\" isTestSource=\"false\" />\n");
 
-                // 婵犵妲呴崑鈧柛瀣崌閺岋紕浠︾拠鎻掑濠碘€冲级閹倸鐣烽妷鈺傛櫆闁兼亽鍎抽悾鍐测攽閻愬瓨缍戞い鎴濈墦閹線顢涢悙鏉戝壆濡炪倖妫侀崑鎰矓?
+                // 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺戭潥婵犵鈧啿绾ч柟顔煎€搁悾鐑藉Ψ閳哄倹娅嗛梺鍏间航閸庢娊鎮鹃崘娴嬫斀闁绘劕鐡ㄧ紞鎴炪亜閹存繄澧﹂柟顖欑窔椤㈡盯鎮欓弶鎴濆婵＄偑鍊栧Λ渚€宕戦幇顔剧煋?
                 Path testDir = projectPath.resolve("src/test/java");
                 if (Files.exists(testDir)) {
                     newContent.append(
                             "      <sourceFolder url=\"file://$MODULE_DIR$/src/test/java\" isTestSource=\"true\" />\n");
                 }
 
-                // 婵犵數鍎戠紞鈧い鏇嗗嫭鍙忛柣鎰惈缁犳娊鏌熼悜姗嗘畷闁绘繄鍠栭弻锝夊煛婵犲倹鐏堢紓?
+                // 濠电姷鏁搁崕鎴犵礊閳ь剚銇勯弴鍡楀閸欏繘鏌ｉ幇顒佹儓缂佺姵濞婇弻鐔兼倻濮楀棙鐣烽梺缁樼箘閸犳牠寮婚敐澶婄厸濠电姴鍊归悘鍫㈢磽?
                 for (String excludeDir : IML_EXCLUDED_DIRS) {
                     newContent.append("          <excludeFolder url=\"file://$MODULE_DIR$/")
                             .append(excludeDir).append("\" />\n");
@@ -933,3 +931,4 @@ public class DebugStartup implements ProjectActivity {
         }
     }
 }
+

@@ -10,7 +10,7 @@ public final class QinJsInheritedGetterSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-inherited-getter-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-inherited-getter\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-inherited-getter\" }\n", StandardCharsets.UTF_8);
         String source = """
                 class Base {
                   constructor() {
@@ -35,3 +35,4 @@ public final class QinJsInheritedGetterSmokeTestMain {
         System.out.println("QinJsInheritedGetterSmokeTestMain OK");
     }
 }
+

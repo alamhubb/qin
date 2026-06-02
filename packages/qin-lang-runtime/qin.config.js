@@ -1,9 +1,11 @@
-{
+export default {
     "name":  "com.qin:qin-lang-runtime",
     "version":  "0.1.0",
     "description":  "Runtime library for Qin language",
     "entry":  "src/java/com/qin/lang/runtime/RuntimePackageMarker.java",
-    "dependencies":  {},
+    "dependencies":  {
+
+                     },
     "java":  {
                  "version":  "21",
                  "sourceDir":  "src/java",
@@ -18,3 +20,4 @@
                    "jarName":  "qin-lang-runtime.jar"
                }
 }
+

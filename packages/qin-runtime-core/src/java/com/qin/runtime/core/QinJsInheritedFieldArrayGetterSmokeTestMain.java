@@ -11,7 +11,7 @@ public final class QinJsInheritedFieldArrayGetterSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-inherited-field-array-getter-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-inherited-field-array-getter\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-inherited-field-array-getter\" }\n", StandardCharsets.UTF_8);
 
         String source = """
                 class Base {
@@ -43,3 +43,4 @@ public final class QinJsInheritedFieldArrayGetterSmokeTestMain {
         System.out.println("QinJsInheritedFieldArrayGetterSmokeTestMain OK");
     }
 }
+

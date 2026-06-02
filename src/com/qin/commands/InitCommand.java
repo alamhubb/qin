@@ -34,7 +34,7 @@ public class InitCommand {
             System.out.println("  Created src/Main.java");
         }
 
-        // Create qin.config.json if not exists
+        // Create qin.config.js if not exists
         Path configFile = cwd.resolve(QinConstants.CONFIG_FILE);
         if (!Files.exists(configFile)) {
             String projectName = cwd.getFileName().toString();
@@ -50,7 +50,7 @@ public class InitCommand {
                       ]
                     }
                     """, projectName));
-            System.out.println("  Created qin.config.json");
+            System.out.println("  Created qin.config.js");
         }
 
         // Create .gitignore if not exists
@@ -136,7 +136,8 @@ public class InitCommand {
 
         Files.writeString(configFile, config.toString());
 
-        System.out.println("\n✓ Project initialized!");
+        System.out.println("\n鉁?Project initialized!");
         System.out.println("  Run 'qin run' to start");
     }
 }
+

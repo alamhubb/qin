@@ -11,7 +11,7 @@ public final class QinJsPreincrementNegativeSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-preincrement-negative-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-preincrement-negative\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-preincrement-negative\" }\n", StandardCharsets.UTF_8);
         String source = """
                 let value = -1;
                 ({ next: ++value, value });
@@ -31,3 +31,4 @@ public final class QinJsPreincrementNegativeSmokeTestMain {
         }
     }
 }
+

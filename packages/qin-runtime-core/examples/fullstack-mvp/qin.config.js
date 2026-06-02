@@ -1,0 +1,23 @@
+export default {
+    "name":  "com.qin.demo:fullstack-mvp",
+    "version":  "0.1.0",
+    "description":  "Qin fullstack MVP with convention startup class",
+    "entry":  "launcher/com/qin/demo/FullstackApplication.java",
+    "dependencies":  {
+                         "com.qin:qin-runtime-core":  "0.1.0",
+                         "@vitejs/plugin-vue":  "6.0.7",
+                         "@vue/compiler-sfc":  "latest",
+                         "vue":  "latest",
+                         "cssts-compiler":  "0.2.87",
+                         "cssts-ts":  "0.2.87",
+                         "ovs-compiler":  "0.2.2",
+                         "ovsjs":  "0.2.2"
+                     },
+    "java":  {
+                 "version":  "21",
+                 "sourceDir":  "launcher",
+                 "outputDir":  "build/classes",
+                 "encoding":  "UTF-8"
+             }
+}
+

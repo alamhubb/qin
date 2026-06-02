@@ -11,7 +11,7 @@ public final class QinJsTopLevelLiveBindingSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-top-level-live-binding-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-top-level-live-binding\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-top-level-live-binding\" }\n", StandardCharsets.UTF_8);
         String source = """
                 function readLater() {
                   return ++counter;
@@ -30,3 +30,4 @@ public final class QinJsTopLevelLiveBindingSmokeTestMain {
         System.out.println("QinJsTopLevelLiveBindingSmokeTestMain OK");
     }
 }
+

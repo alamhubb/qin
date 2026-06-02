@@ -21,7 +21,7 @@ public final class QinJsArgumentsObjectSmokeTestMain {
                 getArg({}, "skipValidation", false) === false ? 42 : 0;
                 """;
         Path root = Files.createTempDirectory("qin-js-arguments-object-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-arguments-object\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-arguments-object\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "arguments_object");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -29,3 +29,4 @@ public final class QinJsArgumentsObjectSmokeTestMain {
         System.out.println("QinJsArgumentsObjectSmokeTestMain OK");
     }
 }
+

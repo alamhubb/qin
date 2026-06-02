@@ -1,115 +1,115 @@
-{
+﻿{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Qin Configuration",
-  "description": "Qin 项目配置文件 (qin.config.json)",
+  "description": "Qin 椤圭洰閰嶇疆鏂囦欢 (qin.config.js)",
   "type": "object",
   "properties": {
     "name": {
       "type": "string",
-      "description": "项目名称，格式: groupId:artifactId",
+      "description": "椤圭洰鍚嶇О锛屾牸寮? groupId:artifactId",
       "pattern": "^[a-zA-Z][a-zA-Z0-9._-]*:[a-zA-Z][a-zA-Z0-9._-]*$"
     },
     "version": {
       "type": "string",
-      "description": "项目版本号",
+      "description": "椤圭洰鐗堟湰鍙?,
       "default": "1.0.0"
     },
     "description": {
       "type": "string",
-      "description": "项目描述"
+      "description": "椤圭洰鎻忚堪"
     },
     "entry": {
       "type": "string",
-      "description": "入口类的完全限定名或文件路径"
+      "description": "鍏ュ彛绫荤殑瀹屽叏闄愬畾鍚嶆垨鏂囦欢璺緞"
     },
     "java": {
       "type": "object",
-      "description": "Java 编译配置",
+      "description": "Java 缂栬瘧閰嶇疆",
       "properties": {
         "version": {
           "type": "string",
-          "description": "Java 版本",
+          "description": "Java 鐗堟湰",
           "enum": ["8", "11", "17", "21", "23", "25"],
           "default": "21"
         },
         "source": {
           "type": "string",
-          "description": "源码兼容版本"
+          "description": "婧愮爜鍏煎鐗堟湰"
         },
         "target": {
           "type": "string",
-          "description": "目标字节码版本"
+          "description": "鐩爣瀛楄妭鐮佺増鏈?
         },
         "sourceDir": {
           "type": "string",
-          "description": "源码目录",
+          "description": "婧愮爜鐩綍",
           "default": "src/main/java"
         },
         "testDir": {
           "type": "string",
-          "description": "测试源码目录",
+          "description": "娴嬭瘯婧愮爜鐩綍",
           "default": "src/test/java"
         },
         "outputDir": {
           "type": "string",
-          "description": "编译输出目录",
+          "description": "缂栬瘧杈撳嚭鐩綍",
           "default": "build/classes"
         },
         "encoding": {
           "type": "string",
-          "description": "源文件编码",
+          "description": "婧愭枃浠剁紪鐮?,
           "default": "UTF-8"
         }
       }
     },
     "dependencies": {
       "type": "object",
-      "description": "项目依赖，格式: { \"groupId:artifactId\": \"version\" }",
+      "description": "椤圭洰渚濊禆锛屾牸寮? { \"groupId:artifactId\": \"version\" }",
       "additionalProperties": {
         "type": "string",
-        "description": "依赖版本号"
+        "description": "渚濊禆鐗堟湰鍙?
       }
     },
     "devDependencies": {
       "type": "object",
-      "description": "开发依赖",
+      "description": "寮€鍙戜緷璧?,
       "additionalProperties": {
         "type": "string"
       }
     },
     "output": {
       "type": "object",
-      "description": "打包输出配置",
+      "description": "鎵撳寘杈撳嚭閰嶇疆",
       "properties": {
         "dir": {
           "type": "string",
-          "description": "输出目录",
+          "description": "杈撳嚭鐩綍",
           "default": "dist"
         },
         "jarName": {
           "type": "string",
-          "description": "JAR 文件名"
+          "description": "JAR 鏂囦欢鍚?
         },
         "fatJar": {
           "type": "boolean",
-          "description": "是否打包为 Fat JAR",
+          "description": "鏄惁鎵撳寘涓?Fat JAR",
           "default": false
         }
       }
     },
     "repositories": {
       "type": "array",
-      "description": "Maven 仓库配置",
+      "description": "Maven 浠撳簱閰嶇疆",
       "items": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
-            "description": "仓库 ID"
+            "description": "浠撳簱 ID"
           },
           "url": {
             "type": "string",
-            "description": "仓库 URL",
+            "description": "浠撳簱 URL",
             "format": "uri"
           }
         },
@@ -118,7 +118,7 @@
     },
     "plugins": {
       "type": "array",
-      "description": "Qin 插件列表",
+      "description": "Qin 鎻掍欢鍒楄〃",
       "items": {
         "type": "string"
       }
@@ -126,3 +126,4 @@
   },
   "required": ["name"]
 }
+

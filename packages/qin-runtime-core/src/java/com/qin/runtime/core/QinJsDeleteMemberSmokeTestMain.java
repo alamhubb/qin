@@ -17,7 +17,7 @@ public final class QinJsDeleteMemberSmokeTestMain {
                 first && second && obj.a === undefined && obj.b === undefined ? 42 : 0;
                 """;
         Path root = Files.createTempDirectory("qin-js-delete-member-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-delete-member\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-delete-member\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "delete_member");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -25,3 +25,4 @@ public final class QinJsDeleteMemberSmokeTestMain {
         System.out.println("QinJsDeleteMemberSmokeTestMain OK");
     }
 }
+

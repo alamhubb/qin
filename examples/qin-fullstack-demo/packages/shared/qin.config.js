@@ -1,0 +1,7 @@
+export default {
+    "name":  "com.qin.demo:shared",
+    "version":  "0.1.0",
+    "description":  "Shared Qin module",
+    "entry":  "src/qin/shared.qin"
+}
+

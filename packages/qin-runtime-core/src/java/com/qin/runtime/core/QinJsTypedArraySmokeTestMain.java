@@ -11,7 +11,7 @@ public final class QinJsTypedArraySmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-typed-array-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-typed-array\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-typed-array\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const heap = new Uint8Array(2);
                 heap[0] = 7;
@@ -36,3 +36,4 @@ public final class QinJsTypedArraySmokeTestMain {
         }
     }
 }
+

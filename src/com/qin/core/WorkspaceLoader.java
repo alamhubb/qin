@@ -27,7 +27,7 @@ public class WorkspaceLoader {
     }
 
     /**
-     * Find workspace root by looking for qin.config.json with packages field
+     * Find workspace root by looking for qin.config.js with packages field
      */
     public String findWorkspaceRoot() throws IOException {
         Path current = Paths.get(cwd);
@@ -146,3 +146,4 @@ public class WorkspaceLoader {
         return workspaceRoot;
     }
 }
+

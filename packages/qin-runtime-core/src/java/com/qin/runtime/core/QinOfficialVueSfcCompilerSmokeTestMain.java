@@ -13,7 +13,7 @@ public final class QinOfficialVueSfcCompilerSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-official-vue-sfc-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-official-vue-smoke\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-official-vue-smoke\" }\n", StandardCharsets.UTF_8);
 
         Path packageDir = Files.createDirectories(
                 root.resolve("node_modules").resolve("@vue").resolve("compiler-sfc").resolve("dist"));
@@ -91,3 +91,4 @@ public final class QinOfficialVueSfcCompilerSmokeTestMain {
         System.out.println("QinOfficialVueSfcCompilerSmokeTestMain passed.");
     }
 }
+

@@ -1,4 +1,4 @@
-# Qin Language Target Model
+﻿# Qin Language Target Model
 
 This document defines the normative language/target layering model for Qin.
 
@@ -80,7 +80,7 @@ The intended compiler behavior is:
 - lower Qin-managed source into the same compilation pipeline
 - emit `.class` for JVM targets
 - emit `.js` for frontend targets
-- use `qin.config.json` as the project/package manifest that defines entry, dependencies, workspace package discovery, and runtime/build coordination
+- use `qin.config.js` as the project/package manifest that defines entry, dependencies, workspace package discovery, and runtime/build coordination
 - allow compatible npm package sources to participate in the same target compilation flow
 
 This means Qin should support mixed projects, not suffix-isolated projects.
@@ -164,7 +164,7 @@ So import policy and target policy are aligned:
 Project-level manifest note:
 
 - zone policy belongs to the language model
-- package identity, dependency declarations, workspace shape, and entry selection belong to `qin.config.json`
+- package identity, dependency declarations, workspace shape, and entry selection belong to `qin.config.js`
 - see `QIN_PACKAGE_MANIFEST_MODEL.md`
 
 ## 6. Sync And Async Model
@@ -269,3 +269,4 @@ Final Qin should progressively add a Qin-owned application layer above this targ
 - deploy
 
 while this zoning model remains the stable compiler/runtime foundation underneath.
+

@@ -13,9 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.nio.file.Path;
 
 /**
- * Qin 运行配置生产者
- * 右键点击 main() 方法时自动创建运行配置
- */
+ * Qin 杩愯閰嶇疆鐢熶骇鑰? * 鍙抽敭鐐瑰嚮 main() 鏂规硶鏃惰嚜鍔ㄥ垱寤鸿繍琛岄厤缃? */
 public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<QinRunConfiguration> {
 
     @NotNull
@@ -31,7 +29,7 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
         PsiElement element = context.getPsiLocation();
         if (element == null) return false;
 
-        // 查找 main 方法
+        // 鏌ユ壘 main 鏂规硶
         PsiMethod mainMethod = findMainMethod(element);
         if (mainMethod == null) return false;
 
@@ -41,11 +39,11 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
         String qualifiedName = containingClass.getQualifiedName();
         if (qualifiedName == null) return false;
 
-        // 查找 Qin 项目路径
+        // 鏌ユ壘 Qin 椤圭洰璺緞
         String projectPath = findQinProjectPath(element);
         if (projectPath == null) return false;
 
-        // 配置 RunConfiguration
+        // 閰嶇疆 RunConfiguration
         configuration.setName("Qin: " + containingClass.getName());
         configuration.setMainClass(qualifiedName);
         configuration.setProjectPath(projectPath);
@@ -71,16 +69,15 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
     }
 
     /**
-     * 查找 main 方法
+     * 鏌ユ壘 main 鏂规硶
      */
     private PsiMethod findMainMethod(PsiElement element) {
-        // 检查当前元素是否在 main 方法内
-        PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
+        // 妫€鏌ュ綋鍓嶅厓绱犳槸鍚﹀湪 main 鏂规硶鍐?        PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
         if (method != null && isMainMethod(method)) {
             return method;
         }
 
-        // 如果在类内，查找类的 main 方法
+        // 濡傛灉鍦ㄧ被鍐咃紝鏌ユ壘绫荤殑 main 鏂规硶
         PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class, false);
         if (psiClass != null) {
             for (PsiMethod m : psiClass.getMethods()) {
@@ -94,7 +91,7 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
     }
 
     /**
-     * 检查是否是 main 方法
+     * 妫€鏌ユ槸鍚︽槸 main 鏂规硶
      */
     private boolean isMainMethod(PsiMethod method) {
         if (!"main".equals(method.getName())) return false;
@@ -111,8 +108,7 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
     }
 
     /**
-     * 向上查找 qin.config.json 所在目录
-     */
+     * 鍚戜笂鏌ユ壘 qin.config.js 鎵€鍦ㄧ洰褰?     */
     private String findQinProjectPath(PsiElement element) {
         PsiFile psiFile = element.getContainingFile();
         if (psiFile == null) return null;
@@ -124,3 +120,4 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
         return nearest != null ? nearest.toString().replace('\\', '/') : null;
     }
 }
+

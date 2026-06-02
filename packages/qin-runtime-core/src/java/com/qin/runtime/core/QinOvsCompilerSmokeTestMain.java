@@ -10,7 +10,7 @@ public final class QinOvsCompilerSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-ovs-compiler-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-ovs-compiler-smoke\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-ovs-compiler-smoke\" }\n", StandardCharsets.UTF_8);
 
         String source = """
                 div(class = css { colorBlue, fontWeight700, padding12px }) {
@@ -34,3 +34,4 @@ public final class QinOvsCompilerSmokeTestMain {
         System.out.println("QinOvsCompilerSmokeTestMain passed.");
     }
 }
+

@@ -11,7 +11,7 @@ public final class QinJsTypedArraySubarraySmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-typed-array-subarray-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-typed-array-subarray\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-typed-array-subarray\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const data = new Uint8Array(4);
                 data[0] = 260;
@@ -48,3 +48,4 @@ public final class QinJsTypedArraySubarraySmokeTestMain {
         }
     }
 }
+

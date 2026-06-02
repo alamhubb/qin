@@ -11,7 +11,7 @@ public final class QinJsCircularLiveBindingSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-circular-live-binding-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-circular-live-binding\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-circular-live-binding\" }\n",
                 StandardCharsets.UTF_8);
         Path packageDir = root.resolve("node_modules").resolve("local-cycle");
         Files.createDirectories(packageDir.resolve("src"));
@@ -55,3 +55,4 @@ public final class QinJsCircularLiveBindingSmokeTestMain {
         System.out.println("QinJsCircularLiveBindingSmokeTestMain OK");
     }
 }
+

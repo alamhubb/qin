@@ -16,7 +16,7 @@ public final class QinJsArrayShiftUnshiftSmokeTestMain {
                 len === 4 && first === 0 && items.join(",") === "1.0,2.0,3.0" ? 42 : 0;
                 """;
         Path root = Files.createTempDirectory("qin-js-array-shift-unshift-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-array-shift-unshift\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-array-shift-unshift\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "array_shift_unshift");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -24,3 +24,4 @@ public final class QinJsArrayShiftUnshiftSmokeTestMain {
         System.out.println("QinJsArrayShiftUnshiftSmokeTestMain OK");
     }
 }
+

@@ -140,7 +140,7 @@ subhuti-java/
 │   └── Main.java       ✅ 已创建
 ├── src/test/java/com/subhuti/
 │   └── MainTest.java   ✅ 已创建
-├── qin.config.json     ✅ Java 25 配置
+├── qin.config.js     ✅ Java 25 配置
 └── target/             ✅ 输出目录
 ```
 
@@ -273,3 +273,4 @@ subhuti-java/
 
 **完成时间**: 2025-12-29 05:12  
 **成就解锁**: 🏆 Java 25 现代化重写大师
+

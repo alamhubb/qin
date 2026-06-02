@@ -1,6 +1,5 @@
 package com.qin.core;
 
-import com.google.gson.Gson;
 import com.qin.constants.QinConstants;
 import com.qin.types.QinConfig;
 
@@ -32,11 +31,8 @@ import java.util.Set;
 public class LocalProjectResolverEnhanced {
 
     private final Path startDir;
-    private final Gson gson;
-
     public LocalProjectResolverEnhanced(String workingDir) {
         this.startDir = Paths.get(workingDir).toAbsolutePath();
-        this.gson = new Gson();
     }
 
     public ResolutionResult resolveDependencies(Map<String, String> dependencies) {
@@ -387,8 +383,11 @@ public class LocalProjectResolverEnhanced {
     }
 
     private QinConfig loadConfig(Path configPath) throws IOException {
-        String json = Files.readString(configPath);
-        return gson.fromJson(json, QinConfig.class);
+        Path projectDir = configPath == null ? null : configPath.getParent();
+        if (projectDir == null) {
+            throw new IOException("qin.config.js path has no parent");
+        }
+        return new ConfigLoader(projectDir.toString()).load();
     }
 
     private Path findWorkspaceRoot(Path startDir) {

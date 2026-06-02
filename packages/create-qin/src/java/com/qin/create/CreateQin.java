@@ -5,17 +5,17 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * create-qin - 项目脚手架工具
+ * create-qin - 椤圭洰鑴氭墜鏋跺伐鍏?
  * 
- * 功能：
- * - 交互式创建新项目
- * - 支持多种语言模板 (Java, Bun, Node)
- * - 支持多种项目类型 (fullstack, monorepo)
+ * 鍔熻兘锛?
+ * - 浜や簰寮忓垱寤烘柊椤圭洰
+ * - 鏀寔澶氱璇█妯℃澘 (Java, Bun, Node)
+ * - 鏀寔澶氱椤圭洰绫诲瀷 (fullstack, monorepo)
  */
 public class CreateQin {
     private static final String VERSION = "0.1.0";
     
-    // 支持的语言
+    // 鏀寔鐨勮瑷€
     private static final Map<String, String> LANGUAGES = new LinkedHashMap<>();
     static {
         LANGUAGES.put("java", "Java (Spring Boot)");
@@ -23,29 +23,29 @@ public class CreateQin {
         LANGUAGES.put("node", "Node.js (Express/Fastify)");
     }
     
-    // 各语言的项目类型
+    // 鍚勮瑷€鐨勯」鐩被鍨?
     private static final Map<String, Map<String, String>> TEMPLATES = new HashMap<>();
     static {
         Map<String, String> javaTemplates = new LinkedHashMap<>();
-        javaTemplates.put("fullstack", "全栈项目 (Spring Boot + Vite)");
-        javaTemplates.put("monorepo", "Monorepo 多包项目");
-        javaTemplates.put("mono-fullstack", "Monorepo 全栈项目");
+        javaTemplates.put("fullstack", "鍏ㄦ爤椤圭洰 (Spring Boot + Vite)");
+        javaTemplates.put("monorepo", "Monorepo 澶氬寘椤圭洰");
+        javaTemplates.put("mono-fullstack", "Monorepo 鍏ㄦ爤椤圭洰");
         TEMPLATES.put("java", javaTemplates);
         
         Map<String, String> bunTemplates = new LinkedHashMap<>();
-        bunTemplates.put("fullstack", "全栈项目 (Hono + Vite)");
-        bunTemplates.put("monorepo", "Monorepo 多包项目");
-        bunTemplates.put("mono-fullstack", "Monorepo 全栈项目");
+        bunTemplates.put("fullstack", "鍏ㄦ爤椤圭洰 (Hono + Vite)");
+        bunTemplates.put("monorepo", "Monorepo 澶氬寘椤圭洰");
+        bunTemplates.put("mono-fullstack", "Monorepo 鍏ㄦ爤椤圭洰");
         TEMPLATES.put("bun", bunTemplates);
         
         Map<String, String> nodeTemplates = new LinkedHashMap<>();
-        nodeTemplates.put("fullstack", "全栈项目 (Express + Vite)");
-        nodeTemplates.put("monorepo", "Monorepo 多包项目");
-        nodeTemplates.put("mono-fullstack", "Monorepo 全栈项目");
+        nodeTemplates.put("fullstack", "鍏ㄦ爤椤圭洰 (Express + Vite)");
+        nodeTemplates.put("monorepo", "Monorepo 澶氬寘椤圭洰");
+        nodeTemplates.put("mono-fullstack", "Monorepo 鍏ㄦ爤椤圭洰");
         TEMPLATES.put("node", nodeTemplates);
     }
 
-    // ANSI 颜色
+    // ANSI 棰滆壊
     private static final String RESET = "\u001B[0m";
     private static final String CYAN = "\u001B[36m";
     private static final String GREEN = "\u001B[32m";
@@ -63,7 +63,7 @@ public class CreateQin {
     }
 
     public void run(String[] args) throws Exception {
-        // 解析参数
+        // 瑙ｆ瀽鍙傛暟
         String projectName = null;
         String language = null;
         String template = null;
@@ -99,16 +99,16 @@ public class CreateQin {
 
         Scanner scanner = new Scanner(System.in);
 
-        // 1. 获取项目名称
+        // 1. 鑾峰彇椤圭洰鍚嶇О
         if (projectName == null && !skipPrompts) {
-            System.out.print(CYAN + "?" + RESET + " 项目名称: ");
+            System.out.print(CYAN + "?" + RESET + " 椤圭洰鍚嶇О: ");
             projectName = scanner.nextLine().trim();
         }
         if (projectName == null || projectName.isEmpty()) {
             projectName = "my-qin-app";
         }
 
-        // 2. 选择语言
+        // 2. 閫夋嫨璇█
         if (language == null && !skipPrompts) {
             language = selectLanguage(scanner);
         }
@@ -116,7 +116,7 @@ public class CreateQin {
             language = "java";
         }
 
-        // 3. 选择项目类型
+        // 3. 閫夋嫨椤圭洰绫诲瀷
         if (template == null && !skipPrompts) {
             template = selectTemplate(scanner, language);
         }
@@ -125,9 +125,9 @@ public class CreateQin {
         }
 
         System.out.println();
-        info("创建项目: " + projectName);
-        info("语言: " + LANGUAGES.get(language));
-        info("类型: " + TEMPLATES.get(language).get(template));
+        info("鍒涘缓椤圭洰: " + projectName);
+        info("璇█: " + LANGUAGES.get(language));
+        info("绫诲瀷: " + TEMPLATES.get(language).get(template));
         System.out.println();
 
         createProject(projectName, language, template);
@@ -136,24 +136,24 @@ public class CreateQin {
     private void banner() {
         System.out.println(CYAN + BRIGHT + """
             
-               ██████╗ ██╗███╗   ██╗
-              ██╔═══██╗██║████╗  ██║
-              ██║   ██║██║██╔██╗ ██║
-              ██║▄▄ ██║██║██║╚██╗██║
-              ╚██████╔╝██║██║ ╚████║
-               ╚══▀▀═╝ ╚═╝╚═╝  ╚═══╝
-            """ + RESET + "\n  " + DIM + "新一代跨语言构建工具" + RESET + "\n");
+               鈻堚枅鈻堚枅鈻堚枅鈺?鈻堚枅鈺椻枅鈻堚枅鈺?  鈻堚枅鈺?
+              鈻堚枅鈺斺晲鈺愨晲鈻堚枅鈺椻枅鈻堚晳鈻堚枅鈻堚枅鈺? 鈻堚枅鈺?
+              鈻堚枅鈺?  鈻堚枅鈺戔枅鈻堚晳鈻堚枅鈺斺枅鈻堚晽 鈻堚枅鈺?
+              鈻堚枅鈺戔杽鈻?鈻堚枅鈺戔枅鈻堚晳鈻堚枅鈺戔暁鈻堚枅鈺椻枅鈻堚晳
+              鈺氣枅鈻堚枅鈻堚枅鈻堚晹鈺濃枅鈻堚晳鈻堚枅鈺?鈺氣枅鈻堚枅鈻堚晳
+               鈺氣晲鈺愨杸鈻€鈺愨暆 鈺氣晲鈺濃暁鈺愨暆  鈺氣晲鈺愨晲鈺?
+            """ + RESET + "\n  " + DIM + "鏂颁竴浠ｈ法璇█鏋勫缓宸ュ叿" + RESET + "\n");
     }
 
     private String selectLanguage(Scanner scanner) {
-        System.out.println("\n选择语言:\n");
+        System.out.println("\n閫夋嫨璇█:\n");
         List<String> keys = new ArrayList<>(LANGUAGES.keySet());
         for (int i = 0; i < keys.size(); i++) {
             System.out.println("  " + CYAN + (i + 1) + RESET + ") " + LANGUAGES.get(keys.get(i)));
         }
         System.out.println();
 
-        System.out.print("请选择 (1-" + keys.size() + ") [1]: ");
+        System.out.print("璇烽€夋嫨 (1-" + keys.size() + ") [1]: ");
         String answer = scanner.nextLine().trim();
         int index = answer.isEmpty() ? 0 : Integer.parseInt(answer) - 1;
 
@@ -167,13 +167,13 @@ public class CreateQin {
         Map<String, String> templates = TEMPLATES.get(language);
         List<String> keys = new ArrayList<>(templates.keySet());
 
-        System.out.println("\n选择项目类型:\n");
+        System.out.println("\n閫夋嫨椤圭洰绫诲瀷:\n");
         for (int i = 0; i < keys.size(); i++) {
             System.out.println("  " + CYAN + (i + 1) + RESET + ") " + templates.get(keys.get(i)));
         }
         System.out.println();
 
-        System.out.print("请选择 (1-" + keys.size() + ") [1]: ");
+        System.out.print("璇烽€夋嫨 (1-" + keys.size() + ") [1]: ");
         String answer = scanner.nextLine().trim();
         int index = answer.isEmpty() ? 0 : Integer.parseInt(answer) - 1;
 
@@ -187,32 +187,32 @@ public class CreateQin {
         Path targetDir = Paths.get(System.getProperty("user.dir"), name);
 
         if (Files.exists(targetDir)) {
-            throw new IOException("目录 " + name + " 已存在");
+            throw new IOException("鐩綍 " + name + " 宸插瓨鍦?);
         }
 
-        // 创建项目目录
+        // 鍒涘缓椤圭洰鐩綍
         Files.createDirectories(targetDir);
 
-        // 根据语言和模板创建项目结构
+        // 鏍规嵁璇█鍜屾ā鏉垮垱寤洪」鐩粨鏋?
         switch (language) {
             case "java" -> createJavaProject(targetDir, name, template);
             case "bun" -> createBunProject(targetDir, name, template);
             case "node" -> createNodeProject(targetDir, name, template);
         }
 
-        success("项目 " + name + " 创建成功!");
+        success("椤圭洰 " + name + " 鍒涘缓鎴愬姛!");
         System.out.println();
-        info("下一步:");
+        info("涓嬩竴姝?");
         System.out.println("  " + CYAN + "cd " + name + RESET);
         System.out.println("  " + CYAN + "qin run" + RESET);
         System.out.println();
     }
 
     private void createJavaProject(Path targetDir, String name, String template) throws IOException {
-        // 创建 src 目录
+        // 鍒涘缓 src 鐩綍
         Files.createDirectories(targetDir.resolve("src"));
 
-        // 创建 Main.java
+        // 鍒涘缓 Main.java
         Files.writeString(targetDir.resolve("src/Main.java"), """
             public class Main {
                 public static void main(String[] args) {
@@ -221,7 +221,7 @@ public class CreateQin {
             }
             """.formatted(name));
 
-        // 创建 qin.config.json
+        // 鍒涘缓 qin.config.js
         String config = """
             {
               "name": "%s",
@@ -233,9 +233,9 @@ public class CreateQin {
               ]
             }
             """.formatted(name);
-        Files.writeString(targetDir.resolve("qin.config.json"), config);
+        Files.writeString(targetDir.resolve("qin.config.js"), config);
 
-        // 创建 .gitignore
+        // 鍒涘缓 .gitignore
         Files.writeString(targetDir.resolve(".gitignore"), """
             build/
             dist/
@@ -254,10 +254,10 @@ public class CreateQin {
     }
 
     private void createBunProject(Path targetDir, String name, String template) throws IOException {
-        // 创建 src 目录
+        // 鍒涘缓 src 鐩綍
         Files.createDirectories(targetDir.resolve("src"));
 
-        // 创建 index.ts
+        // 鍒涘缓 index.ts
         Files.writeString(targetDir.resolve("src/index.ts"), """
             import { Hono } from 'hono'
             
@@ -268,7 +268,7 @@ public class CreateQin {
             export default app
             """.formatted(name));
 
-        // 创建 package.json
+        // 鍒涘缓 package.json
         String packageJson = """
             {
               "name": "%s",
@@ -284,7 +284,7 @@ public class CreateQin {
             """.formatted(name);
         Files.writeString(targetDir.resolve("package.json"), packageJson);
 
-        // 创建 .gitignore
+        // 鍒涘缓 .gitignore
         Files.writeString(targetDir.resolve(".gitignore"), """
             node_modules/
             dist/
@@ -293,10 +293,10 @@ public class CreateQin {
     }
 
     private void createNodeProject(Path targetDir, String name, String template) throws IOException {
-        // 创建 src 目录
+        // 鍒涘缓 src 鐩綍
         Files.createDirectories(targetDir.resolve("src"));
 
-        // 创建 index.js
+        // 鍒涘缓 index.js
         Files.writeString(targetDir.resolve("src/index.js"), """
             const express = require('express')
             const app = express()
@@ -310,7 +310,7 @@ public class CreateQin {
             })
             """.formatted(name));
 
-        // 创建 package.json
+        // 鍒涘缓 package.json
         String packageJson = """
             {
               "name": "%s",
@@ -326,7 +326,7 @@ public class CreateQin {
             """.formatted(name);
         Files.writeString(targetDir.resolve("package.json"), packageJson);
 
-        // 创建 .gitignore
+        // 鍒涘缓 .gitignore
         Files.writeString(targetDir.resolve(".gitignore"), """
             node_modules/
             dist/
@@ -338,7 +338,7 @@ public class CreateQin {
         Path clientDir = targetDir.resolve("src/client");
         Files.createDirectories(clientDir);
 
-        // 创建 index.html
+        // 鍒涘缓 index.html
         Files.writeString(clientDir.resolve("index.html"), """
             <!DOCTYPE html>
             <html lang="en">
@@ -354,18 +354,18 @@ public class CreateQin {
             </html>
             """);
 
-        // 创建 main.js
+        // 鍒涘缓 main.js
         Files.writeString(clientDir.resolve("main.js"), """
             document.getElementById('app').innerHTML = '<h1>Hello, Qin!</h1>'
             """);
     }
 
     private void createMonorepoStructure(Path targetDir, String name) throws IOException {
-        // 创建 packages 目录
+        // 鍒涘缓 packages 鐩綍
         Files.createDirectories(targetDir.resolve("packages"));
         Files.createDirectories(targetDir.resolve("apps"));
 
-        // 更新根配置为 workspace
+        // 鏇存柊鏍归厤缃负 workspace
         String config = """
             {
               "name": "%s",
@@ -376,7 +376,7 @@ public class CreateQin {
               ]
             }
             """.formatted(name);
-        Files.writeString(targetDir.resolve("qin.config.json"), config);
+        Files.writeString(targetDir.resolve("qin.config.js"), config);
     }
 
     private void showHelp() {
@@ -385,31 +385,32 @@ public class CreateQin {
             Usage: create-qin [project-name] [options]
             
             Options:
-              -java               使用 Java (Spring Boot)
-              -bun                使用 Bun (Hono/Elysia)
-              -node               使用 Node.js (Express/Fastify)
-              -t, --template <t>  项目类型: fullstack, monorepo, mono-fullstack
-              -y, --yes           跳过交互，使用默认值
-              -h, --help          显示帮助
-              -v, --version       显示版本
+              -java               浣跨敤 Java (Spring Boot)
+              -bun                浣跨敤 Bun (Hono/Elysia)
+              -node               浣跨敤 Node.js (Express/Fastify)
+              -t, --template <t>  椤圭洰绫诲瀷: fullstack, monorepo, mono-fullstack
+              -y, --yes           璺宠繃浜や簰锛屼娇鐢ㄩ粯璁ゅ€?
+              -h, --help          鏄剧ず甯姪
+              -v, --version       鏄剧ず鐗堟湰
             
             Examples:
-              # 交互式创建
+              # 浜や簰寮忓垱寤?
               create-qin
             
-              # 创建 Java 全栈项目
+              # 鍒涘缓 Java 鍏ㄦ爤椤圭洰
               create-qin my-app -java
             
-              # 创建 Java Monorepo 项目
+              # 鍒涘缓 Java Monorepo 椤圭洰
               create-qin my-app -java -t monorepo
             """);
     }
 
     private void success(String msg) {
-        System.out.println(GREEN + "✓" + RESET + " " + msg);
+        System.out.println(GREEN + "鉁? + RESET + " " + msg);
     }
 
     private void info(String msg) {
-        System.out.println(CYAN + "ℹ" + RESET + " " + msg);
+        System.out.println(CYAN + "鈩? + RESET + " " + msg);
     }
 }
+

@@ -10,7 +10,7 @@ public final class QinJsClassPrototypeMethodNameSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-class-prototype-method-name-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-class-prototype-method-name\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-class-prototype-method-name\" }\n",
                 StandardCharsets.UTF_8);
 
         String wrapper = """
@@ -30,3 +30,4 @@ public final class QinJsClassPrototypeMethodNameSmokeTestMain {
         System.out.println(QinObjectJsonEncoder.toJson(result));
     }
 }
+

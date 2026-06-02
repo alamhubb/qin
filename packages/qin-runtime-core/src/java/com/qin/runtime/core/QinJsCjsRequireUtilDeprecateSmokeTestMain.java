@@ -10,7 +10,7 @@ public final class QinJsCjsRequireUtilDeprecateSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-cjs-require-util-deprecate-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-cjs-require-util-deprecate\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-cjs-require-util-deprecate\" }\n", StandardCharsets.UTF_8);
         String wrapper = """
                 var util = require("util");
                 var wrapped = util.deprecate(function(value) { return value + 1; }, "old");
@@ -23,3 +23,4 @@ public final class QinJsCjsRequireUtilDeprecateSmokeTestMain {
         System.out.println("QinJsCjsRequireUtilDeprecateSmokeTestMain OK");
     }
 }
+

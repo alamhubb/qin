@@ -1,0 +1,8 @@
+export default {
+    "name":  "java-base",
+    "version":  "0.0.1",
+    "java":  {
+                 "sourceDir":  "src"
+             }
+}
+

@@ -17,7 +17,7 @@ public final class QinJsArrayCallbackThisArgSmokeTestMain {
                 result[0] === "a!" ? 42 : 0;
                 """;
         Path root = Files.createTempDirectory("qin-js-array-callback-thisarg-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-array-callback-thisarg\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-array-callback-thisarg\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "array_callback_thisarg");
         if (!Double.valueOf(42.0d).equals(result)) {
             throw new IllegalStateException("Expected 42, got: " + result);
@@ -25,3 +25,4 @@ public final class QinJsArrayCallbackThisArgSmokeTestMain {
         System.out.println("QinJsArrayCallbackThisArgSmokeTestMain OK");
     }
 }
+

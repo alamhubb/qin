@@ -10,7 +10,7 @@ public final class QinJsConstructorObjectAssignmentSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-constructor-object-assignment-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-constructor-object-assignment\" }\n",
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-constructor-object-assignment\" }\n",
                 StandardCharsets.UTF_8);
 
         String wrapper = """
@@ -35,3 +35,4 @@ public final class QinJsConstructorObjectAssignmentSmokeTestMain {
         System.out.println(QinObjectJsonEncoder.toJson(result));
     }
 }
+

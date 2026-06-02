@@ -15,7 +15,7 @@ public final class QinVitePluginConfigReturnedPluginsSmokeTestMain {
         Path root = Files.createTempDirectory("qin-plugin-config-returned-");
         Path src = root.resolve("src");
         Files.createDirectories(src);
-        Files.writeString(root.resolve("qin.config.json"), """
+        Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "com.qin.smoke:plugin-config-returned",
                   "version": "0.1.0",
@@ -81,3 +81,4 @@ public final class QinVitePluginConfigReturnedPluginsSmokeTestMain {
         System.out.println("QinVitePluginConfigReturnedPluginsSmokeTestMain OK");
     }
 }
+

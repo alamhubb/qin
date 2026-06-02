@@ -11,7 +11,7 @@ public final class QinJsOptionalMemberNullishSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-optional-member-nullish-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-optional-member-nullish\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-optional-member-nullish\" }\n", StandardCharsets.UTF_8);
         String source = """
                 const options = { tokenConsumer: "consumer", tokenDefinitions: ["A", "B"] };
                 const fallback = ["X"];
@@ -38,3 +38,4 @@ public final class QinJsOptionalMemberNullishSmokeTestMain {
         System.out.println("QinJsOptionalMemberNullishSmokeTestMain OK");
     }
 }
+

@@ -1,8 +1,11 @@
-{
-    "name":  "com.qin:qin-lang-ir",
+export default {
+    "name":  "com.qin:qin-plugin-jite",
     "version":  "0.1.0",
-    "description":  "Qin language intermediate representation and semantic model",
-    "entry":  "src/java/com/qin/lang/ir/IrPackageMarker.java",
+    "description":  "Jite dev runtime bridge for qin dev",
+    "entry":  "src/java/com/qin/jite/JiteDevMain.java",
+    "dependencies":  {
+                         "com.qin:qin-runtime-core":  "0.1.0"
+                     },
     "java":  {
                  "version":  "21",
                  "sourceDir":  "src/java",
@@ -14,6 +17,7 @@
              },
     "output":  {
                    "dir":  "build",
-                   "jarName":  "qin-lang-ir.jar"
+                   "jarName":  "qin-plugin-jite.jar"
                }
 }
+

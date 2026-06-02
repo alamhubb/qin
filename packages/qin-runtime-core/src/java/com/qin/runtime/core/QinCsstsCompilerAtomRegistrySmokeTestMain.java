@@ -11,7 +11,7 @@ public final class QinCsstsCompilerAtomRegistrySmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-cssts-atom-registry-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-cssts-atom-registry\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-cssts-atom-registry\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, """
                 import { CsstsInit, generateStats } from "cssts-compiler";
                 CsstsInit.init({ dts: false });
@@ -35,3 +35,4 @@ public final class QinCsstsCompilerAtomRegistrySmokeTestMain {
         System.out.println("QinCsstsCompilerAtomRegistrySmokeTestMain passed.");
     }
 }
+

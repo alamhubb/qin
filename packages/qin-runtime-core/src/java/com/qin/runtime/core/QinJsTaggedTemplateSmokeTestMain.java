@@ -11,7 +11,7 @@ public final class QinJsTaggedTemplateSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("qin-js-tagged-template-");
-        Files.writeString(root.resolve("qin.config.json"), "{ \"name\": \"qin-js-tagged-template\" }\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-tagged-template\" }\n", StandardCharsets.UTF_8);
         String source = """
                 function tag(strings, value) {
                   return strings[0] + value + strings[1] + "|" + strings.raw[0] + "|" + strings.length;
@@ -29,3 +29,4 @@ public final class QinJsTaggedTemplateSmokeTestMain {
         System.out.println("QinJsTaggedTemplateSmokeTestMain OK");
     }
 }
+
