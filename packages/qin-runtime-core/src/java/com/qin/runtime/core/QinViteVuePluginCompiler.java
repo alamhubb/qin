@@ -470,6 +470,14 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                       emittedFiles.push({ refId, file });
                       return refId;
                     },
+                    getFileName(refId) {
+                      for (const emitted of emittedFiles) {
+                        if (emitted.refId !== refId) continue;
+                        const file = emitted.file || {};
+                        return file.fileName || file.name || refId;
+                      }
+                      this.error("Unknown emitted file reference: " + refId);
+                    },
                     getWatchFiles() {
                       return watchFiles.slice();
                     },

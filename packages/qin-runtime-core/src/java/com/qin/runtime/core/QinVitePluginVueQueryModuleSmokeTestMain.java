@@ -97,6 +97,9 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                         if (refId !== 'qin-file-0') {
                           this.error('context.emitFile returned unexpected ref id: ' + refId)
                         }
+                        if (this.getFileName(refId) !== 'marker.txt') {
+                          this.error('context.getFileName returned unexpected file name: ' + this.getFileName(refId))
+                        }
                         this.warn('qin marker warning')
                         if (!this.getWatchFiles().includes('virtual:qin-dep')) {
                           this.error('context.addWatchFile did not record plugin-resolved id')
