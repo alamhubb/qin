@@ -16,18 +16,26 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
 
 /**
  * Minimal fullstack entry:
- * 1) compile backend .js -> JVM .class
- * 2) compile frontend .js -> app.js
+ * 1) compile backend .qin/.js/.ts or .java -> JVM .class
+ * 2) compile frontend modules -> app.js
  * 3) serve static files + API on one port
  */
 public final class QinFullstackMain {
     private static final String INDEX_HTML = "index.html";
     private static final String INDEX = "index";
     private static final List<String> DEV_WATCH_EXTENSIONS = List.of(
-            ".html", ".css", ".js", ".mjs", ".ts", ".qin", ".vue", ".ovs");
+            ".html", ".css", ".js", ".mjs", ".ts", ".qin", ".vue", ".ovs", ".java");
+    private static final Pattern JAVA_PACKAGE_PATTERN = Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s*;");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
             ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
 
@@ -65,16 +73,14 @@ public final class QinFullstackMain {
         Path staticRoot = resolveStaticRoot(layout, root, options.staticDir);
         Path jsOutputFile = staticRoot.resolve("app.js").normalize();
 
-        QinBuildRequest backendRequest = new QinBuildRequest(
+        BackendBuild backendBuild = buildBackend(
+                coordinator,
                 root,
                 backendSource,
-                QinBuildTarget.JVM,
-                options.className,
                 classOutputDir,
                 jsOutputFile,
-                options.printIr);
-        QinBuildResult backendResult = coordinator.build(backendRequest);
-        Method runMethod = loadRunMethod(classOutputDir, options.className);
+                options);
+        Method runMethod = backendBuild.runMethod();
         QinFrontendEsmService frontendEsmService = null;
 
         if (frontendSource != null) {
@@ -98,7 +104,7 @@ public final class QinFullstackMain {
         } else {
             System.out.println("Frontend source: <none>");
         }
-        System.out.println("Generated server class: " + backendResult.classFile().toAbsolutePath());
+        System.out.println("Generated server class: " + backendBuild.classFile().toAbsolutePath());
         if (frontendSource != null) {
             if (!options.dev || options.buildOnly) {
                 System.out.println("Generated frontend js: " + jsOutputFile.toAbsolutePath());
@@ -129,6 +135,87 @@ public final class QinFullstackMain {
         new QinNpmDependencyMaterializer().materializeProjectDependencies(root, root.resolve("node_modules"));
     }
 
+    private static BackendBuild buildBackend(
+            QinBuildCoordinator coordinator,
+            Path root,
+            Path backendSource,
+            Path classOutputDir,
+            Path jsOutputFile,
+            Options options) throws Exception {
+        if (isJavaSource(backendSource)) {
+            return compileJavaBackend(root, backendSource, classOutputDir);
+        }
+
+        QinBuildRequest backendRequest = new QinBuildRequest(
+                root,
+                backendSource,
+                QinBuildTarget.JVM,
+                options.className,
+                classOutputDir,
+                jsOutputFile,
+                options.printIr);
+        QinBuildResult backendResult = coordinator.build(backendRequest);
+        Method runMethod = loadRunMethod(classOutputDir, options.className);
+        return new BackendBuild(backendResult.classFile(), runMethod);
+    }
+
+    private static BackendBuild compileJavaBackend(Path root, Path sourceFile, Path classOutputDir) throws Exception {
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) {
+            throw new IllegalStateException("JDK compiler is required for backend .java entries.");
+        }
+
+        Files.createDirectories(classOutputDir);
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
+            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(List.of(sourceFile));
+            List<String> javacOptions = new ArrayList<>();
+            javacOptions.add("-encoding");
+            javacOptions.add("UTF-8");
+            javacOptions.add("-d");
+            javacOptions.add(classOutputDir.toString());
+            javacOptions.add("-sourcepath");
+            javacOptions.add(root.toString());
+            String classpath = System.getProperty("java.class.path", "");
+            if (classpath != null && !classpath.isBlank()) {
+                javacOptions.add("-classpath");
+                javacOptions.add(classpath);
+            }
+
+            Boolean ok = compiler.getTask(null, fileManager, diagnostics, javacOptions, null, units).call();
+            if (!Boolean.TRUE.equals(ok)) {
+                StringBuilder message = new StringBuilder("Failed to compile backend Java source: ")
+                        .append(sourceFile.toAbsolutePath());
+                diagnostics.getDiagnostics().forEach(diagnostic -> message
+                        .append(System.lineSeparator())
+                        .append(diagnostic.getKind())
+                        .append(" line ")
+                        .append(diagnostic.getLineNumber())
+                        .append(": ")
+                        .append(diagnostic.getMessage(null)));
+                throw new IllegalStateException(message.toString());
+            }
+        }
+
+        String className = inferJavaBinaryClassName(sourceFile);
+        Path classFile = classOutputDir.resolve(className.replace('.', '/') + ".class").normalize();
+        Method runMethod = loadRunMethod(classOutputDir, className);
+        return new BackendBuild(classFile, runMethod);
+    }
+
+    private static boolean isJavaSource(Path sourceFile) {
+        return sourceFile != null && sourceFile.getFileName().toString().toLowerCase().endsWith(".java");
+    }
+
+    private static String inferJavaBinaryClassName(Path sourceFile) throws IOException {
+        String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
+        Matcher matcher = JAVA_PACKAGE_PATTERN.matcher(source);
+        String packageName = matcher.find() ? matcher.group(1) : null;
+        String fileName = sourceFile.getFileName().toString();
+        String simpleName = fileName.endsWith(".java") ? fileName.substring(0, fileName.length() - ".java".length()) : fileName;
+        return packageName == null || packageName.isBlank() ? simpleName : packageName + "." + simpleName;
+    }
+
     private static Path resolveBackendSource(QinRuntimeProjectLayout layout, Path fromArgs) throws IOException {
         if (fromArgs != null) {
             Path resolved = resolvePath(layout.root(), fromArgs);
@@ -141,12 +228,23 @@ public final class QinFullstackMain {
                 layout.root().resolve("main/Main.qin"),
                 layout.root().resolve("main/main.js"),
                 layout.root().resolve("main/Main.js"),
+                layout.root().resolve("main/main.mjs"),
+                layout.root().resolve("main/Main.mjs"),
+                layout.root().resolve("main/main.ts"),
+                layout.root().resolve("main/Main.ts"),
+                layout.root().resolve("main/main.java"),
+                layout.root().resolve("main/Main.java"),
                 layout.root().resolve("shared/main.qin"),
                 layout.root().resolve("shared/main.js"),
+                layout.root().resolve("shared/main.mjs"),
+                layout.root().resolve("shared/main.ts"),
                 layout.root().resolve("shared/shared.qin"),
                 layout.root().resolve("shared/shared.js"),
+                layout.root().resolve("shared/shared.mjs"),
+                layout.root().resolve("shared/shared.ts"),
                 layout.root().resolve("app/main.qin"),
-                layout.root().resolve("app/main.js"));
+                layout.root().resolve("app/main.js"),
+                layout.root().resolve("src/Main.java"));
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
                 return candidate.toAbsolutePath().normalize();
@@ -441,8 +539,8 @@ public final class QinFullstackMain {
         System.out.println("  --class <binary.name>    Generated backend class (default: com.qin.runtime.generated.ServerApp)");
         System.out.println("  --class-out <dir>        Backend class output (default: build/fullstack/server-classes)");
         System.out.println("  --static-dir <dir>       Static root (default: app/ or build/fullstack/web)");
-        System.out.println("  --backend-file <file>    Backend .js source override");
-        System.out.println("  --frontend-file <file>   Frontend .js source override");
+        System.out.println("  --backend-file <file>    Backend .qin/.js/.mjs/.ts/.java source override");
+        System.out.println("  --frontend-file <file>   Frontend .js/.ts/.qin/.vue/.ovs source override");
         System.out.println("  --print-ir               Print IR summaries while building");
         System.out.println("  --build-only             Build outputs only");
         System.out.println("  --help                   Show help");
@@ -460,6 +558,9 @@ public final class QinFullstackMain {
         private boolean dev;
         private boolean buildOnly;
         private boolean showHelp;
+    }
+
+    private record BackendBuild(Path classFile, Method runMethod) {
     }
 
     static final class BuildArtifacts implements QinDevServer.RuntimeView {
