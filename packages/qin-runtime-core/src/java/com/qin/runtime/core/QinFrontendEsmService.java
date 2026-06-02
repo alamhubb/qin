@@ -119,6 +119,10 @@ public final class QinFrontendEsmService {
         if (virtualContent != null) {
             return virtualContent;
         }
+        String vueQueryModule = transpileVuePluginQueryModule(normalizedRequestPath);
+        if (vueQueryModule != null) {
+            return vueQueryModule;
+        }
         Path moduleFile = resolveRequestToModuleFile(normalizedRequestPath);
         if (moduleFile == null) {
             return null;
@@ -233,6 +237,34 @@ public final class QinFrontendEsmService {
                 specifier -> rewriteSpecifier(sourceModule, specifier));
         registerVueVirtualModules(moduleFile, result);
         return result.moduleCode();
+    }
+
+    private String transpileVuePluginQueryModule(String requestPath) {
+        if (requestPath == null || !requestPath.contains("?")) {
+            return null;
+        }
+        int queryIndex = requestPath.indexOf('?');
+        String pathOnly = requestPath.substring(0, queryIndex);
+        String query = requestPath.substring(queryIndex + 1);
+        if (!query.contains("vue") || !query.contains("type=")) {
+            return null;
+        }
+        Path moduleFile = requestPathMap.get(pathOnly);
+        if (moduleFile == null || !isVueModuleFile(moduleFile)) {
+            return null;
+        }
+        QinModuleSource module = moduleSourceMap.get(moduleFile.toAbsolutePath().normalize());
+        String source = module != null ? module.source() : readSource(moduleFile);
+        QinModuleSource sourceModule = module != null
+                ? module
+                : new QinModuleSource(moduleFile.toAbsolutePath().normalize(), source, List.of());
+        String transformed = vueSfcCompiler.transpileVueQueryModule(
+                moduleFile,
+                source,
+                query,
+                sourceModule,
+                specifier -> rewriteSpecifier(sourceModule, specifier));
+        return transformed == null || transformed.isBlank() ? null : transformed;
     }
 
     private String transpileOvsModule(Path moduleFile, String source) {
@@ -399,6 +431,10 @@ public final class QinFrontendEsmService {
             registerVueRuntimeVirtualModules(requestPath);
             return requestPath;
         }
+        String vueQuerySpecifier = rewriteVuePluginQuerySpecifier(specifier);
+        if (vueQuerySpecifier != null) {
+            return vueQuerySpecifier;
+        }
 
         QinResolvedImport resolved = findResolvedImport(module, specifier);
         if (resolved != null && resolved.resolvedModule() != null) {
@@ -409,6 +445,29 @@ public final class QinFrontendEsmService {
             }
         }
         return specifier;
+    }
+
+    private String rewriteVuePluginQuerySpecifier(String specifier) {
+        if (specifier == null || !specifier.contains("?") || !specifier.contains("vue")) {
+            return null;
+        }
+        int queryIndex = specifier.indexOf('?');
+        String path = specifier.substring(0, queryIndex);
+        String query = specifier.substring(queryIndex + 1);
+        if (!query.contains("type=")) {
+            return null;
+        }
+        Path resolvedPath;
+        try {
+            resolvedPath = Path.of(path).toAbsolutePath().normalize();
+        } catch (Exception ignored) {
+            return null;
+        }
+        String moduleUrl = moduleUrlMap.get(resolvedPath);
+        if (moduleUrl == null) {
+            return null;
+        }
+        return moduleUrl + "?" + query;
     }
 
     private QinResolvedImport findResolvedImport(QinModuleSource module, String specifier) {
@@ -433,6 +492,14 @@ public final class QinFrontendEsmService {
             return null;
         }
         return virtualModuleContentMap.get(requestPath);
+    }
+
+    private static String readSource(Path file) {
+        try {
+            return Files.readString(file, StandardCharsets.UTF_8);
+        } catch (IOException error) {
+            throw new IllegalStateException("Failed to read frontend module: " + file.toAbsolutePath(), error);
+        }
     }
 
     private static String stripQinHmrQuery(String requestPath) {

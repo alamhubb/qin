@@ -72,6 +72,42 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
         }
     }
 
+    @Override
+    public String transpileVueQueryModule(
+            Path moduleFile,
+            String source,
+            String query,
+            QinModuleSource sourceModule,
+            QinVueSpecifierRewriter specifierRewriter) {
+        try {
+            Path projectRoot = findProjectRoot(moduleFile);
+            Object result = packageRunner.runModuleSource(
+                    projectRoot,
+                    buildQueryWrapperSource(projectRoot, moduleFile, query),
+                    "vite_plugin_vue_query_transform");
+            if (!(result instanceof Map<?, ?> map)) {
+                throw new IllegalStateException("Expected plugin-vue query result object, got: " + result);
+            }
+            Object code = map.get("code");
+            if (!(code instanceof String text) || text.isBlank()) {
+                return null;
+            }
+            if (query.contains("type=style")) {
+                return renderCssInjectionModule(text, moduleFile, query);
+            }
+            String rewritten = rewriteSpecifiers(text, specifierRewriter, IMPORT_FROM_PATTERN);
+            rewritten = rewriteSpecifiers(rewritten, specifierRewriter, EXPORT_FROM_PATTERN);
+            return rewriteSpecifiers(rewritten, specifierRewriter, IMPORT_SIDE_EFFECT_PATTERN);
+        } catch (IllegalStateException error) {
+            throw error;
+        } catch (Exception error) {
+            throw new IllegalStateException(
+                    "Qin @vitejs/plugin-vue query transform failed for " + moduleFile.toAbsolutePath()
+                            + "?" + query,
+                    error);
+        }
+    }
+
     private String rewriteSpecifiers(String source, QinVueSpecifierRewriter specifierRewriter, Pattern pattern) {
         if (source == null || source.isBlank() || specifierRewriter == null) {
             return source;
@@ -99,13 +135,14 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                 const plugin = vuePlugin({ sourceMap: false });
                 const config = {
                   root: %s,
+                  base: "/",
                   command: "serve",
                   isProduction: false,
                   build: { sourcemap: false },
                   css: { devSourcemap: false },
                   define: {},
                   logger: { warn(message) {} },
-                  server: { hmr: true }
+                  server: { hmr: true, origin: "" }
                 };
                 const ctx = {
                   parse(code) { return {}; },
@@ -146,6 +183,98 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                 QinJsPackageRunner.renderJsLiteral(root),
                 QinJsPackageRunner.renderJsLiteral(source),
                 QinJsPackageRunner.renderJsLiteral(filename));
+    }
+
+    private String buildQueryWrapperSource(Path projectRoot, Path moduleFile, String query) {
+        String root = projectRoot.toAbsolutePath().normalize().toString().replace('\\', '/');
+        String filename = moduleFile.toAbsolutePath().normalize().toString().replace('\\', '/');
+        String id = filename + "?" + query;
+        return """
+                import vuePlugin from "@vitejs/plugin-vue";
+
+                const plugin = vuePlugin({ sourceMap: false });
+                const config = {
+                  root: %s,
+                  base: "/",
+                  command: "serve",
+                  isProduction: false,
+                  build: { sourcemap: false },
+                  css: { devSourcemap: false },
+                  define: {},
+                  logger: { warn(message) {} },
+                  server: { hmr: true, origin: "" }
+                };
+                const ctx = {
+                  parse(code) { return {}; },
+                  addWatchFile(file) {},
+                  emitFile(file) {},
+                  warn(message) {},
+                  error(message) { throw message; },
+                  async resolve(id) { return { id }; }
+                };
+                const server = {
+                  config,
+                  watcher: { on(event, handler) {} },
+                  moduleGraph: {
+                    getModuleById(id) { return null; },
+                    invalidateModule(module) {}
+                  }
+                };
+                function callHook(hook, thisArg, ...args) {
+                  if (!hook) return null;
+                  if (typeof hook === "function") return hook.call(thisArg, ...args);
+                  if (hook.handler) return hook.handler.call(thisArg, ...args);
+                  return null;
+                }
+                callHook(plugin.config, plugin, config);
+                callHook(plugin.configResolved, plugin, config);
+                callHook(plugin.configureServer, plugin, server);
+                callHook(plugin.options, ctx);
+                callHook(plugin.buildStart, ctx);
+                const id = %s;
+                let loaded = callHook(plugin.load, ctx, id);
+                if (loaded && loaded.then) {
+                  loaded.then(result => { loaded = result; });
+                }
+                let code = typeof loaded === "string" ? loaded : loaded && loaded.code;
+                let transformed = code == null ? null : callHook(plugin.transform, ctx, code, id);
+                if (transformed && transformed.then) {
+                  transformed.then(result => { transformed = result; });
+                }
+                const finalResult = transformed || loaded;
+                ({
+                  code: typeof finalResult === "string" ? finalResult : finalResult && finalResult.code,
+                  map: typeof finalResult === "string" ? null : finalResult && finalResult.map,
+                  loadedType: typeof loaded,
+                  transformedType: typeof transformed
+                });
+                """.formatted(
+                QinJsPackageRunner.renderJsLiteral(root),
+                QinJsPackageRunner.renderJsLiteral(id));
+    }
+
+    private String renderCssInjectionModule(String css, Path moduleFile, String query) {
+        String styleId = "qin-vue-plugin-style-"
+                + Integer.toHexString((moduleFile.toAbsolutePath().normalize() + "?" + query).hashCode());
+        String escaped = css == null ? "" : css
+                .replace("\\", "\\\\")
+                .replace("`", "\\`")
+                .replace("${", "\\${");
+        return """
+                const css = `%s`;
+                const styleId = "%s";
+                if (typeof document !== 'undefined') {
+                  let style = document.querySelector('style[data-qin-style-id="' + styleId + '"]');
+                  if (!style) {
+                    style = document.createElement('style');
+                    style.setAttribute('data-qin-style-id', styleId);
+                    document.head.appendChild(style);
+                  }
+                  style.setAttribute('data-qin-vue-plugin', 'true');
+                  style.textContent = css;
+                }
+                export default css;
+                """.formatted(escaped, styleId);
     }
 
     private Path findProjectRoot(Path moduleFile) {

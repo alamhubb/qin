@@ -20,4 +20,13 @@ interface QinVueSfcCompiler {
             String source,
             QinModuleSource sourceModule,
             QinVueSpecifierRewriter specifierRewriter);
+
+    default String transpileVueQueryModule(
+            Path moduleFile,
+            String source,
+            String query,
+            QinModuleSource sourceModule,
+            QinVueSpecifierRewriter specifierRewriter) {
+        return null;
+    }
 }
