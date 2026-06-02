@@ -189,7 +189,7 @@ public final class JavaEsmGlobal {
             case "tracingChannel" -> methodHandle(NodeHostRuntime.class, "tracingChannel", Object.class);
             case "Math", "JSON", "Number", "Object", "Array", "Map", "Set", "Proxy", "Promise", "Symbol",
                     "WeakMap", "WeakSet", "Date", "String", "Boolean",
-                    "Uint8Array", "Uint16Array", "Uint32Array", "TextDecoder",
+                    "Uint8Array", "Uint16Array", "Uint32Array", "TextDecoder", "URLSearchParams",
                     "RegExp", "Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError" -> globalName;
             case "Infinity" -> Double.POSITIVE_INFINITY;
             case "NaN" -> Double.NaN;
@@ -1355,6 +1355,7 @@ public final class JavaEsmGlobal {
                 case "Map", "WeakMap" -> new JavaEsmMapObject();
                 case "Set", "WeakSet" -> new JavaEsmSetObject();
                 case "Proxy" -> createProxyObject(args);
+                case "URLSearchParams" -> new JavaEsmUrlSearchParams(args.length == 0 ? null : args[0]);
                 case "Date" -> JavaEsmDate.create(args);
                 case "String" -> args.length == 0 ? "" : String.valueOf(args[0]);
                 case "Boolean" -> args.length != 0 && truthy(args[0]);
@@ -1833,6 +1834,7 @@ public final class JavaEsmGlobal {
             case "Number" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Array" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Object" -> invokeBuiltinNamespace(builtinName, methodName, args);
+            case "String" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Date" -> invokeBuiltinNamespace(builtinName, methodName, args);
             case "Symbol" -> invokeSymbolNamespace(methodName, args);
             case "Promise" -> invokePromiseNamespace(methodName, args);
@@ -1927,6 +1929,7 @@ public final class JavaEsmGlobal {
                 case "Number" -> JavaEsmNumber.class;
                 case "Array" -> JavaEsmArray.class;
                 case "Object" -> JavaEsmObject.class;
+                case "String" -> JavaEsmString.class;
                 case "Date" -> JavaEsmDate.class;
                 default -> null;
             };
@@ -2503,6 +2506,101 @@ public final class JavaEsmGlobal {
         }
     }
 
+    private static final class JavaEsmUrlSearchParams implements QinRuntimeObject, Iterable<Object> {
+        private final List<List<Object>> entries = new ArrayList<>();
+
+        private JavaEsmUrlSearchParams(Object init) {
+            if (init == null) {
+                return;
+            }
+            String query = String.valueOf(init);
+            if (query.startsWith("?")) {
+                query = query.substring(1);
+            }
+            if (query.isBlank()) {
+                return;
+            }
+            for (String pair : query.split("&")) {
+                if (pair.isEmpty()) {
+                    continue;
+                }
+                int eq = pair.indexOf('=');
+                String key = eq >= 0 ? pair.substring(0, eq) : pair;
+                String value = eq >= 0 ? pair.substring(eq + 1) : "";
+                entries.add(new ArrayList<>(List.of(decodeUrlComponent(key), decodeUrlComponent(value))));
+            }
+        }
+
+        @Override
+        public Iterator<Object> iterator() {
+            return new ArrayList<Object>(entries).iterator();
+        }
+
+        @Override
+        public Object get(Object property) {
+            return switch (propertyKey(property)) {
+                case "entries" -> new NativeFunction("URLSearchParams.entries", args -> entries());
+                case "get" -> new NativeFunction("URLSearchParams.get", args -> getParam(args.length == 0 ? null : args[0]));
+                case "has" -> new NativeFunction("URLSearchParams.has", args -> hasParam(args.length == 0 ? null : args[0]));
+                case "forEach" -> new NativeFunction("URLSearchParams.forEach", args -> forEach(args.length == 0 ? null : args[0]));
+                default -> null;
+            };
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            String key = propertyKey(property);
+            return "entries".equals(key) || "get".equals(key) || "has".equals(key) || "forEach".equals(key);
+        }
+
+        private Object entries() {
+            return new ArrayList<Object>(entries);
+        }
+
+        private Object getParam(Object key) {
+            String target = String.valueOf(key);
+            for (List<Object> entry : entries) {
+                if (entry.size() >= 2 && Objects.equals(String.valueOf(entry.get(0)), target)) {
+                    return entry.get(1);
+                }
+            }
+            return null;
+        }
+
+        private Object hasParam(Object key) {
+            String target = String.valueOf(key);
+            for (List<Object> entry : entries) {
+                if (!entry.isEmpty() && Objects.equals(String.valueOf(entry.get(0)), target)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private Object forEach(Object callback) {
+            if (callback == null) {
+                return null;
+            }
+            for (List<Object> entry : entries) {
+                Object key = entry.isEmpty() ? null : entry.get(0);
+                Object value = entry.size() < 2 ? "" : entry.get(1);
+                callAny(callback, value, key, this);
+            }
+            return null;
+        }
+
+        private static String decodeUrlComponent(String value) {
+            return java.net.URLDecoder.decode(
+                    value.replace("+", "%20"),
+                    java.nio.charset.StandardCharsets.UTF_8);
+        }
+    }
+
     private static final class ProxyObject implements QinRuntimeObject {
         private final Object target;
         private final Object handler;
@@ -2739,6 +2837,10 @@ public final class JavaEsmGlobal {
         }
 
         private void bindSelfName() {
+            String type = String.valueOf(ast.get("type"));
+            if ("FunctionExpression".equals(type) || "ClassExpression".equals(type)) {
+                return;
+            }
             Object idNode = ast.get("id");
             if (!(idNode instanceof Map<?, ?> rawId)) {
                 return;
@@ -2758,6 +2860,7 @@ public final class JavaEsmGlobal {
                 installClosureBindings(env);
                 bindParameters(env, args);
                 env.put("this", thisValue);
+                bindExpressionSelfName(env);
                 Object result = evalFunctionBody(ast, env);
                 return result instanceof ReturnSignal signal ? signal.value() : result;
             } finally {
@@ -2773,6 +2876,7 @@ public final class JavaEsmGlobal {
                 installClosureBindings(env);
                 bindParameters(env, args);
                 env.put("this", thisValue);
+                bindExpressionSelfName(env);
                 return evalFunctionBody(ast, env);
             } finally {
                 exitInterpretedCall();
@@ -2831,6 +2935,13 @@ public final class JavaEsmGlobal {
                         System.arraycopy(callArgs, 0, combined, boundArgs.length, callArgs.length);
                         return rebound.call(combined);
                     });
+                });
+            }
+            if ("call".equals(name)) {
+                return new NativeFunction(functionDebugName() + ".call", args -> {
+                    Object boundThis = args.length == 0 ? GLOBAL_OBJECT : args[0];
+                    Object[] callArgs = args.length <= 1 ? new Object[0] : Arrays.copyOfRange(args, 1, args.length);
+                    return bindThis(boundThis).call(callArgs);
                 });
             }
             if ("apply".equals(name)) {
@@ -3409,6 +3520,7 @@ public final class JavaEsmGlobal {
             if ("ArrowFunctionExpression".equals(type) && Boolean.TRUE.equals(functionAst.get("expression"))) {
                 return evalNode(functionAst.get("body"), env);
             }
+            hoistVarDeclarations(functionAst.get("body"), env);
             return evalNode(functionAst.get("body"), env);
         }
 
@@ -3509,13 +3621,32 @@ public final class JavaEsmGlobal {
             }
             InterpretedFunction function = new InterpretedFunction(runtimeDefinition);
             Object idNode = astNode.get("id");
-            if (idNode instanceof Map<?, ?> rawId) {
+            String type = String.valueOf(astNode.get("type"));
+            if (("FunctionDeclaration".equals(type) || "ClassDeclaration".equals(type))
+                    && idNode instanceof Map<?, ?> rawId) {
                 String name = extractPropertyName(rawId);
                 if (name != null && !name.isBlank() && !"null".equals(name)) {
                     env.put(name, function);
                 }
             }
             return function;
+        }
+
+        private void bindExpressionSelfName(Map<String, Object> env) {
+            String type = String.valueOf(ast.get("type"));
+            if (!"FunctionExpression".equals(type) && !"ClassExpression".equals(type)) {
+                return;
+            }
+            Object idNode = ast.get("id");
+            if (!(idNode instanceof Map<?, ?> rawId)) {
+                return;
+            }
+            String name = extractPropertyName(rawId);
+            if (name == null || name.isBlank() || "null".equals(name)) {
+                return;
+            }
+            markLocalBinding(env, name);
+            env.put(name, this);
         }
 
         private Object evalBlock(List<?> statements, Map<String, Object> env) {
@@ -3530,6 +3661,81 @@ public final class JavaEsmGlobal {
                 }
             }
             return last;
+        }
+
+        private void hoistVarDeclarations(Object node, Map<String, Object> env) {
+            if (node instanceof List<?> list) {
+                for (Object item : list) {
+                    hoistVarDeclarations(item, env);
+                }
+                return;
+            }
+            if (!(node instanceof Map<?, ?> rawNode)) {
+                return;
+            }
+            Map<String, Object> astNode = castMap(rawNode);
+            String type = String.valueOf(astNode.get("type"));
+            if (isNestedFunctionOrClassScope(type)) {
+                return;
+            }
+            if ("VariableDeclaration".equals(type) && "var".equals(String.valueOf(astNode.get("kind")))) {
+                for (Object declaratorNode : asList(astNode.get("declarations"))) {
+                    if (declaratorNode instanceof Map<?, ?> rawDeclarator) {
+                        Map<String, Object> declarator = castMap(rawDeclarator);
+                        markPatternBindings(declarator.get("id"), env);
+                    }
+                }
+            }
+            for (Object value : astNode.values()) {
+                hoistVarDeclarations(value, env);
+            }
+        }
+
+        private boolean isNestedFunctionOrClassScope(String type) {
+            return "FunctionDeclaration".equals(type)
+                    || "FunctionExpression".equals(type)
+                    || "ArrowFunctionExpression".equals(type)
+                    || "ClassDeclaration".equals(type)
+                    || "ClassExpression".equals(type);
+        }
+
+        private void markPatternBindings(Object patternNode, Map<String, Object> env) {
+            if (!(patternNode instanceof Map<?, ?> rawPattern)) {
+                return;
+            }
+            Map<String, Object> pattern = castMap(rawPattern);
+            String type = String.valueOf(pattern.get("type"));
+            switch (type) {
+                case "Identifier" -> {
+                    String name = String.valueOf(pattern.get("name"));
+                    markLocalBinding(env, name);
+                    if (!env.containsKey(name)) {
+                        env.put(name, null);
+                    }
+                }
+                case "ArrayPattern" -> {
+                    for (Object element : asList(pattern.get("elements"))) {
+                        markPatternBindings(element, env);
+                    }
+                }
+                case "ObjectPattern" -> {
+                    for (Object propertyNode : asList(pattern.get("properties"))) {
+                        if (!(propertyNode instanceof Map<?, ?> rawProperty)) {
+                            continue;
+                        }
+                        Map<String, Object> property = castMap(rawProperty);
+                        if ("RestElement".equals(String.valueOf(property.get("type")))) {
+                            markPatternBindings(property.get("argument"), env);
+                        } else {
+                            markPatternBindings(property.getOrDefault("value", property.get("key")), env);
+                        }
+                    }
+                }
+                case "RestElement" -> markPatternBindings(pattern.get("argument"), env);
+                case "AssignmentPattern" -> markPatternBindings(pattern.get("left"), env);
+                default -> {
+                }
+            }
         }
 
         private void hoistFunctionDeclarations(List<?> statements, Map<String, Object> env) {
@@ -4367,6 +4573,9 @@ public final class JavaEsmGlobal {
                 }
                 if ("SpreadElement".equals(property.get("type"))) {
                     Object spreadValue = evalNode(property.get("argument"), env);
+                    if (spreadValue == null) {
+                        continue;
+                    }
                     if (spreadValue instanceof Map<?, ?> spreadMap) {
                         object.putAll(castMap(spreadMap));
                         continue;
@@ -4438,6 +4647,14 @@ public final class JavaEsmGlobal {
                                     error);
                         }
                     }
+                    if ("ObjectPattern".equals(left.get("type")) || "ArrayPattern".equals(left.get("type"))) {
+                        if (!"=".equals(operator)) {
+                            throw new IllegalArgumentException("Unsupported destructuring assignment operator: " + operator);
+                        }
+                        Object value = evalNode(astNode.get("right"), env);
+                        assignPattern(left, value, env);
+                        return value;
+                    }
                 }
                 throw new IllegalArgumentException("Unsupported assignment target");
             }
@@ -4506,6 +4723,66 @@ public final class JavaEsmGlobal {
                 case ">>>=" -> __qin_binary__(">>>", currentValue, rightValue);
                 default -> throw new IllegalArgumentException("Unsupported assignment operator: " + operator);
             };
+        }
+
+        private void assignPattern(Object patternNode, Object value, Map<String, Object> env) {
+            Map<String, Object> pattern = castMap(asMap(patternNode));
+            String type = String.valueOf(pattern.get("type"));
+            switch (type) {
+                case "Identifier" -> assignIdentifier(String.valueOf(pattern.get("name")), value, env);
+                case "MemberExpression", "OptionalMemberExpression" -> {
+                    Object target = evalNode(pattern.get("object"), env);
+                    Object property = Boolean.TRUE.equals(pattern.get("computed"))
+                            ? evalNode(pattern.get("property"), env)
+                            : extractPropertyName(pattern.get("property"));
+                    __qin_member_set__(target, property, value);
+                }
+                case "ArrayPattern" -> assignArrayPattern(pattern, value, env);
+                case "ObjectPattern" -> assignObjectPattern(pattern, value, env);
+                case "RestElement" -> assignPattern(pattern.get("argument"), value, env);
+                case "AssignmentPattern" -> {
+                    Object boundValue = value == null ? evalNode(pattern.get("right"), env) : value;
+                    assignPattern(pattern.get("left"), boundValue, env);
+                }
+                default -> throw new IllegalArgumentException("Unsupported assignment pattern: " + type);
+            }
+        }
+
+        private void assignArrayPattern(Map<String, Object> pattern, Object value, Map<String, Object> env) {
+            List<?> elements = asList(pattern.get("elements"));
+            List<Object> values = arrayPatternValues(value);
+            for (int i = 0; i < elements.size(); i++) {
+                Object element = elements.get(i);
+                if (element == null) {
+                    continue;
+                }
+                if (element instanceof Map<?, ?> rawElement
+                        && "RestElement".equals(String.valueOf(rawElement.get("type")))) {
+                    assignPattern(element, new ArrayList<>(values.subList(Math.min(i, values.size()), values.size())), env);
+                    continue;
+                }
+                assignPattern(element, i < values.size() ? values.get(i) : null, env);
+            }
+        }
+
+        private void assignObjectPattern(Map<String, Object> pattern, Object value, Map<String, Object> env) {
+            for (Object propertyNode : asList(pattern.get("properties"))) {
+                if (!(propertyNode instanceof Map<?, ?> rawProperty)) {
+                    continue;
+                }
+                Map<String, Object> property = castMap(rawProperty);
+                String propertyType = String.valueOf(property.get("type"));
+                if ("RestElement".equals(propertyType)) {
+                    assignPattern(property.get("argument"), objectPatternRest(value), env);
+                    continue;
+                }
+                if (!"Property".equals(propertyType)) {
+                    throw new IllegalArgumentException("Unsupported object assignment property: " + propertyType);
+                }
+                String key = extractPropertyName(property.get("key"));
+                Object targetPattern = property.containsKey("value") ? property.get("value") : property.get("key");
+                assignPattern(targetPattern, __qin_member_get__(value, key), env);
+            }
         }
 
         private Object evalUpdate(Map<String, Object> astNode, Map<String, Object> env) {

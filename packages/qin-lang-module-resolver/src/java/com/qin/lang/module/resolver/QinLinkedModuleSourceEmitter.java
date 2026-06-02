@@ -1320,7 +1320,7 @@ public final class QinLinkedModuleSourceEmitter {
                 continue;
             }
             lines.add("const " + parsedImport.localName() + " = "
-                    + exportSymbol(runtimeExport.owner(), runtimeExport.exportName(), moduleIndex)
+                    + exportGetCall(exportSymbol(runtimeExport.owner(), runtimeExport.exportName(), moduleIndex))
                     + ";");
         }
         return lines;

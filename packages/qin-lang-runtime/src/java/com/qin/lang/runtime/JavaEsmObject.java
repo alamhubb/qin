@@ -31,6 +31,44 @@ public final class JavaEsmObject {
         return entries;
     }
 
+    public static Object fromEntries(Object value) {
+        LinkedHashMap<String, Object> object = new LinkedHashMap<>();
+        if (value == null) {
+            return object;
+        }
+        Iterable<?> iterable;
+        if (value instanceof Iterable<?> rawIterable) {
+            iterable = rawIterable;
+        } else if (value.getClass().isArray()) {
+            List<Object> items = new ArrayList<>();
+            int length = java.lang.reflect.Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                items.add(java.lang.reflect.Array.get(value, i));
+            }
+            iterable = items;
+        } else {
+            iterable = enumerableEntries(value).values();
+        }
+        for (Object item : iterable) {
+            Object key = null;
+            Object entryValue = null;
+            if (item instanceof List<?> list) {
+                key = list.isEmpty() ? null : list.get(0);
+                entryValue = list.size() < 2 ? null : list.get(1);
+            } else if (item instanceof Object[] array) {
+                key = array.length == 0 ? null : array[0];
+                entryValue = array.length < 2 ? null : array[1];
+            } else if (item instanceof Map<?, ?> map) {
+                key = map.get("0");
+                entryValue = map.get("1");
+            }
+            if (key != null) {
+                object.put(String.valueOf(key), entryValue);
+            }
+        }
+        return object;
+    }
+
     public static Object hasOwn(Object value, Object key) {
         return enumerableEntries(value).containsKey(String.valueOf(key));
     }

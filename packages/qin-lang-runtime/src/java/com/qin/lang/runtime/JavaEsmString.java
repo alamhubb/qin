@@ -12,6 +12,14 @@ final class JavaEsmString {
     private JavaEsmString() {
     }
 
+    public static String fromCharCode(Object... codes) {
+        StringBuilder builder = new StringBuilder(codes.length);
+        for (Object code : codes) {
+            builder.append((char) toIndex(code));
+        }
+        return builder.toString();
+    }
+
     static Object memberGet(CharSequence text, Object property) {
         String name = String.valueOf(property);
         if ("length".equals(name)) {
