@@ -211,6 +211,20 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   out.push(value);
                   return out;
                 }
+                function qinPluginEnforceRank(plugin) {
+                  if (plugin && plugin.enforce === "pre") return 0;
+                  if (plugin && plugin.enforce === "post") return 2;
+                  return 1;
+                }
+                function qinSortPlugins(plugins) {
+                  return plugins
+                    .map((plugin, index) => ({ plugin, index }))
+                    .sort((left, right) => {
+                      const rank = qinPluginEnforceRank(left.plugin) - qinPluginEnforceRank(right.plugin);
+                      return rank !== 0 ? rank : left.index - right.index;
+                    })
+                    .map(item => item.plugin);
+                }
                 function qinResolveUserConfig(raw) {
                   let value = typeof raw === "function"
                     ? raw({ command: "serve", mode: "development", ssrBuild: false })
@@ -347,9 +361,10 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   return lastResult || { code, map: null };
                 }
                 const qinUserConfig = qinResolveUserConfig(qinUserViteConfig);
-                let qinPlugins = qinFlattenPlugins(qinUserConfig.plugins);
+                let qinPlugins = qinSortPlugins(qinFlattenPlugins(qinUserConfig.plugins));
                 if (!qinHasVuePlugin(qinPlugins)) {
                   qinPlugins.push(vuePlugin({ sourceMap: false }));
+                  qinPlugins = qinSortPlugins(qinPlugins);
                 }
                 const qinResolvedConfig = qinCreateConfig(%s, qinUserConfig);
                 const qinPluginContext = qinCreatePluginContext(qinResolvedConfig);

@@ -41,6 +41,22 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
         Files.writeString(root.resolve("vite.config.js"), """
                 import vue from '@vitejs/plugin-vue'
 
+                function qinPreMarkerPlugin() {
+                  return {
+                    name: 'qin-pre-marker',
+                    enforce: 'pre',
+                    transform(code, id) {
+                      const textId = String(id)
+                      if (textId.includes('Comp.vue') && !textId.includes('?vue')) {
+                        if (!String(code).includes('<template>')) {
+                          this.error('pre plugin ran after plugin-vue transformed the SFC')
+                        }
+                        return String(code).replace('Query Works', 'Pre Works')
+                      }
+                    }
+                  }
+                }
+
                 function qinMarkerPlugin() {
                   return {
                     name: 'qin-marker',
@@ -48,7 +64,8 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                       return { __qinConfigMarker: 'config-hook-ran' }
                     },
                     transform(code, id) {
-                      if (String(id).includes('Comp.vue')) {
+                      const textId = String(id)
+                      if (textId.includes('Comp.vue') && !textId.includes('?vue')) {
                         const resolved = this.resolve('./dep.js', id)
                         if (!resolved || !String(resolved.id).endsWith('/src/dep.js')) {
                           this.error('context.resolve did not resolve relative to importer: ' + JSON.stringify(resolved))
@@ -62,14 +79,16 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                         if (!this.getWatchFiles().some(file => String(file).endsWith('/src/dep.js'))) {
                           this.error('context.addWatchFile did not record dep.js')
                         }
-                        return String(code).replace('Query Works', 'Config Works')
+                      }
+                      if (textId.includes('Comp.vue')) {
+                        return String(code).replace('Pre Works', 'Config Works')
                       }
                     }
                   }
                 }
 
                 export default {
-                  plugins: [qinMarkerPlugin(), vue()]
+                  plugins: [vue(), qinPreMarkerPlugin(), qinMarkerPlugin()]
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(src.resolve("main.js"), """
