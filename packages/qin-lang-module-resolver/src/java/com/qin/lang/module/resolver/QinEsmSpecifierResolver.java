@@ -48,12 +48,25 @@ public final class QinEsmSpecifierResolver {
         }
         String normalized = specifier.trim();
         return normalized.startsWith("node:")
+                || "assert".equals(normalized)
+                || "buffer".equals(normalized)
+                || "child_process".equals(normalized)
+                || "crypto".equals(normalized)
+                || "events".equals(normalized)
                 || "vue".equals(normalized)
                 || "fs".equals(normalized)
                 || "path".equals(normalized)
                 || "url".equals(normalized)
                 || "util".equals(normalized)
+                || "module".equals(normalized)
+                || "os".equals(normalized)
+                || "perf_hooks".equals(normalized)
                 || "process".equals(normalized)
+                || "stream".equals(normalized)
+                || "string_decoder".equals(normalized)
+                || "tty".equals(normalized)
+                || "worker_threads".equals(normalized)
+                || "zlib".equals(normalized)
                 || "globalthis".equals(normalized);
     }
 
@@ -70,6 +83,9 @@ public final class QinEsmSpecifierResolver {
         if (specifier.startsWith("java:") || specifier.startsWith("js:") || isHostRuntimeModule(specifier)
                 || specifier.startsWith("http://") || specifier.startsWith("https://")) {
             return null;
+        }
+        if (specifier.startsWith("#")) {
+            return resolvePackageImport(importerFile, specifier);
         }
         if (specifier.startsWith("./") || specifier.startsWith("../")) {
             return resolveRelativeModule(importerFile, specifier);
@@ -144,6 +160,20 @@ public final class QinEsmSpecifierResolver {
         BareSpecifier bare = parseBareSpecifier(specifier);
         Path search = importerFile.getParent();
         while (search != null) {
+            Path qinNpmHostPackageDir = search.resolve(".qin")
+                    .resolve("runtime")
+                    .resolve("npm-host")
+                    .resolve("node_modules")
+                    .resolve(bare.packageName());
+            if (Files.isDirectory(qinNpmHostPackageDir)) {
+                Path resolved = resolvePackageEntry(qinNpmHostPackageDir, bare.subPath());
+                if (resolved != null) {
+                    return resolved;
+                }
+                throw new IllegalArgumentException(
+                        "Cannot resolve bare module import \"" + specifier + "\" from Qin npm host package "
+                                + qinNpmHostPackageDir.toAbsolutePath());
+            }
             Path packageDir = search.resolve("node_modules").resolve(bare.packageName());
             if (Files.isDirectory(packageDir)) {
                 Path resolved = resolvePackageEntry(packageDir, bare.subPath());
@@ -160,9 +190,68 @@ public final class QinEsmSpecifierResolver {
                 "Cannot resolve bare module import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
     }
 
+    private Path resolvePackageImport(Path importerFile, String specifier) {
+        Path packageDir = findContainingPackageDir(importerFile);
+        if (packageDir == null) {
+            throw new IllegalArgumentException(
+                    "Cannot resolve package import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
+        }
+        Path packageJson = packageDir.resolve("package.json");
+        try {
+            String json = Files.readString(packageJson);
+            String entry = readPackageImportsEntry(json, specifier);
+            if (entry == null || entry.isBlank()) {
+                throw new IllegalArgumentException(
+                        "Cannot resolve package import \"" + specifier + "\" from package "
+                                + packageDir.toAbsolutePath());
+            }
+            if (entry.startsWith("./")) {
+                Path resolved = resolveAsFile(packageDir.resolve(entry));
+                if (resolved != null) {
+                    return resolved;
+                }
+            }
+            if (!entry.startsWith(".") && !entry.startsWith("/")) {
+                return resolveBareModule(packageJson, entry);
+            }
+            throw new IllegalArgumentException(
+                    "Cannot resolve package import \"" + specifier + "\" target \"" + entry
+                            + "\" from package " + packageDir.toAbsolutePath());
+        } catch (IllegalArgumentException error) {
+            throw error;
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Failed to parse package.json: " + packageJson.toAbsolutePath(), error);
+        }
+    }
+
+    private Path findContainingPackageDir(Path importerFile) {
+        Path current = importerFile == null ? null : importerFile.toAbsolutePath().normalize().getParent();
+        while (current != null) {
+            if (Files.isRegularFile(current.resolve("package.json"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return null;
+    }
+
     private Path resolvePackageEntry(Path packageDir, String subPath) {
         Path packageJson = packageDir.resolve("package.json");
         if (subPath != null && !subPath.isBlank()) {
+            if (Files.isRegularFile(packageJson)) {
+                try {
+                    String json = Files.readString(packageJson);
+                    String entry = readExportsSubpathEntry(json, subPath);
+                    if (entry != null && !entry.isBlank()) {
+                        Path resolved = resolveAsFile(packageDir.resolve(entry));
+                        if (resolved != null) {
+                            return resolved;
+                        }
+                    }
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Failed to parse package.json: " + packageJson.toAbsolutePath(), e);
+                }
+            }
             Path target = packageDir.resolve(subPath);
             return resolveAsFile(target);
         }
@@ -311,6 +400,123 @@ public final class QinEsmSpecifierResolver {
             return matcher.group(1);
         }
         return null;
+    }
+
+    private String readExportsSubpathEntry(String json, String subPath) {
+        String normalizedSubpath = subPath.replace('\\', '/');
+        if (!normalizedSubpath.startsWith("./")) {
+            normalizedSubpath = "./" + normalizedSubpath;
+        }
+        return readPackageSpecifierMapEntry(json, normalizedSubpath);
+    }
+
+    private String readPackageImportsEntry(String json, String specifier) {
+        return readPackageSpecifierMapEntry(json, specifier);
+    }
+
+    private String readPackageSpecifierMapEntry(String json, String specifier) {
+        String key = "\"" + specifier + "\"";
+        int keyIndex = json.indexOf(key);
+        if (keyIndex < 0) {
+            return null;
+        }
+        int colonIndex = json.indexOf(':', keyIndex + key.length());
+        if (colonIndex < 0) {
+            return null;
+        }
+        int valueStart = skipWhitespace(json, colonIndex + 1);
+        if (valueStart >= json.length()) {
+            return null;
+        }
+        char valueStartChar = json.charAt(valueStart);
+        if (valueStartChar == '"') {
+            return readJsonStringAt(json, valueStart);
+        }
+        if (valueStartChar != '{') {
+            return null;
+        }
+        int valueEnd = findMatchingBrace(json, valueStart);
+        if (valueEnd < 0) {
+            return null;
+        }
+        String exportObject = json.substring(valueStart, valueEnd + 1);
+        String entry = readField(exportObject, "import");
+        if (entry == null) {
+            entry = readExportsNodeImportDefaultRoot(exportObject);
+        }
+        if (entry == null) {
+            entry = readExportsImportDefaultFallbackRoot(exportObject);
+        }
+        if (entry == null) {
+            entry = readField(exportObject, "default");
+        }
+        return entry;
+    }
+
+    private int skipWhitespace(String text, int index) {
+        int cursor = index;
+        while (cursor < text.length() && Character.isWhitespace(text.charAt(cursor))) {
+            cursor++;
+        }
+        return cursor;
+    }
+
+    private String readJsonStringAt(String text, int quoteIndex) {
+        if (quoteIndex < 0 || quoteIndex >= text.length() || text.charAt(quoteIndex) != '"') {
+            return null;
+        }
+        StringBuilder value = new StringBuilder();
+        boolean escaping = false;
+        for (int cursor = quoteIndex + 1; cursor < text.length(); cursor++) {
+            char ch = text.charAt(cursor);
+            if (escaping) {
+                value.append(ch);
+                escaping = false;
+                continue;
+            }
+            if (ch == '\\') {
+                escaping = true;
+                continue;
+            }
+            if (ch == '"') {
+                return value.toString();
+            }
+            value.append(ch);
+        }
+        return null;
+    }
+
+    private int findMatchingBrace(String text, int openIndex) {
+        if (openIndex < 0 || openIndex >= text.length() || text.charAt(openIndex) != '{') {
+            return -1;
+        }
+        int depth = 0;
+        boolean inString = false;
+        boolean escaping = false;
+        for (int cursor = openIndex; cursor < text.length(); cursor++) {
+            char ch = text.charAt(cursor);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (ch == '"') {
+                inString = true;
+            } else if (ch == '{') {
+                depth++;
+            } else if (ch == '}') {
+                depth--;
+                if (depth == 0) {
+                    return cursor;
+                }
+            }
+        }
+        return -1;
     }
 
     private BareSpecifier parseBareSpecifier(String specifier) {
