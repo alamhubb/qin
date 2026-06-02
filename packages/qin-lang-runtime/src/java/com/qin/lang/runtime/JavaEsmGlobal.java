@@ -576,6 +576,9 @@ public final class JavaEsmGlobal {
         if (target instanceof QinRuntimeObject runtimeObject) {
             return runtimeObject.set(property, value);
         }
+        if (target instanceof JavaEsmRegExp regexp) {
+            return regexp.memberSet(property, value);
+        }
         if (target instanceof Map<?, ?> map) {
             castMap(map).put(propertyKey(property), value);
             return value;

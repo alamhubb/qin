@@ -13,6 +13,7 @@ final class JavaEsmRegExp {
     private final String source;
     private final String flags;
     private final Pattern pattern;
+    private int lastIndex;
 
     JavaEsmRegExp(Object source, Object flags) {
         this.source = normalizeSource(source);
@@ -30,8 +31,16 @@ final class JavaEsmRegExp {
             case "dotAll" -> flags.indexOf('s') >= 0;
             case "unicode" -> flags.indexOf('u') >= 0;
             case "sticky" -> flags.indexOf('y') >= 0;
+            case "lastIndex" -> lastIndex;
             default -> null;
         };
+    }
+
+    Object memberSet(Object property, Object value) {
+        if ("lastIndex".equals(String.valueOf(property))) {
+            lastIndex = Math.max(toIndex(value), 0);
+        }
+        return value;
     }
 
     boolean supports(String methodName) {
@@ -61,6 +70,11 @@ final class JavaEsmRegExp {
             result.add(matcher.group(i));
         }
         return result;
+    }
+
+    int searchIndex(String text) {
+        Matcher matcher = pattern.matcher(text);
+        return matcher.find() ? matcher.start() : -1;
     }
 
     String replace(String text, Object replacement) {
@@ -134,7 +148,45 @@ final class JavaEsmRegExp {
     }
 
     String[] split(String text, int limit) {
-        return pattern.split(text, limit == Integer.MAX_VALUE ? -1 : limit);
+        if (limit == 0) {
+            return new String[0];
+        }
+        List<String> result = new ArrayList<>();
+        Matcher matcher = pattern.matcher(text);
+        int index = 0;
+        while (matcher.find()) {
+            if (matcher.start() == index && matcher.end() == index) {
+                if (index < text.length()) {
+                    index++;
+                    continue;
+                }
+                break;
+            }
+            addSplitPart(result, text.substring(index, matcher.start()), limit);
+            if (result.size() == limit) {
+                break;
+            }
+            for (int group = 1; group <= matcher.groupCount(); group++) {
+                addSplitPart(result, matcher.group(group), limit);
+                if (result.size() == limit) {
+                    break;
+                }
+            }
+            if (result.size() == limit) {
+                break;
+            }
+            index = matcher.end();
+        }
+        if (result.size() < limit) {
+            addSplitPart(result, text.substring(index), limit);
+        }
+        return result.toArray(String[]::new);
+    }
+
+    private static void addSplitPart(List<String> result, String value, int limit) {
+        if (result.size() < limit) {
+            result.add(value == null ? "" : value);
+        }
     }
 
     private Object test(Object[] args) {
@@ -144,7 +196,38 @@ final class JavaEsmRegExp {
 
     private Object exec(Object[] args) {
         requireArgRange("RegExp.exec", args, 1, 1);
-        return match(String.valueOf(args[0]));
+        String text = String.valueOf(args[0]);
+        boolean globalOrSticky = flags.indexOf('g') >= 0 || flags.indexOf('y') >= 0;
+        int start = globalOrSticky ? lastIndex : 0;
+        if (start < 0 || start > text.length()) {
+            if (globalOrSticky) {
+                lastIndex = 0;
+            }
+            return null;
+        }
+        Matcher matcher = pattern.matcher(text);
+        boolean found = flags.indexOf('y') >= 0
+                ? matcher.region(start, text.length()).lookingAt()
+                : matcher.find(start);
+        if (!found) {
+            if (globalOrSticky) {
+                lastIndex = 0;
+            }
+            return null;
+        }
+        if (globalOrSticky) {
+            lastIndex = matcher.end();
+        }
+        return matchResult(matcher);
+    }
+
+    private Object matchResult(Matcher matcher) {
+        List<Object> result = new ArrayList<>();
+        result.add(matcher.group());
+        for (int i = 1; i <= matcher.groupCount(); i++) {
+            result.add(matcher.group(i));
+        }
+        return result;
     }
 
     private static boolean isCallable(Object value) {
@@ -166,6 +249,20 @@ final class JavaEsmRegExp {
             return regexp.source;
         }
         return value == null ? "(?:)" : String.valueOf(value);
+    }
+
+    private static int toIndex(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return (int) Double.parseDouble(text.trim());
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     private static Pattern compilePattern(String source, String flags) {

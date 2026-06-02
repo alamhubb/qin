@@ -38,7 +38,7 @@ final class JavaEsmString {
                     "toLowerCase", "slice", "substring", "substr", "split", "charAt",
                     "charCodeAt",
                     "padStart", "padEnd",
-                    "indexOf", "lastIndexOf", "match", "replace", "valueOf", "toString" -> true;
+                    "indexOf", "lastIndexOf", "search", "match", "replace", "valueOf", "toString" -> true;
             default -> false;
         };
     }
@@ -62,6 +62,7 @@ final class JavaEsmString {
             case "padEnd" -> pad(text, args, false);
             case "indexOf" -> indexOf(text, args);
             case "lastIndexOf" -> lastIndexOf(text, args);
+            case "search" -> search(text, args);
             case "match" -> match(text, args);
             case "replace" -> replace(text, args);
             case "valueOf", "toString" -> primitiveValue(text, args, "String." + methodName);
@@ -176,6 +177,14 @@ final class JavaEsmString {
             return regexp.match(text);
         }
         return new JavaEsmRegExp(String.valueOf(args[0]), null).match(text);
+    }
+
+    private static Object search(String text, Object[] args) {
+        requireArgRange("String.search", args, 1, 1);
+        if (args[0] instanceof JavaEsmRegExp regexp) {
+            return regexp.searchIndex(text);
+        }
+        return new JavaEsmRegExp(String.valueOf(args[0]), null).searchIndex(text);
     }
 
     private static Object replace(String text, Object[] args) {
