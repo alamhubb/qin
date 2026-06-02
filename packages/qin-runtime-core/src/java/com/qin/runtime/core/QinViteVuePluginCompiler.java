@@ -514,16 +514,89 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                     importers: new Set()
                   } : null;
                 }
+                function qinToArray(value) {
+                  if (value == null) return [];
+                  return Array.isArray(value) ? value : [value];
+                }
+                function qinAddEventHandler(target, event, handler) {
+                  const name = String(event || "");
+                  if (!target.__qinHandlers[name]) target.__qinHandlers[name] = [];
+                  if (handler) target.__qinHandlers[name].push(handler);
+                }
+                function qinRemoveEventHandler(target, event, handler) {
+                  const name = String(event || "");
+                  const handlers = target.__qinHandlers[name] || [];
+                  target.__qinHandlers[name] = handler ? handlers.filter(item => item !== handler) : [];
+                }
+                function qinEmitEvent(target, event, ...args) {
+                  const handlers = (target.__qinHandlers[String(event || "")] || []).slice();
+                  for (const handler of handlers) handler(...args);
+                }
+                function qinCreateWatcher() {
+                  return {
+                    __qinHandlers: {},
+                    __qinWatchedFiles: {},
+                    on(event, handler) {
+                      qinAddEventHandler(this, event, handler);
+                      return this;
+                    },
+                    off(event, handler) {
+                      qinRemoveEventHandler(this, event, handler);
+                      return this;
+                    },
+                    add(paths) {
+                      for (const path of qinToArray(paths)) {
+                        const normalized = qinNormalizePath(path);
+                        if (normalized) this.__qinWatchedFiles[normalized] = true;
+                      }
+                      return this;
+                    },
+                    unwatch(paths) {
+                      for (const path of qinToArray(paths)) delete this.__qinWatchedFiles[qinNormalizePath(path)];
+                      return this;
+                    },
+                    getWatched() {
+                      const result = {};
+                      for (const file of Object.keys(this.__qinWatchedFiles)) {
+                        const dir = qinDirname(file) || ".";
+                        const name = file.slice(dir === "." ? 0 : dir.length + 1);
+                        if (!result[dir]) result[dir] = [];
+                        result[dir].push(name);
+                      }
+                      return result;
+                    },
+                    emit(event, ...args) {
+                      qinEmitEvent(this, event, ...args);
+                      return this;
+                    }
+                  };
+                }
+                function qinCreateWebSocketServer() {
+                  return {
+                    __qinHandlers: {},
+                    __qinMessages: [],
+                    on(event, handler) {
+                      qinAddEventHandler(this, event, handler);
+                      return this;
+                    },
+                    off(event, handler) {
+                      qinRemoveEventHandler(this, event, handler);
+                      return this;
+                    },
+                    send(payload) {
+                      this.__qinMessages.push(qinSerializeHotPayload(payload));
+                    },
+                    emit(event, payload) {
+                      qinEmitEvent(this, event, payload);
+                      return this;
+                    }
+                  };
+                }
                 function qinCreateServer(config) {
                   return {
                     config,
-                    watcher: { on(event, handler) {} },
-                    ws: {
-                      send(payload) {
-                        this.__qinMessages.push(qinSerializeHotPayload(payload));
-                      },
-                      __qinMessages: []
-                    },
+                    watcher: qinCreateWatcher(),
+                    ws: qinCreateWebSocketServer(),
                     moduleGraph: {
                       getModuleById(id) {
                         return qinCreateModuleNode(id);
