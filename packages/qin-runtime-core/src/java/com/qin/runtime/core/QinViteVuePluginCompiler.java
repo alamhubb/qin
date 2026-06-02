@@ -289,7 +289,33 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   }
                   return { id: specifier };
                 }
-                function qinCreatePluginContext(config) {
+                function qinNormalizeResolvedId(result) {
+                  if (typeof result === "string") return { id: result };
+                  if (result && typeof result === "object" && result.id) return result;
+                  return null;
+                }
+                function qinApplyResolveId(plugins, context, id, importer, skipPlugin) {
+                  for (const plugin of plugins || []) {
+                    if (!plugin || !plugin.resolveId || plugin === skipPlugin) continue;
+                    const previous = context.__qinCurrentResolvePlugin;
+                    context.__qinCurrentResolvePlugin = plugin;
+                    const resolved = qinNormalizeResolvedId(qinCallHook(
+                      plugin.resolveId,
+                      context,
+                      id,
+                      importer,
+                      { ssr: false, scan: false, isEntry: false }
+                    ));
+                    context.__qinCurrentResolvePlugin = previous;
+                    if (resolved) return resolved;
+                  }
+                  return null;
+                }
+                function qinResolveWithPlugins(plugins, context, id, importer, config, skipPlugin) {
+                  const resolved = qinApplyResolveId(plugins, context, id, importer, skipPlugin);
+                  return resolved || qinResolveId(id, importer, config);
+                }
+                function qinCreatePluginContext(config, plugins) {
                   const watchFiles = [];
                   const emittedFiles = [];
                   const warnings = [];
@@ -314,11 +340,19 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                       throw message instanceof Error ? message : new Error(String(message));
                     },
                     resolve(id, importer) {
-                      return qinResolveId(id, importer, config);
+                      return qinResolveWithPlugins(
+                        plugins,
+                        this,
+                        id,
+                        importer,
+                        config,
+                        this.__qinCurrentResolvePlugin
+                      );
                     },
                     __qinWatchFiles: watchFiles,
                     __qinEmittedFiles: emittedFiles,
-                    __qinWarnings: warnings
+                    __qinWarnings: warnings,
+                    __qinCurrentResolvePlugin: null
                   };
                 }
                 function qinCreateServer(config) {
@@ -367,7 +401,7 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   qinPlugins = qinSortPlugins(qinPlugins);
                 }
                 const qinResolvedConfig = qinCreateConfig(%s, qinUserConfig);
-                const qinPluginContext = qinCreatePluginContext(qinResolvedConfig);
+                const qinPluginContext = qinCreatePluginContext(qinResolvedConfig, qinPlugins);
                 const qinDevServer = qinCreateServer(qinResolvedConfig);
                 qinRunPluginLifecycle(qinPlugins, qinResolvedConfig, qinPluginContext, qinDevServer);
                 """.formatted(QinJsPackageRunner.renderJsLiteral(root));

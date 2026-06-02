@@ -41,6 +41,17 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
         Files.writeString(root.resolve("vite.config.js"), """
                 import vue from '@vitejs/plugin-vue'
 
+                function qinResolveMarkerPlugin() {
+                  return {
+                    name: 'qin-resolve-marker',
+                    resolveId(id, importer) {
+                      if (id === './dep.js' && String(importer).includes('Comp.vue')) {
+                        return { id: 'virtual:qin-dep', meta: { marker: 'resolve-hook-ran' } }
+                      }
+                    }
+                  }
+                }
+
                 function qinPreMarkerPlugin() {
                   return {
                     name: 'qin-pre-marker',
@@ -67,8 +78,11 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                       const textId = String(id)
                       if (textId.includes('Comp.vue') && !textId.includes('?vue')) {
                         const resolved = this.resolve('./dep.js', id)
-                        if (!resolved || !String(resolved.id).endsWith('/src/dep.js')) {
-                          this.error('context.resolve did not resolve relative to importer: ' + JSON.stringify(resolved))
+                        if (!resolved || resolved.id !== 'virtual:qin-dep') {
+                          this.error('context.resolve did not use plugin resolveId: ' + JSON.stringify(resolved))
+                        }
+                        if (!resolved.meta || resolved.meta.marker !== 'resolve-hook-ran') {
+                          this.error('context.resolve did not preserve resolveId metadata: ' + JSON.stringify(resolved))
                         }
                         this.addWatchFile(resolved.id)
                         const refId = this.emitFile({ type: 'asset', name: 'marker.txt', source: 'marker' })
@@ -76,8 +90,8 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                           this.error('context.emitFile returned unexpected ref id: ' + refId)
                         }
                         this.warn('qin marker warning')
-                        if (!this.getWatchFiles().some(file => String(file).endsWith('/src/dep.js'))) {
-                          this.error('context.addWatchFile did not record dep.js')
+                        if (!this.getWatchFiles().includes('virtual:qin-dep')) {
+                          this.error('context.addWatchFile did not record plugin-resolved id')
                         }
                       }
                       if (textId.includes('Comp.vue')) {
@@ -88,7 +102,7 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                 }
 
                 export default {
-                  plugins: [vue(), qinPreMarkerPlugin(), qinMarkerPlugin()]
+                  plugins: [vue(), qinResolveMarkerPlugin(), qinPreMarkerPlugin(), qinMarkerPlugin()]
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(src.resolve("main.js"), """
