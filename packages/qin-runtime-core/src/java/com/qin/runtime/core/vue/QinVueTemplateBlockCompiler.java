@@ -7,6 +7,8 @@ final class QinVueTemplateBlockCompiler {
     private static final Pattern INTERPOLATION_PATTERN = Pattern.compile("\\{\\{\\s*([^}]+?)\\s*\\}\\}");
     private static final Pattern CLASS_BINDING_PATTERN = Pattern.compile(
             "(?i)(:class|v-bind:class)\\s*=\\s*(\"([^\"]*)\"|'([^']*)')");
+    private static final Pattern SIMPLE_DYNAMIC_ATTRIBUTE_PATTERN = Pattern.compile(
+            "(?i)(?<![\\w:-])(:|v-bind:)([A-Za-z_][A-Za-z0-9_:-]*)\\s*=\\s*(\"([^\"]*)\"|'([^']*)')");
     private static final Pattern STAGE1_COMPONENT_PLACEHOLDER_PATTERN = Pattern.compile(
             "<\\s*([A-Z][A-Za-z0-9_$]*)\\s*/\\s*>");
 
@@ -18,16 +20,23 @@ final class QinVueTemplateBlockCompiler {
         template = rewriteStage1ComponentPlaceholders(template);
         String escaped = escapeTemplateLiteral(template);
         escaped = rewriteClassBindings(escaped);
+        escaped = rewriteSimpleDynamicAttributes(escaped);
         String rendered = rewriteInterpolations(escaped);
         return """
                 function __qinEscapeHtml(value) {
-                  const text = value == null ? '' : String(value);
+                  const text = value == null ? '' : String(__qinDisplayValue(value));
                   return text
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
                     .replace(/\\"/g, '&quot;')
                     .replace(/'/g, '&#39;');
+                }
+                function __qinDisplayValue(value) {
+                  if (value && typeof value === 'object' && 'value' in value) {
+                    return value.value;
+                  }
+                  return value;
                 }
                 function __qinNormalizeClass(value) {
                   if (Array.isArray(value)) {
@@ -102,6 +111,23 @@ final class QinVueTemplateBlockCompiler {
         }
 
         return "class=\"${__qinNormalizeClass((" + expr + "))}\"";
+    }
+
+    private static String rewriteSimpleDynamicAttributes(String escapedTemplate) {
+        Matcher matcher = SIMPLE_DYNAMIC_ATTRIBUTE_PATTERN.matcher(escapedTemplate);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String attrName = matcher.group(2);
+            if ("class".equalsIgnoreCase(attrName)) {
+                matcher.appendReplacement(buffer, Matcher.quoteReplacement(matcher.group(0)));
+                continue;
+            }
+            String expr = matcher.group(4) != null ? matcher.group(4) : matcher.group(5);
+            String replacement = attrName + "=\"${__qinEscapeHtml((" + expr + "))}\"";
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(buffer);
+        return buffer.toString();
     }
 
     private static String escapeTemplateLiteral(String text) {

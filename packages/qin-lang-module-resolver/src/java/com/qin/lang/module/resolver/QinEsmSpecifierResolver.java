@@ -48,6 +48,7 @@ public final class QinEsmSpecifierResolver {
         }
         String normalized = specifier.trim();
         return normalized.startsWith("node:")
+                || "vue".equals(normalized)
                 || "fs".equals(normalized)
                 || "path".equals(normalized)
                 || "url".equals(normalized)
@@ -364,7 +365,7 @@ public final class QinEsmSpecifierResolver {
         if (fileName.isBlank() || hasSupportedScriptExtension(fileName)) {
             return null;
         }
-        String[] extensions = {".js", ".qin", ".vue", ".ovs", ".mjs", ".ts"};
+        String[] extensions = {".js", ".qin", ".vue", ".ovs", ".mjs", ".ts", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif"};
         for (String extension : extensions) {
             Path candidate = path.resolveSibling(fileName + extension);
             if (Files.isRegularFile(candidate)) {
@@ -453,7 +454,16 @@ public final class QinEsmSpecifierResolver {
                 || fileName.endsWith(".ts")
                 || fileName.endsWith(".qin")
                 || fileName.endsWith(".vue")
-                || fileName.endsWith(".ovs");
+                || fileName.endsWith(".ovs")
+                || fileName.endsWith(".css")
+                || fileName.endsWith(".svg")
+                || fileName.endsWith(".png")
+                || fileName.endsWith(".jpg")
+                || fileName.endsWith(".jpeg")
+                || fileName.endsWith(".gif")
+                || fileName.endsWith(".webp")
+                || fileName.endsWith(".ico")
+                || fileName.endsWith(".avif");
     }
 
     private record BareSpecifier(String packageName, String subPath) {

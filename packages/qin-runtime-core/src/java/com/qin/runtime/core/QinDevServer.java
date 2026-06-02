@@ -141,6 +141,12 @@ final class QinDevServer {
 
         byte[] bytes = Files.readAllBytes(normalizedResolved);
         if (devMode) {
+            String frontendModule = serveFrontendPublicModuleIfNeeded(exchange, runtime);
+            if (frontendModule != null) {
+                exchange.getResponseHeaders().set("Cache-Control", "no-store");
+                sendText(exchange, 200, frontendModule, "application/javascript; charset=utf-8");
+                return;
+            }
             bytes = injectDevClientIfNeeded(normalizedResolved, bytes);
             exchange.getResponseHeaders().set("Cache-Control", "no-store");
         }
@@ -202,6 +208,32 @@ final class QinDevServer {
         return path + "?" + query;
     }
 
+    private static String serveFrontendPublicModuleIfNeeded(HttpExchange exchange, RuntimeView runtime) throws IOException {
+        QinFrontendEsmService service = runtime.frontendEsmService();
+        if (service == null) {
+            return null;
+        }
+        URI uri = exchange.getRequestURI();
+        String path = uri == null ? null : uri.getPath();
+        if (!isPublicFrontendScriptRequest(path)) {
+            return null;
+        }
+        return service.transpileByPublicRequestPath(frontendModuleRequestPath(uri));
+    }
+
+    private static boolean isPublicFrontendScriptRequest(String path) {
+        if (path == null) {
+            return false;
+        }
+        String lower = path.toLowerCase();
+        return lower.endsWith(".js")
+                || lower.endsWith(".mjs")
+                || lower.endsWith(".ts")
+                || lower.endsWith(".qin")
+                || lower.endsWith(".vue")
+                || lower.endsWith(".ovs");
+    }
+
     private static Path resolveStaticFile(Path webRoot, String relativePath) {
         String normalized = relativePath == null ? "" : relativePath.trim();
         if (normalized.isEmpty() || "/".equals(normalized)) {
@@ -216,6 +248,10 @@ final class QinDevServer {
         Path direct = webRoot.resolve(clean).normalize();
         if (Files.exists(direct) && !Files.isDirectory(direct)) {
             return direct;
+        }
+        Path publicFile = webRoot.resolve("public").resolve(clean).normalize();
+        if (Files.exists(publicFile) && !Files.isDirectory(publicFile)) {
+            return publicFile;
         }
         if (Files.isDirectory(direct)) {
             Path dirIndex = resolveIndexFile(direct);
@@ -264,6 +300,21 @@ final class QinDevServer {
         }
         if (name.endsWith(".svg")) {
             return "image/svg+xml";
+        }
+        if (name.endsWith(".png")) {
+            return "image/png";
+        }
+        if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (name.endsWith(".gif")) {
+            return "image/gif";
+        }
+        if (name.endsWith(".webp")) {
+            return "image/webp";
+        }
+        if (name.endsWith(".ico")) {
+            return "image/x-icon";
         }
         return "application/octet-stream";
     }
@@ -603,6 +654,14 @@ final class QinDevServer {
                 }
                 sendRawText(output, 200, "OK", js, "application/javascript; charset=utf-8", noStore());
                 return;
+            }
+            QinFrontendEsmService service = runtime.frontendEsmService();
+            if (service != null && isPublicFrontendScriptRequest(path)) {
+                String js = service.transpileByPublicRequestPath(frontendModuleRequestPath(uri));
+                if (js != null) {
+                    sendRawText(output, 200, "OK", js, "application/javascript; charset=utf-8", noStore());
+                    return;
+                }
             }
             serveRawStatic(output, runtime, uri);
         }

@@ -205,7 +205,16 @@ public final class QinEsmSemanticAnalyzer {
             return false;
         }
         String fileName = module.file().getFileName().toString().toLowerCase();
-        return fileName.endsWith(".ovs");
+        return fileName.endsWith(".vue")
+                || fileName.endsWith(".ovs")
+                || fileName.endsWith(".svg")
+                || fileName.endsWith(".png")
+                || fileName.endsWith(".jpg")
+                || fileName.endsWith(".jpeg")
+                || fileName.endsWith(".gif")
+                || fileName.endsWith(".webp")
+                || fileName.endsWith(".ico")
+                || fileName.endsWith(".avif");
     }
 
     private void addDefaultDeclarationNamedExports(

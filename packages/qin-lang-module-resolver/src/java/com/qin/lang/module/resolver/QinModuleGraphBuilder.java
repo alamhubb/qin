@@ -44,8 +44,10 @@ public final class QinModuleGraphBuilder {
             return;
         }
 
-        String source = stripUtf8Bom(Files.readString(currentFile, StandardCharsets.UTF_8));
-        List<QinImportDescriptor> imports = importParser.parse(currentFile, source);
+        String source = readModuleSource(currentFile);
+        List<QinImportDescriptor> imports = isBinaryAssetModule(currentFile)
+                ? List.of()
+                : importParser.parse(currentFile, source);
         List<QinResolvedImport> resolvedImports = new ArrayList<>();
         for (QinImportDescriptor descriptor : imports) {
             Path resolvedModule = null;
@@ -70,6 +72,26 @@ public final class QinModuleGraphBuilder {
             return source;
         }
         return source.charAt(0) == UTF8_BOM ? source.substring(1) : source;
+    }
+
+    private String readModuleSource(Path file) throws IOException {
+        if (isBinaryAssetModule(file)) {
+            return "";
+        }
+        return stripUtf8Bom(Files.readString(file, StandardCharsets.UTF_8));
+    }
+
+    private boolean isBinaryAssetModule(Path file) {
+        String fileName = file == null || file.getFileName() == null
+                ? ""
+                : file.getFileName().toString().toLowerCase();
+        return fileName.endsWith(".png")
+                || fileName.endsWith(".jpg")
+                || fileName.endsWith(".jpeg")
+                || fileName.endsWith(".gif")
+                || fileName.endsWith(".webp")
+                || fileName.endsWith(".ico")
+                || fileName.endsWith(".avif");
     }
 
     private Path requireFile(Path file) {

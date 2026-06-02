@@ -56,6 +56,7 @@ public final class QinFullstackMain {
         QinRuntimeProjectLayout layout = QinRuntimeProjectLayout.discover(root);
         QinBuildCoordinator coordinator = new QinBuildCoordinator();
 
+        materializeProjectNpmDependencies(root);
         Path backendSource = resolveBackendSource(layout, options.backendSourceFile);
         Path frontendSource = resolveFrontendSource(layout, options.frontendSourceFile);
         Path classOutputDir = resolvePath(root, options.classOutputDir);
@@ -122,7 +123,11 @@ public final class QinFullstackMain {
         return runMethod;
     }
 
-    private static Path resolveBackendSource(QinRuntimeProjectLayout layout, Path fromArgs) {
+    private static void materializeProjectNpmDependencies(Path root) throws IOException {
+        new QinNpmDependencyMaterializer().materializeProjectDependencies(root, root.resolve("node_modules"));
+    }
+
+    private static Path resolveBackendSource(QinRuntimeProjectLayout layout, Path fromArgs) throws IOException {
         if (fromArgs != null) {
             Path resolved = resolvePath(layout.root(), fromArgs);
             requireFile(resolved, "--backend-file");
@@ -146,8 +151,19 @@ public final class QinFullstackMain {
             }
         }
 
-        throw new IllegalArgumentException(
-                "No backend Qin source found. Expected one of: main/main.qin, main/main.js, shared/main.qin, shared/main.js, shared/shared.qin, shared/shared.js, app/main.qin, app/main.js");
+        return writeGeneratedFrontendOnlyBackend(layout.root());
+    }
+
+    private static Path writeGeneratedFrontendOnlyBackend(Path root) throws IOException {
+        Path generated = root.resolve("build/fullstack/generated-frontend-only-backend.qin").normalize();
+        Files.createDirectories(generated.getParent());
+        Files.writeString(generated, """
+                const result = {
+                  message: "hello from Qin generated frontend-only backend",
+                  source: "build/fullstack/generated-frontend-only-backend.qin"
+                }
+                """, StandardCharsets.UTF_8);
+        return generated.toAbsolutePath().normalize();
     }
 
     private static Path resolveFrontendSource(QinRuntimeProjectLayout layout, Path fromArgs) {

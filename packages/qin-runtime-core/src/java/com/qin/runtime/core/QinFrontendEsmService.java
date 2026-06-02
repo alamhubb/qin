@@ -123,6 +123,30 @@ public final class QinFrontendEsmService {
         return injectQinHmrPrelude(normalizedRequestPath, moduleFile, transpileModule(moduleFile));
     }
 
+    public String transpileByPublicRequestPath(String requestPath) throws IOException {
+        String normalizedRequestPath = stripQinHmrQuery(requestPath);
+        if (normalizedRequestPath == null || normalizedRequestPath.isBlank()) {
+            return null;
+        }
+        int queryIndex = normalizedRequestPath.indexOf('?');
+        String pathOnly = queryIndex < 0 ? normalizedRequestPath : normalizedRequestPath.substring(0, queryIndex);
+        if (!pathOnly.startsWith("/")) {
+            return null;
+        }
+        Path moduleFile = projectRoot.resolve(pathOnly.substring(1)).toAbsolutePath().normalize();
+        if (!moduleFile.startsWith(projectRoot) || !moduleSourceMap.containsKey(moduleFile)) {
+            return null;
+        }
+        if (!isBrowserScriptModuleFile(moduleFile)) {
+            return null;
+        }
+        String moduleUrl = moduleUrlMap.get(moduleFile);
+        if (moduleUrl == null) {
+            return null;
+        }
+        return injectQinHmrPrelude(moduleUrl, moduleFile, transpileModule(moduleFile));
+    }
+
     private String injectQinHmrPrelude(String requestPath, Path moduleFile, String transpiled) {
         if (transpiled == null || requestPath == null || requestPath.contains("?")) {
             return transpiled;
@@ -180,6 +204,10 @@ public final class QinFrontendEsmService {
             transpiled = transpileVueModule(moduleFile, source);
         } else if (isOvsModuleFile(moduleFile)) {
             transpiled = transpileOvsModule(moduleFile, source);
+        } else if (isCssModuleFile(moduleFile)) {
+            transpiled = renderCssInjectionModule(source);
+        } else if (isAssetModuleFile(moduleFile)) {
+            transpiled = renderAssetUrlModule(moduleFile);
         } else {
             source = rewriteSpecifiers(module, source, IMPORT_FROM_PATTERN);
             source = rewriteSpecifiers(module, source, EXPORT_FROM_PATTERN);
@@ -357,7 +385,9 @@ public final class QinFrontendEsmService {
             return toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-ovs=runtime";
         }
         if ("vue".equals(specifier)) {
-            return toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-ovs=vue";
+            String requestPath = toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-vue=runtime";
+            registerVueRuntimeVirtualModules(requestPath);
+            return requestPath;
         }
 
         QinResolvedImport resolved = findResolvedImport(module, specifier);
@@ -605,6 +635,32 @@ public final class QinFrontendEsmService {
                 .normalize();
     }
 
+    private void registerVueRuntimeVirtualModules(String requestPath) {
+        String browserRuntimePath = requestPath.replace("?qin-vue=runtime", "?qin-vue=browser-runtime");
+        virtualModuleContentMap.putIfAbsent(browserRuntimePath, readVueBrowserRuntimeModule());
+        virtualModuleContentMap.putIfAbsent(requestPath, renderQinVueRuntimeWrapper(browserRuntimePath));
+    }
+
+    private String renderQinVueRuntimeWrapper(String browserRuntimePath) {
+        String escapedRuntimePath = escapeJsStringLiteral(browserRuntimePath);
+        return """
+                import * as Vue from "%s";
+                export * from "%s";
+
+                export function createApp(rootComponent, rootProps) {
+                  const app = Vue.createApp(rootComponent, rootProps);
+                  const originalMount = app.mount.bind(app);
+                  app.mount = (target, ...args) => {
+                    if (rootComponent && typeof rootComponent.__qinMountVue === 'function') {
+                      return rootComponent.__qinMountVue(target);
+                    }
+                    return originalMount(target, ...args);
+                  };
+                  return app;
+                }
+                """.formatted(escapedRuntimePath, escapedRuntimePath);
+    }
+
     private String readCsstsRuntimeModule() {
         Path runtimeModule = resolveCsstsRuntimeModule();
         if (!Files.exists(runtimeModule) || !Files.isRegularFile(runtimeModule)) {
@@ -751,6 +807,10 @@ public final class QinFrontendEsmService {
                 """.formatted(escaped);
     }
 
+    private String renderAssetUrlModule(Path moduleFile) {
+        return "export default \"" + escapeJsStringLiteral(toPublicUrl(projectRoot, moduleFile)) + "\";\n";
+    }
+
     private static String escapeJsStringLiteral(String text) {
         if (text == null) {
             return "";
@@ -819,7 +879,14 @@ public final class QinFrontendEsmService {
         if (relative.endsWith(".ovs")) {
             return relative + ".js";
         }
+        if (isCssModuleName(relative) || isAssetModuleName(relative)) {
+            return relative + ".js";
+        }
         return relative;
+    }
+
+    private static String toPublicUrl(Path root, Path file) {
+        return "/" + toRelativeUnix(root, file);
     }
 
     private static String toRelativeUnix(Path root, Path file) {
@@ -827,6 +894,18 @@ public final class QinFrontendEsmService {
     }
 
     private static boolean isFrontendModuleFile(Path file) {
+        String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
+        return name.endsWith(".js")
+                || name.endsWith(".mjs")
+                || name.endsWith(".ts")
+                || name.endsWith(".qin")
+                || name.endsWith(".vue")
+                || name.endsWith(".ovs")
+                || isCssModuleName(name)
+                || isAssetModuleName(name);
+    }
+
+    private static boolean isBrowserScriptModuleFile(Path file) {
         String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
         return name.endsWith(".js")
                 || name.endsWith(".mjs")
@@ -844,5 +923,34 @@ public final class QinFrontendEsmService {
     private static boolean isOvsModuleFile(Path file) {
         String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
         return name.endsWith(".ovs");
+    }
+
+    private static boolean isCssModuleFile(Path file) {
+        String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
+        return isCssModuleName(name);
+    }
+
+    private static boolean isAssetModuleFile(Path file) {
+        String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
+        return isAssetModuleName(name);
+    }
+
+    private static boolean isCssModuleName(String name) {
+        return name != null && name.toLowerCase().endsWith(".css");
+    }
+
+    private static boolean isAssetModuleName(String name) {
+        if (name == null) {
+            return false;
+        }
+        String lower = name.toLowerCase();
+        return lower.endsWith(".svg")
+                || lower.endsWith(".png")
+                || lower.endsWith(".jpg")
+                || lower.endsWith(".jpeg")
+                || lower.endsWith(".gif")
+                || lower.endsWith(".webp")
+                || lower.endsWith(".ico")
+                || lower.endsWith(".avif");
     }
 }

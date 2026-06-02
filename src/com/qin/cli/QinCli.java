@@ -548,14 +548,20 @@ public class QinCli {
 
         int port = resolveQinRuntimePort(config, args);
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
-        Path backendSource = Paths.get(QinConstants.getCwd(), qinFile).toAbsolutePath().normalize();
+        Path backendSource = qinFile == null || qinFile.isBlank()
+                ? null
+                : Paths.get(QinConstants.getCwd(), qinFile).toAbsolutePath().normalize();
         Path frontendRoot = resolveQinFrontendRoot(config, root);
-        Path frontendEntry = resolveQinFrontendEntry(config, root, frontendRoot);
-        Path frontendStaticDir = frontendRoot;
+        Path frontendEntry = firstNonNullPath(
+                resolvePathArg(args, "--frontend-file", root),
+                resolveQinFrontendEntry(config, root, frontendRoot));
+        Path frontendStaticDir = firstNonNullPath(
+                resolvePathArg(args, "--static-dir", root),
+                frontendRoot);
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
 
         System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
-        System.out.println(gray("  Backend entry: " + qinFile));
+        System.out.println(gray("  Backend entry: " + (qinFile == null || qinFile.isBlank() ? "<generated frontend-only backend>" : qinFile)));
         if (frontendRoot != null) {
             System.out.println(gray("  Frontend root: " + root.relativize(frontendRoot)));
         }
@@ -573,10 +579,18 @@ public class QinCli {
         }
         command.add("--root");
         command.add(root.toString());
-        command.add("--backend-file");
-        command.add(backendSource.toString());
+        if (backendSource != null) {
+            command.add("--backend-file");
+            command.add(backendSource.toString());
+        }
         command.add("--port");
         command.add(String.valueOf(port));
+        if (hasArg(args, "--build-only")) {
+            command.add("--build-only");
+        }
+        if (hasArg(args, "--print-ir")) {
+            command.add("--print-ir");
+        }
         if (frontendStaticDir != null) {
             command.add("--static-dir");
             command.add(frontendStaticDir.toString());
@@ -612,6 +626,32 @@ public class QinCli {
             }
         }
         return config.port() != null && config.port() > 0 ? config.port() : QinConstants.DEFAULT_PORT;
+    }
+
+    private static Path resolvePathArg(String[] args, String flag, Path root) {
+        for (int i = 0; i < args.length; i++) {
+            if (flag.equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    throw new IllegalArgumentException("Missing value for " + flag);
+                }
+                Path raw = Paths.get(args[++i]);
+                return raw.isAbsolute() ? raw.normalize() : root.resolve(raw).normalize();
+            }
+        }
+        return null;
+    }
+
+    private static Path firstNonNullPath(Path first, Path second) {
+        return first != null ? first : second;
+    }
+
+    private static boolean hasArg(String[] args, String flag) {
+        for (String arg : args) {
+            if (flag.equals(arg)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String resolveQinRuntimeMainClass(String runtimeClasspath, boolean devMode) {
@@ -974,12 +1014,13 @@ public class QinCli {
         QinConfig config = configLoader.load();
 
         String qinDevEntry = null;
+        boolean frontendOnlyOverride = hasArg(args, "--frontend-file");
         if (args.length > 0 && !args[0].startsWith("-")) {
             qinDevEntry = resolveRunTargetToQinFile(config, args[0]);
-        } else {
+        } else if (!frontendOnlyOverride) {
             qinDevEntry = resolveDefaultQinEntry(config);
         }
-        if (qinDevEntry != null) {
+        if (qinDevEntry != null || frontendOnlyOverride) {
             String[] qinArgs = args.length > 0 && !args[0].startsWith("-")
                     ? Arrays.copyOfRange(args, 1, args.length)
                     : args;
