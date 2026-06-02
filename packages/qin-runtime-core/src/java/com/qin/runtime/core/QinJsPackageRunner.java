@@ -717,6 +717,10 @@ final class QinJsPackageRunner {
                 export function transformWithEsbuild(code, filename, options) {
                   return { code: String(code || ""), map: { mappings: "" } };
                 }
+
+                export function defineConfig(config) {
+                  return config;
+                }
                 """;
     }
 

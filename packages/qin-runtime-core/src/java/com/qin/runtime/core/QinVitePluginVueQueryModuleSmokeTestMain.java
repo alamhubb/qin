@@ -38,6 +38,27 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                   }
                 }
                 """, StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("vite.config.js"), """
+                import vue from '@vitejs/plugin-vue'
+
+                function qinMarkerPlugin() {
+                  return {
+                    name: 'qin-marker',
+                    config() {
+                      return { __qinConfigMarker: 'config-hook-ran' }
+                    },
+                    transform(code, id) {
+                      if (String(id).includes('Comp.vue')) {
+                        return String(code).replace('Query Works', 'Config Works')
+                      }
+                    }
+                  }
+                }
+
+                export default {
+                  plugins: [qinMarkerPlugin(), vue()]
+                }
+                """, StandardCharsets.UTF_8);
         Files.writeString(src.resolve("main.js"), """
                 import './Comp.vue'
                 """, StandardCharsets.UTF_8);
@@ -53,6 +74,10 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
 
         QinFrontendEsmService service = QinFrontendEsmService.create(root, src.resolve("main.js"));
         String mainModule = service.transpileByRequestPath("/@qin-mod/src/Comp.vue.js");
+        if (!mainModule.contains("Config Works")) {
+            throw new IllegalStateException("Expected vite.config.js marker plugin to run before plugin-vue, got:\n"
+                    + mainModule);
+        }
         Matcher matcher = STYLE_IMPORT.matcher(mainModule);
         if (!matcher.find()) {
             throw new IllegalStateException("Expected plugin-vue main module to import style query, got:\n"
@@ -76,7 +101,7 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
         String templateModule = service.transpileByRequestPath("/@qin-mod/src/Comp.vue.js?vue&type=template");
         if (templateModule == null
                 || !templateModule.contains("export function render")
-                || !templateModule.contains("Query Works")) {
+                || !templateModule.contains("Config Works")) {
             throw new IllegalStateException("Expected template query module from plugin-vue, got:\n"
                     + templateModule);
         }

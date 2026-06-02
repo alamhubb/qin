@@ -131,56 +131,18 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
         String filename = moduleFile.toAbsolutePath().normalize().toString().replace('\\', '/');
         return """
                 import vuePlugin from "@vitejs/plugin-vue";
+                %s
 
-                const plugin = vuePlugin({ sourceMap: false });
-                const config = {
-                  root: %s,
-                  base: "/",
-                  command: "serve",
-                  isProduction: false,
-                  build: { sourcemap: false },
-                  css: { devSourcemap: false },
-                  define: {},
-                  logger: { warn(message) {} },
-                  server: { hmr: true, origin: "" }
-                };
-                const ctx = {
-                  parse(code) { return {}; },
-                  addWatchFile(file) {},
-                  emitFile(file) {},
-                  warn(message) {},
-                  error(message) { throw message; },
-                  async resolve(id) { return { id }; }
-                };
-                const server = {
-                  config,
-                  watcher: { on(event, handler) {} },
-                  moduleGraph: {
-                    getModuleById(id) { return null; },
-                    invalidateModule(module) {}
-                  }
-                };
-                function callHook(hook, thisArg, ...args) {
-                  if (!hook) return null;
-                  if (typeof hook === "function") return hook.call(thisArg, ...args);
-                  if (hook.handler) return hook.handler.call(thisArg, ...args);
-                  return null;
-                }
-                callHook(plugin.config, plugin, config);
-                callHook(plugin.configResolved, plugin, config);
-                callHook(plugin.configureServer, plugin, server);
-                callHook(plugin.options, ctx);
-                callHook(plugin.buildStart, ctx);
-                let transformed = callHook(plugin.transform, ctx, %s, %s);
-                if (transformed && transformed.then) {
-                  transformed.then(result => { transformed = result; });
-                }
+                %s
+                const qinTransformResult = qinApplyTransforms(qinPlugins, qinPluginContext, %s, %s);
                 ({
-                  code: typeof transformed === "string" ? transformed : transformed.code,
-                  map: typeof transformed === "string" ? null : transformed.map
+                  code: typeof qinTransformResult === "string" ? qinTransformResult : qinTransformResult.code,
+                  map: typeof qinTransformResult === "string" ? null : qinTransformResult.map,
+                  configMarker: qinResolvedConfig && qinResolvedConfig.__qinConfigMarker
                 });
                 """.formatted(
-                QinJsPackageRunner.renderJsLiteral(root),
+                viteConfigImportSource(projectRoot),
+                pluginContainerSource(root),
                 QinJsPackageRunner.renderJsLiteral(source),
                 QinJsPackageRunner.renderJsLiteral(filename));
     }
@@ -191,66 +153,183 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
         String id = filename + "?" + query;
         return """
                 import vuePlugin from "@vitejs/plugin-vue";
+                %s
 
-                const plugin = vuePlugin({ sourceMap: false });
-                const config = {
-                  root: %s,
-                  base: "/",
-                  command: "serve",
-                  isProduction: false,
-                  build: { sourcemap: false },
-                  css: { devSourcemap: false },
-                  define: {},
-                  logger: { warn(message) {} },
-                  server: { hmr: true, origin: "" }
-                };
-                const ctx = {
-                  parse(code) { return {}; },
-                  addWatchFile(file) {},
-                  emitFile(file) {},
-                  warn(message) {},
-                  error(message) { throw message; },
-                  async resolve(id) { return { id }; }
-                };
-                const server = {
-                  config,
-                  watcher: { on(event, handler) {} },
-                  moduleGraph: {
-                    getModuleById(id) { return null; },
-                    invalidateModule(module) {}
-                  }
-                };
-                function callHook(hook, thisArg, ...args) {
-                  if (!hook) return null;
-                  if (typeof hook === "function") return hook.call(thisArg, ...args);
-                  if (hook.handler) return hook.handler.call(thisArg, ...args);
-                  return null;
-                }
-                callHook(plugin.config, plugin, config);
-                callHook(plugin.configResolved, plugin, config);
-                callHook(plugin.configureServer, plugin, server);
-                callHook(plugin.options, ctx);
-                callHook(plugin.buildStart, ctx);
+                %s
                 const id = %s;
-                let loaded = callHook(plugin.load, ctx, id);
-                if (loaded && loaded.then) {
-                  loaded.then(result => { loaded = result; });
-                }
+                const loaded = qinApplyLoad(qinPlugins, qinPluginContext, id);
                 let code = typeof loaded === "string" ? loaded : loaded && loaded.code;
-                let transformed = code == null ? null : callHook(plugin.transform, ctx, code, id);
-                if (transformed && transformed.then) {
-                  transformed.then(result => { transformed = result; });
-                }
+                const transformed = code == null ? null : qinApplyTransforms(qinPlugins, qinPluginContext, code, id);
                 const finalResult = transformed || loaded;
                 ({
                   code: typeof finalResult === "string" ? finalResult : finalResult && finalResult.code,
                   map: typeof finalResult === "string" ? null : finalResult && finalResult.map,
                   loadedType: typeof loaded,
-                  transformedType: typeof transformed
+                  transformedType: typeof transformed,
+                  configMarker: qinResolvedConfig && qinResolvedConfig.__qinConfigMarker
                 });
                 """.formatted(
-                QinJsPackageRunner.renderJsLiteral(root),
+                viteConfigImportSource(projectRoot),
+                pluginContainerSource(root),
                 QinJsPackageRunner.renderJsLiteral(id));
+    }
+
+    private String pluginContainerSource(String root) {
+        return """
+                function qinCallHook(hook, thisArg, ...args) {
+                  if (!hook) return null;
+                  let result = null;
+                  if (typeof hook === "function") result = hook.call(thisArg, ...args);
+                  else if (hook.handler) result = hook.handler.call(thisArg, ...args);
+                  if (result && result.then) {
+                    result.then(value => { result = value; });
+                  }
+                  return result;
+                }
+                function qinIsPlainObject(value) {
+                  return value != null && typeof value === "object" && !Array.isArray(value);
+                }
+                function qinMergeObject(target, source) {
+                  const out = target || {};
+                  if (!qinIsPlainObject(source)) return out;
+                  for (const key of Object.keys(source)) {
+                    const value = source[key];
+                    if (qinIsPlainObject(value) && qinIsPlainObject(out[key])) {
+                      out[key] = qinMergeObject({ ...out[key] }, value);
+                    } else {
+                      out[key] = value;
+                    }
+                  }
+                  return out;
+                }
+                function qinFlattenPlugins(value, out = []) {
+                  if (value == null || value === false) return out;
+                  if (Array.isArray(value)) {
+                    for (const item of value) qinFlattenPlugins(item, out);
+                    return out;
+                  }
+                  out.push(value);
+                  return out;
+                }
+                function qinResolveUserConfig(raw) {
+                  let value = typeof raw === "function"
+                    ? raw({ command: "serve", mode: "development", ssrBuild: false })
+                    : raw;
+                  if (value && value.then) {
+                    value.then(result => { value = result; });
+                  }
+                  return value || {};
+                }
+                function qinHasVuePlugin(plugins) {
+                  for (const plugin of plugins) {
+                    if (plugin && plugin.name === "vite:vue") return true;
+                  }
+                  return false;
+                }
+                function qinCreateConfig(root, userConfig) {
+                  const config = qinMergeObject({}, userConfig || {});
+                  config.root = root;
+                  config.base = config.base || "/";
+                  config.command = "serve";
+                  config.isProduction = false;
+                  config.build = qinMergeObject({ sourcemap: false }, config.build || {});
+                  config.css = qinMergeObject({ devSourcemap: false }, config.css || {});
+                  config.define = config.define || {};
+                  config.logger = config.logger || { warn(message) {} };
+                  config.server = qinMergeObject({ hmr: true, origin: "" }, config.server || {});
+                  return config;
+                }
+                function qinCreatePluginContext(config) {
+                  return {
+                    parse(code) { return {}; },
+                    addWatchFile(file) {},
+                    emitFile(file) {},
+                    warn(message) {
+                      if (config.logger && config.logger.warn) config.logger.warn(message);
+                    },
+                    error(message) { throw message; },
+                    resolve(id) { return { id }; }
+                  };
+                }
+                function qinCreateServer(config) {
+                  return {
+                    config,
+                    watcher: { on(event, handler) {} },
+                    moduleGraph: {
+                      getModuleById(id) { return null; },
+                      invalidateModule(module) {}
+                    }
+                  };
+                }
+                function qinRunPluginLifecycle(plugins, config, context, server) {
+                  const env = { command: "serve", mode: "development", ssrBuild: false };
+                  for (const plugin of plugins) {
+                    const nextConfig = qinCallHook(plugin && plugin.config, plugin, config, env);
+                    if (nextConfig) qinMergeObject(config, nextConfig);
+                  }
+                  for (const plugin of plugins) qinCallHook(plugin && plugin.configResolved, plugin, config);
+                  for (const plugin of plugins) qinCallHook(plugin && plugin.configureServer, plugin, server);
+                  for (const plugin of plugins) qinCallHook(plugin && plugin.options, context);
+                  for (const plugin of plugins) qinCallHook(plugin && plugin.buildStart, context);
+                }
+                function qinApplyLoad(plugins, context, id) {
+                  for (const plugin of plugins) {
+                    const loaded = qinCallHook(plugin && plugin.load, context, id);
+                    if (loaded != null) return loaded;
+                  }
+                  return null;
+                }
+                function qinApplyTransforms(plugins, context, initialCode, id) {
+                  let code = initialCode;
+                  let lastResult = null;
+                  for (const plugin of plugins) {
+                    const result = qinCallHook(plugin && plugin.transform, context, code, id);
+                    if (result == null) continue;
+                    lastResult = result;
+                    code = typeof result === "string" ? result : result.code;
+                  }
+                  return lastResult || { code, map: null };
+                }
+                const qinUserConfig = qinResolveUserConfig(qinUserViteConfig);
+                let qinPlugins = qinFlattenPlugins(qinUserConfig.plugins);
+                if (!qinHasVuePlugin(qinPlugins)) {
+                  qinPlugins.push(vuePlugin({ sourceMap: false }));
+                }
+                const qinResolvedConfig = qinCreateConfig(%s, qinUserConfig);
+                const qinPluginContext = qinCreatePluginContext(qinResolvedConfig);
+                const qinDevServer = qinCreateServer(qinResolvedConfig);
+                qinRunPluginLifecycle(qinPlugins, qinResolvedConfig, qinPluginContext, qinDevServer);
+                """.formatted(QinJsPackageRunner.renderJsLiteral(root));
+    }
+
+    private String viteConfigImportSource(Path projectRoot) {
+        Path config = findViteConfig(projectRoot);
+        if (config == null) {
+            return "const qinUserViteConfig = null;";
+        }
+        Path wrapperDir = projectRoot.toAbsolutePath().normalize()
+                .resolve(".qin")
+                .resolve("runtime")
+                .resolve("npm-host")
+                .normalize();
+        String relative = wrapperDir.relativize(config.toAbsolutePath().normalize()).toString().replace('\\', '/');
+        if (!relative.startsWith(".")) {
+            relative = "./" + relative;
+        }
+        return "import qinUserViteConfig from "
+                + QinJsPackageRunner.renderJsLiteral(relative)
+                + ";";
+    }
+
+    private Path findViteConfig(Path projectRoot) {
+        Path root = projectRoot.toAbsolutePath().normalize();
+        for (String name : new String[] {"vite.config.js", "vite.config.mjs", "vite.config.ts"}) {
+            Path candidate = root.resolve(name);
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     private String renderCssInjectionModule(String css, Path moduleFile, String query) {
