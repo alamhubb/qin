@@ -10,17 +10,21 @@ import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinIrThisExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
+import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
 import com.slime.java.ast.JavaAstStringLiteral;
+import com.slime.java.ast.JavaAstThisExpression;
 import com.slime.java.ast.JavaCstToAst;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -129,6 +133,14 @@ public final class QinJavaAstIrLowerer {
         }
         if (expression instanceof JavaAstStringLiteral string) {
             return new QinIrStringLiteral(string.value());
+        }
+        if (expression instanceof JavaAstThisExpression) {
+            return new QinIrThisExpression();
+        }
+        if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
+            return new QinIrPropertyAccessExpression(
+                    lowerExpression(memberAccess.receiver()),
+                    memberAccess.propertyName());
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
             return new QinIrBuiltinCallExpression(

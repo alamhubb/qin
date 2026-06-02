@@ -11,6 +11,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                     String name;
                     List items;
                     int add(int a, int b) { return a + b; }
+                    String display() { return this.name; }
                 }
                 """;
 
@@ -21,13 +22,16 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 1, "method count");
+        require(person.methods().size() == 2, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
         require(add.parameters().size() == 2, "parameter count");
         require(add.parameters().get(0).type().kind() == QinIrTypeKind.INT, "first parameter type");
         require(add.parameters().get(1).type().kind() == QinIrTypeKind.INT, "second parameter type");
+        QinJavaSemanticMethod display = person.methods().get(1);
+        require(display.returnType().kind() == QinIrTypeKind.STRING, "display declared return type");
+        require(display.returnExpressionType().kind() == QinIrTypeKind.STRING, "display return expression type");
 
         System.out.println("QinJavaSemanticAnalyzerSmokeTestMain OK");
     }

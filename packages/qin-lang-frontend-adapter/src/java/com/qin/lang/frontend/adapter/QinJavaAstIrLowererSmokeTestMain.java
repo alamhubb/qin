@@ -5,7 +5,9 @@ import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrTypeKind;
 
 public class QinJavaAstIrLowererSmokeTestMain {
@@ -17,6 +19,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     String name;
                     List items;
                     int add(int a, int b) { return a + b; }
+                    String display() { return this.name; }
                 }
                 """;
 
@@ -33,7 +36,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 1, "method count");
+        require(person.methods().size() == 2, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -53,6 +56,13 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require("a".equals(((QinIrIdentifierReference) binary.arguments().get(1)).name()), "binary left name");
         require(binary.arguments().get(2) instanceof QinIrIdentifierReference, "binary right expression");
         require("b".equals(((QinIrIdentifierReference) binary.arguments().get(2)).name()), "binary right name");
+        QinIrMethodDeclaration display = person.methods().get(1);
+        require("display".equals(display.name()), "display method name");
+        require(display.returnType().kind() == QinIrTypeKind.STRING, "display return type");
+        require(display.returnExpression() instanceof QinIrPropertyAccessExpression, "display return expression");
+        QinIrPropertyAccessExpression propertyAccess = (QinIrPropertyAccessExpression) display.returnExpression();
+        require(propertyAccess.receiver() instanceof QinIrThisExpression, "display receiver");
+        require("name".equals(propertyAccess.propertyName()), "display property name");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }
