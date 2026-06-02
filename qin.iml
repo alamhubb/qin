@@ -512,6 +512,7 @@
     <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-el" level="project" />
     <orderEntry type="library" name="org.apache.tomcat.embed@tomcat-embed-websocket" level="project" />
     <orderEntry type="library" name="org.apache.xbean@xbean-reflect" level="project" />
+    <orderEntry type="library" name="org.apiguardian@apiguardian-api" level="project" />
     <orderEntry type="library" name="org.checkerframework@checker-qual" level="project" />
     <orderEntry type="library" name="org.codehaus.plexus@plexus-archiver" level="project" />
     <orderEntry type="library" name="org.codehaus.plexus@plexus-classworlds" level="project" />
@@ -521,6 +522,13 @@
     <orderEntry type="library" name="org.fusesource.jansi@jansi" level="project" />
     <orderEntry type="library" name="org.iq80.snappy@snappy" level="project" />
     <orderEntry type="library" name="org.jspecify@jspecify" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-api" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-engine" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-params" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter" level="project" />
+    <orderEntry type="library" name="org.junit.platform@junit-platform-commons" level="project" />
+    <orderEntry type="library" name="org.junit.platform@junit-platform-engine" level="project" />
+    <orderEntry type="library" name="org.opentest4j@opentest4j" level="project" />
     <orderEntry type="library" name="org.scala-lang.modules@scala-collection-compat_2.13" level="project" />
     <orderEntry type="library" name="org.scala-lang.modules@scala-xml_2.13" level="project" />
     <orderEntry type="library" name="org.scala-lang@scala-library" level="project" />
