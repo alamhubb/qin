@@ -1,18 +1,28 @@
 package com.qin.lang.frontend.adapter;
 
+import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrAnnotation;
 import com.qin.lang.ir.QinIrClassDeclaration;
+import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
+import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrMethodDeclaration;
+import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrTypeRef;
+import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
+import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstFieldDeclaration;
+import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstImportDeclaration;
 import com.slime.java.ast.JavaAstMethodDeclaration;
+import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
+import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaCstToAst;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -86,7 +96,32 @@ public final class QinJavaAstIrLowerer {
                 lowerType(method.returnTypeName(), packageName, importedTypes),
                 parameters,
                 List.of(),
-                null);
+                lowerExpression(method.returnExpression()));
+    }
+
+    private QinIrExpression lowerExpression(JavaAstExpression expression) {
+        if (expression == null) {
+            return null;
+        }
+        if (expression instanceof JavaAstIdentifierExpression identifier) {
+            return new QinIrIdentifierReference(identifier.name());
+        }
+        if (expression instanceof JavaAstNumberLiteral number) {
+            return new QinIrNumberLiteral(number.value());
+        }
+        if (expression instanceof JavaAstStringLiteral string) {
+            return new QinIrStringLiteral(string.value());
+        }
+        if (expression instanceof JavaAstBinaryExpression binary) {
+            return new QinIrBuiltinCallExpression(
+                    "Global",
+                    "__qin_binary__",
+                    List.of(
+                            new QinIrStringLiteral(binary.operator()),
+                            lowerExpression(binary.left()),
+                            lowerExpression(binary.right())));
+        }
+        throw new IllegalArgumentException("Unsupported Java AST expression: " + expression);
     }
 
     private QinIrTypeRef lowerType(

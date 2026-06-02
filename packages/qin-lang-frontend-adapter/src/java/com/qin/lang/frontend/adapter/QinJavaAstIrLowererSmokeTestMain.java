@@ -1,8 +1,11 @@
 package com.qin.lang.frontend.adapter;
 
+import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
+import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrTypeKind;
 
 public class QinJavaAstIrLowererSmokeTestMain {
@@ -39,6 +42,17 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(add.parameters().get(0).type().kind() == QinIrTypeKind.INT, "first parameter type");
         require("b".equals(add.parameters().get(1).name()), "second parameter name");
         require(add.parameters().get(1).type().kind() == QinIrTypeKind.INT, "second parameter type");
+        require(add.returnExpression() instanceof QinIrBuiltinCallExpression, "return expression");
+        QinIrBuiltinCallExpression binary = (QinIrBuiltinCallExpression) add.returnExpression();
+        require("Global".equals(binary.receiverName()), "binary receiver");
+        require("__qin_binary__".equals(binary.methodName()), "binary method");
+        require(binary.arguments().size() == 3, "binary argument count");
+        require(binary.arguments().get(0) instanceof QinIrStringLiteral, "binary operator literal");
+        require("+".equals(((QinIrStringLiteral) binary.arguments().get(0)).value()), "binary operator");
+        require(binary.arguments().get(1) instanceof QinIrIdentifierReference, "binary left expression");
+        require("a".equals(((QinIrIdentifierReference) binary.arguments().get(1)).name()), "binary left name");
+        require(binary.arguments().get(2) instanceof QinIrIdentifierReference, "binary right expression");
+        require("b".equals(((QinIrIdentifierReference) binary.arguments().get(2)).name()), "binary right name");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }
