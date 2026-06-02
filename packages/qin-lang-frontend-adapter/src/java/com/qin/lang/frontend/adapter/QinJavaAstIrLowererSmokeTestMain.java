@@ -4,6 +4,7 @@ import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
+import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
@@ -15,6 +16,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
     public static void main(String[] args) {
         String source = """
                 package com.example;
+                import java.util.ArrayList;
                 import java.util.List;
                 class Person {
                     String name;
@@ -25,6 +27,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     String label() { return this.display(); }
                     String alias() { return display(); }
                     String joined(String name) { return greet(name); }
+                    ArrayList fresh() { return new ArrayList(); }
                 }
                 """;
 
@@ -41,7 +44,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 6, "method count");
+        require(person.methods().size() == 7, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -104,6 +107,15 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(argumentCall.arguments().size() == 1, "joined argument count");
         require(argumentCall.arguments().get(0) instanceof QinIrIdentifierReference, "joined first argument");
         require("name".equals(((QinIrIdentifierReference) argumentCall.arguments().get(0)).name()), "joined argument name");
+        QinIrMethodDeclaration fresh = person.methods().get(6);
+        require("fresh".equals(fresh.name()), "fresh method name");
+        require(fresh.returnType().kind() == QinIrTypeKind.CLASS, "fresh return type");
+        require("java.util.ArrayList".equals(fresh.returnType().binaryName()), "fresh return binary name");
+        require(fresh.returnExpression() instanceof QinIrJavaNewExpression, "fresh return expression");
+        QinIrJavaNewExpression newExpression = (QinIrJavaNewExpression) fresh.returnExpression();
+        require("ArrayList".equals(newExpression.classLocalName()), "fresh new local name");
+        require("java.util.ArrayList".equals(newExpression.ownerBinaryName()), "fresh new owner name");
+        require(newExpression.arguments().isEmpty(), "fresh argument count");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }

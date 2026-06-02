@@ -12,6 +12,7 @@ import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodCallExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
+import com.slime.java.ast.JavaAstNewExpression;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
@@ -111,10 +112,24 @@ public final class QinJavaSemanticAnalyzer {
         for (JavaAstStatement statement : method.bodyStatements()) {
             if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
                 if (localVariable.initializer() != null) {
-                    expressionType(localVariable.initializer(), locals, fieldTypes, methodReturnTypes, classBinaryName);
+                    expressionType(
+                            localVariable.initializer(),
+                            packageName,
+                            importedTypes,
+                            locals,
+                            fieldTypes,
+                            methodReturnTypes,
+                            classBinaryName);
                 }
                 QinIrTypeRef localType = "var".equals(localVariable.typeName())
-                        ? expressionType(localVariable.initializer(), locals, fieldTypes, methodReturnTypes, classBinaryName)
+                        ? expressionType(
+                                localVariable.initializer(),
+                                packageName,
+                                importedTypes,
+                                locals,
+                                fieldTypes,
+                                methodReturnTypes,
+                                classBinaryName)
                         : resolveType(localVariable.typeName(), packageName, importedTypes);
                 locals.put(localVariable.name(), localType);
                 continue;
@@ -122,6 +137,8 @@ public final class QinJavaSemanticAnalyzer {
             if (statement instanceof JavaAstReturnStatement returnStatement) {
                 returnExpressionType = expressionType(
                         returnStatement.expression(),
+                        packageName,
+                        importedTypes,
                         locals,
                         fieldTypes,
                         methodReturnTypes,
@@ -131,6 +148,8 @@ public final class QinJavaSemanticAnalyzer {
         if (method.bodyStatements().isEmpty()) {
             returnExpressionType = expressionType(
                     method.returnExpression(),
+                    packageName,
+                    importedTypes,
                     locals,
                     fieldTypes,
                     methodReturnTypes,
@@ -141,6 +160,8 @@ public final class QinJavaSemanticAnalyzer {
 
     private QinIrTypeRef expressionType(
             JavaAstExpression expression,
+            String packageName,
+            Map<String, String> importedTypes,
             Map<String, QinIrTypeRef> locals,
             Map<String, QinIrTypeRef> fieldTypes,
             Map<String, QinIrTypeRef> methodReturnTypes,
@@ -164,6 +185,12 @@ public final class QinJavaSemanticAnalyzer {
         if (expression instanceof JavaAstStringLiteral) {
             return QinIrTypeRef.stringType();
         }
+        if (expression instanceof JavaAstNewExpression newExpression) {
+            for (JavaAstExpression argument : newExpression.arguments()) {
+                expressionType(argument, packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
+            }
+            return resolveType(newExpression.typeName(), packageName, importedTypes);
+        }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             if (memberAccess.receiver() instanceof JavaAstThisExpression) {
                 QinIrTypeRef fieldType = fieldTypes.get(memberAccess.propertyName());
@@ -176,7 +203,7 @@ public final class QinJavaSemanticAnalyzer {
         }
         if (expression instanceof JavaAstMethodCallExpression methodCall) {
             for (JavaAstExpression argument : methodCall.arguments()) {
-                expressionType(argument, locals, fieldTypes, methodReturnTypes, classBinaryName);
+                expressionType(argument, packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
             }
             if (methodCall.receiver() instanceof JavaAstThisExpression) {
                 QinIrTypeRef returnType = methodReturnTypes.get(methodCall.methodName());
@@ -190,8 +217,8 @@ public final class QinJavaSemanticAnalyzer {
         if (expression instanceof JavaAstBinaryExpression binary) {
             return binaryExpressionType(
                     binary.operator(),
-                    expressionType(binary.left(), locals, fieldTypes, methodReturnTypes, classBinaryName),
-                    expressionType(binary.right(), locals, fieldTypes, methodReturnTypes, classBinaryName));
+                    expressionType(binary.left(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName),
+                    expressionType(binary.right(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName));
         }
         throw new IllegalArgumentException("Unsupported Java expression for semantics: " + expression);
     }

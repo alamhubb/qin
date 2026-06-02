@@ -6,6 +6,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
     public static void main(String[] args) {
         String source = """
                 package com.example;
+                import java.util.ArrayList;
                 import java.util.List;
                 class Person {
                     String name;
@@ -16,6 +17,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                     String label() { return this.display(); }
                     String alias() { return display(); }
                     String joined(String name) { return greet(name); }
+                    ArrayList fresh() { return new ArrayList(); }
                 }
                 """;
 
@@ -26,7 +28,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 6, "method count");
+        require(person.methods().size() == 7, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
@@ -48,6 +50,11 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         QinJavaSemanticMethod joined = person.methods().get(5);
         require(joined.returnType().kind() == QinIrTypeKind.STRING, "joined declared return type");
         require(joined.returnExpressionType().kind() == QinIrTypeKind.STRING, "joined return expression type");
+        QinJavaSemanticMethod fresh = person.methods().get(6);
+        require(fresh.returnType().kind() == QinIrTypeKind.CLASS, "fresh declared return type");
+        require("java.util.ArrayList".equals(fresh.returnType().binaryName()), "fresh declared binary name");
+        require(fresh.returnExpressionType().kind() == QinIrTypeKind.CLASS, "fresh return expression type");
+        require("java.util.ArrayList".equals(fresh.returnExpressionType().binaryName()), "fresh return expression binary name");
 
         System.out.println("QinJavaSemanticAnalyzerSmokeTestMain OK");
     }
