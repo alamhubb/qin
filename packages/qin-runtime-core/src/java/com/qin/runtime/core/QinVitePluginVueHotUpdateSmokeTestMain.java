@@ -50,6 +50,10 @@ public final class QinVitePluginVueHotUpdateSmokeTestMain {
                       if (!modules || modules.size !== 1) {
                         this.error('moduleGraph.getModulesByFile did not return module set')
                       }
+                      const content = ctx.read()
+                      if (!String(content).includes('Hot Update Read Marker')) {
+                        this.error('ctx.read did not return changed file content: ' + content)
+                      }
                       ctx.server.ws.send({
                         type: 'custom',
                         event: 'qin:hot-update-smoke',
@@ -69,7 +73,7 @@ public final class QinVitePluginVueHotUpdateSmokeTestMain {
         Path component = src.resolve("Comp.vue");
         Files.writeString(component, """
                 <template>
-                  <section>Hot Update</section>
+                  <section>Hot Update Read Marker</section>
                 </template>
                 """, StandardCharsets.UTF_8);
 

@@ -266,8 +266,21 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
             if (i > 0) {
                 files.append(", ");
             }
-            files.append(QinJsPackageRunner.renderJsLiteral(
-                    changedFiles.get(i).toAbsolutePath().normalize().toString().replace('\\', '/')));
+            Path changedFile = changedFiles.get(i).toAbsolutePath().normalize();
+            String content = "";
+            if (Files.isRegularFile(changedFile)) {
+                try {
+                    content = Files.readString(changedFile);
+                } catch (Exception error) {
+                    throw new IllegalStateException("Failed to read changed file for Vite HMR: "
+                            + changedFile.toAbsolutePath(), error);
+                }
+            }
+            files.append("{ file: ")
+                    .append(QinJsPackageRunner.renderJsLiteral(changedFile.toString().replace('\\', '/')))
+                    .append(", content: ")
+                    .append(QinJsPackageRunner.renderJsLiteral(content))
+                    .append(" }");
         }
         files.append("]");
         return """
@@ -276,8 +289,8 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
 
                 %s
                 const qinChangedFiles = %s;
-                for (const file of qinChangedFiles) {
-                  qinApplyHotUpdate(qinPlugins, qinDevServer, file);
+                for (const changedFile of qinChangedFiles) {
+                  qinApplyHotUpdate(qinPlugins, qinDevServer, changedFile.file, changedFile.content);
                 }
                 ({ messages: qinDevServer.__qinWsMessages });
                 """.formatted(
@@ -584,7 +597,7 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   }
                   return { specifierRewrites, virtualModules };
                 }
-                function qinApplyHotUpdate(plugins, server, file) {
+                function qinApplyHotUpdate(plugins, server, file, content) {
                   const normalizedFile = qinNormalizePath(file);
                   const modules = Array.from(server.moduleGraph.getModulesByFile(normalizedFile));
                   const context = qinCreatePluginContext(server.config, plugins);
@@ -594,7 +607,7 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                     modules,
                     server,
                     read() {
-                      return "";
+                      return String(content || "");
                     }
                   });
                   for (const plugin of plugins) {
