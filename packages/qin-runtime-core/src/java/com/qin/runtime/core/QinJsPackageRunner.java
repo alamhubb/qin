@@ -404,44 +404,150 @@ final class QinJsPackageRunner {
                   }
                   function compileTemplate(options = {}) {
                     const source = String(options.source || "");
-                    const componentName = firstSelfClosingComponent(source);
-                    if (componentName) {
-                      return {
-                        code: `import { openBlock as _openBlock, createBlock as _createBlock } from "vue"${nl}export function render(_ctx, _cache) { return (_openBlock(), _createBlock(_ctx.${componentName})) }`,
-                        ast: {},
-                        tips: [],
-                        errors: [],
-                        map: null
-                      };
-                    }
-                    const click = firstAttrValue(source, "@click");
-                    const buttonClass = firstAttrValue(source, "class");
-                    const buttonType = firstAttrValue(source, "type") || "button";
-                    const interpolation = firstInterpolation(source);
-                    const plainText = source.replace(/<[^>]*>/g, "").replace(/\\{\\{[^}]+\\}\\}/g, "").trim();
-                    const textExpression = interpolation
-                      ? `${JSON.stringify(plainText ? plainText + " " : "")} + _toDisplayString(_ctx.${interpolation})`
-                      : JSON.stringify(plainText);
-                    if (source.indexOf("<button") >= 0) {
-                      const props = click
-                        ? `{ type: ${JSON.stringify(buttonType)}, class: ${JSON.stringify(buttonClass || "")}, onClick: _cache[0] || (_cache[0] = $event => (_ctx.${click.replace("++", "")}++)) }`
-                        : `{ type: ${JSON.stringify(buttonType)}, class: ${JSON.stringify(buttonClass || "")} }`;
-                      return {
-                        code: `import { toDisplayString as _toDisplayString, openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"${nl}export function render(_ctx, _cache) { return (_openBlock(), _createElementBlock("button", ${props}, ${textExpression}, 9, ["onClick"])) }`,
-                        ast: {},
-                        tips: [],
-                        errors: [],
-                        map: null
-                      };
-                    }
-                    const escaped = JSON.stringify(plainText);
+                    const roots = parseTemplateNodes(source);
+                    const expression = roots.length === 1
+                      ? emitTemplateNode(roots[0])
+                      : `[${roots.map(emitTemplateNode).join(", ")}]`;
                     return {
-                      code: `import { toDisplayString as _toDisplayString, openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"${nl}export function render(_ctx, _cache) { return (_openBlock(), _createElementBlock("div", null, _toDisplayString(${escaped}), 1)) }`,
+                      code: `import { h as _h, toDisplayString as _toDisplayString } from "vue"${nl}export function render(_ctx, _cache) { return ${expression}; }`,
                       ast: {},
                       tips: [],
                       errors: [],
                       map: null
                     };
+                  }
+                  function parseTemplateNodes(source) {
+                    const root = { type: "root", children: [] };
+                    const stack = [root];
+                    let index = 0;
+                    while (index < source.length) {
+                      const lt = source.indexOf("<", index);
+                      if (lt < 0) {
+                        appendText(stack[stack.length - 1], source.slice(index));
+                        break;
+                      }
+                      appendText(stack[stack.length - 1], source.slice(index, lt));
+                      if (source.startsWith("<!--", lt)) {
+                        const endComment = source.indexOf("-->", lt + 4);
+                        index = endComment < 0 ? source.length : endComment + 3;
+                        continue;
+                      }
+                      if (source.startsWith("</", lt)) {
+                        const closeEnd = source.indexOf(">", lt + 2);
+                        if (closeEnd < 0) break;
+                        const closeTag = source.slice(lt + 2, closeEnd).trim().toLowerCase();
+                        while (stack.length > 1 && stack[stack.length - 1].tag.toLowerCase() !== closeTag) {
+                          stack.pop();
+                        }
+                        if (stack.length > 1) stack.pop();
+                        index = closeEnd + 1;
+                        continue;
+                      }
+                      const tagEnd = findTagEnd(source, lt + 1);
+                      if (tagEnd < 0) break;
+                      const raw = source.slice(lt + 1, tagEnd).trim();
+                      const selfClosing = raw.endsWith("/");
+                      const clean = selfClosing ? raw.slice(0, -1).trim() : raw;
+                      const space = firstWhitespace(clean);
+                      const tag = space < 0 ? clean : clean.slice(0, space);
+                      const rawAttrs = space < 0 ? "" : clean.slice(space + 1);
+                      const node = { type: "element", tag, attrs: parseTemplateAttrs(rawAttrs), children: [] };
+                      stack[stack.length - 1].children.push(node);
+                      if (!selfClosing && !isVoidTag(tag)) {
+                        stack.push(node);
+                      }
+                      index = tagEnd + 1;
+                    }
+                    return root.children.filter(node => !(node.type === "text" && !node.value.trim()));
+                  }
+                  function appendText(parent, text) {
+                    if (!text) return;
+                    const parts = String(text).split(/(\\{\\{[\\s\\S]*?\\}\\})/g);
+                    for (const part of parts) {
+                      if (!part) continue;
+                      if (part.startsWith("{{") && part.endsWith("}}")) {
+                        const expression = part.slice(2, -2).trim();
+                        if (expression) parent.children.push({ type: "expression", value: expression });
+                        continue;
+                      }
+                      const normalized = part.replace(/\\s+/g, " ");
+                      if (normalized.trim()) parent.children.push({ type: "text", value: normalized });
+                    }
+                  }
+                  function findTagEnd(source, start) {
+                    let quote = "";
+                    for (let i = start; i < source.length; i++) {
+                      const ch = source[i];
+                      if (quote) {
+                        if (ch === quote) quote = "";
+                        continue;
+                      }
+                      if (ch === '"' || ch === "'") {
+                        quote = ch;
+                        continue;
+                      }
+                      if (ch === ">") return i;
+                    }
+                    return -1;
+                  }
+                  function firstWhitespace(text) {
+                    for (let i = 0; i < text.length; i++) {
+                      const code = text.charCodeAt(i);
+                      if (code === 32 || code === 9 || code === 10 || code === 13 || code === 12) return i;
+                    }
+                    return -1;
+                  }
+                  function parseTemplateAttrs(raw) {
+                    const attrs = [];
+                    const pattern = /([^\\s=]+)(?:\\s*=\\s*("[^"]*"|'[^']*'|[^\\s"']+))?/g;
+                    let match;
+                    while ((match = pattern.exec(raw || ""))) {
+                      let value = match[2];
+                      if (value == null) value = true;
+                      else if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                        value = value.slice(1, -1);
+                      }
+                      attrs.push({ name: match[1], value });
+                    }
+                    return attrs;
+                  }
+                  function emitTemplateNode(node) {
+                    if (node.type === "text") return JSON.stringify(node.value);
+                    if (node.type === "expression") return `_toDisplayString(_ctx.${node.value})`;
+                    const tagExpression = isComponentTag(node.tag) ? `_ctx.${node.tag}` : JSON.stringify(node.tag);
+                    const props = emitProps(node.attrs);
+                    const children = node.children.map(emitTemplateNode).filter(Boolean);
+                    const childrenExpression = children.length === 0
+                      ? "null"
+                      : children.length === 1
+                        ? children[0]
+                        : `[${children.join(", ")}]`;
+                    return `_h(${tagExpression}, ${props}, ${childrenExpression})`;
+                  }
+                  function emitProps(attrs) {
+                    const entries = [];
+                    for (const attr of attrs || []) {
+                      const name = String(attr.name || "");
+                      if (!name) continue;
+                      if (name.startsWith(":")) {
+                        entries.push(`${JSON.stringify(name.slice(1))}: _ctx.${attr.value}`);
+                      } else if (name.startsWith("@")) {
+                        const event = "on" + name.slice(1, 2).toUpperCase() + name.slice(2);
+                        entries.push(`${JSON.stringify(event)}: $event => (_ctx.${String(attr.value).replace(/;\\s*$/, "")})`);
+                      } else if (attr.value === true) {
+                        entries.push(`${JSON.stringify(name)}: true`);
+                      } else {
+                        entries.push(`${JSON.stringify(name)}: ${JSON.stringify(attr.value)}`);
+                      }
+                    }
+                    return entries.length ? `{ ${entries.join(", ")} }` : "null";
+                  }
+                  function isComponentTag(tag) {
+                    const first = String(tag || "")[0] || "";
+                    return first >= "A" && first <= "Z";
+                  }
+                  function isVoidTag(tag) {
+                    return ["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr", "use"].includes(String(tag || "").toLowerCase());
                   }
                   function compileStyleAsync(options = {}) {
                     return { code: String(options.source || ""), errors: [], map: null };
