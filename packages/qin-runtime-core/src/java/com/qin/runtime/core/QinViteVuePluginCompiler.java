@@ -239,16 +239,72 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   config.server = qinMergeObject({ hmr: true, origin: "" }, config.server || {});
                   return config;
                 }
+                function qinNormalizePath(path) {
+                  return String(path || "").replace(/\\\\/g, "/");
+                }
+                function qinStripQuery(id) {
+                  const text = qinNormalizePath(id);
+                  const question = text.indexOf("?");
+                  return question < 0 ? text : text.slice(0, question);
+                }
+                function qinDirname(id) {
+                  const clean = qinStripQuery(id);
+                  const slash = clean.lastIndexOf("/");
+                  return slash < 0 ? "" : clean.slice(0, slash);
+                }
+                function qinJoinPath(base, specifier) {
+                  const prefix = /^[A-Za-z]:\\//.test(base) ? base.slice(0, 3) : (base.startsWith("/") ? "/" : "");
+                  const baseBody = prefix ? base.slice(prefix.length) : base;
+                  const parts = (baseBody + "/" + specifier).split("/");
+                  const out = [];
+                  for (const part of parts) {
+                    if (!part || part === ".") continue;
+                    if (part === "..") out.pop();
+                    else out.push(part);
+                  }
+                  return prefix + out.join("/");
+                }
+                function qinResolveId(id, importer, config) {
+                  const specifier = qinNormalizePath(id);
+                  if (!specifier) return null;
+                  if (/^[A-Za-z]:\\//.test(specifier)) return { id: specifier };
+                  if (specifier.startsWith("/")) return { id: qinJoinPath(config.root, "." + specifier) };
+                  if (specifier.startsWith("./") || specifier.startsWith("../")) {
+                    const base = importer ? qinDirname(importer) : config.root;
+                    return { id: qinJoinPath(base || config.root, specifier) };
+                  }
+                  return { id: specifier };
+                }
                 function qinCreatePluginContext(config) {
+                  const watchFiles = [];
+                  const emittedFiles = [];
+                  const warnings = [];
                   return {
                     parse(code) { return {}; },
-                    addWatchFile(file) {},
-                    emitFile(file) {},
+                    addWatchFile(file) {
+                      watchFiles.push(qinNormalizePath(file));
+                    },
+                    emitFile(file) {
+                      const refId = "qin-file-" + emittedFiles.length;
+                      emittedFiles.push({ refId, file });
+                      return refId;
+                    },
+                    getWatchFiles() {
+                      return watchFiles.slice();
+                    },
                     warn(message) {
+                      warnings.push(message);
                       if (config.logger && config.logger.warn) config.logger.warn(message);
                     },
-                    error(message) { throw message; },
-                    resolve(id) { return { id }; }
+                    error(message) {
+                      throw message instanceof Error ? message : new Error(String(message));
+                    },
+                    resolve(id, importer) {
+                      return qinResolveId(id, importer, config);
+                    },
+                    __qinWatchFiles: watchFiles,
+                    __qinEmittedFiles: emittedFiles,
+                    __qinWarnings: warnings
                   };
                 }
                 function qinCreateServer(config) {

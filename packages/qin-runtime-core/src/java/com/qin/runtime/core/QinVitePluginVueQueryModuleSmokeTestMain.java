@@ -49,6 +49,19 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                     },
                     transform(code, id) {
                       if (String(id).includes('Comp.vue')) {
+                        const resolved = this.resolve('./dep.js', id)
+                        if (!resolved || !String(resolved.id).endsWith('/src/dep.js')) {
+                          this.error('context.resolve did not resolve relative to importer: ' + JSON.stringify(resolved))
+                        }
+                        this.addWatchFile(resolved.id)
+                        const refId = this.emitFile({ type: 'asset', name: 'marker.txt', source: 'marker' })
+                        if (refId !== 'qin-file-0') {
+                          this.error('context.emitFile returned unexpected ref id: ' + refId)
+                        }
+                        this.warn('qin marker warning')
+                        if (!this.getWatchFiles().some(file => String(file).endsWith('/src/dep.js'))) {
+                          this.error('context.addWatchFile did not record dep.js')
+                        }
                         return String(code).replace('Query Works', 'Config Works')
                       }
                     }
