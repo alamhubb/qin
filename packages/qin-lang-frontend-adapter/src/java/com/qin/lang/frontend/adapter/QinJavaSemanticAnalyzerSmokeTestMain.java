@@ -14,6 +14,8 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                     String display() { return this.name; }
                     String greet(String name) { String prefix = "hello "; return prefix + name; }
                     String label() { return this.display(); }
+                    String alias() { return display(); }
+                    String joined(String name) { return greet(name); }
                 }
                 """;
 
@@ -24,7 +26,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 4, "method count");
+        require(person.methods().size() == 6, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
@@ -40,6 +42,12 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         QinJavaSemanticMethod label = person.methods().get(3);
         require(label.returnType().kind() == QinIrTypeKind.STRING, "label declared return type");
         require(label.returnExpressionType().kind() == QinIrTypeKind.STRING, "label return expression type");
+        QinJavaSemanticMethod alias = person.methods().get(4);
+        require(alias.returnType().kind() == QinIrTypeKind.STRING, "alias declared return type");
+        require(alias.returnExpressionType().kind() == QinIrTypeKind.STRING, "alias return expression type");
+        QinJavaSemanticMethod joined = person.methods().get(5);
+        require(joined.returnType().kind() == QinIrTypeKind.STRING, "joined declared return type");
+        require(joined.returnExpressionType().kind() == QinIrTypeKind.STRING, "joined return expression type");
 
         System.out.println("QinJavaSemanticAnalyzerSmokeTestMain OK");
     }

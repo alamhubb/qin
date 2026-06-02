@@ -23,6 +23,8 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     String display() { return this.name; }
                     String greet(String name) { String prefix = "hello "; return prefix + name; }
                     String label() { return this.display(); }
+                    String alias() { return display(); }
+                    String joined(String name) { return greet(name); }
                 }
                 """;
 
@@ -39,7 +41,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 4, "method count");
+        require(person.methods().size() == 6, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -86,6 +88,22 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(methodCall.receiver() instanceof QinIrThisExpression, "label receiver");
         require("display".equals(methodCall.methodName()), "label method call name");
         require(methodCall.arguments().isEmpty(), "label argument count");
+        QinIrMethodDeclaration alias = person.methods().get(4);
+        require("alias".equals(alias.name()), "alias method name");
+        require(alias.returnExpression() instanceof QinIrInstanceMethodCallExpression, "alias return expression");
+        QinIrInstanceMethodCallExpression implicitCall = (QinIrInstanceMethodCallExpression) alias.returnExpression();
+        require(implicitCall.receiver() instanceof QinIrThisExpression, "alias receiver");
+        require("display".equals(implicitCall.methodName()), "alias method call name");
+        require(implicitCall.arguments().isEmpty(), "alias argument count");
+        QinIrMethodDeclaration joined = person.methods().get(5);
+        require("joined".equals(joined.name()), "joined method name");
+        require(joined.returnExpression() instanceof QinIrInstanceMethodCallExpression, "joined return expression");
+        QinIrInstanceMethodCallExpression argumentCall = (QinIrInstanceMethodCallExpression) joined.returnExpression();
+        require(argumentCall.receiver() instanceof QinIrThisExpression, "joined receiver");
+        require("greet".equals(argumentCall.methodName()), "joined method call name");
+        require(argumentCall.arguments().size() == 1, "joined argument count");
+        require(argumentCall.arguments().get(0) instanceof QinIrIdentifierReference, "joined first argument");
+        require("name".equals(((QinIrIdentifierReference) argumentCall.arguments().get(0)).name()), "joined argument name");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }
