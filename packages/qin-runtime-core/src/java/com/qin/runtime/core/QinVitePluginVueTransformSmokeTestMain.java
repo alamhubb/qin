@@ -25,6 +25,10 @@ public final class QinVitePluginVueTransformSmokeTestMain {
                 <template>
                   <img :src="logo" alt="Logo" />
                   <button type="button" @click="count++">Count is {{ count }}</button>
+                  <div id="docs">
+                    <svg><use href="/icons.svg#documentation-icon"></use></svg>
+                    <h2>Docs</h2>
+                  </div>
                 </template>
                 """;
         Object result = new QinJsPackageRunner().runModuleSource(root, """
@@ -98,6 +102,10 @@ public final class QinVitePluginVueTransformSmokeTestMain {
         if (!exposesLogo || !text.contains("\"src\": _ctx.logo")) {
             throw new IllegalStateException("Expected script setup default import to be exposed to template, got:\n"
                     + text);
+        }
+        if (!text.contains("_h(\"div\", { \"id\": \"docs\" }, [_h(\"svg\"")
+                || !text.contains("_h(\"svg\", null, _h(\"use\", { \"href\": \"/icons.svg#documentation-icon\" }, null)), _h(\"h2\", null, \"Docs\")")) {
+            throw new IllegalStateException("Expected SVG use close tag to preserve nested div children, got:\n" + text);
         }
         System.out.println("QinVitePluginVueTransformSmokeTestMain OK");
     }

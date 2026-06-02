@@ -586,7 +586,7 @@ final class QinJsPackageRunner {
                     return first >= "A" && first <= "Z";
                   }
                   function isVoidTag(tag) {
-                    return ["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr", "use"].includes(String(tag || "").toLowerCase());
+                    return ["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"].includes(String(tag || "").toLowerCase());
                   }
                   function compileStyleAsync(options = {}) {
                     return { code: String(options.source || ""), errors: [], map: null };
