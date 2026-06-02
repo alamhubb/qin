@@ -113,6 +113,15 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                   <section class="box">Query Works</section>
                 </template>
 
+                <script>
+                export default {
+                  name: 'CompSmoke',
+                  data() {
+                    return { fromScript: 'Script Works' }
+                  }
+                }
+                </script>
+
                 <style>
                 .box { color: red; }
                 </style>
@@ -150,6 +159,14 @@ public final class QinVitePluginVueQueryModuleSmokeTestMain {
                 || !templateModule.contains("Config Works")) {
             throw new IllegalStateException("Expected template query module from plugin-vue, got:\n"
                     + templateModule);
+        }
+
+        String scriptModule = service.transpileByRequestPath("/@qin-mod/src/Comp.vue.js?vue&type=script&lang.js");
+        if (scriptModule == null
+                || !scriptModule.contains("CompSmoke")
+                || !scriptModule.contains("Script Works")) {
+            throw new IllegalStateException("Expected script query module from plugin-vue, got:\n"
+                    + scriptModule);
         }
 
         System.out.println("QinVitePluginVueQueryModuleSmokeTestMain OK");
