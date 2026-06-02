@@ -1,7 +1,5 @@
 package com.qin.core;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.qin.constants.QinConstants;
 import com.qin.types.FrontendConfig;
 import com.qin.types.JavaConfig;
@@ -16,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -27,7 +24,6 @@ import java.util.regex.Pattern;
  */
 public class ConfigLoader {
     private final String cwd;
-    private final Gson gson;
 
     public ConfigLoader() {
         this(QinConstants.getCwd());
@@ -35,7 +31,6 @@ public class ConfigLoader {
 
     public ConfigLoader(String cwd) {
         this.cwd = cwd;
-        this.gson = new GsonBuilder().setPrettyPrinting().create();
     }
 
     /**
@@ -64,17 +59,8 @@ public class ConfigLoader {
         return applyDefaults(new QinConfig(detectProjectName(), "1.0.0"));
     }
 
-    private QinConfig parseJavaScriptConfig(String content) {
-        String source = content
-                .replaceFirst("(?s)^\\s*(?:import\\s+[^\\n]+\\n\\s*)*", "")
-                .replaceFirst("(?s)^\\s*export\\s+default\\s+", "")
-                .trim();
-        if (source.endsWith(";")) {
-            source = source.substring(0, source.length() - 1).trim();
-        }
-        if (source.startsWith("{") && source.endsWith("}") && isJsonLike(source)) {
-            return gson.fromJson(source, QinConfig.class);
-        }
+    private QinConfig parseJavaScriptConfig(String content) throws IOException {
+        Map<String, Object> source = QinConfigJsParser.parseConfigObject(content);
         return new QinConfig(
                 stringField(source, "name", detectProjectName()),
                 stringField(source, "version", "1.0.0"),
@@ -87,7 +73,7 @@ public class ConfigLoader {
                 stringField(source, "entry", null),
                 stringMapField(source, "dependencies"),
                 stringMapField(source, "devDependencies"),
-                null,
+                stringListField(source, "packages"),
                 null,
                 javaConfigField(source),
                 null,
@@ -96,82 +82,81 @@ public class ConfigLoader {
                 null);
     }
 
-    private boolean isJsonLike(String source) {
-        return source.contains("\"name\"") || source.contains("\"dependencies\"") || source.contains("\"frontend\"");
+    private String stringField(Map<String, Object> source, String key, String fallback) {
+        Object value = source.get(key);
+        return value instanceof String text ? text : fallback;
     }
 
-    private String stringField(String source, String key, String fallback) {
-        Matcher matcher = Pattern.compile("(?:\"%s\"|%s)\\s*:\\s*[\"']([^\"']*)[\"']".formatted(key, key))
-                .matcher(source);
-        return matcher.find() ? matcher.group(1) : fallback;
+    private int intField(Map<String, Object> source, String key, int fallback) {
+        Object value = source.get(key);
+        return value instanceof Number number ? number.intValue() : fallback;
     }
 
-    private int intField(String source, String key, int fallback) {
-        Matcher matcher = Pattern.compile("(?:\"%s\"|%s)\\s*:\\s*(\\d+)".formatted(key, key))
-                .matcher(source);
-        return matcher.find() ? Integer.parseInt(matcher.group(1)) : fallback;
-    }
-
-    private Map<String, String> stringMapField(String source, String key) {
-        String block = objectBlock(source, key);
-        if (block == null) {
+    private Map<String, String> stringMapField(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (!(value instanceof Map<?, ?> map)) {
             return Map.of();
         }
-        Map<String, String> out = new LinkedHashMap<>();
-        Matcher matcher = Pattern.compile("[\"']([^\"']+)[\"']\\s*:\\s*[\"']([^\"']*)[\"']")
-                .matcher(block);
-        while (matcher.find()) {
-            out.put(matcher.group(1), matcher.group(2));
+        java.util.LinkedHashMap<String, String> out = new java.util.LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() instanceof String mapKey && entry.getValue() instanceof String mapValue) {
+                out.put(mapKey, mapValue);
+            }
         }
         return out;
     }
 
-    private JavaConfig javaConfigField(String source) {
-        String block = objectBlock(source, "java");
-        if (block == null) {
+    private List<String> stringListField(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (!(value instanceof List<?> list)) {
             return null;
         }
-        return new JavaConfig(
-                stringField(block, "version", null),
-                stringField(block, "release", null),
-                stringField(block, "source", null),
-                stringField(block, "target", null),
-                stringField(block, "sourceDir", null),
-                stringField(block, "testDir", null),
-                stringField(block, "outputDir", null),
-                stringField(block, "encoding", null));
-    }
-
-    private FrontendConfig frontendConfigField(String source) {
-        String block = objectBlock(source, "frontend");
-        if (block == null) {
-            return null;
-        }
-        return new FrontendConfig(
-                stringField(block, "srcDir", null),
-                stringField(block, "outDir", null),
-                intField(block, "devPort", 0));
-    }
-
-    private String objectBlock(String source, String key) {
-        Matcher matcher = Pattern.compile("(?:\"%s\"|%s)\\s*:\\s*\\{".formatted(key, key)).matcher(source);
-        if (!matcher.find()) {
-            return null;
-        }
-        int start = matcher.end();
-        int depth = 1;
-        for (int index = start; index < source.length(); index++) {
-            char ch = source.charAt(index);
-            if (ch == '{') {
-                depth++;
-            } else if (ch == '}') {
-                depth--;
-                if (depth == 0) {
-                    return source.substring(start, index);
-                }
+        List<String> out = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof String text) {
+                out.add(text);
             }
         }
-        return null;
+        return out;
+    }
+
+    private JavaConfig javaConfigField(Map<String, Object> source) {
+        Object value = source.get("java");
+        if (!(value instanceof Map<?, ?> block)) {
+            return null;
+        }
+        Map<String, Object> map = objectMap(block);
+        return new JavaConfig(
+                stringField(map, "version", null),
+                stringField(map, "release", null),
+                stringField(map, "source", null),
+                stringField(map, "target", null),
+                stringField(map, "sourceDir", null),
+                stringField(map, "testDir", null),
+                stringField(map, "outputDir", null),
+                stringField(map, "encoding", null));
+    }
+
+    private FrontendConfig frontendConfigField(Map<String, Object> source) {
+        Object value = source.get("frontend");
+        if (!(value instanceof Map<?, ?> block)) {
+            return null;
+        }
+        Map<String, Object> map = objectMap(block);
+        return new FrontendConfig(
+                stringField(map, "srcDir", null),
+                stringField(map, "outDir", null),
+                intField(map, "devPort", 0));
+    }
+
+    private Map<String, Object> objectMap(Map<?, ?> source) {
+        java.util.LinkedHashMap<String, Object> out = new java.util.LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : source.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                out.put(key, entry.getValue());
+            }
+        }
+        return out;
     }
 
     private String detectProjectName() {
