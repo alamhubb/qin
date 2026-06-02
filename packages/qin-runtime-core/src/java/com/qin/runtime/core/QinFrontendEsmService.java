@@ -93,6 +93,9 @@ public final class QinFrontendEsmService {
         if (entryUrl == null) {
             throw new IllegalArgumentException("Frontend entry is not a supported module: " + entry.toAbsolutePath());
         }
+        QinVueSfcCompiler vueCompiler = QinViteVuePluginCompiler.isEnabled(root)
+                ? new QinViteVuePluginCompiler()
+                : new QinOfficialVueSfcCompiler();
         return new QinFrontendEsmService(
                 root,
                 entry,
@@ -102,7 +105,7 @@ public final class QinFrontendEsmService {
                 requestPathMap,
                 virtualModuleContentMap,
                 entryUrl,
-                new QinOfficialVueSfcCompiler(),
+                vueCompiler,
                 new QinOvsCompiler());
     }
 
@@ -381,11 +384,18 @@ public final class QinFrontendEsmService {
         if ("cssts-ts".equals(specifier)) {
             return toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-vue-cssts=runtime";
         }
+        if ("\0plugin-vue:export-helper".equals(specifier)
+                || "plugin-vue:export-helper".equals(specifier)
+                || specifier.contains("plugin-vue:export-helper")) {
+            String requestPath = "/@qin/plugin-vue-export-helper.js";
+            virtualModuleContentMap.putIfAbsent(requestPath, readPluginVueExportHelperModule());
+            return requestPath;
+        }
         if ("ovsjs".equals(specifier)) {
             return toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-ovs=runtime";
         }
         if ("vue".equals(specifier)) {
-            String requestPath = toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-vue=runtime";
+            String requestPath = "/@qin-mod/qin-vue-runtime.js?qin-vue=runtime";
             registerVueRuntimeVirtualModules(requestPath);
             return requestPath;
         }
@@ -633,6 +643,17 @@ public final class QinFrontendEsmService {
                 .resolve("vue.esm-browser.js")
                 .toAbsolutePath()
                 .normalize();
+    }
+
+    private String readPluginVueExportHelperModule() {
+        return """
+                export default function _export_sfc(component, props) {
+                  for (const [key, value] of props || []) {
+                    component[key] = value;
+                  }
+                  return component;
+                }
+                """;
     }
 
     private void registerVueRuntimeVirtualModules(String requestPath) {

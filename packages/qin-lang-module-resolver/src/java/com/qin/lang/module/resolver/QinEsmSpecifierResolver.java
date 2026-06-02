@@ -61,6 +61,12 @@ public final class QinEsmSpecifierResolver {
         if (importerFile == null || specifier == null || specifier.isBlank()) {
             return null;
         }
+        if ("vue".equals(specifier.trim())) {
+            if (isQinNpmHostModule(importerFile)) {
+                return resolveOptionalBareModule(importerFile, specifier);
+            }
+            return null;
+        }
         if (specifier.startsWith("java:") || specifier.startsWith("js:") || isHostRuntimeModule(specifier)
                 || specifier.startsWith("http://") || specifier.startsWith("https://")) {
             return null;
@@ -72,6 +78,28 @@ public final class QinEsmSpecifierResolver {
             return resolveAbsoluteModule(importerFile, specifier);
         }
         return resolveBareModule(importerFile, specifier);
+    }
+
+    private Path resolveOptionalBareModule(Path importerFile, String specifier) {
+        BareSpecifier bare = parseBareSpecifier(specifier);
+        Path search = importerFile.getParent();
+        while (search != null) {
+            Path packageDir = search.resolve("node_modules").resolve(bare.packageName());
+            if (Files.isDirectory(packageDir)) {
+                Path resolved = resolvePackageEntry(packageDir, bare.subPath());
+                if (resolved != null) {
+                    return resolved;
+                }
+                return null;
+            }
+            search = search.getParent();
+        }
+        return null;
+    }
+
+    private boolean isQinNpmHostModule(Path importerFile) {
+        String path = importerFile.toAbsolutePath().normalize().toString().replace('\\', '/');
+        return path.contains("/.qin/runtime/npm-host/");
     }
 
     public Path resolveRelativeModule(Path importerFile, String specifier) {

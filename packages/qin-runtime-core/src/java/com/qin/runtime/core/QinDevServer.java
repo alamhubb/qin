@@ -92,6 +92,13 @@ final class QinDevServer {
                 }
                 sendText(exchange, 200, devClientScript(), "application/javascript; charset=utf-8");
             });
+            server.createContext("/@qin/plugin-vue-export-helper.js", exchange -> {
+                if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    sendText(exchange, 405, "method not allowed", "text/plain; charset=utf-8");
+                    return;
+                }
+                sendText(exchange, 200, pluginVueExportHelperScript(), "application/javascript; charset=utf-8");
+            });
             server.createContext("/@qin/hmr", hmrBroadcaster::handleWebSocket);
             server.createContext("/app.js", exchange -> serveFrontendBootstrap(exchange, runtime));
             server.createContext("/@qin-mod/", exchange -> serveFrontendQinModule(exchange, runtime));
@@ -418,6 +425,7 @@ final class QinDevServer {
                 const POLL_INTERVAL = 1000;
                 const hotCallbacks = new Map();
                 const hotData = new Map();
+                const hotEventCallbacks = new Map();
                 let currentVersion = null;
                 let entryModuleUrl = null;
 
@@ -432,6 +440,13 @@ final class QinDevServer {
                     },
                     dispose(callback) {
                       if (typeof callback === 'function') callback(data);
+                    },
+                    on(event, callback) {
+                      if (typeof callback !== 'function') return;
+                      const key = String(event || '');
+                      const callbacks = hotEventCallbacks.get(key) || [];
+                      callbacks.push(callback);
+                      hotEventCallbacks.set(key, callbacks);
                     },
                     invalidate(message) {
                       console.warn('[Qin HMR] invalidated', normalizedOwnerPath, message || '');
@@ -509,6 +524,10 @@ final class QinDevServer {
                   }
                   if (String(next) !== currentVersion) {
                     currentVersion = String(next);
+                    const callbacks = hotEventCallbacks.get('file-changed') || [];
+                    for (const callback of callbacks) {
+                      try { callback({ file: entryModuleUrl || '' }); } catch (_) {}
+                    }
                     applyQinHmr(currentVersion);
                   }
                 }
@@ -554,6 +573,17 @@ final class QinDevServer {
                 }
 
                 connectWebSocket();
+                """;
+    }
+
+    private static String pluginVueExportHelperScript() {
+        return """
+                export default function _export_sfc(component, props) {
+                  for (const [key, value] of props || []) {
+                    component[key] = value;
+                  }
+                  return component;
+                }
                 """;
     }
 
@@ -630,6 +660,10 @@ final class QinDevServer {
             }
             if ("/@qin/dev-client.js".equals(path)) {
                 sendRawText(output, 200, "OK", devClientScript(), "application/javascript; charset=utf-8", noStore());
+                return;
+            }
+            if ("/@qin/plugin-vue-export-helper.js".equals(path)) {
+                sendRawText(output, 200, "OK", pluginVueExportHelperScript(), "application/javascript; charset=utf-8", noStore());
                 return;
             }
             if ("/app.js".equals(path)) {

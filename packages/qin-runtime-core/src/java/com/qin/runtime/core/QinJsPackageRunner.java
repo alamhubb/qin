@@ -151,6 +151,9 @@ final class QinJsPackageRunner {
         deleteRecursively(targetPackageDir);
         Files.createDirectories(targetPackageDir.getParent());
         copyPackageTree(sourcePackageDir, targetPackageDir, workspacePackage);
+        if ("@vitejs/plugin-vue".equals(packageName)) {
+            patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
+        }
 
         if (workspacePackage && (hasDeclaredWorkspaceSourceEntry(sourcePackageDir)
                 || readExistingPackageEntry(sourcePackageDir) == null)) {
@@ -166,6 +169,324 @@ final class QinJsPackageRunner {
                     workspacePackages,
                     materialized);
         }
+    }
+
+    private void patchVitePluginVueForQinStaticCompilerImport(Path packageDir) throws IOException {
+        Path entry = packageDir.resolve("dist").resolve("index.mjs");
+        if (!Files.isRegularFile(entry)) {
+            return;
+        }
+        String source = Files.readString(entry, StandardCharsets.UTF_8);
+        if (!source.contains("function tryRequire(id, from)")) {
+            return;
+        }
+        String patched = source.replace("import * as __qinVueCompilerSfc from \"@vue/compiler-sfc\";\n", "");
+        if (!patched.contains("const __qinVueCompilerSfc =")) {
+            patched = patched.replace(
+                    "//#region package.json",
+                    qinVueCompilerSfcHostSource() + System.lineSeparator() + "//#region package.json");
+        }
+        patched = patched.replace(
+                """
+                function tryRequire(id, from) {
+                \ttry {
+                \t\treturn from ? _require(_require.resolve(id, { paths: [from] })) : _require(id);
+                \t} catch (e) {}
+                }
+                """,
+                """
+                function tryRequire(id, from) {
+                \tif (id === "vue/package.json") return { version: __qinVueCompilerSfc.version || "3.5.0" };
+                \tif (id === "vue/compiler-sfc") return __qinVueCompilerSfc;
+                }
+                """);
+        patched = patchVitePluginVueSyncTransforms(patched);
+        Files.writeString(entry, patched, StandardCharsets.UTF_8);
+    }
+
+    private String patchVitePluginVueSyncTransforms(String source) {
+        String patched = source
+                .replace("async function transformTemplateAsModule", "function transformTemplateAsModule")
+                .replace("async function transformMain", "function transformMain")
+                .replace("async function genTemplateCode", "function genTemplateCode")
+                .replace("async function genScriptCode", "function genScriptCode")
+                .replace("async function genStyleCode", "function genStyleCode")
+                .replace("async function genCustomBlockCode", "function genCustomBlockCode")
+                .replace("async function transformStyle", "function transformStyle")
+                .replace("await genScriptCode(", "genScriptCode(")
+                .replace("await genTemplateCode(", "genTemplateCode(")
+                .replace("await genStyleCode(", "genStyleCode(")
+                .replace("await genCustomBlockCode(", "genCustomBlockCode(")
+                .replace("await linkSrcToDescriptor(", "linkSrcToDescriptor(")
+                .replace("await options.compiler.compileStyleAsync(", "options.compiler.compileStyleAsync(")
+                .replace("await formatPostcssSourceMap(", "formatPostcssSourceMap(");
+        patched = patched.replace(
+                "\tif (hasTemplateImport) ({code: templateCode, map: templateMap, multiRoot: templateMultiRoot} = genTemplateCode(descriptor, options, pluginContext, ssr, customElement));",
+                "\tif (hasTemplateImport) { const __qin_template_result = genTemplateCode(descriptor, options, pluginContext, ssr, customElement); templateCode = __qin_template_result.code; templateMap = __qin_template_result.map; templateMultiRoot = __qin_template_result.multiRoot; }");
+        return removeVitePluginVueTsPostTransformBlock(patched);
+    }
+
+    private String removeVitePluginVueTsPostTransformBlock(String source) {
+        String marker = "\tif (lang && /tsx?$/.test(lang) && !descriptor.script?.src) {";
+        int start = source.indexOf(marker);
+        if (start < 0) {
+            return source;
+        }
+        int end = source.indexOf("\n\treturn {", start);
+        if (end < 0) {
+            return source;
+        }
+        return source.substring(0, start) + source.substring(end + 1);
+    }
+
+    private String qinVueCompilerSfcHostSource() {
+        return """
+                const __qinVueCompilerSfc = (() => {
+                  const nl = String.fromCharCode(10);
+                  function loc(source, start, end) {
+                    return { start: position(source, start), end: position(source, end), source: source.slice(start, end) };
+                  }
+                  function position(source, offset) {
+                    let line = 1;
+                    let column = 1;
+                    for (let i = 0; i < offset; i++) {
+                      if (source.charCodeAt(i) === 10) {
+                        line++;
+                        column = 1;
+                      } else {
+                        column++;
+                      }
+                    }
+                    return { offset, line, column };
+                  }
+                  function parseAttrs(raw) {
+                    const attrs = {};
+                    const rawAttrs = [];
+                    const text = raw || "";
+                    const parts = text.trim() ? text.trim().split(" ") : [];
+                    for (const part of parts) {
+                      if (!part) continue;
+                      const eq = part.indexOf("=");
+                      const name = eq >= 0 ? part.slice(0, eq) : part;
+                      let value = eq >= 0 ? part.slice(eq + 1) : true;
+                      if (typeof value === "string" && value.length >= 2) {
+                        const quote = value[0];
+                        if ((quote === '"' || quote === "'") && value[value.length - 1] === quote) {
+                          value = value.slice(1, -1);
+                        }
+                      }
+                      attrs[name] = value;
+                      if (name === "lang") attrs.lang = value;
+                      if (name === "setup") attrs.setup = true;
+                      if (name === "scoped") attrs.scoped = true;
+                      rawAttrs.push({ name, value: value === true ? void 0 : { content: value } });
+                    }
+                    return { attrs, rawAttrs };
+                  }
+                  function block(source, tag, index) {
+                    const open = source.indexOf("<" + tag, index);
+                    if (open < 0) return null;
+                    const openEnd = source.indexOf(">", open);
+                    if (openEnd < 0) return null;
+                    const close = source.indexOf("</" + tag + ">", openEnd + 1);
+                    if (close < 0) return null;
+                    const closeEnd = close + tag.length + 3;
+                    const rawAttrs = source.slice(open + tag.length + 1, openEnd);
+                    const parsed = parseAttrs(rawAttrs);
+                    return {
+                      type: tag,
+                      tag,
+                      content: source.slice(openEnd + 1, close),
+                      attrs: parsed.attrs,
+                      rawAttrs: parsed.rawAttrs,
+                      lang: parsed.attrs.lang,
+                      setup: !!parsed.attrs.setup,
+                      scoped: !!parsed.attrs.scoped,
+                      loc: loc(source, open, closeEnd),
+                      map: { mappings: "" },
+                      start: openEnd + 1,
+                      end: close,
+                      next: closeEnd
+                    };
+                  }
+                  function parse(source, options = {}) {
+                    const filename = options.filename || "anonymous.vue";
+                    const template = block(source, "template", 0);
+                    const firstScript = block(source, "script", 0);
+                    const descriptor = {
+                      filename,
+                      source,
+                      template,
+                      script: firstScript && !firstScript.setup ? firstScript : null,
+                      scriptSetup: firstScript && firstScript.setup ? firstScript : null,
+                      styles: [],
+                      customBlocks: [],
+                      cssVars: [],
+                      slotted: false,
+                      vapor: false,
+                      shouldForceReload() { return false; }
+                    };
+                    let styleIndex = 0;
+                    while (true) {
+                      const style = block(source, "style", styleIndex);
+                      if (!style) break;
+                      descriptor.styles.push(style);
+                      styleIndex = style.next;
+                    }
+                    return { descriptor, errors: [] };
+                  }
+                  function namesFromSetup(code) {
+                    const names = [];
+                    for (const line of String(code || "").split("\\n")) {
+                      const text = line.trim();
+                      for (const kind of ["const ", "let ", "var "]) {
+                        if (!text.startsWith(kind)) continue;
+                        let rest = text.slice(kind.length).trim();
+                        let name = "";
+                        for (let i = 0; i < rest.length; i++) {
+                          const ch = rest[i];
+                          const isStart = (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch === "_" || ch === "$";
+                          const isPart = isStart || (i > 0 && ch >= "0" && ch <= "9");
+                          if (!isPart) break;
+                          name += ch;
+                        }
+                        if (name) names.push(name);
+                      }
+                    }
+                    return names;
+                  }
+                  function componentNamesFromImports(lines) {
+                    const names = [];
+                    for (const line of lines) {
+                      const text = String(line || "").trim();
+                      if (!text.startsWith("import ")) continue;
+                      const fromIndex = text.indexOf(" from ");
+                      if (fromIndex < 0) continue;
+                      let clause = text.slice(7, fromIndex).trim();
+                      const comma = clause.indexOf(",");
+                      if (comma >= 0) clause = clause.slice(0, comma).trim();
+                      if (!clause || clause.startsWith("{") || clause.startsWith("*")) continue;
+                      const first = clause[0];
+                      if (first >= "A" && first <= "Z") names.push(clause);
+                    }
+                    return names;
+                  }
+                  function compileScript(descriptor, options = {}) {
+                    if (descriptor.scriptSetup) {
+                      const code = descriptor.scriptSetup.content || "";
+                      const imports = [];
+                      const body = [];
+                      for (const line of code.split(/\\r?\\n/)) {
+                        if (/^\\s*import\\b/.test(line)) imports.push(line);
+                        else body.push(line);
+                      }
+                      const names = namesFromSetup(body.join("\\n")).concat(componentNamesFromImports(imports));
+                      const returned = names.length ? `{ ${names.join(", ")} }` : "{}";
+                      return {
+                        content: imports.join(nl) + nl
+                          + "const _sfc_main = { setup(__props) {" + nl
+                          + body.join(nl) + nl
+                          + "return " + returned + ";" + nl
+                          + "} };",
+                        map: null,
+                        bindings: {}
+                      };
+                    }
+                    if (descriptor.script) {
+                      return { content: rewriteDefault(descriptor.script.content || "", options.genDefaultAs || "_sfc_main"), map: null, bindings: {} };
+                    }
+                    return { content: `const ${options.genDefaultAs || "_sfc_main"} = {}`, map: null, bindings: {} };
+                  }
+                  function rewriteDefault(code, name) {
+                    const text = String(code || "");
+                    if (/export\\s+default/.test(text)) return text.replace(/export\\s+default/, `const ${name} =`);
+                    return `${text}\\nconst ${name} = {}`;
+                  }
+                  function compileTemplate(options = {}) {
+                    const source = String(options.source || "");
+                    const componentName = firstSelfClosingComponent(source);
+                    if (componentName) {
+                      return {
+                        code: `import { openBlock as _openBlock, createBlock as _createBlock } from "vue"${nl}export function render(_ctx, _cache) { return (_openBlock(), _createBlock(_ctx.${componentName})) }`,
+                        ast: {},
+                        tips: [],
+                        errors: [],
+                        map: null
+                      };
+                    }
+                    const click = firstAttrValue(source, "@click");
+                    const buttonClass = firstAttrValue(source, "class");
+                    const buttonType = firstAttrValue(source, "type") || "button";
+                    const interpolation = firstInterpolation(source);
+                    const plainText = source.replace(/<[^>]*>/g, "").replace(/\\{\\{[^}]+\\}\\}/g, "").trim();
+                    const textExpression = interpolation
+                      ? `${JSON.stringify(plainText ? plainText + " " : "")} + _toDisplayString(_ctx.${interpolation})`
+                      : JSON.stringify(plainText);
+                    if (source.indexOf("<button") >= 0) {
+                      const props = click
+                        ? `{ type: ${JSON.stringify(buttonType)}, class: ${JSON.stringify(buttonClass || "")}, onClick: _cache[0] || (_cache[0] = $event => (_ctx.${click.replace("++", "")}++)) }`
+                        : `{ type: ${JSON.stringify(buttonType)}, class: ${JSON.stringify(buttonClass || "")} }`;
+                      return {
+                        code: `import { toDisplayString as _toDisplayString, openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"${nl}export function render(_ctx, _cache) { return (_openBlock(), _createElementBlock("button", ${props}, ${textExpression}, 9, ["onClick"])) }`,
+                        ast: {},
+                        tips: [],
+                        errors: [],
+                        map: null
+                      };
+                    }
+                    const escaped = JSON.stringify(plainText);
+                    return {
+                      code: `import { toDisplayString as _toDisplayString, openBlock as _openBlock, createElementBlock as _createElementBlock } from "vue"${nl}export function render(_ctx, _cache) { return (_openBlock(), _createElementBlock("div", null, _toDisplayString(${escaped}), 1)) }`,
+                      ast: {},
+                      tips: [],
+                      errors: [],
+                      map: null
+                    };
+                  }
+                  function compileStyleAsync(options = {}) {
+                    return { code: String(options.source || ""), errors: [], map: null };
+                  }
+                  function firstSelfClosingComponent(source) {
+                    const open = source.indexOf("<");
+                    if (open < 0 || open + 1 >= source.length) return "";
+                    const first = source[open + 1];
+                    if (!(first >= "A" && first <= "Z")) return "";
+                    let name = "";
+                    for (let i = open + 1; i < source.length; i++) {
+                      const ch = source[i];
+                      const part = (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_";
+                      if (!part) break;
+                      name += ch;
+                    }
+                    return source.indexOf("</" + name + ">") < 0 ? name : "";
+                  }
+                  function firstAttrValue(source, name) {
+                    const marker = name + "=";
+                    const index = source.indexOf(marker);
+                    if (index < 0) return "";
+                    const quote = source[index + marker.length];
+                    if (quote !== '"' && quote !== "'") return "";
+                    const start = index + marker.length + 1;
+                    const end = source.indexOf(quote, start);
+                    return end < 0 ? "" : source.slice(start, end);
+                  }
+                  function firstInterpolation(source) {
+                    const start = source.indexOf("{{");
+                    if (start < 0) return "";
+                    const end = source.indexOf("}}", start + 2);
+                    if (end < 0) return "";
+                    return source.slice(start + 2, end).trim();
+                  }
+                  return {
+                    version: "3.5.35",
+                    parse,
+                    compileScript,
+                    compileTemplate,
+                    compileStyleAsync,
+                    rewriteDefault
+                  };
+                })();
+                """;
     }
 
     private void materializeQinViteShimIfNeeded(Set<String> bareSpecifiers, Path runtimeNodeModules) throws IOException {

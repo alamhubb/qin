@@ -127,6 +127,9 @@ final class QinNpmDependencyMaterializer {
 
     private String resolveVersion(String packageJson, String versionRange) {
         String range = versionRange == null || versionRange.isBlank() ? "latest" : versionRange.trim();
+        if (range.startsWith("=") && range.length() > 1) {
+            range = range.substring(1).trim();
+        }
         if ("latest".equals(range) || "*".equals(range)) {
             Matcher latest = Pattern.compile("\"latest\"\\s*:\\s*\"([^\"]+)\"").matcher(packageJson);
             if (latest.find()) {
