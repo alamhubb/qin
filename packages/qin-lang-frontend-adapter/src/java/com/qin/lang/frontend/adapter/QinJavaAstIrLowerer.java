@@ -6,6 +6,7 @@ import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
@@ -20,6 +21,7 @@ import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
+import com.slime.java.ast.JavaAstMethodCallExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
@@ -168,6 +170,16 @@ public final class QinJavaAstIrLowerer {
             return new QinIrPropertyAccessExpression(
                     lowerExpression(memberAccess.receiver(), locals),
                     memberAccess.propertyName());
+        }
+        if (expression instanceof JavaAstMethodCallExpression methodCall) {
+            List<QinIrExpression> arguments = new ArrayList<>();
+            for (JavaAstExpression argument : methodCall.arguments()) {
+                arguments.add(lowerExpression(argument, locals));
+            }
+            return new QinIrInstanceMethodCallExpression(
+                    lowerExpression(methodCall.receiver(), locals),
+                    methodCall.methodName(),
+                    arguments);
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
             return new QinIrBuiltinCallExpression(

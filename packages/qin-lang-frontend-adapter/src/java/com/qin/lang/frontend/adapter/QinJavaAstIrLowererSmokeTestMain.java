@@ -3,6 +3,7 @@ package com.qin.lang.frontend.adapter;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
@@ -21,6 +22,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     int add(int a, int b) { return a + b; }
                     String display() { return this.name; }
                     String greet(String name) { String prefix = "hello "; return prefix + name; }
+                    String label() { return this.display(); }
                 }
                 """;
 
@@ -37,7 +39,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 3, "method count");
+        require(person.methods().size() == 4, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -76,6 +78,14 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require("hello ".equals(((QinIrStringLiteral) greetBinary.arguments().get(1)).value()), "greet local inline text");
         require(greetBinary.arguments().get(2) instanceof QinIrIdentifierReference, "greet parameter reference");
         require("name".equals(((QinIrIdentifierReference) greetBinary.arguments().get(2)).name()), "greet parameter name");
+        QinIrMethodDeclaration label = person.methods().get(3);
+        require("label".equals(label.name()), "label method name");
+        require(label.returnType().kind() == QinIrTypeKind.STRING, "label return type");
+        require(label.returnExpression() instanceof QinIrInstanceMethodCallExpression, "label return expression");
+        QinIrInstanceMethodCallExpression methodCall = (QinIrInstanceMethodCallExpression) label.returnExpression();
+        require(methodCall.receiver() instanceof QinIrThisExpression, "label receiver");
+        require("display".equals(methodCall.methodName()), "label method call name");
+        require(methodCall.arguments().isEmpty(), "label argument count");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }

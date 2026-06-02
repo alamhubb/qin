@@ -10,6 +10,7 @@ import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstImportDeclaration;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
+import com.slime.java.ast.JavaAstMethodCallExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
@@ -80,8 +81,12 @@ public final class QinJavaSemanticAnalyzer {
         String binaryName = packageName == null || packageName.isBlank()
                 ? classDeclaration.name()
                 : packageName + "." + classDeclaration.name();
+        Map<String, QinIrTypeRef> methodReturnTypes = new LinkedHashMap<>();
         for (JavaAstMethodDeclaration method : classDeclaration.methods()) {
-            methods.add(analyzeMethod(method, packageName, importedTypes, fieldTypes, binaryName));
+            methodReturnTypes.put(method.name(), resolveType(method.returnTypeName(), packageName, importedTypes));
+        }
+        for (JavaAstMethodDeclaration method : classDeclaration.methods()) {
+            methods.add(analyzeMethod(method, packageName, importedTypes, fieldTypes, methodReturnTypes, binaryName));
         }
 
         return new QinJavaSemanticClass(packageName, classDeclaration.name(), binaryName, fields, methods);
@@ -92,6 +97,7 @@ public final class QinJavaSemanticAnalyzer {
             String packageName,
             Map<String, String> importedTypes,
             Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
             String classBinaryName) {
         List<QinJavaSemanticParameter> parameters = new ArrayList<>();
         Map<String, QinIrTypeRef> locals = new LinkedHashMap<>(fieldTypes);
@@ -105,20 +111,30 @@ public final class QinJavaSemanticAnalyzer {
         for (JavaAstStatement statement : method.bodyStatements()) {
             if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
                 if (localVariable.initializer() != null) {
-                    expressionType(localVariable.initializer(), locals, fieldTypes, classBinaryName);
+                    expressionType(localVariable.initializer(), locals, fieldTypes, methodReturnTypes, classBinaryName);
                 }
                 QinIrTypeRef localType = "var".equals(localVariable.typeName())
-                        ? expressionType(localVariable.initializer(), locals, fieldTypes, classBinaryName)
+                        ? expressionType(localVariable.initializer(), locals, fieldTypes, methodReturnTypes, classBinaryName)
                         : resolveType(localVariable.typeName(), packageName, importedTypes);
                 locals.put(localVariable.name(), localType);
                 continue;
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
-                returnExpressionType = expressionType(returnStatement.expression(), locals, fieldTypes, classBinaryName);
+                returnExpressionType = expressionType(
+                        returnStatement.expression(),
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
             }
         }
         if (method.bodyStatements().isEmpty()) {
-            returnExpressionType = expressionType(method.returnExpression(), locals, fieldTypes, classBinaryName);
+            returnExpressionType = expressionType(
+                    method.returnExpression(),
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
         }
         return new QinJavaSemanticMethod(method.name(), returnType, parameters, returnExpressionType);
     }
@@ -127,6 +143,7 @@ public final class QinJavaSemanticAnalyzer {
             JavaAstExpression expression,
             Map<String, QinIrTypeRef> locals,
             Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
             String classBinaryName) {
         if (expression == null) {
             return QinIrTypeRef.voidType();
@@ -157,11 +174,24 @@ public final class QinJavaSemanticAnalyzer {
             }
             throw new IllegalArgumentException("Unsupported Java member receiver for semantics: " + memberAccess.receiver());
         }
+        if (expression instanceof JavaAstMethodCallExpression methodCall) {
+            for (JavaAstExpression argument : methodCall.arguments()) {
+                expressionType(argument, locals, fieldTypes, methodReturnTypes, classBinaryName);
+            }
+            if (methodCall.receiver() instanceof JavaAstThisExpression) {
+                QinIrTypeRef returnType = methodReturnTypes.get(methodCall.methodName());
+                if (returnType == null) {
+                    throw new IllegalArgumentException("Unknown Java method: " + methodCall.methodName());
+                }
+                return returnType;
+            }
+            throw new IllegalArgumentException("Unsupported Java method receiver for semantics: " + methodCall.receiver());
+        }
         if (expression instanceof JavaAstBinaryExpression binary) {
             return binaryExpressionType(
                     binary.operator(),
-                    expressionType(binary.left(), locals, fieldTypes, classBinaryName),
-                    expressionType(binary.right(), locals, fieldTypes, classBinaryName));
+                    expressionType(binary.left(), locals, fieldTypes, methodReturnTypes, classBinaryName),
+                    expressionType(binary.right(), locals, fieldTypes, methodReturnTypes, classBinaryName));
         }
         throw new IllegalArgumentException("Unsupported Java expression for semantics: " + expression);
     }
