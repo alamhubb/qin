@@ -12,6 +12,29 @@ public final class JavaEsmSetObject {
 
     private final LinkedHashSet<JavaEsmIdentityKey> values = new LinkedHashSet<>();
 
+    public JavaEsmSetObject() {
+    }
+
+    public JavaEsmSetObject(Object initialValues) {
+        if (initialValues == null) {
+            return;
+        }
+        if (initialValues instanceof JavaEsmSetObject setObject) {
+            for (Object value : setObject.values()) {
+                add(value);
+            }
+            return;
+        }
+        if (initialValues instanceof Iterable<?> iterable) {
+            for (Object value : iterable) {
+                add(value);
+            }
+            return;
+        }
+        throw new IllegalArgumentException("Set constructor expects iterable value, got: "
+                + initialValues.getClass().getName());
+    }
+
     public JavaEsmSetObject add(Object value) {
         values.add(JavaEsmIdentityKey.of(value));
         size = values.size();

@@ -1409,7 +1409,7 @@ public final class JavaEsmGlobal {
                 case "Array" -> new ArrayList<>(List.of(args));
                 case "Object" -> new LinkedHashMap<String, Object>();
                 case "Map", "WeakMap" -> new JavaEsmMapObject();
-                case "Set", "WeakSet" -> new JavaEsmSetObject();
+                case "Set", "WeakSet" -> new JavaEsmSetObject(args.length == 0 ? null : args[0]);
                 case "Proxy" -> createProxyObject(args);
                 case "URLSearchParams" -> new JavaEsmUrlSearchParams(args.length == 0 ? null : args[0]);
                 case "Date" -> JavaEsmDate.create(args);
