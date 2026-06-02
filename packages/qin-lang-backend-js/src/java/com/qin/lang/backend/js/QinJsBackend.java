@@ -47,6 +47,7 @@ public final class QinJsBackend {
         Map<String, String> javaAliases = new LinkedHashMap<>();
         emitJavaAliases(js, program.javaImports(), javaAliases);
         emitJavaRuntimeAliasesForProgram(js, program, javaAliases);
+        emitBuiltinRuntimeHelpers(js, program);
         emitJsImports(js, program.jsImports());
         emitClassDeclarations(js, program.classDeclarations());
 
@@ -420,6 +421,142 @@ public final class QinJsBackend {
             js.append(" from \"").append(escapeJs(entry.getKey())).append("\";\n");
         }
         js.append("\n");
+    }
+
+    private void emitBuiltinRuntimeHelpers(StringBuilder js, QinIrProgram program) {
+        if (!usesBuiltin(program, "__qin_binary__")) {
+            return;
+        }
+        js.append("""
+                function __qin_binary__(operator, left, right) {
+                  switch (operator) {
+                    case "+": return left + right;
+                    case "-": return left - right;
+                    case "*": return left * right;
+                    case "/": return left / right;
+                    case "%": return left % right;
+                    case "==": return left == right;
+                    case "!=": return left != right;
+                    case "===": return left === right;
+                    case "!==": return left !== right;
+                    case "<": return left < right;
+                    case "<=": return left <= right;
+                    case ">": return left > right;
+                    case ">=": return left >= right;
+                    case "&&": return left && right;
+                    case "||": return left || right;
+                    default: throw new Error("Unsupported Qin binary operator: " + operator);
+                  }
+                }
+                """);
+    }
+
+    private boolean usesBuiltin(QinIrProgram program, String methodName) {
+        for (QinIrConstDeclaration declaration : program.declarations()) {
+            if (usesBuiltin(declaration.initializer(), methodName)) {
+                return true;
+            }
+        }
+        for (QinIrExpressionStatement expressionStatement : program.expressionStatements()) {
+            if (usesBuiltin(expressionStatement.expression(), methodName)) {
+                return true;
+            }
+        }
+        for (QinIrConsoleLogValue consoleValueLog : program.consoleValueLogs()) {
+            if (usesBuiltin(consoleValueLog.value(), methodName)) {
+                return true;
+            }
+        }
+        for (QinIrConsoleLogJavaStaticCall call : program.javaStaticConsoleLogs()) {
+            for (QinIrExpression argument : call.arguments()) {
+                if (usesBuiltin(argument, methodName)) {
+                    return true;
+                }
+            }
+        }
+        for (QinIrJavaInstanceMethodCall call : program.javaInstanceMethodCalls()) {
+            for (QinIrExpression argument : call.arguments()) {
+                if (usesBuiltin(argument, methodName)) {
+                    return true;
+                }
+            }
+        }
+        for (QinIrConsoleLogJavaInstanceCall call : program.javaInstanceConsoleLogs()) {
+            for (QinIrExpression argument : call.arguments()) {
+                if (usesBuiltin(argument, methodName)) {
+                    return true;
+                }
+            }
+        }
+        for (QinIrClassDeclaration classDeclaration : program.classDeclarations()) {
+            for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+                if (usesBuiltin(field.initializer(), methodName)) {
+                    return true;
+                }
+            }
+            for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+                if (usesBuiltin(method.returnExpression(), methodName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean usesBuiltin(QinIrExpression expression, String methodName) {
+        if (expression == null) {
+            return false;
+        }
+        if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
+            if (methodName.equals(builtinCallExpression.methodName())) {
+                return true;
+            }
+            for (QinIrExpression argument : builtinCallExpression.arguments()) {
+                if (usesBuiltin(argument, methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
+            for (QinIrExpression argument : javaNewExpression.arguments()) {
+                if (usesBuiltin(argument, methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
+            for (QinIrExpression argument : staticMethodCallExpression.arguments()) {
+                if (usesBuiltin(argument, methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (expression instanceof QinIrInstanceMethodCallExpression instanceMethodCallExpression) {
+            if (usesBuiltin(instanceMethodCallExpression.receiver(), methodName)) {
+                return true;
+            }
+            for (QinIrExpression argument : instanceMethodCallExpression.arguments()) {
+                if (usesBuiltin(argument, methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (expression instanceof QinIrObjectLiteral objectLiteral) {
+            for (QinIrObjectProperty property : objectLiteral.properties()) {
+                if (usesBuiltin(property.value(), methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (expression instanceof QinIrPropertyAccessExpression propertyAccessExpression) {
+            return usesBuiltin(propertyAccessExpression.receiver(), methodName);
+        }
+        return false;
     }
 
     private void emitObjectLiteral(StringBuilder js, QinIrObjectLiteral objectLiteral) {
