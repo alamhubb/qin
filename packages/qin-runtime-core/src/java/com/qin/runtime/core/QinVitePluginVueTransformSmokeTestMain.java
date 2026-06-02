@@ -15,19 +15,22 @@ public final class QinVitePluginVueTransformSmokeTestMain {
         Path root = Path.of("packages/qin-runtime-core/examples/fullstack-mvp")
                 .toAbsolutePath()
                 .normalize();
-        Object result = new QinJsPackageRunner().runModuleSource(root, """
-                import vuePlugin from "@vitejs/plugin-vue";
-
-                const source = `
+        String source = """
                 <script setup>
                 import { ref } from 'vue'
+                import logo from './logo.svg'
                 const count = ref(0)
                 </script>
 
                 <template>
+                  <img :src="logo" alt="Logo" />
                   <button type="button" @click="count++">Count is {{ count }}</button>
                 </template>
-                `;
+                """;
+        Object result = new QinJsPackageRunner().runModuleSource(root, """
+                import vuePlugin from "@vitejs/plugin-vue";
+
+                const source = %s;
 
                 console.log("[smoke] create plugin");
                 const plugin = vuePlugin({ sourceMap: false });
@@ -77,7 +80,7 @@ public final class QinVitePluginVueTransformSmokeTestMain {
                   transformedKeys: transformed ? Object.keys(transformed).join(",") : "null",
                   hasThen: !!(transformed && transformed.then)
                 });
-                """, "vite_plugin_vue_transform");
+                """.formatted(QinJsPackageRunner.renderJsLiteral(source)), "vite_plugin_vue_transform");
 
         if (!(result instanceof Map<?, ?> map)) {
             throw new IllegalStateException("Expected plugin-vue transform result object, got: " + result);
@@ -89,6 +92,12 @@ public final class QinVitePluginVueTransformSmokeTestMain {
         }
         if (!text.contains("function _sfc_render") || !text.contains("_export_sfc")) {
             throw new IllegalStateException("Expected plugin-vue SFC entry output, got:\n" + text);
+        }
+        boolean exposesLogo = text.contains("return { count, logo }")
+                || text.contains("return { logo, count }");
+        if (!exposesLogo || !text.contains("\"src\": _ctx.logo")) {
+            throw new IllegalStateException("Expected script setup default import to be exposed to template, got:\n"
+                    + text);
         }
         System.out.println("QinVitePluginVueTransformSmokeTestMain OK");
     }

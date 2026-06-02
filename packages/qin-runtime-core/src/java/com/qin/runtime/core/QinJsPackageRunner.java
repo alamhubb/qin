@@ -177,31 +177,45 @@ final class QinJsPackageRunner {
             return;
         }
         String source = Files.readString(entry, StandardCharsets.UTF_8);
-        if (!source.contains("function tryRequire(id, from)")) {
-            return;
-        }
         String patched = source.replace("import * as __qinVueCompilerSfc from \"@vue/compiler-sfc\";\n", "");
-        if (!patched.contains("const __qinVueCompilerSfc =")) {
+        if (patched.contains("const __qinVueCompilerSfc =")) {
+            patched = replaceQinVueCompilerSfcHost(patched);
+        } else {
             patched = patched.replace(
                     "//#region package.json",
                     qinVueCompilerSfcHostSource() + System.lineSeparator() + "//#region package.json");
         }
-        patched = patched.replace(
-                """
-                function tryRequire(id, from) {
-                \ttry {
-                \t\treturn from ? _require(_require.resolve(id, { paths: [from] })) : _require(id);
-                \t} catch (e) {}
-                }
-                """,
-                """
-                function tryRequire(id, from) {
-                \tif (id === "vue/package.json") return { version: __qinVueCompilerSfc.version || "3.5.0" };
-                \tif (id === "vue/compiler-sfc") return __qinVueCompilerSfc;
-                }
-                """);
+        if (patched.contains("function tryRequire(id, from)")) {
+            patched = patched.replace(
+                    """
+                    function tryRequire(id, from) {
+                    \ttry {
+                    \t\treturn from ? _require(_require.resolve(id, { paths: [from] })) : _require(id);
+                    \t} catch (e) {}
+                    }
+                    """,
+                    """
+                    function tryRequire(id, from) {
+                    \tif (id === "vue/package.json") return { version: __qinVueCompilerSfc.version || "3.5.0" };
+                    \tif (id === "vue/compiler-sfc") return __qinVueCompilerSfc;
+                    }
+                    """);
+        }
         patched = patchVitePluginVueSyncTransforms(patched);
         Files.writeString(entry, patched, StandardCharsets.UTF_8);
+    }
+
+    private String replaceQinVueCompilerSfcHost(String source) {
+        String startMarker = "const __qinVueCompilerSfc = (() => {";
+        String endMarker = System.lineSeparator() + "//#region package.json";
+        int start = source.indexOf(startMarker);
+        int end = source.indexOf(endMarker, start);
+        if (start < 0 || end < 0) {
+            return source;
+        }
+        return source.substring(0, start)
+                + qinVueCompilerSfcHostSource()
+                + source.substring(end);
     }
 
     private String patchVitePluginVueSyncTransforms(String source) {
@@ -321,6 +335,7 @@ final class QinJsPackageRunner {
                       scriptSetup: firstScript && firstScript.setup ? firstScript : null,
                       styles: [],
                       customBlocks: [],
+                      qinScriptSetupImports: firstScript && firstScript.setup ? importLinesFromCode(firstScript.content || "") : "",
                       cssVars: [],
                       slotted: false,
                       vapor: false,
@@ -355,37 +370,61 @@ final class QinJsPackageRunner {
                     }
                     return names;
                   }
-                  function componentNamesFromImports(lines) {
-                    const names = [];
-                    for (const line of lines) {
-                      const text = String(line || "").trim();
-                      if (!text.startsWith("import ")) continue;
-                      const fromIndex = text.indexOf(" from ");
-                      if (fromIndex < 0) continue;
-                      let clause = text.slice(7, fromIndex).trim();
-                      const comma = clause.indexOf(",");
-                      if (comma >= 0) clause = clause.slice(0, comma).trim();
-                      if (!clause || clause.startsWith("{") || clause.startsWith("*")) continue;
-                      const first = clause[0];
-                      if (first >= "A" && first <= "Z") names.push(clause);
+                  function importLinesFromCode(code) {
+                    let importsText = "";
+                    for (const line of String(code || "").split("\\n")) {
+                      if (/^\\s*import\\b/.test(line)) importsText += line + nl;
                     }
-                    return names;
+                    return importsText;
+                  }
+                  function appendDefaultNamesFromImportText(importsText, names) {
+                    for (const line of String(importsText || "").split("\\n")) {
+                      appendDefaultNameFromImport(line, names);
+                    }
+                  }
+                  function appendDefaultNameFromImport(line, names) {
+                    const text = String(line || "").trim();
+                    if (!text.startsWith("import ")) return;
+                    const fromIndex = text.indexOf(" from ");
+                    if (fromIndex < 0) return;
+                    let clause = text.slice(7, fromIndex).trim();
+                    const comma = clause.indexOf(",");
+                    if (comma >= 0) clause = clause.slice(0, comma).trim();
+                    if (!clause || clause.startsWith("{") || clause.startsWith("*")) return;
+                    names.push(clause);
                   }
                   function compileScript(descriptor, options = {}) {
                     if (descriptor.scriptSetup) {
                       const code = descriptor.scriptSetup.content || "";
-                      const imports = [];
-                      const body = [];
+                      const sourceForImports = descriptor.source
+                        || (descriptor.scriptSetup.loc && descriptor.scriptSetup.loc.source)
+                        || "";
+                      const originalScriptSetup = sourceForImports ? block(sourceForImports, "script", 0) : null;
+                      const importSourceCode = originalScriptSetup && originalScriptSetup.setup
+                        ? originalScriptSetup.content || ""
+                        : sourceForImports || code;
+                      let importsText = importLinesFromCode(importSourceCode);
+                      let bodyText = "";
+                      const names = [];
+                      appendDefaultNamesFromImportText(importsText, names);
                       for (const line of code.split(/\\r?\\n/)) {
-                        if (/^\\s*import\\b/.test(line)) imports.push(line);
-                        else body.push(line);
+                        if (/^\\s*import\\b/.test(line)) {
+                          if (!importsText) {
+                            importsText += line + nl;
+                            appendDefaultNameFromImport(line, names);
+                          }
+                        } else {
+                          bodyText += line + nl;
+                        }
                       }
-                      const names = namesFromSetup(body.join("\\n")).concat(componentNamesFromImports(imports));
+                      for (const name of namesFromSetup(bodyText)) {
+                        names.push(name);
+                      }
                       const returned = names.length ? `{ ${names.join(", ")} }` : "{}";
                       return {
-                        content: imports.join(nl) + nl
+                        content: importsText
                           + "const _sfc_main = { setup(__props) {" + nl
-                          + body.join(nl) + nl
+                          + bodyText
                           + "return " + returned + ";" + nl
                           + "} };",
                         map: null,
