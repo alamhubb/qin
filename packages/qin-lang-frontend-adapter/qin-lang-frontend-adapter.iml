@@ -134,7 +134,15 @@
     <orderEntry type="library" name="com.github.ben-manes.caffeine@caffeine" level="project" />
     <orderEntry type="library" name="com.google.errorprone@error_prone_annotations" level="project" />
     <orderEntry type="library" name="net.bytebuddy@byte-buddy" level="project" />
+    <orderEntry type="library" name="org.apiguardian@apiguardian-api" level="project" />
     <orderEntry type="library" name="org.checkerframework@checker-qual" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-api" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-engine" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter-params" level="project" />
+    <orderEntry type="library" name="org.junit.jupiter@junit-jupiter" level="project" />
+    <orderEntry type="library" name="org.junit.platform@junit-platform-commons" level="project" />
+    <orderEntry type="library" name="org.junit.platform@junit-platform-engine" level="project" />
+    <orderEntry type="library" name="org.opentest4j@opentest4j" level="project" />
     <orderEntry type="library" name="org.slf4j@slf4j-api" level="project" />
     <!-- End Qin Libraries -->
 

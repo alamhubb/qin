@@ -6,7 +6,8 @@ export default {
     "dependencies":  {
                          "com.qin:qin-lang-ir":  "0.1.0",
                          "com.qin:qin-parser":  "0.1.0",
-                         "com.slime:slime-parser":  "1.0.0"
+                         "com.slime:slime-parser":  "1.0.0",
+                         "com.slime:slime-java":  "0.1.0"
                      },
     "java":  {
                  "version":  "21",
