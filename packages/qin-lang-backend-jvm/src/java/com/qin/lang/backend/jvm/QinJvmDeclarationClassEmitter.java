@@ -10,6 +10,7 @@ import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
+import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrNullLiteral;
@@ -740,6 +741,9 @@ public final class QinJvmDeclarationClassEmitter {
                     declarationIndex,
                     staticMethodCallExpression);
         }
+        if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
+            return emitJavaNewExpression(code, ownerDeclaration, method, declarationIndex, javaNewExpression);
+        }
         if (expression instanceof QinIrObjectLiteral objectLiteral) {
             emitObjectLiteral(code, ownerDeclaration, method, declarationIndex, objectLiteral);
             return QinIrTypeRef.classType("java.util.Map");
@@ -864,6 +868,32 @@ public final class QinJvmDeclarationClassEmitter {
 
         invokeStaticMethod(code, resolvedMethod);
         return resolvedMethod.returnType();
+    }
+
+    private QinIrTypeRef emitJavaNewExpression(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            QinIrJavaNewExpression javaNewExpression) {
+        ResolvedConstructorCall resolvedConstructor = resolveConstructorCall(
+                javaNewExpression.ownerBinaryName(),
+                javaNewExpression.arguments().size());
+
+        ClassDesc ownerDesc = ClassDesc.of(javaNewExpression.ownerBinaryName());
+        code.new_(ownerDesc);
+        code.dup();
+        for (int i = 0; i < javaNewExpression.arguments().size(); i++) {
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    javaNewExpression.arguments().get(i));
+            coerceValueForTargetType(code, actualType, resolvedConstructor.parameterTypes().get(i));
+        }
+        code.invokespecial(ownerDesc, "<init>", resolvedConstructor.descriptor());
+        return QinIrTypeRef.classType(javaNewExpression.ownerBinaryName());
     }
 
     private QinIrTypeRef emitBuiltinCallExpression(
@@ -1533,6 +1563,36 @@ public final class QinJvmDeclarationClassEmitter {
         }
     }
 
+    private ResolvedConstructorCall resolveConstructorCall(String ownerBinaryName, int argumentCount) {
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Constructor<?> matched = null;
+            for (Constructor<?> candidate : ownerClass.getConstructors()) {
+                if (candidate.getParameterCount() != argumentCount) {
+                    continue;
+                }
+                if (matched != null) {
+                    throw new IllegalArgumentException(
+                            "Ambiguous reflected constructor overload: " + ownerBinaryName + "/" + argumentCount);
+                }
+                matched = candidate;
+            }
+            if (matched == null) {
+                throw new IllegalArgumentException(
+                        "Unknown Java constructor: " + ownerBinaryName + "/" + argumentCount);
+            }
+            List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+            for (Class<?> parameterType : matched.getParameterTypes()) {
+                parameterTypes.add(toQinTypeRef(parameterType));
+            }
+            return new ResolvedConstructorCall(
+                    List.copyOf(parameterTypes),
+                    toConstructorDescriptorForTypes(parameterTypes));
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java constructor owner: " + ownerBinaryName, e);
+        }
+    }
+
     private QinIrTypeRef toQinTypeRef(Class<?> type) {
         if (type == void.class || type == Void.class) {
             return QinIrTypeRef.voidType();
@@ -1712,6 +1772,11 @@ public final class QinJvmDeclarationClassEmitter {
             String methodName,
             List<QinIrTypeRef> parameterTypes,
             QinIrTypeRef returnType) {
+    }
+
+    private record ResolvedConstructorCall(
+            List<QinIrTypeRef> parameterTypes,
+            MethodTypeDesc descriptor) {
     }
 
     private void invokeAccessor(java.lang.classfile.CodeBuilder code, ResolvedPropertyAccess propertyAccess) {
