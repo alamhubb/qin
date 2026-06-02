@@ -8,6 +8,7 @@ import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
+import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrTypeKind;
@@ -18,6 +19,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
                 package com.example;
                 import java.util.ArrayList;
                 import java.util.List;
+                import java.util.Objects;
                 class Person {
                     String name;
                     List items;
@@ -28,6 +30,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     String alias() { return display(); }
                     String joined(String name) { return greet(name); }
                     ArrayList fresh() { return new ArrayList(); }
+                    String safe(String name) { return Objects.toString(name); }
                 }
                 """;
 
@@ -44,7 +47,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 7, "method count");
+        require(person.methods().size() == 8, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -116,6 +119,17 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require("ArrayList".equals(newExpression.classLocalName()), "fresh new local name");
         require("java.util.ArrayList".equals(newExpression.ownerBinaryName()), "fresh new owner name");
         require(newExpression.arguments().isEmpty(), "fresh argument count");
+        QinIrMethodDeclaration safe = person.methods().get(7);
+        require("safe".equals(safe.name()), "safe method name");
+        require(safe.returnType().kind() == QinIrTypeKind.STRING, "safe return type");
+        require(safe.returnExpression() instanceof QinIrStaticMethodCallExpression, "safe return expression");
+        QinIrStaticMethodCallExpression staticCall = (QinIrStaticMethodCallExpression) safe.returnExpression();
+        require("Objects".equals(staticCall.classLocalName()), "safe class local name");
+        require("java.util.Objects".equals(staticCall.ownerBinaryName()), "safe owner name");
+        require("toString".equals(staticCall.methodName()), "safe method call name");
+        require(staticCall.arguments().size() == 1, "safe argument count");
+        require(staticCall.arguments().get(0) instanceof QinIrIdentifierReference, "safe first argument");
+        require("name".equals(((QinIrIdentifierReference) staticCall.arguments().get(0)).name()), "safe argument name");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }

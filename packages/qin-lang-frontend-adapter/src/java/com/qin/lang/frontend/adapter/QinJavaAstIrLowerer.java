@@ -13,6 +13,7 @@ import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
+import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
@@ -34,9 +35,11 @@ import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
 import com.slime.java.ast.JavaCstToAst;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class QinJavaAstIrLowerer {
     private final QinJavaSemanticAnalyzer semanticAnalyzer = new QinJavaSemanticAnalyzer();
@@ -80,8 +83,10 @@ public final class QinJavaAstIrLowerer {
         }
         Map<String, QinJavaSemanticField> semanticFields = semanticFieldsByName(semanticClass);
         Map<String, QinJavaSemanticMethod> semanticMethods = semanticMethodsByName(semanticClass);
+        Set<String> fieldNames = new LinkedHashSet<>();
         List<QinIrFieldDeclaration> fields = new ArrayList<>();
         for (JavaAstFieldDeclaration field : classDeclaration.fields()) {
+            fieldNames.add(field.name());
             QinJavaSemanticField semanticField = semanticFields.get(field.name());
             if (semanticField == null) {
                 throw new IllegalArgumentException("Missing semantic field for " + field.name());
@@ -99,7 +104,7 @@ public final class QinJavaAstIrLowerer {
             if (semanticMethod == null) {
                 throw new IllegalArgumentException("Missing semantic method for " + method.name());
             }
-            methods.add(lowerMethod(packageName, importedTypes, method, semanticMethod));
+            methods.add(lowerMethod(packageName, importedTypes, fieldNames, method, semanticMethod));
         }
 
         return new QinIrClassDeclaration(
@@ -114,11 +119,14 @@ public final class QinJavaAstIrLowerer {
     private QinIrMethodDeclaration lowerMethod(
             String packageName,
             Map<String, String> importedTypes,
+            Set<String> fieldNames,
             JavaAstMethodDeclaration method,
             QinJavaSemanticMethod semanticMethod) {
         List<QinIrParameter> parameters = new ArrayList<>();
+        Set<String> valueNames = new LinkedHashSet<>(fieldNames);
         Map<String, QinJavaSemanticParameter> semanticParameters = semanticParametersByName(semanticMethod);
         for (JavaAstParameter parameter : method.parameters()) {
+            valueNames.add(parameter.name());
             QinJavaSemanticParameter semanticParameter = semanticParameters.get(parameter.name());
             if (semanticParameter == null) {
                 throw new IllegalArgumentException("Missing semantic parameter for " + parameter.name());
@@ -133,37 +141,45 @@ public final class QinJavaAstIrLowerer {
                 semanticMethod.returnType(),
                 parameters,
                 List.of(),
-                lowerMethodReturnExpression(packageName, importedTypes, method));
+                lowerMethodReturnExpression(packageName, importedTypes, valueNames, method));
     }
 
     private QinIrExpression lowerMethodReturnExpression(
             String packageName,
             Map<String, String> importedTypes,
+            Set<String> valueNames,
             JavaAstMethodDeclaration method) {
         Map<String, QinIrExpression> locals = new LinkedHashMap<>();
         for (JavaAstStatement statement : method.bodyStatements()) {
             if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
                 if (localVariable.initializer() != null) {
-                    locals.put(localVariable.name(), lowerExpression(localVariable.initializer(), packageName, importedTypes, locals));
+                    locals.put(localVariable.name(), lowerExpression(
+                            localVariable.initializer(),
+                            packageName,
+                            importedTypes,
+                            locals,
+                            valueNames));
                 }
+                valueNames.add(localVariable.name());
                 continue;
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
-                return lowerExpression(returnStatement.expression(), packageName, importedTypes, locals);
+                return lowerExpression(returnStatement.expression(), packageName, importedTypes, locals, valueNames);
             }
         }
-        return lowerExpression(method.returnExpression(), packageName, importedTypes, locals);
+        return lowerExpression(method.returnExpression(), packageName, importedTypes, locals, valueNames);
     }
 
     private QinIrExpression lowerExpression(JavaAstExpression expression) {
-        return lowerExpression(expression, null, Map.of(), Map.of());
+        return lowerExpression(expression, null, Map.of(), Map.of(), Set.of());
     }
 
     private QinIrExpression lowerExpression(
             JavaAstExpression expression,
             String packageName,
             Map<String, String> importedTypes,
-            Map<String, QinIrExpression> locals) {
+            Map<String, QinIrExpression> locals,
+            Set<String> valueNames) {
         if (expression == null) {
             return null;
         }
@@ -185,23 +201,36 @@ public final class QinJavaAstIrLowerer {
         }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             return new QinIrPropertyAccessExpression(
-                    lowerExpression(memberAccess.receiver(), packageName, importedTypes, locals),
+                    lowerExpression(memberAccess.receiver(), packageName, importedTypes, locals, valueNames),
                     memberAccess.propertyName());
         }
         if (expression instanceof JavaAstMethodCallExpression methodCall) {
             List<QinIrExpression> arguments = new ArrayList<>();
             for (JavaAstExpression argument : methodCall.arguments()) {
-                arguments.add(lowerExpression(argument, packageName, importedTypes, locals));
+                arguments.add(lowerExpression(argument, packageName, importedTypes, locals, valueNames));
+            }
+            if (methodCall.receiver() instanceof JavaAstIdentifierExpression receiverIdentifier
+                    && !valueNames.contains(receiverIdentifier.name())) {
+                String ownerBinaryName = semanticAnalyzer
+                        .resolveType(receiverIdentifier.name(), packageName, importedTypes)
+                        .binaryName();
+                if (ownerBinaryName != null) {
+                    return new QinIrStaticMethodCallExpression(
+                            receiverIdentifier.name(),
+                            ownerBinaryName,
+                            methodCall.methodName(),
+                            arguments);
+                }
             }
             return new QinIrInstanceMethodCallExpression(
-                    lowerExpression(methodCall.receiver(), packageName, importedTypes, locals),
+                    lowerExpression(methodCall.receiver(), packageName, importedTypes, locals, valueNames),
                     methodCall.methodName(),
                     arguments);
         }
         if (expression instanceof JavaAstNewExpression newExpression) {
             List<QinIrExpression> arguments = new ArrayList<>();
             for (JavaAstExpression argument : newExpression.arguments()) {
-                arguments.add(lowerExpression(argument, packageName, importedTypes, locals));
+                arguments.add(lowerExpression(argument, packageName, importedTypes, locals, valueNames));
             }
             String ownerBinaryName = semanticAnalyzer
                     .resolveType(newExpression.typeName(), packageName, importedTypes)
@@ -214,8 +243,8 @@ public final class QinJavaAstIrLowerer {
                     "__qin_binary__",
                     List.of(
                             new QinIrStringLiteral(binary.operator()),
-                            lowerExpression(binary.left(), packageName, importedTypes, locals),
-                            lowerExpression(binary.right(), packageName, importedTypes, locals)));
+                            lowerExpression(binary.left(), packageName, importedTypes, locals, valueNames),
+                            lowerExpression(binary.right(), packageName, importedTypes, locals, valueNames)));
         }
         throw new IllegalArgumentException("Unsupported Java AST expression: " + expression);
     }

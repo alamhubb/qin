@@ -21,6 +21,8 @@ import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
 import com.slime.java.ast.JavaCstToAst;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -212,6 +214,16 @@ public final class QinJavaSemanticAnalyzer {
                 }
                 return returnType;
             }
+            if (methodCall.receiver() instanceof JavaAstIdentifierExpression receiverIdentifier
+                    && !locals.containsKey(receiverIdentifier.name())) {
+                QinIrTypeRef ownerType = resolveType(receiverIdentifier.name(), packageName, importedTypes);
+                if (ownerType.kind() == QinIrTypeKind.CLASS && ownerType.binaryName() != null) {
+                    return resolveStaticMethodReturnType(
+                            ownerType.binaryName(),
+                            methodCall.methodName(),
+                            methodCall.arguments().size());
+                }
+            }
             throw new IllegalArgumentException("Unsupported Java method receiver for semantics: " + methodCall.receiver());
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
@@ -234,6 +246,63 @@ public final class QinJavaSemanticAnalyzer {
             return QinIrTypeRef.intType();
         }
         return left;
+    }
+
+    private QinIrTypeRef resolveStaticMethodReturnType(
+            String ownerBinaryName,
+            String methodName,
+            int argumentCount) {
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Method matched = null;
+            for (Method method : ownerClass.getMethods()) {
+                if (!method.getName().equals(methodName)
+                        || method.getParameterCount() != argumentCount
+                        || !Modifier.isStatic(method.getModifiers())) {
+                    continue;
+                }
+                if (matched != null) {
+                    throw new IllegalArgumentException("Ambiguous Java static method: "
+                            + ownerBinaryName + "." + methodName + "/" + argumentCount);
+                }
+                matched = method;
+            }
+            if (matched == null) {
+                throw new IllegalArgumentException("Unknown Java static method: "
+                        + ownerBinaryName + "." + methodName + "/" + argumentCount);
+            }
+            return typeRefFromClass(matched.getReturnType());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java static method owner: " + ownerBinaryName, e);
+        }
+    }
+
+    private QinIrTypeRef typeRefFromClass(Class<?> type) {
+        if (type == void.class || type == Void.class) {
+            return QinIrTypeRef.voidType();
+        }
+        if (type == boolean.class || type == Boolean.class) {
+            return QinIrTypeRef.booleanType();
+        }
+        if (type == byte.class
+                || type == short.class
+                || type == int.class
+                || type == long.class
+                || type == char.class
+                || type == Byte.class
+                || type == Short.class
+                || type == Integer.class
+                || type == Long.class
+                || type == Character.class) {
+            return QinIrTypeRef.intType();
+        }
+        if (type == float.class || type == double.class || type == Float.class || type == Double.class) {
+            return QinIrTypeRef.doubleType();
+        }
+        if (type == String.class) {
+            return QinIrTypeRef.stringType();
+        }
+        return QinIrTypeRef.classType(type.getName());
     }
 
     private String resolveClassName(String typeName, String packageName, Map<String, String> importedTypes) {

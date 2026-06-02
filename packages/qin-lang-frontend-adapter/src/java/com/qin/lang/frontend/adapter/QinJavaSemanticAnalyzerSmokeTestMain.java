@@ -8,6 +8,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                 package com.example;
                 import java.util.ArrayList;
                 import java.util.List;
+                import java.util.Objects;
                 class Person {
                     String name;
                     List items;
@@ -18,6 +19,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                     String alias() { return display(); }
                     String joined(String name) { return greet(name); }
                     ArrayList fresh() { return new ArrayList(); }
+                    String safe(String name) { return Objects.toString(name); }
                 }
                 """;
 
@@ -28,7 +30,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 7, "method count");
+        require(person.methods().size() == 8, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
@@ -55,6 +57,9 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require("java.util.ArrayList".equals(fresh.returnType().binaryName()), "fresh declared binary name");
         require(fresh.returnExpressionType().kind() == QinIrTypeKind.CLASS, "fresh return expression type");
         require("java.util.ArrayList".equals(fresh.returnExpressionType().binaryName()), "fresh return expression binary name");
+        QinJavaSemanticMethod safe = person.methods().get(7);
+        require(safe.returnType().kind() == QinIrTypeKind.STRING, "safe declared return type");
+        require(safe.returnExpressionType().kind() == QinIrTypeKind.STRING, "safe return expression type");
 
         System.out.println("QinJavaSemanticAnalyzerSmokeTestMain OK");
     }
