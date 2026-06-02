@@ -10,7 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -257,18 +259,19 @@ public final class QinFullstackMain {
 
     private static void startDevRebuildLoop(BuildArtifacts artifacts, Options options) {
         Thread thread = Thread.ofPlatform().name("qin-dev-rebuild-loop").daemon(true).start(() -> {
-            long lastFingerprint = computeDevSourceFingerprint(artifacts.root());
+            Map<Path, FileSnapshot> lastSnapshot = snapshotDevSourceFiles(artifacts.root());
             while (true) {
                 try {
                     Thread.sleep(1000L);
-                    long current = computeDevSourceFingerprint(artifacts.root());
-                    if (current == lastFingerprint) {
+                    Map<Path, FileSnapshot> currentSnapshot = snapshotDevSourceFiles(artifacts.root());
+                    List<Path> changedFiles = diffChangedFiles(lastSnapshot, currentSnapshot);
+                    if (changedFiles.isEmpty()) {
                         continue;
                     }
-                    lastFingerprint = current;
+                    lastSnapshot = currentSnapshot;
                     System.out.println("[dev] source change detected, rebuilding...");
                     BuildArtifacts rebuilt = build(options);
-                    artifacts.updateFrom(rebuilt);
+                    artifacts.updateFrom(rebuilt, changedFiles);
                     System.out.println("[dev] rebuild finished (version " + artifacts.version() + ")");
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -281,8 +284,8 @@ public final class QinFullstackMain {
         System.out.println("[dev] watching source files (thread: " + thread.getName() + ")");
     }
 
-    private static long computeDevSourceFingerprint(Path root) {
-        long hash = 0xcbf29ce484222325L;
+    private static Map<Path, FileSnapshot> snapshotDevSourceFiles(Path root) {
+        Map<Path, FileSnapshot> snapshots = new LinkedHashMap<>();
         try (var stream = Files.walk(root)) {
             List<Path> files = stream
                     .filter(Files::isRegularFile)
@@ -291,22 +294,31 @@ public final class QinFullstackMain {
                     .toList();
 
             for (Path file : files) {
-                String rel = root.relativize(file).toString().replace('\\', '/');
-                long modified = Files.getLastModifiedTime(file).toMillis();
-                long size = Files.size(file);
-                hash = mix(hash, rel.hashCode());
-                hash = mix(hash, modified);
-                hash = mix(hash, size);
+                snapshots.put(
+                        file.toAbsolutePath().normalize(),
+                        new FileSnapshot(Files.getLastModifiedTime(file).toMillis(), Files.size(file)));
             }
         } catch (IOException ignored) {
-            // ignore and keep current hash
+            // ignore and keep current snapshot
         }
-        return hash;
+        return snapshots;
     }
 
-    private static long mix(long hash, long value) {
-        long mixed = hash ^ value;
-        return mixed * 0x100000001b3L;
+    private static List<Path> diffChangedFiles(Map<Path, FileSnapshot> previous, Map<Path, FileSnapshot> current) {
+        List<Path> changed = new ArrayList<>();
+        for (Map.Entry<Path, FileSnapshot> entry : current.entrySet()) {
+            FileSnapshot before = previous.get(entry.getKey());
+            if (!entry.getValue().equals(before)) {
+                changed.add(entry.getKey());
+            }
+        }
+        for (Path file : previous.keySet()) {
+            if (!current.containsKey(file)) {
+                changed.add(file);
+            }
+        }
+        changed.sort(Comparator.comparing(Path::toString));
+        return changed;
     }
 
     private static boolean isDevSourceFile(Path root, Path file) {
@@ -455,6 +467,7 @@ public final class QinFullstackMain {
         private volatile Path staticRoot;
         private final AtomicReference<Method> runMethodRef;
         private final AtomicReference<QinFrontendEsmService> frontendEsmServiceRef;
+        private final AtomicReference<List<String>> hmrMessagesRef;
         private final AtomicLong version;
 
         private BuildArtifacts(Path root, Path staticRoot, Method runMethod, QinFrontendEsmService frontendEsmService) {
@@ -462,6 +475,7 @@ public final class QinFullstackMain {
             this.staticRoot = staticRoot;
             this.runMethodRef = new AtomicReference<>(runMethod);
             this.frontendEsmServiceRef = new AtomicReference<>(frontendEsmService);
+            this.hmrMessagesRef = new AtomicReference<>(List.of());
             this.version = new AtomicLong(System.currentTimeMillis());
         }
 
@@ -489,11 +503,25 @@ public final class QinFullstackMain {
             return version.get();
         }
 
-        private void updateFrom(BuildArtifacts rebuilt) {
+        @Override
+        public List<String> consumeHmrMessages() {
+            return hmrMessagesRef.getAndSet(List.of());
+        }
+
+        private void updateFrom(BuildArtifacts rebuilt, List<Path> changedFiles) {
             this.staticRoot = rebuilt.staticRoot;
             this.runMethodRef.set(rebuilt.currentRunMethod());
             this.frontendEsmServiceRef.set(rebuilt.frontendEsmService());
+            QinFrontendEsmService frontend = rebuilt.frontendEsmService();
+            if (frontend != null && changedFiles != null && !changedFiles.isEmpty()) {
+                this.hmrMessagesRef.set(frontend.collectViteHotUpdateMessages(changedFiles));
+            } else {
+                this.hmrMessagesRef.set(List.of());
+            }
             this.version.incrementAndGet();
         }
+    }
+
+    private record FileSnapshot(long modifiedMillis, long size) {
     }
 }

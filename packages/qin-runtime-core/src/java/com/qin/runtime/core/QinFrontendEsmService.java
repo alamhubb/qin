@@ -113,6 +113,13 @@ public final class QinFrontendEsmService {
         return "import \"" + entryModuleUrl + "\";\n";
     }
 
+    public List<String> collectViteHotUpdateMessages(List<Path> changedFiles) {
+        if (changedFiles == null || changedFiles.isEmpty() || !(vueSfcCompiler instanceof QinViteVuePluginCompiler compiler)) {
+            return List.of();
+        }
+        return compiler.collectHotUpdateMessages(projectRoot, changedFiles);
+    }
+
     public String transpileByRequestPath(String requestPath) throws IOException {
         String normalizedRequestPath = stripQinHmrQuery(requestPath);
         String virtualContent = resolveVirtualModuleContent(normalizedRequestPath);

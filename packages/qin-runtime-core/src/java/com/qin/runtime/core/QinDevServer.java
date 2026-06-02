@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -558,6 +559,11 @@ final class QinDevServer {
                           handleVersion(payload.version);
                         } else if (payload && payload.type === 'update') {
                           handleVersion(payload.version);
+                        } else if (payload && payload.type === 'custom') {
+                          const callbacks = hotEventCallbacks.get(String(payload.event || '')) || [];
+                          for (const callback of callbacks) {
+                            try { callback(payload.data); } catch (_) {}
+                          }
                         } else if (payload && payload.type === 'full-reload') {
                           window.location.reload();
                         }
@@ -900,6 +906,9 @@ final class QinDevServer {
                     long next = runtime.version();
                     long previous = observedVersion.getAndSet(next);
                     if (next != previous) {
+                        for (String message : runtime.consumeHmrMessages()) {
+                            broadcast(message);
+                        }
                         broadcast("{\"type\":\"update\",\"version\":" + next + "}");
                     }
                     Thread.sleep(250);
@@ -1004,5 +1013,9 @@ final class QinDevServer {
         QinFrontendEsmService frontendEsmService();
 
         long version();
+
+        default List<String> consumeHmrMessages() {
+            return List.of();
+        }
     }
 }

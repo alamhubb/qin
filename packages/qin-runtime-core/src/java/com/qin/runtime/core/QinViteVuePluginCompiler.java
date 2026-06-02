@@ -4,6 +4,8 @@ import com.qin.lang.module.resolver.QinModuleSource;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +23,36 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
             "(?m)(export\\s+(?:\\*\\s*(?:as\\s+[A-Za-z_$][\\w$]*\\s*)?|\\{[^}\\n]*})\\s*from\\s*[\"'])([^\"']+)([\"'])");
 
     private final QinJsPackageRunner packageRunner = new QinJsPackageRunner();
+
+    List<String> collectHotUpdateMessages(Path projectRoot, List<Path> changedFiles) {
+        if (changedFiles == null || changedFiles.isEmpty()) {
+            return List.of();
+        }
+        try {
+            Object result = packageRunner.runModuleSource(
+                    projectRoot,
+                    buildHotUpdateWrapperSource(projectRoot, changedFiles),
+                    "vite_plugin_vue_hot_update");
+            if (!(result instanceof Map<?, ?> map)) {
+                throw new IllegalStateException("Expected plugin-vue hot update result object, got: " + result);
+            }
+            Object messages = map.get("messages");
+            if (!(messages instanceof List<?> list) || list.isEmpty()) {
+                return List.of();
+            }
+            List<String> out = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof String text && !text.isBlank()) {
+                    out.add(text);
+                }
+            }
+            return out;
+        } catch (IllegalStateException error) {
+            throw error;
+        } catch (Exception error) {
+            throw new IllegalStateException("Qin @vitejs/plugin-vue hot update failed for " + projectRoot, error);
+        }
+    }
 
     static boolean isEnabled(Path projectRoot) {
         Path root = projectRoot.toAbsolutePath().normalize();
@@ -177,6 +209,33 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                 viteConfigImportSource(projectRoot),
                 pluginContainerSource(root),
                 QinJsPackageRunner.renderJsLiteral(id));
+    }
+
+    private String buildHotUpdateWrapperSource(Path projectRoot, List<Path> changedFiles) {
+        String root = projectRoot.toAbsolutePath().normalize().toString().replace('\\', '/');
+        StringBuilder files = new StringBuilder("[");
+        for (int i = 0; i < changedFiles.size(); i++) {
+            if (i > 0) {
+                files.append(", ");
+            }
+            files.append(QinJsPackageRunner.renderJsLiteral(
+                    changedFiles.get(i).toAbsolutePath().normalize().toString().replace('\\', '/')));
+        }
+        files.append("]");
+        return """
+                import vuePlugin from "@vitejs/plugin-vue";
+                %s
+
+                %s
+                const qinChangedFiles = %s;
+                for (const file of qinChangedFiles) {
+                  qinApplyHotUpdate(qinPlugins, qinDevServer, file);
+                }
+                ({ messages: qinDevServer.__qinWsMessages });
+                """.formatted(
+                viteConfigImportSource(projectRoot),
+                pluginContainerSource(root),
+                files);
     }
 
     private String pluginContainerSource(String root) {
@@ -364,11 +423,29 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   return {
                     config,
                     watcher: { on(event, handler) {} },
+                    ws: {
+                      send(payload) {
+                        this.__qinMessages.push(qinSerializeHotPayload(payload));
+                      },
+                      __qinMessages: []
+                    },
                     moduleGraph: {
-                      getModuleById(id) { return null; },
-                      invalidateModule(module) {}
-                    }
+                      getModuleById(id) {
+                        return id ? { id, url: id, file: qinStripQuery(id), importedModules: new Set(), importers: new Set() } : null;
+                      },
+                      getModulesByFile(file) {
+                        return new Set([{ id: qinNormalizePath(file), url: qinNormalizePath(file), file: qinNormalizePath(file), importedModules: new Set(), importers: new Set() }]);
+                      },
+                      invalidateModule(module) {
+                        if (module) module.__qinInvalidated = true;
+                      }
+                    },
+                    __qinWsMessages: []
                   };
+                }
+                function qinSerializeHotPayload(payload) {
+                  if (typeof payload === "string") return payload;
+                  return JSON.stringify(payload == null ? { type: "custom", event: "qin:empty" } : payload);
                 }
                 function qinRunPluginLifecycle(plugins, config, context, server) {
                   const env = { command: "serve", mode: "development", ssrBuild: false };
@@ -398,6 +475,28 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                     code = typeof result === "string" ? result : result.code;
                   }
                   return lastResult || { code, map: null };
+                }
+                function qinApplyHotUpdate(plugins, server, file) {
+                  const normalizedFile = qinNormalizePath(file);
+                  const modules = Array.from(server.moduleGraph.getModulesByFile(normalizedFile));
+                  const context = qinCreatePluginContext(server.config, plugins);
+                  Object.assign(context, {
+                    file: normalizedFile,
+                    timestamp: Date.now(),
+                    modules,
+                    server,
+                    read() {
+                      return "";
+                    }
+                  });
+                  for (const plugin of plugins) {
+                    const result = qinCallHook(plugin && plugin.handleHotUpdate, context, context);
+                    if (result && Array.isArray(result)) {
+                      context.modules = result;
+                    }
+                  }
+                  server.__qinWsMessages.push(...server.ws.__qinMessages);
+                  server.ws.__qinMessages.length = 0;
                 }
                 const qinUserConfig = qinResolveUserConfig(qinUserViteConfig);
                 let qinPlugins = qinSortPlugins(qinFlattenPlugins(qinUserConfig.plugins));
