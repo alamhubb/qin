@@ -337,6 +337,22 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                     })
                     .map(item => item.plugin);
                 }
+                function qinAppendUniquePlugins(target, value) {
+                  for (const plugin of qinFlattenPlugins(value)) {
+                    if (target.indexOf(plugin) < 0) target.push(plugin);
+                  }
+                  return target;
+                }
+                function qinRefreshPluginsFromConfig(plugins, config, configHookPlugins) {
+                  const next = [];
+                  qinAppendUniquePlugins(next, plugins);
+                  qinAppendUniquePlugins(next, config && config.plugins);
+                  qinAppendUniquePlugins(next, configHookPlugins);
+                  const sorted = qinSortPlugins(next);
+                  plugins.length = 0;
+                  plugins.push(...sorted);
+                  if (config) config.plugins = plugins;
+                }
                 function qinResolveUserConfig(raw) {
                   let value = typeof raw === "function"
                     ? raw({ command: "serve", mode: "development", ssrBuild: false })
@@ -497,10 +513,15 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                 }
                 function qinRunPluginLifecycle(plugins, config, context, server) {
                   const env = { command: "serve", mode: "development", ssrBuild: false };
-                  for (const plugin of plugins) {
+                  const configHookPlugins = [];
+                  for (const plugin of plugins.slice()) {
                     const nextConfig = qinCallHook(plugin && plugin.config, plugin, config, env);
-                    if (nextConfig) qinMergeObject(config, nextConfig);
+                    if (nextConfig) {
+                      qinAppendUniquePlugins(configHookPlugins, nextConfig.plugins);
+                      qinMergeObject(config, nextConfig);
+                    }
                   }
+                  qinRefreshPluginsFromConfig(plugins, config, configHookPlugins);
                   for (const plugin of plugins) qinCallHook(plugin && plugin.configResolved, plugin, config);
                   for (const plugin of plugins) qinCallHook(plugin && plugin.configureServer, plugin, server);
                   for (const plugin of plugins) qinCallHook(plugin && plugin.options, context);
