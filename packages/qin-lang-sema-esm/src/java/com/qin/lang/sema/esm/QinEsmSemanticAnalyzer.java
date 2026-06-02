@@ -32,6 +32,8 @@ public final class QinEsmSemanticAnalyzer {
             "\\bexport\\s*(type\\s+)?\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?");
     private static final Pattern EXPORT_ALL_PATTERN = Pattern.compile(
             "\\bexport\\s*\\*\\s*(?:as\\s+([A-Za-z_$][\\w$]*)\\s*)?from\\s*[\"']([^\"']+)[\"']\\s*;?");
+    private static final Pattern COMMONJS_EXPORT_PATTERN = Pattern.compile(
+            "\\bmodule\\s*\\.\\s*exports\\b|\\bexports\\s*\\.");
 
     public QinEsmSemanticModel analyze(QinModuleGraph graph) {
         Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
@@ -90,6 +92,7 @@ public final class QinEsmSemanticAnalyzer {
 
     private List<QinEsmExportBinding> parseExports(QinModuleSource module) {
         List<QinEsmExportBinding> exports = new ArrayList<>();
+        boolean[] code = codeMask(module.source());
         if (isVirtualDefaultExportModule(module)) {
             exports.add(new QinEsmExportBinding(
                     module.file(),
@@ -102,7 +105,18 @@ public final class QinEsmSemanticAnalyzer {
                     1,
                     1));
         }
-        boolean[] code = codeMask(module.source());
+        if (isCommonJsInteropDefaultModule(module, code)) {
+            exports.add(new QinEsmExportBinding(
+                    module.file(),
+                    QinEsmExportKind.LOCAL_DEFAULT,
+                    "default",
+                    "default",
+                    false,
+                    null,
+                    null,
+                    1,
+                    1));
+        }
         Matcher matcher = EXPORT_DECLARATION_PATTERN.matcher(module.source());
         while (matcher.find()) {
             if (!isCodePosition(code, matcher.start())) {
@@ -215,6 +229,19 @@ public final class QinEsmSemanticAnalyzer {
                 || fileName.endsWith(".webp")
                 || fileName.endsWith(".ico")
                 || fileName.endsWith(".avif");
+    }
+
+    private boolean isCommonJsInteropDefaultModule(QinModuleSource module, boolean[] code) {
+        if (module == null || module.source() == null) {
+            return false;
+        }
+        Matcher matcher = COMMONJS_EXPORT_PATTERN.matcher(module.source());
+        while (matcher.find()) {
+            if (isCodePosition(code, matcher.start())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void addDefaultDeclarationNamedExports(
