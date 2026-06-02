@@ -77,6 +77,11 @@ public final class QinJsBackend {
                 }
                 continue;
             }
+            if ("java.lang.StringBuilder".equals(javaImport.ownerBinaryName())) {
+                emitJavaLangStringBuilderRuntime(js);
+                js.append("const ").append(javaImport.localName()).append(" = __QinJavaLangStringBuilder;\n");
+                continue;
+            }
             if ("java.util.ArrayList".equals(javaImport.ownerBinaryName())) {
                 emitJavaUtilArrayListRuntime(js);
                 js.append("const ").append(javaImport.localName()).append(" = __QinJavaUtilArrayList;\n");
@@ -98,6 +103,38 @@ public final class QinJsBackend {
         if (!javaImports.isEmpty()) {
             js.append("\n");
         }
+    }
+
+    private void emitJavaLangStringBuilderRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinJavaLangStringBuilder") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaLangStringBuilder {
+                  constructor(initialValue) {
+                    this.__text = "";
+                    if (initialValue != null) {
+                      this.__text += String(initialValue);
+                    }
+                  }
+                  append(value) {
+                    this.__text += String(value);
+                    return this;
+                  }
+                  length() {
+                    return this.__text.length;
+                  }
+                  charAt(index) {
+                    return this.__text.charAt(index);
+                  }
+                  setLength(length) {
+                    this.__text = this.__text.slice(0, length);
+                  }
+                  toString() {
+                    return this.__text;
+                  }
+                }
+                """);
     }
 
     private void emitJavaUtilArrayListRuntime(StringBuilder js) {
@@ -531,6 +568,7 @@ public final class QinJsBackend {
         if ("java.util.ArrayList".equals(ownerBinaryName)
                 || "java.util.HashMap".equals(ownerBinaryName)
                 || "java.util.Objects".equals(ownerBinaryName)
+                || "java.lang.StringBuilder".equals(ownerBinaryName)
                 || "java.lang.Math".equals(ownerBinaryName)) {
             return;
         }
