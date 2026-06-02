@@ -536,7 +536,14 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                   }
                   qinRefreshPluginsFromConfig(plugins, config, configHookPlugins);
                   for (const plugin of plugins) qinCallHook(plugin && plugin.configResolved, plugin, config);
-                  for (const plugin of plugins) qinCallHook(plugin && plugin.configureServer, plugin, server);
+                  const configureServerPostHooks = [];
+                  for (const plugin of plugins) {
+                    const postHook = qinCallHook(plugin && plugin.configureServer, plugin, server);
+                    if (typeof postHook === "function") {
+                      configureServerPostHooks.push({ plugin, postHook });
+                    }
+                  }
+                  for (const item of configureServerPostHooks) qinCallHook(item.postHook, item.plugin);
                   for (const plugin of plugins) qinCallHook(plugin && plugin.options, context);
                   for (const plugin of plugins) qinCallHook(plugin && plugin.buildStart, context);
                 }
