@@ -19,6 +19,7 @@ import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrSequenceExpression;
+import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrTypeKind;
@@ -37,6 +38,8 @@ import java.lang.classfile.attribute.RuntimeVisibleParameterAnnotationsAttribute
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
@@ -729,6 +732,14 @@ public final class QinJvmDeclarationClassEmitter {
                     declarationIndex,
                     methodCallExpression);
         }
+        if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
+            return emitStaticMethodCall(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    staticMethodCallExpression);
+        }
         if (expression instanceof QinIrObjectLiteral objectLiteral) {
             emitObjectLiteral(code, ownerDeclaration, method, declarationIndex, objectLiteral);
             return QinIrTypeRef.classType("java.util.Map");
@@ -822,6 +833,36 @@ public final class QinJvmDeclarationClassEmitter {
         }
 
         invokeMethod(code, resolvedMethod);
+        return resolvedMethod.returnType();
+    }
+
+    private QinIrTypeRef emitStaticMethodCall(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            QinIrStaticMethodCallExpression methodCallExpression) {
+        ResolvedStaticMethodCall resolvedMethod = resolveStaticMethodCall(
+                methodCallExpression.ownerBinaryName(),
+                methodCallExpression.methodName(),
+                methodCallExpression.arguments().size());
+        if (resolvedMethod == null) {
+            throw new IllegalArgumentException(
+                    "Unknown declaration static method: "
+                            + methodCallExpression.ownerBinaryName() + "." + methodCallExpression.methodName());
+        }
+
+        for (int i = 0; i < methodCallExpression.arguments().size(); i++) {
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    methodCallExpression.arguments().get(i));
+            coerceValueForTargetType(code, actualType, resolvedMethod.parameterTypes().get(i));
+        }
+
+        invokeStaticMethod(code, resolvedMethod);
         return resolvedMethod.returnType();
     }
 
@@ -1456,6 +1497,42 @@ public final class QinJvmDeclarationClassEmitter {
         }
     }
 
+    private ResolvedStaticMethodCall resolveStaticMethodCall(
+            String ownerBinaryName,
+            String methodName,
+            int argumentCount) {
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Method matched = null;
+            for (Method candidate : ownerClass.getMethods()) {
+                if (!candidate.getName().equals(methodName)
+                        || candidate.getParameterCount() != argumentCount
+                        || !Modifier.isStatic(candidate.getModifiers())) {
+                    continue;
+                }
+                if (matched != null) {
+                    throw new IllegalArgumentException(
+                            "Ambiguous reflected static method overload: " + ownerBinaryName + "." + methodName);
+                }
+                matched = candidate;
+            }
+            if (matched == null) {
+                return null;
+            }
+            List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+            for (Class<?> parameterType : matched.getParameterTypes()) {
+                parameterTypes.add(toQinTypeRef(parameterType));
+            }
+            return new ResolvedStaticMethodCall(
+                    ownerClass.getName(),
+                    matched.getName(),
+                    List.copyOf(parameterTypes),
+                    toQinTypeRef(matched.getReturnType()));
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
     private QinIrTypeRef toQinTypeRef(Class<?> type) {
         if (type == void.class || type == Void.class) {
             return QinIrTypeRef.voidType();
@@ -1630,6 +1707,13 @@ public final class QinJvmDeclarationClassEmitter {
             boolean ownerInterface) {
     }
 
+    private record ResolvedStaticMethodCall(
+            String ownerBinaryName,
+            String methodName,
+            List<QinIrTypeRef> parameterTypes,
+            QinIrTypeRef returnType) {
+    }
+
     private void invokeAccessor(java.lang.classfile.CodeBuilder code, ResolvedPropertyAccess propertyAccess) {
         if (propertyAccess.ownerInterface()) {
             code.invokeinterface(
@@ -1653,6 +1737,13 @@ public final class QinJvmDeclarationClassEmitter {
             return;
         }
         code.invokevirtual(ClassDesc.of(methodCall.ownerBinaryName()), methodCall.methodName(), descriptor);
+    }
+
+    private void invokeStaticMethod(java.lang.classfile.CodeBuilder code, ResolvedStaticMethodCall methodCall) {
+        MethodTypeDesc descriptor = MethodTypeDesc.of(
+                toClassDesc(methodCall.returnType()),
+                methodCall.parameterTypes().stream().map(this::toClassDesc).toList());
+        code.invokestatic(ClassDesc.of(methodCall.ownerBinaryName()), methodCall.methodName(), descriptor);
     }
 
     private void coerceValueForTargetType(
