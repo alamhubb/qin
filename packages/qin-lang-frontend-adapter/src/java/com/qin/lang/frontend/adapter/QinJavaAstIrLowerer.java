@@ -18,11 +18,14 @@ import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
+import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
+import com.slime.java.ast.JavaAstReturnStatement;
+import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
 import com.slime.java.ast.JavaCstToAst;
@@ -118,14 +121,38 @@ public final class QinJavaAstIrLowerer {
                 semanticMethod.returnType(),
                 parameters,
                 List.of(),
-                lowerExpression(method.returnExpression()));
+                lowerMethodReturnExpression(method));
+    }
+
+    private QinIrExpression lowerMethodReturnExpression(JavaAstMethodDeclaration method) {
+        Map<String, QinIrExpression> locals = new LinkedHashMap<>();
+        for (JavaAstStatement statement : method.bodyStatements()) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                if (localVariable.initializer() != null) {
+                    locals.put(localVariable.name(), lowerExpression(localVariable.initializer(), locals));
+                }
+                continue;
+            }
+            if (statement instanceof JavaAstReturnStatement returnStatement) {
+                return lowerExpression(returnStatement.expression(), locals);
+            }
+        }
+        return lowerExpression(method.returnExpression(), locals);
     }
 
     private QinIrExpression lowerExpression(JavaAstExpression expression) {
+        return lowerExpression(expression, Map.of());
+    }
+
+    private QinIrExpression lowerExpression(JavaAstExpression expression, Map<String, QinIrExpression> locals) {
         if (expression == null) {
             return null;
         }
         if (expression instanceof JavaAstIdentifierExpression identifier) {
+            QinIrExpression local = locals.get(identifier.name());
+            if (local != null) {
+                return local;
+            }
             return new QinIrIdentifierReference(identifier.name());
         }
         if (expression instanceof JavaAstNumberLiteral number) {
@@ -139,7 +166,7 @@ public final class QinJavaAstIrLowerer {
         }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             return new QinIrPropertyAccessExpression(
-                    lowerExpression(memberAccess.receiver()),
+                    lowerExpression(memberAccess.receiver(), locals),
                     memberAccess.propertyName());
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
@@ -148,8 +175,8 @@ public final class QinJavaAstIrLowerer {
                     "__qin_binary__",
                     List.of(
                             new QinIrStringLiteral(binary.operator()),
-                            lowerExpression(binary.left()),
-                            lowerExpression(binary.right())));
+                            lowerExpression(binary.left(), locals),
+                            lowerExpression(binary.right(), locals)));
         }
         throw new IllegalArgumentException("Unsupported Java AST expression: " + expression);
     }

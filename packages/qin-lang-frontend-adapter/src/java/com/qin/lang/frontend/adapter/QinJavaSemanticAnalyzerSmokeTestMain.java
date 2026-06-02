@@ -12,6 +12,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                     List items;
                     int add(int a, int b) { return a + b; }
                     String display() { return this.name; }
+                    String greet(String name) { String prefix = "hello "; return prefix + name; }
                 }
                 """;
 
@@ -22,7 +23,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 2, "method count");
+        require(person.methods().size() == 3, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
@@ -32,6 +33,9 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         QinJavaSemanticMethod display = person.methods().get(1);
         require(display.returnType().kind() == QinIrTypeKind.STRING, "display declared return type");
         require(display.returnExpressionType().kind() == QinIrTypeKind.STRING, "display return expression type");
+        QinJavaSemanticMethod greet = person.methods().get(2);
+        require(greet.returnType().kind() == QinIrTypeKind.STRING, "greet declared return type");
+        require(greet.returnExpressionType().kind() == QinIrTypeKind.STRING, "greet return expression type");
 
         System.out.println("QinJavaSemanticAnalyzerSmokeTestMain OK");
     }

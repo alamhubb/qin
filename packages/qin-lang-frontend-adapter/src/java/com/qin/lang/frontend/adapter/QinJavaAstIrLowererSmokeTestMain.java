@@ -20,6 +20,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     List items;
                     int add(int a, int b) { return a + b; }
                     String display() { return this.name; }
+                    String greet(String name) { String prefix = "hello "; return prefix + name; }
                 }
                 """;
 
@@ -36,7 +37,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 2, "method count");
+        require(person.methods().size() == 3, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -63,6 +64,18 @@ public class QinJavaAstIrLowererSmokeTestMain {
         QinIrPropertyAccessExpression propertyAccess = (QinIrPropertyAccessExpression) display.returnExpression();
         require(propertyAccess.receiver() instanceof QinIrThisExpression, "display receiver");
         require("name".equals(propertyAccess.propertyName()), "display property name");
+        QinIrMethodDeclaration greet = person.methods().get(2);
+        require("greet".equals(greet.name()), "greet method name");
+        require(greet.returnType().kind() == QinIrTypeKind.STRING, "greet return type");
+        require(greet.returnExpression() instanceof QinIrBuiltinCallExpression, "greet return expression");
+        QinIrBuiltinCallExpression greetBinary = (QinIrBuiltinCallExpression) greet.returnExpression();
+        require("__qin_binary__".equals(greetBinary.methodName()), "greet binary method");
+        require(greetBinary.arguments().get(0) instanceof QinIrStringLiteral, "greet binary operator");
+        require("+".equals(((QinIrStringLiteral) greetBinary.arguments().get(0)).value()), "greet binary operator value");
+        require(greetBinary.arguments().get(1) instanceof QinIrStringLiteral, "greet local inline value");
+        require("hello ".equals(((QinIrStringLiteral) greetBinary.arguments().get(1)).value()), "greet local inline text");
+        require(greetBinary.arguments().get(2) instanceof QinIrIdentifierReference, "greet parameter reference");
+        require("name".equals(((QinIrIdentifierReference) greetBinary.arguments().get(2)).name()), "greet parameter name");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }

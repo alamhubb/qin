@@ -8,11 +8,14 @@ import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstImportDeclaration;
+import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
+import com.slime.java.ast.JavaAstReturnStatement;
+import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
 import com.slime.java.ast.JavaCstToAst;
@@ -98,7 +101,25 @@ public final class QinJavaSemanticAnalyzer {
             locals.put(parameter.name(), type);
         }
         QinIrTypeRef returnType = resolveType(method.returnTypeName(), packageName, importedTypes);
-        QinIrTypeRef returnExpressionType = expressionType(method.returnExpression(), locals, fieldTypes, classBinaryName);
+        QinIrTypeRef returnExpressionType = QinIrTypeRef.voidType();
+        for (JavaAstStatement statement : method.bodyStatements()) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                if (localVariable.initializer() != null) {
+                    expressionType(localVariable.initializer(), locals, fieldTypes, classBinaryName);
+                }
+                QinIrTypeRef localType = "var".equals(localVariable.typeName())
+                        ? expressionType(localVariable.initializer(), locals, fieldTypes, classBinaryName)
+                        : resolveType(localVariable.typeName(), packageName, importedTypes);
+                locals.put(localVariable.name(), localType);
+                continue;
+            }
+            if (statement instanceof JavaAstReturnStatement returnStatement) {
+                returnExpressionType = expressionType(returnStatement.expression(), locals, fieldTypes, classBinaryName);
+            }
+        }
+        if (method.bodyStatements().isEmpty()) {
+            returnExpressionType = expressionType(method.returnExpression(), locals, fieldTypes, classBinaryName);
+        }
         return new QinJavaSemanticMethod(method.name(), returnType, parameters, returnExpressionType);
     }
 
