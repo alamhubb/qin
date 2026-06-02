@@ -557,7 +557,7 @@ public class QinCli {
                 resolveQinFrontendEntry(config, root, frontendRoot));
         Path frontendStaticDir = firstNonNullPath(
                 resolvePathArg(args, "--static-dir", root),
-                frontendRoot);
+                resolveQinFrontendStaticDir(root, frontendRoot));
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
 
         System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
@@ -956,6 +956,13 @@ public class QinCli {
         return null;
     }
 
+    private static Path resolveQinFrontendStaticDir(Path projectRoot, Path frontendRoot) {
+        if (Files.isRegularFile(projectRoot.resolve("index.html")) || Files.isRegularFile(projectRoot.resolve("index"))) {
+            return projectRoot;
+        }
+        return frontendRoot;
+    }
+
     private static String resolveRunTargetToMainClass(String runTarget) {
         if (runTarget == null || runTarget.isBlank()) {
             return null;
@@ -1015,13 +1022,17 @@ public class QinCli {
 
         String qinDevEntry = null;
         boolean frontendOnlyOverride = hasArg(args, "--frontend-file");
-        if (args.length > 0 && !args[0].startsWith("-")) {
+        boolean hasPositionalTarget = args.length > 0 && !args[0].startsWith("-");
+        boolean configuredFrontendOnly = hasConfiguredFrontend(config)
+                && !hasArg(args, "--backend-file")
+                && !hasPositionalTarget;
+        if (hasPositionalTarget) {
             qinDevEntry = resolveRunTargetToQinFile(config, args[0]);
-        } else if (!frontendOnlyOverride) {
+        } else if (!frontendOnlyOverride && !configuredFrontendOnly) {
             qinDevEntry = resolveDefaultQinEntry(config);
         }
-        if (qinDevEntry != null || frontendOnlyOverride) {
-            String[] qinArgs = args.length > 0 && !args[0].startsWith("-")
+        if (qinDevEntry != null || frontendOnlyOverride || configuredFrontendOnly) {
+            String[] qinArgs = hasPositionalTarget
                     ? Arrays.copyOfRange(args, 1, args.length)
                     : args;
             runQinRuntime(config, qinDevEntry, true, qinArgs);
@@ -1056,6 +1067,10 @@ public class QinCli {
 
         System.out.println(green("[OK] Development server started"));
         System.out.println(gray("  Press Ctrl+C to stop"));
+    }
+
+    private static boolean hasConfiguredFrontend(QinConfig config) {
+        return config.frontend() != null || config.client() != null;
     }
 
     private static void compileProject(String[] args) throws Exception {

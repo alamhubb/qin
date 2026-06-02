@@ -236,6 +236,8 @@ public final class QinFullstackMain {
         Path resolved;
         if (fromArgs != null) {
             resolved = resolvePath(root, fromArgs);
+        } else if (Files.isRegularFile(root.resolve(INDEX_HTML)) || Files.isRegularFile(root.resolve(INDEX))) {
+            resolved = root.toAbsolutePath().normalize();
         } else if (Files.isDirectory(layout.appDir())) {
             resolved = layout.appDir().toAbsolutePath().normalize();
         } else {
