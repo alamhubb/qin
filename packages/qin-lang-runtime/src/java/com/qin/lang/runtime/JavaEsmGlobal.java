@@ -3465,7 +3465,7 @@ public final class JavaEsmGlobal {
             env.put("arguments", argumentsObject(args));
             List<?> params = asList(ast.get("params"));
             for (int i = 0; i < params.size(); i++) {
-                Object paramNode = params.get(i);
+                Object paramNode = unwrapFunctionParam(params.get(i));
                 if (!(paramNode instanceof Map<?, ?> map)) {
                     continue;
                 }
@@ -3476,6 +3476,13 @@ public final class JavaEsmGlobal {
                 }
                 bindPattern(paramNode, i < args.length ? args[i] : null, env);
             }
+        }
+
+        private Object unwrapFunctionParam(Object paramNode) {
+            if (paramNode instanceof Map<?, ?> map && map.containsKey("param")) {
+                return map.get("param");
+            }
+            return paramNode;
         }
 
         private Object argumentsObject(Object[] args) {
