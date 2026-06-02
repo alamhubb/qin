@@ -10,7 +10,9 @@ package com.qin.types;
 public record FrontendConfig(
         String srcDir,
         String outDir,
-        int devPort) {
+        int devPort,
+        String entry,
+        String staticDir) {
 
     /**
      * Compact Constructor with defaults
@@ -19,12 +21,14 @@ public record FrontendConfig(
         srcDir = srcDir != null && !srcDir.isBlank() ? srcDir : "app";
         outDir = outDir != null && !outDir.isBlank() ? outDir : "dist/static";
         devPort = devPort > 0 ? devPort : 5173;
+        entry = entry != null && !entry.isBlank() ? entry : null;
+        staticDir = staticDir != null && !staticDir.isBlank() ? staticDir : null;
     }
 
     /**
      * 默认构造器
      */
     public FrontendConfig() {
-        this(null, null, 0);
+        this(null, null, 0, null, null);
     }
 }

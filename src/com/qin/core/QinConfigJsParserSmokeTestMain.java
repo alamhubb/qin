@@ -24,7 +24,13 @@ public final class QinConfigJsParserSmokeTestMain {
                   frontend: {
                     srcDir: 'src',
                     outDir: 'dist',
-                    devPort: 19097
+                    devPort: 19097,
+                    entry: 'src/main.vue',
+                    staticDir: 'public'
+                  },
+                  backend: {
+                    sourceDir: 'server',
+                    entry: 'server/Main.java'
                   },
                   dependencies: {
                     'com.qin:qin-runtime-core': '0.1.0',
@@ -51,6 +57,10 @@ public final class QinConfigJsParserSmokeTestMain {
         require("0.2.0".equals(config.version()), "version");
         require("src/main.js".equals(config.entry()), "entry");
         require(config.frontend() != null && config.frontend().devPort() == 19097, "frontend.devPort");
+        require("src/main.vue".equals(config.frontend().entry()), "frontend.entry");
+        require("public".equals(config.frontend().staticDir()), "frontend.staticDir");
+        require(config.backend() != null && "server".equals(config.backend().sourceDir()), "backend.sourceDir");
+        require("server/Main.java".equals(config.backend().entry()), "backend.entry");
         require("^3.5.34".equals(config.dependencies().get("@vue/compiler-sfc")), "scoped dependency");
         require("^6.0.7".equals(config.devDependencies().get("@vitejs/plugin-vue")), "scoped devDependency");
         require("25".equals(config.java().version()), "java.version");

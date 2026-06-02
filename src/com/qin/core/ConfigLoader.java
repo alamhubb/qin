@@ -1,6 +1,7 @@
 package com.qin.core;
 
 import com.qin.constants.QinConstants;
+import com.qin.types.BackendConfig;
 import com.qin.types.FrontendConfig;
 import com.qin.types.JavaConfig;
 import com.qin.types.OutputConfig;
@@ -78,6 +79,7 @@ public class ConfigLoader {
                 javaConfigField(source),
                 null,
                 frontendConfigField(source),
+                backendConfigField(source),
                 stringMapField(source, "scripts"),
                 null);
     }
@@ -146,7 +148,20 @@ public class ConfigLoader {
         return new FrontendConfig(
                 stringField(map, "srcDir", null),
                 stringField(map, "outDir", null),
-                intField(map, "devPort", 0));
+                intField(map, "devPort", 0),
+                stringField(map, "entry", null),
+                stringField(map, "staticDir", null));
+    }
+
+    private BackendConfig backendConfigField(Map<String, Object> source) {
+        Object value = source.get("backend");
+        if (!(value instanceof Map<?, ?> block)) {
+            return null;
+        }
+        Map<String, Object> map = objectMap(block);
+        return new BackendConfig(
+                stringField(map, "sourceDir", null),
+                stringField(map, "entry", null));
     }
 
     private Map<String, Object> objectMap(Map<?, ?> source) {
@@ -253,6 +268,7 @@ public class ConfigLoader {
                 java,
                 config.graalvm(),
                 config.frontend(),
+                config.backend(),
                 config.scripts(),
                 config.repositories());
     }

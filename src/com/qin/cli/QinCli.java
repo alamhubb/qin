@@ -431,7 +431,7 @@ public class QinCli {
         }
 
         String normalizedTarget = runTarget.trim();
-        if (hasQinScriptExtension(normalizedTarget)) {
+        if (hasQinBackendExtension(normalizedTarget)) {
             String pathTarget = normalizeRelativePath(normalizedTarget);
             Path absolute = Paths.get(QinConstants.getCwd()).resolve(pathTarget).normalize();
             return Files.exists(absolute) ? pathTarget : null;
@@ -439,7 +439,7 @@ public class QinCli {
 
         if (normalizedTarget.contains("/") || normalizedTarget.contains("\\")) {
             String pathTarget = normalizeRelativePath(normalizedTarget);
-            if (hasQinScriptExtension(pathTarget)) {
+            if (hasQinBackendExtension(pathTarget)) {
                 Path absolute = Paths.get(QinConstants.getCwd()).resolve(pathTarget).normalize();
                 return Files.exists(absolute) ? pathTarget : null;
             }
@@ -480,8 +480,14 @@ public class QinCli {
     }
 
     private static String resolveDefaultQinEntry(QinConfig config) {
+        if (config.backend() != null && config.backend().entry() != null && !config.backend().entry().isBlank()) {
+            String entry = normalizeRelativePath(config.backend().entry());
+            Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
+            return Files.exists(absolute) ? entry : null;
+        }
+
         if (config.entry() != null && !config.entry().isBlank()) {
-            if (hasQinScriptExtension(config.entry())) {
+            if (hasQinBackendExtension(config.entry())) {
                 String entry = normalizeRelativePath(config.entry());
                 Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
                 return Files.exists(absolute) ? entry : null;
@@ -505,6 +511,10 @@ public class QinCli {
             }
         }
         return false;
+    }
+
+    private static boolean hasQinBackendExtension(String path) {
+        return hasQinScriptExtension(path) || path.toLowerCase(Locale.ROOT).endsWith(".java");
     }
 
     private static void addScriptCandidates(Set<Path> out, Path baseDir, String baseName) {
@@ -548,20 +558,20 @@ public class QinCli {
 
         int port = resolveQinRuntimePort(config, args);
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
-        Path backendSource = qinFile == null || qinFile.isBlank()
-                ? null
-                : Paths.get(QinConstants.getCwd(), qinFile).toAbsolutePath().normalize();
+        Path backendSource = firstNonNullPath(
+                resolvePathArg(args, "--backend-file", root),
+                resolveQinBackendEntry(config, root, qinFile));
         Path frontendRoot = resolveQinFrontendRoot(config, root);
         Path frontendEntry = firstNonNullPath(
                 resolvePathArg(args, "--frontend-file", root),
                 resolveQinFrontendEntry(config, root, frontendRoot));
         Path frontendStaticDir = firstNonNullPath(
                 resolvePathArg(args, "--static-dir", root),
-                resolveQinFrontendStaticDir(root, frontendRoot));
+                resolveQinFrontendStaticDir(config, root, frontendRoot));
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
 
         System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
-        System.out.println(gray("  Backend entry: " + (qinFile == null || qinFile.isBlank() ? "<generated frontend-only backend>" : qinFile)));
+        System.out.println(gray("  Backend entry: " + formatRelativeOrGenerated(root, backendSource)));
         if (frontendRoot != null) {
             System.out.println(gray("  Frontend root: " + root.relativize(frontendRoot)));
         }
@@ -862,7 +872,10 @@ public class QinCli {
                 : compileOutputDir + separator + dependencyClasspath;
 
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
-        Path backendSource = root.resolve(qinFile).normalize();
+        Path backendSource = resolveQinBackendEntry(config, root, qinFile);
+        if (backendSource == null) {
+            throw new IllegalStateException("Qin backend entry is missing. Set backend.entry in qin.config.js or pass a backend file.");
+        }
         Path frontendRoot = resolveQinFrontendRoot(config, root);
         Path frontendEntry = resolveQinFrontendEntry(config, root, frontendRoot);
         Path fullstackOutRoot = resolveQinBuildOutputRoot(config, args);
@@ -956,11 +969,47 @@ public class QinCli {
         return null;
     }
 
-    private static Path resolveQinFrontendStaticDir(Path projectRoot, Path frontendRoot) {
+    private static Path resolveQinBackendEntry(QinConfig config, Path projectRoot, String qinFile) {
+        if (qinFile != null && !qinFile.isBlank()) {
+            Path raw = Paths.get(qinFile);
+            return raw.isAbsolute() ? raw.normalize() : projectRoot.resolve(raw).normalize();
+        }
+
+        if (config.backend() != null && config.backend().entry() != null && !config.backend().entry().isBlank()) {
+            Path configured = Paths.get(config.backend().entry());
+            return configured.isAbsolute() ? configured.normalize() : projectRoot.resolve(configured).normalize();
+        }
+
+        if (config.entry() != null && hasQinBackendExtension(config.entry())) {
+            Path configured = Paths.get(config.entry());
+            return configured.isAbsolute() ? configured.normalize() : projectRoot.resolve(configured).normalize();
+        }
+
+        return null;
+    }
+
+    private static Path resolveQinFrontendStaticDir(QinConfig config, Path projectRoot, Path frontendRoot) {
+        if (config.frontend() != null
+                && config.frontend().staticDir() != null
+                && !config.frontend().staticDir().isBlank()) {
+            Path configured = Paths.get(config.frontend().staticDir());
+            return configured.isAbsolute() ? configured.normalize() : projectRoot.resolve(configured).normalize();
+        }
         if (Files.isRegularFile(projectRoot.resolve("index.html")) || Files.isRegularFile(projectRoot.resolve("index"))) {
             return projectRoot;
         }
         return frontendRoot;
+    }
+
+    private static String formatRelativeOrGenerated(Path root, Path source) {
+        if (source == null) {
+            return "<generated frontend-only backend>";
+        }
+        try {
+            return root.relativize(source).toString();
+        } catch (IllegalArgumentException ignored) {
+            return source.toString();
+        }
     }
 
     private static String resolveRunTargetToMainClass(String runTarget) {
@@ -990,6 +1039,17 @@ public class QinCli {
         }
 
         LinkedHashSet<Path> candidates = new LinkedHashSet<>();
+        if (config.frontend() != null
+                && config.frontend().entry() != null
+                && !config.frontend().entry().isBlank()) {
+            Path configured = Paths.get(config.frontend().entry());
+            if (configured.isAbsolute()) {
+                candidates.add(configured.normalize());
+            } else {
+                candidates.add(projectRoot.resolve(configured).normalize());
+                candidates.add(frontendRoot.resolve(configured).normalize());
+            }
+        }
         addExistingFrontendEntryCandidates(candidates, frontendRoot);
 
         if (frontendRoot.equals(projectRoot.resolve(QinConstants.APP_DIR).normalize())) {
@@ -1024,6 +1084,7 @@ public class QinCli {
         boolean frontendOnlyOverride = hasArg(args, "--frontend-file");
         boolean hasPositionalTarget = args.length > 0 && !args[0].startsWith("-");
         boolean configuredFrontendOnly = hasConfiguredFrontend(config)
+                && !hasConfiguredBackend(config)
                 && !hasArg(args, "--backend-file")
                 && !hasPositionalTarget;
         if (hasPositionalTarget) {
@@ -1071,6 +1132,12 @@ public class QinCli {
 
     private static boolean hasConfiguredFrontend(QinConfig config) {
         return config.frontend() != null || config.client() != null;
+    }
+
+    private static boolean hasConfiguredBackend(QinConfig config) {
+        return config.backend() != null
+                && config.backend().entry() != null
+                && !config.backend().entry().isBlank();
     }
 
     private static void compileProject(String[] args) throws Exception {

@@ -43,6 +43,7 @@ public record QinConfig(
         JavaConfig java,
         GraalVMConfig graalvm,
         FrontendConfig frontend,
+        BackendConfig backend,
         Map<String, String> scripts,
         List<Repository> repositories) {
 
@@ -97,6 +98,7 @@ public record QinConfig(
                 null, // java
                 null, // graalvm
                 null, // frontend
+                null, // backend
                 null, // scripts
                 null // repositories
         );
