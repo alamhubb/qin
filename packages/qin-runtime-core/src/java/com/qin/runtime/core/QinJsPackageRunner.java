@@ -1,10 +1,13 @@
 package com.qin.runtime.core;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +49,7 @@ final class QinJsPackageRunner {
             ".git", ".idea", ".qin", "node_modules", "build", "target", "out");
     private static final Set<String> IGNORED_INSTALLED_PACKAGE_DIRS = Set.of(
             ".git", ".idea", ".qin", "node_modules");
+    private static final Map<Path, Object> NPM_HOST_LOCK_MONITORS = new ConcurrentHashMap<>();
 
     private final QinInMemoryJvmRunner runner = new QinInMemoryJvmRunner();
     private final QinNpmDependencyMaterializer npmDependencyMaterializer = new QinNpmDependencyMaterializer();
@@ -74,22 +79,39 @@ final class QinJsPackageRunner {
         Path wrapperDir = root.resolve(".qin").resolve("runtime").resolve("npm-host").normalize();
         Files.createDirectories(wrapperDir);
         logPhase("prepare wrapper dir", startNanos, wrapperDir.toString());
-        materializeWorkspaceDependencies(root, wrapperDir, wrapperSource);
-        logPhase("materialize workspace dependencies", startNanos, wrapperDir.resolve("node_modules").toString());
 
-        long sequence = INVOCATION_SEQUENCE.incrementAndGet();
-        String token = sanitizeToken(nameHint == null || nameHint.isBlank() ? "module" : nameHint);
-        Path wrapperFile = wrapperDir.resolve(
-                "invoke-" + token + "-" + sequence + ".js");
-        Files.writeString(wrapperFile, wrapperSource, StandardCharsets.UTF_8);
-        logPhase("write wrapper source", startNanos, wrapperFile.toString());
+        Object monitor = NPM_HOST_LOCK_MONITORS.computeIfAbsent(wrapperDir, ignored -> new Object());
+        synchronized (monitor) {
+            try (NpmHostLock ignored = acquireNpmHostLock(wrapperDir)) {
+                materializeWorkspaceDependencies(root, wrapperDir, wrapperSource);
+                logPhase("materialize workspace dependencies", startNanos, wrapperDir.resolve("node_modules").toString());
 
-        String className = "com.qin.runtime.generated.npm.Invoke"
-                + capitalize(token)
-                + sequence;
-        Object result = runner.compileAndRun(wrapperFile, root, className);
-        logPhase("compile and run wrapper", startNanos, className);
-        return result;
+                long sequence = INVOCATION_SEQUENCE.incrementAndGet();
+                String token = sanitizeToken(nameHint == null || nameHint.isBlank() ? "module" : nameHint);
+                Path wrapperFile = wrapperDir.resolve(
+                        "invoke-" + token + "-" + sequence + ".js");
+                Files.writeString(wrapperFile, wrapperSource, StandardCharsets.UTF_8);
+                logPhase("write wrapper source", startNanos, wrapperFile.toString());
+
+                String className = "com.qin.runtime.generated.npm.Invoke"
+                        + capitalize(token)
+                        + sequence;
+                Object result = runner.compileAndRun(wrapperFile, root, className);
+                logPhase("compile and run wrapper", startNanos, className);
+                return result;
+            }
+        }
+    }
+
+    private NpmHostLock acquireNpmHostLock(Path wrapperDir) throws IOException {
+        Files.createDirectories(wrapperDir);
+        Path lockPath = wrapperDir.resolve(".qin-npm-host.lock");
+        FileChannel channel = FileChannel.open(
+                lockPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE);
+        FileLock lock = channel.lock();
+        return new NpmHostLock(channel, lock);
     }
 
     private void materializeWorkspaceDependencies(Path projectRoot, Path wrapperDir, String wrapperSource) throws IOException {
@@ -1257,6 +1279,27 @@ final class QinJsPackageRunner {
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    private static final class NpmHostLock implements AutoCloseable {
+        private final FileChannel channel;
+        private final FileLock lock;
+
+        private NpmHostLock(FileChannel channel, FileLock lock) {
+            this.channel = channel;
+            this.lock = lock;
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                if (lock != null && lock.isValid()) {
+                    lock.release();
+                }
+            } finally {
+                channel.close();
+            }
+        }
     }
 
     private void logPhase(String phase, long startNanos, String detail) {
