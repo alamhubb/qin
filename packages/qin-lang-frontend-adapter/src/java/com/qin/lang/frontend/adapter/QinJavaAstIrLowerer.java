@@ -11,13 +11,11 @@ import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrStringLiteral;
-import com.qin.lang.ir.QinIrTypeRef;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
-import com.slime.java.ast.JavaAstImportDeclaration;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
@@ -30,15 +28,18 @@ import java.util.List;
 import java.util.Map;
 
 public final class QinJavaAstIrLowerer {
+    private final QinJavaSemanticAnalyzer semanticAnalyzer = new QinJavaSemanticAnalyzer();
+
     public QinIrProgram lowerSource(String source) {
         return lowerProgram(JavaCstToAst.parse(source));
     }
 
     public QinIrProgram lowerProgram(JavaAstProgram program) {
-        Map<String, String> importedTypes = importedTypes(program.imports());
+        QinJavaSemanticModel semanticModel = semanticAnalyzer.analyzeProgram(program);
+        Map<String, QinJavaSemanticClass> semanticClasses = semanticClassesBySimpleName(semanticModel);
         List<QinIrClassDeclaration> classes = new ArrayList<>();
         for (JavaAstClassDeclaration classDeclaration : program.classes()) {
-            classes.add(lowerClass(program.packageName(), importedTypes, classDeclaration));
+            classes.add(lowerClass(program.packageName(), classDeclaration, semanticClasses.get(classDeclaration.name())));
         }
         return new QinIrProgram(
                 List.of(),
@@ -55,20 +56,33 @@ public final class QinJavaAstIrLowerer {
 
     private QinIrClassDeclaration lowerClass(
             String packageName,
-            Map<String, String> importedTypes,
-            JavaAstClassDeclaration classDeclaration) {
+            JavaAstClassDeclaration classDeclaration,
+            QinJavaSemanticClass semanticClass) {
+        if (semanticClass == null) {
+            throw new IllegalArgumentException("Missing semantic class for " + classDeclaration.name());
+        }
+        Map<String, QinJavaSemanticField> semanticFields = semanticFieldsByName(semanticClass);
+        Map<String, QinJavaSemanticMethod> semanticMethods = semanticMethodsByName(semanticClass);
         List<QinIrFieldDeclaration> fields = new ArrayList<>();
         for (JavaAstFieldDeclaration field : classDeclaration.fields()) {
+            QinJavaSemanticField semanticField = semanticFields.get(field.name());
+            if (semanticField == null) {
+                throw new IllegalArgumentException("Missing semantic field for " + field.name());
+            }
             fields.add(new QinIrFieldDeclaration(
                     field.name(),
-                    lowerType(field.typeName(), packageName, importedTypes),
+                    semanticField.type(),
                     List.of(),
                     null));
         }
 
         List<QinIrMethodDeclaration> methods = new ArrayList<>();
         for (JavaAstMethodDeclaration method : classDeclaration.methods()) {
-            methods.add(lowerMethod(method, packageName, importedTypes));
+            QinJavaSemanticMethod semanticMethod = semanticMethods.get(method.name());
+            if (semanticMethod == null) {
+                throw new IllegalArgumentException("Missing semantic method for " + method.name());
+            }
+            methods.add(lowerMethod(method, semanticMethod));
         }
 
         return new QinIrClassDeclaration(
@@ -82,18 +96,22 @@ public final class QinJavaAstIrLowerer {
 
     private QinIrMethodDeclaration lowerMethod(
             JavaAstMethodDeclaration method,
-            String packageName,
-            Map<String, String> importedTypes) {
+            QinJavaSemanticMethod semanticMethod) {
         List<QinIrParameter> parameters = new ArrayList<>();
+        Map<String, QinJavaSemanticParameter> semanticParameters = semanticParametersByName(semanticMethod);
         for (JavaAstParameter parameter : method.parameters()) {
+            QinJavaSemanticParameter semanticParameter = semanticParameters.get(parameter.name());
+            if (semanticParameter == null) {
+                throw new IllegalArgumentException("Missing semantic parameter for " + parameter.name());
+            }
             parameters.add(new QinIrParameter(
                     parameter.name(),
-                    lowerType(parameter.typeName(), packageName, importedTypes),
+                    semanticParameter.type(),
                     List.of()));
         }
         return new QinIrMethodDeclaration(
                 method.name(),
-                lowerType(method.returnTypeName(), packageName, importedTypes),
+                semanticMethod.returnType(),
                 parameters,
                 List.of(),
                 lowerExpression(method.returnExpression()));
@@ -124,49 +142,35 @@ public final class QinJavaAstIrLowerer {
         throw new IllegalArgumentException("Unsupported Java AST expression: " + expression);
     }
 
-    private QinIrTypeRef lowerType(
-            String typeName,
-            String packageName,
-            Map<String, String> importedTypes) {
-        return switch (typeName) {
-            case "void" -> QinIrTypeRef.voidType();
-            case "boolean" -> QinIrTypeRef.booleanType();
-            case "byte", "short", "int", "long", "char" -> QinIrTypeRef.intType();
-            case "float", "double" -> QinIrTypeRef.doubleType();
-            case "String", "java.lang.String" -> QinIrTypeRef.stringType();
-            default -> QinIrTypeRef.classType(resolveClassName(typeName, packageName, importedTypes));
-        };
+    private Map<String, QinJavaSemanticClass> semanticClassesBySimpleName(QinJavaSemanticModel model) {
+        Map<String, QinJavaSemanticClass> classes = new LinkedHashMap<>();
+        for (QinJavaSemanticClass semanticClass : model.classes()) {
+            classes.put(semanticClass.simpleName(), semanticClass);
+        }
+        return classes;
     }
 
-    private String resolveClassName(
-            String typeName,
-            String packageName,
-            Map<String, String> importedTypes) {
-        String imported = importedTypes.get(typeName);
-        if (imported != null) {
-            return imported;
+    private Map<String, QinJavaSemanticField> semanticFieldsByName(QinJavaSemanticClass semanticClass) {
+        Map<String, QinJavaSemanticField> fields = new LinkedHashMap<>();
+        for (QinJavaSemanticField field : semanticClass.fields()) {
+            fields.put(field.name(), field);
         }
-        if (typeName.contains(".")) {
-            return typeName;
-        }
-        if (packageName != null && !packageName.isBlank()) {
-            return packageName + "." + typeName;
-        }
-        return typeName;
+        return fields;
     }
 
-    private Map<String, String> importedTypes(List<JavaAstImportDeclaration> imports) {
-        Map<String, String> importedTypes = new LinkedHashMap<>();
-        for (JavaAstImportDeclaration importDeclaration : imports) {
-            if (importDeclaration.onDemand()) {
-                continue;
-            }
-            String name = importDeclaration.name();
-            int dot = name.lastIndexOf('.');
-            if (dot >= 0 && dot < name.length() - 1) {
-                importedTypes.put(name.substring(dot + 1), name);
-            }
+    private Map<String, QinJavaSemanticMethod> semanticMethodsByName(QinJavaSemanticClass semanticClass) {
+        Map<String, QinJavaSemanticMethod> methods = new LinkedHashMap<>();
+        for (QinJavaSemanticMethod method : semanticClass.methods()) {
+            methods.put(method.name(), method);
         }
-        return importedTypes;
+        return methods;
+    }
+
+    private Map<String, QinJavaSemanticParameter> semanticParametersByName(QinJavaSemanticMethod semanticMethod) {
+        Map<String, QinJavaSemanticParameter> parameters = new LinkedHashMap<>();
+        for (QinJavaSemanticParameter parameter : semanticMethod.parameters()) {
+            parameters.put(parameter.name(), parameter);
+        }
+        return parameters;
     }
 }
