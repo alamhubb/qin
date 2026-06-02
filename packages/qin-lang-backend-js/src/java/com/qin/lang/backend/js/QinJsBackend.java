@@ -82,6 +82,11 @@ public final class QinJsBackend {
                 js.append("const ").append(javaImport.localName()).append(" = __QinJavaUtilArrayList;\n");
                 continue;
             }
+            if ("java.util.HashMap".equals(javaImport.ownerBinaryName())) {
+                emitJavaUtilHashMapRuntime(js);
+                js.append("const ").append(javaImport.localName()).append(" = __QinJavaUtilHashMap;\n");
+                continue;
+            }
             if ("java.util.Objects".equals(javaImport.ownerBinaryName())) {
                 emitJavaUtilObjectsRuntime(js);
                 js.append("const ").append(javaImport.localName()).append(" = __QinJavaUtilObjects;\n");
@@ -130,6 +135,49 @@ public final class QinJsBackend {
                   }
                   [Symbol.iterator]() {
                     return this.__items[Symbol.iterator]();
+                  }
+                }
+                """);
+    }
+
+    private void emitJavaUtilHashMapRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinJavaUtilHashMap") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaUtilHashMap {
+                  constructor(initialEntries) {
+                    this.__entries = new Map();
+                    if (initialEntries != null) {
+                      for (const entry of initialEntries) {
+                        this.__entries.set(entry[0], entry[1]);
+                      }
+                    }
+                  }
+                  put(key, value) {
+                    const previous = this.__entries.has(key) ? this.__entries.get(key) : null;
+                    this.__entries.set(key, value);
+                    return previous;
+                  }
+                  get(key) {
+                    return this.__entries.has(key) ? this.__entries.get(key) : null;
+                  }
+                  containsKey(key) {
+                    return this.__entries.has(key);
+                  }
+                  remove(key) {
+                    const previous = this.__entries.has(key) ? this.__entries.get(key) : null;
+                    this.__entries.delete(key);
+                    return previous;
+                  }
+                  size() {
+                    return this.__entries.size;
+                  }
+                  isEmpty() {
+                    return this.__entries.size === 0;
+                  }
+                  clear() {
+                    this.__entries.clear();
                   }
                 }
                 """);
@@ -481,6 +529,7 @@ public final class QinJsBackend {
 
     private void ensureSupportedJavaOwner(String ownerBinaryName) {
         if ("java.util.ArrayList".equals(ownerBinaryName)
+                || "java.util.HashMap".equals(ownerBinaryName)
                 || "java.util.Objects".equals(ownerBinaryName)
                 || "java.lang.Math".equals(ownerBinaryName)) {
             return;
