@@ -25,7 +25,7 @@ import java.util.zip.GZIPInputStream;
  * Qin-owned npm dependency materializer for the current dev-server subset.
  *
  * <p>This is intentionally not a full npm client. It supports the packages
- * declared in {@code qin.config.json} plus their ordinary {@code dependencies}
+ * declared in {@code qin.config.js} plus their ordinary {@code dependencies}
  * so Qin can run the Vue/CSSTS Stage-1 pipeline without invoking npm, Node, or
  * Vite.
  */
@@ -33,7 +33,10 @@ final class QinNpmDependencyMaterializer {
     private static final List<String> REGISTRIES = List.of(
             "https://registry.npmmirror.com",
             "https://registry.npmjs.org");
-    private static final Pattern JSON_DEPENDENCIES_BLOCK = Pattern.compile(
+    private static final Pattern MANIFEST_DEPENDENCIES_BLOCK = Pattern.compile(
+            "(?:\"(dependencies|devDependencies)\"|(dependencies|devDependencies))\\s*:\\s*\\{([^}]*)\\}",
+            Pattern.DOTALL);
+    private static final Pattern PACKAGE_DEPENDENCIES_BLOCK = Pattern.compile(
             "\"dependencies\"\\s*:\\s*\\{([^}]*)\\}",
             Pattern.DOTALL);
     private static final Pattern JSON_STRING_FIELD = Pattern.compile(
@@ -42,11 +45,11 @@ final class QinNpmDependencyMaterializer {
     private static final Pattern JSON_TARBALL_FIELD = Pattern.compile("\"tarball\"\\s*:\\s*\"([^\"]+)\"");
 
     void materializeProjectDependencies(Path projectRoot, Path nodeModulesRoot) throws IOException {
-        Path manifest = projectRoot.resolve("qin.config.json").normalize();
+        Path manifest = findProjectManifest(projectRoot);
         if (!Files.isRegularFile(manifest)) {
             return;
         }
-        Map<String, String> dependencies = readDependencyVersions(manifest);
+        Map<String, String> dependencies = readProjectDependencyVersions(manifest);
         if (dependencies.isEmpty()) {
             return;
         }
@@ -245,12 +248,33 @@ final class QinNpmDependencyMaterializer {
         }
     }
 
+    private Path findProjectManifest(Path projectRoot) {
+        Path root = projectRoot.toAbsolutePath().normalize();
+        return root.resolve("qin.config.js");
+    }
+
+    private Map<String, String> readProjectDependencyVersions(Path manifest) throws IOException {
+        if (!Files.isRegularFile(manifest)) {
+            return Map.of();
+        }
+        String text = Files.readString(manifest, StandardCharsets.UTF_8);
+        Matcher blockMatcher = MANIFEST_DEPENDENCIES_BLOCK.matcher(text);
+        Map<String, String> dependencies = new LinkedHashMap<>();
+        while (blockMatcher.find()) {
+            Matcher fieldMatcher = JSON_STRING_FIELD.matcher(blockMatcher.group(3));
+            while (fieldMatcher.find()) {
+                dependencies.put(fieldMatcher.group(1), fieldMatcher.group(2));
+            }
+        }
+        return dependencies;
+    }
+
     private Map<String, String> readDependencyVersions(Path manifest) throws IOException {
         if (!Files.isRegularFile(manifest)) {
             return Map.of();
         }
         String json = Files.readString(manifest, StandardCharsets.UTF_8);
-        Matcher blockMatcher = JSON_DEPENDENCIES_BLOCK.matcher(json);
+        Matcher blockMatcher = PACKAGE_DEPENDENCIES_BLOCK.matcher(json);
         if (!blockMatcher.find()) {
             return Map.of();
         }

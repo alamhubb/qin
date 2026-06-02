@@ -56,20 +56,20 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
 
     static boolean isEnabled(Path projectRoot) {
         Path root = projectRoot.toAbsolutePath().normalize();
-        if (Files.isRegularFile(root.resolve("vite.config.js"))
-                || Files.isRegularFile(root.resolve("vite.config.mjs"))
-                || Files.isRegularFile(root.resolve("vite.config.ts"))) {
-            return true;
+        Path qinConfig = findQinConfig(root);
+        if (Files.isRegularFile(qinConfig)) {
+            try {
+                String text = Files.readString(qinConfig);
+                if (text.contains("\"@vitejs/plugin-vue\"")
+                        || text.contains("'@vitejs/plugin-vue'")
+                        || text.contains("plugins")) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+                return false;
+            }
         }
-        Path qinConfig = root.resolve("qin.config.json");
-        if (!Files.isRegularFile(qinConfig)) {
-            return false;
-        }
-        try {
-            return Files.readString(qinConfig).contains("\"@vitejs/plugin-vue\"");
-        } catch (Exception ignored) {
-            return false;
-        }
+        return false;
     }
 
     @Override
@@ -755,11 +755,9 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
 
     private Path findViteConfig(Path projectRoot) {
         Path root = projectRoot.toAbsolutePath().normalize();
-        for (String name : new String[] {"vite.config.js", "vite.config.mjs", "vite.config.ts"}) {
-            Path candidate = root.resolve(name);
-            if (Files.isRegularFile(candidate)) {
-                return candidate;
-            }
+        Path qinConfig = findQinConfig(root);
+        if (Files.isRegularFile(qinConfig)) {
+            return qinConfig;
         }
         return null;
     }
@@ -791,7 +789,7 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
     private Path findProjectRoot(Path moduleFile) {
         Path current = moduleFile.toAbsolutePath().normalize().getParent();
         while (current != null) {
-            if (Files.exists(current.resolve("qin.config.json"))
+            if (Files.exists(current.resolve("qin.config.js"))
                     || Files.isDirectory(current.resolve("node_modules"))
                     || Files.isDirectory(current.resolve(".qin"))) {
                 return current;
@@ -799,5 +797,10 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
             current = current.getParent();
         }
         return moduleFile.toAbsolutePath().normalize().getParent();
+    }
+
+    private static Path findQinConfig(Path projectRoot) {
+        Path root = projectRoot.toAbsolutePath().normalize();
+        return root.resolve("qin.config.js");
     }
 }
