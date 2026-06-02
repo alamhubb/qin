@@ -50,6 +50,14 @@ public final class QinVitePluginVueHotUpdateSmokeTestMain {
                       if (!modules || modules.size !== 1) {
                         this.error('moduleGraph.getModulesByFile did not return module set')
                       }
+                      const moduleByUrl = ctx.server.moduleGraph.getModuleByUrl(ctx.file + '?vue&type=script')
+                      if (!moduleByUrl || moduleByUrl.file !== ctx.file) {
+                        this.error('moduleGraph.getModuleByUrl did not strip query to file')
+                      }
+                      ctx.server.moduleGraph.invalidateModule(moduleByUrl)
+                      if (!moduleByUrl.__qinInvalidated) {
+                        this.error('moduleGraph.invalidateModule did not mark module')
+                      }
                       const content = ctx.read()
                       if (!String(content).includes('Hot Update Read Marker')) {
                         this.error('ctx.read did not return changed file content: ' + content)

@@ -504,6 +504,16 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                     __qinCurrentResolvePlugin: null
                   };
                 }
+                function qinCreateModuleNode(id) {
+                  const normalized = qinNormalizePath(id);
+                  return normalized ? {
+                    id: normalized,
+                    url: normalized,
+                    file: qinStripQuery(normalized),
+                    importedModules: new Set(),
+                    importers: new Set()
+                  } : null;
+                }
                 function qinCreateServer(config) {
                   return {
                     config,
@@ -516,10 +526,14 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                     },
                     moduleGraph: {
                       getModuleById(id) {
-                        return id ? { id, url: id, file: qinStripQuery(id), importedModules: new Set(), importers: new Set() } : null;
+                        return qinCreateModuleNode(id);
+                      },
+                      getModuleByUrl(url) {
+                        return qinCreateModuleNode(url);
                       },
                       getModulesByFile(file) {
-                        return new Set([{ id: qinNormalizePath(file), url: qinNormalizePath(file), file: qinNormalizePath(file), importedModules: new Set(), importers: new Set() }]);
+                        const module = qinCreateModuleNode(file);
+                        return module ? new Set([module]) : new Set();
                       },
                       invalidateModule(module) {
                         if (module) module.__qinInvalidated = true;
