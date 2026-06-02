@@ -44,6 +44,8 @@ public final class JavaEsmGlobal {
     private static final Map<MethodLookupKey, Object> METHOD_LOOKUP_CACHE = new ConcurrentHashMap<>();
     private static final Map<Class<?>, JavaRecordInfo> JAVA_RECORD_INFO_CACHE = new ConcurrentHashMap<>();
     private static final Object UNRESOLVED_MODULE_REF = new Object();
+    private static final Set<String> ERROR_CONSTRUCTORS =
+            Set.of("Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError");
     private static final Map<String, List<ModuleFieldRef>> MODULE_REFS = new ConcurrentHashMap<>();
     private static final StackWalker CALLER_CLASS_WALKER =
             StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
@@ -399,8 +401,59 @@ public final class JavaEsmGlobal {
             case ">" -> jsRelationalCompare(op, left, right);
             case ">=" -> jsRelationalCompare(op, left, right);
             case "in" -> jsIn(left, right);
+            case "instanceof" -> jsInstanceOf(left, right);
             default -> throw new IllegalArgumentException("Unsupported binary operator: " + op);
         };
+    }
+
+    private static boolean jsInstanceOf(Object value, Object constructor) {
+        if (constructor == null) {
+            throw new IllegalArgumentException("Right-hand side of 'instanceof' is not callable");
+        }
+        constructor = unwrapExportSlotValue(constructor);
+        if (constructor instanceof String builtinName) {
+            return jsBuiltinInstanceOf(value, builtinName);
+        }
+        if (constructor instanceof InterpretedFunction interpretedFunction) {
+            Object prototype = interpretedFunction.get("prototype");
+            return value instanceof InterpretedInstance instance && instance.hasPrototypeObject(prototype);
+        }
+        if (constructor instanceof Class<?> clazz) {
+            return value != null && clazz.isInstance(value);
+        }
+        if (constructor instanceof NativeFunction || constructor instanceof QinCallable || constructor instanceof Method) {
+            return false;
+        }
+        throw new IllegalArgumentException("Right-hand side of 'instanceof' is not callable: "
+                + simpleName(constructor));
+    }
+
+    private static boolean jsBuiltinInstanceOf(Object value, String builtinName) {
+        return switch (builtinName) {
+            case "Object" -> isObjectLike(value);
+            case "Array" -> value instanceof List<?> || value instanceof JavaEsmArrayObject
+                    || value != null && value.getClass().isArray();
+            case "Map", "WeakMap" -> value instanceof JavaEsmMapObject;
+            case "Set", "WeakSet" -> value instanceof JavaEsmSetObject;
+            case "RegExp" -> value instanceof JavaEsmRegExp;
+            case "Date" -> value instanceof JavaEsmDate;
+            case "URLSearchParams" -> value instanceof JavaEsmUrlSearchParams;
+            case "Uint8Array", "Uint16Array", "Uint32Array" -> value instanceof JavaEsmTypedArray;
+            case "Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError" ->
+                    isErrorObjectInstance(value, builtinName);
+            default -> false;
+        };
+    }
+
+    private static boolean isErrorObjectInstance(Object value, String constructorName) {
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            return false;
+        }
+        Object rawName = rawMap.get("name");
+        if (!(rawName instanceof String errorName) || !ERROR_CONSTRUCTORS.contains(errorName)) {
+            return false;
+        }
+        return "Error".equals(constructorName) || constructorName.equals(errorName);
     }
 
     private static boolean jsIn(Object property, Object target) {
@@ -2747,6 +2800,10 @@ public final class JavaEsmGlobal {
             return new LinkedHashMap<>(fields);
         }
 
+        private boolean hasPrototypeObject(Object prototype) {
+            return prototype != null && prototypeProperties == prototype;
+        }
+
         private Set<String> ownEnumerablePropertyNames() {
             return new LinkedHashSet<>(fields.keySet());
         }
@@ -3097,7 +3154,8 @@ public final class JavaEsmGlobal {
                         collectInheritedInstanceMethods(),
                         collectInheritedInstanceAccessors(),
                         parent == null ? Map.of() : parent.collectInheritedInstanceMethods(),
-                        parent == null ? Map.of() : parent.collectInheritedInstanceAccessors());
+                        parent == null ? Map.of() : parent.collectInheritedInstanceAccessors(),
+                        functionPrototypeProperties());
                 instance.setConstructorFunction(this);
                 if (parent != null) {
                     parent.installInheritedInstanceFields(instance);
