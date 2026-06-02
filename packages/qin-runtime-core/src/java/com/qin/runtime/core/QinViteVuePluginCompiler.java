@@ -134,7 +134,12 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                 %s
 
                 %s
-                const qinTransformResult = qinApplyTransforms(qinPlugins, qinPluginContext, %s, %s);
+                const qinMainId = %s;
+                const qinLoaded = qinApplyLoad(qinPlugins, qinPluginContext, qinMainId);
+                const qinInitialCode = qinLoaded == null
+                  ? %s
+                  : (typeof qinLoaded === "string" ? qinLoaded : qinLoaded.code);
+                const qinTransformResult = qinApplyTransforms(qinPlugins, qinPluginContext, qinInitialCode, qinMainId);
                 ({
                   code: typeof qinTransformResult === "string" ? qinTransformResult : qinTransformResult.code,
                   map: typeof qinTransformResult === "string" ? null : qinTransformResult.map,
@@ -143,8 +148,8 @@ final class QinViteVuePluginCompiler implements QinVueSfcCompiler {
                 """.formatted(
                 viteConfigImportSource(projectRoot),
                 pluginContainerSource(root),
-                QinJsPackageRunner.renderJsLiteral(source),
-                QinJsPackageRunner.renderJsLiteral(filename));
+                QinJsPackageRunner.renderJsLiteral(filename),
+                QinJsPackageRunner.renderJsLiteral(source));
     }
 
     private String buildQueryWrapperSource(Path projectRoot, Path moduleFile, String query) {
