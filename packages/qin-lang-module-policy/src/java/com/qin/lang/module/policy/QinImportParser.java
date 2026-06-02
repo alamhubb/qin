@@ -59,7 +59,7 @@ public final class QinImportParser {
             boolean typeOnly) {
         Matcher matcher = pattern.matcher(source);
         while (matcher.find()) {
-            if (!isCodePosition(code, matcher.start())) {
+            if (!isCodePosition(code, declarationKeywordIndex(source, matcher.start(), matcher.end()))) {
                 continue;
             }
             String specifier = matcher.group(1);
@@ -114,14 +114,6 @@ public final class QinImportParser {
                 continue;
             }
             if (template) {
-                if (ch == '$' && next == '{' && previous != '\\') {
-                    code[i] = true;
-                    code[i + 1] = true;
-                    templateExpressionDepth = 1;
-                    template = false;
-                    i++;
-                    continue;
-                }
                 if (ch == '`' && previous != '\\') {
                     template = false;
                 }
@@ -161,6 +153,19 @@ public final class QinImportParser {
 
     private boolean isCodePosition(boolean[] code, int index) {
         return index >= 0 && index < code.length && code[index];
+    }
+
+    private int declarationKeywordIndex(String source, int start, int end) {
+        int importIndex = source.indexOf("import", start);
+        int exportIndex = source.indexOf("export", start);
+        int best = -1;
+        if (importIndex >= 0 && importIndex < end) {
+            best = importIndex;
+        }
+        if (exportIndex >= 0 && exportIndex < end && (best < 0 || exportIndex < best)) {
+            best = exportIndex;
+        }
+        return best >= 0 ? best : start;
     }
 
     private boolean startsRegexLiteral(String source, int slashIndex) {
