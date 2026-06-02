@@ -68,11 +68,30 @@ Qin accepts three Qin-language source suffixes in the same workspace and compila
 - `.js`: ESM-style source authored in JavaScript-like Qin syntax
 - `.qin`: Qin-native source
 
-Java source is different:
+Java source has two distinct roles:
 
-- `.java` is not a Qin language source suffix
-- `.java` is host/interop code that may coexist in a backend project
+- backend `.java` is host/JVM code that may coexist in a backend project
+- frontend `.java` is a future Stage 3 Qin-managed source surface, limited to a Java 8 subset
 - Qin backend code may import Java ecosystem types and frameworks through `java:`
+- frontend code may not import JVM host modules through `java:`
+
+Stage 3 frontend Java is not a direct browser JVM execution model. Its intended compiler path is:
+
+- parse `.java` with Qin/Slime's Java8 `JavaParser` built on the Java Subhuti parser stack
+- convert Java CST to a Java AST
+- build a Java semantic model for the supported subset
+- lower that model to Qin IR
+- emit browser JS through the existing Qin JS backend path
+
+The frontend Java subset also needs a Qin-owned Java standard-library runtime for JS.
+This should be a small Java 8 subset mapping, not a full JDK port at the start:
+
+- `java.lang`: `String`, boxed primitives where needed, `Object`, `Math`, `StringBuilder`
+- `java.util`: `ArrayList`, `HashMap`, `HashSet`, `Collections`, `Objects`, `Arrays`
+- runtime helpers for Java equality, null checks, method dispatch, and Java collection iteration
+
+GWT, J2CL, TeaVM, and similar projects are useful references, but Qin should keep the
+runtime surface explicit and grow it from real Java8 lowering needs.
 
 The intended compiler behavior is:
 
@@ -125,6 +144,7 @@ Rules:
 
 - compiles to JS
 - may mix `.qin`, `.ts`, and `.js` inputs under the same project graph
+- Stage 3 may add `.java` inputs through a Java 8 subset parser/lowering path
 - may use browser/web capabilities
 - may not use `java:`
 

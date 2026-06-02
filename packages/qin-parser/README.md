@@ -49,6 +49,7 @@ This package is the architectural correction:
 `qin-parser` should own:
 
 - `.qin` parsing entrypoints
+- Stage 3 frontend `.java` parser integration boundaries once Java8 parsing is promoted from `slime-java`
 - Qin parser configuration and parse options
 - Qin-specific syntax extensions
 - Qin parser diagnostics
@@ -86,3 +87,9 @@ Stage 4:
 
 - introduce a Qin-owned AST / normalized parse model if needed
 - reduce direct dependence of downstream layers on raw Slime node shapes
+
+Stage 5:
+
+- integrate Qin/Slime Java8 `JavaParser` for frontend `.java`
+- keep Java parsing in the Subhuti parser family rather than using ad hoc string lowering
+- lower Java CST -> Java AST -> Java semantic model -> Qin IR before JS emission
