@@ -44,8 +44,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * First-phase declaration emitter for Qin class declarations.
@@ -146,7 +148,9 @@ public final class QinJvmDeclarationClassEmitter {
                         code -> emitFieldSetterBody(code, binaryClassName, field));
             }
 
+            Set<String> emittedConstructorDescriptors = new LinkedHashSet<>();
             if (hasNoArgSuperclassConstructor(declaration.superType(), declarationIndex)) {
+                emittedConstructorDescriptors.add(VOID_INIT.descriptorString());
                 builder.withMethodBody("<init>", VOID_INIT, ClassFile.ACC_PUBLIC, code -> {
                     code.aload(0);
                     code.invokespecial(resolveSuperclass(declaration.superType()), "<init>", VOID_INIT);
@@ -158,7 +162,12 @@ public final class QinJvmDeclarationClassEmitter {
             }
 
             emitJavaSuperclassConstructors(builder, declaration, binaryClassName);
-            emitLocalSuperclassConstructors(builder, declaration, binaryClassName, declarationIndex);
+            emitLocalSuperclassConstructors(
+                    builder,
+                    declaration,
+                    binaryClassName,
+                    declarationIndex,
+                    emittedConstructorDescriptors);
 
             if (!declaration.fields().isEmpty() && hasNoArgSuperclassConstructor(declaration.superType(), declarationIndex)) {
                 builder.withMethod(
@@ -301,7 +310,8 @@ public final class QinJvmDeclarationClassEmitter {
             ClassBuilder builder,
             QinIrClassDeclaration declaration,
             String binaryClassName,
-            Map<String, QinIrClassDeclaration> declarationIndex) {
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            Set<String> emittedDescriptors) {
         QinIrClassDeclaration localSuperclass = declaration.superType() == null
                 ? null
                 : declarationIndex.get(declaration.superType().binaryName());
@@ -312,9 +322,13 @@ public final class QinJvmDeclarationClassEmitter {
                 localSuperclass,
                 declarationIndex,
                 new java.util.LinkedHashSet<>())) {
+            MethodTypeDesc descriptor = toConstructorDescriptorForTypes(parameterTypes);
+            if (!emittedDescriptors.add(descriptor.descriptorString())) {
+                continue;
+            }
             builder.withMethodBody(
                     "<init>",
-                    toConstructorDescriptorForTypes(parameterTypes),
+                    descriptor,
                     ClassFile.ACC_PUBLIC,
                     code -> {
                         code.aload(0);
@@ -326,7 +340,7 @@ public final class QinJvmDeclarationClassEmitter {
                         code.invokespecial(
                                 ClassDesc.of(localSuperclass.binaryName()),
                                 "<init>",
-                                toConstructorDescriptorForTypes(parameterTypes));
+                                descriptor);
                         for (QinIrFieldDeclaration field : declaration.fields()) {
                             emitFieldInitializer(code, binaryClassName, field);
                         }

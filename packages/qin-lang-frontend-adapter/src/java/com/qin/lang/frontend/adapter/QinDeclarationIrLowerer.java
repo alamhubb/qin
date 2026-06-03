@@ -518,11 +518,6 @@ final class QinDeclarationIrLowerer {
         if (classDeclaration == null || classDeclaration.id() == null) {
             throw qjsError("QJS2010", "Anonymous ClassDeclaration is not supported in Qin subset");
         }
-        if (useJvmClassValue) {
-            return new QinIrConstDeclaration(
-                    classDeclaration.id().name(),
-                    new QinIrIdentifierReference(classDeclaration.id().name()));
-        }
         return new QinIrConstDeclaration(
                 classDeclaration.id().name(),
                 adapter.lowerClassDeclarationRuntimeValue(classDeclaration, javaImportLookup, declarationLookup));
