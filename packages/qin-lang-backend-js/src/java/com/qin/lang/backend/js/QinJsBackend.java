@@ -444,6 +444,18 @@ public final class QinJsBackend {
                 emitJavaUtilConcurrentAtomicLongRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilConcurrentAtomicLong");
             }
+            case "com.github.benmanes.caffeine.cache.Caffeine" -> {
+                emitCaffeineRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinCaffeine");
+            }
+            case "com.github.benmanes.caffeine.cache.Cache" -> {
+                emitCaffeineRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinCaffeineCache");
+            }
+            case "com.github.benmanes.caffeine.cache.RemovalCause" -> {
+                emitCaffeineRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinCaffeineRemovalCause");
+            }
             case "org.slf4j.LoggerFactory" -> {
                 emitSlf4jRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinSlf4jLoggerFactory");
@@ -1462,6 +1474,115 @@ public final class QinJsBackend {
                     return true;
                   }
                 }
+                """);
+    }
+
+    private void emitCaffeineRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinCaffeineCache") >= 0) {
+            return;
+        }
+        js.append("""
+                const __QinCaffeineRemovalCause = {
+                  SIZE: {
+                    wasEvicted() {
+                      return true;
+                    }
+                  },
+                  EXPLICIT: {
+                    wasEvicted() {
+                      return false;
+                    }
+                  }
+                };
+                class __QinCaffeineCache {
+                  constructor(maximumSize, removalListener) {
+                    this.__maximumSize = maximumSize == null ? Infinity : maximumSize;
+                    this.__removalListener = removalListener;
+                    this.__entries = new Map();
+                  }
+                  getIfPresent(key) {
+                    if (!this.__entries.has(key)) {
+                      return null;
+                    }
+                    const value = this.__entries.get(key);
+                    this.__entries.delete(key);
+                    this.__entries.set(key, value);
+                    return value;
+                  }
+                  put(key, value) {
+                    if (this.__entries.has(key)) {
+                      this.__entries.delete(key);
+                    }
+                    this.__entries.set(key, value);
+                    while (this.__entries.size > this.__maximumSize) {
+                      let oldestKey = null;
+                      for (const entryKey of this.__entries.keys()) {
+                        oldestKey = entryKey;
+                        break;
+                      }
+                      const oldestValue = this.__entries.get(oldestKey);
+                      this.__entries.delete(oldestKey);
+                      if (this.__removalListener != null) {
+                        this.__removalListener(oldestKey, oldestValue, __QinCaffeineRemovalCause.SIZE);
+                      }
+                    }
+                  }
+                  invalidate(key) {
+                    if (!this.__entries.has(key)) {
+                      return;
+                    }
+                    const value = this.__entries.get(key);
+                    this.__entries.delete(key);
+                    if (this.__removalListener != null) {
+                      this.__removalListener(key, value, __QinCaffeineRemovalCause.EXPLICIT);
+                    }
+                  }
+                  invalidateAll() {
+                    for (const [key, value] of Array.from(this.__entries.entries())) {
+                      this.__entries.delete(key);
+                      if (this.__removalListener != null) {
+                        this.__removalListener(key, value, __QinCaffeineRemovalCause.EXPLICIT);
+                      }
+                    }
+                  }
+                  estimatedSize() {
+                    return this.__entries.size;
+                  }
+                  stats() {
+                    return {};
+                  }
+                }
+                class __QinCaffeineBuilder {
+                  constructor() {
+                    this.__maximumSize = Infinity;
+                    this.__removalListener = null;
+                  }
+                  maximumSize(value) {
+                    this.__maximumSize = value;
+                    return this;
+                  }
+                  expireAfterAccess() {
+                    return this;
+                  }
+                  expireAfterWrite() {
+                    return this;
+                  }
+                  removalListener(listener) {
+                    this.__removalListener = listener;
+                    return this;
+                  }
+                  recordStats() {
+                    return this;
+                  }
+                  build() {
+                    return new __QinCaffeineCache(this.__maximumSize, this.__removalListener);
+                  }
+                }
+                const __QinCaffeine = {
+                  newBuilder() {
+                    return new __QinCaffeineBuilder();
+                  }
+                };
                 """);
     }
 
@@ -2924,6 +3045,9 @@ public final class QinJsBackend {
                 || "java.util.regex.Pattern".equals(ownerBinaryName)
                 || "java.util.regex.Matcher".equals(ownerBinaryName)
                 || "java.util.concurrent.atomic.AtomicLong".equals(ownerBinaryName)
+                || "com.github.benmanes.caffeine.cache.Caffeine".equals(ownerBinaryName)
+                || "com.github.benmanes.caffeine.cache.Cache".equals(ownerBinaryName)
+                || "com.github.benmanes.caffeine.cache.RemovalCause".equals(ownerBinaryName)
                 || "org.slf4j.LoggerFactory".equals(ownerBinaryName)
                 || "org.slf4j.Logger".equals(ownerBinaryName)) {
             return;
@@ -2967,6 +3091,9 @@ public final class QinJsBackend {
             case "java.util.regex.Pattern" -> "__QinJavaUtilRegexPattern";
             case "java.util.regex.Matcher" -> "__QinJavaUtilRegexMatcher";
             case "java.util.concurrent.atomic.AtomicLong" -> "__QinJavaUtilConcurrentAtomicLong";
+            case "com.github.benmanes.caffeine.cache.Caffeine" -> "__QinCaffeine";
+            case "com.github.benmanes.caffeine.cache.Cache" -> "__QinCaffeineCache";
+            case "com.github.benmanes.caffeine.cache.RemovalCause" -> "__QinCaffeineRemovalCause";
             case "org.slf4j.LoggerFactory" -> "__QinSlf4jLoggerFactory";
             case "org.slf4j.Logger" -> "__QinSlf4jLogger";
             default -> classLocalName;
