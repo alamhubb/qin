@@ -411,8 +411,18 @@ public final class QinJavaAstIrLowerer {
                 continue;
             }
             if (statement instanceof JavaAstIfStatement ifStatement) {
-                resultExpression = lowerIfExpression(ifStatement, packageName, importedTypes, baseLocals, scopedValueNames);
-                break;
+                QinIrExpression ifExpression = lowerIfExpression(
+                        ifStatement,
+                        packageName,
+                        importedTypes,
+                        baseLocals,
+                        scopedValueNames);
+                if (ifBranchesReturn(ifStatement)) {
+                    resultExpression = ifExpression;
+                    break;
+                }
+                leadingExpressions.add(ifExpression);
+                continue;
             }
             if (statement instanceof JavaAstWhileStatement whileStatement) {
                 leadingExpressions.add(lowerWhileExpression(whileStatement, packageName, importedTypes, baseLocals, scopedValueNames));
@@ -515,8 +525,18 @@ public final class QinJavaAstIrLowerer {
                 continue;
             }
             if (statement instanceof JavaAstIfStatement ifStatement) {
-                resultExpression = lowerIfExpression(ifStatement, packageName, importedTypes, baseLocals, scopedValueNames);
-                break;
+                QinIrExpression ifExpression = lowerIfExpression(
+                        ifStatement,
+                        packageName,
+                        importedTypes,
+                        baseLocals,
+                        scopedValueNames);
+                if (ifBranchesReturn(ifStatement)) {
+                    resultExpression = ifExpression;
+                    break;
+                }
+                leadingExpressions.add(ifExpression);
+                continue;
             }
             if (statement instanceof JavaAstWhileStatement whileStatement) {
                 leadingExpressions.add(lowerWhileExpression(whileStatement, packageName, importedTypes, baseLocals, scopedValueNames));
@@ -531,6 +551,25 @@ public final class QinJavaAstIrLowerer {
             return resultExpression;
         }
         return new QinIrLetExpression(localDeclarations, leadingExpressions, resultExpression);
+    }
+
+    private boolean ifBranchesReturn(JavaAstIfStatement ifStatement) {
+        return statementsEndInReturn(ifStatement.consequentStatements())
+                && statementsEndInReturn(ifStatement.alternateStatements());
+    }
+
+    private boolean statementsEndInReturn(List<JavaAstStatement> statements) {
+        if (statements.isEmpty()) {
+            return false;
+        }
+        JavaAstStatement last = statements.get(statements.size() - 1);
+        if (last instanceof JavaAstReturnStatement) {
+            return true;
+        }
+        if (last instanceof JavaAstIfStatement nestedIf) {
+            return ifBranchesReturn(nestedIf);
+        }
+        return false;
     }
 
     private QinIrWhileExpression lowerWhileExpression(
