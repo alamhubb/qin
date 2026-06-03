@@ -27,6 +27,10 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
                             return value + 1;
                         };
                     }
+
+                    java.lang.Object makeParameter() {
+                        return (int value) -> value + 1;
+                    }
                 }
                 """);
 
@@ -34,9 +38,12 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
         require(make.returnExpression() instanceof QinIrFunctionLiteral, "lambda lowers to function literal");
         QinIrMethodDeclaration makeBlock = program.classDeclarations().get(0).methods().get(1);
         require(makeBlock.returnExpression() instanceof QinIrFunctionLiteral, "block lambda lowers to function literal");
+        QinIrMethodDeclaration makeParameter = program.classDeclarations().get(0).methods().get(2);
+        require(makeParameter.returnExpression() instanceof QinIrFunctionLiteral, "parameter lambda lowers to function literal");
 
         String generated = new QinJsBackend().compileProgram(program);
         require(generated.contains("() =>"), "generated arrow function");
+        require(generated.contains("(value) =>"), "generated parameter arrow function");
 
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-lambda-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-java-ast-js-backend-lambda\" };\n",
@@ -54,6 +61,13 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
                 "java_ast_js_backend_lambda_block");
         if (!Double.valueOf(2.0).equals(blockResult)) {
             throw new IllegalStateException("Expected block lambda result 2.0, got: " + blockResult);
+        }
+        Object parameterResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                generated + "\nconst fn = new LambdaBox().makeParameter(); fn(2);\n",
+                "java_ast_js_backend_lambda_parameter");
+        if (!Double.valueOf(3.0).equals(parameterResult)) {
+            throw new IllegalStateException("Expected parameter lambda result 3.0, got: " + parameterResult);
         }
 
         System.out.println("QinJavaAstJsBackendLambdaSmokeTestMain OK");

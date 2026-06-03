@@ -254,17 +254,16 @@ public final class QinJavaSemanticAnalyzer {
             return QinIrTypeRef.stringType();
         }
         if (expression instanceof JavaAstLambdaExpression lambdaExpression) {
-            if (!lambdaExpression.parameterNames().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Java lambda parameters are not supported by Qin semantic analysis yet: "
-                                + lambdaExpression.parameterNames());
+            Map<String, QinIrTypeRef> lambdaLocals = new LinkedHashMap<>(locals);
+            for (String parameterName : lambdaExpression.parameterNames()) {
+                lambdaLocals.put(parameterName, QinIrTypeRef.classType(Object.class.getName()));
             }
             if (lambdaExpression.bodyExpression() != null) {
                 expressionType(
                         lambdaExpression.bodyExpression(),
                         packageName,
                         importedTypes,
-                        locals,
+                        lambdaLocals,
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
@@ -273,7 +272,7 @@ public final class QinJavaSemanticAnalyzer {
                 analyzeStatements(
                         packageName,
                         importedTypes,
-                        locals,
+                        lambdaLocals,
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName,

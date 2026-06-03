@@ -617,11 +617,8 @@ public final class QinJavaAstIrLowerer {
             return new QinIrThisExpression();
         }
         if (expression instanceof JavaAstLambdaExpression lambdaExpression) {
-            if (!lambdaExpression.parameterNames().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Java lambda parameters are not supported by Qin IR yet: "
-                                + lambdaExpression.parameterNames());
-            }
+            Set<String> lambdaValueNames = new LinkedHashSet<>(valueNames);
+            lambdaValueNames.addAll(lambdaExpression.parameterNames());
             QinIrExpression returnExpression;
             if (lambdaExpression.bodyExpression() != null) {
                 returnExpression = lowerExpression(
@@ -629,15 +626,15 @@ public final class QinJavaAstIrLowerer {
                         packageName,
                         importedTypes,
                         locals,
-                        valueNames);
+                        lambdaValueNames);
             } else {
                 returnExpression = lowerStatementResult(
                         lambdaExpression.bodyStatements(),
                         packageName,
                         importedTypes,
-                        valueNames);
+                        lambdaValueNames);
             }
-            return new QinIrFunctionLiteral(returnExpression);
+            return new QinIrFunctionLiteral(lambdaExpression.parameterNames(), returnExpression);
         }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             return new QinIrPropertyAccessExpression(

@@ -1066,7 +1066,14 @@ public final class QinJsBackend {
             return;
         }
         if (expression instanceof QinIrFunctionLiteral functionLiteral) {
-            js.append("() => {\n");
+            js.append("(");
+            for (int i = 0; i < functionLiteral.parameterNames().size(); i++) {
+                js.append(functionLiteral.parameterNames().get(i));
+                if (i < functionLiteral.parameterNames().size() - 1) {
+                    js.append(", ");
+                }
+            }
+            js.append(") => {\n");
             js.append("      return ");
             emitExpression(js, functionLiteral.returnExpression());
             js.append(";\n");
