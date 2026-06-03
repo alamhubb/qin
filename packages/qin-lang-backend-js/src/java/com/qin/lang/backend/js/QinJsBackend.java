@@ -1,6 +1,7 @@
 package com.qin.lang.backend.js;
 
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
+import com.qin.lang.ir.QinIrAssignmentExpression;
 import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrConstDeclaration;
@@ -18,6 +19,7 @@ import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJsImport;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrLetExpression;
+import com.qin.lang.ir.QinIrLocalVariableDeclaration;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
@@ -139,6 +141,11 @@ public final class QinJsBackend {
         if (expression == null) {
             return;
         }
+        if (expression instanceof QinIrAssignmentExpression assignmentExpression) {
+            emitJavaRuntimeAliasesForExpression(js, assignmentExpression.target(), javaAliases);
+            emitJavaRuntimeAliasesForExpression(js, assignmentExpression.value(), javaAliases);
+            return;
+        }
         if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
             emitJavaRuntimeAlias(
                     js,
@@ -169,7 +176,7 @@ public final class QinJsBackend {
             return;
         }
         if (expression instanceof QinIrLetExpression letExpression) {
-            for (QinIrConstDeclaration declaration : letExpression.localDeclarations()) {
+            for (QinIrLocalVariableDeclaration declaration : letExpression.localDeclarations()) {
                 emitJavaRuntimeAliasesForExpression(js, declaration.initializer(), javaAliases);
             }
             for (QinIrExpression leadingExpression : letExpression.leadingExpressions()) {
@@ -526,6 +533,10 @@ public final class QinJsBackend {
         if (expression == null) {
             return false;
         }
+        if (expression instanceof QinIrAssignmentExpression assignmentExpression) {
+            return usesBuiltin(assignmentExpression.target(), methodName)
+                    || usesBuiltin(assignmentExpression.value(), methodName);
+        }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
             if (methodName.equals(builtinCallExpression.methodName())) {
                 return true;
@@ -573,7 +584,7 @@ public final class QinJsBackend {
             return false;
         }
         if (expression instanceof QinIrLetExpression letExpression) {
-            for (QinIrConstDeclaration declaration : letExpression.localDeclarations()) {
+            for (QinIrLocalVariableDeclaration declaration : letExpression.localDeclarations()) {
                 if (usesBuiltin(declaration.initializer(), methodName)) {
                     return true;
                 }
@@ -858,6 +869,12 @@ public final class QinJsBackend {
             js.append("this");
             return;
         }
+        if (expression instanceof QinIrAssignmentExpression assignmentExpression) {
+            emitExpression(js, assignmentExpression.target());
+            js.append(" ").append(assignmentExpression.operator()).append(" ");
+            emitExpression(js, assignmentExpression.value());
+            return;
+        }
         if (expression instanceof QinIrPropertyAccessExpression propertyAccessExpression) {
             emitExpression(js, propertyAccessExpression.receiver());
             js.append(".").append(propertyAccessExpression.propertyName());
@@ -925,8 +942,8 @@ public final class QinJsBackend {
 
     private void emitLetExpression(StringBuilder js, QinIrLetExpression letExpression) {
         js.append("(() => {\n");
-        for (QinIrConstDeclaration declaration : letExpression.localDeclarations()) {
-            js.append("      const ").append(declaration.name()).append(" = ");
+        for (QinIrLocalVariableDeclaration declaration : letExpression.localDeclarations()) {
+            js.append("      let ").append(declaration.name()).append(" = ");
             emitExpression(js, declaration.initializer());
             js.append(";\n");
         }

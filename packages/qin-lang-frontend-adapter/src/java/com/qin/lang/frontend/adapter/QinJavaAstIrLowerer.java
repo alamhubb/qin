@@ -2,6 +2,7 @@ package com.qin.lang.frontend.adapter;
 
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrAnnotation;
+import com.qin.lang.ir.QinIrAssignmentExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrExpression;
@@ -10,6 +11,7 @@ import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrLetExpression;
+import com.qin.lang.ir.QinIrLocalVariableDeclaration;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
@@ -19,6 +21,7 @@ import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
+import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
@@ -192,7 +195,7 @@ public final class QinJavaAstIrLowerer {
             Set<String> valueNames,
             JavaAstMethodDeclaration method) {
         Set<String> scopedValueNames = new LinkedHashSet<>(valueNames);
-        List<QinIrConstDeclaration> localDeclarations = new ArrayList<>();
+        List<QinIrLocalVariableDeclaration> localDeclarations = new ArrayList<>();
         List<QinIrExpression> leadingExpressions = new ArrayList<>();
         QinIrExpression resultExpression = null;
 
@@ -206,7 +209,7 @@ public final class QinJavaAstIrLowerer {
                                 importedTypes,
                                 Map.of(),
                                 scopedValueNames);
-                localDeclarations.add(new QinIrConstDeclaration(localVariable.name(), initializer));
+                localDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
                 scopedValueNames.add(localVariable.name());
                 continue;
             }
@@ -303,6 +306,12 @@ public final class QinJavaAstIrLowerer {
                     .resolveType(newExpression.typeName(), packageName, importedTypes)
                     .binaryName();
             return new QinIrJavaNewExpression(newExpression.typeName(), ownerBinaryName, arguments);
+        }
+        if (expression instanceof JavaAstAssignmentExpression assignment) {
+            return new QinIrAssignmentExpression(
+                    lowerExpression(assignment.target(), packageName, importedTypes, locals, valueNames),
+                    assignment.operator(),
+                    lowerExpression(assignment.value(), packageName, importedTypes, locals, valueNames));
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
             return new QinIrBuiltinCallExpression(

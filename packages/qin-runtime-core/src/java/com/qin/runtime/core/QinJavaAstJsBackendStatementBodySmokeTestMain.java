@@ -33,7 +33,7 @@ public final class QinJavaAstJsBackendStatementBodySmokeTestMain {
         require(letExpression.leadingExpressions().size() == 1, "leading expression count");
 
         String generated = new QinJsBackend().compileProgram(program);
-        require(generated.contains("const builder = new StringBuilder(\"qin\");"), "builder local declaration");
+        require(generated.contains("let builder = new StringBuilder(\"qin\");"), "builder local declaration");
         require(generated.contains("builder.append(\"-js\");"), "builder append side effect");
         require(generated.contains("return builder.toString();"), "builder return expression");
 

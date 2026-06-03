@@ -8,7 +8,7 @@ import java.util.Objects;
  * before producing a result value.
  */
 public record QinIrLetExpression(
-        List<QinIrConstDeclaration> localDeclarations,
+        List<QinIrLocalVariableDeclaration> localDeclarations,
         List<QinIrExpression> leadingExpressions,
         QinIrExpression resultExpression) implements QinIrExpression {
     public QinIrLetExpression {

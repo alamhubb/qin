@@ -2,6 +2,7 @@ package com.qin.lang.frontend.adapter;
 
 import com.qin.lang.ir.QinIrTypeKind;
 import com.qin.lang.ir.QinIrTypeRef;
+import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
@@ -205,6 +206,10 @@ public final class QinJavaSemanticAnalyzer {
                 expressionType(argument, packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
             }
             return resolveType(newExpression.typeName(), packageName, importedTypes);
+        }
+        if (expression instanceof JavaAstAssignmentExpression assignment) {
+            expressionType(assignment.target(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
+            return expressionType(assignment.value(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
         }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             if (memberAccess.receiver() instanceof JavaAstThisExpression) {
