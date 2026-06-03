@@ -39,6 +39,9 @@ import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrWhileExpression;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -293,10 +296,89 @@ public final class QinJsBackend {
                 emitJavaUtilObjectsRuntime(js);
                 js.append("const ").append(localName).append(" = __QinJavaUtilObjects;\n");
             }
-            default -> throw new IllegalArgumentException(
-                    "JS backend does not support Java stdlib interop yet: " + ownerBinaryName);
+            default -> {
+                Class<?> ownerClass = loadJavaOwner(ownerBinaryName);
+                if (!ownerClass.isRecord()) {
+                    throw new IllegalArgumentException(
+                            "JS backend does not support Java interop owner yet: " + ownerBinaryName);
+                }
+                emitJavaRecordRuntime(js, localName, ownerClass);
+            }
         }
         javaAliases.put(localName, ownerBinaryName);
+    }
+
+    private void emitJavaRecordRuntime(StringBuilder js, String localName, Class<?> ownerClass) {
+        if (js.indexOf("class " + localName + " ") >= 0) {
+            return;
+        }
+        RecordComponent[] components = ownerClass.getRecordComponents();
+        js.append("class ").append(localName).append(" {\n");
+        js.append("  constructor(");
+        for (int i = 0; i < components.length; i++) {
+            js.append(components[i].getName());
+            if (i < components.length - 1) {
+                js.append(", ");
+            }
+        }
+        js.append(") {\n");
+        for (RecordComponent component : components) {
+            js.append("    this.__").append(component.getName()).append(" = ").append(component.getName()).append(";\n");
+        }
+        js.append("  }\n");
+        for (RecordComponent component : components) {
+            js.append("  ").append(component.getName()).append("() { return this.__")
+                    .append(component.getName())
+                    .append("; }\n");
+        }
+        js.append("}\n");
+        emitJavaRecordStaticFields(js, localName, ownerClass, components);
+    }
+
+    private void emitJavaRecordStaticFields(
+            StringBuilder js,
+            String localName,
+            Class<?> ownerClass,
+            RecordComponent[] components) {
+        for (Field field : ownerClass.getFields()) {
+            int modifiers = field.getModifiers();
+            if (!Modifier.isStatic(modifiers) || field.getType() != ownerClass) {
+                continue;
+            }
+            try {
+                Object value = field.get(null);
+                js.append(localName).append(".").append(field.getName()).append(" = new ")
+                        .append(localName)
+                        .append("(");
+                for (int i = 0; i < components.length; i++) {
+                    Object componentValue = components[i].getAccessor().invoke(value);
+                    emitJavaRecordLiteralValue(js, componentValue);
+                    if (i < components.length - 1) {
+                        js.append(", ");
+                    }
+                }
+                js.append(");\n");
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalArgumentException(
+                        "Could not emit Java record static field: " + ownerClass.getName() + "." + field.getName(), e);
+            }
+        }
+    }
+
+    private void emitJavaRecordLiteralValue(StringBuilder js, Object value) {
+        if (value == null) {
+            js.append("null");
+            return;
+        }
+        if (value instanceof Boolean || value instanceof Number) {
+            js.append(value);
+            return;
+        }
+        if (value instanceof String text) {
+            js.append("\"").append(escapeJs(text)).append("\"");
+            return;
+        }
+        throw new IllegalArgumentException("Unsupported Java record static literal value: " + value.getClass().getName());
     }
 
     private void emitJavaLangStringBuilderRuntime(StringBuilder js) {
@@ -768,8 +850,12 @@ public final class QinJsBackend {
                 js.append(" extends ").append(jsClassReference(classDeclaration.superType().binaryName()));
             }
             js.append(" {\n");
-            emitClassConstructor(js, classDeclaration);
+            QinIrMethodDeclaration explicitConstructor = explicitConstructor(classDeclaration);
+            emitClassConstructor(js, classDeclaration, explicitConstructor);
             for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+                if ("constructor".equals(method.name())) {
+                    continue;
+                }
                 emitMethodDeclaration(js, method);
             }
             js.append("}\n");
@@ -779,10 +865,39 @@ public final class QinJsBackend {
         }
     }
 
-    private void emitClassConstructor(StringBuilder js, QinIrClassDeclaration classDeclaration) {
-        js.append("  constructor() {\n");
+    private QinIrMethodDeclaration explicitConstructor(QinIrClassDeclaration classDeclaration) {
+        for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+            if ("constructor".equals(method.name())) {
+                return method;
+            }
+        }
+        return null;
+    }
+
+    private void emitClassConstructor(
+            StringBuilder js,
+            QinIrClassDeclaration classDeclaration,
+            QinIrMethodDeclaration explicitConstructor) {
+        js.append("  constructor(");
+        List<QinIrParameter> parameters = explicitConstructor == null
+                ? List.of()
+                : explicitConstructor.parameters();
+        for (int i = 0; i < parameters.size(); i++) {
+            js.append(parameters.get(i).name());
+            if (i < parameters.size() - 1) {
+                js.append(", ");
+            }
+        }
+        js.append(") {\n");
         if (classDeclaration.superType() != null) {
-            js.append("    super();\n");
+            js.append("    super(");
+            for (int i = 0; i < parameters.size(); i++) {
+                js.append(parameters.get(i).name());
+                if (i < parameters.size() - 1) {
+                    js.append(", ");
+                }
+            }
+            js.append(");\n");
         }
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
             js.append("    this.").append(field.name()).append(" = ");
@@ -1270,7 +1385,18 @@ public final class QinJsBackend {
                 || "java.lang.Math".equals(ownerBinaryName)) {
             return;
         }
-        throw new IllegalArgumentException("JS backend does not support Java stdlib interop yet: " + ownerBinaryName);
+        if (loadJavaOwner(ownerBinaryName).isRecord()) {
+            return;
+        }
+        throw new IllegalArgumentException("JS backend does not support Java interop owner yet: " + ownerBinaryName);
+    }
+
+    private Class<?> loadJavaOwner(String ownerBinaryName) {
+        try {
+            return Class.forName(ownerBinaryName);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java interop owner: " + ownerBinaryName, e);
+        }
     }
 
     private void emitArguments(StringBuilder js, List<QinIrExpression> arguments) {

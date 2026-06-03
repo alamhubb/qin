@@ -28,11 +28,16 @@ import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
+import com.slime.java.ast.JavaAstUnaryExpression;
 import com.slime.java.ast.JavaAstUpdateExpression;
 import com.slime.java.ast.JavaAstWhileStatement;
 import com.slime.java.ast.JavaCstToAst;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -83,8 +88,15 @@ public final class QinJavaSemanticAnalyzer {
             String packageName,
             Map<String, String> importedTypes,
             JavaAstClassDeclaration classDeclaration) {
+        importedTypes = withInheritedNestedTypes(
+                importedTypes,
+                classDeclaration.superTypeName(),
+                packageName);
         List<QinJavaSemanticField> fields = new ArrayList<>();
-        Map<String, QinIrTypeRef> fieldTypes = new LinkedHashMap<>();
+        Map<String, QinIrTypeRef> fieldTypes = collectInheritedFieldTypes(
+                classDeclaration.superTypeName(),
+                packageName,
+                importedTypes);
         for (JavaAstFieldDeclaration field : classDeclaration.fields()) {
             QinIrTypeRef type = resolveType(field.typeName(), packageName, importedTypes);
             fields.add(new QinJavaSemanticField(field.name(), type));
@@ -95,7 +107,10 @@ public final class QinJavaSemanticAnalyzer {
         String binaryName = packageName == null || packageName.isBlank()
                 ? classDeclaration.name()
                 : packageName + "." + classDeclaration.name();
-        Map<String, QinIrTypeRef> methodReturnTypes = new LinkedHashMap<>();
+        Map<String, QinIrTypeRef> methodReturnTypes = collectInheritedMethodReturnTypes(
+                classDeclaration.superTypeName(),
+                packageName,
+                importedTypes);
         for (JavaAstMethodDeclaration method : classDeclaration.methods()) {
             methodReturnTypes.put(method.name(), resolveType(method.returnTypeName(), packageName, importedTypes));
         }
@@ -294,6 +309,11 @@ public final class QinJavaSemanticAnalyzer {
             return expressionType(updateExpression.target(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
                     classBinaryName);
         }
+        if (expression instanceof JavaAstUnaryExpression unaryExpression) {
+            expressionType(unaryExpression.operand(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
+                    classBinaryName);
+            return "!".equals(unaryExpression.operator()) ? QinIrTypeRef.booleanType() : QinIrTypeRef.doubleType();
+        }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             if (memberAccess.receiver() instanceof JavaAstThisExpression) {
                 QinIrTypeRef fieldType = fieldTypes.get(memberAccess.propertyName());
@@ -301,6 +321,13 @@ public final class QinJavaSemanticAnalyzer {
                     throw new IllegalArgumentException("Unknown Java field: " + memberAccess.propertyName());
                 }
                 return fieldType;
+            }
+            if (memberAccess.receiver() instanceof JavaAstIdentifierExpression receiverIdentifier
+                    && !locals.containsKey(receiverIdentifier.name())) {
+                QinIrTypeRef ownerType = resolveType(receiverIdentifier.name(), packageName, importedTypes);
+                if (ownerType.kind() == QinIrTypeKind.CLASS && isLoadableClass(ownerType.binaryName())) {
+                    return resolveStaticFieldType(ownerType.binaryName(), memberAccess.propertyName());
+                }
             }
             throw new IllegalArgumentException("Unsupported Java member receiver for semantics: " + memberAccess.receiver());
         }
@@ -316,14 +343,20 @@ public final class QinJavaSemanticAnalyzer {
                 return returnType;
             }
             if (methodCall.receiver() instanceof JavaAstIdentifierExpression receiverIdentifier
+                    && !"super".equals(receiverIdentifier.name())
                     && !locals.containsKey(receiverIdentifier.name())) {
                 QinIrTypeRef ownerType = resolveType(receiverIdentifier.name(), packageName, importedTypes);
-                if (ownerType.kind() == QinIrTypeKind.CLASS && ownerType.binaryName() != null) {
+                if (ownerType.kind() == QinIrTypeKind.CLASS && isLoadableClass(ownerType.binaryName())) {
                     return resolveStaticMethodReturnType(
                             ownerType.binaryName(),
                             methodCall.methodName(),
                             methodCall.arguments().size());
                 }
+            }
+            if (methodCall.receiver() instanceof JavaAstIdentifierExpression receiverIdentifier
+                    && "super".equals(receiverIdentifier.name())) {
+                QinIrTypeRef returnType = methodReturnTypes.get(methodCall.methodName());
+                return returnType == null ? QinIrTypeRef.classType(Object.class.getName()) : returnType;
             }
             QinIrTypeRef receiverType = expressionType(
                     methodCall.receiver(),
@@ -515,6 +548,190 @@ public final class QinJavaSemanticAnalyzer {
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unknown Java static method owner: " + ownerBinaryName, e);
         }
+    }
+
+    private QinIrTypeRef resolveStaticFieldType(String ownerBinaryName, String fieldName) {
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Field field = ownerClass.getField(fieldName);
+            if (!Modifier.isStatic(field.getModifiers())) {
+                throw new IllegalArgumentException("Java field is not static: " + ownerBinaryName + "." + fieldName);
+            }
+            return typeRefFromType(field.getGenericType(), Map.of());
+        } catch (NoSuchFieldException e) {
+            throw new IllegalArgumentException("Unknown Java static field: " + ownerBinaryName + "." + fieldName, e);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java static field owner: " + ownerBinaryName, e);
+        }
+    }
+
+    boolean isLoadableClass(String binaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            return false;
+        }
+        try {
+            Class.forName(binaryName);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    Map<String, QinIrTypeRef> collectInheritedFieldTypes(
+            String superTypeName,
+            String packageName,
+            Map<String, String> importedTypes) {
+        Map<String, QinIrTypeRef> fields = new LinkedHashMap<>();
+        if (superTypeName == null || superTypeName.isBlank()) {
+            return fields;
+        }
+        QinIrTypeRef superType = resolveType(superTypeName, packageName, importedTypes);
+        if (superType.binaryName() == null || !isLoadableClass(superType.binaryName())) {
+            return fields;
+        }
+        try {
+            Class<?> owner = Class.forName(superType.binaryName());
+            Map<TypeVariable<?>, Type> typeBindings = new LinkedHashMap<>();
+            String accessingPackage = packageName == null ? "" : packageName;
+            while (owner != null && owner != Object.class) {
+                String ownerPackage = owner.getPackageName() == null ? "" : owner.getPackageName();
+                for (Field field : owner.getDeclaredFields()) {
+                    int modifiers = field.getModifiers();
+                    if (Modifier.isStatic(modifiers) || Modifier.isPrivate(modifiers)) {
+                        continue;
+                    }
+                    if (!Modifier.isPublic(modifiers)
+                            && !Modifier.isProtected(modifiers)
+                            && !ownerPackage.equals(accessingPackage)) {
+                        continue;
+                    }
+                    fields.putIfAbsent(field.getName(), typeRefFromType(field.getGenericType(), typeBindings));
+                }
+                Type genericSuperclass = owner.getGenericSuperclass();
+                Class<?> rawSuperclass = owner.getSuperclass();
+                typeBindings = nextTypeBindings(genericSuperclass, typeBindings);
+                owner = rawSuperclass;
+            }
+            return fields;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java superclass: " + superType.binaryName(), e);
+        }
+    }
+
+    Map<String, QinIrTypeRef> collectInheritedMethodReturnTypes(
+            String superTypeName,
+            String packageName,
+            Map<String, String> importedTypes) {
+        Map<String, QinIrTypeRef> methods = new LinkedHashMap<>();
+        if (superTypeName == null || superTypeName.isBlank()) {
+            return methods;
+        }
+        QinIrTypeRef superType = resolveType(superTypeName, packageName, importedTypes);
+        if (superType.binaryName() == null || !isLoadableClass(superType.binaryName())) {
+            return methods;
+        }
+        try {
+            Class<?> owner = Class.forName(superType.binaryName());
+            Map<TypeVariable<?>, Type> typeBindings = new LinkedHashMap<>();
+            String accessingPackage = packageName == null ? "" : packageName;
+            while (owner != null && owner != Object.class) {
+                String ownerPackage = owner.getPackageName() == null ? "" : owner.getPackageName();
+                for (Method method : owner.getDeclaredMethods()) {
+                    int modifiers = method.getModifiers();
+                    if (Modifier.isStatic(modifiers) || Modifier.isPrivate(modifiers)) {
+                        continue;
+                    }
+                    if (!Modifier.isPublic(modifiers)
+                            && !Modifier.isProtected(modifiers)
+                            && !ownerPackage.equals(accessingPackage)) {
+                        continue;
+                    }
+                    methods.putIfAbsent(method.getName(), typeRefFromType(method.getGenericReturnType(), typeBindings));
+                }
+                Type genericSuperclass = owner.getGenericSuperclass();
+                Class<?> rawSuperclass = owner.getSuperclass();
+                typeBindings = nextTypeBindings(genericSuperclass, typeBindings);
+                owner = rawSuperclass;
+            }
+            return methods;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java superclass: " + superType.binaryName(), e);
+        }
+    }
+
+    Map<String, String> withInheritedNestedTypes(
+            Map<String, String> importedTypes,
+            String superTypeName,
+            String packageName) {
+        Map<String, String> resolved = new LinkedHashMap<>(importedTypes);
+        if (superTypeName == null || superTypeName.isBlank()) {
+            return resolved;
+        }
+        QinIrTypeRef superType = resolveType(superTypeName, packageName, importedTypes);
+        if (superType.binaryName() == null || !isLoadableClass(superType.binaryName())) {
+            return resolved;
+        }
+        try {
+            Class<?> owner = Class.forName(superType.binaryName());
+            String accessingPackage = packageName == null ? "" : packageName;
+            while (owner != null && owner != Object.class) {
+                String ownerPackage = owner.getPackageName() == null ? "" : owner.getPackageName();
+                for (Class<?> nestedClass : owner.getDeclaredClasses()) {
+                    int modifiers = nestedClass.getModifiers();
+                    if (Modifier.isPrivate(modifiers)) {
+                        continue;
+                    }
+                    if (!Modifier.isPublic(modifiers)
+                            && !Modifier.isProtected(modifiers)
+                            && !ownerPackage.equals(accessingPackage)) {
+                        continue;
+                    }
+                    resolved.putIfAbsent(nestedClass.getSimpleName(), nestedClass.getName());
+                }
+                owner = owner.getSuperclass();
+            }
+            return resolved;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java superclass: " + superType.binaryName(), e);
+        }
+    }
+
+    private Map<TypeVariable<?>, Type> nextTypeBindings(
+            Type genericSuperclass,
+            Map<TypeVariable<?>, Type> currentBindings) {
+        Map<TypeVariable<?>, Type> next = new LinkedHashMap<>();
+        if (genericSuperclass instanceof ParameterizedType parameterizedType
+                && parameterizedType.getRawType() instanceof Class<?> rawClass) {
+            TypeVariable<?>[] variables = rawClass.getTypeParameters();
+            Type[] arguments = parameterizedType.getActualTypeArguments();
+            for (int i = 0; i < variables.length && i < arguments.length; i++) {
+                next.put(variables[i], resolveBoundType(arguments[i], currentBindings));
+            }
+        }
+        return next;
+    }
+
+    private QinIrTypeRef typeRefFromType(Type type, Map<TypeVariable<?>, Type> typeBindings) {
+        Type resolved = resolveBoundType(type, typeBindings);
+        if (resolved instanceof Class<?> resolvedClass) {
+            return typeRefFromClass(resolvedClass);
+        }
+        if (resolved instanceof ParameterizedType parameterizedType
+                && parameterizedType.getRawType() instanceof Class<?> rawClass) {
+            return typeRefFromClass(rawClass);
+        }
+        if (type instanceof TypeVariable<?> variable && variable.getBounds().length > 0) {
+            return typeRefFromType(variable.getBounds()[0], typeBindings);
+        }
+        return QinIrTypeRef.classType(Object.class.getName());
+    }
+
+    private Type resolveBoundType(Type type, Map<TypeVariable<?>, Type> typeBindings) {
+        Type current = type;
+        while (current instanceof TypeVariable<?> variable && typeBindings.containsKey(variable)) {
+            current = typeBindings.get(variable);
+        }
+        return current;
     }
 
     private QinIrTypeRef resolveInstanceMethodReturnType(
