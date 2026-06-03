@@ -63,9 +63,11 @@ public final class QinJsBackendJavaArrayListSmokeTestMain {
                 generated
                         + "\nglobalThis.__qinResult.add(\"aardvark\");\n"
                         + "globalThis.__qinResult.sort((a, b) => a.length - b.length);\n"
-                        + "globalThis.__qinResult.get(0) + \":\" + globalThis.__qinResult.size();\n",
+                        + "let values = \"\";\n"
+                        + "for (const value of globalThis.__qinResult) { values += value + \",\"; }\n"
+                        + "globalThis.__qinResult.get(0) + \":\" + globalThis.__qinResult.size() + \":\" + values;\n",
                 "js_backend_array_list");
-        if (!"hello:2".equals(result)) {
+        if (!"hello:2:hello,aardvark,".equals(result)) {
             throw new IllegalStateException("Expected generated ArrayList sort result, got: " + result);
         }
         System.out.println("QinJsBackendJavaArrayListSmokeTestMain OK");

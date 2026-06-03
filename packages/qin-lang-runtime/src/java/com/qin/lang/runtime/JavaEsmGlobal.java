@@ -603,6 +603,9 @@ public final class JavaEsmGlobal {
         if (target instanceof JavaEsmMapObject mapObject && Objects.equals(property, JavaEsmSymbol.iterator())) {
             return new NativeFunction("Map.Symbol.iterator", args -> mapObject.entries().iterator());
         }
+        if (target instanceof List<?> list && Objects.equals(property, JavaEsmSymbol.iterator())) {
+            return new NativeFunction("Array.Symbol.iterator", args -> list.iterator());
+        }
         if (target instanceof Map<?, ?> map) {
             String key = propertyKey(property);
             Map<String, Object> cast = castMap(map);
@@ -912,6 +915,9 @@ public final class JavaEsmGlobal {
         }
         if (target instanceof JavaEsmMapObject mapObject && Objects.equals(methodName, JavaEsmSymbol.iterator())) {
             return mapObject.entries().iterator();
+        }
+        if (target instanceof List<?> list && Objects.equals(methodName, JavaEsmSymbol.iterator())) {
+            return list.iterator();
         }
         if (target instanceof Number number && JavaEsmNumber.supports(name)) {
             return JavaEsmNumber.invoke(number, name, args);
