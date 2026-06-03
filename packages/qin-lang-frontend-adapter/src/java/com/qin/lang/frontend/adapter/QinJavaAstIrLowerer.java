@@ -27,6 +27,7 @@ import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrWhileExpression;
 import com.slime.java.ast.JavaAstAssignmentExpression;
+import com.slime.java.ast.JavaAstAnnotation;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstBooleanLiteral;
 import com.slime.java.ast.JavaAstClassDeclaration;
@@ -113,7 +114,7 @@ public final class QinJavaAstIrLowerer {
             fields.add(new QinIrFieldDeclaration(
                     field.name(),
                     semanticField.type(),
-                    List.of(),
+                    lowerAnnotations(packageName, importedTypes, field.annotations()),
                     null));
         }
 
@@ -130,7 +131,7 @@ public final class QinJavaAstIrLowerer {
                 packageName,
                 classDeclaration.name(),
                 null,
-                List.<QinIrAnnotation>of(),
+                lowerAnnotations(packageName, importedTypes, classDeclaration.annotations()),
                 fields,
                 methods);
     }
@@ -159,8 +160,43 @@ public final class QinJavaAstIrLowerer {
                 method.name(),
                 semanticMethod.returnType(),
                 parameters,
-                List.of(),
+                lowerAnnotations(packageName, importedTypes, method.annotations()),
                 lowerMethodReturnExpression(packageName, importedTypes, valueNames, method));
+    }
+
+    private List<QinIrAnnotation> lowerAnnotations(
+            String packageName,
+            Map<String, String> importedTypes,
+            List<JavaAstAnnotation> annotations) {
+        List<QinIrAnnotation> lowered = new ArrayList<>();
+        for (JavaAstAnnotation annotation : annotations) {
+            lowered.add(new QinIrAnnotation(
+                    resolveAnnotationBinaryName(annotation.name(), packageName, importedTypes),
+                    List.of()));
+        }
+        return lowered;
+    }
+
+    private String resolveAnnotationBinaryName(
+            String annotationName,
+            String packageName,
+            Map<String, String> importedTypes) {
+        String imported = importedTypes.get(annotationName);
+        if (imported != null) {
+            return imported;
+        }
+        if (annotationName.contains(".")) {
+            return annotationName;
+        }
+        String javaLangName = "java.lang." + annotationName;
+        try {
+            Class.forName(javaLangName);
+            return javaLangName;
+        } catch (ClassNotFoundException ignored) {
+            return packageName == null || packageName.isBlank()
+                    ? annotationName
+                    : packageName + "." + annotationName;
+        }
     }
 
     private QinIrExpression lowerMethodReturnExpression(
