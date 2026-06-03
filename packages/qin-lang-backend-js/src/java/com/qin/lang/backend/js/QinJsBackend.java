@@ -1966,7 +1966,7 @@ public final class QinJsBackend {
         js.append("""
                 function __qin_init_enum_value(value, name, ordinal) {
                   Object.defineProperty(value, "__qinEnumName", {
-                    value: String(name),
+                    value: "" + name,
                     configurable: true
                   });
                   Object.defineProperty(value, "__qinEnumOrdinal", {

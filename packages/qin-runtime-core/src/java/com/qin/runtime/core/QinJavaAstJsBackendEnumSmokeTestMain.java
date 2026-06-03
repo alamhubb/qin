@@ -15,6 +15,7 @@ public final class QinJavaAstJsBackendEnumSmokeTestMain {
     public static void main(String[] args) throws Exception {
         QinIrProgram program = new QinJavaAstIrLowerer().lowerSource("""
                 package com.example;
+                import java.lang.String;
                 enum SourceType {
                     SCRIPT, MODULE
                 }
