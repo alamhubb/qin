@@ -44,6 +44,7 @@ public final class QinFrontendEsmService {
     private final String entryModuleUrl;
     private final QinVueSfcCompiler vueSfcCompiler;
     private final QinOvsCompiler ovsCompiler;
+    private final QinCsstsCompiler csstsCompiler;
 
     private QinFrontendEsmService(
             Path projectRoot,
@@ -55,7 +56,8 @@ public final class QinFrontendEsmService {
             Map<String, String> virtualModuleContentMap,
             String entryModuleUrl,
             QinVueSfcCompiler vueSfcCompiler,
-            QinOvsCompiler ovsCompiler) {
+            QinOvsCompiler ovsCompiler,
+            QinCsstsCompiler csstsCompiler) {
         this.projectRoot = projectRoot;
         this.entryFile = entryFile;
         this.graph = graph;
@@ -66,6 +68,7 @@ public final class QinFrontendEsmService {
         this.entryModuleUrl = entryModuleUrl;
         this.vueSfcCompiler = vueSfcCompiler;
         this.ovsCompiler = ovsCompiler;
+        this.csstsCompiler = csstsCompiler;
     }
 
     public static QinFrontendEsmService create(Path projectRoot, Path frontendEntry) throws Exception {
@@ -106,7 +109,8 @@ public final class QinFrontendEsmService {
                 virtualModuleContentMap,
                 entryUrl,
                 vueCompiler,
-                new QinOvsCompiler());
+                new QinOvsCompiler(),
+                new QinCsstsCompiler());
     }
 
     public String bootstrapJs() {
@@ -218,6 +222,8 @@ public final class QinFrontendEsmService {
             transpiled = transpileVueModule(moduleFile, source);
         } else if (isOvsModuleFile(moduleFile)) {
             transpiled = transpileOvsModule(moduleFile, source);
+        } else if (isCsstsModuleFile(moduleFile)) {
+            transpiled = transpileCsstsModule(moduleFile, source);
         } else if (isCssModuleFile(moduleFile)) {
             transpiled = renderCssInjectionModule(source);
         } else if (isAssetModuleFile(moduleFile)) {
@@ -237,7 +243,10 @@ public final class QinFrontendEsmService {
         QinModuleSource sourceModule = module != null
                 ? module
                 : new QinModuleSource(moduleFile.toAbsolutePath().normalize(), source, List.of());
-        QinVueSfcModuleResult result = vueSfcCompiler.transpileVueModule(
+        QinVueSfcCompiler compiler = requiresQinNativeVueCompiler(source)
+                ? new QinOfficialVueSfcCompiler()
+                : vueSfcCompiler;
+        QinVueSfcModuleResult result = compiler.transpileVueModule(
                 moduleFile,
                 source,
                 sourceModule,
@@ -245,6 +254,14 @@ public final class QinFrontendEsmService {
         registerViteVirtualModules(result);
         registerVueVirtualModules(moduleFile, result);
         return result.moduleCode();
+    }
+
+    private static boolean requiresQinNativeVueCompiler(String source) {
+        if (source == null || source.isBlank()) {
+            return false;
+        }
+        return source.contains("lang=\"cssts\"")
+                || source.contains("lang='cssts'");
     }
 
     private void registerViteVirtualModules(QinVueSfcModuleResult result) {
@@ -307,6 +324,26 @@ public final class QinFrontendEsmService {
         compiled = rewriteSpecifiers(sourceModule, compiled, EXPORT_FROM_PATTERN);
         compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_SIDE_EFFECT_PATTERN);
         return mountOvsModule(moduleFile, compiled);
+    }
+
+    private String transpileCsstsModule(Path moduleFile, String source) {
+        QinModuleSource module = moduleSourceMap.get(moduleFile.toAbsolutePath().normalize());
+        QinModuleSource sourceModule = module != null
+                ? module
+                : new QinModuleSource(moduleFile.toAbsolutePath().normalize(), source, List.of());
+        QinCsstsCompiler.QinCsstsCompileResult result;
+        try {
+            result = csstsCompiler.compile(projectRoot, source);
+        } catch (Exception error) {
+            throw new IllegalStateException("Qin CSSTS compilation failed for " + moduleFile.toAbsolutePath(), error);
+        }
+
+        registerCsstsVirtualModules(moduleFile, result);
+        String compiled = result.code();
+        compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_FROM_PATTERN);
+        compiled = rewriteSpecifiers(sourceModule, compiled, EXPORT_FROM_PATTERN);
+        compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_SIDE_EFFECT_PATTERN);
+        return compiled;
     }
 
     private String joinScriptBlocks(Object scriptBlock, Object scriptSetupBlock) {
@@ -599,6 +636,20 @@ public final class QinFrontendEsmService {
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
         virtualModuleContentMap.put(ovsRuntimeRequestPath, readOvsRuntimeModule(vueRuntimeRequestPath));
         virtualModuleContentMap.put(vueRuntimeRequestPath, readVueBrowserRuntimeModule());
+    }
+
+    private void registerCsstsVirtualModules(Path moduleFile, QinCsstsCompiler.QinCsstsCompileResult result) {
+        String base = toModuleUrl(projectRoot, moduleFile);
+        String cssRequestPath = base + "?qin-vue-cssts=style";
+        String atomRequestPath = base + "?qin-vue-cssts=atom";
+        String runtimeRequestPath = base + "?qin-vue-cssts=runtime";
+        if (result.css() != null && !result.css().isBlank()) {
+            virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(result.css()));
+        }
+        if (result.atomModule() != null && !result.atomModule().isBlank()) {
+            virtualModuleContentMap.put(atomRequestPath, result.atomModule());
+        }
+        virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
     }
 
     private String mountOvsModule(Path moduleFile, String source) {
@@ -989,6 +1040,9 @@ public final class QinFrontendEsmService {
         if (relative.endsWith(".ovs")) {
             return relative + ".js";
         }
+        if (relative.endsWith(".cssts")) {
+            return relative + ".js";
+        }
         if (isCssModuleName(relative) || isAssetModuleName(relative)) {
             return relative + ".js";
         }
@@ -1011,6 +1065,7 @@ public final class QinFrontendEsmService {
                 || name.endsWith(".qin")
                 || name.endsWith(".vue")
                 || name.endsWith(".ovs")
+                || name.endsWith(".cssts")
                 || isCssModuleName(name)
                 || isAssetModuleName(name);
     }
@@ -1022,7 +1077,8 @@ public final class QinFrontendEsmService {
                 || name.endsWith(".ts")
                 || name.endsWith(".qin")
                 || name.endsWith(".vue")
-                || name.endsWith(".ovs");
+                || name.endsWith(".ovs")
+                || name.endsWith(".cssts");
     }
 
     private static boolean isVueModuleFile(Path file) {
@@ -1033,6 +1089,11 @@ public final class QinFrontendEsmService {
     private static boolean isOvsModuleFile(Path file) {
         String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
         return name.endsWith(".ovs");
+    }
+
+    private static boolean isCsstsModuleFile(Path file) {
+        String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
+        return name.endsWith(".cssts");
     }
 
     private static boolean isCssModuleFile(Path file) {

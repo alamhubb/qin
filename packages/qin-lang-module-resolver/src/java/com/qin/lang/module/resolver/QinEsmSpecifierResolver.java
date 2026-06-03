@@ -613,7 +613,7 @@ public final class QinEsmSpecifierResolver {
         if (fileName.isBlank() || hasSupportedScriptExtension(fileName)) {
             return null;
         }
-        String[] extensions = {".js", ".qin", ".vue", ".ovs", ".mjs", ".ts", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif"};
+        String[] extensions = {".js", ".qin", ".vue", ".ovs", ".cssts", ".mjs", ".ts", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif"};
         for (String extension : extensions) {
             Path candidate = path.resolveSibling(fileName + extension);
             if (Files.isRegularFile(candidate)) {
@@ -659,6 +659,10 @@ public final class QinEsmSpecifierResolver {
         if (Files.isRegularFile(ovs)) {
             return ovs.toAbsolutePath().normalize();
         }
+        Path cssts = sibling.resolveSibling(baseName + ".cssts");
+        if (Files.isRegularFile(cssts)) {
+            return cssts.toAbsolutePath().normalize();
+        }
         return null;
     }
 
@@ -703,6 +707,7 @@ public final class QinEsmSpecifierResolver {
                 || fileName.endsWith(".qin")
                 || fileName.endsWith(".vue")
                 || fileName.endsWith(".ovs")
+                || fileName.endsWith(".cssts")
                 || fileName.endsWith(".css")
                 || fileName.endsWith(".svg")
                 || fileName.endsWith(".png")

@@ -34,7 +34,7 @@ public final class QinFullstackMain {
     private static final String INDEX_HTML = "index.html";
     private static final String INDEX = "index";
     private static final List<String> DEV_WATCH_EXTENSIONS = List.of(
-            ".html", ".css", ".js", ".mjs", ".ts", ".qin", ".vue", ".ovs", ".java");
+            ".html", ".css", ".cssts", ".js", ".mjs", ".ts", ".qin", ".vue", ".ovs", ".java");
     private static final Pattern JAVA_PACKAGE_PATTERN = Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s*;");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
             ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
@@ -329,7 +329,8 @@ public final class QinFullstackMain {
                 || fileName.endsWith(".ts")
                 || fileName.endsWith(".qin")
                 || fileName.endsWith(".vue")
-                || fileName.endsWith(".ovs");
+                || fileName.endsWith(".ovs")
+                || fileName.endsWith(".cssts");
     }
 
     private static Path resolveStaticRoot(QinRuntimeProjectLayout layout, Path root, Path fromArgs) throws IOException {
@@ -540,7 +541,7 @@ public final class QinFullstackMain {
         System.out.println("  --class-out <dir>        Backend class output (default: build/fullstack/server-classes)");
         System.out.println("  --static-dir <dir>       Static root (default: app/ or build/fullstack/web)");
         System.out.println("  --backend-file <file>    Backend .qin/.js/.mjs/.ts/.java source override");
-        System.out.println("  --frontend-file <file>   Frontend .js/.ts/.qin/.vue/.ovs source override");
+        System.out.println("  --frontend-file <file>   Frontend .js/.ts/.qin/.vue/.ovs/.cssts source override");
         System.out.println("  --print-ir               Print IR summaries while building");
         System.out.println("  --build-only             Build outputs only");
         System.out.println("  --help                   Show help");
