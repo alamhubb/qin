@@ -1943,10 +1943,6 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 return new QinIrNumberLiteral(number.doubleValue());
             }
             if (value instanceof String text) {
-                ParsedRegexLiteral regexLiteral = parseRegexLiteral(text);
-                if (regexLiteral != null) {
-                    return createRegexLiteralExpression(regexLiteral);
-                }
                 return new QinIrStringLiteral(normalizeStringLiteral(text));
             }
             if (value instanceof Boolean boolValue) {
@@ -3320,10 +3316,6 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 return new QinIrNumberLiteral(number.doubleValue());
             }
             if (value instanceof String text) {
-                ParsedRegexLiteral regexLiteral = parseRegexLiteral(text);
-                if (regexLiteral != null) {
-                    return createRegexLiteralExpression(regexLiteral);
-                }
                 return new QinIrStringLiteral(normalizeStringLiteral(text));
             }
             if (value instanceof Boolean boolValue) {
@@ -3366,10 +3358,6 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             return new QinIrNumberLiteral(number.doubleValue());
         }
         if (value instanceof String text) {
-            ParsedRegexLiteral regexLiteral = parseRegexLiteral(text);
-            if (regexLiteral != null) {
-                return createRegexLiteralExpression(regexLiteral);
-            }
             return new QinIrStringLiteral(normalizeStringLiteral(text));
         }
         if (value instanceof Boolean boolValue) {
@@ -3379,6 +3367,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
     }
 
     private QinIrExpression lowerRegexLiteralOrNull(Object literal) {
+        Object regex = invokeByName(literal, "regex");
+        if (regex == null) {
+            return null;
+        }
         Object raw = invokeByName(literal, "raw");
         if (raw instanceof String rawText) {
             ParsedRegexLiteral regexLiteral = parseRegexLiteral(rawText);
@@ -5276,7 +5268,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 String raw = asString(readProperty(value, "raw"));
                 Object literalValue = readProperty(value, "value");
                 fields.put("type", "Literal");
-                if (looksLikeRegexLiteral(raw) && (literalValue == null || literalValue instanceof String)) {
+                if (looksLikeRegexLiteral(raw) && literalValue == null) {
                     fields.put("value", new LinkedHashMap<String, Object>());
                     fields.put("raw", raw);
                     fields.put("regex", parseRegexLiteral(raw));
@@ -6431,7 +6423,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             if (literalValue == null) {
                 return createLocation("NullLiteral", "null", start, end);
             }
-            if (raw != null && raw.startsWith("/") && raw.lastIndexOf('/') > 0) {
+            if (literalValue == null && raw != null && raw.startsWith("/") && raw.lastIndexOf('/') > 0) {
                 return createLocation("RegularExpressionLiteral", raw, start, end);
             }
             if (literalValue instanceof String) {
