@@ -14,6 +14,7 @@ import com.slime.java.ast.JavaAstForStatement;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstIfStatement;
 import com.slime.java.ast.JavaAstImportDeclaration;
+import com.slime.java.ast.JavaAstLambdaExpression;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodCallExpression;
@@ -251,6 +252,34 @@ public final class QinJavaSemanticAnalyzer {
         }
         if (expression instanceof JavaAstStringLiteral) {
             return QinIrTypeRef.stringType();
+        }
+        if (expression instanceof JavaAstLambdaExpression lambdaExpression) {
+            if (!lambdaExpression.parameterNames().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Java lambda parameters are not supported by Qin semantic analysis yet: "
+                                + lambdaExpression.parameterNames());
+            }
+            if (lambdaExpression.bodyExpression() != null) {
+                expressionType(
+                        lambdaExpression.bodyExpression(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+            }
+            for (JavaAstStatement statement : lambdaExpression.bodyStatements()) {
+                analyzeStatements(
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName,
+                        List.of(statement));
+            }
+            return QinIrTypeRef.classType(Object.class.getName());
         }
         if (expression instanceof JavaAstNewExpression newExpression) {
             for (JavaAstExpression argument : newExpression.arguments()) {

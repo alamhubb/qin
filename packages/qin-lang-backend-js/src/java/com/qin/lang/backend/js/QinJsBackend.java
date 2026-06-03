@@ -14,6 +14,7 @@ import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrForExpression;
+import com.qin.lang.ir.QinIrFunctionLiteral;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
@@ -154,6 +155,10 @@ public final class QinJsBackend {
             emitJavaRuntimeAliasesForExpression(js, ifExpression.test(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.consequent(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.alternate(), javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrFunctionLiteral functionLiteral) {
+            emitJavaRuntimeAliasesForExpression(js, functionLiteral.returnExpression(), javaAliases);
             return;
         }
         if (expression instanceof QinIrForExpression forExpression) {
@@ -1055,6 +1060,14 @@ public final class QinJsBackend {
         }
         if (expression instanceof QinIrIdentifierReference identifierReference) {
             js.append(identifierReference.name());
+            return;
+        }
+        if (expression instanceof QinIrFunctionLiteral functionLiteral) {
+            js.append("() => {\n");
+            js.append("      return ");
+            emitExpression(js, functionLiteral.returnExpression());
+            js.append(";\n");
+            js.append("    }");
             return;
         }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {

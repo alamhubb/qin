@@ -10,6 +10,7 @@ import com.qin.lang.ir.QinIrDoWhileExpression;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrForExpression;
+import com.qin.lang.ir.QinIrFunctionLiteral;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
@@ -38,6 +39,7 @@ import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstForStatement;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstIfStatement;
+import com.slime.java.ast.JavaAstLambdaExpression;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodCallExpression;
@@ -613,6 +615,22 @@ public final class QinJavaAstIrLowerer {
         }
         if (expression instanceof JavaAstThisExpression) {
             return new QinIrThisExpression();
+        }
+        if (expression instanceof JavaAstLambdaExpression lambdaExpression) {
+            if (!lambdaExpression.parameterNames().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Java lambda parameters are not supported by Qin IR yet: "
+                                + lambdaExpression.parameterNames());
+            }
+            if (lambdaExpression.bodyExpression() == null) {
+                throw new IllegalArgumentException("Java block lambdas are not supported by Qin IR yet");
+            }
+            return new QinIrFunctionLiteral(lowerExpression(
+                    lambdaExpression.bodyExpression(),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    valueNames));
         }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             return new QinIrPropertyAccessExpression(
