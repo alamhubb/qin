@@ -17,8 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +34,9 @@ public final class QinFrontendEsmService {
             "(?m)(import\\s*[\"'])([^\"']+)([\"'])");
     private static final Pattern EXPORT_FROM_PATTERN = Pattern.compile(
             "(?m)(export\\s+(?:\\*\\s*(?:as\\s+[A-Za-z_$][\\w$]*\\s*)?|\\{[^}\\n]*})\\s*from\\s*[\"'])([^\"']+)([\"'])");
+    private static final String CSSTS_STYLE_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts.css.js";
+    private static final String CSSTS_ATOM_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/csstsAtom.js";
+    private static final String CSSTS_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts-runtime.js";
 
     private final Path projectRoot;
     private final Path entryFile;
@@ -45,6 +50,8 @@ public final class QinFrontendEsmService {
     private final QinVueSfcCompiler vueSfcCompiler;
     private final QinOvsCompiler ovsCompiler;
     private final QinCsstsCompiler csstsCompiler;
+    private final Map<Path, String> csstsCssByModule = new LinkedHashMap<>();
+    private final Map<Path, String> csstsAtomByModule = new LinkedHashMap<>();
 
     private QinFrontendEsmService(
             Path projectRoot,
@@ -99,7 +106,7 @@ public final class QinFrontendEsmService {
         QinVueSfcCompiler vueCompiler = QinViteVuePluginCompiler.isEnabled(root)
                 ? new QinViteVuePluginCompiler()
                 : new QinOfficialVueSfcCompiler();
-        return new QinFrontendEsmService(
+        QinFrontendEsmService service = new QinFrontendEsmService(
                 root,
                 entry,
                 graph,
@@ -111,6 +118,8 @@ public final class QinFrontendEsmService {
                 vueCompiler,
                 new QinOvsCompiler(),
                 new QinCsstsCompiler());
+        service.prewarmCsstsGraphModules();
+        return service;
     }
 
     public String bootstrapJs() {
@@ -236,6 +245,22 @@ public final class QinFrontendEsmService {
         }
         transpiledModuleCache.put(normalizedModuleFile, transpiled);
         return transpiled;
+    }
+
+    private void prewarmCsstsGraphModules() throws IOException {
+        for (QinModuleSource module : graph.modules()) {
+            Path file = module.file().toAbsolutePath().normalize();
+            if (!isFrontendModuleFile(file)) {
+                continue;
+            }
+            String source = module.source();
+            if (isCsstsModuleFile(file)
+                    || isOvsModuleFile(file)
+                    || (isVueModuleFile(file) && requiresQinNativeVueCompiler(source))) {
+                transpileModule(file);
+            }
+        }
+        refreshCsstsGlobalVirtualModules();
     }
 
     private String transpileVueModule(Path moduleFile, String source) {
@@ -467,13 +492,13 @@ public final class QinFrontendEsmService {
             throw new IllegalArgumentException("QIN1001 frontend cannot import java modules: " + specifier);
         }
         if ("virtual:cssts.css".equals(specifier)) {
-            return toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-vue-cssts=style";
+            return CSSTS_STYLE_VIRTUAL_MODULE_URL;
         }
         if ("virtual:csstsAtom".equals(specifier)) {
-            return toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-vue-cssts=atom";
+            return CSSTS_ATOM_VIRTUAL_MODULE_URL;
         }
         if ("cssts-ts".equals(specifier)) {
-            return toModuleUrl(projectRoot, module.file().toAbsolutePath().normalize()) + "?qin-vue-cssts=runtime";
+            return CSSTS_RUNTIME_VIRTUAL_MODULE_URL;
         }
         if ("\0plugin-vue:export-helper".equals(specifier)
                 || "plugin-vue:export-helper".equals(specifier)
@@ -550,6 +575,11 @@ public final class QinFrontendEsmService {
         if (requestPath == null) {
             return null;
         }
+        if (CSSTS_STYLE_VIRTUAL_MODULE_URL.equals(requestPath)
+                || CSSTS_ATOM_VIRTUAL_MODULE_URL.equals(requestPath)
+                || CSSTS_RUNTIME_VIRTUAL_MODULE_URL.equals(requestPath)) {
+            refreshCsstsGlobalVirtualModules();
+        }
         return virtualModuleContentMap.get(requestPath);
     }
 
@@ -617,6 +647,7 @@ public final class QinFrontendEsmService {
             virtualModuleContentMap.put(atomRequestPath, atom);
         }
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
+        registerCsstsGlobalVirtualModules(moduleFile, css, atom);
     }
 
     private void registerOvsVirtualModules(Path moduleFile, QinOvsCompiler.QinOvsCompileResult result) {
@@ -636,6 +667,7 @@ public final class QinFrontendEsmService {
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
         virtualModuleContentMap.put(ovsRuntimeRequestPath, readOvsRuntimeModule(vueRuntimeRequestPath));
         virtualModuleContentMap.put(vueRuntimeRequestPath, readVueBrowserRuntimeModule());
+        registerCsstsGlobalVirtualModules(moduleFile, result.css(), result.atomModule());
     }
 
     private void registerCsstsVirtualModules(Path moduleFile, QinCsstsCompiler.QinCsstsCompileResult result) {
@@ -650,6 +682,99 @@ public final class QinFrontendEsmService {
             virtualModuleContentMap.put(atomRequestPath, result.atomModule());
         }
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
+        registerCsstsGlobalVirtualModules(moduleFile, result.css(), result.atomModule());
+    }
+
+    private void registerCsstsGlobalVirtualModules(Path moduleFile, String css, String atomModule) {
+        Path key = moduleFile.toAbsolutePath().normalize();
+        if (css != null && !css.isBlank()) {
+            csstsCssByModule.put(key, css);
+        } else {
+            csstsCssByModule.remove(key);
+        }
+        if (atomModule != null && !atomModule.isBlank()) {
+            csstsAtomByModule.put(key, atomModule);
+        } else {
+            csstsAtomByModule.remove(key);
+        }
+        refreshCsstsGlobalVirtualModules();
+    }
+
+    private void refreshCsstsGlobalVirtualModules() {
+        virtualModuleContentMap.put(CSSTS_STYLE_VIRTUAL_MODULE_URL, renderCssInjectionModule(mergeCsstsCss()));
+        virtualModuleContentMap.put(CSSTS_ATOM_VIRTUAL_MODULE_URL, mergeCsstsAtomModules());
+        virtualModuleContentMap.put(CSSTS_RUNTIME_VIRTUAL_MODULE_URL, readCsstsRuntimeModule());
+    }
+
+    private String mergeCsstsCss() {
+        Set<String> cssBlocks = new LinkedHashSet<>();
+        for (String css : csstsCssByModule.values()) {
+            if (css != null && !css.isBlank()) {
+                cssBlocks.add(css.trim());
+            }
+        }
+        return String.join(System.lineSeparator() + System.lineSeparator(), cssBlocks);
+    }
+
+    private String mergeCsstsAtomModules() {
+        Map<String, String> entriesByName = new LinkedHashMap<>();
+        for (String atomModule : csstsAtomByModule.values()) {
+            for (String entry : extractCsstsAtomEntries(atomModule)) {
+                int colon = entry.indexOf(':');
+                if (colon <= 0) {
+                    continue;
+                }
+                String name = entry.substring(0, colon).trim();
+                if (!name.isBlank()) {
+                    entriesByName.put(name, entry);
+                }
+            }
+        }
+
+        StringBuilder module = new StringBuilder();
+        module.append("// Auto-generated by Qin from virtual:csstsAtom").append(System.lineSeparator());
+        module.append("export const csstsAtom = {").append(System.lineSeparator());
+        int index = 0;
+        for (String entry : entriesByName.values()) {
+            module.append("  ").append(entry);
+            if (++index < entriesByName.size()) {
+                module.append(',');
+            }
+            module.append(System.lineSeparator());
+        }
+        module.append("}").append(System.lineSeparator());
+        module.append("export default csstsAtom").append(System.lineSeparator());
+        return module.toString();
+    }
+
+    private List<String> extractCsstsAtomEntries(String atomModule) {
+        if (atomModule == null || atomModule.isBlank()) {
+            return List.of();
+        }
+        List<String> entries = new ArrayList<>();
+        boolean inside = false;
+        for (String line : atomModule.split("\\R")) {
+            String trimmed = line.trim();
+            if (!inside) {
+                if (trimmed.startsWith("export const csstsAtom") && trimmed.contains("{")) {
+                    inside = true;
+                }
+                continue;
+            }
+            if (trimmed.equals("}") || trimmed.equals("};")) {
+                break;
+            }
+            if (trimmed.isBlank()) {
+                continue;
+            }
+            if (trimmed.endsWith(",")) {
+                trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
+            }
+            if (!trimmed.isBlank()) {
+                entries.add(trimmed);
+            }
+        }
+        return entries;
     }
 
     private String mountOvsModule(Path moduleFile, String source) {

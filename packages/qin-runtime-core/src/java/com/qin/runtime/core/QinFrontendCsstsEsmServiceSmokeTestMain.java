@@ -39,25 +39,30 @@ public final class QinFrontendCsstsEsmServiceSmokeTestMain {
 
         String csstsModule = service.transpileByRequestPath("/@qin-mod/app/theme.cssts.js");
         if (csstsModule == null
-                || !csstsModule.contains("qin-vue-cssts=style")
-                || !csstsModule.contains("qin-vue-cssts=atom")
-                || !csstsModule.contains("qin-vue-cssts=runtime")) {
+                || !csstsModule.contains("/@qin-mod/__virtual/cssts.css.js")
+                || !csstsModule.contains("/@qin-mod/__virtual/csstsAtom.js")
+                || !csstsModule.contains("/@qin-mod/__virtual/cssts-runtime.js")) {
             throw new IllegalStateException("CSSTS module missing virtual module wiring:\n" + csstsModule);
         }
 
-        String cssModule = service.transpileByRequestPath("/@qin-mod/app/theme.cssts.js?qin-vue-cssts=style");
+        String cssModule = service.transpileByRequestPath("/@qin-mod/__virtual/cssts.css.js");
         if (cssModule == null || !cssModule.contains("data-qin-cssts") || !cssModule.contains("display")) {
             throw new IllegalStateException("CSSTS CSS virtual module missing generated CSS:\n" + cssModule);
         }
 
-        String atomModule = service.transpileByRequestPath("/@qin-mod/app/theme.cssts.js?qin-vue-cssts=atom");
+        String atomModule = service.transpileByRequestPath("/@qin-mod/__virtual/csstsAtom.js");
         if (atomModule == null || !atomModule.contains("displayFlex")) {
             throw new IllegalStateException("CSSTS atom virtual module missing displayFlex:\n" + atomModule);
         }
 
-        String runtimeModule = service.transpileByRequestPath("/@qin-mod/app/theme.cssts.js?qin-vue-cssts=runtime");
+        String runtimeModule = service.transpileByRequestPath("/@qin-mod/__virtual/cssts-runtime.js");
         if (runtimeModule == null || !runtimeModule.contains("export")) {
             throw new IllegalStateException("CSSTS runtime virtual module missing exports:\n" + runtimeModule);
+        }
+
+        String legacyCssModule = service.transpileByRequestPath("/@qin-mod/app/theme.cssts.js?qin-vue-cssts=style");
+        if (legacyCssModule == null || !legacyCssModule.contains("data-qin-cssts")) {
+            throw new IllegalStateException("Legacy CSSTS CSS query module should remain supported:\n" + legacyCssModule);
         }
 
         System.out.println("QinFrontendCsstsEsmServiceSmokeTestMain passed.");

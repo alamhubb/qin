@@ -26,18 +26,19 @@ public final class QinFullstackVueCsstsFrontendSmokeTestMain {
                             + module.length()
                             + " chars. This usually means compiler internals leaked into descriptor JSON.");
         }
-        if (!module.contains("qin-vue-cssts=style") || !module.contains("qin-vue-cssts=atom")) {
+        if (!module.contains("/@qin-mod/__virtual/cssts.css.js")
+                || !module.contains("/@qin-mod/__virtual/csstsAtom.js")) {
             throw new IllegalStateException("Vue module did not reference cssts virtual modules:\n" + module);
         }
-        if (!module.contains("qin-vue-cssts=runtime") || module.contains("from \"cssts-ts\"")) {
+        if (!module.contains("/@qin-mod/__virtual/cssts-runtime.js") || module.contains("from \"cssts-ts\"")) {
             throw new IllegalStateException("Vue module did not rewrite cssts-ts runtime import:\n" + module);
         }
 
-        String cssModule = service.transpileByRequestPath("/@qin-mod/app/main.vue.js?qin-vue-cssts=style");
+        String cssModule = service.transpileByRequestPath("/@qin-mod/__virtual/cssts.css.js");
         if (cssModule == null || !cssModule.contains("data-qin-cssts") || !cssModule.contains("background-color")) {
             throw new IllegalStateException("Cssts CSS virtual module did not expose injectable CSS:\n" + cssModule);
         }
-        String runtimeModule = service.transpileByRequestPath("/@qin-mod/app/main.vue.js?qin-vue-cssts=runtime");
+        String runtimeModule = service.transpileByRequestPath("/@qin-mod/__virtual/cssts-runtime.js");
         if (runtimeModule == null || !runtimeModule.contains("export") || !runtimeModule.contains("merge")) {
             throw new IllegalStateException("Cssts runtime virtual module did not expose cssts-ts runtime:\n" + runtimeModule);
         }

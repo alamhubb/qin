@@ -498,7 +498,7 @@ final class QinDevServer {
                   }
                   try {
                     const module = await import(withQinHmr(entryModuleUrl, nextVersion));
-                    await importIfAvailable(withQinHmr(entryModuleUrl + '?qin-vue-cssts=style', nextVersion));
+                    await importIfAvailable(withQinHmr('/@qin-mod/__virtual/cssts.css.js', nextVersion));
                     const callback = hotCallbacks.get(stripQinHmr(entryModuleUrl));
                     if (typeof callback === 'function') {
                       callback(module);
