@@ -22,7 +22,6 @@ import com.slime.ast.nodes.modules.ExportAllDeclaration;
 import com.slime.ast.nodes.modules.ExportNamedDeclaration;
 import com.slime.ast.nodes.modules.ImportDeclaration;
 import com.slime.ast.nodes.statements.ExpressionStatement;
-import com.slime.ast.nodes.statements.IfStatement;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -203,9 +202,6 @@ final class QinTopLevelIrAssembler {
                             QinIrProgram.TopLevelStatementKind.JAVA_INSTANCE_CONSOLE,
                             assembly.javaInstanceConsoleLogs().size() - 1));
                 }
-                continue;
-            }
-            if (statement instanceof IfStatement) {
                 continue;
             }
             if (legacyLowerer.isTopLevelControlStatement(nodeType)) {

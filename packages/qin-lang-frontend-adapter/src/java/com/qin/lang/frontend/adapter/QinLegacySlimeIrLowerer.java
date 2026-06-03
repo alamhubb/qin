@@ -126,7 +126,8 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
     }
 
     boolean isTopLevelControlStatement(String nodeType) {
-        return "ForStatement".equals(nodeType)
+        return "IfStatement".equals(nodeType)
+                || "ForStatement".equals(nodeType)
                 || "ForOfStatement".equals(nodeType)
                 || "WhileStatement".equals(nodeType)
                 || "DoWhileStatement".equals(nodeType)
