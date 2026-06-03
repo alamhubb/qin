@@ -1,6 +1,7 @@
 package com.qin.lang.backend.js;
 
 import com.qin.lang.ir.QinIrAssignmentExpression;
+import com.qin.lang.ir.QinIrAnnotation;
 import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrBooleanLiteral;
@@ -74,6 +75,7 @@ public final class QinJsBackend {
         emitJavaAliases(js, program.javaImports(), javaAliases);
         emitJavaRuntimeAliasesForProgram(js, program, javaAliases);
         emitBuiltinRuntimeHelpers(js, program);
+        emitSubhutiRuleRuntimeHelpers(js, program);
         emitJsImports(js, program.jsImports());
         emitClassDeclarations(js, program.classDeclarations());
 
@@ -421,7 +423,8 @@ public final class QinJsBackend {
                 emitJavaUtilHashSetRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHashSet");
             }
-            case "java.util.HashMap", "java.util.LinkedHashMap" -> {
+            case "java.util.HashMap", "java.util.LinkedHashMap",
+                    "java.util.concurrent.ConcurrentHashMap", "java.util.concurrent.ConcurrentMap" -> {
                 emitJavaUtilHashMapRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHashMap");
             }
@@ -436,6 +439,18 @@ public final class QinJsBackend {
             case "java.util.regex.Matcher" -> {
                 emitJavaUtilRegexRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilRegexMatcher");
+            }
+            case "java.util.concurrent.atomic.AtomicLong" -> {
+                emitJavaUtilConcurrentAtomicLongRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilConcurrentAtomicLong");
+            }
+            case "org.slf4j.LoggerFactory" -> {
+                emitSlf4jRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinSlf4jLoggerFactory");
+            }
+            case "org.slf4j.Logger" -> {
+                emitSlf4jRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinSlf4jLogger");
             }
             default -> {
                 Class<?> ownerClass = loadJavaOwner(ownerBinaryName);
@@ -587,6 +602,24 @@ public final class QinJsBackend {
                       return "" + value;
                     });
                   }
+                };
+                """);
+    }
+
+    private void emitSlf4jRuntime(StringBuilder js) {
+        if (js.indexOf("const __QinSlf4jLoggerFactory") >= 0) {
+            return;
+        }
+        js.append("""
+                const __QinSlf4jLogger = {
+                  warn(_message, ..._args) { return null; },
+                  info(_message, ..._args) { return null; },
+                  debug(_message, ..._args) { return null; },
+                  error(_message, ..._args) { return null; },
+                  trace(_message, ..._args) { return null; }
+                };
+                const __QinSlf4jLoggerFactory = {
+                  getLogger(_owner) { return __QinSlf4jLogger; }
                 };
                 """);
     }
@@ -1388,6 +1421,50 @@ public final class QinJsBackend {
                 """);
     }
 
+    private void emitJavaUtilConcurrentAtomicLongRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinJavaUtilConcurrentAtomicLong") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaUtilConcurrentAtomicLong {
+                  constructor(initialValue = 0) {
+                    this.__value = Number(initialValue);
+                  }
+                  get() {
+                    return this.__value;
+                  }
+                  set(value) {
+                    this.__value = Number(value);
+                  }
+                  incrementAndGet() {
+                    this.__value += 1;
+                    return this.__value;
+                  }
+                  getAndIncrement() {
+                    const previous = this.__value;
+                    this.__value += 1;
+                    return previous;
+                  }
+                  addAndGet(delta) {
+                    this.__value += Number(delta);
+                    return this.__value;
+                  }
+                  getAndAdd(delta) {
+                    const previous = this.__value;
+                    this.__value += Number(delta);
+                    return previous;
+                  }
+                  compareAndSet(expectedValue, newValue) {
+                    if (this.__value !== Number(expectedValue)) {
+                      return false;
+                    }
+                    this.__value = Number(newValue);
+                    return true;
+                  }
+                }
+                """);
+    }
+
     private void emitJavaUtilRegexRuntime(StringBuilder js) {
         if (js.indexOf("class __QinJavaUtilRegexPattern") >= 0) {
             return;
@@ -1662,6 +1739,48 @@ public final class QinJsBackend {
                     }
                     """);
         }
+    }
+
+    private void emitSubhutiRuleRuntimeHelpers(StringBuilder js, QinIrProgram program) {
+        if (!usesSubhutiRuleMethod(program)) {
+            return;
+        }
+        js.append("""
+                let __qin_subhuti_next_rule_cache_id = 1;
+                function __qin_subhuti_rule_cache_key(args) {
+                  if (args == null || args.length === 0) return "";
+                  const format = (value) => {
+                    if (value == null) return "null";
+                    const type = typeof value;
+                    if (type === "string") return value;
+                    if (type === "number" || type === "boolean" || type === "bigint") return "" + value;
+                    if (Array.isArray(value)) return "[" + value.map(format).join(", ") + "]";
+                    if (type === "object" || type === "function") {
+                      if (value.__qinSubhutiRuleCacheId == null) {
+                        value.__qinSubhutiRuleCacheId = __qin_subhuti_next_rule_cache_id++;
+                      }
+                      return type + "#" + value.__qinSubhutiRuleCacheId;
+                    }
+                    return "" + value;
+                  };
+                  const parts = [];
+                  for (let i = 0; i < args.length; i++) {
+                    parts.push(format(args[i]));
+                  }
+                  return "[" + parts.join(", ") + "]";
+                }
+                """);
+    }
+
+    private boolean usesSubhutiRuleMethod(QinIrProgram program) {
+        for (QinIrClassDeclaration classDeclaration : program.classDeclarations()) {
+            for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+                if (isSubhutiRuleMethod(method)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean usesBuiltin(QinIrProgram program, String methodName) {
@@ -1945,12 +2064,7 @@ public final class QinJsBackend {
             js.append(" {\n");
             QinIrMethodDeclaration explicitConstructor = explicitConstructor(classDeclaration);
             emitClassConstructor(js, classDeclaration, explicitConstructor);
-            for (QinIrMethodDeclaration method : classDeclaration.methods()) {
-                if ("constructor".equals(method.name())) {
-                    continue;
-                }
-                emitMethodDeclaration(js, method);
-            }
+            emitClassMethods(js, classDeclaration);
             js.append("}\n");
         }
         emitJavaEnumStaticValues(js, classDeclarations);
@@ -2069,6 +2183,11 @@ public final class QinJsBackend {
             }
             js.append(";\n");
         }
+        if (explicitConstructor != null && explicitConstructor.returnExpression() != null) {
+            js.append("    ");
+            emitExpression(js, explicitConstructor.returnExpression());
+            js.append(";\n");
+        }
         js.append("  }\n");
         bindingAliases = previousAliases;
     }
@@ -2093,10 +2212,65 @@ public final class QinJsBackend {
         return ownerBinaryName != null && generatedClassBinaryNames.contains(ownerBinaryName);
     }
 
-    private void emitMethodDeclaration(StringBuilder js, QinIrMethodDeclaration method) {
+    private void emitClassMethods(StringBuilder js, QinIrClassDeclaration classDeclaration) {
+        Map<String, List<QinIrMethodDeclaration>> methodsByName = new LinkedHashMap<>();
+        for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+            if ("constructor".equals(method.name())) {
+                continue;
+            }
+            methodsByName.computeIfAbsent(method.name(), ignored -> new java.util.ArrayList<>()).add(method);
+        }
+        for (List<QinIrMethodDeclaration> overloads : methodsByName.values()) {
+            if (overloads.size() == 1) {
+                emitMethodDeclaration(js, classDeclaration.simpleName(), overloads.get(0), overloads.get(0).name());
+                continue;
+            }
+            emitOverloadedMethodDispatcher(js, overloads.get(0).name(), overloads);
+            for (QinIrMethodDeclaration overload : overloads) {
+                emitMethodDeclaration(
+                        js,
+                        classDeclaration.simpleName(),
+                        overload,
+                        overloadedMethodImplementationName(overload.name(), overload.parameters().size()));
+            }
+        }
+    }
+
+    private void emitOverloadedMethodDispatcher(
+            StringBuilder js,
+            String methodName,
+            List<QinIrMethodDeclaration> overloads) {
+        js.append("  ").append(methodName).append("(...__qin_args) {\n");
+        js.append("    switch (__qin_args.length) {\n");
+        Set<Integer> emittedArities = new LinkedHashSet<>();
+        for (QinIrMethodDeclaration overload : overloads) {
+            int arity = overload.parameters().size();
+            if (!emittedArities.add(arity)) {
+                continue;
+            }
+            js.append("      case ").append(arity).append(": return this.")
+                    .append(overloadedMethodImplementationName(methodName, arity))
+                    .append("(...__qin_args);\n");
+        }
+        js.append("      default: throw new Error(\"Unsupported Java overload arity: ")
+                .append(escapeJs(methodName))
+                .append("/\" + __qin_args.length);\n");
+        js.append("    }\n");
+        js.append("  }\n");
+    }
+
+    private String overloadedMethodImplementationName(String methodName, int arity) {
+        return "__qin_overload_" + methodName + "_" + arity;
+    }
+
+    private void emitMethodDeclaration(
+            StringBuilder js,
+            String className,
+            QinIrMethodDeclaration method,
+            String jsMethodName) {
         Map<String, String> previousAliases = bindingAliases;
         bindingAliases = new LinkedHashMap<>(previousAliases);
-        js.append("  ").append(method.name()).append("(");
+        js.append("  ").append(jsMethodName).append("(");
         List<QinIrParameter> parameters = method.parameters();
         for (int i = 0; i < parameters.size(); i++) {
             js.append(declareBindingName(parameters.get(i).name()));
@@ -2105,15 +2279,44 @@ public final class QinJsBackend {
             }
         }
         js.append(") {\n");
-        js.append("    return ");
-        if (method.returnExpression() == null) {
-            js.append("null");
+        if (isSubhutiRuleMethod(method)) {
+            js.append("    return this.executeRuleWrapper(() => {\n");
+            js.append("      return ");
+            if (method.returnExpression() == null) {
+                js.append("null");
+            } else {
+                emitExpression(js, method.returnExpression());
+            }
+            js.append(";\n");
+            js.append("    }, \"")
+                    .append(escapeJs(subhutiRuleName(method)))
+                    .append("\", \"")
+                    .append(escapeJs(className))
+                    .append("\", __qin_subhuti_rule_cache_key(arguments));\n");
         } else {
-            emitExpression(js, method.returnExpression());
+            js.append("    return ");
+            if (method.returnExpression() == null) {
+                js.append("null");
+            } else {
+                emitExpression(js, method.returnExpression());
+            }
+            js.append(";\n");
         }
-        js.append(";\n");
         js.append("  }\n");
         bindingAliases = previousAliases;
+    }
+
+    private boolean isSubhutiRuleMethod(QinIrMethodDeclaration method) {
+        for (QinIrAnnotation annotation : method.annotations()) {
+            if ("com.subhuti.parser.SubhutiRule".equals(annotation.ownerBinaryName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String subhutiRuleName(QinIrMethodDeclaration method) {
+        return method.name();
     }
 
     private void emitConsoleLogs(
@@ -2694,6 +2897,8 @@ public final class QinJsBackend {
                 || "java.util.LinkedHashSet".equals(ownerBinaryName)
                 || "java.util.HashMap".equals(ownerBinaryName)
                 || "java.util.LinkedHashMap".equals(ownerBinaryName)
+                || "java.util.concurrent.ConcurrentHashMap".equals(ownerBinaryName)
+                || "java.util.concurrent.ConcurrentMap".equals(ownerBinaryName)
                 || "java.util.Objects".equals(ownerBinaryName)
                 || "java.lang.String".equals(ownerBinaryName)
                 || "java.lang.StringBuilder".equals(ownerBinaryName)
@@ -2708,7 +2913,10 @@ public final class QinJsBackend {
                 || "java.time.LocalDateTime".equals(ownerBinaryName)
                 || "java.time.format.DateTimeFormatter".equals(ownerBinaryName)
                 || "java.util.regex.Pattern".equals(ownerBinaryName)
-                || "java.util.regex.Matcher".equals(ownerBinaryName)) {
+                || "java.util.regex.Matcher".equals(ownerBinaryName)
+                || "java.util.concurrent.atomic.AtomicLong".equals(ownerBinaryName)
+                || "org.slf4j.LoggerFactory".equals(ownerBinaryName)
+                || "org.slf4j.Logger".equals(ownerBinaryName)) {
             return;
         }
         if (loadJavaOwner(ownerBinaryName).isRecord()) {
@@ -2743,10 +2951,15 @@ public final class QinJsBackend {
             case "java.util.Collections" -> "__QinJavaUtilCollections";
             case "java.util.ArrayList" -> "__QinJavaUtilArrayList";
             case "java.util.HashSet", "java.util.LinkedHashSet" -> "__QinJavaUtilHashSet";
-            case "java.util.HashMap", "java.util.LinkedHashMap" -> "__QinJavaUtilHashMap";
+            case "java.util.HashMap", "java.util.LinkedHashMap",
+                    "java.util.concurrent.ConcurrentHashMap", "java.util.concurrent.ConcurrentMap" ->
+                    "__QinJavaUtilHashMap";
             case "java.util.Objects" -> "__QinJavaUtilObjects";
             case "java.util.regex.Pattern" -> "__QinJavaUtilRegexPattern";
             case "java.util.regex.Matcher" -> "__QinJavaUtilRegexMatcher";
+            case "java.util.concurrent.atomic.AtomicLong" -> "__QinJavaUtilConcurrentAtomicLong";
+            case "org.slf4j.LoggerFactory" -> "__QinSlf4jLoggerFactory";
+            case "org.slf4j.Logger" -> "__QinSlf4jLogger";
             default -> classLocalName;
         };
     }
