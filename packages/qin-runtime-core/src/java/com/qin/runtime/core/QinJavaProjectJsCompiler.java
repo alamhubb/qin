@@ -71,7 +71,8 @@ public final class QinJavaProjectJsCompiler {
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Could not lower Java source bundle for " + entryBinaryName, e);
         }
-        String generated = new QinJsBackend().compileProgram(bundleProgram);
+        String generated = new QinJsBackend().compileProgram(bundleProgram)
+                + projectExports(bundleProgram);
         Files.createDirectories(outputFile.getParent());
         Files.writeString(outputFile, generated, StandardCharsets.UTF_8);
         return generated;
@@ -79,6 +80,30 @@ public final class QinJavaProjectJsCompiler {
 
     private QinIrProgram lowerBundle(List<JavaAstProgram> programs) {
         return new QinJavaAstIrLowerer().lowerPrograms(programs);
+    }
+
+    private String projectExports(QinIrProgram program) {
+        if (program.classDeclarations().isEmpty()) {
+            return "";
+        }
+        StringBuilder js = new StringBuilder();
+        js.append("\nif (typeof globalThis !== 'undefined') {\n");
+        js.append("  globalThis.__qinJavaProjectExports = globalThis.__qinJavaProjectExports || {};\n");
+        for (var classDeclaration : program.classDeclarations()) {
+            js.append("  globalThis.__qinJavaProjectExports[\"")
+                    .append(escapeJs(classDeclaration.binaryName()))
+                    .append("\"] = ")
+                    .append(classDeclaration.simpleName())
+                    .append(";\n");
+        }
+        js.append("}\n");
+        return js.toString();
+    }
+
+    private String escapeJs(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 
     public Map<String, Path> superclassSourceFiles(List<Path> sourceRoots, String entryBinaryName) {

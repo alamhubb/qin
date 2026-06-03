@@ -39,6 +39,8 @@ public final class QinJavaProjectSlimeParserJsBundleSmokeTestMain {
         require(generated.indexOf("class SlimeJavascriptParserBase")
                         < generated.indexOf("class SlimeParser"),
                 "superclass appears before SlimeParser");
+        require(generated.contains("globalThis.__qinJavaProjectExports[\"com.slime.parser.SlimeParser\"] = SlimeParser;"),
+                "SlimeParser project export");
 
         System.out.println("Generated JS bundle: " + outputFile);
         System.out.println("QinJavaProjectSlimeParserJsBundleSmokeTestMain OK");
