@@ -5,6 +5,7 @@ import com.qin.lang.ir.QinIrTypeRef;
 import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
+import com.slime.java.ast.JavaAstDoWhileStatement;
 import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstExpressionStatement;
 import com.slime.java.ast.JavaAstFieldDeclaration;
@@ -163,6 +164,11 @@ public final class QinJavaSemanticAnalyzer {
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstDoWhileStatement doWhileStatement) {
+                analyzeDoWhileStatement(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        doWhileStatement);
                 continue;
             }
             if (statement instanceof JavaAstForStatement forStatement) {
@@ -341,6 +347,11 @@ public final class QinJavaSemanticAnalyzer {
                         classBinaryName);
                 continue;
             }
+            if (statement instanceof JavaAstDoWhileStatement doWhileStatement) {
+                analyzeDoWhileStatement(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        doWhileStatement);
+                continue;
+            }
             if (statement instanceof JavaAstForStatement forStatement) {
                 analyzeForStatement(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
                         forStatement);
@@ -362,6 +373,20 @@ public final class QinJavaSemanticAnalyzer {
                         whileStatement.bodyStatements());
             }
         }
+    }
+
+    private void analyzeDoWhileStatement(
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName,
+            JavaAstDoWhileStatement doWhileStatement) {
+        analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                doWhileStatement.bodyStatements());
+        expressionType(doWhileStatement.test(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
+                classBinaryName);
     }
 
     private void analyzeForStatement(

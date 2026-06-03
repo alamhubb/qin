@@ -9,6 +9,7 @@ import com.qin.lang.ir.QinIrConsoleLogJavaInstanceCall;
 import com.qin.lang.ir.QinIrConsoleLogJavaStaticCall;
 import com.qin.lang.ir.QinIrConsoleLogStatement;
 import com.qin.lang.ir.QinIrConsoleLogValue;
+import com.qin.lang.ir.QinIrDoWhileExpression;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrFieldDeclaration;
@@ -172,6 +173,16 @@ public final class QinJsBackend {
             for (QinIrExpression bodyExpression : forExpression.bodyExpressions()) {
                 emitJavaRuntimeAliasesForExpression(js, bodyExpression, javaAliases);
             }
+            return;
+        }
+        if (expression instanceof QinIrDoWhileExpression doWhileExpression) {
+            for (QinIrLocalVariableDeclaration declaration : doWhileExpression.localDeclarations()) {
+                emitJavaRuntimeAliasesForExpression(js, declaration.initializer(), javaAliases);
+            }
+            for (QinIrExpression bodyExpression : doWhileExpression.bodyExpressions()) {
+                emitJavaRuntimeAliasesForExpression(js, bodyExpression, javaAliases);
+            }
+            emitJavaRuntimeAliasesForExpression(js, doWhileExpression.test(), javaAliases);
             return;
         }
         if (expression instanceof QinIrWhileExpression whileExpression) {
@@ -611,6 +622,19 @@ public final class QinJsBackend {
             }
             return false;
         }
+        if (expression instanceof QinIrDoWhileExpression doWhileExpression) {
+            for (QinIrLocalVariableDeclaration declaration : doWhileExpression.localDeclarations()) {
+                if (usesBuiltin(declaration.initializer(), methodName)) {
+                    return true;
+                }
+            }
+            for (QinIrExpression bodyExpression : doWhileExpression.bodyExpressions()) {
+                if (usesBuiltin(bodyExpression, methodName)) {
+                    return true;
+                }
+            }
+            return usesBuiltin(doWhileExpression.test(), methodName);
+        }
         if (expression instanceof QinIrWhileExpression whileExpression) {
             if (usesBuiltin(whileExpression.test(), methodName)) {
                 return true;
@@ -973,6 +997,10 @@ public final class QinJsBackend {
             emitForExpression(js, forExpression);
             return;
         }
+        if (expression instanceof QinIrDoWhileExpression doWhileExpression) {
+            emitDoWhileExpression(js, doWhileExpression);
+            return;
+        }
         if (expression instanceof QinIrWhileExpression whileExpression) {
             emitWhileExpression(js, whileExpression);
             return;
@@ -1091,6 +1119,26 @@ public final class QinJsBackend {
             js.append(";\n");
         }
         js.append("      }\n");
+        js.append("      return null;\n");
+        js.append("    })()");
+    }
+
+    private void emitDoWhileExpression(StringBuilder js, QinIrDoWhileExpression doWhileExpression) {
+        js.append("(() => {\n");
+        js.append("      do {\n");
+        for (QinIrLocalVariableDeclaration declaration : doWhileExpression.localDeclarations()) {
+            js.append("        let ").append(declaration.name()).append(" = ");
+            emitExpression(js, declaration.initializer());
+            js.append(";\n");
+        }
+        for (QinIrExpression bodyExpression : doWhileExpression.bodyExpressions()) {
+            js.append("        ");
+            emitExpression(js, bodyExpression);
+            js.append(";\n");
+        }
+        js.append("      } while (");
+        emitExpression(js, doWhileExpression.test());
+        js.append(");\n");
         js.append("      return null;\n");
         js.append("    })()");
     }
