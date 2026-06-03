@@ -329,86 +329,88 @@ public final class QinJsBackend {
         if (isGeneratedClassOwner(ownerBinaryName)) {
             return;
         }
-        if (javaAliases.containsKey(localName)) {
+        String aliasKey = localName + "\u0000" + ownerBinaryName;
+        if (javaAliases.containsKey(aliasKey)) {
             return;
         }
+        String aliasName = isJsIdentifier(localName) ? localName : null;
         switch (ownerBinaryName) {
             case "java.lang.Math" -> {
-                if (!"Math".equals(localName)) {
-                    js.append("const ").append(localName).append(" = Math;\n");
+                if (aliasName != null && !"Math".equals(aliasName)) {
+                    js.append("const ").append(aliasName).append(" = Math;\n");
                 }
             }
             case "java.lang.StringBuilder" -> {
                 emitJavaLangStringBuilderRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaLangStringBuilder;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangStringBuilder");
             }
             case "java.lang.String" -> {
                 emitJavaLangStringRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaLangString;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangString");
             }
             case "java.lang.Integer" -> {
                 emitJavaLangIntegerRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaLangInteger;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangInteger");
             }
             case "java.lang.Double" -> {
                 emitJavaLangDoubleRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaLangDouble;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangDouble");
             }
             case "java.lang.System" -> {
                 emitJavaLangSystemRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaLangSystem;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangSystem");
             }
             case "java.io.File" -> {
                 emitJavaIoFileRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaIoFile;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaIoFile");
             }
             case "java.time.LocalDateTime" -> {
                 emitJavaTimeRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaTimeLocalDateTime;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaTimeLocalDateTime");
             }
             case "java.time.format.DateTimeFormatter" -> {
                 emitJavaTimeRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaTimeFormatDateTimeFormatter;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaTimeFormatDateTimeFormatter");
             }
             case "java.util.List" -> {
                 emitJavaUtilListRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilList;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilList");
             }
             case "java.util.Set" -> {
                 emitJavaUtilSetRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilSet;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilSet");
             }
             case "java.util.Arrays" -> {
                 emitJavaUtilArraysRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilArrays;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilArrays");
             }
             case "java.util.Collections" -> {
                 emitJavaUtilCollectionsRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilCollections;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilCollections");
             }
             case "java.util.ArrayList" -> {
                 emitJavaUtilArrayListRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilArrayList;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilArrayList");
             }
             case "java.util.HashSet", "java.util.LinkedHashSet" -> {
                 emitJavaUtilHashSetRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilHashSet;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHashSet");
             }
             case "java.util.HashMap", "java.util.LinkedHashMap" -> {
                 emitJavaUtilHashMapRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilHashMap;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHashMap");
             }
             case "java.util.Objects" -> {
                 emitJavaUtilObjectsRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilObjects;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilObjects");
             }
             case "java.util.regex.Pattern" -> {
                 emitJavaUtilRegexRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilRegexPattern;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilRegexPattern");
             }
             case "java.util.regex.Matcher" -> {
                 emitJavaUtilRegexRuntime(js);
-                js.append("const ").append(localName).append(" = __QinJavaUtilRegexMatcher;\n");
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilRegexMatcher");
             }
             default -> {
                 Class<?> ownerClass = loadJavaOwner(ownerBinaryName);
@@ -419,7 +421,17 @@ public final class QinJsBackend {
                 emitJavaRecordRuntime(js, localName, ownerClass);
             }
         }
-        javaAliases.put(localName, ownerBinaryName);
+        javaAliases.put(aliasKey, ownerBinaryName);
+    }
+
+    private void emitJavaAliasBinding(StringBuilder js, String aliasName, String runtimeReference) {
+        if (aliasName != null && !aliasName.equals(runtimeReference)) {
+            js.append("const ").append(aliasName).append(" = ").append(runtimeReference).append(";\n");
+        }
+    }
+
+    private boolean isJsIdentifier(String value) {
+        return value != null && value.matches("[A-Za-z_$][A-Za-z0-9_$]*");
     }
 
     private void emitJavaRecordRuntime(StringBuilder js, String localName, Class<?> ownerClass) {
@@ -2171,9 +2183,9 @@ public final class QinJsBackend {
         }
         if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
             ensureSupportedJavaOwner(staticMethodCallExpression.ownerBinaryName());
-            js.append(isGeneratedClassOwner(staticMethodCallExpression.ownerBinaryName())
-                            ? jsClassReference(staticMethodCallExpression.ownerBinaryName())
-                            : staticMethodCallExpression.classLocalName())
+            js.append(javaOwnerReference(
+                            staticMethodCallExpression.ownerBinaryName(),
+                            staticMethodCallExpression.classLocalName()))
                     .append(".")
                     .append(staticMethodCallExpression.methodName())
                     .append("(");
@@ -2184,9 +2196,9 @@ public final class QinJsBackend {
         if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
             ensureSupportedJavaOwner(javaNewExpression.ownerBinaryName());
             js.append("new ")
-                    .append(isGeneratedClassOwner(javaNewExpression.ownerBinaryName())
-                            ? jsClassReference(javaNewExpression.ownerBinaryName())
-                            : javaNewExpression.classLocalName())
+                    .append(javaOwnerReference(
+                            javaNewExpression.ownerBinaryName(),
+                            javaNewExpression.classLocalName()))
                     .append("(");
             emitArguments(js, javaNewExpression.arguments());
             js.append(")");
@@ -2194,9 +2206,9 @@ public final class QinJsBackend {
         }
         if (expression instanceof QinIrJavaMethodReferenceExpression methodReferenceExpression) {
             ensureSupportedJavaOwner(methodReferenceExpression.ownerBinaryName());
-            String ownerReference = isGeneratedClassOwner(methodReferenceExpression.ownerBinaryName())
-                    ? jsClassReference(methodReferenceExpression.ownerBinaryName())
-                    : methodReferenceExpression.classLocalName();
+            String ownerReference = javaOwnerReference(
+                    methodReferenceExpression.ownerBinaryName(),
+                    methodReferenceExpression.classLocalName());
             js.append(ownerReference)
                     .append(".")
                     .append(methodReferenceExpression.methodName())
@@ -2290,9 +2302,7 @@ public final class QinJsBackend {
             StringBuilder js,
             QinIrJavaInstanceofPatternExpression expression) {
         ensureSupportedJavaOwner(expression.ownerBinaryName());
-        String ownerReference = isGeneratedClassOwner(expression.ownerBinaryName())
-                ? jsClassReference(expression.ownerBinaryName())
-                : expression.classLocalName();
+        String ownerReference = javaOwnerReference(expression.ownerBinaryName(), expression.classLocalName());
         js.append("(() => { const __qin_pattern_value = ");
         emitExpression(js, expression.value());
         js.append("; return __qin_pattern_value instanceof ")
@@ -2497,6 +2507,37 @@ public final class QinJsBackend {
             return;
         }
         throw new IllegalArgumentException("JS backend does not support Java interop owner yet: " + ownerBinaryName);
+    }
+
+    private String javaOwnerReference(String ownerBinaryName, String classLocalName) {
+        if (isGeneratedClassOwner(ownerBinaryName)) {
+            return jsClassReference(ownerBinaryName);
+        }
+        if (isJsIdentifier(classLocalName)) {
+            return classLocalName;
+        }
+        return switch (ownerBinaryName) {
+            case "java.lang.Math" -> "Math";
+            case "java.lang.String" -> "__QinJavaLangString";
+            case "java.lang.StringBuilder" -> "__QinJavaLangStringBuilder";
+            case "java.lang.Integer" -> "__QinJavaLangInteger";
+            case "java.lang.Double" -> "__QinJavaLangDouble";
+            case "java.lang.System" -> "__QinJavaLangSystem";
+            case "java.io.File" -> "__QinJavaIoFile";
+            case "java.time.LocalDateTime" -> "__QinJavaTimeLocalDateTime";
+            case "java.time.format.DateTimeFormatter" -> "__QinJavaTimeFormatDateTimeFormatter";
+            case "java.util.List" -> "__QinJavaUtilList";
+            case "java.util.Set" -> "__QinJavaUtilSet";
+            case "java.util.Arrays" -> "__QinJavaUtilArrays";
+            case "java.util.Collections" -> "__QinJavaUtilCollections";
+            case "java.util.ArrayList" -> "__QinJavaUtilArrayList";
+            case "java.util.HashSet", "java.util.LinkedHashSet" -> "__QinJavaUtilHashSet";
+            case "java.util.HashMap", "java.util.LinkedHashMap" -> "__QinJavaUtilHashMap";
+            case "java.util.Objects" -> "__QinJavaUtilObjects";
+            case "java.util.regex.Pattern" -> "__QinJavaUtilRegexPattern";
+            case "java.util.regex.Matcher" -> "__QinJavaUtilRegexMatcher";
+            default -> classLocalName;
+        };
     }
 
     private Class<?> loadJavaOwner(String ownerBinaryName) {
