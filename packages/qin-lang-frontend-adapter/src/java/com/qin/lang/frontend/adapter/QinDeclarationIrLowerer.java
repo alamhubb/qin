@@ -521,10 +521,7 @@ final class QinDeclarationIrLowerer {
         if (useJvmClassValue) {
             return new QinIrConstDeclaration(
                     classDeclaration.id().name(),
-                    new QinIrBuiltinCallExpression(
-                            "Global",
-                            "__qin_global__",
-                            List.of(new QinIrStringLiteral(classDeclaration.id().name()))));
+                    new QinIrIdentifierReference(classDeclaration.id().name()));
         }
         return new QinIrConstDeclaration(
                 classDeclaration.id().name(),
