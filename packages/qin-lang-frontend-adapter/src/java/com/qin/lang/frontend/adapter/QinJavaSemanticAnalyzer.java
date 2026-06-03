@@ -9,6 +9,7 @@ import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstExpressionStatement;
 import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
+import com.slime.java.ast.JavaAstIfStatement;
 import com.slime.java.ast.JavaAstImportDeclaration;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
@@ -159,6 +160,21 @@ public final class QinJavaSemanticAnalyzer {
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstIfStatement ifStatement) {
+                expressionType(
+                        ifStatement.test(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        ifStatement.consequentStatements());
+                analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        ifStatement.alternateStatements());
             }
         }
         if (method.bodyStatements().isEmpty()) {
@@ -264,6 +280,51 @@ public final class QinJavaSemanticAnalyzer {
                     expressionType(binary.right(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName));
         }
         throw new IllegalArgumentException("Unsupported Java expression for semantics: " + expression);
+    }
+
+    private void analyzeStatements(
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> inheritedLocals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName,
+            List<JavaAstStatement> statements) {
+        Map<String, QinIrTypeRef> locals = new LinkedHashMap<>(inheritedLocals);
+        for (JavaAstStatement statement : statements) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrTypeRef localType = localVariable.initializer() == null
+                        ? resolveType(localVariable.typeName(), packageName, importedTypes)
+                        : expressionType(
+                                localVariable.initializer(),
+                                packageName,
+                                importedTypes,
+                                locals,
+                                fieldTypes,
+                                methodReturnTypes,
+                                classBinaryName);
+                locals.put(localVariable.name(), localType);
+                continue;
+            }
+            if (statement instanceof JavaAstReturnStatement returnStatement) {
+                expressionType(returnStatement.expression(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
+                        classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstExpressionStatement expressionStatement) {
+                expressionType(expressionStatement.expression(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
+                        classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstIfStatement ifStatement) {
+                expressionType(ifStatement.test(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
+                        classBinaryName);
+                analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        ifStatement.consequentStatements());
+                analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        ifStatement.alternateStatements());
+            }
+        }
     }
 
     private QinIrTypeRef binaryExpressionType(String operator, QinIrTypeRef left, QinIrTypeRef right) {

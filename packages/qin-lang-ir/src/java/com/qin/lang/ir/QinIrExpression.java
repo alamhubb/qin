@@ -9,6 +9,7 @@ public sealed interface QinIrExpression permits
         QinIrBooleanLiteral,
         QinIrBuiltinCallExpression,
         QinIrFunctionLiteral,
+        QinIrIfExpression,
         QinIrIdentifierReference,
         QinIrInstanceMethodCallExpression,
         QinIrJavaNewExpression,

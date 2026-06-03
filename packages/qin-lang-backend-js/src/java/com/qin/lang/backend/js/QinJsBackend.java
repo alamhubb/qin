@@ -13,6 +13,7 @@ import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
@@ -144,6 +145,12 @@ public final class QinJsBackend {
         if (expression instanceof QinIrAssignmentExpression assignmentExpression) {
             emitJavaRuntimeAliasesForExpression(js, assignmentExpression.target(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, assignmentExpression.value(), javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrIfExpression ifExpression) {
+            emitJavaRuntimeAliasesForExpression(js, ifExpression.test(), javaAliases);
+            emitJavaRuntimeAliasesForExpression(js, ifExpression.consequent(), javaAliases);
+            emitJavaRuntimeAliasesForExpression(js, ifExpression.alternate(), javaAliases);
             return;
         }
         if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
@@ -537,6 +544,11 @@ public final class QinJsBackend {
             return usesBuiltin(assignmentExpression.target(), methodName)
                     || usesBuiltin(assignmentExpression.value(), methodName);
         }
+        if (expression instanceof QinIrIfExpression ifExpression) {
+            return usesBuiltin(ifExpression.test(), methodName)
+                    || usesBuiltin(ifExpression.consequent(), methodName)
+                    || usesBuiltin(ifExpression.alternate(), methodName);
+        }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
             if (methodName.equals(builtinCallExpression.methodName())) {
                 return true;
@@ -875,6 +887,10 @@ public final class QinJsBackend {
             emitExpression(js, assignmentExpression.value());
             return;
         }
+        if (expression instanceof QinIrIfExpression ifExpression) {
+            emitIfExpression(js, ifExpression);
+            return;
+        }
         if (expression instanceof QinIrPropertyAccessExpression propertyAccessExpression) {
             emitExpression(js, propertyAccessExpression.receiver());
             js.append(".").append(propertyAccessExpression.propertyName());
@@ -954,6 +970,21 @@ public final class QinJsBackend {
         }
         js.append("      return ");
         emitExpression(js, letExpression.resultExpression());
+        js.append(";\n");
+        js.append("    })()");
+    }
+
+    private void emitIfExpression(StringBuilder js, QinIrIfExpression ifExpression) {
+        js.append("(() => {\n");
+        js.append("      if (");
+        emitExpression(js, ifExpression.test());
+        js.append(") {\n");
+        js.append("        return ");
+        emitExpression(js, ifExpression.consequent());
+        js.append(";\n");
+        js.append("      }\n");
+        js.append("      return ");
+        emitExpression(js, ifExpression.alternate());
         js.append(";\n");
         js.append("    })()");
     }
