@@ -763,12 +763,12 @@ public final class QinJsBackend {
 
     private void emitClassDeclarations(StringBuilder js, List<QinIrClassDeclaration> classDeclarations) {
         for (QinIrClassDeclaration classDeclaration : classDeclarations) {
+            js.append("class ").append(classDeclaration.simpleName());
             if (classDeclaration.superType() != null) {
-                throw new IllegalArgumentException(
-                        "JS backend does not support Java class extends yet: " + classDeclaration.simpleName());
+                js.append(" extends ").append(jsClassReference(classDeclaration.superType().binaryName()));
             }
-            js.append("class ").append(classDeclaration.simpleName()).append(" {\n");
-            emitClassConstructor(js, classDeclaration.fields());
+            js.append(" {\n");
+            emitClassConstructor(js, classDeclaration);
             for (QinIrMethodDeclaration method : classDeclaration.methods()) {
                 emitMethodDeclaration(js, method);
             }
@@ -779,9 +779,12 @@ public final class QinJsBackend {
         }
     }
 
-    private void emitClassConstructor(StringBuilder js, List<QinIrFieldDeclaration> fields) {
+    private void emitClassConstructor(StringBuilder js, QinIrClassDeclaration classDeclaration) {
         js.append("  constructor() {\n");
-        for (QinIrFieldDeclaration field : fields) {
+        if (classDeclaration.superType() != null) {
+            js.append("    super();\n");
+        }
+        for (QinIrFieldDeclaration field : classDeclaration.fields()) {
             js.append("    this.").append(field.name()).append(" = ");
             if (field.initializer() == null) {
                 js.append("null");
@@ -791,6 +794,14 @@ public final class QinJsBackend {
             js.append(";\n");
         }
         js.append("  }\n");
+    }
+
+    private String jsClassReference(String binaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            throw new IllegalArgumentException("Missing JS class reference");
+        }
+        int dot = binaryName.lastIndexOf('.');
+        return dot < 0 ? binaryName : binaryName.substring(dot + 1);
     }
 
     private void emitMethodDeclaration(StringBuilder js, QinIrMethodDeclaration method) {

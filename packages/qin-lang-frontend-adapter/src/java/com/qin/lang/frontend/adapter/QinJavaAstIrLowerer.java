@@ -132,7 +132,9 @@ public final class QinJavaAstIrLowerer {
         return new QinIrClassDeclaration(
                 packageName,
                 classDeclaration.name(),
-                null,
+                classDeclaration.superTypeName() == null
+                        ? null
+                        : semanticAnalyzer.resolveType(classDeclaration.superTypeName(), packageName, importedTypes),
                 lowerAnnotations(packageName, importedTypes, classDeclaration.annotations()),
                 fields,
                 methods);

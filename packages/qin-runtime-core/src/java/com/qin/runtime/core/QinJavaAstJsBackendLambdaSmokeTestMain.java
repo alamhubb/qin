@@ -32,6 +32,9 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
                         return (int value) -> value + 1;
                     }
                 }
+
+                class DerivedLambdaBox extends LambdaBox {
+                }
                 """);
 
         QinIrMethodDeclaration make = program.classDeclarations().get(0).methods().get(0);
@@ -44,6 +47,7 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
         String generated = new QinJsBackend().compileProgram(program);
         require(generated.contains("() =>"), "generated arrow function");
         require(generated.contains("(value) =>"), "generated parameter arrow function");
+        require(generated.contains("class DerivedLambdaBox extends LambdaBox"), "generated class extends");
 
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-lambda-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-java-ast-js-backend-lambda\" };\n",
@@ -68,6 +72,13 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
                 "java_ast_js_backend_lambda_parameter");
         if (!Double.valueOf(3.0).equals(parameterResult)) {
             throw new IllegalStateException("Expected parameter lambda result 3.0, got: " + parameterResult);
+        }
+        Object inheritedResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                generated + "\nconst fn = new DerivedLambdaBox().make(); fn();\n",
+                "java_ast_js_backend_lambda_extends");
+        if (!Double.valueOf(1.0).equals(inheritedResult)) {
+            throw new IllegalStateException("Expected inherited lambda result 1.0, got: " + inheritedResult);
         }
 
         System.out.println("QinJavaAstJsBackendLambdaSmokeTestMain OK");
