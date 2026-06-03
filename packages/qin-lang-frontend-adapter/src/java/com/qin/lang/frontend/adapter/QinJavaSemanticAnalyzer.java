@@ -23,6 +23,7 @@ import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
+import com.slime.java.ast.JavaAstWhileStatement;
 import com.slime.java.ast.JavaCstToAst;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -175,6 +176,19 @@ public final class QinJavaSemanticAnalyzer {
                         ifStatement.consequentStatements());
                 analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
                         ifStatement.alternateStatements());
+                continue;
+            }
+            if (statement instanceof JavaAstWhileStatement whileStatement) {
+                expressionType(
+                        whileStatement.test(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        whileStatement.bodyStatements());
             }
         }
         if (method.bodyStatements().isEmpty()) {
@@ -323,11 +337,26 @@ public final class QinJavaSemanticAnalyzer {
                         ifStatement.consequentStatements());
                 analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
                         ifStatement.alternateStatements());
+                continue;
+            }
+            if (statement instanceof JavaAstWhileStatement whileStatement) {
+                expressionType(whileStatement.test(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
+                        classBinaryName);
+                analyzeStatements(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        whileStatement.bodyStatements());
             }
         }
     }
 
     private QinIrTypeRef binaryExpressionType(String operator, QinIrTypeRef left, QinIrTypeRef right) {
+        if ("<".equals(operator)
+                || ">".equals(operator)
+                || "<=".equals(operator)
+                || ">=".equals(operator)
+                || "==".equals(operator)
+                || "!=".equals(operator)) {
+            return QinIrTypeRef.booleanType();
+        }
         if ("+".equals(operator) && (left.kind() == QinIrTypeKind.STRING || right.kind() == QinIrTypeKind.STRING)) {
             return QinIrTypeRef.stringType();
         }

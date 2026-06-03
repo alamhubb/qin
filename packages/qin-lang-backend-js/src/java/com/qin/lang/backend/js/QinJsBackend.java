@@ -34,6 +34,7 @@ import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrThisExpression;
+import com.qin.lang.ir.QinIrWhileExpression;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -151,6 +152,16 @@ public final class QinJsBackend {
             emitJavaRuntimeAliasesForExpression(js, ifExpression.test(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.consequent(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.alternate(), javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrWhileExpression whileExpression) {
+            emitJavaRuntimeAliasesForExpression(js, whileExpression.test(), javaAliases);
+            for (QinIrLocalVariableDeclaration declaration : whileExpression.localDeclarations()) {
+                emitJavaRuntimeAliasesForExpression(js, declaration.initializer(), javaAliases);
+            }
+            for (QinIrExpression bodyExpression : whileExpression.bodyExpressions()) {
+                emitJavaRuntimeAliasesForExpression(js, bodyExpression, javaAliases);
+            }
             return;
         }
         if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
@@ -549,6 +560,22 @@ public final class QinJsBackend {
                     || usesBuiltin(ifExpression.consequent(), methodName)
                     || usesBuiltin(ifExpression.alternate(), methodName);
         }
+        if (expression instanceof QinIrWhileExpression whileExpression) {
+            if (usesBuiltin(whileExpression.test(), methodName)) {
+                return true;
+            }
+            for (QinIrLocalVariableDeclaration declaration : whileExpression.localDeclarations()) {
+                if (usesBuiltin(declaration.initializer(), methodName)) {
+                    return true;
+                }
+            }
+            for (QinIrExpression bodyExpression : whileExpression.bodyExpressions()) {
+                if (usesBuiltin(bodyExpression, methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
             if (methodName.equals(builtinCallExpression.methodName())) {
                 return true;
@@ -891,6 +918,10 @@ public final class QinJsBackend {
             emitIfExpression(js, ifExpression);
             return;
         }
+        if (expression instanceof QinIrWhileExpression whileExpression) {
+            emitWhileExpression(js, whileExpression);
+            return;
+        }
         if (expression instanceof QinIrPropertyAccessExpression propertyAccessExpression) {
             emitExpression(js, propertyAccessExpression.receiver());
             js.append(".").append(propertyAccessExpression.propertyName());
@@ -986,6 +1017,26 @@ public final class QinJsBackend {
         js.append("      return ");
         emitExpression(js, ifExpression.alternate());
         js.append(";\n");
+        js.append("    })()");
+    }
+
+    private void emitWhileExpression(StringBuilder js, QinIrWhileExpression whileExpression) {
+        js.append("(() => {\n");
+        js.append("      while (");
+        emitExpression(js, whileExpression.test());
+        js.append(") {\n");
+        for (QinIrLocalVariableDeclaration declaration : whileExpression.localDeclarations()) {
+            js.append("        let ").append(declaration.name()).append(" = ");
+            emitExpression(js, declaration.initializer());
+            js.append(";\n");
+        }
+        for (QinIrExpression bodyExpression : whileExpression.bodyExpressions()) {
+            js.append("        ");
+            emitExpression(js, bodyExpression);
+            js.append(";\n");
+        }
+        js.append("      }\n");
+        js.append("      return null;\n");
         js.append("    })()");
     }
 
