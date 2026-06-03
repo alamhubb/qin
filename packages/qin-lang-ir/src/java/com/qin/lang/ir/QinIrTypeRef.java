@@ -1,5 +1,6 @@
 package com.qin.lang.ir;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -7,9 +8,15 @@ import java.util.Objects;
  */
 public record QinIrTypeRef(
         QinIrTypeKind kind,
-        String binaryName) {
+        String binaryName,
+        List<QinIrTypeRef> typeArguments) {
+    public QinIrTypeRef(QinIrTypeKind kind, String binaryName) {
+        this(kind, binaryName, List.of());
+    }
+
     public QinIrTypeRef {
         Objects.requireNonNull(kind, "kind cannot be null");
+        typeArguments = typeArguments == null ? List.of() : List.copyOf(typeArguments);
         if (kind == QinIrTypeKind.CLASS || kind == QinIrTypeKind.STRING) {
             if (binaryName == null || binaryName.isBlank()) {
                 throw new IllegalArgumentException("binaryName cannot be blank for reference-like types");
@@ -42,5 +49,9 @@ public record QinIrTypeRef(
 
     public static QinIrTypeRef classType(String binaryName) {
         return new QinIrTypeRef(QinIrTypeKind.CLASS, binaryName);
+    }
+
+    public static QinIrTypeRef classType(String binaryName, List<QinIrTypeRef> typeArguments) {
+        return new QinIrTypeRef(QinIrTypeKind.CLASS, binaryName, typeArguments);
     }
 }
