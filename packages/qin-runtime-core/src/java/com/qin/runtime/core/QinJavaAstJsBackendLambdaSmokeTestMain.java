@@ -20,11 +20,20 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
                     java.lang.Object make() {
                         return () -> 1;
                     }
+
+                    java.lang.Object makeBlock() {
+                        return () -> {
+                            int value = 1;
+                            return value + 1;
+                        };
+                    }
                 }
                 """);
 
         QinIrMethodDeclaration make = program.classDeclarations().get(0).methods().get(0);
         require(make.returnExpression() instanceof QinIrFunctionLiteral, "lambda lowers to function literal");
+        QinIrMethodDeclaration makeBlock = program.classDeclarations().get(0).methods().get(1);
+        require(makeBlock.returnExpression() instanceof QinIrFunctionLiteral, "block lambda lowers to function literal");
 
         String generated = new QinJsBackend().compileProgram(program);
         require(generated.contains("() =>"), "generated arrow function");
@@ -38,6 +47,13 @@ public final class QinJavaAstJsBackendLambdaSmokeTestMain {
                 "java_ast_js_backend_lambda");
         if (!Double.valueOf(1.0).equals(result)) {
             throw new IllegalStateException("Expected lambda result 1.0, got: " + result);
+        }
+        Object blockResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                generated + "\nconst fn = new LambdaBox().makeBlock(); fn();\n",
+                "java_ast_js_backend_lambda_block");
+        if (!Double.valueOf(2.0).equals(blockResult)) {
+            throw new IllegalStateException("Expected block lambda result 2.0, got: " + blockResult);
         }
 
         System.out.println("QinJavaAstJsBackendLambdaSmokeTestMain OK");

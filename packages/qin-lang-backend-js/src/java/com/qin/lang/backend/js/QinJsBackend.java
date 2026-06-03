@@ -611,6 +611,9 @@ public final class QinJsBackend {
                     || usesBuiltin(ifExpression.consequent(), methodName)
                     || usesBuiltin(ifExpression.alternate(), methodName);
         }
+        if (expression instanceof QinIrFunctionLiteral functionLiteral) {
+            return usesBuiltin(functionLiteral.returnExpression(), methodName);
+        }
         if (expression instanceof QinIrForExpression forExpression) {
             for (QinIrLocalVariableDeclaration declaration : forExpression.initializerDeclarations()) {
                 if (usesBuiltin(declaration.initializer(), methodName)) {

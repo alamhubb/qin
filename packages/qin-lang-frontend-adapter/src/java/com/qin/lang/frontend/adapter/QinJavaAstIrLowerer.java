@@ -622,15 +622,22 @@ public final class QinJavaAstIrLowerer {
                         "Java lambda parameters are not supported by Qin IR yet: "
                                 + lambdaExpression.parameterNames());
             }
-            if (lambdaExpression.bodyExpression() == null) {
-                throw new IllegalArgumentException("Java block lambdas are not supported by Qin IR yet");
+            QinIrExpression returnExpression;
+            if (lambdaExpression.bodyExpression() != null) {
+                returnExpression = lowerExpression(
+                        lambdaExpression.bodyExpression(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        valueNames);
+            } else {
+                returnExpression = lowerStatementResult(
+                        lambdaExpression.bodyStatements(),
+                        packageName,
+                        importedTypes,
+                        valueNames);
             }
-            return new QinIrFunctionLiteral(lowerExpression(
-                    lambdaExpression.bodyExpression(),
-                    packageName,
-                    importedTypes,
-                    locals,
-                    valueNames));
+            return new QinIrFunctionLiteral(returnExpression);
         }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             return new QinIrPropertyAccessExpression(

@@ -269,7 +269,7 @@ public final class QinJavaSemanticAnalyzer {
                         methodReturnTypes,
                         classBinaryName);
             }
-            for (JavaAstStatement statement : lambdaExpression.bodyStatements()) {
+            if (!lambdaExpression.bodyStatements().isEmpty()) {
                 analyzeStatements(
                         packageName,
                         importedTypes,
@@ -277,7 +277,7 @@ public final class QinJavaSemanticAnalyzer {
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName,
-                        List.of(statement));
+                        lambdaExpression.bodyStatements());
             }
             return QinIrTypeRef.classType(Object.class.getName());
         }
