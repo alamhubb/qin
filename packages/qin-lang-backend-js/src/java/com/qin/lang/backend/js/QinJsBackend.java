@@ -432,6 +432,10 @@ public final class QinJsBackend {
                 emitJavaUtilObjectsRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilObjects");
             }
+            case "java.util.Optional" -> {
+                emitJavaUtilOptionalRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilOptional");
+            }
             case "java.util.regex.Pattern" -> {
                 emitJavaUtilRegexRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilRegexPattern");
@@ -1428,6 +1432,54 @@ public final class QinJsBackend {
                       return arguments.length >= 2 ? nullDefault : "null";
                     }
                     return String(value);
+                  }
+                };
+                """);
+    }
+
+    private void emitJavaUtilOptionalRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinJavaUtilOptionalValue") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaUtilOptionalValue {
+                  constructor(present, value) {
+                    this.__present = present;
+                    this.__value = value;
+                  }
+                  isPresent() {
+                    return this.__present;
+                  }
+                  isEmpty() {
+                    return !this.__present;
+                  }
+                  get() {
+                    if (!this.__present) {
+                      throw new Error("No value present");
+                    }
+                    return this.__value;
+                  }
+                  orElse(other) {
+                    return this.__present ? this.__value : other;
+                  }
+                  orElseGet(supplier) {
+                    return this.__present ? this.__value : supplier();
+                  }
+                }
+                const __QinJavaUtilOptional = {
+                  empty() {
+                    return new __QinJavaUtilOptionalValue(false, null);
+                  },
+                  of(value) {
+                    if (value == null) {
+                      throw new Error("Optional.of requires a non-null value");
+                    }
+                    return new __QinJavaUtilOptionalValue(true, value);
+                  },
+                  ofNullable(value) {
+                    return value == null
+                      ? new __QinJavaUtilOptionalValue(false, null)
+                      : new __QinJavaUtilOptionalValue(true, value);
                   }
                 };
                 """);
@@ -3030,6 +3082,7 @@ public final class QinJsBackend {
                 || "java.util.concurrent.ConcurrentHashMap".equals(ownerBinaryName)
                 || "java.util.concurrent.ConcurrentMap".equals(ownerBinaryName)
                 || "java.util.Objects".equals(ownerBinaryName)
+                || "java.util.Optional".equals(ownerBinaryName)
                 || "java.lang.String".equals(ownerBinaryName)
                 || "java.lang.StringBuilder".equals(ownerBinaryName)
                 || "java.lang.Integer".equals(ownerBinaryName)
@@ -3088,6 +3141,7 @@ public final class QinJsBackend {
                     "java.util.concurrent.ConcurrentHashMap", "java.util.concurrent.ConcurrentMap" ->
                     "__QinJavaUtilHashMap";
             case "java.util.Objects" -> "__QinJavaUtilObjects";
+            case "java.util.Optional" -> "__QinJavaUtilOptional";
             case "java.util.regex.Pattern" -> "__QinJavaUtilRegexPattern";
             case "java.util.regex.Matcher" -> "__QinJavaUtilRegexMatcher";
             case "java.util.concurrent.atomic.AtomicLong" -> "__QinJavaUtilConcurrentAtomicLong";
