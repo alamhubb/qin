@@ -316,18 +316,18 @@ public final class QinJsBackend {
         js.append("class ").append(localName).append(" {\n");
         js.append("  constructor(");
         for (int i = 0; i < components.length; i++) {
-            js.append(components[i].getName());
+            js.append("__recordValue").append(i);
             if (i < components.length - 1) {
                 js.append(", ");
             }
         }
         js.append(") {\n");
-        for (RecordComponent component : components) {
-            js.append("    this.__").append(component.getName()).append(" = ").append(component.getName()).append(";\n");
+        for (int i = 0; i < components.length; i++) {
+            js.append("    this.__").append(components[i].getName()).append(" = __recordValue").append(i).append(";\n");
         }
         js.append("  }\n");
         for (RecordComponent component : components) {
-            js.append("  ").append(component.getName()).append("() { return this.__")
+            js.append("  [\"").append(escapeJs(component.getName())).append("\"]() { return this.__")
                     .append(component.getName())
                     .append("; }\n");
         }
