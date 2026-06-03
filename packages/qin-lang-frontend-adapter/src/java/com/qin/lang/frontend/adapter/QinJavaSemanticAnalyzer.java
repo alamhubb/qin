@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public final class QinJavaSemanticAnalyzer {
     public QinJavaSemanticModel analyzeSource(String source) {
@@ -224,7 +225,20 @@ public final class QinJavaSemanticAnalyzer {
                             methodCall.arguments().size());
                 }
             }
-            throw new IllegalArgumentException("Unsupported Java method receiver for semantics: " + methodCall.receiver());
+            QinIrTypeRef receiverType = expressionType(
+                    methodCall.receiver(),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+            return resolveInstanceMethodReturnType(
+                    receiverType,
+                    methodCall.methodName(),
+                    methodCall.arguments().size(),
+                    methodReturnTypes,
+                    classBinaryName);
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
             return binaryExpressionType(
@@ -275,6 +289,92 @@ public final class QinJavaSemanticAnalyzer {
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unknown Java static method owner: " + ownerBinaryName, e);
         }
+    }
+
+    private QinIrTypeRef resolveInstanceMethodReturnType(
+            QinIrTypeRef receiverType,
+            String methodName,
+            int argumentCount,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (receiverType.kind() == QinIrTypeKind.STRING) {
+            return resolveReflectiveInstanceMethodReturnType(
+                    String.class.getName(),
+                    methodName,
+                    argumentCount);
+        }
+        if (receiverType.kind() != QinIrTypeKind.CLASS || receiverType.binaryName() == null) {
+            throw new IllegalArgumentException(
+                    "Unsupported Java instance method receiver type: " + receiverType);
+        }
+        if (receiverType.binaryName().equals(classBinaryName)) {
+            QinIrTypeRef localReturnType = methodReturnTypes.get(methodName);
+            if (localReturnType != null) {
+                return localReturnType;
+            }
+        }
+        return resolveReflectiveInstanceMethodReturnType(
+                receiverType.binaryName(),
+                methodName,
+                argumentCount);
+    }
+
+    private QinIrTypeRef resolveReflectiveInstanceMethodReturnType(
+            String ownerBinaryName,
+            String methodName,
+            int argumentCount) {
+        try {
+            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Method matched = null;
+            for (Method method : ownerClass.getMethods()) {
+                if (!method.getName().equals(methodName)
+                        || method.getParameterCount() != argumentCount
+                        || Modifier.isStatic(method.getModifiers())) {
+                    continue;
+                }
+                if (matched != null) {
+                    Class<?> selectedReturnType = moreSpecificReturnType(
+                            matched.getReturnType(),
+                            method.getReturnType(),
+                            ownerBinaryName,
+                            methodName,
+                            argumentCount);
+                    if (!Objects.equals(selectedReturnType, matched.getReturnType())) {
+                        matched = method;
+                    }
+                    continue;
+                }
+                matched = method;
+            }
+            if (matched == null) {
+                throw new IllegalArgumentException("Unknown Java instance method: "
+                        + ownerBinaryName + "." + methodName + "/" + argumentCount);
+            }
+            return typeRefFromClass(matched.getReturnType());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Java instance method owner: " + ownerBinaryName, e);
+        }
+    }
+
+    private Class<?> moreSpecificReturnType(
+            Class<?> first,
+            Class<?> second,
+            String ownerBinaryName,
+            String methodName,
+            int argumentCount) {
+        if (Objects.equals(first, second)) {
+            return first;
+        }
+        if (!first.isPrimitive() && !second.isPrimitive()) {
+            if (first.isAssignableFrom(second)) {
+                return second;
+            }
+            if (second.isAssignableFrom(first)) {
+                return first;
+            }
+        }
+        throw new IllegalArgumentException("Ambiguous Java instance method: "
+                + ownerBinaryName + "." + methodName + "/" + argumentCount);
     }
 
     private QinIrTypeRef typeRefFromClass(Class<?> type) {
