@@ -12,14 +12,25 @@ public record QinIrMethodDeclaration(
         List<QinIrParameter> parameters,
         List<QinIrAnnotation> annotations,
         QinIrExpression returnExpression,
-        QinIrObjectLiteral runtimeFunctionDefinition) {
+        QinIrObjectLiteral runtimeFunctionDefinition,
+        boolean staticMethod) {
+    public QinIrMethodDeclaration(
+            String name,
+            QinIrTypeRef returnType,
+            List<QinIrParameter> parameters,
+            List<QinIrAnnotation> annotations,
+            QinIrExpression returnExpression,
+            QinIrObjectLiteral runtimeFunctionDefinition) {
+        this(name, returnType, parameters, annotations, returnExpression, runtimeFunctionDefinition, false);
+    }
+
     public QinIrMethodDeclaration(
             String name,
             QinIrTypeRef returnType,
             List<QinIrParameter> parameters,
             List<QinIrAnnotation> annotations,
             QinIrExpression returnExpression) {
-        this(name, returnType, parameters, annotations, returnExpression, null);
+        this(name, returnType, parameters, annotations, returnExpression, null, false);
     }
 
     public QinIrMethodDeclaration {

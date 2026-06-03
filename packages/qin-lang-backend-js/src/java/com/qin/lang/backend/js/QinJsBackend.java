@@ -2218,7 +2218,8 @@ public final class QinJsBackend {
             if ("constructor".equals(method.name())) {
                 continue;
             }
-            methodsByName.computeIfAbsent(method.name(), ignored -> new java.util.ArrayList<>()).add(method);
+            String groupKey = method.name() + "\u0000" + method.staticMethod();
+            methodsByName.computeIfAbsent(groupKey, ignored -> new java.util.ArrayList<>()).add(method);
         }
         for (List<QinIrMethodDeclaration> overloads : methodsByName.values()) {
             if (overloads.size() == 1) {
@@ -2240,7 +2241,11 @@ public final class QinJsBackend {
             StringBuilder js,
             String methodName,
             List<QinIrMethodDeclaration> overloads) {
-        js.append("  ").append(methodName).append("(...__qin_args) {\n");
+        js.append("  ");
+        if (overloads.get(0).staticMethod()) {
+            js.append("static ");
+        }
+        js.append(methodName).append("(...__qin_args) {\n");
         js.append("    switch (__qin_args.length) {\n");
         Set<Integer> emittedArities = new LinkedHashSet<>();
         for (QinIrMethodDeclaration overload : overloads) {
@@ -2270,7 +2275,11 @@ public final class QinJsBackend {
             String jsMethodName) {
         Map<String, String> previousAliases = bindingAliases;
         bindingAliases = new LinkedHashMap<>(previousAliases);
-        js.append("  ").append(jsMethodName).append("(");
+        js.append("  ");
+        if (method.staticMethod()) {
+            js.append("static ");
+        }
+        js.append(jsMethodName).append("(");
         List<QinIrParameter> parameters = method.parameters();
         for (int i = 0; i < parameters.size(); i++) {
             js.append(declareBindingName(parameters.get(i).name()));

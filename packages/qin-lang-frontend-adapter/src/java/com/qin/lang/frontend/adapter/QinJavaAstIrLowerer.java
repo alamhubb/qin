@@ -273,7 +273,9 @@ public final class QinJavaAstIrLowerer {
                 semanticMethod.returnType(),
                 parameters,
                 lowerAnnotations(packageName, importedTypes, method.annotations()),
-                lowerMethodReturnExpression(packageName, importedTypes, fieldNames, valueNames, method));
+                lowerMethodReturnExpression(packageName, importedTypes, fieldNames, valueNames, method),
+                null,
+                method.staticMethod());
     }
 
     private List<QinIrAnnotation> lowerAnnotations(

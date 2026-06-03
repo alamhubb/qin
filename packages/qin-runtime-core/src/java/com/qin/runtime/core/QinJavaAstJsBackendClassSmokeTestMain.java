@@ -19,6 +19,7 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
                 class Person {
                     String name = "qin";
                     String title;
+                    static String label() { return "person"; }
                     ArrayList fresh() { return new ArrayList(); }
                     String display() { return this.name; }
                 }
@@ -29,6 +30,7 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
         require(generated.contains("constructor()"), "Person constructor");
         require(generated.contains("this.name = \"qin\";"), "explicit field initializer");
         require(generated.contains("this.title = null;"), "default field initializer");
+        require(generated.contains("static label()"), "static method");
         require(generated.contains("fresh()"), "fresh method");
         require(generated.contains("return new ArrayList();"), "ArrayList method return");
         require(generated.contains("return this.name;"), "this property return");
@@ -39,9 +41,9 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nconst person = new Person(); person.display() + \":\" + person.fresh().size();\n",
+                generated + "\nconst person = new Person(); Person.label() + \":\" + person.display() + \":\" + person.fresh().size();\n",
                 "java_ast_js_backend_class");
-        if (!"qin:0".equals(result)) {
+        if (!"person:qin:0".equals(result)) {
             throw new IllegalStateException("Expected generated Java AST class field initializer and ArrayList, got: " + result);
         }
         System.out.println("QinJavaAstJsBackendClassSmokeTestMain OK");
