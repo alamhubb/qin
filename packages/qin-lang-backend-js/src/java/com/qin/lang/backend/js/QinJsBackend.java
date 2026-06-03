@@ -369,6 +369,18 @@ public final class QinJsBackend {
                 emitJavaLangEnumRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangEnum");
             }
+            case "java.lang.Throwable" -> {
+                emitJavaLangExceptionRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangThrowable");
+            }
+            case "java.lang.Exception" -> {
+                emitJavaLangExceptionRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangException");
+            }
+            case "java.lang.RuntimeException" -> {
+                emitJavaLangExceptionRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangRuntimeException");
+            }
             case "java.lang.System" -> {
                 emitJavaLangSystemRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangSystem");
@@ -636,6 +648,36 @@ public final class QinJsBackend {
                   toString() {
                     return this.name();
                   }
+                }
+                """);
+    }
+
+    private void emitJavaLangExceptionRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinJavaLangThrowable") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaLangThrowable {
+                  constructor(message, cause) {
+                    this.name = this.constructor.name;
+                    this.message = message == null ? null : String(message);
+                    this.__cause = cause == null ? null : cause;
+                  }
+                  getMessage() {
+                    return this.message;
+                  }
+                  getCause() {
+                    return this.__cause;
+                  }
+                  toString() {
+                    return this.message == null || this.message === ""
+                      ? this.name
+                      : this.name + ": " + this.message;
+                  }
+                }
+                class __QinJavaLangException extends __QinJavaLangThrowable {
+                }
+                class __QinJavaLangRuntimeException extends __QinJavaLangException {
                 }
                 """);
     }
@@ -2657,6 +2699,9 @@ public final class QinJsBackend {
                 || "java.lang.StringBuilder".equals(ownerBinaryName)
                 || "java.lang.Integer".equals(ownerBinaryName)
                 || "java.lang.Double".equals(ownerBinaryName)
+                || "java.lang.Throwable".equals(ownerBinaryName)
+                || "java.lang.Exception".equals(ownerBinaryName)
+                || "java.lang.RuntimeException".equals(ownerBinaryName)
                 || "java.lang.System".equals(ownerBinaryName)
                 || "java.lang.Math".equals(ownerBinaryName)
                 || "java.io.File".equals(ownerBinaryName)
@@ -2685,6 +2730,9 @@ public final class QinJsBackend {
             case "java.lang.StringBuilder" -> "__QinJavaLangStringBuilder";
             case "java.lang.Integer" -> "__QinJavaLangInteger";
             case "java.lang.Double" -> "__QinJavaLangDouble";
+            case "java.lang.Throwable" -> "__QinJavaLangThrowable";
+            case "java.lang.Exception" -> "__QinJavaLangException";
+            case "java.lang.RuntimeException" -> "__QinJavaLangRuntimeException";
             case "java.lang.System" -> "__QinJavaLangSystem";
             case "java.io.File" -> "__QinJavaIoFile";
             case "java.time.LocalDateTime" -> "__QinJavaTimeLocalDateTime";

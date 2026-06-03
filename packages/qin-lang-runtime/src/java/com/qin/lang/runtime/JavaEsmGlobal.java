@@ -2810,10 +2810,11 @@ public final class JavaEsmGlobal {
         private final Map<String, InterpretedFunction> superMethods;
         private final Map<String, AccessorProperty> superAccessors;
         private final Map<String, Object> prototypeProperties;
+        private final List<Object> prototypeChain;
         private Object constructorFunction;
 
         private InterpretedInstance(Map<String, InterpretedFunction> methods, Map<String, AccessorProperty> accessors) {
-            this(methods, accessors, Map.of(), Map.of(), Map.of());
+            this(methods, accessors, Map.of(), Map.of(), Map.of(), List.of());
         }
 
         private InterpretedInstance(
@@ -2821,7 +2822,7 @@ public final class JavaEsmGlobal {
                 Map<String, AccessorProperty> accessors,
                 Map<String, InterpretedFunction> superMethods,
                 Map<String, AccessorProperty> superAccessors) {
-            this(methods, accessors, superMethods, superAccessors, Map.of());
+            this(methods, accessors, superMethods, superAccessors, Map.of(), List.of());
         }
 
         private InterpretedInstance(
@@ -2829,12 +2830,14 @@ public final class JavaEsmGlobal {
                 Map<String, AccessorProperty> accessors,
                 Map<String, InterpretedFunction> superMethods,
                 Map<String, AccessorProperty> superAccessors,
-                Map<String, Object> prototypeProperties) {
+                Map<String, Object> prototypeProperties,
+                List<Object> prototypeChain) {
             this.methods = methods;
             this.accessors = accessors;
             this.superMethods = superMethods;
             this.superAccessors = superAccessors;
             this.prototypeProperties = prototypeProperties;
+            this.prototypeChain = List.copyOf(prototypeChain);
         }
 
         @Override
@@ -2910,7 +2913,7 @@ public final class JavaEsmGlobal {
         }
 
         private boolean hasPrototypeObject(Object prototype) {
-            return prototype != null && prototypeProperties == prototype;
+            return prototype != null && prototypeChain.contains(prototype);
         }
 
         private Set<String> ownEnumerablePropertyNames() {
@@ -3259,12 +3262,14 @@ public final class JavaEsmGlobal {
                     throw new IllegalStateException("Recursive interpreted class construction: " + stack);
                 }
                 InterpretedFunction parent = resolveSuperClassFunction();
+                List<Object> prototypeChain = prototypeChain();
                 InterpretedInstance instance = new InterpretedInstance(
                         collectInheritedInstanceMethods(),
                         collectInheritedInstanceAccessors(),
                         parent == null ? Map.of() : parent.collectInheritedInstanceMethods(),
                         parent == null ? Map.of() : parent.collectInheritedInstanceAccessors(),
-                        functionPrototypeProperties());
+                        functionPrototypeProperties(),
+                        prototypeChain);
                 instance.setConstructorFunction(this);
                 if (parent != null) {
                     parent.installInheritedInstanceFields(instance);
@@ -3305,7 +3310,8 @@ public final class JavaEsmGlobal {
                         Map.of(),
                         Map.of(),
                         Map.of(),
-                        functionPrototypeProperties());
+                        functionPrototypeProperties(),
+                        prototypeChain());
                 instance.setConstructorFunction(this);
                 Object constructed = bindThis(instance).callConstructor(args);
                 if (constructed instanceof ReturnSignal signal) {
@@ -3329,6 +3335,19 @@ public final class JavaEsmGlobal {
                 return castMap(rawPrototype);
             }
             return Map.of();
+        }
+
+        private List<Object> prototypeChain() {
+            List<Object> chain = new ArrayList<>();
+            Object prototype = get("prototype");
+            if (prototype != null) {
+                chain.add(prototype);
+            }
+            InterpretedFunction parent = resolveSuperClassFunction();
+            if (parent != null) {
+                chain.addAll(parent.prototypeChain());
+            }
+            return chain;
         }
 
         private void installInheritedInstanceFields(InterpretedInstance instance) {
