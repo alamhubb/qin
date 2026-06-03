@@ -3396,6 +3396,7 @@ public final class JavaEsmGlobal {
                 methodDefinition.put("functionName", name);
             }
             Map<String, Object> resolvedClosure = new LinkedHashMap<>(resolveClosure());
+            bindClassSelfName(resolvedClosure);
             methodDefinition.put("closure", resolvedClosure);
             methodDefinition.put("ownerSuperClass", ast.get("superClass"));
             methodDefinition.put("ownerSuperClassFunction", resolveSuperClassFunction());
@@ -3512,11 +3513,15 @@ public final class JavaEsmGlobal {
             installLocalBindings(env);
             installClosureBindings(env);
             env.put("this", receiver);
+            bindClassSelfName(env);
+            return evalNode(valueNode, env);
+        }
+
+        private void bindClassSelfName(Map<String, Object> env) {
             String className = classDebugName();
             if (className != null && !className.isBlank() && !"null".equals(className)) {
                 env.put(className, this);
             }
-            return evalNode(valueNode, env);
         }
 
         private void bindParameters(Map<String, Object> env, Object[] args) {
