@@ -3,6 +3,7 @@ package com.qin.lang.frontend.adapter;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrAnnotation;
 import com.qin.lang.ir.QinIrAssignmentExpression;
+import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrDoWhileExpression;
@@ -27,6 +28,7 @@ import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrWhileExpression;
 import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
+import com.slime.java.ast.JavaAstBooleanLiteral;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstDoWhileStatement;
 import com.slime.java.ast.JavaAstExpression;
@@ -40,6 +42,7 @@ import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodCallExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNewExpression;
+import com.slime.java.ast.JavaAstNullLiteral;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
@@ -562,6 +565,12 @@ public final class QinJavaAstIrLowerer {
         }
         if (expression instanceof JavaAstNumberLiteral number) {
             return new QinIrNumberLiteral(number.value());
+        }
+        if (expression instanceof JavaAstBooleanLiteral booleanLiteral) {
+            return new QinIrBooleanLiteral(booleanLiteral.value());
+        }
+        if (expression instanceof JavaAstNullLiteral) {
+            return new QinIrNullLiteral();
         }
         if (expression instanceof JavaAstStringLiteral string) {
             return new QinIrStringLiteral(string.value());

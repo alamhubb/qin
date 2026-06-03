@@ -4,6 +4,7 @@ import com.qin.lang.ir.QinIrTypeKind;
 import com.qin.lang.ir.QinIrTypeRef;
 import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
+import com.slime.java.ast.JavaAstBooleanLiteral;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstDoWhileStatement;
 import com.slime.java.ast.JavaAstExpression;
@@ -18,6 +19,7 @@ import com.slime.java.ast.JavaAstMemberAccessExpression;
 import com.slime.java.ast.JavaAstMethodCallExpression;
 import com.slime.java.ast.JavaAstMethodDeclaration;
 import com.slime.java.ast.JavaAstNewExpression;
+import com.slime.java.ast.JavaAstNullLiteral;
 import com.slime.java.ast.JavaAstNumberLiteral;
 import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
@@ -240,6 +242,12 @@ public final class QinJavaSemanticAnalyzer {
         }
         if (expression instanceof JavaAstNumberLiteral) {
             return QinIrTypeRef.doubleType();
+        }
+        if (expression instanceof JavaAstBooleanLiteral) {
+            return QinIrTypeRef.booleanType();
+        }
+        if (expression instanceof JavaAstNullLiteral) {
+            return QinIrTypeRef.classType(Object.class.getName());
         }
         if (expression instanceof JavaAstStringLiteral) {
             return QinIrTypeRef.stringType();
