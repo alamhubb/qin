@@ -24,6 +24,7 @@ import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
+import com.slime.java.ast.JavaAstUpdateExpression;
 import com.slime.java.ast.JavaAstWhileStatement;
 import com.slime.java.ast.JavaCstToAst;
 import java.lang.reflect.Method;
@@ -246,6 +247,10 @@ public final class QinJavaSemanticAnalyzer {
         if (expression instanceof JavaAstAssignmentExpression assignment) {
             expressionType(assignment.target(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
             return expressionType(assignment.value(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
+        }
+        if (expression instanceof JavaAstUpdateExpression updateExpression) {
+            return expressionType(updateExpression.target(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
+                    classBinaryName);
         }
         if (expression instanceof JavaAstMemberAccessExpression memberAccess) {
             if (memberAccess.receiver() instanceof JavaAstThisExpression) {

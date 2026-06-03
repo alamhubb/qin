@@ -45,6 +45,7 @@ import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
 import com.slime.java.ast.JavaAstThisExpression;
+import com.slime.java.ast.JavaAstUpdateExpression;
 import com.slime.java.ast.JavaAstWhileStatement;
 import com.slime.java.ast.JavaCstToAst;
 import java.util.ArrayList;
@@ -535,6 +536,20 @@ public final class QinJavaAstIrLowerer {
                     lowerExpression(assignment.target(), packageName, importedTypes, locals, valueNames),
                     assignment.operator(),
                     lowerExpression(assignment.value(), packageName, importedTypes, locals, valueNames));
+        }
+        if (expression instanceof JavaAstUpdateExpression updateExpression) {
+            QinIrExpression target = lowerExpression(updateExpression.target(), packageName, importedTypes, locals, valueNames);
+            String binaryOperator = "++".equals(updateExpression.operator()) ? "+" : "-";
+            return new QinIrAssignmentExpression(
+                    target,
+                    "=",
+                    new QinIrBuiltinCallExpression(
+                            "Global",
+                            "__qin_binary__",
+                            List.of(
+                                    new QinIrStringLiteral(binaryOperator),
+                                    target,
+                                    new QinIrNumberLiteral(1.0))));
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
             return new QinIrBuiltinCallExpression(
