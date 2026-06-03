@@ -52,6 +52,13 @@ public final class QinJavaSlimeParserJsBackendSmokeTestMain {
         String source = Files.readString(slimeParser, StandardCharsets.UTF_8);
         QinIrProgram program = new QinJavaAstIrLowerer().lowerSource(source);
         String generated = new QinJsBackend().compileProgram(program);
+        Path generatedOutput = qinRoot
+                .resolve(".qin")
+                .resolve("generated")
+                .resolve("slime-parser")
+                .resolve("SlimeParser.js");
+        Files.createDirectories(generatedOutput.getParent());
+        Files.writeString(generatedOutput, generated, StandardCharsets.UTF_8);
 
         require(generated.contains("class SlimeParser"), "generated SlimeParser class");
         require(generated.contains("extends SlimeTSDeclarationParser"), "generated SlimeParser inheritance");
@@ -61,6 +68,7 @@ public final class QinJavaSlimeParserJsBackendSmokeTestMain {
         require(generated.contains("class ExpressionParams"), "generated inherited Java record runtime");
         require(generated.contains("ExpressionParams.DEFAULT"), "generated Java record static field access");
 
+        System.out.println("Generated JS: " + generatedOutput);
         System.out.println("QinJavaSlimeParserJsBackendSmokeTestMain OK");
     }
 
