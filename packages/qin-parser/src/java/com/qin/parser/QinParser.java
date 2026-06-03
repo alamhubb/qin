@@ -1,8 +1,6 @@
 package com.qin.parser;
 
 import com.slime.parser.SlimeParser;
-import com.subhuti.parser.SubhutiRule;
-
 /**
  * Qin parser entry built on top of Slime's TypeScript-capable parser layer.
  *
@@ -17,11 +15,13 @@ public class QinParser extends SlimeParser {
     }
 
     /**
-     * Placeholder top-level rule for future Qin-specific module entry customization.
+     * Placeholder top-level entry for future Qin-specific module customization.
      *
-     * <p>At the current migration stage we delegate to the inherited program entry.
+     * <p>At the current migration stage the production facade calls the inherited
+     * {@code Program} rule directly. Keeping this method outside the Subhuti rule
+     * table prevents the Qin subclass from perturbing the inherited Slime parser
+     * packrat keys while still documenting the planned Qin-owned entry point.
      */
-    @SubhutiRule
     public void QinModule(SourceType sourceType) {
         Program(sourceType);
     }
