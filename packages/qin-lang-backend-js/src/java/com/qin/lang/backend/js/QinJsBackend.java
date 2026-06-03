@@ -147,6 +147,13 @@ public final class QinJsBackend {
             }
         }
         for (QinIrClassDeclaration classDeclaration : program.classDeclarations()) {
+            if (classDeclaration.superType() != null) {
+                emitJavaRuntimeAlias(
+                        js,
+                        jsClassReference(classDeclaration.superType().binaryName()),
+                        classDeclaration.superType().binaryName(),
+                        javaAliases);
+            }
             for (QinIrFieldDeclaration field : classDeclaration.fields()) {
                 emitJavaRuntimeAliasesForExpression(js, field.initializer(), javaAliases);
             }
@@ -357,6 +364,10 @@ public final class QinJsBackend {
             case "java.lang.Double" -> {
                 emitJavaLangDoubleRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangDouble");
+            }
+            case "java.lang.Enum" -> {
+                emitJavaLangEnumRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangEnum");
             }
             case "java.lang.System" -> {
                 emitJavaLangSystemRuntime(js);
@@ -605,6 +616,27 @@ public final class QinJsBackend {
                   parseDouble(value) { return Number.parseFloat(String(value)); },
                   valueOf(value) { return Number(value); }
                 };
+                """);
+    }
+
+    private void emitJavaLangEnumRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinJavaLangEnum") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaLangEnum {
+                  constructor() {
+                  }
+                  name() {
+                    return this.__qinEnumName == null ? "" : this.__qinEnumName;
+                  }
+                  ordinal() {
+                    return this.__qinEnumOrdinal == null ? -1 : this.__qinEnumOrdinal;
+                  }
+                  toString() {
+                    return this.name();
+                  }
+                }
                 """);
     }
 
@@ -1879,9 +1911,75 @@ public final class QinJsBackend {
             }
             js.append("}\n");
         }
+        emitJavaEnumStaticValues(js, classDeclarations);
         if (!classDeclarations.isEmpty()) {
             js.append("\n");
         }
+    }
+
+    private void emitJavaEnumStaticValues(StringBuilder js, List<QinIrClassDeclaration> classDeclarations) {
+        if (!hasJavaEnumStaticValues(classDeclarations)) {
+            return;
+        }
+        js.append("""
+                function __qin_init_enum_value(value, name, ordinal) {
+                  Object.defineProperty(value, "__qinEnumName", {
+                    value: String(name),
+                    configurable: true
+                  });
+                  Object.defineProperty(value, "__qinEnumOrdinal", {
+                    value: ordinal,
+                    configurable: true
+                  });
+                  return value;
+                }
+                """);
+        for (QinIrClassDeclaration classDeclaration : classDeclarations) {
+            if (!isJavaEnumClass(classDeclaration)) {
+                continue;
+            }
+            int ordinal = 0;
+            for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+                if (!isJavaEnumConstant(classDeclaration, field)) {
+                    continue;
+                }
+                js.append(classDeclaration.simpleName())
+                        .append(".")
+                        .append(field.name())
+                        .append(" = __qin_init_enum_value(new ")
+                        .append(classDeclaration.simpleName())
+                        .append("(), \"")
+                        .append(escapeJs(field.name()))
+                        .append("\", ")
+                        .append(ordinal)
+                        .append(");\n");
+                ordinal++;
+            }
+        }
+    }
+
+    private boolean hasJavaEnumStaticValues(List<QinIrClassDeclaration> classDeclarations) {
+        for (QinIrClassDeclaration classDeclaration : classDeclarations) {
+            if (!isJavaEnumClass(classDeclaration)) {
+                continue;
+            }
+            for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+                if (isJavaEnumConstant(classDeclaration, field)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isJavaEnumClass(QinIrClassDeclaration classDeclaration) {
+        return classDeclaration.superType() != null
+                && "java.lang.Enum".equals(classDeclaration.superType().binaryName());
+    }
+
+    private boolean isJavaEnumConstant(QinIrClassDeclaration classDeclaration, QinIrFieldDeclaration field) {
+        return field.type().binaryName() != null
+                && field.type().binaryName().equals(classDeclaration.binaryName());
     }
 
     private QinIrMethodDeclaration explicitConstructor(QinIrClassDeclaration classDeclaration) {
