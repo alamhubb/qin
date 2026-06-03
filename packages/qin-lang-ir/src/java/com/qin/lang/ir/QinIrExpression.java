@@ -8,6 +8,7 @@ public sealed interface QinIrExpression permits
         QinIrArrayLiteral,
         QinIrBooleanLiteral,
         QinIrBuiltinCallExpression,
+        QinIrForExpression,
         QinIrFunctionLiteral,
         QinIrIfExpression,
         QinIrIdentifierReference,

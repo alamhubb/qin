@@ -7,6 +7,7 @@ import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
+import com.qin.lang.ir.QinIrForExpression;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
@@ -29,6 +30,7 @@ import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstExpressionStatement;
 import com.slime.java.ast.JavaAstFieldDeclaration;
+import com.slime.java.ast.JavaAstForStatement;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstIfStatement;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
@@ -187,6 +189,7 @@ public final class QinJavaAstIrLowerer {
     private boolean hasStructuredStatement(JavaAstMethodDeclaration method) {
         for (JavaAstStatement statement : method.bodyStatements()) {
             if (statement instanceof JavaAstExpressionStatement
+                    || statement instanceof JavaAstForStatement
                     || statement instanceof JavaAstIfStatement
                     || statement instanceof JavaAstWhileStatement) {
                 return true;
@@ -226,6 +229,10 @@ public final class QinJavaAstIrLowerer {
                         importedTypes,
                         Map.of(),
                         scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstForStatement forStatement) {
+                leadingExpressions.add(lowerForExpression(forStatement, packageName, importedTypes, scopedValueNames));
                 continue;
             }
             if (statement instanceof JavaAstIfStatement ifStatement) {
@@ -292,6 +299,10 @@ public final class QinJavaAstIrLowerer {
                         scopedValueNames));
                 continue;
             }
+            if (statement instanceof JavaAstForStatement forStatement) {
+                leadingExpressions.add(lowerForExpression(forStatement, packageName, importedTypes, scopedValueNames));
+                continue;
+            }
             if (statement instanceof JavaAstIfStatement ifStatement) {
                 resultExpression = lowerIfExpression(ifStatement, packageName, importedTypes, scopedValueNames);
                 break;
@@ -342,6 +353,10 @@ public final class QinJavaAstIrLowerer {
                         scopedValueNames));
                 continue;
             }
+            if (statement instanceof JavaAstForStatement forStatement) {
+                bodyExpressions.add(lowerForExpression(forStatement, packageName, importedTypes, scopedValueNames));
+                continue;
+            }
             if (statement instanceof JavaAstIfStatement ifStatement) {
                 bodyExpressions.add(lowerIfExpression(ifStatement, packageName, importedTypes, scopedValueNames));
                 continue;
@@ -362,6 +377,89 @@ public final class QinJavaAstIrLowerer {
         return new QinIrWhileExpression(
                 lowerExpression(whileStatement.test(), packageName, importedTypes, Map.of(), valueNames),
                 localDeclarations,
+                bodyExpressions);
+    }
+
+    private QinIrForExpression lowerForExpression(
+            JavaAstForStatement forStatement,
+            String packageName,
+            Map<String, String> importedTypes,
+            Set<String> valueNames) {
+        List<QinIrLocalVariableDeclaration> initializerDeclarations = new ArrayList<>();
+        List<QinIrExpression> initializerExpressions = new ArrayList<>();
+        Set<String> scopedValueNames = new LinkedHashSet<>(valueNames);
+        for (JavaAstStatement initializer : forStatement.initializerStatements()) {
+            if (initializer instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrExpression initialValue = localVariable.initializer() == null
+                        ? new QinIrNullLiteral()
+                        : lowerExpression(localVariable.initializer(), packageName, importedTypes, Map.of(), scopedValueNames);
+                initializerDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initialValue));
+                scopedValueNames.add(localVariable.name());
+                continue;
+            }
+            if (initializer instanceof JavaAstExpressionStatement expressionStatement) {
+                initializerExpressions.add(lowerExpression(
+                        expressionStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        Map.of(),
+                        scopedValueNames));
+            }
+        }
+
+        List<QinIrExpression> updateExpressions = new ArrayList<>();
+        for (JavaAstExpression updateExpression : forStatement.updateExpressions()) {
+            updateExpressions.add(lowerExpression(updateExpression, packageName, importedTypes, Map.of(), scopedValueNames));
+        }
+
+        List<QinIrLocalVariableDeclaration> bodyLocalDeclarations = new ArrayList<>();
+        List<QinIrExpression> bodyExpressions = new ArrayList<>();
+        for (JavaAstStatement statement : forStatement.bodyStatements()) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrExpression initializer = localVariable.initializer() == null
+                        ? new QinIrNullLiteral()
+                        : lowerExpression(localVariable.initializer(), packageName, importedTypes, Map.of(), scopedValueNames);
+                bodyLocalDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
+                scopedValueNames.add(localVariable.name());
+                continue;
+            }
+            if (statement instanceof JavaAstExpressionStatement expressionStatement) {
+                bodyExpressions.add(lowerExpression(
+                        expressionStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        Map.of(),
+                        scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstForStatement nestedForStatement) {
+                bodyExpressions.add(lowerForExpression(nestedForStatement, packageName, importedTypes, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstIfStatement ifStatement) {
+                bodyExpressions.add(lowerIfExpression(ifStatement, packageName, importedTypes, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstWhileStatement whileStatement) {
+                bodyExpressions.add(lowerWhileExpression(whileStatement, packageName, importedTypes, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstReturnStatement returnStatement) {
+                bodyExpressions.add(lowerExpression(
+                        returnStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        Map.of(),
+                        scopedValueNames));
+            }
+        }
+
+        return new QinIrForExpression(
+                initializerDeclarations,
+                initializerExpressions,
+                lowerExpression(forStatement.test(), packageName, importedTypes, Map.of(), scopedValueNames),
+                updateExpressions,
+                bodyLocalDeclarations,
                 bodyExpressions);
     }
 

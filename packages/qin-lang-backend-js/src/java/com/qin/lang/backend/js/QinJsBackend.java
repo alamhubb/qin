@@ -12,6 +12,7 @@ import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrFieldDeclaration;
+import com.qin.lang.ir.QinIrForExpression;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
@@ -152,6 +153,25 @@ public final class QinJsBackend {
             emitJavaRuntimeAliasesForExpression(js, ifExpression.test(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.consequent(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.alternate(), javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrForExpression forExpression) {
+            for (QinIrLocalVariableDeclaration declaration : forExpression.initializerDeclarations()) {
+                emitJavaRuntimeAliasesForExpression(js, declaration.initializer(), javaAliases);
+            }
+            for (QinIrExpression initializerExpression : forExpression.initializerExpressions()) {
+                emitJavaRuntimeAliasesForExpression(js, initializerExpression, javaAliases);
+            }
+            emitJavaRuntimeAliasesForExpression(js, forExpression.test(), javaAliases);
+            for (QinIrExpression updateExpression : forExpression.updateExpressions()) {
+                emitJavaRuntimeAliasesForExpression(js, updateExpression, javaAliases);
+            }
+            for (QinIrLocalVariableDeclaration declaration : forExpression.bodyLocalDeclarations()) {
+                emitJavaRuntimeAliasesForExpression(js, declaration.initializer(), javaAliases);
+            }
+            for (QinIrExpression bodyExpression : forExpression.bodyExpressions()) {
+                emitJavaRuntimeAliasesForExpression(js, bodyExpression, javaAliases);
+            }
             return;
         }
         if (expression instanceof QinIrWhileExpression whileExpression) {
@@ -560,6 +580,37 @@ public final class QinJsBackend {
                     || usesBuiltin(ifExpression.consequent(), methodName)
                     || usesBuiltin(ifExpression.alternate(), methodName);
         }
+        if (expression instanceof QinIrForExpression forExpression) {
+            for (QinIrLocalVariableDeclaration declaration : forExpression.initializerDeclarations()) {
+                if (usesBuiltin(declaration.initializer(), methodName)) {
+                    return true;
+                }
+            }
+            for (QinIrExpression initializerExpression : forExpression.initializerExpressions()) {
+                if (usesBuiltin(initializerExpression, methodName)) {
+                    return true;
+                }
+            }
+            if (usesBuiltin(forExpression.test(), methodName)) {
+                return true;
+            }
+            for (QinIrExpression updateExpression : forExpression.updateExpressions()) {
+                if (usesBuiltin(updateExpression, methodName)) {
+                    return true;
+                }
+            }
+            for (QinIrLocalVariableDeclaration declaration : forExpression.bodyLocalDeclarations()) {
+                if (usesBuiltin(declaration.initializer(), methodName)) {
+                    return true;
+                }
+            }
+            for (QinIrExpression bodyExpression : forExpression.bodyExpressions()) {
+                if (usesBuiltin(bodyExpression, methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
         if (expression instanceof QinIrWhileExpression whileExpression) {
             if (usesBuiltin(whileExpression.test(), methodName)) {
                 return true;
@@ -918,6 +969,10 @@ public final class QinJsBackend {
             emitIfExpression(js, ifExpression);
             return;
         }
+        if (expression instanceof QinIrForExpression forExpression) {
+            emitForExpression(js, forExpression);
+            return;
+        }
         if (expression instanceof QinIrWhileExpression whileExpression) {
             emitWhileExpression(js, whileExpression);
             return;
@@ -1038,6 +1093,63 @@ public final class QinJsBackend {
         js.append("      }\n");
         js.append("      return null;\n");
         js.append("    })()");
+    }
+
+    private void emitForExpression(StringBuilder js, QinIrForExpression forExpression) {
+        js.append("(() => {\n");
+        js.append("      for (");
+        emitForInitializers(js, forExpression);
+        js.append("; ");
+        if (forExpression.test() != null) {
+            emitExpression(js, forExpression.test());
+        }
+        js.append("; ");
+        emitCommaSeparatedExpressions(js, forExpression.updateExpressions());
+        js.append(") {\n");
+        for (QinIrLocalVariableDeclaration declaration : forExpression.bodyLocalDeclarations()) {
+            js.append("        let ").append(declaration.name()).append(" = ");
+            emitExpression(js, declaration.initializer());
+            js.append(";\n");
+        }
+        for (QinIrExpression bodyExpression : forExpression.bodyExpressions()) {
+            js.append("        ");
+            emitExpression(js, bodyExpression);
+            js.append(";\n");
+        }
+        js.append("      }\n");
+        js.append("      return null;\n");
+        js.append("    })()");
+    }
+
+    private void emitForInitializers(StringBuilder js, QinIrForExpression forExpression) {
+        boolean emitted = false;
+        if (!forExpression.initializerDeclarations().isEmpty()) {
+            js.append("let ");
+            for (int i = 0; i < forExpression.initializerDeclarations().size(); i++) {
+                if (i > 0) {
+                    js.append(", ");
+                }
+                QinIrLocalVariableDeclaration declaration = forExpression.initializerDeclarations().get(i);
+                js.append(declaration.name()).append(" = ");
+                emitExpression(js, declaration.initializer());
+            }
+            emitted = true;
+        }
+        if (!forExpression.initializerExpressions().isEmpty()) {
+            if (emitted) {
+                js.append(", ");
+            }
+            emitCommaSeparatedExpressions(js, forExpression.initializerExpressions());
+        }
+    }
+
+    private void emitCommaSeparatedExpressions(StringBuilder js, List<QinIrExpression> expressions) {
+        for (int i = 0; i < expressions.size(); i++) {
+            if (i > 0) {
+                js.append(", ");
+            }
+            emitExpression(js, expressions.get(i));
+        }
     }
 
     private void emitSequenceExpression(StringBuilder js, QinIrSequenceExpression sequenceExpression) {

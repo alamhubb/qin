@@ -8,6 +8,7 @@ import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
 import com.slime.java.ast.JavaAstExpressionStatement;
 import com.slime.java.ast.JavaAstFieldDeclaration;
+import com.slime.java.ast.JavaAstForStatement;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstIfStatement;
 import com.slime.java.ast.JavaAstImportDeclaration;
@@ -161,6 +162,11 @@ public final class QinJavaSemanticAnalyzer {
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstForStatement forStatement) {
+                analyzeForStatement(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        forStatement);
                 continue;
             }
             if (statement instanceof JavaAstIfStatement ifStatement) {
@@ -330,6 +336,11 @@ public final class QinJavaSemanticAnalyzer {
                         classBinaryName);
                 continue;
             }
+            if (statement instanceof JavaAstForStatement forStatement) {
+                analyzeForStatement(packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName,
+                        forStatement);
+                continue;
+            }
             if (statement instanceof JavaAstIfStatement ifStatement) {
                 expressionType(ifStatement.test(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
                         classBinaryName);
@@ -346,6 +357,45 @@ public final class QinJavaSemanticAnalyzer {
                         whileStatement.bodyStatements());
             }
         }
+    }
+
+    private void analyzeForStatement(
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> inheritedLocals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName,
+            JavaAstForStatement forStatement) {
+        Map<String, QinIrTypeRef> scopedLocals = new LinkedHashMap<>(inheritedLocals);
+        for (JavaAstStatement initializer : forStatement.initializerStatements()) {
+            if (initializer instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrTypeRef localType = localVariable.initializer() == null
+                        ? resolveType(localVariable.typeName(), packageName, importedTypes)
+                        : expressionType(
+                                localVariable.initializer(),
+                                packageName,
+                                importedTypes,
+                                scopedLocals,
+                                fieldTypes,
+                                methodReturnTypes,
+                                classBinaryName);
+                scopedLocals.put(localVariable.name(), localType);
+                continue;
+            }
+            if (initializer instanceof JavaAstExpressionStatement expressionStatement) {
+                expressionType(expressionStatement.expression(), packageName, importedTypes, scopedLocals, fieldTypes,
+                        methodReturnTypes, classBinaryName);
+            }
+        }
+        expressionType(forStatement.test(), packageName, importedTypes, scopedLocals, fieldTypes, methodReturnTypes,
+                classBinaryName);
+        for (JavaAstExpression updateExpression : forStatement.updateExpressions()) {
+            expressionType(updateExpression, packageName, importedTypes, scopedLocals, fieldTypes, methodReturnTypes,
+                    classBinaryName);
+        }
+        analyzeStatements(packageName, importedTypes, scopedLocals, fieldTypes, methodReturnTypes, classBinaryName,
+                forStatement.bodyStatements());
     }
 
     private QinIrTypeRef binaryExpressionType(String operator, QinIrTypeRef left, QinIrTypeRef right) {
