@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -117,6 +118,17 @@ public final class JavaEsmGlobal {
         return new NativeFunction("constant", args -> value);
     }
 
+    public static Object __qin_builtin_constructor__(Object name) {
+        String builtinName = String.valueOf(name);
+        return switch (builtinName) {
+            case "Array", "Object", "Map", "Set", "WeakMap", "WeakSet", "Proxy", "Promise", "Symbol",
+                    "Date", "String", "Boolean", "Number",
+                    "Uint8Array", "Uint16Array", "Uint32Array", "TextDecoder", "URLSearchParams",
+                    "RegExp", "Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError" -> builtinName;
+            default -> throw new IllegalArgumentException("Unsupported JS builtin constructor: " + builtinName);
+        };
+    }
+
     public static Object __qin_global__(Object name) {
         String globalName = String.valueOf(name);
         Object bound = GLOBAL_BINDINGS.get(globalName);
@@ -140,6 +152,8 @@ public final class JavaEsmGlobal {
             case "parseFloat" -> methodHandle(JavaEsmGlobal.class, "parseFloat", Object.class);
             case "isNaN" -> methodHandle(JavaEsmGlobal.class, "isNaN", Object.class);
             case "isFinite" -> methodHandle(JavaEsmGlobal.class, "isFinite", Object.class);
+            case "__qin_builtin_constructor__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_builtin_constructor__", Object.class);
             case "globalthis" -> methodHandle(NodeHostRuntime.class, "globalThis");
             case "node:fs.default" -> NodeHostRuntime.fsNamespace();
             case "node:path.default" -> NodeHostRuntime.pathNamespace();
@@ -583,11 +597,21 @@ public final class JavaEsmGlobal {
         if (target instanceof JavaEsmTypedArray typedArray) {
             return typedArray.memberGet(property);
         }
+        if (target instanceof JavaEsmSetObject setObject && Objects.equals(property, JavaEsmSymbol.iterator())) {
+            return new NativeFunction("Set.Symbol.iterator", args -> setObject.values().iterator());
+        }
+        if (target instanceof JavaEsmMapObject mapObject && Objects.equals(property, JavaEsmSymbol.iterator())) {
+            return new NativeFunction("Map.Symbol.iterator", args -> mapObject.entries().iterator());
+        }
         if (target instanceof Map<?, ?> map) {
             String key = propertyKey(property);
             Map<String, Object> cast = castMap(map);
             if (cast.containsKey(key)) {
                 return normalizeRuntimeMemberValue(JavaEsmObject.resolveStoredPropertyValue(cast.get(key)));
+            }
+            Object globalBuiltinValue = tryReadGlobalObjectBuiltin(key);
+            if (globalBuiltinValue != BUILTIN_MISS) {
+                return globalBuiltinValue;
             }
             Object objectPrototypeValue = objectPrototypeMember(target, key);
             if (objectPrototypeValue != BUILTIN_MISS) {
@@ -882,6 +906,12 @@ public final class JavaEsmGlobal {
             if (value != null) {
                 return callRuntimeMethodValue(target, value, args);
             }
+        }
+        if (target instanceof JavaEsmSetObject setObject && Objects.equals(methodName, JavaEsmSymbol.iterator())) {
+            return setObject.values().iterator();
+        }
+        if (target instanceof JavaEsmMapObject mapObject && Objects.equals(methodName, JavaEsmSymbol.iterator())) {
+            return mapObject.entries().iterator();
         }
         if (target instanceof Number number && JavaEsmNumber.supports(name)) {
             return JavaEsmNumber.invoke(number, name, args);
@@ -1684,7 +1714,7 @@ public final class JavaEsmGlobal {
         return true;
     }
 
-    private static Iterable<?> asIterableForOf(Object value) {
+    static Iterable<?> asIterableForOf(Object value) {
         if (value == null) {
             throw new IllegalArgumentException("for...of cannot iterate null");
         }
@@ -1719,7 +1749,68 @@ public final class JavaEsmGlobal {
             }
             return entries;
         }
+        Object iteratorMethod = __qin_member_get__(value, JavaEsmSymbol.iterator());
+        if (iteratorMethod != null) {
+            Object iterator = callRuntimeMethodValue(value, iteratorMethod);
+            return iterableFromJsIterator(iterator);
+        }
         throw new IllegalArgumentException("Unsupported for...of target: " + simpleName(value));
+    }
+
+    private static Iterable<Object> iterableFromJsIterator(Object iterator) {
+        if (iterator == null) {
+            throw new IllegalArgumentException("Iterator method returned null");
+        }
+        if (iterator instanceof Iterator<?> javaIterator) {
+            return () -> new Iterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return javaIterator.hasNext();
+                }
+
+                @Override
+                public Object next() {
+                    return javaIterator.next();
+                }
+            };
+        }
+        return () -> new Iterator<>() {
+            private Object nextValue;
+            private boolean nextDone;
+            private boolean loaded;
+
+            @Override
+            public boolean hasNext() {
+                load();
+                return !nextDone;
+            }
+
+            @Override
+            public Object next() {
+                load();
+                if (nextDone) {
+                    throw new NoSuchElementException();
+                }
+                Object value = nextValue;
+                loaded = false;
+                nextValue = null;
+                return value;
+            }
+
+            private void load() {
+                if (loaded) {
+                    return;
+                }
+                Object nextFunction = __qin_member_get__(iterator, "next");
+                if (nextFunction == null) {
+                    throw new IllegalArgumentException("Iterator object does not expose next()");
+                }
+                Object result = callRuntimeMethodValue(iterator, nextFunction);
+                nextDone = truthy(__qin_member_get__(result, "done"));
+                nextValue = __qin_member_get__(result, "value");
+                loaded = true;
+            }
+        };
     }
 
     private static Object createErrorObject(String name, Object[] args) {
@@ -1915,10 +2006,28 @@ public final class JavaEsmGlobal {
                 Object value = JavaEsmNumber.staticMemberGet(property);
                 yield value == null ? BUILTIN_MISS : value;
             }
+            case "Symbol" -> {
+                if ("iterator".equals(key)) {
+                    yield JavaEsmSymbol.iterator();
+                }
+                yield BUILTIN_MISS;
+            }
             case "process", "node:process" -> {
                 Object value = NodeHostRuntime.processMember(key);
                 yield value == null ? BUILTIN_MISS : value;
             }
+            default -> BUILTIN_MISS;
+        };
+    }
+
+    private static Object tryReadGlobalObjectBuiltin(String key) {
+        return switch (key) {
+            case "Math", "JSON", "Number", "Object", "Array", "Map", "Set", "Proxy", "Promise", "Symbol",
+                    "WeakMap", "WeakSet", "Date", "String", "Boolean",
+                    "Uint8Array", "Uint16Array", "Uint32Array", "TextDecoder", "URLSearchParams",
+                    "RegExp", "Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError" -> key;
+            case "Infinity" -> Double.POSITIVE_INFINITY;
+            case "NaN", "undefined" -> null;
             default -> BUILTIN_MISS;
         };
     }
@@ -3074,7 +3183,7 @@ public final class JavaEsmGlobal {
                 if (!isStaticClassMember(member)) {
                     continue;
                 }
-                String name = extractPropertyName(member.get("key"));
+                String name = classMemberKey(member);
                 if (name == null) {
                     continue;
                 }
@@ -3128,7 +3237,7 @@ public final class JavaEsmGlobal {
                         || isAccessorMember(member)) {
                     continue;
                 }
-                String name = extractPropertyName(member.get("key"));
+                String name = classMemberKey(member);
                 Object valueNode = member.get("value");
                 if (name == null || !(valueNode instanceof Map<?, ?> rawValue)) {
                     continue;
@@ -3382,6 +3491,13 @@ public final class JavaEsmGlobal {
             cachedSuperClassFunction = value instanceof InterpretedFunction interpretedFunction ? interpretedFunction : null;
             superClassFunctionResolved = true;
             return cachedSuperClassFunction;
+        }
+
+        private String classMemberKey(Map<String, Object> member) {
+            if (Boolean.TRUE.equals(member.get("computed"))) {
+                return propertyKey(evalNode(member.get("key"), closure));
+            }
+            return extractPropertyName(member.get("key"));
         }
 
         private InterpretedFunction createMemberFunction(Map<String, Object> valueAst) {
@@ -5082,7 +5198,7 @@ public final class JavaEsmGlobal {
                 return decodeQuotedStringLiteral(text);
             }
             Object raw = astNode.get("raw");
-            if (raw instanceof String rawText) {
+            if (astNode.containsKey("regex") && raw instanceof String rawText) {
                 JavaEsmRegExp regexp = regexLiteral(rawText);
                 if (regexp != null) {
                     return regexp;

@@ -107,6 +107,14 @@ public final class JavaEsmArray {
             }
             return result;
         }
+        try {
+            for (Object item : JavaEsmGlobal.asIterableForOf(value)) {
+                result.add(item);
+            }
+            return result;
+        } catch (IllegalArgumentException ignored) {
+            // Fall through to array-like/string handling below.
+        }
         if (value.getClass().isArray()) {
             int length = java.lang.reflect.Array.getLength(value);
             for (int i = 0; i < length; i++) {

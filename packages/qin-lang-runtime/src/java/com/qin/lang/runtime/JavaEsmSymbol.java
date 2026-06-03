@@ -11,6 +11,7 @@ public final class JavaEsmSymbol {
     private static final AtomicLong SEQUENCE = new AtomicLong();
     private static final Map<String, JavaSymbol> REGISTRY = new ConcurrentHashMap<>();
     private static final Map<Long, JavaSymbol> BY_ID = new ConcurrentHashMap<>();
+    private static final JavaSymbol ITERATOR = wellKnown("Symbol.iterator");
 
     private JavaEsmSymbol() {
     }
@@ -38,6 +39,10 @@ public final class JavaEsmSymbol {
         return null;
     }
 
+    public static Object iterator() {
+        return ITERATOR;
+    }
+
     static Object fromInternalPropertyKey(String key) {
         if (key == null || !key.startsWith("\u0000symbol:")) {
             return null;
@@ -47,6 +52,12 @@ public final class JavaEsmSymbol {
         } catch (NumberFormatException ignored) {
             return null;
         }
+    }
+
+    private static JavaSymbol wellKnown(String description) {
+        JavaSymbol symbol = new JavaSymbol(SEQUENCE.incrementAndGet(), description, false);
+        BY_ID.put(symbol.id(), symbol);
+        return symbol;
     }
 
     public record JavaSymbol(long id, String description, boolean global) {

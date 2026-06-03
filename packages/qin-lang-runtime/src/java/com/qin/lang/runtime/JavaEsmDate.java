@@ -1,6 +1,7 @@
 package com.qin.lang.runtime;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
@@ -34,7 +35,11 @@ public final class JavaEsmDate {
         try {
             return new JavaEsmDate(Instant.parse(text).toEpochMilli());
         } catch (DateTimeParseException ignored) {
-            throw new IllegalArgumentException("Unsupported Date constructor argument: " + text);
+            try {
+                return new JavaEsmDate(LocalDateTime.parse(text).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            } catch (DateTimeParseException ignoredAgain) {
+                throw new IllegalArgumentException("Unsupported Date constructor argument: " + text);
+            }
         }
     }
 
