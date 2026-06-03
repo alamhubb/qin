@@ -17,6 +17,7 @@ import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJsImport;
 import com.qin.lang.ir.QinIrJavaNewExpression;
+import com.qin.lang.ir.QinIrLetExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
@@ -24,6 +25,7 @@ import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrSequenceExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrMethodDeclaration;
@@ -164,6 +166,23 @@ public final class QinJsBackend {
             for (QinIrExpression argument : instanceMethodCallExpression.arguments()) {
                 emitJavaRuntimeAliasesForExpression(js, argument, javaAliases);
             }
+            return;
+        }
+        if (expression instanceof QinIrLetExpression letExpression) {
+            for (QinIrConstDeclaration declaration : letExpression.localDeclarations()) {
+                emitJavaRuntimeAliasesForExpression(js, declaration.initializer(), javaAliases);
+            }
+            for (QinIrExpression leadingExpression : letExpression.leadingExpressions()) {
+                emitJavaRuntimeAliasesForExpression(js, leadingExpression, javaAliases);
+            }
+            emitJavaRuntimeAliasesForExpression(js, letExpression.resultExpression(), javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrSequenceExpression sequenceExpression) {
+            for (QinIrExpression leadingExpression : sequenceExpression.leadingExpressions()) {
+                emitJavaRuntimeAliasesForExpression(js, leadingExpression, javaAliases);
+            }
+            emitJavaRuntimeAliasesForExpression(js, sequenceExpression.resultExpression(), javaAliases);
             return;
         }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
@@ -553,6 +572,27 @@ public final class QinJsBackend {
             }
             return false;
         }
+        if (expression instanceof QinIrLetExpression letExpression) {
+            for (QinIrConstDeclaration declaration : letExpression.localDeclarations()) {
+                if (usesBuiltin(declaration.initializer(), methodName)) {
+                    return true;
+                }
+            }
+            for (QinIrExpression leadingExpression : letExpression.leadingExpressions()) {
+                if (usesBuiltin(leadingExpression, methodName)) {
+                    return true;
+                }
+            }
+            return usesBuiltin(letExpression.resultExpression(), methodName);
+        }
+        if (expression instanceof QinIrSequenceExpression sequenceExpression) {
+            for (QinIrExpression leadingExpression : sequenceExpression.leadingExpressions()) {
+                if (usesBuiltin(leadingExpression, methodName)) {
+                    return true;
+                }
+            }
+            return usesBuiltin(sequenceExpression.resultExpression(), methodName);
+        }
         if (expression instanceof QinIrPropertyAccessExpression propertyAccessExpression) {
             return usesBuiltin(propertyAccessExpression.receiver(), methodName);
         }
@@ -868,11 +908,50 @@ public final class QinJsBackend {
             js.append(")");
             return;
         }
+        if (expression instanceof QinIrLetExpression letExpression) {
+            emitLetExpression(js, letExpression);
+            return;
+        }
+        if (expression instanceof QinIrSequenceExpression sequenceExpression) {
+            emitSequenceExpression(js, sequenceExpression);
+            return;
+        }
         if (expression instanceof QinIrObjectLiteral objectLiteral) {
             emitObjectLiteral(js, objectLiteral);
             return;
         }
         throw new IllegalArgumentException("Unsupported expression: " + expression.getClass().getSimpleName());
+    }
+
+    private void emitLetExpression(StringBuilder js, QinIrLetExpression letExpression) {
+        js.append("(() => {\n");
+        for (QinIrConstDeclaration declaration : letExpression.localDeclarations()) {
+            js.append("      const ").append(declaration.name()).append(" = ");
+            emitExpression(js, declaration.initializer());
+            js.append(";\n");
+        }
+        for (QinIrExpression leadingExpression : letExpression.leadingExpressions()) {
+            js.append("      ");
+            emitExpression(js, leadingExpression);
+            js.append(";\n");
+        }
+        js.append("      return ");
+        emitExpression(js, letExpression.resultExpression());
+        js.append(";\n");
+        js.append("    })()");
+    }
+
+    private void emitSequenceExpression(StringBuilder js, QinIrSequenceExpression sequenceExpression) {
+        js.append("(() => {\n");
+        for (QinIrExpression leadingExpression : sequenceExpression.leadingExpressions()) {
+            js.append("      ");
+            emitExpression(js, leadingExpression);
+            js.append(";\n");
+        }
+        js.append("      return ");
+        emitExpression(js, sequenceExpression.resultExpression());
+        js.append(";\n");
+        js.append("    })()");
     }
 
     private void ensureSupportedJavaOwner(String ownerBinaryName) {

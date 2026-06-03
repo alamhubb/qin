@@ -5,6 +5,7 @@ import com.qin.lang.ir.QinIrTypeRef;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
+import com.slime.java.ast.JavaAstExpressionStatement;
 import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstImportDeclaration;
@@ -140,6 +141,17 @@ public final class QinJavaSemanticAnalyzer {
             if (statement instanceof JavaAstReturnStatement returnStatement) {
                 returnExpressionType = expressionType(
                         returnStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstExpressionStatement expressionStatement) {
+                expressionType(
+                        expressionStatement.expression(),
                         packageName,
                         importedTypes,
                         locals,

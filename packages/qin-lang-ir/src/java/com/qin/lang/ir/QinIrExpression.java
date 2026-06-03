@@ -11,6 +11,7 @@ public sealed interface QinIrExpression permits
         QinIrIdentifierReference,
         QinIrInstanceMethodCallExpression,
         QinIrJavaNewExpression,
+        QinIrLetExpression,
         QinIrMemberAccessExpression,
         QinIrNullLiteral,
         QinIrNumberLiteral,

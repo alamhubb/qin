@@ -3,12 +3,15 @@ package com.qin.lang.frontend.adapter;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrAnnotation;
 import com.qin.lang.ir.QinIrClassDeclaration;
+import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaNewExpression;
+import com.qin.lang.ir.QinIrLetExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
+import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
@@ -19,6 +22,7 @@ import com.qin.lang.ir.QinIrThisExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstExpression;
+import com.slime.java.ast.JavaAstExpressionStatement;
 import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
@@ -149,6 +153,9 @@ public final class QinJavaAstIrLowerer {
             Map<String, String> importedTypes,
             Set<String> valueNames,
             JavaAstMethodDeclaration method) {
+        if (hasExpressionStatement(method)) {
+            return lowerMethodBodyExpression(packageName, importedTypes, valueNames, method);
+        }
         Map<String, QinIrExpression> locals = new LinkedHashMap<>();
         for (JavaAstStatement statement : method.bodyStatements()) {
             if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
@@ -168,6 +175,66 @@ public final class QinJavaAstIrLowerer {
             }
         }
         return lowerExpression(method.returnExpression(), packageName, importedTypes, locals, valueNames);
+    }
+
+    private boolean hasExpressionStatement(JavaAstMethodDeclaration method) {
+        for (JavaAstStatement statement : method.bodyStatements()) {
+            if (statement instanceof JavaAstExpressionStatement) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private QinIrExpression lowerMethodBodyExpression(
+            String packageName,
+            Map<String, String> importedTypes,
+            Set<String> valueNames,
+            JavaAstMethodDeclaration method) {
+        Set<String> scopedValueNames = new LinkedHashSet<>(valueNames);
+        List<QinIrConstDeclaration> localDeclarations = new ArrayList<>();
+        List<QinIrExpression> leadingExpressions = new ArrayList<>();
+        QinIrExpression resultExpression = null;
+
+        for (JavaAstStatement statement : method.bodyStatements()) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrExpression initializer = localVariable.initializer() == null
+                        ? new QinIrNullLiteral()
+                        : lowerExpression(
+                                localVariable.initializer(),
+                                packageName,
+                                importedTypes,
+                                Map.of(),
+                                scopedValueNames);
+                localDeclarations.add(new QinIrConstDeclaration(localVariable.name(), initializer));
+                scopedValueNames.add(localVariable.name());
+                continue;
+            }
+            if (statement instanceof JavaAstExpressionStatement expressionStatement) {
+                leadingExpressions.add(lowerExpression(
+                        expressionStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        Map.of(),
+                        scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstReturnStatement returnStatement) {
+                resultExpression = lowerExpression(
+                        returnStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        Map.of(),
+                        scopedValueNames);
+            }
+        }
+
+        if (resultExpression == null) {
+            resultExpression = method.returnExpression() == null
+                    ? new QinIrNullLiteral()
+                    : lowerExpression(method.returnExpression(), packageName, importedTypes, Map.of(), scopedValueNames);
+        }
+        return new QinIrLetExpression(localDeclarations, leadingExpressions, resultExpression);
     }
 
     private QinIrExpression lowerExpression(JavaAstExpression expression) {
