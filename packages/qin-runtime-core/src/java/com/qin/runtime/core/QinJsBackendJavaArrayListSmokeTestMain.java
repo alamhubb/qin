@@ -60,10 +60,13 @@ public final class QinJsBackendJavaArrayListSmokeTestMain {
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nglobalThis.__qinResult.size();\n",
+                generated
+                        + "\nglobalThis.__qinResult.add(\"aardvark\");\n"
+                        + "globalThis.__qinResult.sort((a, b) => a.length - b.length);\n"
+                        + "globalThis.__qinResult.get(0) + \":\" + globalThis.__qinResult.size();\n",
                 "js_backend_array_list");
-        if (!Integer.valueOf(1).equals(result)) {
-            throw new IllegalStateException("Expected generated ArrayList size 1, got: " + result);
+        if (!"hello:2".equals(result)) {
+            throw new IllegalStateException("Expected generated ArrayList sort result, got: " + result);
         }
         System.out.println("QinJsBackendJavaArrayListSmokeTestMain OK");
     }

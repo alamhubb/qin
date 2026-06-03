@@ -53,10 +53,12 @@ public final class QinJsBackendJavaHashMapSmokeTestMain {
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nglobalThis.__qinResult.get(\"name\") + \":\" + globalThis.__qinResult.size();\n",
+                generated
+                        + "\nconst created = globalThis.__qinResult.computeIfAbsent(\"missing\", key => key + \"-value\");\n"
+                        + "created + \":\" + globalThis.__qinResult.get(\"name\") + \":\" + globalThis.__qinResult.size();\n",
                 "js_backend_hash_map");
-        if (!"qin:1".equals(result)) {
-            throw new IllegalStateException("Expected generated HashMap qin:1, got: " + result);
+        if (!"missing-value:qin:2".equals(result)) {
+            throw new IllegalStateException("Expected generated HashMap computeIfAbsent result, got: " + result);
         }
         System.out.println("QinJsBackendJavaHashMapSmokeTestMain OK");
     }
