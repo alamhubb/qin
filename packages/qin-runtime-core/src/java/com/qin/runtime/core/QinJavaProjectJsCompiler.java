@@ -204,6 +204,7 @@ public final class QinJavaProjectJsCompiler {
         collectTypeReference(classDeclaration.superTypeName(), resolver, sourceBinaryNames, referenced);
         for (JavaAstFieldDeclaration field : classDeclaration.fields()) {
             collectTypeReference(field.typeName(), resolver, sourceBinaryNames, referenced);
+            collectExpressionReferences(field.initializer(), resolver, sourceBinaryNames, referenced);
         }
         for (JavaAstMethodDeclaration method : classDeclaration.methods()) {
             collectTypeReference(method.returnTypeName(), resolver, sourceBinaryNames, referenced);

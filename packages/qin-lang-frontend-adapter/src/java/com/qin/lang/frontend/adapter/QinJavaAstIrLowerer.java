@@ -212,7 +212,14 @@ public final class QinJavaAstIrLowerer {
                     field.name(),
                     semanticField.type(),
                     lowerAnnotations(packageName, importedTypes, field.annotations()),
-                    null));
+                    field.initializer() == null
+                            ? null
+                            : lowerExpression(
+                                    field.initializer(),
+                                    packageName,
+                                    importedTypes,
+                                    fieldLocals(fieldNames),
+                                    fieldNames)));
         }
 
         List<QinIrMethodDeclaration> methods = new ArrayList<>();

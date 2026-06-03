@@ -17,7 +17,8 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
                 package com.example;
                 import java.util.ArrayList;
                 class Person {
-                    String name;
+                    String name = "qin";
+                    String title;
                     ArrayList fresh() { return new ArrayList(); }
                     String display() { return this.name; }
                 }
@@ -26,7 +27,8 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
         String generated = new QinJsBackend().compileProgram(program);
         require(generated.contains("class Person"), "Person JS class");
         require(generated.contains("constructor()"), "Person constructor");
-        require(generated.contains("this.name = null;"), "field initializer");
+        require(generated.contains("this.name = \"qin\";"), "explicit field initializer");
+        require(generated.contains("this.title = null;"), "default field initializer");
         require(generated.contains("fresh()"), "fresh method");
         require(generated.contains("return new ArrayList();"), "ArrayList method return");
         require(generated.contains("return this.name;"), "this property return");
@@ -37,10 +39,10 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nconst person = new Person(); person.fresh().size();\n",
+                generated + "\nconst person = new Person(); person.display() + \":\" + person.fresh().size();\n",
                 "java_ast_js_backend_class");
-        if (!Integer.valueOf(0).equals(result)) {
-            throw new IllegalStateException("Expected generated Java AST class fresh ArrayList size 0, got: " + result);
+        if (!"qin:0".equals(result)) {
+            throw new IllegalStateException("Expected generated Java AST class field initializer and ArrayList, got: " + result);
         }
         System.out.println("QinJavaAstJsBackendClassSmokeTestMain OK");
     }
