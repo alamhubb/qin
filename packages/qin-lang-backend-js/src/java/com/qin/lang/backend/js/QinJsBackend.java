@@ -499,31 +499,46 @@ public final class QinJsBackend {
     }
 
     private void emitBuiltinRuntimeHelpers(StringBuilder js, QinIrProgram program) {
-        if (!usesBuiltin(program, "__qin_binary__")) {
+        boolean usesBinary = usesBuiltin(program, "__qin_binary__");
+        boolean usesLogical = usesBuiltin(program, "__qin_logical__");
+        if (!usesBinary && !usesLogical) {
             return;
         }
-        js.append("""
-                function __qin_binary__(operator, left, right) {
-                  switch (operator) {
-                    case "+": return left + right;
-                    case "-": return left - right;
-                    case "*": return left * right;
-                    case "/": return left / right;
-                    case "%": return left % right;
-                    case "==": return left == right;
-                    case "!=": return left != right;
-                    case "===": return left === right;
-                    case "!==": return left !== right;
-                    case "<": return left < right;
-                    case "<=": return left <= right;
-                    case ">": return left > right;
-                    case ">=": return left >= right;
-                    case "&&": return left && right;
-                    case "||": return left || right;
-                    default: throw new Error("Unsupported Qin binary operator: " + operator);
-                  }
-                }
-                """);
+        if (usesBinary) {
+            js.append("""
+                    function __qin_binary__(operator, left, right) {
+                      switch (operator) {
+                        case "+": return left + right;
+                        case "-": return left - right;
+                        case "*": return left * right;
+                        case "/": return left / right;
+                        case "%": return left % right;
+                        case "==": return left == right;
+                        case "!=": return left != right;
+                        case "===": return left === right;
+                        case "!==": return left !== right;
+                        case "<": return left < right;
+                        case "<=": return left <= right;
+                        case ">": return left > right;
+                        case ">=": return left >= right;
+                        case "&&": return left && right;
+                        case "||": return left || right;
+                        default: throw new Error("Unsupported Qin binary operator: " + operator);
+                      }
+                    }
+                    """);
+        }
+        if (usesLogical) {
+            js.append("""
+                    function __qin_logical__(operator, left, right) {
+                      switch (operator) {
+                        case "&&": return left && right;
+                        case "||": return left || right;
+                        default: throw new Error("Unsupported Qin logical operator: " + operator);
+                      }
+                    }
+                    """);
+        }
     }
 
     private boolean usesBuiltin(QinIrProgram program, String methodName) {

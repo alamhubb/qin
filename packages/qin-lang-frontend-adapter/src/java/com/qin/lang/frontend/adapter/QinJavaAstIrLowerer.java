@@ -637,6 +637,18 @@ public final class QinJavaAstIrLowerer {
                                     new QinIrNumberLiteral(1.0))));
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
+            if ("&&".equals(binary.operator())) {
+                return new QinIrIfExpression(
+                        lowerExpression(binary.left(), packageName, importedTypes, locals, valueNames),
+                        lowerExpression(binary.right(), packageName, importedTypes, locals, valueNames),
+                        new QinIrBooleanLiteral(false));
+            }
+            if ("||".equals(binary.operator())) {
+                return new QinIrIfExpression(
+                        lowerExpression(binary.left(), packageName, importedTypes, locals, valueNames),
+                        new QinIrBooleanLiteral(true),
+                        lowerExpression(binary.right(), packageName, importedTypes, locals, valueNames));
+            }
             return new QinIrBuiltinCallExpression(
                     "Global",
                     "__qin_binary__",

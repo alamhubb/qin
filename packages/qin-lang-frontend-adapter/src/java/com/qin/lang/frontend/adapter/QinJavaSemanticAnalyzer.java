@@ -437,6 +437,9 @@ public final class QinJavaSemanticAnalyzer {
     }
 
     private QinIrTypeRef binaryExpressionType(String operator, QinIrTypeRef left, QinIrTypeRef right) {
+        if ("&&".equals(operator) || "||".equals(operator)) {
+            return QinIrTypeRef.booleanType();
+        }
         if ("<".equals(operator)
                 || ">".equals(operator)
                 || "<=".equals(operator)
