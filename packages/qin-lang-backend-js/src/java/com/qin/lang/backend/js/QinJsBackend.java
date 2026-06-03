@@ -436,6 +436,10 @@ public final class QinJsBackend {
                 emitJavaUtilOptionalRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilOptional");
             }
+            case "java.util.stream.Collectors" -> {
+                emitJavaUtilStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilStreamCollectors");
+            }
             case "java.util.regex.Pattern" -> {
                 emitJavaUtilRegexRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilRegexPattern");
@@ -1086,6 +1090,9 @@ public final class QinJsBackend {
                   toArray() {
                     return this.__items.slice();
                   }
+                  stream() {
+                    return new __QinJavaUtilStream(this.__items);
+                  }
                   [Symbol.iterator]() {
                     return this.__items[Symbol.iterator]();
                   }
@@ -1122,6 +1129,9 @@ public final class QinJsBackend {
                   }
                   toArray() {
                     return this.__values().slice();
+                  }
+                  stream() {
+                    return new __QinJavaUtilStream(this.__values());
                   }
                   [Symbol.iterator]() {
                     return this.__values()[Symbol.iterator]();
@@ -1480,6 +1490,63 @@ public final class QinJsBackend {
                     return value == null
                       ? new __QinJavaUtilOptionalValue(false, null)
                       : new __QinJavaUtilOptionalValue(true, value);
+                  }
+                };
+                """);
+    }
+
+    private void emitJavaUtilStreamRuntime(StringBuilder js) {
+        if (js.indexOf("class __QinJavaUtilStream") >= 0) {
+            return;
+        }
+        emitJavaUtilArrayListRuntime(js);
+        emitJavaUtilOptionalRuntime(js);
+        js.append("""
+                class __QinJavaUtilStream {
+                  constructor(source) {
+                    this.__items = source == null ? [] : Array.from(source);
+                  }
+                  filter(predicate) {
+                    return new __QinJavaUtilStream(this.__items.filter(item => predicate(item)));
+                  }
+                  map(mapper) {
+                    return new __QinJavaUtilStream(this.__items.map(item => mapper(item)));
+                  }
+                  anyMatch(predicate) {
+                    return this.__items.some(item => predicate(item));
+                  }
+                  findFirst() {
+                    return this.__items.length === 0
+                      ? __QinJavaUtilOptional.empty()
+                      : __QinJavaUtilOptional.ofNullable(this.__items[0]);
+                  }
+                  collect(collector) {
+                    if (collector == null || typeof collector.__collect !== "function") {
+                      throw new TypeError("java.util.stream.Stream.collect requires a Qin collector");
+                    }
+                    return collector.__collect(this.__items);
+                  }
+                  toArray() {
+                    return this.__items.slice();
+                  }
+                  [Symbol.iterator]() {
+                    return this.__items[Symbol.iterator]();
+                  }
+                }
+                const __QinJavaUtilStreamCollectors = {
+                  toList() {
+                    return {
+                      __collect(items) {
+                        return new __QinJavaUtilArrayList(items);
+                      }
+                    };
+                  },
+                  joining(delimiter = "") {
+                    return {
+                      __collect(items) {
+                        return items.map(item => String(item)).join(String(delimiter));
+                      }
+                    };
                   }
                 };
                 """);
@@ -3083,6 +3150,7 @@ public final class QinJsBackend {
                 || "java.util.concurrent.ConcurrentMap".equals(ownerBinaryName)
                 || "java.util.Objects".equals(ownerBinaryName)
                 || "java.util.Optional".equals(ownerBinaryName)
+                || "java.util.stream.Collectors".equals(ownerBinaryName)
                 || "java.lang.String".equals(ownerBinaryName)
                 || "java.lang.StringBuilder".equals(ownerBinaryName)
                 || "java.lang.Integer".equals(ownerBinaryName)
@@ -3142,6 +3210,7 @@ public final class QinJsBackend {
                     "__QinJavaUtilHashMap";
             case "java.util.Objects" -> "__QinJavaUtilObjects";
             case "java.util.Optional" -> "__QinJavaUtilOptional";
+            case "java.util.stream.Collectors" -> "__QinJavaUtilStreamCollectors";
             case "java.util.regex.Pattern" -> "__QinJavaUtilRegexPattern";
             case "java.util.regex.Matcher" -> "__QinJavaUtilRegexMatcher";
             case "java.util.concurrent.atomic.AtomicLong" -> "__QinJavaUtilConcurrentAtomicLong";
