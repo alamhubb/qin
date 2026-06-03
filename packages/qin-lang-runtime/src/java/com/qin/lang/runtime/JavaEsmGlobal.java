@@ -2490,6 +2490,111 @@ public final class JavaEsmGlobal {
         return "[object " + tag + "]";
     }
 
+    private static final class JavaRuntimeClass implements QinRuntimeObject {
+        private final InterpretedFunction classFunction;
+        private final JavaRuntimeClass superClass;
+        private final String simpleName;
+        private final String binaryName;
+
+        private JavaRuntimeClass(InterpretedFunction classFunction, JavaRuntimeClass superClass) {
+            this.classFunction = classFunction;
+            this.superClass = superClass;
+            this.simpleName = classFunction.classDebugName();
+            this.binaryName = simpleName;
+        }
+
+        @Override
+        public Object get(Object property) {
+            String key = propertyKey(property);
+            return switch (key) {
+                case "getName" -> new NativeFunction("Class.getName", args -> binaryName);
+                case "getSimpleName" -> new NativeFunction("Class.getSimpleName", args -> simpleName);
+                case "getSuperclass" -> new NativeFunction("Class.getSuperclass", args -> superClass);
+                case "getMethod", "getDeclaredMethod" -> new NativeFunction("Class." + key, args -> {
+                    if (args.length == 0) {
+                        throw new IllegalArgumentException("Class.getDeclaredMethod requires a method name");
+                    }
+                    String methodName = String.valueOf(args[0]);
+                    InterpretedFunction method = classFunction.findInstanceMethod(methodName);
+                    if (method == null) {
+                        throw new IllegalArgumentException("No interpreted method: " + binaryName + "." + methodName);
+                    }
+                    return new JavaRuntimeMethod(binaryName, methodName, method);
+                });
+                default -> null;
+            };
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof JavaRuntimeClass runtimeClass && classFunction == runtimeClass.classFunction;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(classFunction);
+        }
+
+        @Override
+        public String toString() {
+            return "class " + binaryName;
+        }
+    }
+
+    private static final class JavaRuntimeMethod implements QinRuntimeObject {
+        private final String ownerName;
+        private final String name;
+        private final InterpretedFunction method;
+
+        private JavaRuntimeMethod(String ownerName, String name, InterpretedFunction method) {
+            this.ownerName = ownerName;
+            this.name = name;
+            this.method = method;
+        }
+
+        @Override
+        public Object get(Object property) {
+            return switch (propertyKey(property)) {
+                case "getName" -> new NativeFunction("Method.getName", args -> name);
+                case "setAccessible" -> new NativeFunction("Method.setAccessible", args -> null);
+                case "invoke" -> new NativeFunction("Method.invoke", args -> {
+                    if (args.length == 0) {
+                        throw new IllegalArgumentException("Method.invoke requires a receiver");
+                    }
+                    Object receiver = unwrapExportSlotValue(args[0]);
+                    Object[] invokeArgs = args.length <= 1 ? new Object[0] : Arrays.copyOfRange(args, 1, args.length);
+                    return method.bindThis(receiver).call(invokeArgs);
+                });
+                default -> null;
+            };
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+
+        @Override
+        public String toString() {
+            return ownerName + "." + name + "()";
+        }
+    }
+
     private static final class ObjectPrototype implements QinRuntimeObject {
         private static final ObjectPrototype INSTANCE = new ObjectPrototype();
 
@@ -2852,6 +2957,9 @@ public final class JavaEsmGlobal {
             }
             if ("constructor".equals(name) && constructorFunction != null) {
                 return constructorFunction;
+            }
+            if ("getClass".equals(name) && constructorFunction instanceof InterpretedFunction classFunction) {
+                return new NativeFunction("Object.getClass", args -> classFunction.javaRuntimeClass());
             }
             if ("_markParseFail".equals(name) && methods.containsKey("setParseFail")) {
                 return methods.get("setParseFail").bindThis(this);
@@ -3384,6 +3492,15 @@ public final class JavaEsmGlobal {
                 return debug == null ? String.valueOf(ast.get("type")) : String.valueOf(debug);
             }
             return name;
+        }
+
+        private JavaRuntimeClass javaRuntimeClass() {
+            InterpretedFunction parent = resolveSuperClassFunction();
+            return new JavaRuntimeClass(this, parent == null ? null : parent.javaRuntimeClass());
+        }
+
+        private InterpretedFunction findInstanceMethod(String name) {
+            return collectInheritedInstanceMethods().get(propertyKey(name));
         }
 
         private Map<String, InterpretedFunction> collectInstanceMethods() {
