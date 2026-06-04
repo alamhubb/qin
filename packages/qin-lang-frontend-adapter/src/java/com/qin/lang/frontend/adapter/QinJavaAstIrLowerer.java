@@ -916,11 +916,11 @@ public final class QinJavaAstIrLowerer {
             return null;
         }
         if (expression instanceof JavaAstIdentifierExpression identifier) {
-            QinIrExpression local = locals.get(identifier.name());
-            if (local != null) {
-                return local;
+            if (valueNames.contains(identifier.name())) {
+                return new QinIrIdentifierReference(identifier.name());
             }
-            return new QinIrIdentifierReference(identifier.name());
+            QinIrExpression local = locals.get(identifier.name());
+            return local == null ? new QinIrIdentifierReference(identifier.name()) : local;
         }
         if (expression instanceof JavaAstNumberLiteral number) {
             return new QinIrNumberLiteral(number.value());
