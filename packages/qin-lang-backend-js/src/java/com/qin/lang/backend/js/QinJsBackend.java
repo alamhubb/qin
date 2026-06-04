@@ -2313,8 +2313,9 @@ public final class QinJsBackend {
             js.append(" {\n");
             Map<String, String> previousFieldAliases = currentJavaFieldAliases;
             currentJavaFieldAliases = javaFieldAliases(classDeclaration);
-            QinIrMethodDeclaration explicitConstructor = explicitConstructor(classDeclaration);
-            emitClassConstructor(js, classDeclaration, explicitConstructor);
+            List<QinIrMethodDeclaration> explicitConstructors = explicitConstructors(classDeclaration);
+            emitClassConstructor(js, classDeclaration, explicitConstructors);
+            emitClassConstructorInitializers(js, classDeclaration, explicitConstructors);
             emitClassMethods(js, classDeclaration);
             currentJavaFieldAliases = previousFieldAliases;
             js.append("}\n");
@@ -2354,9 +2355,13 @@ public final class QinJsBackend {
                 js.append(classDeclaration.simpleName())
                         .append(".")
                         .append(field.name())
-                        .append(" = __qin_init_enum_value(new ")
-                        .append(classDeclaration.simpleName())
-                        .append("(), \"")
+                        .append(" = __qin_init_enum_value(");
+                if (field.initializer() == null) {
+                    js.append("new ").append(classDeclaration.simpleName()).append("()");
+                } else {
+                    emitExpression(js, field.initializer());
+                }
+                js.append(", \"")
                         .append(escapeJs(field.name()))
                         .append("\", ")
                         .append(ordinal)
@@ -2390,25 +2395,101 @@ public final class QinJsBackend {
                 && field.type().binaryName().equals(classDeclaration.binaryName());
     }
 
-    private QinIrMethodDeclaration explicitConstructor(QinIrClassDeclaration classDeclaration) {
+    private List<QinIrMethodDeclaration> explicitConstructors(QinIrClassDeclaration classDeclaration) {
+        List<QinIrMethodDeclaration> constructors = new java.util.ArrayList<>();
         for (QinIrMethodDeclaration method : classDeclaration.methods()) {
             if ("constructor".equals(method.name())) {
-                return method;
+                constructors.add(method);
             }
         }
-        return null;
+        return List.copyOf(constructors);
     }
 
     private void emitClassConstructor(
             StringBuilder js,
             QinIrClassDeclaration classDeclaration,
-            QinIrMethodDeclaration explicitConstructor) {
+            List<QinIrMethodDeclaration> explicitConstructors) {
         Map<String, String> previousAliases = bindingAliases;
         bindingAliases = new LinkedHashMap<>(previousAliases);
-        js.append("  constructor(");
-        List<QinIrParameter> parameters = explicitConstructor == null
+        js.append("  constructor(...__qin_args) {\n");
+        QinIrMethodDeclaration selectedConstructor = explicitConstructors.isEmpty()
+                ? null
+                : explicitConstructors.get(0);
+        List<QinIrParameter> parameters = selectedConstructor == null
                 ? List.of()
-                : explicitConstructor.parameters();
+                : selectedConstructor.parameters();
+        for (QinIrParameter parameter : parameters) {
+            declareBindingName(parameter.name());
+        }
+        if (!explicitConstructors.isEmpty()) {
+            js.append("    switch (__qin_args.length) {\n");
+            Set<Integer> emittedArities = new LinkedHashSet<>();
+            for (QinIrMethodDeclaration constructor : explicitConstructors) {
+                int arity = constructor.parameters().size();
+                if (!emittedArities.add(arity)) {
+                    continue;
+                }
+                js.append("      case ").append(arity).append(": {\n");
+                List<QinIrParameter> constructorParameters = constructor.parameters();
+                for (int i = 0; i < constructorParameters.size(); i++) {
+                    js.append("        const ")
+                            .append(declareBindingName(constructorParameters.get(i).name()))
+                            .append(" = __qin_args[")
+                            .append(i)
+                            .append("];\n");
+                }
+                emitSuperCall(js, classDeclaration, constructor, constructorParameters, "        ");
+                js.append("        return this.")
+                        .append(constructorInitializerName(arity))
+                        .append("(");
+                for (int i = 0; i < constructorParameters.size(); i++) {
+                    js.append(jsBindingName(constructorParameters.get(i).name()));
+                    if (i < constructorParameters.size() - 1) {
+                        js.append(", ");
+                    }
+                }
+                js.append(");\n");
+                js.append("      }\n");
+            }
+            js.append("      default: throw new Error(\"Unsupported Java constructor arity: ")
+                    .append(escapeJs(classDeclaration.simpleName()))
+                    .append("/\" + __qin_args.length);\n");
+            js.append("    }\n");
+            js.append("  }\n");
+            bindingAliases = previousAliases;
+            return;
+        }
+        js.append("    if (__qin_args.length !== 0) {\n");
+        js.append("      throw new Error(\"Unsupported Java constructor arity: ")
+                .append(escapeJs(classDeclaration.simpleName()))
+                .append("/\" + __qin_args.length);\n");
+        js.append("    }\n");
+        emitSuperCall(js, classDeclaration, selectedConstructor, parameters, "    ");
+        emitFieldInitializers(js, classDeclaration);
+        js.append("  }\n");
+        bindingAliases = previousAliases;
+    }
+
+    private void emitClassConstructorInitializers(
+            StringBuilder js,
+            QinIrClassDeclaration classDeclaration,
+            List<QinIrMethodDeclaration> explicitConstructors) {
+        if (explicitConstructors.isEmpty()) {
+            return;
+        }
+        for (QinIrMethodDeclaration constructor : explicitConstructors) {
+            emitClassConstructorInitializer(js, classDeclaration, constructor);
+        }
+    }
+
+    private void emitClassConstructorInitializer(
+            StringBuilder js,
+            QinIrClassDeclaration classDeclaration,
+            QinIrMethodDeclaration constructor) {
+        Map<String, String> previousAliases = bindingAliases;
+        bindingAliases = new LinkedHashMap<>(previousAliases);
+        List<QinIrParameter> parameters = constructor.parameters();
+        js.append("  ").append(constructorInitializerName(parameters.size())).append("(");
         for (int i = 0; i < parameters.size(); i++) {
             js.append(declareBindingName(parameters.get(i).name()));
             if (i < parameters.size() - 1) {
@@ -2416,11 +2497,29 @@ public final class QinJsBackend {
             }
         }
         js.append(") {\n");
+        if (!hasThisConstructorDelegation(constructor)) {
+            emitFieldInitializers(js, classDeclaration);
+        }
+        if (constructor.returnExpression() != null) {
+            js.append("    ");
+            emitExpression(js, constructor.returnExpression());
+            js.append(";\n");
+        }
+        js.append("  }\n");
+        bindingAliases = previousAliases;
+    }
+
+    private void emitSuperCall(
+            StringBuilder js,
+            QinIrClassDeclaration classDeclaration,
+            QinIrMethodDeclaration constructor,
+            List<QinIrParameter> parameters,
+            String indent) {
         if (classDeclaration.superType() != null) {
-            js.append("    super(");
-            List<QinIrExpression> superArguments = explicitConstructor == null
+            js.append(indent).append("super(");
+            List<QinIrExpression> superArguments = constructor == null
                     ? List.of()
-                    : explicitConstructor.superArguments();
+                    : constructor.superArguments();
             if (superArguments.isEmpty()) {
                 for (int i = 0; i < parameters.size(); i++) {
                     js.append(jsBindingName(parameters.get(i).name()));
@@ -2438,7 +2537,40 @@ public final class QinJsBackend {
             }
             js.append(");\n");
         }
+    }
+
+    private boolean hasThisConstructorDelegation(QinIrMethodDeclaration constructor) {
+        return usesThisConstructorDelegation(constructor.returnExpression());
+    }
+
+    private boolean usesThisConstructorDelegation(QinIrExpression expression) {
+        if (expression == null) {
+            return false;
+        }
+        if (expression instanceof QinIrInstanceMethodCallExpression methodCallExpression) {
+            return "constructor".equals(methodCallExpression.methodName())
+                    && methodCallExpression.receiver() instanceof QinIrThisExpression;
+        }
+        if (expression instanceof QinIrLetExpression letExpression) {
+            for (QinIrExpression leadingExpression : letExpression.leadingExpressions()) {
+                if (usesThisConstructorDelegation(leadingExpression)) {
+                    return true;
+                }
+            }
+            return usesThisConstructorDelegation(letExpression.resultExpression());
+        }
+        if (expression instanceof QinIrIfExpression ifExpression) {
+            return usesThisConstructorDelegation(ifExpression.consequent())
+                    || usesThisConstructorDelegation(ifExpression.alternate());
+        }
+        return false;
+    }
+
+    private void emitFieldInitializers(StringBuilder js, QinIrClassDeclaration classDeclaration) {
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+            if (isJavaEnumConstant(classDeclaration, field)) {
+                continue;
+            }
             js.append("    this.").append(jsCurrentJavaFieldName(field.name())).append(" = ");
             if (field.initializer() == null) {
                 js.append("null");
@@ -2447,13 +2579,10 @@ public final class QinJsBackend {
             }
             js.append(";\n");
         }
-        if (explicitConstructor != null && explicitConstructor.returnExpression() != null) {
-            js.append("    ");
-            emitExpression(js, explicitConstructor.returnExpression());
-            js.append(";\n");
-        }
-        js.append("  }\n");
-        bindingAliases = previousAliases;
+    }
+
+    private String constructorInitializerName(int arity) {
+        return "__qin_constructor_" + arity;
     }
 
     private String jsClassReference(String binaryName) {
@@ -2845,9 +2974,14 @@ public final class QinJsBackend {
         }
         if (expression instanceof QinIrInstanceMethodCallExpression instanceMethodCallExpression) {
             emitExpression(js, instanceMethodCallExpression.receiver());
-            js.append(".")
-                    .append(instanceMethodCallExpression.methodName())
-                    .append("(");
+            js.append(".");
+            if ("constructor".equals(instanceMethodCallExpression.methodName())
+                    && instanceMethodCallExpression.receiver() instanceof QinIrThisExpression) {
+                js.append(constructorInitializerName(instanceMethodCallExpression.arguments().size()));
+            } else {
+                js.append(instanceMethodCallExpression.methodName());
+            }
+            js.append("(");
             emitArguments(js, instanceMethodCallExpression.arguments());
             js.append(")");
             return;
