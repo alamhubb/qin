@@ -2951,7 +2951,7 @@ public final class QinJsBackend {
                 .append(ownerReference)
                 .append(" && (")
                 .append(declareBindingName(expression.variableName()))
-                .append(" = __qin_pattern_value, true))");
+                .append(" = __qin_pattern_value, true)");
         js.append("; })()");
     }
 

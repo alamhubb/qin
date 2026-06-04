@@ -18,7 +18,9 @@ public final class QinJsInstanceofSmokeTestMain {
                   typeAsError: new TypeError("typed") instanceof Error,
                   typeExact: new TypeError("typed") instanceof TypeError,
                   typeNotRange: new TypeError("typed") instanceof RangeError,
-                  box: box instanceof Box
+                  box: box instanceof Box,
+                  nullBox: null instanceof Box,
+                  objectBox: {} instanceof Box
                 };
                 """;
         Path root = Files.createTempDirectory("qin-js-instanceof-");
@@ -33,7 +35,9 @@ public final class QinJsInstanceofSmokeTestMain {
                 || !Boolean.TRUE.equals(map.get("typeAsError"))
                 || !Boolean.TRUE.equals(map.get("typeExact"))
                 || !Boolean.FALSE.equals(map.get("typeNotRange"))
-                || !Boolean.TRUE.equals(map.get("box"))) {
+                || !Boolean.TRUE.equals(map.get("box"))
+                || !Boolean.FALSE.equals(map.get("nullBox"))
+                || !Boolean.FALSE.equals(map.get("objectBox"))) {
             throw new IllegalStateException("Unexpected instanceof result: " + QinObjectJsonEncoder.toJson(result));
         }
         System.out.println("QinJsInstanceofSmokeTestMain OK");

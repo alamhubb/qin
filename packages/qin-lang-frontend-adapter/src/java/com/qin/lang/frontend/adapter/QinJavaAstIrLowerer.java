@@ -411,6 +411,7 @@ public final class QinJavaAstIrLowerer {
                 continue;
             }
             if (statement instanceof JavaAstIfStatement ifStatement) {
+                JavaAstReturnStatement fallthroughReturn = nextReturnStatement(method.bodyStatements(), statement);
                 QinIrExpression ifExpression = lowerIfExpression(
                         ifStatement,
                         packageName,
@@ -419,6 +420,20 @@ public final class QinJavaAstIrLowerer {
                         scopedValueNames);
                 if (ifBranchesReturn(ifStatement)) {
                     resultExpression = ifExpression;
+                    break;
+                }
+                if (fallthroughReturn != null
+                        && ifStatement.alternateStatements().isEmpty()
+                        && statementsEndInReturn(ifStatement.consequentStatements())) {
+                    resultExpression = new QinIrIfExpression(
+                            lowerExpression(ifStatement.test(), packageName, importedTypes, baseLocals, scopedValueNames),
+                            lowerStatementResult(
+                                    ifStatement.consequentStatements(),
+                                    packageName,
+                                    importedTypes,
+                                    baseLocals,
+                                    scopedValueNames),
+                            lowerReturnExpression(fallthroughReturn, packageName, importedTypes, baseLocals, scopedValueNames));
                     break;
                 }
                 leadingExpressions.add(ifExpression);
@@ -439,6 +454,15 @@ public final class QinJavaAstIrLowerer {
                     : lowerExpression(method.returnExpression(), packageName, importedTypes, baseLocals, scopedValueNames);
         }
         return new QinIrLetExpression(localDeclarations, leadingExpressions, resultExpression);
+    }
+
+    private JavaAstReturnStatement nextReturnStatement(List<JavaAstStatement> statements, JavaAstStatement current) {
+        int index = statements.indexOf(current);
+        if (index < 0 || index + 1 >= statements.size()) {
+            return null;
+        }
+        JavaAstStatement next = statements.get(index + 1);
+        return next instanceof JavaAstReturnStatement returnStatement ? returnStatement : null;
     }
 
     private void addPatternVariableDeclarations(
