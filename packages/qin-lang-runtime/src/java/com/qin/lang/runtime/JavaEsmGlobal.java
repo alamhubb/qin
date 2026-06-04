@@ -926,6 +926,12 @@ public final class JavaEsmGlobal {
             return JavaEsmArray.invoke(list, name, args);
         }
         if (target instanceof QinRuntimeObject runtimeObject) {
+            if (target instanceof InterpretedInstance interpretedInstance) {
+                Object methodValue = interpretedInstance.getMethod(name);
+                if (methodValue != null) {
+                    return callRuntimeMethodValue(target, methodValue, args);
+                }
+            }
             Object value = runtimeObject.get(methodName);
             if (value != null) {
                 return callRuntimeMethodValue(target, value, args);
@@ -2957,6 +2963,10 @@ public final class JavaEsmGlobal {
             if (fields.containsKey(name)) {
                 return fields.get(name);
             }
+            String javaFieldName = javaFieldAliasName(name);
+            if (fields.containsKey(javaFieldName)) {
+                return fields.get(javaFieldName);
+            }
             AccessorProperty accessor = accessors.get(name);
             if (accessor != null && accessor.getter != null) {
                 return accessor.getter.bindThis(this).call();
@@ -2990,14 +3000,15 @@ public final class JavaEsmGlobal {
         @Override
         public Object set(Object property, Object value) {
             String name = propertyKey(property);
-            if (!fields.containsKey(name)) {
+            String storageName = fields.containsKey(name) ? name : javaFieldAliasName(name);
+            if (!fields.containsKey(name) && !fields.containsKey(storageName)) {
                 AccessorProperty accessor = accessors.get(name);
                 if (accessor != null && accessor.setter != null) {
                     accessor.setter.bindThis(this).call(value);
                     return value;
                 }
             }
-            fields.put(name, value);
+            fields.put(fields.containsKey(storageName) ? storageName : name, value);
             return value;
         }
 
@@ -3005,13 +3016,33 @@ public final class JavaEsmGlobal {
         public boolean has(Object property) {
             String name = propertyKey(property);
             return fields.containsKey(name)
+                    || fields.containsKey(javaFieldAliasName(name))
                     || accessors.containsKey(name)
                     || methods.containsKey(name)
                     || prototypeProperties.containsKey(name);
         }
 
+        private String javaFieldAliasName(String name) {
+            return "__qin_field_" + name;
+        }
+
         private Set<String> methodNames() {
             return methods.keySet();
+        }
+
+        private Object getMethod(String name) {
+            InterpretedFunction method = methods.get(name);
+            if (method != null) {
+                return method.bindThis(this);
+            }
+            Object prototypeValue = prototypeProperties.get(name);
+            if (prototypeValue instanceof InterpretedFunction prototypeFunction) {
+                return prototypeFunction.bindThis(this);
+            }
+            if (isFunctionDefinition(prototypeValue)) {
+                return new InterpretedFunction(castMap((Map<?, ?>) prototypeValue)).bindThis(this);
+            }
+            return null;
         }
 
         private Set<String> fieldNames() {
