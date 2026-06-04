@@ -202,9 +202,15 @@ public final class QinJavaAstIrLowerer {
         Set<String> fieldNames = new LinkedHashSet<>(semanticAnalyzer
                 .collectInheritedFieldTypes(classDeclaration.superTypeName(), packageName, importedTypes)
                 .keySet());
+        Map<String, QinIrExpression> fieldLocals = new LinkedHashMap<>();
+        fieldLocals.putAll(fieldLocals(fieldNames));
         List<QinIrFieldDeclaration> fields = new ArrayList<>();
+        String binaryName = binaryName(packageName, simpleName);
         for (JavaAstFieldDeclaration field : classDeclaration.fields()) {
             fieldNames.add(field.name());
+            fieldLocals.put(field.name(), field.staticField()
+                    ? new QinIrMemberAccessExpression(binaryName, field.name())
+                    : new QinIrPropertyAccessExpression(new QinIrThisExpression(), field.name()));
             QinJavaSemanticField semanticField = semanticFields.get(field.name());
             if (semanticField == null) {
                 throw new IllegalArgumentException("Missing semantic field for " + field.name());
@@ -219,8 +225,9 @@ public final class QinJavaAstIrLowerer {
                                     field.initializer(),
                                     packageName,
                                     importedTypes,
-                                    fieldLocals(fieldNames),
-                                    fieldNames)));
+                                    fieldLocals,
+                                    fieldNames),
+                    field.staticField()));
         }
 
         List<QinIrMethodDeclaration> methods = new ArrayList<>();
@@ -232,7 +239,7 @@ public final class QinJavaAstIrLowerer {
                         "Missing semantic method for " + methodSignatureForMessage(packageName, importedTypes, method)
                                 + "; available=" + semanticMethods.keySet());
             }
-            methods.add(lowerMethod(packageName, importedTypes, fieldNames, method, semanticMethod));
+            methods.add(lowerMethod(packageName, importedTypes, fieldNames, fieldLocals, method, semanticMethod));
         }
         if (classDeclaration.recordClass()) {
             addRecordCanonicalConstructor(classDeclaration, fields, methods);
@@ -308,10 +315,11 @@ public final class QinJavaAstIrLowerer {
             String packageName,
             Map<String, String> importedTypes,
             Set<String> fieldNames,
+            Map<String, QinIrExpression> fieldLocals,
             JavaAstMethodDeclaration method,
             QinJavaSemanticMethod semanticMethod) {
         List<QinIrParameter> parameters = new ArrayList<>();
-        Set<String> valueNames = new LinkedHashSet<>(fieldNames);
+        Set<String> valueNames = new LinkedHashSet<>();
         Map<String, QinJavaSemanticParameter> semanticParameters = semanticParametersByName(semanticMethod);
         for (JavaAstParameter parameter : method.parameters()) {
             valueNames.add(parameter.name());
@@ -332,8 +340,8 @@ public final class QinJavaAstIrLowerer {
                 semanticMethod.returnType(),
                 parameters,
                 lowerAnnotations(packageName, importedTypes, method.annotations()),
-                lowerMethodReturnExpression(packageName, importedTypes, fieldNames, valueNames, method),
-                lowerExplicitSuperArguments(packageName, importedTypes, fieldNames, valueNames, method),
+                lowerMethodReturnExpression(packageName, importedTypes, fieldLocals, valueNames, method),
+                lowerExplicitSuperArguments(packageName, importedTypes, fieldLocals, valueNames, method),
                 null,
                 method.staticMethod());
     }
@@ -341,7 +349,7 @@ public final class QinJavaAstIrLowerer {
     private List<QinIrExpression> lowerExplicitSuperArguments(
             String packageName,
             Map<String, String> importedTypes,
-            Set<String> fieldNames,
+            Map<String, QinIrExpression> fieldLocals,
             Set<String> valueNames,
             JavaAstMethodDeclaration method) {
         if (!"constructor".equals(method.name()) || method.bodyStatements().isEmpty()) {
@@ -354,7 +362,7 @@ public final class QinJavaAstIrLowerer {
                 && "super".equals(receiver.name()))) {
             return List.of();
         }
-        Map<String, QinIrExpression> locals = fieldLocals(fieldNames);
+        Map<String, QinIrExpression> locals = new LinkedHashMap<>(fieldLocals);
         List<QinIrExpression> arguments = new ArrayList<>();
         for (JavaAstExpression argument : methodCall.arguments()) {
             arguments.add(lowerExpression(argument, packageName, importedTypes, locals, valueNames));
@@ -400,13 +408,13 @@ public final class QinJavaAstIrLowerer {
     private QinIrExpression lowerMethodReturnExpression(
             String packageName,
             Map<String, String> importedTypes,
-            Set<String> fieldNames,
+            Map<String, QinIrExpression> fieldLocals,
             Set<String> valueNames,
             JavaAstMethodDeclaration method) {
         if (hasStructuredStatement(method)) {
-            return lowerMethodBodyExpression(packageName, importedTypes, fieldNames, valueNames, method);
+            return lowerMethodBodyExpression(packageName, importedTypes, fieldLocals, valueNames, method);
         }
-        Map<String, QinIrExpression> locals = fieldLocals(fieldNames);
+        Map<String, QinIrExpression> locals = new LinkedHashMap<>(fieldLocals);
         for (JavaAstStatement statement : method.bodyStatements()) {
             if (isExplicitSuperConstructorInvocation(statement)) {
                 continue;
@@ -450,11 +458,11 @@ public final class QinJavaAstIrLowerer {
     private QinIrExpression lowerMethodBodyExpression(
             String packageName,
             Map<String, String> importedTypes,
-            Set<String> fieldNames,
+            Map<String, QinIrExpression> fieldLocals,
             Set<String> valueNames,
             JavaAstMethodDeclaration method) {
         Set<String> scopedValueNames = new LinkedHashSet<>(valueNames);
-        Map<String, QinIrExpression> baseLocals = fieldLocals(fieldNames);
+        Map<String, QinIrExpression> baseLocals = new LinkedHashMap<>(fieldLocals);
         List<QinIrLocalVariableDeclaration> localDeclarations = new ArrayList<>();
         List<QinIrExpression> leadingExpressions = new ArrayList<>();
         QinIrExpression resultExpression = null;
@@ -1021,7 +1029,10 @@ public final class QinJavaAstIrLowerer {
                 return new QinIrIdentifierReference(identifier.name());
             }
             QinIrExpression local = locals.get(identifier.name());
-            return local == null ? new QinIrIdentifierReference(identifier.name()) : local;
+            if (local != null) {
+                return local;
+            }
+            return new QinIrIdentifierReference(identifier.name());
         }
         if (expression instanceof JavaAstNumberLiteral number) {
             return new QinIrNumberLiteral(number.value());

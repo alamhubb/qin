@@ -10,7 +10,16 @@ public record QinIrFieldDeclaration(
         String name,
         QinIrTypeRef type,
         List<QinIrAnnotation> annotations,
-        QinIrExpression initializer) {
+        QinIrExpression initializer,
+        boolean staticField) {
+    public QinIrFieldDeclaration(
+            String name,
+            QinIrTypeRef type,
+            List<QinIrAnnotation> annotations,
+            QinIrExpression initializer) {
+        this(name, type, annotations, initializer, false);
+    }
+
     public QinIrFieldDeclaration {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");

@@ -2319,6 +2319,7 @@ public final class QinJsBackend {
             emitClassMethods(js, classDeclaration);
             currentJavaFieldAliases = previousFieldAliases;
             js.append("}\n");
+            emitStaticFieldInitializers(js, classDeclaration);
         }
         emitJavaEnumStaticValues(js, classDeclarations);
         if (!classDeclarations.isEmpty()) {
@@ -2561,7 +2562,7 @@ public final class QinJsBackend {
 
     private void emitFieldInitializers(StringBuilder js, QinIrClassDeclaration classDeclaration) {
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
-            if (isJavaEnumConstant(classDeclaration, field)) {
+            if (field.staticField() || isJavaEnumConstant(classDeclaration, field)) {
                 continue;
             }
             js.append("    this.").append(jsCurrentJavaFieldName(field.name())).append(" = ");
@@ -2572,6 +2573,27 @@ public final class QinJsBackend {
             }
             js.append(";\n");
         }
+    }
+
+    private void emitStaticFieldInitializers(StringBuilder js, QinIrClassDeclaration classDeclaration) {
+        Map<String, String> previousFieldAliases = currentJavaFieldAliases;
+        currentJavaFieldAliases = javaFieldAliases(classDeclaration);
+        for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+            if (!field.staticField() || isJavaEnumConstant(classDeclaration, field)) {
+                continue;
+            }
+            js.append(jsClassReference(classDeclaration.binaryName()))
+                    .append(".")
+                    .append(jsCurrentJavaFieldName(field.name()))
+                    .append(" = ");
+            if (field.initializer() == null) {
+                js.append("null");
+            } else {
+                emitExpression(js, field.initializer());
+            }
+            js.append(";\n");
+        }
+        currentJavaFieldAliases = previousFieldAliases;
     }
 
     private String constructorInitializerName(int arity) {
@@ -2930,7 +2952,7 @@ public final class QinJsBackend {
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
             js.append(jsBindingName(memberAccessExpression.objectName()))
                     .append(".")
-                    .append(memberAccessExpression.propertyName());
+                    .append(javaMemberAccessPropertyName(memberAccessExpression));
             return;
         }
         if (expression instanceof QinIrThisExpression) {
@@ -3409,6 +3431,14 @@ public final class QinJsBackend {
             return jsCurrentJavaFieldName(propertyAccessExpression.propertyName());
         }
         return propertyAccessExpression.propertyName();
+    }
+
+    private String javaMemberAccessPropertyName(QinIrMemberAccessExpression memberAccessExpression) {
+        if (generatedClassBinaryNames.contains(memberAccessExpression.objectName())
+                && currentJavaFieldAliases.containsKey(memberAccessExpression.propertyName())) {
+            return jsCurrentJavaFieldName(memberAccessExpression.propertyName());
+        }
+        return memberAccessExpression.propertyName();
     }
 
     private Class<?> loadJavaOwner(String ownerBinaryName) {
