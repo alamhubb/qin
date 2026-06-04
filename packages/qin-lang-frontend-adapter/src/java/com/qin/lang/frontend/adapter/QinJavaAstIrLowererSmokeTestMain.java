@@ -3,6 +3,7 @@ package com.qin.lang.frontend.adapter;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
@@ -31,6 +32,8 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     String joined(String name) { return greet(name); }
                     ArrayList fresh() { return new ArrayList(); }
                     String safe(String name) { return Objects.toString(name); }
+                    String choose(boolean flag) { return flag ? "yes" : "no"; }
+                    Class[] copy(Class[] params) { return params.clone(); }
                 }
                 """;
 
@@ -47,7 +50,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 8, "method count");
+        require(person.methods().size() == 10, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -130,6 +133,26 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(staticCall.arguments().size() == 1, "safe argument count");
         require(staticCall.arguments().get(0) instanceof QinIrIdentifierReference, "safe first argument");
         require("name".equals(((QinIrIdentifierReference) staticCall.arguments().get(0)).name()), "safe argument name");
+        QinIrMethodDeclaration choose = person.methods().get(8);
+        require("choose".equals(choose.name()), "choose method name");
+        require(choose.returnExpression() instanceof QinIrIfExpression, "choose return expression");
+        QinIrIfExpression chooseExpression = (QinIrIfExpression) choose.returnExpression();
+        require(chooseExpression.test() instanceof QinIrIdentifierReference, "choose condition");
+        require("flag".equals(((QinIrIdentifierReference) chooseExpression.test()).name()), "choose condition name");
+        require(chooseExpression.consequent() instanceof QinIrStringLiteral, "choose consequent");
+        require("yes".equals(((QinIrStringLiteral) chooseExpression.consequent()).value()), "choose consequent value");
+        require(chooseExpression.alternate() instanceof QinIrStringLiteral, "choose alternate");
+        require("no".equals(((QinIrStringLiteral) chooseExpression.alternate()).value()), "choose alternate value");
+        QinIrMethodDeclaration copy = person.methods().get(9);
+        require("copy".equals(copy.name()), "copy method name");
+        require(copy.returnType().kind() == QinIrTypeKind.CLASS, "copy return type");
+        require("[Ljava.lang.Class;".equals(copy.returnType().binaryName()), "copy return binary name");
+        require(copy.returnExpression() instanceof QinIrInstanceMethodCallExpression, "copy return expression");
+        QinIrInstanceMethodCallExpression cloneCall = (QinIrInstanceMethodCallExpression) copy.returnExpression();
+        require(cloneCall.receiver() instanceof QinIrIdentifierReference, "copy receiver");
+        require("params".equals(((QinIrIdentifierReference) cloneCall.receiver()).name()), "copy receiver name");
+        require("clone".equals(cloneCall.methodName()), "copy method call name");
+        require(cloneCall.arguments().isEmpty(), "copy argument count");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }

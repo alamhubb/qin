@@ -12,6 +12,7 @@ public record QinIrMethodDeclaration(
         List<QinIrParameter> parameters,
         List<QinIrAnnotation> annotations,
         QinIrExpression returnExpression,
+        List<QinIrStatement> bodyStatements,
         List<QinIrExpression> superArguments,
         QinIrObjectLiteral runtimeFunctionDefinition,
         boolean staticMethod) {
@@ -23,7 +24,19 @@ public record QinIrMethodDeclaration(
             QinIrExpression returnExpression,
             QinIrObjectLiteral runtimeFunctionDefinition,
             boolean staticMethod) {
-        this(name, returnType, parameters, annotations, returnExpression, List.of(), runtimeFunctionDefinition, staticMethod);
+        this(name, returnType, parameters, annotations, returnExpression, List.of(), List.of(), runtimeFunctionDefinition, staticMethod);
+    }
+
+    public QinIrMethodDeclaration(
+            String name,
+            QinIrTypeRef returnType,
+            List<QinIrParameter> parameters,
+            List<QinIrAnnotation> annotations,
+            QinIrExpression returnExpression,
+            List<QinIrExpression> superArguments,
+            QinIrObjectLiteral runtimeFunctionDefinition,
+            boolean staticMethod) {
+        this(name, returnType, parameters, annotations, returnExpression, List.of(), superArguments, runtimeFunctionDefinition, staticMethod);
     }
 
     public QinIrMethodDeclaration(
@@ -52,10 +65,12 @@ public record QinIrMethodDeclaration(
         Objects.requireNonNull(returnType, "returnType cannot be null");
         Objects.requireNonNull(parameters, "parameters cannot be null");
         Objects.requireNonNull(annotations, "annotations cannot be null");
+        Objects.requireNonNull(bodyStatements, "bodyStatements cannot be null");
         Objects.requireNonNull(superArguments, "superArguments cannot be null");
         name = name.trim();
         parameters = List.copyOf(parameters);
         annotations = List.copyOf(annotations);
+        bodyStatements = List.copyOf(bodyStatements);
         superArguments = List.copyOf(superArguments);
     }
 }

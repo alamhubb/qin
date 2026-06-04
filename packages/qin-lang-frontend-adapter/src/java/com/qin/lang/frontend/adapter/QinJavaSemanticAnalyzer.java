@@ -10,6 +10,7 @@ import com.slime.java.ast.JavaAstBooleanLiteral;
 import com.slime.java.ast.JavaAstCastExpression;
 import com.slime.java.ast.JavaAstClassLiteralExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
+import com.slime.java.ast.JavaAstConditionalExpression;
 import com.slime.java.ast.JavaAstDoWhileStatement;
 import com.slime.java.ast.JavaAstEnhancedForStatement;
 import com.slime.java.ast.JavaAstExpression;
@@ -702,6 +703,33 @@ public final class QinJavaSemanticAnalyzer {
                     expressionType(binary.left(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName),
                     expressionType(binary.right(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName));
         }
+        if (expression instanceof JavaAstConditionalExpression conditional) {
+            expressionType(
+                    conditional.condition(),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+            return conditionalExpressionType(
+                    expressionType(
+                            conditional.consequent(),
+                            packageName,
+                            importedTypes,
+                            locals,
+                            fieldTypes,
+                            methodReturnTypes,
+                            classBinaryName),
+                    expressionType(
+                            conditional.alternate(),
+                            packageName,
+                            importedTypes,
+                            locals,
+                            fieldTypes,
+                            methodReturnTypes,
+                            classBinaryName));
+        }
         throw new IllegalArgumentException("Unsupported Java expression for semantics: " + expression);
     }
 
@@ -1039,6 +1067,22 @@ public final class QinJavaSemanticAnalyzer {
             return QinIrTypeRef.intType();
         }
         return left;
+    }
+
+    private QinIrTypeRef conditionalExpressionType(QinIrTypeRef consequent, QinIrTypeRef alternate) {
+        if (consequent.equals(alternate)) {
+            return consequent;
+        }
+        if (consequent.kind() == QinIrTypeKind.DOUBLE || alternate.kind() == QinIrTypeKind.DOUBLE) {
+            return QinIrTypeRef.doubleType();
+        }
+        if (consequent.kind() == QinIrTypeKind.INT && alternate.kind() == QinIrTypeKind.INT) {
+            return QinIrTypeRef.intType();
+        }
+        if (consequent.kind() == QinIrTypeKind.VOID || alternate.kind() == QinIrTypeKind.VOID) {
+            return QinIrTypeRef.voidType();
+        }
+        return QinIrTypeRef.classType(Object.class.getName());
     }
 
     private QinIrTypeRef resolveStaticMethodReturnType(
@@ -1395,7 +1439,18 @@ public final class QinJavaSemanticAnalyzer {
             String superTypeName,
             String packageName,
             Map<String, String> importedTypes) {
-        Map<String, QinIrTypeRef> fields = new LinkedHashMap<>();
+        Map<String, QinIrTypeRef> fieldTypes = new LinkedHashMap<>();
+        for (QinJavaInheritedField field : collectInheritedFields(superTypeName, packageName, importedTypes).values()) {
+            fieldTypes.put(field.name(), field.type());
+        }
+        return fieldTypes;
+    }
+
+    Map<String, QinJavaInheritedField> collectInheritedFields(
+            String superTypeName,
+            String packageName,
+            Map<String, String> importedTypes) {
+        Map<String, QinJavaInheritedField> fields = new LinkedHashMap<>();
         if (superTypeName == null || superTypeName.isBlank()) {
             return fields;
         }
@@ -1409,14 +1464,18 @@ public final class QinJavaSemanticAnalyzer {
                     superType.binaryName(),
                     importedTypes);
             superImportedTypes = withTypeArgumentBindings(superImportedTypes, sourceSuperClass, superType);
-            fields.putAll(collectInheritedFieldTypes(
+            fields.putAll(collectInheritedFields(
                     sourceSuperClass.superTypeName(),
                     packageName(superType.binaryName()),
                     superImportedTypes));
             for (JavaAstFieldDeclaration field : sourceSuperClass.fields()) {
                 fields.putIfAbsent(
                         field.name(),
-                        resolveType(field.typeName(), packageName(superType.binaryName()), superImportedTypes));
+                        new QinJavaInheritedField(
+                                field.name(),
+                                resolveType(field.typeName(), packageName(superType.binaryName()), superImportedTypes),
+                                superType.binaryName(),
+                                field.staticField()));
             }
             return fields;
         }
@@ -1431,7 +1490,7 @@ public final class QinJavaSemanticAnalyzer {
                 String ownerPackage = owner.getPackageName() == null ? "" : owner.getPackageName();
                 for (Field field : owner.getDeclaredFields()) {
                     int modifiers = field.getModifiers();
-                    if (Modifier.isStatic(modifiers) || Modifier.isPrivate(modifiers)) {
+                    if (Modifier.isPrivate(modifiers)) {
                         continue;
                     }
                     if (!Modifier.isPublic(modifiers)
@@ -1439,7 +1498,13 @@ public final class QinJavaSemanticAnalyzer {
                             && !ownerPackage.equals(accessingPackage)) {
                         continue;
                     }
-                    fields.putIfAbsent(field.getName(), typeRefFromType(field.getGenericType(), typeBindings, new HashSet<>()));
+                    fields.putIfAbsent(
+                            field.getName(),
+                            new QinJavaInheritedField(
+                                    field.getName(),
+                                    typeRefFromType(field.getGenericType(), typeBindings, new HashSet<>()),
+                                    owner.getName(),
+                                    Modifier.isStatic(modifiers)));
                 }
                 Type genericSuperclass = owner.getGenericSuperclass();
                 Class<?> rawSuperclass = owner.getSuperclass();
@@ -1629,6 +1694,9 @@ public final class QinJavaSemanticAnalyzer {
         if (receiverType.kind() != QinIrTypeKind.CLASS || receiverType.binaryName() == null) {
             throw new IllegalArgumentException(
                     "Unsupported Java instance method receiver type: " + receiverType);
+        }
+        if (isArrayBinaryName(receiverType.binaryName()) && "clone".equals(methodName) && argumentTypes.isEmpty()) {
+            return receiverType;
         }
         QinIrTypeRef genericCollectionReturnType = genericCollectionReturnType(receiverType, methodName, argumentTypes);
         if (genericCollectionReturnType != null) {

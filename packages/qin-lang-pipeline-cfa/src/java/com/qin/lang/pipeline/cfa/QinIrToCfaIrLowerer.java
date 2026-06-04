@@ -16,12 +16,15 @@ import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrJsImport;
+import com.qin.lang.ir.QinIrLetExpression;
+import com.qin.lang.ir.QinIrLocalVariableDeclaration;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrNullLiteral;
 import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrSequenceExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.pipeline.cfa.ir.QinCfaProgram;
 
@@ -167,6 +170,12 @@ public final class QinIrToCfaIrLowerer {
                     javaNewExpression.ownerBinaryName(),
                     lowerExpressions(javaNewExpression.arguments()));
         }
+        if (expression instanceof QinIrLetExpression letExpression) {
+            return new QinCfaProgram.LetExpression(
+                    lowerLocalDeclarations(letExpression.localDeclarations()),
+                    lowerExpressions(letExpression.leadingExpressions()),
+                    lowerExpression(letExpression.resultExpression()));
+        }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
             return new QinCfaProgram.MemberAccessExpression(
                     memberAccessExpression.objectName(),
@@ -180,6 +189,11 @@ public final class QinIrToCfaIrLowerer {
         }
         if (expression instanceof QinIrObjectLiteral objectLiteral) {
             return new QinCfaProgram.ObjectLiteral(lowerProperties(objectLiteral.properties()));
+        }
+        if (expression instanceof QinIrSequenceExpression sequenceExpression) {
+            return new QinCfaProgram.SequenceExpression(
+                    lowerExpressions(sequenceExpression.leadingExpressions()),
+                    lowerExpression(sequenceExpression.resultExpression()));
         }
         if (expression instanceof QinIrStringLiteral stringLiteral) {
             return new QinCfaProgram.StringLiteral(stringLiteral.value());
@@ -197,6 +211,17 @@ public final class QinIrToCfaIrLowerer {
             lowered.add(new QinCfaProgram.ObjectProperty(
                     property.key(),
                     lowerExpression(property.value())));
+        }
+        return lowered;
+    }
+
+    private List<QinCfaProgram.LocalVariableDeclaration> lowerLocalDeclarations(
+            List<QinIrLocalVariableDeclaration> declarations) {
+        List<QinCfaProgram.LocalVariableDeclaration> lowered = new ArrayList<>();
+        for (QinIrLocalVariableDeclaration declaration : declarations) {
+            lowered.add(new QinCfaProgram.LocalVariableDeclaration(
+                    declaration.name(),
+                    lowerExpression(declaration.initializer())));
         }
         return lowered;
     }

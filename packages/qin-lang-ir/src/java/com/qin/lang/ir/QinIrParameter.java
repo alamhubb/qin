@@ -9,7 +9,12 @@ import java.util.Objects;
 public record QinIrParameter(
         String name,
         QinIrTypeRef type,
-        List<QinIrAnnotation> annotations) {
+        List<QinIrAnnotation> annotations,
+        boolean varargs) {
+    public QinIrParameter(String name, QinIrTypeRef type, List<QinIrAnnotation> annotations) {
+        this(name, type, annotations, false);
+    }
+
     public QinIrParameter {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");

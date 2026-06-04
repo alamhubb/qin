@@ -5,24 +5,33 @@ import com.qin.lang.ir.QinIrAnnotation;
 import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrAssignmentExpression;
 import com.qin.lang.ir.QinIrBooleanLiteral;
+import com.qin.lang.ir.QinIrBreakStatement;
+import com.qin.lang.ir.QinIrCatchClause;
 import com.qin.lang.ir.QinIrCastExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
+import com.qin.lang.ir.QinIrContinueStatement;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrDoWhileExpression;
+import com.qin.lang.ir.QinIrDoWhileStatementNode;
 import com.qin.lang.ir.QinIrElementAccessExpression;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrForEachExpression;
+import com.qin.lang.ir.QinIrForEachStatement;
 import com.qin.lang.ir.QinIrForExpression;
+import com.qin.lang.ir.QinIrForStatement;
 import com.qin.lang.ir.QinIrFunctionLiteral;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfExpression;
+import com.qin.lang.ir.QinIrIfStatement;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaClassLiteralExpression;
 import com.qin.lang.ir.QinIrJavaInstanceofPatternExpression;
 import com.qin.lang.ir.QinIrJavaMethodReferenceExpression;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrLetExpression;
+import com.qin.lang.ir.QinIrLocalDeclarationExpression;
+import com.qin.lang.ir.QinIrLocalDeclarationStatement;
 import com.qin.lang.ir.QinIrLocalVariableDeclaration;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
@@ -31,21 +40,32 @@ import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
+import com.qin.lang.ir.QinIrReturnStatement;
 import com.qin.lang.ir.QinIrSequenceExpression;
+import com.qin.lang.ir.QinIrSpreadArgumentExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
+import com.qin.lang.ir.QinIrStatement;
+import com.qin.lang.ir.QinIrStatementExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
+import com.qin.lang.ir.QinIrThrowStatement;
+import com.qin.lang.ir.QinIrTryStatement;
 import com.qin.lang.ir.QinIrTypeRef;
 import com.qin.lang.ir.QinIrWhileExpression;
+import com.qin.lang.ir.QinIrWhileStatementNode;
 import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstAnnotation;
 import com.slime.java.ast.JavaAstArrayAccessExpression;
 import com.slime.java.ast.JavaAstArrayLiteralExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstBooleanLiteral;
+import com.slime.java.ast.JavaAstBreakStatement;
+import com.slime.java.ast.JavaAstCatchClause;
 import com.slime.java.ast.JavaAstCastExpression;
 import com.slime.java.ast.JavaAstClassLiteralExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
+import com.slime.java.ast.JavaAstConditionalExpression;
+import com.slime.java.ast.JavaAstContinueStatement;
 import com.slime.java.ast.JavaAstDoWhileStatement;
 import com.slime.java.ast.JavaAstEnhancedForStatement;
 import com.slime.java.ast.JavaAstExpression;
@@ -69,7 +89,9 @@ import com.slime.java.ast.JavaAstProgram;
 import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
+import com.slime.java.ast.JavaAstThrowStatement;
 import com.slime.java.ast.JavaAstThisExpression;
+import com.slime.java.ast.JavaAstTryStatement;
 import com.slime.java.ast.JavaAstUnaryExpression;
 import com.slime.java.ast.JavaAstUpdateExpression;
 import com.slime.java.ast.JavaAstWhileStatement;
@@ -83,6 +105,13 @@ import java.util.Set;
 
 public final class QinJavaAstIrLowerer {
     private final QinJavaSemanticAnalyzer semanticAnalyzer = new QinJavaSemanticAnalyzer();
+    private String currentStaticInitializerOwnerSimpleName;
+    private String currentStaticInitializerOwnerBinaryName;
+    private Set<String> currentStaticInitializerStaticMethodNames = Set.of();
+    private String currentClassOwnerSimpleName;
+    private String currentClassOwnerBinaryName;
+    private Set<String> currentClassStaticMethodNames = Set.of();
+    private Set<String> currentVarargsParameterNames = Set.of();
 
     public QinIrProgram lowerSource(String source) {
         return lowerProgram(JavaCstToAst.parse(source));
@@ -199,11 +228,11 @@ public final class QinJavaAstIrLowerer {
                 packageName);
         Map<String, QinJavaSemanticField> semanticFields = semanticFieldsByName(semanticClass);
         Map<String, QinJavaSemanticMethod> semanticMethods = semanticMethodsBySignature(semanticClass);
-        Set<String> fieldNames = new LinkedHashSet<>(semanticAnalyzer
-                .collectInheritedFieldTypes(classDeclaration.superTypeName(), packageName, importedTypes)
-                .keySet());
+        Map<String, QinJavaInheritedField> inheritedFields = semanticAnalyzer
+                .collectInheritedFields(classDeclaration.superTypeName(), packageName, importedTypes);
+        Set<String> fieldNames = new LinkedHashSet<>(inheritedFields.keySet());
         Map<String, QinIrExpression> fieldLocals = new LinkedHashMap<>();
-        fieldLocals.putAll(fieldLocals(fieldNames));
+        fieldLocals.putAll(fieldLocals(inheritedFields));
         List<QinIrFieldDeclaration> fields = new ArrayList<>();
         String binaryName = binaryName(packageName, simpleName);
         for (JavaAstFieldDeclaration field : classDeclaration.fields()) {
@@ -231,18 +260,53 @@ public final class QinJavaAstIrLowerer {
         }
 
         List<QinIrMethodDeclaration> methods = new ArrayList<>();
-        for (JavaAstMethodDeclaration method : classDeclaration.methods()) {
-            String key = methodKey(packageName, importedTypes, method);
-            QinJavaSemanticMethod semanticMethod = semanticMethods.get(key);
-            if (semanticMethod == null) {
-                throw new IllegalArgumentException(
-                        "Missing semantic method for " + methodSignatureForMessage(packageName, importedTypes, method)
-                                + "; available=" + semanticMethods.keySet());
+        String previousClassOwnerSimpleName = currentClassOwnerSimpleName;
+        String previousClassOwnerBinaryName = currentClassOwnerBinaryName;
+        Set<String> previousClassStaticMethodNames = currentClassStaticMethodNames;
+        currentClassOwnerSimpleName = simpleName;
+        currentClassOwnerBinaryName = binaryName;
+        currentClassStaticMethodNames = staticMethodNames(classDeclaration.methods());
+        try {
+            for (JavaAstMethodDeclaration method : classDeclaration.methods()) {
+                String key = methodKey(packageName, importedTypes, method);
+                QinJavaSemanticMethod semanticMethod = semanticMethods.get(key);
+                if (semanticMethod == null) {
+                    throw new IllegalArgumentException(
+                            "Missing semantic method for " + methodSignatureForMessage(packageName, importedTypes, method)
+                                    + "; available=" + semanticMethods.keySet());
+                }
+                methods.add(lowerMethod(packageName, importedTypes, fieldNames, fieldLocals, method, semanticMethod));
             }
-            methods.add(lowerMethod(packageName, importedTypes, fieldNames, fieldLocals, method, semanticMethod));
+        } finally {
+            currentClassOwnerSimpleName = previousClassOwnerSimpleName;
+            currentClassOwnerBinaryName = previousClassOwnerBinaryName;
+            currentClassStaticMethodNames = previousClassStaticMethodNames;
         }
         if (classDeclaration.recordClass()) {
             addRecordCanonicalConstructor(classDeclaration, fields, methods);
+            addRecordComponentAccessors(classDeclaration, fields, methods);
+        }
+        List<QinIrExpression> staticInitializers = new ArrayList<>();
+        Set<String> staticInitializerValueNames = new LinkedHashSet<>();
+        String previousStaticInitializerOwnerSimpleName = currentStaticInitializerOwnerSimpleName;
+        String previousStaticInitializerOwnerBinaryName = currentStaticInitializerOwnerBinaryName;
+        Set<String> previousStaticInitializerStaticMethodNames = currentStaticInitializerStaticMethodNames;
+        currentStaticInitializerOwnerSimpleName = simpleName;
+        currentStaticInitializerOwnerBinaryName = binaryName;
+        currentStaticInitializerStaticMethodNames = staticMethodNames(classDeclaration.methods());
+        try {
+            for (var staticInitializer : classDeclaration.staticInitializers()) {
+                staticInitializers.add(lowerStatementResult(
+                        staticInitializer.statements(),
+                        packageName,
+                        importedTypes,
+                        fieldLocals,
+                        staticInitializerValueNames));
+            }
+        } finally {
+            currentStaticInitializerOwnerSimpleName = previousStaticInitializerOwnerSimpleName;
+            currentStaticInitializerOwnerBinaryName = previousStaticInitializerOwnerBinaryName;
+            currentStaticInitializerStaticMethodNames = previousStaticInitializerStaticMethodNames;
         }
 
         return new QinIrClassDeclaration(
@@ -253,7 +317,19 @@ public final class QinJavaAstIrLowerer {
                         : semanticAnalyzer.resolveType(classDeclaration.superTypeName(), packageName, importedTypes),
                 lowerAnnotations(packageName, importedTypes, classDeclaration.annotations()),
                 fields,
-                methods);
+                methods,
+                staticInitializers,
+                classDeclaration.recordClass());
+    }
+
+    private Set<String> staticMethodNames(List<JavaAstMethodDeclaration> methods) {
+        Set<String> names = new LinkedHashSet<>();
+        for (JavaAstMethodDeclaration method : methods) {
+            if (method.staticMethod()) {
+                names.add(method.name());
+            }
+        }
+        return Set.copyOf(names);
     }
 
     private void addRecordCanonicalConstructor(
@@ -284,6 +360,26 @@ public final class QinJavaAstIrLowerer {
                 false));
     }
 
+    private void addRecordComponentAccessors(
+            JavaAstClassDeclaration classDeclaration,
+            List<QinIrFieldDeclaration> fields,
+            List<QinIrMethodDeclaration> methods) {
+        for (QinIrFieldDeclaration component : recordComponentFields(classDeclaration, fields)) {
+            if (hasMethodArity(methods, component.name(), 0)) {
+                continue;
+            }
+            methods.add(new QinIrMethodDeclaration(
+                    component.name(),
+                    component.type(),
+                    List.of(),
+                    List.of(),
+                    new QinIrPropertyAccessExpression(new QinIrThisExpression(), component.name()),
+                    List.of(),
+                    null,
+                    false));
+        }
+    }
+
     private List<QinIrFieldDeclaration> recordComponentFields(
             JavaAstClassDeclaration classDeclaration,
             List<QinIrFieldDeclaration> fields) {
@@ -303,8 +399,12 @@ public final class QinJavaAstIrLowerer {
     }
 
     private boolean hasConstructorArity(List<QinIrMethodDeclaration> methods, int arity) {
+        return hasMethodArity(methods, "constructor", arity);
+    }
+
+    private boolean hasMethodArity(List<QinIrMethodDeclaration> methods, String name, int arity) {
         for (QinIrMethodDeclaration method : methods) {
-            if ("constructor".equals(method.name()) && method.parameters().size() == arity) {
+            if (name.equals(method.name()) && method.parameters().size() == arity) {
                 return true;
             }
         }
@@ -333,17 +433,37 @@ public final class QinJavaAstIrLowerer {
             parameters.add(new QinIrParameter(
                     parameter.name(),
                     semanticParameter.type(),
-                    List.of()));
+                    List.of(),
+                    parameter.varargs()));
         }
-        return new QinIrMethodDeclaration(
-                method.name(),
-                semanticMethod.returnType(),
-                parameters,
-                lowerAnnotations(packageName, importedTypes, method.annotations()),
-                lowerMethodReturnExpression(packageName, importedTypes, fieldLocals, valueNames, method),
-                lowerExplicitSuperArguments(packageName, importedTypes, fieldLocals, valueNames, method),
-                null,
-                method.staticMethod());
+        Set<String> previousVarargsParameterNames = currentVarargsParameterNames;
+        currentVarargsParameterNames = varargsParameterNames(method);
+        try {
+            return new QinIrMethodDeclaration(
+                    method.name(),
+                    semanticMethod.returnType(),
+                    parameters,
+                    lowerAnnotations(packageName, importedTypes, method.annotations()),
+                    lowerMethodReturnExpression(packageName, importedTypes, fieldLocals, valueNames, method),
+                    hasStructuredStatement(method)
+                            ? lowerMethodBodyStatements(packageName, importedTypes, fieldLocals, valueNames, method)
+                            : List.of(),
+                    lowerExplicitSuperArguments(packageName, importedTypes, fieldLocals, valueNames, method),
+                    null,
+                    method.staticMethod());
+        } finally {
+            currentVarargsParameterNames = previousVarargsParameterNames;
+        }
+    }
+
+    private Set<String> varargsParameterNames(JavaAstMethodDeclaration method) {
+        Set<String> names = new LinkedHashSet<>();
+        for (JavaAstParameter parameter : method.parameters()) {
+            if (parameter.varargs()) {
+                names.add(parameter.name());
+            }
+        }
+        return names;
     }
 
     private List<QinIrExpression> lowerExplicitSuperArguments(
@@ -428,7 +548,6 @@ public final class QinJavaAstIrLowerer {
                             locals,
                             valueNames));
                 }
-                valueNames.add(localVariable.name());
                 continue;
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
@@ -448,6 +567,10 @@ public final class QinJavaAstIrLowerer {
                     || statement instanceof JavaAstEnhancedForStatement
                     || statement instanceof JavaAstForStatement
                     || statement instanceof JavaAstIfStatement
+                    || statement instanceof JavaAstBreakStatement
+                    || statement instanceof JavaAstContinueStatement
+                    || statement instanceof JavaAstThrowStatement
+                    || statement instanceof JavaAstTryStatement
                     || statement instanceof JavaAstWhileStatement) {
                 return true;
             }
@@ -481,7 +604,7 @@ public final class QinJavaAstIrLowerer {
                                 importedTypes,
                                 baseLocals,
                                 scopedValueNames);
-                localDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
+                leadingExpressions.add(new QinIrLocalDeclarationExpression(localVariable.name(), initializer));
                 scopedValueNames.add(localVariable.name());
                 continue;
             }
@@ -546,6 +669,11 @@ public final class QinJavaAstIrLowerer {
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
                 resultExpression = lowerReturnExpression(returnStatement, packageName, importedTypes, baseLocals, scopedValueNames);
+                break;
+            }
+            if (statement instanceof JavaAstThrowStatement throwStatement) {
+                resultExpression = lowerThrowExpression(throwStatement, packageName, importedTypes, baseLocals, scopedValueNames);
+                break;
             }
         }
 
@@ -555,6 +683,212 @@ public final class QinJavaAstIrLowerer {
                     : lowerExpression(method.returnExpression(), packageName, importedTypes, baseLocals, scopedValueNames);
         }
         return new QinIrLetExpression(localDeclarations, leadingExpressions, resultExpression);
+    }
+
+    private List<QinIrStatement> lowerMethodBodyStatements(
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> fieldLocals,
+            Set<String> valueNames,
+            JavaAstMethodDeclaration method) {
+        return lowerJavaStatements(
+                method.bodyStatements().stream()
+                        .filter(statement -> !isExplicitSuperConstructorInvocation(statement))
+                        .toList(),
+                packageName,
+                importedTypes,
+                fieldLocals,
+                new LinkedHashSet<>(valueNames));
+    }
+
+    private List<QinIrStatement> lowerJavaStatements(
+            List<JavaAstStatement> sourceStatements,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> baseLocals,
+            Set<String> valueNames) {
+        List<QinIrStatement> statements = new ArrayList<>();
+        Set<String> scopedValueNames = new LinkedHashSet<>(valueNames);
+        for (JavaAstStatement statement : sourceStatements) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrExpression initializer = localVariable.initializer() == null
+                        ? new QinIrNullLiteral()
+                        : lowerExpression(
+                                localVariable.initializer(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                scopedValueNames);
+                statements.add(new QinIrLocalDeclarationStatement(localVariable.name(), initializer));
+                scopedValueNames.add(localVariable.name());
+                valueNames.add(localVariable.name());
+                continue;
+            }
+            if (statement instanceof JavaAstExpressionStatement expressionStatement) {
+                statements.add(new QinIrStatementExpression(lowerExpression(
+                        expressionStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        baseLocals,
+                        scopedValueNames)));
+                continue;
+            }
+            if (statement instanceof JavaAstIfStatement ifStatement) {
+                statements.add(new QinIrIfStatement(
+                        lowerExpression(ifStatement.test(), packageName, importedTypes, baseLocals, scopedValueNames),
+                        lowerJavaStatements(
+                                ifStatement.consequentStatements(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                new LinkedHashSet<>(scopedValueNames)),
+                        lowerJavaStatements(
+                                ifStatement.alternateStatements(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                new LinkedHashSet<>(scopedValueNames))));
+                continue;
+            }
+            if (statement instanceof JavaAstWhileStatement whileStatement) {
+                statements.add(new QinIrWhileStatementNode(
+                        lowerExpression(whileStatement.test(), packageName, importedTypes, baseLocals, scopedValueNames),
+                        lowerJavaStatements(
+                                whileStatement.bodyStatements(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                new LinkedHashSet<>(scopedValueNames))));
+                continue;
+            }
+            if (statement instanceof JavaAstDoWhileStatement doWhileStatement) {
+                statements.add(new QinIrDoWhileStatementNode(
+                        lowerJavaStatements(
+                                doWhileStatement.bodyStatements(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                new LinkedHashSet<>(scopedValueNames)),
+                        lowerExpression(doWhileStatement.test(), packageName, importedTypes, baseLocals, scopedValueNames)));
+                continue;
+            }
+            if (statement instanceof JavaAstTryStatement tryStatement) {
+                List<QinIrCatchClause> catchClauses = new ArrayList<>();
+                for (JavaAstCatchClause catchClause : tryStatement.catchClauses()) {
+                    Set<String> catchValueNames = new LinkedHashSet<>(scopedValueNames);
+                    catchValueNames.add(catchClause.parameterName());
+                    catchClauses.add(new QinIrCatchClause(
+                            catchClause.parameterName(),
+                            semanticAnalyzer.resolveType(catchClause.parameterTypeName(), packageName, importedTypes),
+                            lowerJavaStatements(
+                                    catchClause.bodyStatements(),
+                                    packageName,
+                                    importedTypes,
+                                    baseLocals,
+                                    catchValueNames)));
+                }
+                statements.add(new QinIrTryStatement(
+                        lowerJavaStatements(
+                                tryStatement.tryStatements(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                new LinkedHashSet<>(scopedValueNames)),
+                        catchClauses,
+                        lowerJavaStatements(
+                                tryStatement.finallyStatements(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                new LinkedHashSet<>(scopedValueNames))));
+                continue;
+            }
+            if (statement instanceof JavaAstForStatement forStatement) {
+                statements.add(lowerForStatementNode(forStatement, packageName, importedTypes, baseLocals, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstEnhancedForStatement enhancedForStatement) {
+                Set<String> bodyValueNames = new LinkedHashSet<>(scopedValueNames);
+                bodyValueNames.add(enhancedForStatement.variableName());
+                statements.add(new QinIrForEachStatement(
+                        enhancedForStatement.variableName(),
+                        lowerExpression(
+                                enhancedForStatement.iterableExpression(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                scopedValueNames),
+                        lowerJavaStatements(
+                                enhancedForStatement.bodyStatements(),
+                                packageName,
+                                importedTypes,
+                                baseLocals,
+                                bodyValueNames)));
+                continue;
+            }
+            if (statement instanceof JavaAstReturnStatement returnStatement) {
+                statements.add(new QinIrReturnStatement(
+                        lowerOptionalExpression(returnStatement.expression(), packageName, importedTypes, baseLocals, scopedValueNames)));
+                continue;
+            }
+            if (statement instanceof JavaAstThrowStatement throwStatement) {
+                statements.add(new QinIrThrowStatement(
+                        lowerExpression(throwStatement.expression(), packageName, importedTypes, baseLocals, scopedValueNames)));
+                continue;
+            }
+            if (statement instanceof JavaAstBreakStatement breakStatement) {
+                statements.add(new QinIrBreakStatement(breakStatement.label()));
+                continue;
+            }
+            if (statement instanceof JavaAstContinueStatement continueStatement) {
+                statements.add(new QinIrContinueStatement(continueStatement.label()));
+            }
+        }
+        return statements;
+    }
+
+    private QinIrForStatement lowerForStatementNode(
+            JavaAstForStatement forStatement,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> baseLocals,
+            Set<String> valueNames) {
+        List<QinIrLocalVariableDeclaration> initializerDeclarations = new ArrayList<>();
+        List<QinIrExpression> initializerExpressions = new ArrayList<>();
+        Set<String> scopedValueNames = new LinkedHashSet<>(valueNames);
+        for (JavaAstStatement initializer : forStatement.initializerStatements()) {
+            if (initializer instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrExpression initialValue = localVariable.initializer() == null
+                        ? new QinIrNullLiteral()
+                        : lowerExpression(localVariable.initializer(), packageName, importedTypes, baseLocals, scopedValueNames);
+                initializerDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initialValue));
+                scopedValueNames.add(localVariable.name());
+                continue;
+            }
+            if (initializer instanceof JavaAstExpressionStatement expressionStatement) {
+                initializerExpressions.add(lowerExpression(
+                        expressionStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        baseLocals,
+                        scopedValueNames));
+            }
+        }
+        List<QinIrExpression> updateExpressions = new ArrayList<>();
+        for (JavaAstExpression updateExpression : forStatement.updateExpressions()) {
+            updateExpressions.add(lowerExpression(updateExpression, packageName, importedTypes, baseLocals, scopedValueNames));
+        }
+        return new QinIrForStatement(
+                initializerDeclarations,
+                initializerExpressions,
+                lowerExpression(forStatement.test(), packageName, importedTypes, baseLocals, scopedValueNames),
+                updateExpressions,
+                lowerJavaStatements(
+                        forStatement.bodyStatements(),
+                        packageName,
+                        importedTypes,
+                        baseLocals,
+                        scopedValueNames));
     }
 
     private boolean isExplicitSuperConstructorInvocation(JavaAstStatement statement) {
@@ -627,7 +961,7 @@ public final class QinJavaAstIrLowerer {
                 QinIrExpression initializer = localVariable.initializer() == null
                         ? new QinIrNullLiteral()
                         : lowerExpression(localVariable.initializer(), packageName, importedTypes, baseLocals, scopedValueNames);
-                localDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
+                leadingExpressions.add(new QinIrLocalDeclarationExpression(localVariable.name(), initializer));
                 scopedValueNames.add(localVariable.name());
                 continue;
             }
@@ -679,6 +1013,10 @@ public final class QinJavaAstIrLowerer {
                 resultExpression = lowerReturnExpression(returnStatement, packageName, importedTypes, baseLocals, scopedValueNames);
                 break;
             }
+            if (statement instanceof JavaAstThrowStatement throwStatement) {
+                resultExpression = lowerThrowExpression(throwStatement, packageName, importedTypes, baseLocals, scopedValueNames);
+                break;
+            }
         }
         if (localDeclarations.isEmpty() && leadingExpressions.isEmpty()) {
             return resultExpression;
@@ -697,6 +1035,9 @@ public final class QinJavaAstIrLowerer {
         }
         JavaAstStatement last = statements.get(statements.size() - 1);
         if (last instanceof JavaAstReturnStatement) {
+            return true;
+        }
+        if (last instanceof JavaAstThrowStatement) {
             return true;
         }
         if (last instanceof JavaAstIfStatement nestedIf) {
@@ -719,7 +1060,7 @@ public final class QinJavaAstIrLowerer {
                 QinIrExpression initializer = localVariable.initializer() == null
                         ? new QinIrNullLiteral()
                         : lowerExpression(localVariable.initializer(), packageName, importedTypes, baseLocals, scopedValueNames);
-                localDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
+                bodyExpressions.add(new QinIrLocalDeclarationExpression(localVariable.name(), initializer));
                 scopedValueNames.add(localVariable.name());
                 continue;
             }
@@ -759,6 +1100,10 @@ public final class QinJavaAstIrLowerer {
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
                 bodyExpressions.add(lowerReturnExpression(returnStatement, packageName, importedTypes, baseLocals, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstThrowStatement throwStatement) {
+                bodyExpressions.add(lowerThrowExpression(throwStatement, packageName, importedTypes, baseLocals, scopedValueNames));
             }
         }
         return new QinIrWhileExpression(
@@ -781,7 +1126,7 @@ public final class QinJavaAstIrLowerer {
                 QinIrExpression initializer = localVariable.initializer() == null
                         ? new QinIrNullLiteral()
                         : lowerExpression(localVariable.initializer(), packageName, importedTypes, baseLocals, scopedValueNames);
-                localDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
+                bodyExpressions.add(new QinIrLocalDeclarationExpression(localVariable.name(), initializer));
                 scopedValueNames.add(localVariable.name());
                 continue;
             }
@@ -821,6 +1166,10 @@ public final class QinJavaAstIrLowerer {
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
                 bodyExpressions.add(lowerReturnExpression(returnStatement, packageName, importedTypes, baseLocals, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstThrowStatement throwStatement) {
+                bodyExpressions.add(lowerThrowExpression(throwStatement, packageName, importedTypes, baseLocals, scopedValueNames));
             }
         }
         return new QinIrDoWhileExpression(
@@ -869,7 +1218,7 @@ public final class QinJavaAstIrLowerer {
                 QinIrExpression initializer = localVariable.initializer() == null
                         ? new QinIrNullLiteral()
                         : lowerExpression(localVariable.initializer(), packageName, importedTypes, baseLocals, scopedValueNames);
-                bodyLocalDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
+                bodyExpressions.add(new QinIrLocalDeclarationExpression(localVariable.name(), initializer));
                 scopedValueNames.add(localVariable.name());
                 continue;
             }
@@ -909,6 +1258,10 @@ public final class QinJavaAstIrLowerer {
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
                 bodyExpressions.add(lowerReturnExpression(returnStatement, packageName, importedTypes, baseLocals, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstThrowStatement throwStatement) {
+                bodyExpressions.add(lowerThrowExpression(throwStatement, packageName, importedTypes, baseLocals, scopedValueNames));
             }
         }
 
@@ -942,7 +1295,7 @@ public final class QinJavaAstIrLowerer {
                 QinIrExpression initializer = localVariable.initializer() == null
                         ? new QinIrNullLiteral()
                         : lowerExpression(localVariable.initializer(), packageName, importedTypes, baseLocals, scopedValueNames);
-                bodyLocalDeclarations.add(new QinIrLocalVariableDeclaration(localVariable.name(), initializer));
+                bodyExpressions.add(new QinIrLocalDeclarationExpression(localVariable.name(), initializer));
                 scopedValueNames.add(localVariable.name());
                 continue;
             }
@@ -982,6 +1335,10 @@ public final class QinJavaAstIrLowerer {
             }
             if (statement instanceof JavaAstReturnStatement returnStatement) {
                 bodyExpressions.add(lowerReturnExpression(returnStatement, packageName, importedTypes, baseLocals, scopedValueNames));
+                continue;
+            }
+            if (statement instanceof JavaAstThrowStatement throwStatement) {
+                bodyExpressions.add(lowerThrowExpression(throwStatement, packageName, importedTypes, baseLocals, scopedValueNames));
             }
         }
         return new QinIrForEachExpression(
@@ -1002,6 +1359,16 @@ public final class QinJavaAstIrLowerer {
             Map<String, QinIrExpression> locals,
             Set<String> valueNames) {
         return lowerOptionalExpression(returnStatement.expression(), packageName, importedTypes, locals, valueNames);
+    }
+
+    private QinIrExpression lowerThrowExpression(
+            JavaAstThrowStatement throwStatement,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> locals,
+            Set<String> valueNames) {
+        return new com.qin.lang.ir.QinIrThrowExpression(
+                lowerExpression(throwStatement.expression(), packageName, importedTypes, locals, valueNames));
     }
 
     private QinIrExpression lowerOptionalExpression(
@@ -1060,15 +1427,17 @@ public final class QinJavaAstIrLowerer {
                         importedTypes,
                         locals,
                         lambdaValueNames);
+                return new QinIrFunctionLiteral(lambdaExpression.parameterNames(), returnExpression);
             } else {
-                returnExpression = lowerStatementResult(
+                return new QinIrFunctionLiteral(
+                        lambdaExpression.parameterNames(),
+                        lowerJavaStatements(
                         lambdaExpression.bodyStatements(),
                         packageName,
                         importedTypes,
                         locals,
-                        lambdaValueNames);
+                                lambdaValueNames));
             }
-            return new QinIrFunctionLiteral(lambdaExpression.parameterNames(), returnExpression);
         }
         if (expression instanceof JavaAstClassLiteralExpression classLiteral) {
             return new QinIrJavaClassLiteralExpression(
@@ -1099,9 +1468,29 @@ public final class QinJavaAstIrLowerer {
                     lowerExpression(arrayAccess.index(), packageName, importedTypes, locals, valueNames));
         }
         if (expression instanceof JavaAstMethodCallExpression methodCall) {
-            List<QinIrExpression> arguments = new ArrayList<>();
-            for (JavaAstExpression argument : methodCall.arguments()) {
-                arguments.add(lowerExpression(argument, packageName, importedTypes, locals, valueNames));
+            List<QinIrExpression> arguments = lowerMethodCallArguments(
+                    methodCall.arguments(),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    valueNames);
+            if (methodCall.receiver() instanceof JavaAstThisExpression
+                    && currentClassOwnerBinaryName != null
+                    && currentClassStaticMethodNames.contains(methodCall.methodName())) {
+                return new QinIrStaticMethodCallExpression(
+                        currentClassOwnerSimpleName,
+                        currentClassOwnerBinaryName,
+                        methodCall.methodName(),
+                        arguments);
+            }
+            if (methodCall.receiver() instanceof JavaAstThisExpression
+                    && currentStaticInitializerOwnerBinaryName != null
+                    && currentStaticInitializerStaticMethodNames.contains(methodCall.methodName())) {
+                return new QinIrStaticMethodCallExpression(
+                        currentStaticInitializerOwnerSimpleName,
+                        currentStaticInitializerOwnerBinaryName,
+                        methodCall.methodName(),
+                        arguments);
             }
             if (!(methodCall.receiver() instanceof JavaAstIdentifierExpression receiverIdentifier
                     && "super".equals(receiverIdentifier.name()))) {
@@ -1195,6 +1584,12 @@ public final class QinJavaAstIrLowerer {
                     castExpression.typeName(),
                     lowerExpression(castExpression.expression(), packageName, importedTypes, locals, valueNames));
         }
+        if (expression instanceof JavaAstConditionalExpression conditionalExpression) {
+            return new QinIrIfExpression(
+                    lowerExpression(conditionalExpression.condition(), packageName, importedTypes, locals, valueNames),
+                    lowerExpression(conditionalExpression.consequent(), packageName, importedTypes, locals, valueNames),
+                    lowerExpression(conditionalExpression.alternate(), packageName, importedTypes, locals, valueNames));
+        }
         if (expression instanceof JavaAstInstanceofPatternExpression instanceofPattern) {
             QinIrTypeRef ownerType = semanticAnalyzer.resolveType(
                     instanceofPattern.typeName(),
@@ -1230,6 +1625,26 @@ public final class QinJavaAstIrLowerer {
         throw new IllegalArgumentException("Unsupported Java AST expression: " + expression);
     }
 
+    private List<QinIrExpression> lowerMethodCallArguments(
+            List<JavaAstExpression> arguments,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> locals,
+            Set<String> valueNames) {
+        List<QinIrExpression> loweredArguments = new ArrayList<>();
+        for (int i = 0; i < arguments.size(); i++) {
+            JavaAstExpression argument = arguments.get(i);
+            QinIrExpression lowered = lowerExpression(argument, packageName, importedTypes, locals, valueNames);
+            if (i == arguments.size() - 1
+                    && argument instanceof JavaAstIdentifierExpression identifier
+                    && currentVarargsParameterNames.contains(identifier.name())) {
+                lowered = new QinIrSpreadArgumentExpression(lowered);
+            }
+            loweredArguments.add(lowered);
+        }
+        return loweredArguments;
+    }
+
     private QinIrTypeRef staticOwnerType(
             JavaAstExpression expression,
             String packageName,
@@ -1248,10 +1663,14 @@ public final class QinJavaAstIrLowerer {
         return semanticAnalyzer.isLoadableClass(ownerType.binaryName()) ? ownerType : null;
     }
 
-    private Map<String, QinIrExpression> fieldLocals(Set<String> fieldNames) {
+    private Map<String, QinIrExpression> fieldLocals(Map<String, QinJavaInheritedField> fields) {
         Map<String, QinIrExpression> locals = new LinkedHashMap<>();
-        for (String fieldName : fieldNames) {
-            locals.put(fieldName, new QinIrPropertyAccessExpression(new QinIrThisExpression(), fieldName));
+        for (QinJavaInheritedField field : fields.values()) {
+            locals.put(
+                    field.name(),
+                    field.staticField()
+                            ? new QinIrMemberAccessExpression(field.ownerBinaryName(), field.name())
+                            : new QinIrPropertyAccessExpression(new QinIrThisExpression(), field.name()));
         }
         return locals;
     }

@@ -131,10 +131,12 @@ public record QinCfaProgram(
             FunctionLiteral,
             IdentifierReference,
             JavaNewExpression,
+            LetExpression,
             MemberAccessExpression,
             NullLiteral,
             NumberLiteral,
             ObjectLiteral,
+            SequenceExpression,
             StringLiteral {
     }
 
@@ -272,6 +274,26 @@ public record QinCfaProgram(
         }
     }
 
+    public record LetExpression(
+            List<LocalVariableDeclaration> localDeclarations,
+            List<Expression> leadingExpressions,
+            Expression resultExpression) implements Expression {
+        public LetExpression {
+            Objects.requireNonNull(localDeclarations, "localDeclarations cannot be null");
+            Objects.requireNonNull(leadingExpressions, "leadingExpressions cannot be null");
+            Objects.requireNonNull(resultExpression, "resultExpression cannot be null");
+            localDeclarations = List.copyOf(localDeclarations);
+            leadingExpressions = List.copyOf(leadingExpressions);
+        }
+    }
+
+    public record LocalVariableDeclaration(String name, Expression initializer) {
+        public LocalVariableDeclaration {
+            Objects.requireNonNull(name, "name cannot be null");
+            Objects.requireNonNull(initializer, "initializer cannot be null");
+        }
+    }
+
     public record MemberAccessExpression(
             String objectName,
             String propertyName) implements Expression {
@@ -298,6 +320,19 @@ public record QinCfaProgram(
         public ObjectProperty {
             Objects.requireNonNull(key, "key cannot be null");
             Objects.requireNonNull(value, "value cannot be null");
+        }
+    }
+
+    public record SequenceExpression(
+            List<Expression> leadingExpressions,
+            Expression resultExpression) implements Expression {
+        public SequenceExpression {
+            Objects.requireNonNull(leadingExpressions, "leadingExpressions cannot be null");
+            Objects.requireNonNull(resultExpression, "resultExpression cannot be null");
+            leadingExpressions = List.copyOf(leadingExpressions);
+            if (leadingExpressions.isEmpty()) {
+                throw new IllegalArgumentException("leadingExpressions cannot be empty");
+            }
         }
     }
 
