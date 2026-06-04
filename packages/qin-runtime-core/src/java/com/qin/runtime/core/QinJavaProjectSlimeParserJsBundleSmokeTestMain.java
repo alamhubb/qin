@@ -43,6 +43,13 @@ public final class QinJavaProjectSlimeParserJsBundleSmokeTestMain {
         require(generated.indexOf("class com_slime_parser_base_SlimeJavascriptParserBase")
                         < generated.indexOf("class com_slime_parser_SlimeParser"),
                 "superclass appears before SlimeParser");
+        require(generated.indexOf("class com_subhuti_lookahead_SubhutiTokenConsumer")
+                        < generated.indexOf("class com_slime_parser_consumer_SlimeJavascriptTokenConsumer"),
+                "token consumer superclass appears before JavaScript token consumer");
+        require(!generated.contains("executeRuleWrapper(() =>"),
+                "Subhuti rule suppliers use Java functional wrapper");
+        require(generated.contains("executeRuleWrapper(__qin_java_functional(() =>"),
+                "Subhuti rule suppliers are callable through Supplier.get");
         require(generated.contains("globalThis.__qinJavaProjectExports[\"com.slime.parser.SlimeParser\"] = com_slime_parser_SlimeParser;"),
                 "SlimeParser project export");
 

@@ -7,9 +7,12 @@ import com.slime.java.ast.JavaAstArrayAccessExpression;
 import com.slime.java.ast.JavaAstArrayLiteralExpression;
 import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
+import com.slime.java.ast.JavaAstBreakStatement;
+import com.slime.java.ast.JavaAstCatchClause;
 import com.slime.java.ast.JavaAstCastExpression;
 import com.slime.java.ast.JavaAstClassDeclaration;
 import com.slime.java.ast.JavaAstClassLiteralExpression;
+import com.slime.java.ast.JavaAstContinueStatement;
 import com.slime.java.ast.JavaAstDoWhileStatement;
 import com.slime.java.ast.JavaAstEnhancedForStatement;
 import com.slime.java.ast.JavaAstExpression;
@@ -30,6 +33,8 @@ import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
 import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
+import com.slime.java.ast.JavaAstThrowStatement;
+import com.slime.java.ast.JavaAstTryStatement;
 import com.slime.java.ast.JavaAstUnaryExpression;
 import com.slime.java.ast.JavaAstUpdateExpression;
 import com.slime.java.ast.JavaAstWhileStatement;
@@ -67,7 +72,7 @@ public final class QinJavaProjectJsCompiler {
 
         QinIrProgram bundleProgram;
         try {
-            bundleProgram = lowerBundle(parsedPrograms);
+            bundleProgram = sortJavaClassDeclarations(lowerBundle(parsedPrograms));
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Could not lower Java source bundle for " + entryBinaryName, e);
         }
@@ -80,6 +85,67 @@ public final class QinJavaProjectJsCompiler {
 
     private QinIrProgram lowerBundle(List<JavaAstProgram> programs) {
         return new QinJavaAstIrLowerer().lowerPrograms(programs);
+    }
+
+    private QinIrProgram sortJavaClassDeclarations(QinIrProgram program) {
+        List<com.qin.lang.ir.QinIrClassDeclaration> sortedClasses =
+                sortJavaClassDeclarations(program.classDeclarations());
+        if (sortedClasses.equals(program.classDeclarations())) {
+            return program;
+        }
+        return new QinIrProgram(
+                program.declarations(),
+                program.expressionStatements(),
+                program.consoleValueLogs(),
+                program.consoleLogs(),
+                program.javaImports(),
+                program.jsImports(),
+                program.javaStaticConsoleLogs(),
+                program.javaInstanceMethodCalls(),
+                program.javaInstanceConsoleLogs(),
+                sortedClasses,
+                program.executionSteps(),
+                program.functionModelArtifacts());
+    }
+
+    private List<com.qin.lang.ir.QinIrClassDeclaration> sortJavaClassDeclarations(
+            List<com.qin.lang.ir.QinIrClassDeclaration> classDeclarations) {
+        Map<String, com.qin.lang.ir.QinIrClassDeclaration> byBinaryName = new LinkedHashMap<>();
+        for (com.qin.lang.ir.QinIrClassDeclaration classDeclaration : classDeclarations) {
+            byBinaryName.put(classDeclaration.binaryName(), classDeclaration);
+        }
+        List<com.qin.lang.ir.QinIrClassDeclaration> sorted = new ArrayList<>();
+        Set<String> visiting = new LinkedHashSet<>();
+        Set<String> visited = new LinkedHashSet<>();
+        for (com.qin.lang.ir.QinIrClassDeclaration classDeclaration : classDeclarations) {
+            visitJavaClassDeclaration(classDeclaration, byBinaryName, visiting, visited, sorted);
+        }
+        return List.copyOf(sorted);
+    }
+
+    private void visitJavaClassDeclaration(
+            com.qin.lang.ir.QinIrClassDeclaration classDeclaration,
+            Map<String, com.qin.lang.ir.QinIrClassDeclaration> byBinaryName,
+            Set<String> visiting,
+            Set<String> visited,
+            List<com.qin.lang.ir.QinIrClassDeclaration> sorted) {
+        String binaryName = classDeclaration.binaryName();
+        if (visited.contains(binaryName)) {
+            return;
+        }
+        if (!visiting.add(binaryName)) {
+            throw new IllegalArgumentException("Cyclic Java class inheritance in generated JS bundle: " + visiting);
+        }
+        if (classDeclaration.superType() != null) {
+            com.qin.lang.ir.QinIrClassDeclaration superClass =
+                    byBinaryName.get(classDeclaration.superType().binaryName());
+            if (superClass != null) {
+                visitJavaClassDeclaration(superClass, byBinaryName, visiting, visited, sorted);
+            }
+        }
+        visiting.remove(binaryName);
+        visited.add(binaryName);
+        sorted.add(classDeclaration);
     }
 
     private String projectExports(QinIrProgram program) {
@@ -236,6 +302,10 @@ public final class QinJavaProjectJsCompiler {
                 }
                 collectExpressionReferences(doWhileStatement.test(), resolver, sourceBinaryNames, referenced);
             }
+            case JavaAstBreakStatement ignored -> {
+            }
+            case JavaAstContinueStatement ignored -> {
+            }
             case JavaAstEnhancedForStatement enhancedForStatement -> {
                 collectTypeReference(enhancedForStatement.variableTypeName(), resolver, sourceBinaryNames, referenced);
                 collectExpressionReferences(enhancedForStatement.iterableExpression(), resolver, sourceBinaryNames, referenced);
@@ -272,6 +342,22 @@ public final class QinJavaProjectJsCompiler {
             }
             case JavaAstReturnStatement returnStatement ->
                     collectExpressionReferences(returnStatement.expression(), resolver, sourceBinaryNames, referenced);
+            case JavaAstThrowStatement throwStatement ->
+                    collectExpressionReferences(throwStatement.expression(), resolver, sourceBinaryNames, referenced);
+            case JavaAstTryStatement tryStatement -> {
+                for (JavaAstStatement tryBodyStatement : tryStatement.tryStatements()) {
+                    collectStatementReferences(tryBodyStatement, resolver, sourceBinaryNames, referenced);
+                }
+                for (JavaAstCatchClause catchClause : tryStatement.catchClauses()) {
+                    collectTypeReference(catchClause.parameterTypeName(), resolver, sourceBinaryNames, referenced);
+                    for (JavaAstStatement catchBodyStatement : catchClause.bodyStatements()) {
+                        collectStatementReferences(catchBodyStatement, resolver, sourceBinaryNames, referenced);
+                    }
+                }
+                for (JavaAstStatement finallyBodyStatement : tryStatement.finallyStatements()) {
+                    collectStatementReferences(finallyBodyStatement, resolver, sourceBinaryNames, referenced);
+                }
+            }
             case JavaAstWhileStatement whileStatement -> {
                 collectExpressionReferences(whileStatement.test(), resolver, sourceBinaryNames, referenced);
                 for (JavaAstStatement bodyStatement : whileStatement.bodyStatements()) {
