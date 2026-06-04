@@ -2306,7 +2306,7 @@ public final class QinJsBackend {
 
     private void emitClassDeclarations(StringBuilder js, List<QinIrClassDeclaration> classDeclarations) {
         for (QinIrClassDeclaration classDeclaration : classDeclarations) {
-            js.append("class ").append(classDeclaration.simpleName());
+            js.append("class ").append(jsClassReference(classDeclaration.binaryName()));
             if (classDeclaration.superType() != null) {
                 js.append(" extends ").append(jsClassReference(classDeclaration.superType().binaryName()));
             }
@@ -2352,12 +2352,12 @@ public final class QinJsBackend {
                 if (!isJavaEnumConstant(classDeclaration, field)) {
                     continue;
                 }
-                js.append(classDeclaration.simpleName())
+                js.append(jsClassReference(classDeclaration.binaryName()))
                         .append(".")
                         .append(field.name())
                         .append(" = __qin_init_enum_value(");
                 if (field.initializer() == null) {
-                    js.append("new ").append(classDeclaration.simpleName()).append("()");
+                    js.append("new ").append(jsClassReference(classDeclaration.binaryName())).append("()");
                 } else {
                     emitExpression(js, field.initializer());
                 }
@@ -2585,12 +2585,34 @@ public final class QinJsBackend {
         return "__qin_constructor_" + arity;
     }
 
-    private String jsClassReference(String binaryName) {
+    public static String generatedJavaClassIdentifier(String binaryName) {
         if (binaryName == null || binaryName.isBlank()) {
             throw new IllegalArgumentException("Missing JS class reference");
         }
-        int dot = binaryName.lastIndexOf('.');
-        return dot < 0 ? binaryName : binaryName.substring(dot + 1);
+        StringBuilder identifier = new StringBuilder(binaryName.length());
+        for (int i = 0; i < binaryName.length(); i++) {
+            char ch = binaryName.charAt(i);
+            if (i == 0) {
+                identifier.append(isJsIdentifierStart(ch) ? ch : '_');
+            } else {
+                identifier.append(isJsIdentifierPart(ch) ? ch : '_');
+            }
+        }
+        return identifier.toString();
+    }
+
+    private String jsClassReference(String binaryName) {
+        return generatedJavaClassIdentifier(binaryName);
+    }
+
+    private static boolean isJsIdentifierStart(char ch) {
+        return ch == '_' || ch == '$'
+                || (ch >= 'A' && ch <= 'Z')
+                || (ch >= 'a' && ch <= 'z');
+    }
+
+    private static boolean isJsIdentifierPart(char ch) {
+        return isJsIdentifierStart(ch) || (ch >= '0' && ch <= '9');
     }
 
     private Set<String> generatedClassBinaryNames(List<QinIrClassDeclaration> classDeclarations) {

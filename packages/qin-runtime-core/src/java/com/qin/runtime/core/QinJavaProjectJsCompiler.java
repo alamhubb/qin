@@ -93,7 +93,7 @@ public final class QinJavaProjectJsCompiler {
             js.append("  globalThis.__qinJavaProjectExports[\"")
                     .append(escapeJs(classDeclaration.binaryName()))
                     .append("\"] = ")
-                    .append(classDeclaration.simpleName())
+                    .append(QinJsBackend.generatedJavaClassIdentifier(classDeclaration.binaryName()))
                     .append(";\n");
         }
         js.append("}\n");

@@ -26,14 +26,14 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
                 """);
 
         String generated = new QinJsBackend().compileProgram(program);
-        require(generated.contains("class Person"), "Person JS class");
-        require(generated.contains("constructor()"), "Person constructor");
-        require(generated.contains("this.name = \"qin\";"), "explicit field initializer");
-        require(generated.contains("this.title = null;"), "default field initializer");
+        require(generated.contains("class com_example_Person"), "Person JS class");
+        require(generated.contains("constructor(...__qin_args)"), "Person constructor");
+        require(generated.contains("this.__qin_field_name = \"qin\";"), "explicit field initializer");
+        require(generated.contains("this.__qin_field_title = null;"), "default field initializer");
         require(generated.contains("static label()"), "static method");
         require(generated.contains("fresh()"), "fresh method");
         require(generated.contains("return new ArrayList();"), "ArrayList method return");
-        require(generated.contains("return this.name;"), "this property return");
+        require(generated.contains("return this.__qin_field_name;"), "this property return");
         require(generated.contains("class __QinJavaUtilArrayList"), "ArrayList runtime shim from class method");
 
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-class-");
@@ -41,7 +41,9 @@ public final class QinJavaAstJsBackendClassSmokeTestMain {
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nconst person = new Person(); Person.label() + \":\" + person.display() + \":\" + person.fresh().size();\n",
+                generated
+                        + "\nconst person = new com_example_Person();"
+                        + " com_example_Person.label() + \":\" + person.display() + \":\" + person.fresh().size();\n",
                 "java_ast_js_backend_class");
         if (!"person:qin:0".equals(result)) {
             throw new IllegalStateException("Expected generated Java AST class field initializer and ArrayList, got: " + result);
