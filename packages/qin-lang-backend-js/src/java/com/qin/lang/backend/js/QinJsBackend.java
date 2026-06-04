@@ -65,6 +65,7 @@ public final class QinJsBackend {
     private Map<String, QinIrClassDeclaration> generatedClassesByBinaryName = Map.of();
     private Map<String, String> bindingAliases = new LinkedHashMap<>();
     private Map<String, String> currentJavaFieldAliases = Map.of();
+    private QinIrClassDeclaration currentJavaClassDeclaration;
 
     public String compileProgram(QinIrProgram program) {
         Objects.requireNonNull(program, "program cannot be null");
@@ -2314,12 +2315,15 @@ public final class QinJsBackend {
             }
             js.append(" {\n");
             Map<String, String> previousFieldAliases = currentJavaFieldAliases;
+            QinIrClassDeclaration previousClassDeclaration = currentJavaClassDeclaration;
             currentJavaFieldAliases = javaFieldAliases(classDeclaration);
+            currentJavaClassDeclaration = classDeclaration;
             List<QinIrMethodDeclaration> explicitConstructors = explicitConstructors(classDeclaration);
             emitClassConstructor(js, classDeclaration, explicitConstructors);
             emitClassConstructorInitializers(js, classDeclaration, explicitConstructors);
             emitClassMethods(js, classDeclaration);
             currentJavaFieldAliases = previousFieldAliases;
+            currentJavaClassDeclaration = previousClassDeclaration;
             js.append("}\n");
             emitStaticFieldInitializers(js, classDeclaration);
         }
@@ -2443,7 +2447,7 @@ public final class QinJsBackend {
                 }
                 emitSuperCall(js, classDeclaration, constructor, constructorParameters, "        ");
                 js.append("        return this.")
-                        .append(constructorInitializerName(arity))
+                        .append(constructorInitializerName(classDeclaration, arity))
                         .append("(");
                 for (int i = 0; i < constructorParameters.size(); i++) {
                     js.append(jsBindingName(constructorParameters.get(i).name()));
@@ -2492,7 +2496,7 @@ public final class QinJsBackend {
         Map<String, String> previousAliases = bindingAliases;
         bindingAliases = new LinkedHashMap<>(previousAliases);
         List<QinIrParameter> parameters = constructor.parameters();
-        js.append("  ").append(constructorInitializerName(parameters.size())).append("(");
+        js.append("  ").append(constructorInitializerName(classDeclaration, parameters.size())).append("(");
         for (int i = 0; i < parameters.size(); i++) {
             js.append(declareBindingName(parameters.get(i).name()));
             if (i < parameters.size() - 1) {
@@ -2598,8 +2602,8 @@ public final class QinJsBackend {
         currentJavaFieldAliases = previousFieldAliases;
     }
 
-    private String constructorInitializerName(int arity) {
-        return "__qin_constructor_" + arity;
+    private String constructorInitializerName(QinIrClassDeclaration classDeclaration, int arity) {
+        return "__qin_constructor_" + jsClassReference(classDeclaration.binaryName()) + "_" + arity;
     }
 
     public static String generatedJavaClassIdentifier(String binaryName) {
@@ -3032,7 +3036,12 @@ public final class QinJsBackend {
             js.append(".");
             if ("constructor".equals(instanceMethodCallExpression.methodName())
                     && instanceMethodCallExpression.receiver() instanceof QinIrThisExpression) {
-                js.append(constructorInitializerName(instanceMethodCallExpression.arguments().size()));
+                if (currentJavaClassDeclaration == null) {
+                    throw new IllegalStateException("Java constructor delegation requires current class context");
+                }
+                js.append(constructorInitializerName(
+                        currentJavaClassDeclaration,
+                        instanceMethodCallExpression.arguments().size()));
             } else {
                 js.append(instanceMethodCallExpression.methodName());
             }

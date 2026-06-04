@@ -3553,7 +3553,7 @@ public final class JavaEsmGlobal {
                         || isAccessorMember(member)) {
                     continue;
                 }
-                String name = extractPropertyName(member.get("key"));
+                String name = methodDefinitionName(member);
                 Object valueNode = member.get("value");
                 if (!(valueNode instanceof Map<?, ?> rawValue)) {
                     continue;
@@ -3561,7 +3561,7 @@ public final class JavaEsmGlobal {
                 InterpretedFunction memberFunction = createMemberFunction(name, castMap(rawValue));
                 Object decoratedFunction = applyLegacyMethodDecorators(member, name, memberFunction, null);
                 InterpretedFunction loweredFunction = toInterpretedFunction(decoratedFunction, memberFunction);
-                if (asList(member.get("decorators")).isEmpty()) {
+                if (!"constructor".equals(name) && asList(member.get("decorators")).isEmpty()) {
                     InterpretedFunction prototypeFunction = toInterpretedFunction(
                             prototypeObjectForDecorator().get(propertyKey(name)),
                             null);
@@ -3602,7 +3602,7 @@ public final class JavaEsmGlobal {
                         || !isAccessorMember(member)) {
                     continue;
                 }
-                String name = extractPropertyName(member.get("key"));
+                String name = methodDefinitionName(member);
                 Object valueNode = member.get("value");
                 if (name == null || !(valueNode instanceof Map<?, ?> rawValue)) {
                     continue;
@@ -3671,6 +3671,13 @@ public final class JavaEsmGlobal {
                 return propertyKey(evalNode(member.get("key"), closure));
             }
             return extractPropertyName(member.get("key"));
+        }
+
+        private String methodDefinitionName(Map<String, Object> member) {
+            if ("constructor".equals(String.valueOf(member.get("kind")))) {
+                return "constructor";
+            }
+            return classMemberKey(member);
         }
 
         private InterpretedFunction createMemberFunction(Map<String, Object> valueAst) {

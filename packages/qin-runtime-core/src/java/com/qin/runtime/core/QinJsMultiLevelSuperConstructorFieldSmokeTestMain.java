@@ -118,6 +118,19 @@ public final class QinJsMultiLevelSuperConstructorFieldSmokeTestMain {
             throw new IllegalStateException("Expected generated dispatcher field result true, got: "
                     + generatedDispatcherResult);
         }
+        StringBuilder largeSource = new StringBuilder();
+        largeSource.append("/*");
+        largeSource.append("x".repeat(310_000));
+        largeSource.append("*/\n");
+        largeSource.append(generatedDispatcherSource);
+        Object externalizedResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                largeSource.toString(),
+                "js_multi_super_externalized_dispatcher_field");
+        if (!Boolean.TRUE.equals(externalizedResult)) {
+            throw new IllegalStateException("Expected externalized dispatcher field result true, got: "
+                    + externalizedResult);
+        }
         System.out.println("QinJsMultiLevelSuperConstructorFieldSmokeTestMain OK");
     }
 }

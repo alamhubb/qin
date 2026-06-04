@@ -34,7 +34,7 @@ public final class QinJavaAstJsBackendThisConstructorSmokeTestMain {
                 """);
 
         String generated = new QinJsBackend().compileProgram(program);
-        if (!generated.contains("this.__qin_constructor_2(name, null)")) {
+        if (!generated.contains("this.__qin_constructor_TokenBox_2(name, null)")) {
             throw new IllegalStateException("Expected generated JS to route this(...) to constructor initializer:\n" + generated);
         }
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-this-constructor-");
