@@ -228,6 +228,8 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                 JavaCstToAst.parse(ownerSource),
                 JavaCstToAst.parse(useSource)));
         require(multiProgramModel.classes().size() == 3, "multi program class count");
+        QinJavaSemanticAnalyzer analyzer = new QinJavaSemanticAnalyzer();
+        require(!analyzer.isLoadableClass("com.subhuti.debug.logWriter"), "wrong-case class probe");
 
         System.out.println("QinJavaSemanticAnalyzerSmokeTestMain OK");
     }

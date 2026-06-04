@@ -1382,7 +1382,7 @@ public final class QinJavaSemanticAnalyzer {
         try {
             Class.forName(binaryName);
             return true;
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | LinkageError e) {
             return false;
         }
     }
