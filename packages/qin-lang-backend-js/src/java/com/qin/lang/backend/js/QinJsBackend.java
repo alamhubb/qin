@@ -62,12 +62,14 @@ import java.util.Set;
  */
 public final class QinJsBackend {
     private Set<String> generatedClassBinaryNames = Set.of();
+    private Map<String, QinIrClassDeclaration> generatedClassesByBinaryName = Map.of();
     private Map<String, String> bindingAliases = new LinkedHashMap<>();
     private Map<String, String> currentJavaFieldAliases = Map.of();
 
     public String compileProgram(QinIrProgram program) {
         Objects.requireNonNull(program, "program cannot be null");
         generatedClassBinaryNames = generatedClassBinaryNames(program.classDeclarations());
+        generatedClassesByBinaryName = generatedClassesByBinaryName(program.classDeclarations());
         bindingAliases = new LinkedHashMap<>();
 
         StringBuilder js = new StringBuilder();
@@ -2638,12 +2640,28 @@ public final class QinJsBackend {
         return Set.copyOf(names);
     }
 
+    private Map<String, QinIrClassDeclaration> generatedClassesByBinaryName(
+            List<QinIrClassDeclaration> classDeclarations) {
+        Map<String, QinIrClassDeclaration> classes = new LinkedHashMap<>();
+        for (QinIrClassDeclaration classDeclaration : classDeclarations) {
+            classes.put(classDeclaration.binaryName(), classDeclaration);
+        }
+        return Map.copyOf(classes);
+    }
+
     private boolean isGeneratedClassOwner(String ownerBinaryName) {
         return ownerBinaryName != null && generatedClassBinaryNames.contains(ownerBinaryName);
     }
 
     private Map<String, String> javaFieldAliases(QinIrClassDeclaration classDeclaration) {
         LinkedHashMap<String, String> aliases = new LinkedHashMap<>();
+        if (classDeclaration.superType() != null) {
+            QinIrClassDeclaration superClass =
+                    generatedClassesByBinaryName.get(classDeclaration.superType().binaryName());
+            if (superClass != null) {
+                aliases.putAll(javaFieldAliases(superClass));
+            }
+        }
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
             aliases.put(field.name(), jsJavaFieldName(field.name()));
         }
