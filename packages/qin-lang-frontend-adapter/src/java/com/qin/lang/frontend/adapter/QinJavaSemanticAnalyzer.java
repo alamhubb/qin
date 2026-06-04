@@ -320,6 +320,9 @@ public final class QinJavaSemanticAnalyzer {
         QinIrTypeRef returnType = resolveType(method.returnTypeName(), packageName, importedTypes);
         QinIrTypeRef returnExpressionType = QinIrTypeRef.voidType();
         for (JavaAstStatement statement : method.bodyStatements()) {
+            if (isExplicitSuperConstructorInvocation(statement)) {
+                continue;
+            }
             if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
                 if (localVariable.initializer() != null) {
                     expressionType(
@@ -437,6 +440,14 @@ public final class QinJavaSemanticAnalyzer {
                     classBinaryName);
         }
         return new QinJavaSemanticMethod(method.name(), returnType, parameters, returnExpressionType);
+    }
+
+    private boolean isExplicitSuperConstructorInvocation(JavaAstStatement statement) {
+        return statement instanceof JavaAstExpressionStatement expressionStatement
+                && expressionStatement.expression() instanceof JavaAstMethodCallExpression methodCall
+                && "constructor".equals(methodCall.methodName())
+                && methodCall.receiver() instanceof JavaAstIdentifierExpression receiver
+                && "super".equals(receiver.name());
     }
 
     private QinIrTypeRef expressionType(

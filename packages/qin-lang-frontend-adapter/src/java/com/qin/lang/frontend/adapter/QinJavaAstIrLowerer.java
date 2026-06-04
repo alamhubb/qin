@@ -274,8 +274,33 @@ public final class QinJavaAstIrLowerer {
                 parameters,
                 lowerAnnotations(packageName, importedTypes, method.annotations()),
                 lowerMethodReturnExpression(packageName, importedTypes, fieldNames, valueNames, method),
+                lowerExplicitSuperArguments(packageName, importedTypes, fieldNames, valueNames, method),
                 null,
                 method.staticMethod());
+    }
+
+    private List<QinIrExpression> lowerExplicitSuperArguments(
+            String packageName,
+            Map<String, String> importedTypes,
+            Set<String> fieldNames,
+            Set<String> valueNames,
+            JavaAstMethodDeclaration method) {
+        if (!"constructor".equals(method.name()) || method.bodyStatements().isEmpty()) {
+            return List.of();
+        }
+        JavaAstStatement firstStatement = method.bodyStatements().get(0);
+        if (!(firstStatement instanceof JavaAstExpressionStatement expressionStatement
+                && expressionStatement.expression() instanceof JavaAstMethodCallExpression methodCall
+                && methodCall.receiver() instanceof JavaAstIdentifierExpression receiver
+                && "super".equals(receiver.name()))) {
+            return List.of();
+        }
+        Map<String, QinIrExpression> locals = fieldLocals(fieldNames);
+        List<QinIrExpression> arguments = new ArrayList<>();
+        for (JavaAstExpression argument : methodCall.arguments()) {
+            arguments.add(lowerExpression(argument, packageName, importedTypes, locals, valueNames));
+        }
+        return arguments;
     }
 
     private List<QinIrAnnotation> lowerAnnotations(
@@ -324,6 +349,9 @@ public final class QinJavaAstIrLowerer {
         }
         Map<String, QinIrExpression> locals = fieldLocals(fieldNames);
         for (JavaAstStatement statement : method.bodyStatements()) {
+            if (isExplicitSuperConstructorInvocation(statement)) {
+                continue;
+            }
             if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
                 if (localVariable.initializer() != null) {
                     locals.put(localVariable.name(), lowerExpression(
@@ -345,6 +373,9 @@ public final class QinJavaAstIrLowerer {
 
     private boolean hasStructuredStatement(JavaAstMethodDeclaration method) {
         for (JavaAstStatement statement : method.bodyStatements()) {
+            if (isExplicitSuperConstructorInvocation(statement)) {
+                continue;
+            }
             if (statement instanceof JavaAstExpressionStatement
                     || statement instanceof JavaAstDoWhileStatement
                     || statement instanceof JavaAstEnhancedForStatement
@@ -371,6 +402,9 @@ public final class QinJavaAstIrLowerer {
         addPatternVariableDeclarations(method.bodyStatements(), scopedValueNames, localDeclarations);
 
         for (JavaAstStatement statement : method.bodyStatements()) {
+            if (isExplicitSuperConstructorInvocation(statement)) {
+                continue;
+            }
             if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
                 QinIrExpression initializer = localVariable.initializer() == null
                         ? new QinIrNullLiteral()
@@ -454,6 +488,14 @@ public final class QinJavaAstIrLowerer {
                     : lowerExpression(method.returnExpression(), packageName, importedTypes, baseLocals, scopedValueNames);
         }
         return new QinIrLetExpression(localDeclarations, leadingExpressions, resultExpression);
+    }
+
+    private boolean isExplicitSuperConstructorInvocation(JavaAstStatement statement) {
+        return statement instanceof JavaAstExpressionStatement expressionStatement
+                && expressionStatement.expression() instanceof JavaAstMethodCallExpression methodCall
+                && "constructor".equals(methodCall.methodName())
+                && methodCall.receiver() instanceof JavaAstIdentifierExpression receiver
+                && "super".equals(receiver.name());
     }
 
     private JavaAstReturnStatement nextReturnStatement(List<JavaAstStatement> statements, JavaAstStatement current) {
