@@ -69,12 +69,13 @@ public final class QinJsBackendJavaRegexSmokeTestMain {
                 generated
                         + "\nconst regionHit = matcher.region(3, 6).lookingAt();\n"
                         + "const regionGroup = matcher.group();\n"
+                        + "const leadingMiss = Pattern.compile(\"[ ]+\").matcher(\"a b\").lookingAt();\n"
                         + "const second = pattern.matcher(\"xx yy\");\n"
                         + "const found = second.find();\n"
                         + "const replaced = pattern.matcher(\"ab cd\").replaceAll(\"X\");\n"
-                        + "[quoted, pattern.pattern(), pattern.flags(), regionHit, regionGroup, found, second.group(), replaced].join(\":\");\n",
+                        + "[quoted, pattern.pattern(), pattern.flags(), regionHit, regionGroup, leadingMiss, found, second.group(), replaced].join(\":\");\n",
                 "js_backend_regex");
-        if (!"\\Q?.*\\E:\\b[a-z]+\\b:0.0:true:abc:true:xx:X X".equals(result)) {
+        if (!"\\Q?.*\\E:\\b[a-z]+\\b:0.0:true:abc:false:true:xx:X X".equals(result)) {
             throw new IllegalStateException("Expected generated regex result, got: " + result);
         }
         System.out.println("QinJsBackendJavaRegexSmokeTestMain OK");

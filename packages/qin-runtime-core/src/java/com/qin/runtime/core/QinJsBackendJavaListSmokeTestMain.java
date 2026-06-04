@@ -59,6 +59,34 @@ public final class QinJsBackendJavaListSmokeTestMain {
         if (!"beta:2:true".equals(result)) {
             throw new IllegalStateException("Expected generated List.of result, got: " + result);
         }
+        Object copyResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                generated
+                        + "\nconst source = new __QinJavaUtilArrayList();\n"
+                        + "source.add(\"alpha\");\n"
+                        + "const copy = new __QinJavaUtilArrayList(source);\n"
+                        + "const changed = copy.addAll(List.of(\"beta\", \"gamma\"));\n"
+                        + "const previous = copy.set(1, \"delta\");\n"
+                        + "const tail = copy.subList(0, 1);\n"
+                        + "copy.get(0) + \":\" + copy.get(2) + \":\" + copy.size() + \":\" + tail.get(0)"
+                        + " + \":\" + tail.size() + \":\" + changed + \":\" + previous + \":\" + copy.get(1)"
+                        + " + \":\" + copy.indexOf(\"gamma\") + \":\" + copy.indexOf(\"missing\");\n",
+                "js_backend_array_list_copy");
+        if (!"alpha:gamma:3:alpha:1:true:beta:delta:2:-1".equals(copyResult)) {
+            throw new IllegalStateException("Expected ArrayList copy/addAll/set/subList/indexOf result alpha:gamma:3:alpha:1:true:beta:delta:2:-1, got: "
+                    + copyResult);
+        }
+        Object listSubListResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                generated
+                        + "\nconst pair = globalThis.__qinResult.subList(0, 2);\n"
+                        + "pair.get(0) + \":\" + pair.get(1) + \":\" + pair.size()"
+                        + " + \":\" + pair.indexOf(\"beta\") + \":\" + pair.indexOf(\"missing\");\n",
+                "js_backend_list_sub_list");
+        if (!"alpha:beta:2:1:-1".equals(listSubListResult)) {
+            throw new IllegalStateException("Expected List.of subList/indexOf result alpha:beta:2:1:-1, got: "
+                    + listSubListResult);
+        }
         System.out.println("QinJsBackendJavaListSmokeTestMain OK");
     }
 

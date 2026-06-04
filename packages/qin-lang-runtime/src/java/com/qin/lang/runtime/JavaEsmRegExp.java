@@ -16,9 +16,17 @@ final class JavaEsmRegExp {
     private int lastIndex;
 
     JavaEsmRegExp(Object source, Object flags) {
+        this(source, flags, false);
+    }
+
+    private JavaEsmRegExp(Object source, Object flags, boolean javaPatternSource) {
         this.source = normalizeSource(source);
         this.flags = flags == null ? "" : String.valueOf(flags);
-        this.pattern = compilePattern(this.source, this.flags);
+        this.pattern = compilePattern(this.source, this.flags, javaPatternSource);
+    }
+
+    static JavaEsmRegExp fromJavaPattern(Object source, Object flags) {
+        return new JavaEsmRegExp(source, flags, true);
     }
 
     Object memberGet(Object property) {
@@ -266,6 +274,10 @@ final class JavaEsmRegExp {
     }
 
     private static Pattern compilePattern(String source, String flags) {
+        return compilePattern(source, flags, false);
+    }
+
+    private static Pattern compilePattern(String source, String flags, boolean javaPatternSource) {
         int javaFlags = 0;
         if (flags.indexOf('i') >= 0) {
             javaFlags |= Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
@@ -276,12 +288,36 @@ final class JavaEsmRegExp {
         if (flags.indexOf('s') >= 0) {
             javaFlags |= Pattern.DOTALL;
         }
-        String javaPattern = translateJsPatternToJava(source);
+        String javaPattern = javaPatternSource ? source : translateJsPatternToJava(source);
         try {
             return Pattern.compile(javaPattern, javaFlags);
         } catch (PatternSyntaxException error) {
+            if (javaPatternSource) {
+                String collapsed = collapseDoubledRegexBackslashes(javaPattern);
+                if (!collapsed.equals(javaPattern)) {
+                    try {
+                        return Pattern.compile(collapsed, javaFlags);
+                    } catch (PatternSyntaxException ignored) {
+                        // Report the original Java pattern source below.
+                    }
+                }
+            }
             throw new IllegalArgumentException("Invalid RegExp pattern: /" + source + "/" + flags, error);
         }
+    }
+
+    private static String collapseDoubledRegexBackslashes(String source) {
+        StringBuilder out = new StringBuilder(source.length());
+        for (int i = 0; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            if (ch == '\\' && i + 1 < source.length() && source.charAt(i + 1) == '\\') {
+                out.append('\\');
+                i++;
+                continue;
+            }
+            out.append(ch);
+        }
+        return out.toString();
     }
 
     private static String translateJsPatternToJava(String source) {

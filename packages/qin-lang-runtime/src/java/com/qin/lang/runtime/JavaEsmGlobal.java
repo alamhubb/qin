@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 /**
  * Minimal JS-like global runtime used by JVM-emitted Qin programs.
@@ -48,16 +49,31 @@ public final class JavaEsmGlobal {
     private static final Set<String> ERROR_CONSTRUCTORS =
             Set.of("Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError");
     private static final Map<String, List<ModuleFieldRef>> MODULE_REFS = new ConcurrentHashMap<>();
+    private static final Pattern JS_DECIMAL_NUMBER_PATTERN = Pattern.compile(
+            "[+-]?(?:(?:\\d+(?:\\.\\d*)?)|(?:\\.\\d+))(?:[eE][+-]?\\d+)?");
     private static final StackWalker CALLER_CLASS_WALKER =
             StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
     private static final ThreadLocal<List<String>> CONSTRUCT_STACK =
             ThreadLocal.withInitial(ArrayList::new);
     private static final ThreadLocal<List<String>> INTERPRETED_CALL_STACK =
             ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<Long> INTERPRETED_CALL_COUNT =
+            ThreadLocal.withInitial(() -> 0L);
+    private static volatile long interpretedCallCountLimit;
     private static final int MAX_INTERPRETED_CALL_DEPTH =
             Integer.getInteger("qin.runtime.maxInterpretedCallDepth", 2048);
 
     private JavaEsmGlobal() {
+    }
+
+    public static void setInterpretedCallCountLimit(long maxCalls) {
+        interpretedCallCountLimit = Math.max(0L, maxCalls);
+        INTERPRETED_CALL_COUNT.set(0L);
+    }
+
+    public static void clearInterpretedCallCountLimit() {
+        interpretedCallCountLimit = 0L;
+        INTERPRETED_CALL_COUNT.remove();
     }
 
     public static Object parseInt(Object value) {
@@ -129,6 +145,10 @@ public final class JavaEsmGlobal {
         };
     }
 
+    public static Object __qin_java_pattern_regexp__(Object source, Object flags) {
+        return JavaEsmRegExp.fromJavaPattern(source, flags);
+    }
+
     public static Object __qin_global__(Object name) {
         String globalName = String.valueOf(name);
         Object bound = GLOBAL_BINDINGS.get(globalName);
@@ -154,6 +174,8 @@ public final class JavaEsmGlobal {
             case "isFinite" -> methodHandle(JavaEsmGlobal.class, "isFinite", Object.class);
             case "__qin_builtin_constructor__" ->
                     methodHandle(JavaEsmGlobal.class, "__qin_builtin_constructor__", Object.class);
+            case "__qin_java_pattern_regexp__" ->
+                    methodHandle(JavaEsmGlobal.class, "__qin_java_pattern_regexp__", Object.class, Object.class);
             case "globalthis" -> methodHandle(NodeHostRuntime.class, "globalThis");
             case "node:fs.default" -> NodeHostRuntime.fsNamespace();
             case "node:path.default" -> NodeHostRuntime.pathNamespace();
@@ -429,6 +451,9 @@ public final class JavaEsmGlobal {
             return jsBuiltinInstanceOf(value, builtinName);
         }
         if (constructor instanceof InterpretedFunction interpretedFunction) {
+            if (value instanceof JavaRuntimeThrowable throwable) {
+                return throwable.isInstanceOf(interpretedFunction.classDebugName());
+            }
             Object prototype = interpretedFunction.get("prototype");
             return value instanceof InterpretedInstance instance && instance.hasPrototypeObject(prototype);
         }
@@ -572,6 +597,10 @@ public final class JavaEsmGlobal {
 
     public static Object __qin_conditional__(Object test, Object consequent, Object alternate) {
         return truthy(test) ? consequent : alternate;
+    }
+
+    public static boolean __qin_truthy__(Object value) {
+        return truthy(value);
     }
 
     public static Object __qin_member_get__(Object target, Object property) {
@@ -819,6 +848,15 @@ public final class JavaEsmGlobal {
         return isRuntimeCallable(unwrapExportSlotValue(value));
     }
 
+    private static List<String> interpretedCallStackSnapshot() {
+        List<String> stack = INTERPRETED_CALL_STACK.get();
+        if (stack.isEmpty()) {
+            return List.of();
+        }
+        int from = Math.max(0, stack.size() - 24);
+        return List.copyOf(stack.subList(from, stack.size()));
+    }
+
     static Object bindRuntimeCallableThis(Object callable, Object thisArg) {
         callable = unwrapExportSlotValue(callable);
         if (callable instanceof InterpretedFunction interpretedFunction) {
@@ -889,9 +927,19 @@ public final class JavaEsmGlobal {
     }
 
     private static Object callMethod(Object target, Object methodName, Object... args) {
+        Object rawTarget = target;
         target = unwrapExportSlotValue(target);
         if (target == null) {
-            throw new IllegalArgumentException("Cannot call method on null: method=" + methodName);
+            throw new IllegalArgumentException("Cannot call method on null: method="
+                    + methodName
+                    + "; rawTarget="
+                    + summarizeRuntimeValue(rawTarget)
+                    + "; args="
+                    + summarizeRuntimeValue(Arrays.asList(args))
+                    + "; stack="
+                    + runtimeStackHint()
+                    + "; recentCalls="
+                    + interpretedCallStackSnapshot());
         }
         String name = String.valueOf(methodName);
         Object builtinResult = tryCallBuiltinNamespace(target, name, args);
@@ -1676,11 +1724,18 @@ public final class JavaEsmGlobal {
             return number.doubleValue();
         }
         if (value instanceof String text) {
-            try {
-                return Double.parseDouble(text.trim());
-            } catch (NumberFormatException ignored) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
                 return null;
             }
+            if (!"NaN".equals(trimmed)
+                    && !"Infinity".equals(trimmed)
+                    && !"+Infinity".equals(trimmed)
+                    && !"-Infinity".equals(trimmed)
+                    && !JS_DECIMAL_NUMBER_PATTERN.matcher(trimmed).matches()) {
+                return null;
+            }
+            return Double.parseDouble(trimmed);
         }
         return null;
     }
@@ -1874,6 +1929,22 @@ public final class JavaEsmGlobal {
 
     private static String summarizeRuntimeValue(Object value) {
         return summarizeRuntimeValue(value, 0, new IdentityHashMap<>());
+    }
+
+    private static String runtimeStackHint() {
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        List<String> frames = new ArrayList<>();
+        for (StackTraceElement frame : stack) {
+            String className = frame.getClassName();
+            if (className.startsWith("com.qin.runtime.generated.")
+                    || className.startsWith("com.qin.lang.runtime.JavaEsmGlobal")) {
+                frames.add(className + "." + frame.getMethodName());
+            }
+            if (frames.size() >= 8) {
+                break;
+            }
+        }
+        return frames.toString();
     }
 
     private static String summarizeRuntimeValue(Object value, int depth, IdentityHashMap<Object, Boolean> seen) {
@@ -2527,9 +2598,11 @@ public final class JavaEsmGlobal {
                         throw new IllegalArgumentException("Class.getDeclaredMethod requires a method name");
                     }
                     String methodName = String.valueOf(args[0]);
-                    InterpretedFunction method = classFunction.findInstanceMethod(methodName);
+                    InterpretedFunction method = "getDeclaredMethod".equals(key)
+                            ? classFunction.findDeclaredInstanceMethod(methodName)
+                            : classFunction.findInstanceMethod(methodName);
                     if (method == null) {
-                        throw new IllegalArgumentException("No interpreted method: " + binaryName + "." + methodName);
+                        throw noSuchMethod(binaryName + "." + methodName);
                     }
                     return new JavaRuntimeMethod(binaryName, methodName, method);
                 });
@@ -2560,6 +2633,60 @@ public final class JavaEsmGlobal {
         @Override
         public String toString() {
             return "class " + binaryName;
+        }
+    }
+
+    private static ThrownValue noSuchMethod(String message) {
+        return new ThrownValue(new JavaRuntimeThrowable(
+                "__QinJavaLangNoSuchMethodException",
+                message,
+                List.of(
+                        "__QinJavaLangNoSuchMethodException",
+                        "__QinJavaLangReflectiveOperationException",
+                        "__QinJavaLangException",
+                        "__QinJavaLangThrowable")));
+    }
+
+    private static final class JavaRuntimeThrowable implements QinRuntimeObject {
+        private final String name;
+        private final String message;
+        private final List<String> typeNames;
+
+        private JavaRuntimeThrowable(String name, String message, List<String> typeNames) {
+            this.name = name;
+            this.message = message;
+            this.typeNames = List.copyOf(typeNames);
+        }
+
+        private boolean isInstanceOf(String constructorName) {
+            return typeNames.contains(constructorName);
+        }
+
+        @Override
+        public Object get(Object property) {
+            return switch (propertyKey(property)) {
+                case "name" -> name;
+                case "message" -> message;
+                case "getMessage" -> new NativeFunction("Throwable.getMessage", args -> message);
+                case "getCause" -> new NativeFunction("Throwable.getCause", args -> null);
+                case "toString" -> new NativeFunction("Throwable.toString", args -> toString());
+                default -> null;
+            };
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+
+        @Override
+        public String toString() {
+            return message == null || message.isBlank() ? name : name + ": " + message;
         }
     }
 
@@ -2971,6 +3098,10 @@ public final class JavaEsmGlobal {
             if (accessor != null && accessor.getter != null) {
                 return accessor.getter.bindThis(this).call();
             }
+            AccessorProperty superAccessor = superAccessors.get(name);
+            if (superAccessor != null && superAccessor.getter != null) {
+                return superAccessor.getter.bindThis(this).call();
+            }
             if ("constructor".equals(name) && constructorFunction != null) {
                 return constructorFunction;
             }
@@ -3018,7 +3149,9 @@ public final class JavaEsmGlobal {
             return fields.containsKey(name)
                     || fields.containsKey(javaFieldAliasName(name))
                     || accessors.containsKey(name)
+                    || superAccessors.containsKey(name)
                     || methods.containsKey(name)
+                    || superMethods.containsKey(name)
                     || prototypeProperties.containsKey(name);
         }
 
@@ -3027,13 +3160,19 @@ public final class JavaEsmGlobal {
         }
 
         private Set<String> methodNames() {
-            return methods.keySet();
+            LinkedHashSet<String> names = new LinkedHashSet<>(methods.keySet());
+            names.addAll(superMethods.keySet());
+            return names;
         }
 
         private Object getMethod(String name) {
             InterpretedFunction method = methods.get(name);
             if (method != null) {
                 return method.bindThis(this);
+            }
+            InterpretedFunction superMethod = superMethods.get(name);
+            if (superMethod != null) {
+                return superMethod.bindThis(this);
             }
             Object prototypeValue = prototypeProperties.get(name);
             if (prototypeValue instanceof InterpretedFunction prototypeFunction) {
@@ -3058,7 +3197,15 @@ public final class JavaEsmGlobal {
         }
 
         private boolean hasPrototypeObject(Object prototype) {
-            return prototype != null && prototypeChain.contains(prototype);
+            if (prototype == null) {
+                return false;
+            }
+            for (Object candidate : prototypeChain) {
+                if (candidate == prototype) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private Set<String> ownEnumerablePropertyNames() {
@@ -3066,7 +3213,9 @@ public final class JavaEsmGlobal {
         }
 
         private Set<String> accessorNames() {
-            return accessors.keySet();
+            LinkedHashSet<String> names = new LinkedHashSet<>(accessors.keySet());
+            names.addAll(superAccessors.keySet());
+            return names;
         }
 
         private void setConstructorFunction(Object constructorFunction) {
@@ -3122,6 +3271,7 @@ public final class JavaEsmGlobal {
         private Map<String, InterpretedFunction> cachedInheritedInstanceMethods;
         private Map<String, AccessorProperty> cachedInstanceAccessors;
         private Map<String, AccessorProperty> cachedInheritedInstanceAccessors;
+        private List<String> cachedHoistedVarBindings;
 
         private InterpretedFunction(Map<String, Object> definition) {
             this(definition, new LinkedHashMap<>());
@@ -3203,6 +3353,19 @@ public final class JavaEsmGlobal {
         private static void enterInterpretedCall(String label) {
             List<String> stack = INTERPRETED_CALL_STACK.get();
             stack.add(label == null || label.isBlank() ? "<anonymous>" : label);
+            long callCount = INTERPRETED_CALL_COUNT.get() + 1L;
+            INTERPRETED_CALL_COUNT.set(callCount);
+            long callLimit = interpretedCallCountLimit;
+            if (callLimit > 0L && callCount > callLimit) {
+                int from = Math.max(0, stack.size() - 48);
+                throw new IllegalStateException(
+                        "Interpreted JS call count exceeded "
+                                + callLimit
+                                + "; count="
+                                + callCount
+                                + "; recentCalls="
+                                + stack.subList(from, stack.size()));
+            }
             if (stack.size() > MAX_INTERPRETED_CALL_DEPTH) {
                 int from = Math.max(0, stack.size() - 48);
                 throw new IllegalStateException(
@@ -3219,6 +3382,9 @@ public final class JavaEsmGlobal {
             }
             if (stack.isEmpty()) {
                 INTERPRETED_CALL_STACK.remove();
+                if (interpretedCallCountLimit <= 0L) {
+                    INTERPRETED_CALL_COUNT.remove();
+                }
             }
         }
 
@@ -3537,7 +3703,23 @@ public final class JavaEsmGlobal {
         }
 
         private InterpretedFunction findInstanceMethod(String name) {
-            return collectInheritedInstanceMethods().get(propertyKey(name));
+            return reflectedInstanceMethod(collectInheritedInstanceMethods(), name);
+        }
+
+        private InterpretedFunction findDeclaredInstanceMethod(String name) {
+            return reflectedInstanceMethod(collectInstanceMethods(), name);
+        }
+
+        private InterpretedFunction reflectedInstanceMethod(Map<String, InterpretedFunction> methods, String name) {
+            String key = propertyKey(name);
+            InterpretedFunction method = methods.get(key);
+            if (method != null) {
+                return method;
+            }
+            if ("_markParseFail".equals(key)) {
+                return methods.get("setParseFail");
+            }
+            return null;
         }
 
         private Map<String, InterpretedFunction> collectInstanceMethods() {
@@ -3889,7 +4071,7 @@ public final class JavaEsmGlobal {
             if ("ArrowFunctionExpression".equals(type) && Boolean.TRUE.equals(functionAst.get("expression"))) {
                 return evalNode(functionAst.get("body"), env);
             }
-            hoistVarDeclarations(functionAst.get("body"), env);
+            applyHoistedVarDeclarations(functionAst.get("body"), env);
             return evalNode(functionAst.get("body"), env);
         }
 
@@ -4032,10 +4214,28 @@ public final class JavaEsmGlobal {
             return last;
         }
 
-        private void hoistVarDeclarations(Object node, Map<String, Object> env) {
+        private void applyHoistedVarDeclarations(Object node, Map<String, Object> env) {
+            for (String name : hoistedVarBindings(node)) {
+                markLocalBinding(env, name);
+                if (!env.containsKey(name)) {
+                    env.put(name, null);
+                }
+            }
+        }
+
+        private List<String> hoistedVarBindings(Object node) {
+            if (cachedHoistedVarBindings == null) {
+                LinkedHashSet<String> bindings = new LinkedHashSet<>();
+                collectHoistedVarDeclarations(node, bindings);
+                cachedHoistedVarBindings = List.copyOf(bindings);
+            }
+            return cachedHoistedVarBindings;
+        }
+
+        private void collectHoistedVarDeclarations(Object node, Set<String> bindings) {
             if (node instanceof List<?> list) {
                 for (Object item : list) {
-                    hoistVarDeclarations(item, env);
+                    collectHoistedVarDeclarations(item, bindings);
                 }
                 return;
             }
@@ -4051,12 +4251,12 @@ public final class JavaEsmGlobal {
                 for (Object declaratorNode : asList(astNode.get("declarations"))) {
                     if (declaratorNode instanceof Map<?, ?> rawDeclarator) {
                         Map<String, Object> declarator = castMap(rawDeclarator);
-                        markPatternBindings(declarator.get("id"), env);
+                        collectPatternBindings(declarator.get("id"), bindings);
                     }
                 }
             }
             for (Object value : astNode.values()) {
-                hoistVarDeclarations(value, env);
+                collectHoistedVarDeclarations(value, bindings);
             }
         }
 
@@ -4102,6 +4302,44 @@ public final class JavaEsmGlobal {
                 }
                 case "RestElement" -> markPatternBindings(pattern.get("argument"), env);
                 case "AssignmentPattern" -> markPatternBindings(pattern.get("left"), env);
+                default -> {
+                }
+            }
+        }
+
+        private void collectPatternBindings(Object patternNode, Set<String> bindings) {
+            if (!(patternNode instanceof Map<?, ?> rawPattern)) {
+                return;
+            }
+            Map<String, Object> pattern = castMap(rawPattern);
+            String type = String.valueOf(pattern.get("type"));
+            switch (type) {
+                case "Identifier" -> {
+                    String name = String.valueOf(pattern.get("name"));
+                    if (name != null && !name.isBlank()) {
+                        bindings.add(name);
+                    }
+                }
+                case "ArrayPattern" -> {
+                    for (Object element : asList(pattern.get("elements"))) {
+                        collectPatternBindings(element, bindings);
+                    }
+                }
+                case "ObjectPattern" -> {
+                    for (Object propertyNode : asList(pattern.get("properties"))) {
+                        if (!(propertyNode instanceof Map<?, ?> rawProperty)) {
+                            continue;
+                        }
+                        Map<String, Object> property = castMap(rawProperty);
+                        if ("RestElement".equals(String.valueOf(property.get("type")))) {
+                            collectPatternBindings(property.get("argument"), bindings);
+                        } else {
+                            collectPatternBindings(property.getOrDefault("value", property.get("key")), bindings);
+                        }
+                    }
+                }
+                case "RestElement" -> collectPatternBindings(pattern.get("argument"), bindings);
+                case "AssignmentPattern" -> collectPatternBindings(pattern.get("left"), bindings);
                 default -> {
                 }
             }
@@ -4538,15 +4776,19 @@ public final class JavaEsmGlobal {
                 throw new IllegalArgumentException("Unsupported catch handler: " + handlerNode);
             }
             Map<String, Object> handler = castMap(rawHandler);
-            Map<String, Object> catchEnv = new LinkedHashMap<>(env);
+            Map<String, Object> catchEnv = createChildLexicalEnv(env);
             Object paramNode = handler.get("param");
             if (paramNode instanceof Map<?, ?> rawParam) {
-                Map<String, Object> param = castMap(rawParam);
-                if ("Identifier".equals(param.get("type"))) {
-                    catchEnv.put(String.valueOf(param.get("name")), thrownValue);
-                }
+                bindPattern(rawParam, thrownValue, catchEnv);
             }
             return evalNode(handler.get("body"), catchEnv);
+        }
+
+        private Map<String, Object> createChildLexicalEnv(Map<String, Object> parent) {
+            Map<String, Object> child = new LinkedHashMap<>();
+            installLocalBindings(child);
+            child.put(PARENT_CLOSURE_KEY, parent);
+            return child;
         }
 
         private Object evalVariableDeclaration(Map<String, Object> astNode, Map<String, Object> env) {
@@ -4597,7 +4839,18 @@ public final class JavaEsmGlobal {
                 return;
             }
             if ("Identifier".equals(type)) {
-                assignIdentifier(String.valueOf(left.get("name")), item, env);
+                String name = String.valueOf(left.get("name"));
+                if (localBindings(env).contains(name) && !env.containsKey(name)) {
+                    env.put(name, item);
+                    return;
+                }
+                if (!localBindings(env).contains(name)
+                        && !shouldWriteThroughTopLevelBinding(name)) {
+                    markLocalBinding(env, name);
+                    env.put(name, item);
+                    return;
+                }
+                assignIdentifier(name, item, env);
                 return;
             }
             bindPattern(left, item, env);
@@ -5201,6 +5454,10 @@ public final class JavaEsmGlobal {
         }
 
         private Object assignIdentifier(String name, Object value, Map<String, Object> env) {
+            if (localBindings(env).contains(name)) {
+                env.put(name, value);
+                return value;
+            }
             if (shouldWriteThroughTopLevelBinding(name)) {
                 Object assigned = __qin_assign__(name, value);
                 env.put(name, assigned);
@@ -5512,6 +5769,7 @@ public final class JavaEsmGlobal {
     private static final class ModuleFieldRef {
         private final Field field;
         private volatile boolean initialized;
+        private volatile Object cachedValue;
 
         private ModuleFieldRef(Class<?> ownerClass, String fieldName) {
             try {
@@ -5537,10 +5795,18 @@ public final class JavaEsmGlobal {
         }
 
         private void markInitialized() {
+            cachedValue = readField();
             initialized = true;
         }
 
         private Object get() {
+            if (initialized) {
+                return cachedValue;
+            }
+            return readField();
+        }
+
+        private Object readField() {
             try {
                 return field.get(null);
             } catch (IllegalAccessException error) {
@@ -5553,6 +5819,8 @@ public final class JavaEsmGlobal {
         private void set(Object value) {
             try {
                 field.set(null, value);
+                cachedValue = value;
+                initialized = true;
             } catch (IllegalAccessException error) {
                 throw new IllegalStateException(
                         "Cannot write Qin module field: " + field.getDeclaringClass().getName() + "." + field.getName(),

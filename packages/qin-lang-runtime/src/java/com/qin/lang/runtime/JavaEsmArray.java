@@ -42,7 +42,7 @@ public final class JavaEsmArray {
 
     static boolean supports(String methodName) {
         return switch (methodName) {
-            case "push", "pop", "unshift", "shift", "concat", "map", "forEach", "at", "filter", "fill", "join", "slice",
+            case "push", "pop", "unshift", "shift", "concat", "map", "forEach", "at", "filter", "fill", "join", "slice", "splice",
                     "includes", "indexOf", "find", "some", "every",
                     "reduce", "flat", "flatMap", "sort" -> true;
             default -> false;
@@ -65,6 +65,7 @@ public final class JavaEsmArray {
             case "fill" -> fill(list, args);
             case "join" -> join(list, args);
             case "slice" -> slice(list, args);
+            case "splice" -> splice(list, args);
             case "includes" -> includes(list, args);
             case "indexOf" -> indexOf(list, args);
             case "find" -> find(list, args);
@@ -213,6 +214,22 @@ public final class JavaEsmArray {
             end = start;
         }
         return new ArrayList<>(list.subList(start, end));
+    }
+
+    private static Object splice(List<Object> list, Object[] args) {
+        requireArgRange("Array.splice", args, 0, Integer.MAX_VALUE);
+        int start = args.length >= 1 ? normalizeFromIndex(args[0], list.size()) : 0;
+        int deleteCount = args.length >= 2
+                ? Math.max(0, Math.min(toIndex(args[1]), list.size() - start))
+                : list.size() - start;
+        List<Object> removed = new ArrayList<>();
+        for (int i = 0; i < deleteCount; i++) {
+            removed.add(list.remove(start));
+        }
+        for (int i = args.length - 1; i >= 2; i--) {
+            list.add(start, args[i]);
+        }
+        return removed;
     }
 
     private static Object filter(List<Object> list, Object[] args) {

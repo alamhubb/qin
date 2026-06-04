@@ -16,12 +16,15 @@ public final class QinJavaAstJsBackendMethodCallSmokeTestMain {
         QinIrProgram program = new QinJavaAstIrLowerer().lowerSource("""
                 import java.lang.StringBuilder;
                 import java.util.Objects;
+                record BackData(int codeIndex) {}
                 class MethodBox {
                     String build() { return new StringBuilder("qin").append("-js").toString(); }
                     String safe(String name) { return Objects.toString(name); }
                     String display() { return "ok"; }
                     String label() { return this.display(); }
                     String alias() { return display(); }
+                    static String helper() { return "static"; }
+                    String helperAlias() { return helper(); }
                 }
                 """);
 
@@ -30,6 +33,8 @@ public final class QinJavaAstJsBackendMethodCallSmokeTestMain {
         require(generated.contains("class __QinJavaLangStringBuilder"), "StringBuilder runtime shim");
         require(generated.contains("const Objects = __QinJavaUtilObjects;"), "Objects runtime alias");
         require(generated.contains("return this.display();"), "explicit this call");
+        require(generated.contains("return MethodBox.helper();"), "implicit current-class static call");
+        require(generated.contains("codeIndex()"), "record component accessor");
 
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-method-call-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-java-ast-js-backend-method-call\" };\n",
@@ -38,10 +43,12 @@ public final class QinJavaAstJsBackendMethodCallSmokeTestMain {
                 root,
                 generated
                         + "\nconst box = new MethodBox();"
-                        + "box.build() + \":\" + box.safe(null) + \":\" + box.label() + \":\" + box.alias();\n",
+                        + "const state = new BackData(7);"
+                        + "box.build() + \":\" + box.safe(null) + \":\" + box.label() + \":\" + box.alias()"
+                        + " + \":\" + box.helperAlias() + \":\" + state.codeIndex();\n",
                 "java_ast_js_backend_method_call");
-        if (!"qin-js:null:ok:ok".equals(result)) {
-            throw new IllegalStateException("Expected method call result qin-js:null:ok:ok, got: " + result);
+        if (!"qin-js:null:ok:ok:static:7".equals(result)) {
+            throw new IllegalStateException("Expected method call result qin-js:null:ok:ok:static:7, got: " + result);
         }
         System.out.println("QinJavaAstJsBackendMethodCallSmokeTestMain OK");
     }

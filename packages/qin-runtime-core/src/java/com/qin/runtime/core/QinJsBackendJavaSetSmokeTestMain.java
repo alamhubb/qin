@@ -80,8 +80,8 @@ public final class QinJsBackendJavaSetSmokeTestMain {
         require(generated.contains("const HashSet = __QinJavaUtilHashSet;"), "HashSet alias");
         require(generated.contains("const Collections = __QinJavaUtilCollections;"), "Collections alias");
         require(generated.contains("Set.of(\"alpha\", \"beta\")"), "Set.of call");
-        require(generated.contains("new HashSet(fixed)"), "HashSet constructor");
         require(generated.contains("Collections.emptySet()"), "Collections.emptySet call");
+        require(generated.contains("function __qin_java_hash_key__"), "HashSet Java hash key runtime");
 
         Path root = Files.createTempDirectory("qin-js-backend-set-");
         Files.writeString(root.resolve("qin.config.js"), "export default { name: \"qin-js-backend-set\" };\n",
@@ -90,17 +90,36 @@ public final class QinJsBackendJavaSetSmokeTestMain {
                 root,
                 generated + """
                         
+                        class Key {
+                          constructor(name) { this.name = name; }
+                          hashCode() { return 17; }
+                          equals(other) { return other instanceof Key && other.name === this.name; }
+                        }
+                        const objectSet = new __QinJavaUtilHashSet();
+                        const addedObject = objectSet.add(new Key("same"));
+                        const addedEqualObject = objectSet.add(new Key("same"));
+                        objectSet.add(new Key("other"));
+                        const containsEqualObject = objectSet.contains(new Key("same"));
+                        const removedEqualObject = objectSet.remove(new Key("same"));
+                        const containsAfterRemove = objectSet.contains(new Key("same"));
                         [
                           added,
                           containsBeta,
                           removedAlpha,
                           mutable.size(),
                           Array.from(mutable).join(","),
-                          empty.isEmpty()
+                          empty.isEmpty(),
+                          addedObject,
+                          addedEqualObject,
+                          objectSet.size(),
+                          containsEqualObject,
+                          removedEqualObject,
+                          containsAfterRemove,
+                          objectSet.contains(new Key("other"))
                         ].join(":");
                         """,
                 "js_backend_set");
-        if (!"true:true:true:2:beta,gamma:true".equals(result)) {
+        if (!"true:true:true:2.0:beta,gamma:true:true:false:1.0:true:true:false:true".equals(result)) {
             throw new IllegalStateException("Expected generated Set result, got: " + result);
         }
         System.out.println("QinJsBackendJavaSetSmokeTestMain OK");

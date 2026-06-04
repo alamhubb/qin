@@ -34,6 +34,9 @@ public final class QinJavaAstJsBackendRecordConstructorSmokeTestMain {
         require(generated.contains("case 2:"), "record constructor dispatch");
         require(generated.contains("this.__qin_field_left = left;"), "left component assignment");
         require(generated.contains("this.__qin_field_right = right;"), "right component assignment");
+        require(generated.contains("equals(other)"), "record default equals");
+        require(generated.contains("hashCode()"), "record default hashCode");
+        require(generated.contains("toString()"), "record default toString");
 
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-record-constructor-");
         Files.writeString(root.resolve("qin.config.js"),
@@ -41,10 +44,21 @@ public final class QinJavaAstJsBackendRecordConstructorSmokeTestMain {
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nnew Pair(\"qin\", \"record\").join();\n",
+                generated + """
+
+                        const left = new Pair("qin", "record");
+                        const right = new Pair("qin", "record");
+                        const other = new Pair("qin", "other");
+                        if (left.join() !== "qin:record") throw new Error("record join failed");
+                        if (!left.equals(right)) throw new Error("record equals failed");
+                        if (left.equals(other)) throw new Error("record unequal failed");
+                        if (left.hashCode() !== right.hashCode()) throw new Error("record hashCode failed");
+                        if (left.toString() !== "Pair[left=qin, right=record]") throw new Error("record toString failed");
+                        "record-values-ok";
+                        """,
                 "java_ast_js_backend_record_constructor");
-        if (!"qin:record".equals(result)) {
-            throw new IllegalStateException("Expected record constructor result qin:record, got: " + result);
+        if (!"record-values-ok".equals(result)) {
+            throw new IllegalStateException("Expected record value semantics result, got: " + result);
         }
 
         System.out.println("QinJavaAstJsBackendRecordConstructorSmokeTestMain OK");

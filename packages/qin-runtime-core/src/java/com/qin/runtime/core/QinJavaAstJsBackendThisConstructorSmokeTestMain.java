@@ -37,16 +37,37 @@ public final class QinJavaAstJsBackendThisConstructorSmokeTestMain {
         if (!generated.contains("this.__qin_constructor_TokenBox_2(name, null)")) {
             throw new IllegalStateException("Expected generated JS to route this(...) to constructor initializer:\n" + generated);
         }
+        if (generated.contains("return this.__qin_constructor_TokenBox_")) {
+            throw new IllegalStateException("Java constructor dispatch must not return initializer values:\n" + generated);
+        }
+        QinIrProgram objectAssignmentProgram = new QinJavaAstIrLowerer().lowerSource("""
+                import java.lang.StringBuilder;
+                class ConstructorObjectAssignmentBox {
+                    StringBuilder builder;
+
+                    ConstructorObjectAssignmentBox() {
+                        this.builder = new StringBuilder("qin");
+                    }
+
+                    String read() {
+                        return this.builder.toString();
+                    }
+                }
+                """);
+        String objectAssignmentGenerated = new QinJsBackend().compileProgram(objectAssignmentProgram);
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-this-constructor-");
         Files.writeString(root.resolve("qin.config.js"),
                 "export default { name: \"qin-java-ast-js-backend-this-constructor\" };\n",
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nnew TokenBox(\"IDENTIFIER\").read();\n",
+                generated
+                        + "\n"
+                        + objectAssignmentGenerated
+                        + "\nnew TokenBox(\"IDENTIFIER\").read() + \"|\" + new ConstructorObjectAssignmentBox().read();\n",
                 "java_ast_js_backend_this_constructor");
-        if (!"IDENTIFIER:null".equals(result)) {
-            throw new IllegalStateException("Expected this constructor result IDENTIFIER:null, got: " + result);
+        if (!"IDENTIFIER:null|qin".equals(result)) {
+            throw new IllegalStateException("Expected this constructor result IDENTIFIER:null|qin, got: " + result);
         }
 
         System.out.println("QinJavaAstJsBackendThisConstructorSmokeTestMain OK");

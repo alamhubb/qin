@@ -18,7 +18,21 @@ public final class QinJsTopLevelTrySmokeTestMain {
                 } finally {
                   message = message + "-finally";
                 }
-                message;
+                class Box {
+                  constructor(value) {
+                    this.value = value;
+                  }
+                  read() {
+                    return this.value;
+                  }
+                }
+                let box;
+                try {
+                  box = new Box(message);
+                } catch (error) {
+                  message = "construct-error";
+                }
+                message + ";" + box.read();
                 """;
         Path root = Files.createTempDirectory("qin-top-level-try-");
         Path sourceFile = root.resolve("main.js");
@@ -26,7 +40,7 @@ public final class QinJsTopLevelTrySmokeTestMain {
         Object result = new QinInMemoryJvmRunner().compileAndRun(
                 sourceFile,
                 "com.qin.runtime.generated.JsTopLevelTrySmoke");
-        if (!"top-level-boom-finally".equals(String.valueOf(result))) {
+        if (!"top-level-boom-finally;top-level-boom-finally".equals(String.valueOf(result))) {
             throw new IllegalStateException("Unexpected top-level try result: " + result);
         }
         System.out.println("QinJsTopLevelTrySmokeTestMain OK");
