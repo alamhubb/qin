@@ -14,20 +14,32 @@ public final class QinJavaAstJsBackendInheritedFieldSmokeTestMain {
 
     public static void main(String[] args) throws Exception {
         QinIrProgram program = new QinJavaAstIrLowerer().lowerSource("""
+                import java.util.ArrayList;
+                import java.util.List;
+
                 class BaseParser {
-                    String cstStack = "ready";
+                    List cstStack = new ArrayList();
                 }
 
-                class ChildParser extends BaseParser {
-                    String read() {
-                        return cstStack;
+                class MiddleParser extends BaseParser {
+                    MiddleParser(String source) {
+                    }
+                }
+
+                class ChildParser extends MiddleParser {
+                    ChildParser(String source) {
+                        super(source);
+                    }
+
+                    boolean read() {
+                        return cstStack.isEmpty();
                     }
                 }
                 """);
 
         String generated = new QinJsBackend().compileProgram(program);
-        require(generated.contains("this.__qin_field_cstStack = \"ready\";"), "base field initializer");
-        require(generated.contains("return this.__qin_field_cstStack;"), "inherited field read");
+        require(generated.contains("this.__qin_field_cstStack = new ArrayList();"), "base field initializer");
+        require(generated.contains("this.__qin_field_cstStack.isEmpty()"), "inherited field read");
         require(!generated.contains("return this.cstStack;"), "no raw inherited field read");
 
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-inherited-field-");
@@ -36,10 +48,10 @@ public final class QinJavaAstJsBackendInheritedFieldSmokeTestMain {
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(
                 root,
-                generated + "\nconst child = new ChildParser(); child.read();\n",
+                generated + "\nconst child = new ChildParser(\"source\"); child.read();\n",
                 "java_ast_js_backend_inherited_field");
-        if (!"ready".equals(result)) {
-            throw new IllegalStateException("Expected inherited field result ready, got: " + result);
+        if (!Boolean.TRUE.equals(result)) {
+            throw new IllegalStateException("Expected inherited field result true, got: " + result);
         }
 
         System.out.println("QinJavaAstJsBackendInheritedFieldSmokeTestMain OK");
