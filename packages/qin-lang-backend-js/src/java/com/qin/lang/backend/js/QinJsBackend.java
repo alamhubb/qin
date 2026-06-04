@@ -63,6 +63,7 @@ import java.util.Set;
 public final class QinJsBackend {
     private Set<String> generatedClassBinaryNames = Set.of();
     private Map<String, String> bindingAliases = new LinkedHashMap<>();
+    private Map<String, String> currentJavaFieldAliases = Map.of();
 
     public String compileProgram(QinIrProgram program) {
         Objects.requireNonNull(program, "program cannot be null");
@@ -502,6 +503,14 @@ public final class QinJsBackend {
 
     private String jsBindingName(String sourceName) {
         return bindingAliases.getOrDefault(sourceName, jsIdentifier(sourceName));
+    }
+
+    private String jsJavaFieldName(String sourceName) {
+        return "__qin_field_" + jsIdentifier(sourceName);
+    }
+
+    private String jsCurrentJavaFieldName(String sourceName) {
+        return currentJavaFieldAliases.getOrDefault(sourceName, sourceName);
     }
 
     private String jsIdentifier(String sourceName) {
@@ -2302,9 +2311,12 @@ public final class QinJsBackend {
                 js.append(" extends ").append(jsClassReference(classDeclaration.superType().binaryName()));
             }
             js.append(" {\n");
+            Map<String, String> previousFieldAliases = currentJavaFieldAliases;
+            currentJavaFieldAliases = javaFieldAliases(classDeclaration);
             QinIrMethodDeclaration explicitConstructor = explicitConstructor(classDeclaration);
             emitClassConstructor(js, classDeclaration, explicitConstructor);
             emitClassMethods(js, classDeclaration);
+            currentJavaFieldAliases = previousFieldAliases;
             js.append("}\n");
         }
         emitJavaEnumStaticValues(js, classDeclarations);
@@ -2415,7 +2427,7 @@ public final class QinJsBackend {
             js.append(");\n");
         }
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
-            js.append("    this.").append(field.name()).append(" = ");
+            js.append("    this.").append(jsCurrentJavaFieldName(field.name())).append(" = ");
             if (field.initializer() == null) {
                 js.append("null");
             } else {
@@ -2450,6 +2462,14 @@ public final class QinJsBackend {
 
     private boolean isGeneratedClassOwner(String ownerBinaryName) {
         return ownerBinaryName != null && generatedClassBinaryNames.contains(ownerBinaryName);
+    }
+
+    private Map<String, String> javaFieldAliases(QinIrClassDeclaration classDeclaration) {
+        LinkedHashMap<String, String> aliases = new LinkedHashMap<>();
+        for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+            aliases.put(field.name(), jsJavaFieldName(field.name()));
+        }
+        return Map.copyOf(aliases);
     }
 
     private void emitClassMethods(StringBuilder js, QinIrClassDeclaration classDeclaration) {
@@ -2793,7 +2813,7 @@ public final class QinJsBackend {
         }
         if (expression instanceof QinIrPropertyAccessExpression propertyAccessExpression) {
             emitExpression(js, propertyAccessExpression.receiver());
-            js.append(".").append(propertyAccessExpression.propertyName());
+            js.append(".").append(javaFieldAwarePropertyName(propertyAccessExpression));
             return;
         }
         if (expression instanceof QinIrElementAccessExpression elementAccessExpression) {
@@ -3221,6 +3241,13 @@ public final class QinJsBackend {
             case "org.slf4j.Logger" -> "__QinSlf4jLogger";
             default -> classLocalName;
         };
+    }
+
+    private String javaFieldAwarePropertyName(QinIrPropertyAccessExpression propertyAccessExpression) {
+        if (propertyAccessExpression.receiver() instanceof QinIrThisExpression) {
+            return jsCurrentJavaFieldName(propertyAccessExpression.propertyName());
+        }
+        return propertyAccessExpression.propertyName();
     }
 
     private Class<?> loadJavaOwner(String ownerBinaryName) {
