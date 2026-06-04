@@ -31,6 +31,7 @@ import com.qin.lang.ir.QinIrNumberLiteral;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
+import com.qin.lang.ir.QinIrSequenceExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
@@ -233,6 +234,9 @@ public final class QinJavaAstIrLowerer {
             }
             methods.add(lowerMethod(packageName, importedTypes, fieldNames, method, semanticMethod));
         }
+        if (classDeclaration.recordClass()) {
+            addRecordCanonicalConstructor(classDeclaration, fields, methods);
+        }
 
         return new QinIrClassDeclaration(
                 packageName,
@@ -243,6 +247,61 @@ public final class QinJavaAstIrLowerer {
                 lowerAnnotations(packageName, importedTypes, classDeclaration.annotations()),
                 fields,
                 methods);
+    }
+
+    private void addRecordCanonicalConstructor(
+            JavaAstClassDeclaration classDeclaration,
+            List<QinIrFieldDeclaration> fields,
+            List<QinIrMethodDeclaration> methods) {
+        List<QinIrFieldDeclaration> components = recordComponentFields(classDeclaration, fields);
+        if (components.isEmpty() || hasConstructorArity(methods, components.size())) {
+            return;
+        }
+        List<QinIrParameter> parameters = new ArrayList<>();
+        List<QinIrExpression> assignments = new ArrayList<>();
+        for (QinIrFieldDeclaration component : components) {
+            parameters.add(new QinIrParameter(component.name(), component.type(), List.of()));
+            assignments.add(new QinIrAssignmentExpression(
+                    new QinIrPropertyAccessExpression(new QinIrThisExpression(), component.name()),
+                    "=",
+                    new QinIrIdentifierReference(component.name())));
+        }
+        methods.add(new QinIrMethodDeclaration(
+                "constructor",
+                QinIrTypeRef.voidType(),
+                parameters,
+                List.of(),
+                new QinIrSequenceExpression(assignments, new QinIrNullLiteral()),
+                List.of(),
+                null,
+                false));
+    }
+
+    private List<QinIrFieldDeclaration> recordComponentFields(
+            JavaAstClassDeclaration classDeclaration,
+            List<QinIrFieldDeclaration> fields) {
+        List<QinIrFieldDeclaration> components = new ArrayList<>();
+        for (JavaAstFieldDeclaration sourceField : classDeclaration.fields()) {
+            if (!sourceField.recordComponent()) {
+                continue;
+            }
+            for (QinIrFieldDeclaration field : fields) {
+                if (field.name().equals(sourceField.name())) {
+                    components.add(field);
+                    break;
+                }
+            }
+        }
+        return components;
+    }
+
+    private boolean hasConstructorArity(List<QinIrMethodDeclaration> methods, int arity) {
+        for (QinIrMethodDeclaration method : methods) {
+            if ("constructor".equals(method.name()) && method.parameters().size() == arity) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private QinIrMethodDeclaration lowerMethod(

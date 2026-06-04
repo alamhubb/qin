@@ -2520,14 +2520,7 @@ public final class QinJsBackend {
             List<QinIrExpression> superArguments = constructor == null
                     ? List.of()
                     : constructor.superArguments();
-            if (superArguments.isEmpty()) {
-                for (int i = 0; i < parameters.size(); i++) {
-                    js.append(jsBindingName(parameters.get(i).name()));
-                    if (i < parameters.size() - 1) {
-                        js.append(", ");
-                    }
-                }
-            } else {
+            if (!superArguments.isEmpty()) {
                 for (int i = 0; i < superArguments.size(); i++) {
                     emitExpression(js, superArguments.get(i));
                     if (i < superArguments.size() - 1) {
