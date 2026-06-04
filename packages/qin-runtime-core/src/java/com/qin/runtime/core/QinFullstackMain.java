@@ -122,13 +122,43 @@ public final class QinFullstackMain {
     private static Method loadRunMethod(Path classOutputDir, String className) throws Exception {
         Files.createDirectories(classOutputDir);
         URL[] urls = { classOutputDir.toUri().toURL() };
-        URLClassLoader classLoader = new URLClassLoader(urls, QinFullstackMain.class.getClassLoader());
+        URLClassLoader classLoader = newProjectClassFirstLoader(classOutputDir, urls);
         Class<?> serverClass = Class.forName(className, true, classLoader);
         Method runMethod = serverClass.getMethod("run");
         if (!Modifier.isStatic(runMethod.getModifiers()) || runMethod.getParameterCount() != 0) {
             throw new IllegalStateException("Generated run method must be `public static Object run()`");
         }
         return runMethod;
+    }
+
+    private static URLClassLoader newProjectClassFirstLoader(Path classOutputDir, URL[] urls) {
+        ClassLoader parent = QinFullstackMain.class.getClassLoader();
+        return new URLClassLoader(urls, parent) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                synchronized (getClassLoadingLock(name)) {
+                    Class<?> loaded = findLoadedClass(name);
+                    if (loaded == null && isProjectClassFilePresent(classOutputDir, name)) {
+                        try {
+                            loaded = findClass(name);
+                        } catch (ClassNotFoundException ignored) {
+                            loaded = null;
+                        }
+                    }
+                    if (loaded == null) {
+                        loaded = super.loadClass(name, false);
+                    }
+                    if (resolve) {
+                        resolveClass(loaded);
+                    }
+                    return loaded;
+                }
+            }
+        };
+    }
+
+    private static boolean isProjectClassFilePresent(Path classOutputDir, String binaryName) {
+        return Files.isRegularFile(classOutputDir.resolve(binaryName.replace('.', '/') + ".class"));
     }
 
     private static void materializeProjectNpmDependencies(Path root) throws IOException {

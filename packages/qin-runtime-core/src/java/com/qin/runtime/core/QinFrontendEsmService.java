@@ -248,6 +248,7 @@ public final class QinFrontendEsmService {
     }
 
     private void prewarmCsstsGraphModules() throws IOException {
+        boolean hasCsstsGraphModule = false;
         for (QinModuleSource module : graph.modules()) {
             Path file = module.file().toAbsolutePath().normalize();
             if (!isFrontendModuleFile(file)) {
@@ -257,10 +258,13 @@ public final class QinFrontendEsmService {
             if (isCsstsModuleFile(file)
                     || isOvsModuleFile(file)
                     || (isVueModuleFile(file) && requiresQinNativeVueCompiler(source))) {
+                hasCsstsGraphModule = true;
                 transpileModule(file);
             }
         }
-        refreshCsstsGlobalVirtualModules();
+        if (hasCsstsGraphModule || !csstsCssByModule.isEmpty() || !csstsAtomByModule.isEmpty()) {
+            refreshCsstsGlobalVirtualModules();
+        }
     }
 
     private String transpileVueModule(Path moduleFile, String source) {
@@ -790,17 +794,24 @@ public final class QinFrontendEsmService {
         return """
                 import { createApp as __qinCreateApp } from "%s";
                 %s
-                function __qinMountOvs() {
+                function __qinMountOvs(target = null) {
                   if (typeof document === 'undefined') return null;
-                  const __qinOvsTarget = document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo');
+                  const __qinOvsTarget = target || document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo');
                   if (!__qinOvsTarget) return null;
                   __qinOvsTarget.innerHTML = '';
                   return __qinCreateApp(__qinOvsDefault).mount(__qinOvsTarget);
                 }
+                function __qinMountVue(target) {
+                  return __qinMountOvs(target);
+                }
+                if (__qinOvsDefault && (typeof __qinOvsDefault === 'object' || typeof __qinOvsDefault === 'function')) {
+                  __qinOvsDefault.__qinMountVue = __qinMountVue;
+                  __qinOvsDefault.__qinMountOvs = __qinMountOvs;
+                }
                 if (typeof document !== 'undefined') {
                   setTimeout(__qinMountOvs, 0);
                 }
-                export { __qinMountOvs };
+                export { __qinMountOvs, __qinMountVue };
                 export default __qinOvsDefault;
                 """.formatted(vueRuntime, transformed);
     }

@@ -37,25 +37,40 @@ public final class QinJavaProjectSlimeParserJsParseSmokeTestMain {
 
                         const SlimeParser = globalThis.__qinJavaProjectExports["com.slime.parser.SlimeParser"];
                         const SourceType = globalThis.__qinJavaProjectExports["com.slime.parser.SlimeJavascriptParser$SourceType"];
+                        const JavaScriptTokens = globalThis.__qinJavaProjectExports["com.slime.token.JavaScriptTokens"];
                         if (typeof SlimeParser !== "function") {
                           throw new Error("Generated SlimeParser export is missing");
                         }
-                        const parser = new SlimeParser("const answer = 42;");
-                        const programValue = parser.Program(SourceType.MODULE);
-                        const parseValue = parser.parse();
-                        "slime=" + typeof SlimeParser
-                          + ";sourceType=" + typeof SourceType
-                          + ";module=" + SourceType.MODULE
-                          + ";index=" + parser.getCurrentIndex()
-                          + ";fail=" + parser.isParserFail()
-                          + ";error=" + parser.getErrorInfo()
-                          + ";parsed=" + parser.getParsedTokens().size()
-                          + ";unparsed=" + parser.getUnparsedTokens().size()
-                          + ";programNull=" + (programValue == null)
-                          + ";parseNull=" + (parseValue == null);
+                        const tokenCount = JavaScriptTokens.getTokens().size();
+                        const programParser = new SlimeParser("const answer = 42;");
+                        const parseParser = new SlimeParser("const answer = 42;");
+                        (() => {
+                              const programValue = programParser.Program(SourceType.MODULE);
+                              const parseValue = parseParser.parse();
+                              return "slime=" + typeof SlimeParser
+                                + ";tokensPositive=" + (tokenCount > 0)
+                                + ";sourceType=" + typeof SourceType
+                                + ";moduleNull=" + (SourceType.MODULE == null)
+                                + ";programIndex=" + programParser.getCurrentIndex()
+                                + ";programFail=" + programParser.isParserFail()
+                                + ";programError=" + programParser.getErrorInfo()
+                                + ";programParsed=" + programParser.getParsedTokens().size()
+                                + ";programUnparsed=" + programParser.getUnparsedTokens().size()
+                                + ";parseIndex=" + parseParser.getCurrentIndex()
+                                + ";parseFail=" + parseParser.isParserFail()
+                                + ";parseError=" + parseParser.getErrorInfo()
+                                + ";parseParsed=" + parseParser.getParsedTokens().size()
+                                + ";parseUnparsed=" + parseParser.getUnparsedTokens().size()
+                                + ";programNull=" + (programValue == null)
+                                + ";parseNull=" + (parseValue == null);
+                            })();
                         """,
                 "java_project_slime_parser_js_parse");
-        if (!(result instanceof String value) || !value.startsWith("Program:")) {
+        String expected = "slime=function;tokensPositive=true;sourceType=function;moduleNull=false"
+                + ";programIndex=18;programFail=false;programError=null;programParsed=5;programUnparsed=0"
+                + ";parseIndex=18;parseFail=false;parseError=null;parseParsed=5;parseUnparsed=0"
+                + ";programNull=false;parseNull=false";
+        if (!expected.equals(result)) {
             throw new IllegalStateException("Expected generated SlimeParser to parse JS Program, got: " + result);
         }
         System.out.println("Generated JS bundle: " + outputFile);

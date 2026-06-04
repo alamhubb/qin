@@ -12,16 +12,19 @@ public final class QinFullstackMvpFrontendSmokeTestMain {
 
         String mainModule = service.transpileByRequestPath("/@qin-mod/app/main.vue.js");
         if (mainModule == null
-                || !mainModule.contains("OvsDemo")
-                || !mainModule.contains("qin-vue-cssts=style")) {
+                || !mainModule.contains("import OvsDemo from \"/@qin-mod/app/OvsDemo.ovs.js\"")
+                || !mainModule.contains("data-qin-component=\"OvsDemo\"")
+                || !mainModule.contains("/@qin-mod/__virtual/cssts.css.js")) {
             throw new IllegalStateException("Fullstack MVP main Vue module missing OVS/CSSTS wiring:\n" + mainModule);
         }
 
         String ovsModule = service.transpileByRequestPath("/@qin-mod/app/OvsDemo.ovs.js");
         if (ovsModule == null
                 || !ovsModule.contains("__qinMountOvs")
+                || !ovsModule.contains("__qinMountVue")
+                || !ovsModule.contains("__qinOvsDefault.__qinMountVue")
                 || !ovsModule.contains("qin-ovs=runtime")
-                || !ovsModule.contains("qin-vue-cssts=style")) {
+                || !ovsModule.contains("/@qin-mod/__virtual/cssts.css.js")) {
             throw new IllegalStateException("Fullstack MVP OVS module missing runtime wiring:\n" + ovsModule);
         }
 

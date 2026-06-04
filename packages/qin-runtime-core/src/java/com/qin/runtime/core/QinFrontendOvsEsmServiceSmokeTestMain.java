@@ -40,8 +40,10 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
         String module = service.transpileByRequestPath("/@qin-mod/app/OvsDemo.ovs.js");
         if (module == null
                 || !module.contains("__qinMountOvs")
+                || !module.contains("__qinMountVue")
+                || !module.contains("__qinOvsDefault.__qinMountVue")
                 || !module.contains("qin-ovs=runtime")
-                || !module.contains("qin-vue-cssts=style")
+                || !module.contains("/@qin-mod/__virtual/cssts.css.js")
                 || !module.contains("$OvsHtmlTag")) {
             throw new IllegalStateException("OVS module did not include expected runtime wiring:\n" + module);
         }
