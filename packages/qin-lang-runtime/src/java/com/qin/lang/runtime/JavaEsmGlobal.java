@@ -63,7 +63,25 @@ public final class JavaEsmGlobal {
     private static final int MAX_INTERPRETED_CALL_DEPTH =
             Integer.getInteger("qin.runtime.maxInterpretedCallDepth", 2048);
 
+    static {
+        installGlobalObjectBuiltins();
+    }
+
     private JavaEsmGlobal() {
+    }
+
+    private static void installGlobalObjectBuiltins() {
+        GLOBAL_OBJECT.put("__qin_builtin_constructor__",
+                methodHandle(JavaEsmGlobal.class, "__qin_builtin_constructor__", Object.class));
+        GLOBAL_OBJECT.put("__qin_java_pattern_regexp__",
+                methodHandle(JavaEsmGlobal.class, "__qin_java_pattern_regexp__", Object.class, Object.class));
+        for (String constructor : List.of(
+                "Array", "Object", "Map", "Set", "WeakMap", "WeakSet", "Proxy", "Promise", "Symbol",
+                "Date", "String", "Boolean", "Number",
+                "Uint8Array", "Uint16Array", "Uint32Array", "TextDecoder", "URLSearchParams",
+                "RegExp", "Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError")) {
+            GLOBAL_OBJECT.put(constructor, constructor);
+        }
     }
 
     public static void setInterpretedCallCountLimit(long maxCalls) {

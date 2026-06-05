@@ -26,6 +26,8 @@ public final class QinJavaAstJsBackendInstanceofPatternSmokeTestMain {
                 """);
 
         String generated = new QinJsBackend().compileProgram(program);
+        require(generated.contains("let other = null;"),
+                "instanceof pattern variable declaration");
         require(generated.contains(
                 "return __qin_pattern_value instanceof MethodKey && (other = __qin_pattern_value, true);"),
                 "valid instanceof pattern assignment expression");

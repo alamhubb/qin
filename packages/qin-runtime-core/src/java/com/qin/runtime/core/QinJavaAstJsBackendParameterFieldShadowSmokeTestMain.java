@@ -32,8 +32,14 @@ public final class QinJavaAstJsBackendParameterFieldShadowSmokeTestMain {
                 """);
 
         String generated = new QinJsBackend().compileProgram(program);
-        if (!generated.contains("sourceCode.length()")) {
-            throw new IllegalStateException("Expected parameter sourceCode to stay local in generated JS");
+        if (!generated.contains("__QinJavaLangString.length(sourceCode)")) {
+            throw new IllegalStateException("Expected parameter String.length() to use Java String JS SDK");
+        }
+        if (!generated.contains("__QinJavaLangString.length(this.__qin_field_sourceCode)")) {
+            throw new IllegalStateException("Expected field String.length() to use Java String JS SDK");
+        }
+        if (generated.contains("sourceCode.length()")) {
+            throw new IllegalStateException("String.length() must not be emitted as a JS function call");
         }
         Path root = Files.createTempDirectory("qin-java-ast-js-backend-parameter-field-shadow-");
         Files.writeString(root.resolve("qin.config.js"),
