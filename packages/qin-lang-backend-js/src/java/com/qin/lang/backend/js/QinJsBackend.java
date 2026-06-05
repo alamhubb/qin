@@ -84,16 +84,23 @@ public final class QinJsBackend {
     private Map<String, QinIrClassDeclaration> generatedClassesByBinaryName = Map.of();
     private Map<String, String> generatedClassReferencesBySimpleName = Map.of();
     private Map<String, String> generatedJavaFieldAliases = Map.of();
+    private Set<String> externallyBoundJavaBinaryNames = Set.of();
     private Map<String, String> bindingAliases = new LinkedHashMap<>();
     private Map<String, String> currentJavaFieldAliases = Map.of();
     private QinIrClassDeclaration currentJavaClassDeclaration;
 
     public String compileProgram(QinIrProgram program) {
+        return compileProgram(program, Set.of());
+    }
+
+    public String compileProgram(QinIrProgram program, Set<String> externallyBoundJavaBinaryNames) {
         Objects.requireNonNull(program, "program cannot be null");
+        Objects.requireNonNull(externallyBoundJavaBinaryNames, "externallyBoundJavaBinaryNames cannot be null");
         generatedClassBinaryNames = generatedClassBinaryNames(program.classDeclarations());
         generatedClassesByBinaryName = generatedClassesByBinaryName(program.classDeclarations());
         generatedClassReferencesBySimpleName = generatedClassReferencesBySimpleName(program.classDeclarations());
         generatedJavaFieldAliases = javaFieldAliases(program.classDeclarations());
+        this.externallyBoundJavaBinaryNames = Set.copyOf(externallyBoundJavaBinaryNames);
         bindingAliases = new LinkedHashMap<>();
 
         StringBuilder js = new StringBuilder();
@@ -471,6 +478,9 @@ public final class QinJsBackend {
             String ownerBinaryName,
             Map<String, String> javaAliases) {
         if (isGeneratedClassOwner(ownerBinaryName)) {
+            return;
+        }
+        if (externallyBoundJavaBinaryNames.contains(ownerBinaryName)) {
             return;
         }
         String aliasKey = localName + "\u0000" + ownerBinaryName;
@@ -5086,6 +5096,9 @@ public final class QinJsBackend {
         if (isGeneratedClassOwner(ownerBinaryName)) {
             return;
         }
+        if (externallyBoundJavaBinaryNames.contains(ownerBinaryName)) {
+            return;
+        }
         if ("java.util.ArrayList".equals(ownerBinaryName)
                 || "java.util.List".equals(ownerBinaryName)
                 || "java.util.Set".equals(ownerBinaryName)
@@ -5145,6 +5158,9 @@ public final class QinJsBackend {
 
     private String javaOwnerReference(String ownerBinaryName, String classLocalName) {
         if (isGeneratedClassOwner(ownerBinaryName)) {
+            return jsClassReference(ownerBinaryName);
+        }
+        if (externallyBoundJavaBinaryNames.contains(ownerBinaryName)) {
             return jsClassReference(ownerBinaryName);
         }
         String runtimeOwner = switch (ownerBinaryName) {

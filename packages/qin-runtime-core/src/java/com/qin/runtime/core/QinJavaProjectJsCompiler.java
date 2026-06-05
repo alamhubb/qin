@@ -61,18 +61,11 @@ public final class QinJavaProjectJsCompiler {
             String entryBinaryName,
             Path outputFile) throws IOException {
         Map<String, Path> sourceFiles = sourceDependencyFiles(sourceRoots, entryBinaryName);
-        List<JavaAstProgram> parsedPrograms = new ArrayList<>();
-        for (Path sourceFile : sourceFiles.values()) {
-            try {
-                parsedPrograms.add(JavaCstToAst.parse(Files.readString(sourceFile, StandardCharsets.UTF_8)));
-            } catch (RuntimeException e) {
-                throw new IllegalArgumentException("Could not parse Java source file: " + sourceFile, e);
-            }
-        }
+        Map<String, JavaAstProgram> parsedPrograms = parseSourceFiles(sourceFiles);
 
         QinIrProgram bundleProgram;
         try {
-            bundleProgram = sortJavaClassDeclarations(lowerBundle(parsedPrograms));
+            bundleProgram = sortJavaClassDeclarations(lowerBundle(parsedPrograms.values()));
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Could not lower Java source bundle for " + entryBinaryName, e);
         }
@@ -83,8 +76,83 @@ public final class QinJavaProjectJsCompiler {
         return generated;
     }
 
-    private QinIrProgram lowerBundle(List<JavaAstProgram> programs) {
-        return new QinJavaAstIrLowerer().lowerPrograms(programs);
+    public List<EsmFileOutput> compileSuperclassClosureEsmFiles(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            Path outputRoot) throws IOException {
+        Map<String, Path> sourceFiles = sourceDependencyFiles(sourceRoots, entryBinaryName);
+        Map<String, JavaAstProgram> parsedPrograms = parseSourceFiles(sourceFiles);
+        QinIrProgram bundleProgram;
+        try {
+            bundleProgram = lowerBundle(parsedPrograms.values());
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Could not lower Java source bundle for " + entryBinaryName, e);
+        }
+
+        Map<String, Path> outputFilesByBinaryName = new LinkedHashMap<>();
+        Map<String, Set<String>> programClassBinaryNames = new LinkedHashMap<>();
+        for (Map.Entry<String, Path> sourceEntry : sourceFiles.entrySet()) {
+            String sourceBinaryName = sourceEntry.getKey();
+            Path outputFile = outputFileForSource(sourceRoots, sourceEntry.getValue(), outputRoot);
+            outputFilesByBinaryName.put(sourceBinaryName, outputFile);
+            programClassBinaryNames.put(
+                    sourceBinaryName,
+                    programClassBinaryNames(parsedPrograms.get(sourceBinaryName)));
+        }
+
+        List<EsmFileOutput> outputs = new ArrayList<>();
+        for (Map.Entry<String, Path> sourceEntry : sourceFiles.entrySet()) {
+            String sourceBinaryName = sourceEntry.getKey();
+            Path sourceFile = sourceEntry.getValue();
+            Path outputFile = outputFilesByBinaryName.get(sourceBinaryName);
+            Set<String> localClassBinaryNames = programClassBinaryNames.get(sourceBinaryName);
+            QinIrProgram fileProgram = programWithClasses(bundleProgram, localClassBinaryNames);
+            Set<String> dependencyBinaryNames = referencedSourceBinaryNames(
+                    parsedPrograms.get(sourceBinaryName),
+                    sourceFiles.keySet());
+            Set<String> externallyBoundClassBinaryNames = externallyBoundClassBinaryNames(
+                    sourceBinaryName,
+                    outputFile,
+                    dependencyBinaryNames,
+                    outputFilesByBinaryName,
+                    programClassBinaryNames);
+            String generated = esmImports(
+                    sourceBinaryName,
+                    outputFile,
+                    dependencyBinaryNames,
+                    outputFilesByBinaryName,
+                    programClassBinaryNames)
+                    + new QinJsBackend().compileProgram(fileProgram, externallyBoundClassBinaryNames)
+                    + esmExports(fileProgram);
+            Files.createDirectories(outputFile.getParent());
+            Files.writeString(outputFile, generated, StandardCharsets.UTF_8);
+            outputs.add(new EsmFileOutput(sourceBinaryName, sourceFile, outputFile, generated));
+        }
+        return List.copyOf(outputs);
+    }
+
+    private Map<String, JavaAstProgram> parseSourceFiles(Map<String, Path> sourceFiles) {
+        Map<String, JavaAstProgram> parsedPrograms = new LinkedHashMap<>();
+        for (Map.Entry<String, Path> sourceEntry : sourceFiles.entrySet()) {
+            try {
+                parsedPrograms.put(
+                        sourceEntry.getKey(),
+                        JavaCstToAst.parse(Files.readString(sourceEntry.getValue(), StandardCharsets.UTF_8)));
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Could not read Java source file: " + sourceEntry.getValue(), e);
+            } catch (RuntimeException e) {
+                throw new IllegalArgumentException("Could not parse Java source file: " + sourceEntry.getValue(), e);
+            }
+        }
+        return parsedPrograms;
+    }
+
+    private QinIrProgram lowerBundle(Iterable<JavaAstProgram> programs) {
+        List<JavaAstProgram> programList = new ArrayList<>();
+        for (JavaAstProgram program : programs) {
+            programList.add(program);
+        }
+        return new QinJavaAstIrLowerer().lowerPrograms(programList);
     }
 
     private QinIrProgram sortJavaClassDeclarations(QinIrProgram program) {
@@ -166,10 +234,160 @@ public final class QinJavaProjectJsCompiler {
         return js.toString();
     }
 
+    private QinIrProgram programWithClasses(QinIrProgram program, Set<String> classBinaryNames) {
+        List<com.qin.lang.ir.QinIrClassDeclaration> classes = new ArrayList<>();
+        for (var classDeclaration : program.classDeclarations()) {
+            if (classBinaryNames.contains(classDeclaration.binaryName())) {
+                classes.add(classDeclaration);
+            }
+        }
+        return new QinIrProgram(
+                program.declarations(),
+                program.expressionStatements(),
+                program.consoleValueLogs(),
+                program.consoleLogs(),
+                program.javaImports(),
+                program.jsImports(),
+                program.javaStaticConsoleLogs(),
+                program.javaInstanceMethodCalls(),
+                program.javaInstanceConsoleLogs(),
+                sortJavaClassDeclarations(classes),
+                program.executionSteps(),
+                program.functionModelArtifacts());
+    }
+
+    private String esmImports(
+            String sourceBinaryName,
+            Path outputFile,
+            Set<String> dependencyBinaryNames,
+            Map<String, Path> outputFilesByBinaryName,
+            Map<String, Set<String>> programClassBinaryNames) {
+        StringBuilder js = new StringBuilder();
+        Set<String> importedClassBinaryNames = new LinkedHashSet<>();
+        for (String dependencyBinaryName : dependencyBinaryNames) {
+            Path dependencyOutputFile = outputFilesByBinaryName.get(dependencyBinaryName);
+            if (dependencyOutputFile == null || outputFile.equals(dependencyOutputFile)) {
+                continue;
+            }
+            Set<String> dependencyClassBinaryNames = programClassBinaryNames.get(dependencyBinaryName);
+            if (dependencyClassBinaryNames == null || dependencyClassBinaryNames.isEmpty()) {
+                continue;
+            }
+            List<String> identifiers = new ArrayList<>();
+            for (String classBinaryName : dependencyClassBinaryNames) {
+                if (importedClassBinaryNames.add(classBinaryName)) {
+                    identifiers.add(QinJsBackend.generatedJavaClassIdentifier(classBinaryName));
+                }
+            }
+            if (identifiers.isEmpty()) {
+                continue;
+            }
+            js.append("import { ")
+                    .append(String.join(", ", identifiers))
+                    .append(" } from \"")
+                    .append(relativeModuleSpecifier(outputFile, dependencyOutputFile))
+                    .append("\";\n");
+        }
+        if (js.length() > 0) {
+            js.append('\n');
+        }
+        return js.toString();
+    }
+
+    private Set<String> externallyBoundClassBinaryNames(
+            String sourceBinaryName,
+            Path outputFile,
+            Set<String> dependencyBinaryNames,
+            Map<String, Path> outputFilesByBinaryName,
+            Map<String, Set<String>> programClassBinaryNames) {
+        Set<String> classBinaryNames = new LinkedHashSet<>();
+        for (String dependencyBinaryName : dependencyBinaryNames) {
+            Path dependencyOutputFile = outputFilesByBinaryName.get(dependencyBinaryName);
+            if (dependencyOutputFile == null || outputFile.equals(dependencyOutputFile)) {
+                continue;
+            }
+            Set<String> dependencyClassBinaryNames = programClassBinaryNames.get(dependencyBinaryName);
+            if (dependencyClassBinaryNames != null) {
+                classBinaryNames.addAll(dependencyClassBinaryNames);
+            }
+        }
+        return classBinaryNames;
+    }
+
+    private String esmExports(QinIrProgram program) {
+        if (program.classDeclarations().isEmpty()) {
+            return "";
+        }
+        List<String> identifiers = new ArrayList<>();
+        for (var classDeclaration : program.classDeclarations()) {
+            identifiers.add(QinJsBackend.generatedJavaClassIdentifier(classDeclaration.binaryName()));
+        }
+        return "\nexport { " + String.join(", ", identifiers) + " };\n";
+    }
+
+    private Path outputFileForSource(List<Path> sourceRoots, Path sourceFile, Path outputRoot) {
+        Path normalizedSourceFile = sourceFile.toAbsolutePath().normalize();
+        for (Path sourceRoot : sourceRoots) {
+            Path normalizedSourceRoot = sourceRoot.toAbsolutePath().normalize();
+            if (normalizedSourceFile.startsWith(normalizedSourceRoot)) {
+                Path relative = normalizedSourceRoot.relativize(normalizedSourceFile);
+                String relativeText = relative.toString();
+                relativeText = relativeText.substring(0, relativeText.length() - ".java".length()) + ".js";
+                return outputRoot.resolve(relativeText).normalize();
+            }
+        }
+        throw new IllegalArgumentException("Source file is not under any source root: " + sourceFile);
+    }
+
+    private String relativeModuleSpecifier(Path fromOutputFile, Path toOutputFile) {
+        Path fromDir = fromOutputFile.toAbsolutePath().normalize().getParent();
+        Path toFile = toOutputFile.toAbsolutePath().normalize();
+        String specifier = fromDir.relativize(toFile).toString().replace('\\', '/');
+        if (!specifier.startsWith(".")) {
+            specifier = "./" + specifier;
+        }
+        return specifier;
+    }
+
+    private Set<String> programClassBinaryNames(JavaAstProgram program) {
+        Set<String> binaryNames = new LinkedHashSet<>();
+        for (JavaAstClassDeclaration classDeclaration : program.classes()) {
+            collectProgramClassBinaryNames(program.packageName(), null, classDeclaration, binaryNames);
+        }
+        return binaryNames;
+    }
+
+    private void collectProgramClassBinaryNames(
+            String packageName,
+            String ownerSimpleName,
+            JavaAstClassDeclaration classDeclaration,
+            Set<String> binaryNames) {
+        String simpleName = ownerSimpleName == null
+                ? classDeclaration.name()
+                : ownerSimpleName + "$" + classDeclaration.name();
+        binaryNames.add(binaryName(packageName, simpleName));
+        for (JavaAstClassDeclaration nestedClass : classDeclaration.nestedClasses()) {
+            collectProgramClassBinaryNames(packageName, simpleName, nestedClass, binaryNames);
+        }
+    }
+
+    private String binaryName(String packageName, String simpleName) {
+        return packageName == null || packageName.isBlank()
+                ? simpleName
+                : packageName + "." + simpleName;
+    }
+
     private String escapeJs(String value) {
         return value
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"");
+    }
+
+    public record EsmFileOutput(
+            String binaryName,
+            Path sourceFile,
+            Path outputFile,
+            String js) {
     }
 
     public Map<String, Path> superclassSourceFiles(List<Path> sourceRoots, String entryBinaryName) {
