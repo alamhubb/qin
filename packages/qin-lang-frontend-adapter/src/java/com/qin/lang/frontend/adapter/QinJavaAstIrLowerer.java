@@ -248,14 +248,15 @@ public final class QinJavaAstIrLowerer {
                     field.name(),
                     semanticField.type(),
                     lowerAnnotations(packageName, importedTypes, field.annotations()),
-                    field.initializer() == null
-                            ? null
-                            : lowerExpression(
-                                    field.initializer(),
-                                    packageName,
-                                    importedTypes,
-                                    fieldLocals,
-                                    fieldNames),
+                    lowerFieldInitializer(
+                            packageName,
+                            importedTypes,
+                            fieldLocals,
+                            fieldNames,
+                            simpleName,
+                            binaryName,
+                            classDeclaration.methods(),
+                            field),
                     field.staticField()));
         }
 
@@ -464,6 +465,36 @@ public final class QinJavaAstIrLowerer {
             }
         }
         return names;
+    }
+
+    private QinIrExpression lowerFieldInitializer(
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> fieldLocals,
+            Set<String> fieldNames,
+            String simpleName,
+            String binaryName,
+            List<JavaAstMethodDeclaration> methods,
+            JavaAstFieldDeclaration field) {
+        if (field.initializer() == null) {
+            return null;
+        }
+        if (!field.staticField()) {
+            return lowerExpression(field.initializer(), packageName, importedTypes, fieldLocals, fieldNames);
+        }
+        String previousStaticInitializerOwnerSimpleName = currentStaticInitializerOwnerSimpleName;
+        String previousStaticInitializerOwnerBinaryName = currentStaticInitializerOwnerBinaryName;
+        Set<String> previousStaticInitializerStaticMethodNames = currentStaticInitializerStaticMethodNames;
+        currentStaticInitializerOwnerSimpleName = simpleName;
+        currentStaticInitializerOwnerBinaryName = binaryName;
+        currentStaticInitializerStaticMethodNames = staticMethodNames(methods);
+        try {
+            return lowerExpression(field.initializer(), packageName, importedTypes, fieldLocals, fieldNames);
+        } finally {
+            currentStaticInitializerOwnerSimpleName = previousStaticInitializerOwnerSimpleName;
+            currentStaticInitializerOwnerBinaryName = previousStaticInitializerOwnerBinaryName;
+            currentStaticInitializerStaticMethodNames = previousStaticInitializerStaticMethodNames;
+        }
     }
 
     private List<QinIrExpression> lowerExplicitSuperArguments(

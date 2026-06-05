@@ -82,6 +82,8 @@ import java.util.Set;
 public final class QinJsBackend {
     private Set<String> generatedClassBinaryNames = Set.of();
     private Map<String, QinIrClassDeclaration> generatedClassesByBinaryName = Map.of();
+    private Map<String, String> generatedClassReferencesBySimpleName = Map.of();
+    private Map<String, String> generatedJavaFieldAliases = Map.of();
     private Map<String, String> bindingAliases = new LinkedHashMap<>();
     private Map<String, String> currentJavaFieldAliases = Map.of();
     private QinIrClassDeclaration currentJavaClassDeclaration;
@@ -90,6 +92,8 @@ public final class QinJsBackend {
         Objects.requireNonNull(program, "program cannot be null");
         generatedClassBinaryNames = generatedClassBinaryNames(program.classDeclarations());
         generatedClassesByBinaryName = generatedClassesByBinaryName(program.classDeclarations());
+        generatedClassReferencesBySimpleName = generatedClassReferencesBySimpleName(program.classDeclarations());
+        generatedJavaFieldAliases = javaFieldAliases(program.classDeclarations());
         bindingAliases = new LinkedHashMap<>();
 
         StringBuilder js = new StringBuilder();
@@ -841,8 +845,16 @@ public final class QinJsBackend {
         }
         js.append("""
                 const __QinJavaLangBoolean = {
-                  TRUE: true,
-                  FALSE: false,
+                  TRUE: Object.freeze({
+                    equals(value) { return value === true || (value != null && typeof value.valueOf === "function" && value.valueOf() === true); },
+                    valueOf() { return true; },
+                    toString() { return "true"; }
+                  }),
+                  FALSE: Object.freeze({
+                    equals(value) { return value === false || (value != null && typeof value.valueOf === "function" && value.valueOf() === false); },
+                    valueOf() { return false; },
+                    toString() { return "false"; }
+                  }),
                   valueOf(value) {
                     return value === true || String(value).toLowerCase() === "true";
                   },
@@ -2589,6 +2601,63 @@ public final class QinJsBackend {
                   fn.compare = (...args) => fn(...args);
                   return fn;
                 }
+                function __qin_java_class_info__(ctor) {
+                  const className = ctor && ctor.name ? ctor.name : "Object";
+                  const simpleName = className.split(".").pop().split("_").pop() || className;
+                  let hash = 0;
+                  for (let index = 0; index < className.length; index++) {
+                    hash = ((hash * 31) + className.charCodeAt(index)) | 0;
+                  }
+                  const findMethod = (name) => {
+                    const candidates = name === "_markParseFail" ? ["_markParseFail", "setParseFail"] : [name];
+                    let prototype = ctor == null ? null : ctor.prototype;
+                    while (prototype != null) {
+                      for (const candidate of candidates) {
+                        if (typeof prototype[candidate] === "function") {
+                          return {
+                            setAccessible() {},
+                            invoke(target, ...args) {
+                              return target[candidate](...args);
+                            }
+                          };
+                        }
+                      }
+                      prototype = Object.getPrototypeOf(prototype);
+                    }
+                    throw new Error("NoSuchMethod: " + className + "." + name);
+                  };
+                  return {
+                    getName() { return className; },
+                    getSimpleName() { return simpleName; },
+                    getMethod(name, ...params) { return findMethod(name); },
+                    getDeclaredMethod(name, ...params) { return findMethod(name); },
+                    getSuperclass() {
+                      const parent = ctor == null || ctor.prototype == null ? null : Object.getPrototypeOf(ctor.prototype);
+                      return parent != null && parent.constructor != null && parent.constructor !== Object
+                        ? __qin_java_class_info__(parent.constructor)
+                        : null;
+                    },
+                    getField(name) {
+                      return {
+                        get(target) {
+                          const qinField = "__qin_field_" + name;
+                          if (target != null && qinField in target) return target[qinField];
+                          if (target != null && name in target && typeof target[name] !== "function") return target[name];
+                          throw new Error("NoSuchField: " + className + "." + name);
+                        }
+                      };
+                    },
+                    equals(other) { return other != null && typeof other.getName === "function" && other.getName() === className; },
+                    hashCode() { return hash; },
+                    toString() { return "class " + className; }
+                  };
+                }
+                if (Object.prototype.getClass == null) {
+                  Object.defineProperty(Object.prototype, "getClass", {
+                    value() { return __qin_java_class_info__(this == null ? Object : this.constructor); },
+                    configurable: true
+                  });
+                }
                 """);
         boolean usesBinary = usesBuiltin(program, "__qin_binary__");
         boolean usesLogical = usesBuiltin(program, "__qin_logical__");
@@ -3084,6 +3153,11 @@ public final class QinJsBackend {
                     .append("; return { newInstance(...__qin_args) { return new __qin_ctor(...__qin_args); } }; }, ")
                     .append("getConstructor(...__qin_types) { return this.getDeclaredConstructor(...__qin_types); }, ");
         }
+        js.append("equals(other) { return other != null && typeof other.getName === \"function\" && other.getName() === \"")
+                .append(escapeJs(displayName))
+                .append("\"; }, hashCode() { return ")
+                .append(displayName.hashCode())
+                .append("; }, ");
         js.append("toString() { return \"class ")
                 .append(escapeJs(displayName))
                 .append("\"; } })");
@@ -3294,7 +3368,8 @@ public final class QinJsBackend {
     }
 
     private boolean isJavaEnumConstant(QinIrClassDeclaration classDeclaration, QinIrFieldDeclaration field) {
-        return field.type().binaryName() != null
+        return isJavaEnumClass(classDeclaration)
+                && field.type().binaryName() != null
                 && field.type().binaryName().equals(classDeclaration.binaryName());
     }
 
@@ -3571,6 +3646,45 @@ public final class QinJsBackend {
         return Map.copyOf(classes);
     }
 
+    private Map<String, String> generatedClassReferencesBySimpleName(
+            List<QinIrClassDeclaration> classDeclarations) {
+        Map<String, String> references = new LinkedHashMap<>();
+        Set<String> ambiguousNames = new LinkedHashSet<>();
+        for (QinIrClassDeclaration classDeclaration : classDeclarations) {
+            String reference = jsClassReference(classDeclaration.binaryName());
+            addGeneratedClassReference(references, ambiguousNames, classDeclaration.simpleName(), reference);
+            addGeneratedClassReference(
+                    references,
+                    ambiguousNames,
+                    simpleClassName(classDeclaration.binaryName()),
+                    reference);
+            addGeneratedClassReference(
+                    references,
+                    ambiguousNames,
+                    nestedSimpleClassName(classDeclaration.binaryName()),
+                    reference);
+        }
+        for (String ambiguousName : ambiguousNames) {
+            references.remove(ambiguousName);
+        }
+        return Map.copyOf(references);
+    }
+
+    private void addGeneratedClassReference(
+            Map<String, String> references,
+            Set<String> ambiguousNames,
+            String name,
+            String reference) {
+        if (name == null || name.isBlank() || ambiguousNames.contains(name)) {
+            return;
+        }
+        String previous = references.putIfAbsent(name, reference);
+        if (previous != null && !previous.equals(reference)) {
+            ambiguousNames.add(name);
+            references.remove(name);
+        }
+    }
+
     private boolean isGeneratedClassOwner(String ownerBinaryName) {
         return ownerBinaryName != null && generatedClassBinaryNames.contains(ownerBinaryName);
     }
@@ -3586,6 +3700,16 @@ public final class QinJsBackend {
         }
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
             aliases.put(field.name(), jsJavaFieldName(field.name()));
+        }
+        return Map.copyOf(aliases);
+    }
+
+    private Map<String, String> javaFieldAliases(List<QinIrClassDeclaration> classDeclarations) {
+        LinkedHashMap<String, String> aliases = new LinkedHashMap<>();
+        for (QinIrClassDeclaration classDeclaration : classDeclarations) {
+            for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+                aliases.putIfAbsent(field.name(), jsJavaFieldName(field.name()));
+            }
         }
         return Map.copyOf(aliases);
     }
@@ -3783,6 +3907,12 @@ public final class QinJsBackend {
     private String simpleClassName(String binaryName) {
         int dot = binaryName.lastIndexOf('.');
         return dot < 0 ? binaryName : binaryName.substring(dot + 1);
+    }
+
+    private String nestedSimpleClassName(String binaryName) {
+        String simpleName = simpleClassName(binaryName);
+        int nestedSeparator = simpleName.lastIndexOf('$');
+        return nestedSeparator < 0 ? simpleName : simpleName.substring(nestedSeparator + 1);
     }
 
     private String overloadedMethodImplementationName(String methodName, int arity, int overloadIndex) {
@@ -4281,7 +4411,7 @@ public final class QinJsBackend {
             return;
         }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
-            js.append(jsBindingName(memberAccessExpression.objectName()))
+            js.append(memberAccessObjectReference(memberAccessExpression.objectName()))
                     .append(".")
                     .append(javaMemberAccessPropertyName(memberAccessExpression));
             return;
@@ -4837,11 +4967,24 @@ public final class QinJsBackend {
         return null;
     }
 
+    private String memberAccessObjectReference(String objectName) {
+        if (generatedClassBinaryNames.contains(objectName)) {
+            return jsClassReference(objectName);
+        }
+        String generatedReference = generatedClassReferencesBySimpleName.get(objectName);
+        if (generatedReference != null) {
+            return generatedReference;
+        }
+        return jsBindingName(objectName);
+    }
+
     private String javaFieldAwarePropertyName(QinIrPropertyAccessExpression propertyAccessExpression) {
         if (propertyAccessExpression.receiver() instanceof QinIrThisExpression) {
             return jsCurrentJavaFieldName(propertyAccessExpression.propertyName());
         }
-        return propertyAccessExpression.propertyName();
+        return generatedJavaFieldAliases.getOrDefault(
+                propertyAccessExpression.propertyName(),
+                propertyAccessExpression.propertyName());
     }
 
     private String javaMemberAccessPropertyName(QinIrMemberAccessExpression memberAccessExpression) {
@@ -4849,7 +4992,9 @@ public final class QinJsBackend {
                 && currentJavaFieldAliases.containsKey(memberAccessExpression.propertyName())) {
             return jsCurrentJavaFieldName(memberAccessExpression.propertyName());
         }
-        return memberAccessExpression.propertyName();
+        return generatedJavaFieldAliases.getOrDefault(
+                memberAccessExpression.propertyName(),
+                memberAccessExpression.propertyName());
     }
 
     private Class<?> loadJavaOwner(String ownerBinaryName) {

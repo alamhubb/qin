@@ -2,6 +2,7 @@ package com.qin.runtime.core;
 
 import com.qin.lang.backend.js.QinJsBackend;
 import com.qin.lang.frontend.adapter.QinJavaAstIrLowerer;
+import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
 
@@ -59,6 +60,63 @@ public final class QinJavaAstJsBackendRecordConstructorSmokeTestMain {
                 "java_ast_js_backend_record_constructor");
         if (!"record-values-ok".equals(result)) {
             throw new IllegalStateException("Expected record value semantics result, got: " + result);
+        }
+
+        QinIrProgram staticRecordProgram = new QinJavaAstIrLowerer().lowerSource("""
+                record Flag() {
+                    public static final Flag DEFAULT = new Flag();
+                }
+                """);
+        QinIrFieldDeclaration defaultField = staticRecordProgram.classDeclarations().get(0).fields().stream()
+                .filter(field -> "DEFAULT".equals(field.name()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Expected record static DEFAULT field in IR"));
+        require(defaultField.staticField(), "record static field flag");
+        String staticRecordGenerated = new QinJsBackend().compileProgram(staticRecordProgram);
+        if (!staticRecordGenerated.contains("__qin_field_DEFAULT")) {
+            throw new IllegalStateException("Expected record static DEFAULT initializer, generated:\n" + staticRecordGenerated);
+        }
+        Path staticRoot = Files.createTempDirectory("qin-java-ast-js-backend-record-static-");
+        Files.writeString(staticRoot.resolve("qin.config.js"),
+                "export default { name: \"qin-java-ast-js-backend-record-static\" };\n",
+                StandardCharsets.UTF_8);
+        Object staticResult = new QinJsPackageRunner().runModuleSource(
+                staticRoot,
+                staticRecordGenerated + """
+
+                        if (!(Flag.__qin_field_DEFAULT instanceof Flag)) throw new Error("record static DEFAULT failed");
+                        "record-static-ok";
+                        """,
+                "java_ast_js_backend_record_static");
+        if (!"record-static-ok".equals(staticResult)) {
+            throw new IllegalStateException("Expected record static result, got: " + staticResult);
+        }
+
+        QinIrProgram staticFactoryProgram = new QinJavaAstIrLowerer().lowerSource("""
+                class Mode {
+                    static Mode create(String name) {
+                        return new Mode();
+                    }
+                    static final Mode DEFAULT = create("");
+                }
+                """);
+        String staticFactoryGenerated = new QinJsBackend().compileProgram(staticFactoryProgram);
+        require(staticFactoryGenerated.contains("Mode.create(\"\")"), "static field factory call owner");
+        require(!staticFactoryGenerated.contains("this.create(\"\""), "no this receiver for static field factory call");
+        Path staticFactoryRoot = Files.createTempDirectory("qin-java-ast-js-backend-static-factory-");
+        Files.writeString(staticFactoryRoot.resolve("qin.config.js"),
+                "export default { name: \"qin-java-ast-js-backend-static-factory\" };\n",
+                StandardCharsets.UTF_8);
+        Object staticFactoryResult = new QinJsPackageRunner().runModuleSource(
+                staticFactoryRoot,
+                staticFactoryGenerated + """
+
+                        if (!(Mode.__qin_field_DEFAULT instanceof Mode)) throw new Error("static factory DEFAULT failed");
+                        "static-factory-ok";
+                        """,
+                "java_ast_js_backend_static_factory");
+        if (!"static-factory-ok".equals(staticFactoryResult)) {
+            throw new IllegalStateException("Expected static factory result, got: " + staticFactoryResult);
         }
 
         System.out.println("QinJavaAstJsBackendRecordConstructorSmokeTestMain OK");
