@@ -128,7 +128,6 @@ final class QinJsPackageRunner {
         Map<String, Path> workspacePackages = indexWorkspacePackages(workspaceRoot);
         Path runtimeNodeModules = wrapperDir.resolve("node_modules");
         Files.createDirectories(runtimeNodeModules);
-        npmDependencyMaterializer.materializeProjectDependencies(projectRoot, runtimeNodeModules);
 
         Set<String> materialized = new LinkedHashSet<>();
         for (String specifier : bareSpecifiers) {
@@ -156,6 +155,10 @@ final class QinJsPackageRunner {
             materializeQinGlogShim(runtimeNodeModules);
             return;
         }
+        if ("@vue/compiler-sfc".equals(packageName)) {
+            materializeQinVueCompilerSfcShim(runtimeNodeModules);
+            return;
+        }
 
         Path workspacePackageDir = workspacePackages.get(packageName);
         boolean workspacePackage = workspacePackageDir != null;
@@ -177,8 +180,7 @@ final class QinJsPackageRunner {
             patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
         }
 
-        if (workspacePackage && (hasDeclaredWorkspaceSourceEntry(sourcePackageDir)
-                || readExistingPackageEntry(sourcePackageDir) == null)) {
+        if (workspacePackage && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir)) {
             rewriteWorkspacePackageManifest(targetPackageDir, sourcePackageDir, packageName);
         }
 
@@ -186,6 +188,19 @@ final class QinJsPackageRunner {
             materializeDependency(
                     dependency.getKey(),
                     dependency.getValue(),
+                    runtimeNodeModules,
+                    workspaceRoot,
+                    workspacePackages,
+                    materialized);
+        }
+        for (String importedSpecifier : scanPackageBareModuleSpecifiers(targetPackageDir, sourcePackageDir)) {
+            String importedPackage = parseBarePackageName(importedSpecifier);
+            if (packageName.equals(importedPackage)) {
+                continue;
+            }
+            materializeDependency(
+                    importedSpecifier,
+                    null,
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
@@ -225,6 +240,40 @@ final class QinJsPackageRunner {
         }
         patched = patchVitePluginVueSyncTransforms(patched);
         Files.writeString(entry, patched, StandardCharsets.UTF_8);
+    }
+
+    private boolean isVitePluginPackage(String packageName) {
+        return packageName != null
+                && (packageName.startsWith("vite-plugin-") || packageName.startsWith("@vitejs/plugin-"));
+    }
+
+    private boolean shouldRewriteWorkspacePackageManifest(String packageName, Path sourcePackageDir) throws IOException {
+        if (isPublishedRuntimePackage(packageName, sourcePackageDir)) {
+            return false;
+        }
+        return hasDeclaredWorkspaceSourceEntry(sourcePackageDir)
+                || readExistingPackageEntry(sourcePackageDir) == null;
+    }
+
+    private boolean isPublishedRuntimePackage(String packageName, Path sourcePackageDir) throws IOException {
+        if (isVitePluginPackage(packageName)) {
+            return true;
+        }
+        String entry = readExistingPackageEntry(sourcePackageDir);
+        if (entry == null || entry.isBlank()) {
+            return false;
+        }
+        String normalizedEntry = entry.replace('\\', '/');
+        if (!normalizedEntry.startsWith("./dist/") && !normalizedEntry.startsWith("dist/")) {
+            return false;
+        }
+        return packageName != null
+                && ("subhuti".equals(packageName)
+                || packageName.startsWith("slime-")
+                || packageName.startsWith("cssts-")
+                || packageName.startsWith("ovs-")
+                || "ovsjs".equals(packageName)
+                || "slime-generator".equals(packageName));
     }
 
     private String replaceQinVueCompilerSfcHost(String source) {
@@ -663,6 +712,9 @@ final class QinJsPackageRunner {
         if (bareSpecifiers.contains("vite") || bareSpecifiers.contains("@vitejs/plugin-vue")) {
             materializeQinViteShim(runtimeNodeModules);
         }
+        if (bareSpecifiers.contains("@vue/compiler-sfc")) {
+            materializeQinVueCompilerSfcShim(runtimeNodeModules);
+        }
         if (bareSpecifiers.contains("@vitejs/plugin-vue")) {
             materializeQinVuePluginHostShim(runtimeNodeModules);
         }
@@ -777,6 +829,39 @@ final class QinJsPackageRunner {
                 export const log = Glog.log;
                 export default Glog;
                 """, StandardCharsets.UTF_8);
+    }
+
+    private void materializeQinVueCompilerSfcShim(Path runtimeNodeModules) throws IOException {
+        Path shimDir = runtimeNodeModules.resolve("@vue").resolve("compiler-sfc").normalize();
+        deleteRecursively(shimDir);
+        Files.createDirectories(shimDir);
+        Files.writeString(shimDir.resolve("package.json"), """
+                {
+                  "name": "@vue/compiler-sfc",
+                  "version": "0.0.0-qin-shim",
+                  "type": "module",
+                  "exports": {
+                    ".": "./index.js"
+                  },
+                  "main": "./index.js",
+                  "module": "./index.js"
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(shimDir.resolve("index.js"), qinVueCompilerSfcShimSource(), StandardCharsets.UTF_8);
+    }
+
+    private String qinVueCompilerSfcShimSource() {
+        return qinVueCompilerSfcHostSource()
+                + System.lineSeparator()
+                + """
+                export const version = __qinVueCompilerSfc.version;
+                export const parse = __qinVueCompilerSfc.parse;
+                export const compileScript = __qinVueCompilerSfc.compileScript;
+                export const compileTemplate = __qinVueCompilerSfc.compileTemplate;
+                export const compileStyleAsync = __qinVueCompilerSfc.compileStyleAsync;
+                export const rewriteDefault = __qinVueCompilerSfc.rewriteDefault;
+                export { __qinVueCompilerSfc as default };
+                """;
     }
 
     private void materializeQinVuePluginHostShim(Path runtimeNodeModules) throws IOException {
@@ -1162,11 +1247,18 @@ final class QinJsPackageRunner {
         return dependencies;
     }
 
-    private Set<String> scanPackageBareModuleSpecifiers(Path packageDir) throws IOException {
+    private Set<String> scanPackageBareModuleSpecifiers(Path packageDir, Path sourcePackageDir) throws IOException {
         if (packageDir == null || !Files.isDirectory(packageDir)) {
             return Set.of();
         }
         Set<String> specifiers = new LinkedHashSet<>();
+        String entry = readExistingPackageEntry(sourcePackageDir);
+        if (entry != null) {
+            Path entryFile = packageDir.resolve(entry).normalize();
+            if (Files.isRegularFile(entryFile)) {
+                collectPackageSourceBareSpecifiers(specifiers, entryFile);
+            }
+        }
         try (var paths = Files.walk(packageDir)) {
             paths
                     .filter(Files::isRegularFile)
@@ -1180,9 +1272,7 @@ final class QinJsPackageRunner {
         String name = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
         return name.endsWith(".js")
                 || name.endsWith(".mjs")
-                || name.endsWith(".cjs")
-                || name.endsWith(".ts")
-                || name.endsWith(".qin");
+                || name.endsWith(".cjs");
     }
 
     private void collectPackageSourceBareSpecifiers(Set<String> specifiers, Path sourceFile) {
