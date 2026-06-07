@@ -187,14 +187,43 @@ public final class QinJavaProjectJsCompiler {
                 packageRoot.resolve("package.json"),
                 javaSdkPackageJson(javaSdkSource.packageName()),
                 StandardCharsets.UTF_8);
-        String source = javaSdkSource.source();
         if (javaSdkSource.fromSiblingProject()) {
-            source = source.replaceFirst("^// Qin Java SDK for generated JavaScript\\R", "");
-            source = "// Qin Java SDK for generated JavaScript\n"
-                    + "// Source: " + javaSdkSource.sourceFile().toAbsolutePath().normalize() + "\n"
-                    + source;
+            copyJavaSdkSourceTree(javaSdkSource, packageRoot);
+        } else {
+            Files.writeString(packageRoot.resolve("index.js"), javaSdkSource.source(), StandardCharsets.UTF_8);
         }
-        Files.writeString(packageRoot.resolve("index.js"), source, StandardCharsets.UTF_8);
+    }
+
+    private void copyJavaSdkSourceTree(JavaSdkSource javaSdkSource, Path packageRoot) throws IOException {
+        Path sourceDir = javaSdkSource.sourceFile().getParent();
+        try (Stream<Path> stream = Files.walk(sourceDir)) {
+            for (Path sourceFile : stream.filter(Files::isRegularFile).toList()) {
+                String fileName = sourceFile.getFileName().toString();
+                if (!fileName.endsWith(".ts") && !fileName.endsWith(".js")) {
+                    continue;
+                }
+                Path relative = sourceDir.relativize(sourceFile);
+                Path target = packageRoot.resolve(jsModuleFileName(relative)).normalize();
+                Files.createDirectories(target.getParent());
+                String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
+                if (sourceFile.equals(javaSdkSource.sourceFile())) {
+                    source = source.replaceFirst("^// Qin Java SDK for generated JavaScript\\R", "");
+                    source = "// Qin Java SDK for generated JavaScript\n"
+                            + "// Source: " + sourceFile.toAbsolutePath().normalize() + "\n"
+                            + source;
+                }
+                Files.writeString(target, source, StandardCharsets.UTF_8);
+            }
+        }
+    }
+
+    private Path jsModuleFileName(Path relative) {
+        Path parent = relative.getParent();
+        String fileName = relative.getFileName().toString();
+        if (fileName.endsWith(".ts")) {
+            fileName = fileName.substring(0, fileName.length() - ".ts".length()) + ".js";
+        }
+        return parent == null ? Path.of(fileName) : parent.resolve(fileName);
     }
 
     private JavaSdkSource findSiblingJavaSdkSource(Path outputRoot) throws IOException {
