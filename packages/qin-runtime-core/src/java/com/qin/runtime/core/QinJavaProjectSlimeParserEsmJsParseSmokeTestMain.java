@@ -46,10 +46,14 @@ public final class QinJavaProjectSlimeParserEsmJsParseSmokeTestMain {
         require(Files.isRegularFile(sdkPackage.resolve("package.json")),
                 "@qin/java-sdk-js package.json");
         String sdkSource = Files.readString(sdkPackage.resolve("index.js"), StandardCharsets.UTF_8);
-        require(sdkSource.contains("const __QinJavaLangString ="),
-                "@qin/java-sdk-js owns java.lang.String runtime");
-        require(sdkSource.contains("class __QinJavaLangStringBuilder"),
-                "@qin/java-sdk-js owns StringBuilder runtime");
+        require(sdkSource.contains("__QinJavaLangString") && sdkSource.contains("./core/runtime.js"),
+                "@qin/java-sdk-js re-exports java.lang.String runtime");
+        require(sdkSource.contains("__QinJavaLangStringBuilder") && sdkSource.contains("./lang/string-builder.js"),
+                "@qin/java-sdk-js re-exports StringBuilder runtime");
+        require(!sdkSource.contains("__QinJavaIoFile"),
+                "@qin/java-sdk-js web entry does not export java.io");
+        require(!sdkSource.contains("__qin_subhuti_rule_cache_key"),
+                "@qin/java-sdk-js web entry does not export Subhuti tooling helpers");
 
         Path smokeFile = outputRoot.resolve("parse-smoke.mjs");
         Files.writeString(

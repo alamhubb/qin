@@ -81,6 +81,7 @@ import java.util.Set;
  */
 public final class QinJsBackend {
     private static final String JAVA_SDK_JS_PACKAGE = "@qin/java-sdk-js";
+    private static final String JAVA_SDK_TOOLING_JS_PACKAGE = "@qin/java-sdk-js/tooling";
     private static final List<String> JAVA_SDK_RUNTIME_EXPORTS = List.of(
             "__qin_builtin_constructor__",
             "__qin_java_pattern_regexp__",
@@ -851,8 +852,20 @@ public final class QinJsBackend {
     }
 
     private void requireExternalJavaSdkRuntime(String name) {
+        if ("Math".equals(name)) {
+            return;
+        }
         if (externalJavaSdkRuntime) {
             externalJavaSdkRuntimeImports.add(name);
+            if ("__QinJavaUtilArrayList".equals(name) || "__QinJavaUtilList".equals(name)) {
+                externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableList");
+            }
+            if ("__QinJavaUtilHashSet".equals(name) || "__QinJavaUtilSet".equals(name)) {
+                externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableSet");
+            }
+            if ("__QinJavaUtilHashMap".equals(name) || "__QinJavaUtilCollections".equals(name)) {
+                externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableMap");
+            }
         }
     }
 
@@ -866,12 +879,38 @@ public final class QinJsBackend {
     }
 
     private String externalJavaSdkImportStatement() {
-        Set<String> imports = externalJavaSdkRuntimeImports.isEmpty()
-                ? new LinkedHashSet<>(JAVA_SDK_RUNTIME_EXPORTS)
-                : new LinkedHashSet<>(JAVA_SDK_RUNTIME_EXPORTS);
-        imports.addAll(externalJavaSdkRuntimeImports);
-        return "import { " + String.join(", ", imports)
-                + " } from \"" + JAVA_SDK_JS_PACKAGE + "\";\n\n";
+        Set<String> sdkImports = new LinkedHashSet<>();
+        Set<String> toolingImports = new LinkedHashSet<>();
+        for (String runtimeImport : externalJavaSdkRuntimeImports) {
+            if (isJavaSdkToolingRuntimeImport(runtimeImport)) {
+                toolingImports.add(runtimeImport);
+            } else {
+                sdkImports.add(runtimeImport);
+            }
+        }
+        StringBuilder imports = new StringBuilder();
+        if (!sdkImports.isEmpty()) {
+            imports.append("import { ").append(String.join(", ", sdkImports))
+                    .append(" } from \"").append(JAVA_SDK_JS_PACKAGE).append("\";\n");
+        }
+        if (!toolingImports.isEmpty()) {
+            imports.append("import { ").append(String.join(", ", toolingImports))
+                    .append(" } from \"").append(JAVA_SDK_TOOLING_JS_PACKAGE).append("\";\n");
+        }
+        if (imports.length() > 0) {
+            imports.append('\n');
+        }
+        return imports.toString();
+    }
+
+    private boolean isJavaSdkToolingRuntimeImport(String name) {
+        return "__qin_subhuti_rule_cache_key".equals(name)
+                || "__QinJavaIoFile".equals(name)
+                || "__QinJavaNioFilePath".equals(name)
+                || "__QinJavaNioFilePaths".equals(name)
+                || "__QinJavaNioFileFiles".equals(name)
+                || "__QinJavaIoFileWriter".equals(name)
+                || "__QinJavaIoBufferedWriter".equals(name);
     }
 
     private boolean isJsIdentifier(String value) {
@@ -2031,6 +2070,13 @@ public final class QinJsBackend {
 
     private void emitJavaHashRuntimeHelpers(StringBuilder js) {
         if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime(
+                    "__qin_java_string_hash_code__",
+                    "__qin_java_identity_hash_code__",
+                    "__qin_java_value_hash_code__",
+                    "__qin_java_values_equal__",
+                    "__qin_java_hash_key__",
+                    "__qin_java_hash_key_equals__");
             return;
         }
 
@@ -2969,6 +3015,14 @@ public final class QinJsBackend {
 
     private void emitBuiltinRuntimeHelpers(StringBuilder js, QinIrProgram program) {
         if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime(
+                    "__qin_builtin_constructor__",
+                    "__qin_java_pattern_regexp__",
+                    "__QinJavaLangString",
+                    "__qin_java_functional",
+                    "__qin_java_class_info__",
+                    "__qin_binary__",
+                    "__qin_logical__");
             return;
         }
         js.append("""
@@ -3121,6 +3175,9 @@ public final class QinJsBackend {
 
     private void emitSubhutiRuleRuntimeHelpers(StringBuilder js, QinIrProgram program) {
         if (externalJavaSdkRuntime) {
+            if (program == null || usesSubhutiRuleMethod(program)) {
+                requireExternalJavaSdkRuntime("__qin_subhuti_rule_cache_key");
+            }
             return;
         }
         if (program != null && !usesSubhutiRuleMethod(program)) {
@@ -5540,6 +5597,7 @@ public final class QinJsBackend {
             default -> null;
         };
         if (runtimeOwner != null) {
+            requireExternalJavaSdkRuntime(runtimeOwner);
             return runtimeOwner;
         }
         if (isJsIdentifier(classLocalName)) {

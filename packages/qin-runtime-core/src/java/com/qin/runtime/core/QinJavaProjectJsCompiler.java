@@ -269,7 +269,10 @@ public final class QinJavaProjectJsCompiler {
                   "name": "%s",
                   "version": "0.0.0-qin-generated",
                   "type": "module",
-                  "exports": "./index.js"
+                  "exports": {
+                    ".": "./index.js",
+                    "./tooling": "./tooling/index.js"
+                  }
                 }
                 """.formatted(packageName);
     }
