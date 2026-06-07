@@ -181,6 +181,7 @@ public final class QinJavaProjectJsCompiler {
                 .resolve("node_modules")
                 .resolve(QinJsBackend.javaSdkJsPackageName())
                 .normalize();
+        cleanGeneratedJavaSdkPackage(outputRoot, packageRoot);
         Files.createDirectories(packageRoot);
         JavaSdkSource javaSdkSource = findSiblingJavaSdkSource(outputRoot);
         Files.writeString(
@@ -191,6 +192,23 @@ public final class QinJavaProjectJsCompiler {
             copyJavaSdkSourceTree(javaSdkSource, packageRoot);
         } else {
             Files.writeString(packageRoot.resolve("index.js"), javaSdkSource.source(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private void cleanGeneratedJavaSdkPackage(Path outputRoot, Path packageRoot) throws IOException {
+        Path nodeModulesRoot = outputRoot.resolve("node_modules").toAbsolutePath().normalize();
+        Path absolutePackageRoot = packageRoot.toAbsolutePath().normalize();
+        if (!absolutePackageRoot.startsWith(nodeModulesRoot.resolve("@qin").normalize())) {
+            throw new IllegalStateException("Refusing to clean unexpected Java SDK package path: " + absolutePackageRoot);
+        }
+        if (!Files.exists(absolutePackageRoot)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.walk(absolutePackageRoot)) {
+            List<Path> paths = stream.sorted((left, right) -> right.compareTo(left)).toList();
+            for (Path path : paths) {
+                Files.delete(path);
+            }
         }
     }
 
