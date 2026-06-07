@@ -80,11 +80,81 @@ import java.util.Set;
  * Minimal JavaScript backend for Qin IR.
  */
 public final class QinJsBackend {
+    private static final String JAVA_SDK_JS_PACKAGE = "@qin/java-sdk-js";
+    private static final List<String> JAVA_SDK_RUNTIME_EXPORTS = List.of(
+            "__qin_builtin_constructor__",
+            "__qin_java_pattern_regexp__",
+            "__QinJavaLangString",
+            "__QinJavaLangBoolean",
+            "__QinSlf4jLogger",
+            "__QinSlf4jLoggerFactory",
+            "__QinJavaLangInteger",
+            "__QinJavaLangDouble",
+            "__QinJavaLangEnum",
+            "__QinJavaLangThrowable",
+            "__QinJavaLangException",
+            "__QinJavaLangRuntimeException",
+            "__QinJavaLangReflectiveOperationException",
+            "__QinJavaLangClassNotFoundException",
+            "__QinJavaLangNoSuchMethodException",
+            "__QinJavaLangError",
+            "__QinJavaLangStackOverflowError",
+            "__QinJavaLangIllegalArgumentException",
+            "__QinJavaLangNumberFormatException",
+            "__QinJavaLangIllegalStateException",
+            "__QinJavaLangUnsupportedOperationException",
+            "__QinJavaIoIOException",
+            "__QinJavaLangSystem",
+            "__QinJavaLangStringBuilder",
+            "__QinJavaIoFile",
+            "__QinJavaNioFilePath",
+            "__QinJavaNioFilePaths",
+            "__QinJavaNioFileFiles",
+            "__QinJavaIoFileWriter",
+            "__QinJavaIoBufferedWriter",
+            "__QinJavaTimeFormatDateTimeFormatter",
+            "__QinJavaTimeLocalDateTime",
+            "__QinJavaUtilArrayList",
+            "__QinJavaUtilUnmodifiableList",
+            "__QinJavaUtilList",
+            "__QinJavaUtilHashSet",
+            "__QinJavaUtilUnmodifiableSet",
+            "__QinJavaUtilSet",
+            "__qin_java_string_hash_code__",
+            "__qin_java_identity_hash_code__",
+            "__qin_java_value_hash_code__",
+            "__qin_java_values_equal__",
+            "__qin_java_hash_key__",
+            "__qin_java_hash_key_equals__",
+            "__QinJavaUtilArrays",
+            "__QinJavaUtilUnmodifiableMap",
+            "__QinJavaUtilCollections",
+            "__QinJavaUtilHashMap",
+            "__QinJavaUtilObjects",
+            "__QinJavaUtilOptionalValue",
+            "__QinJavaUtilOptional",
+            "__QinJavaUtilStream",
+            "__QinJavaUtilStreamCollectors",
+            "__QinJavaUtilConcurrentAtomicLong",
+            "__QinCaffeineRemovalCause",
+            "__QinCaffeineCache",
+            "__QinCaffeineBuilder",
+            "__QinCaffeine",
+            "__QinJavaUtilRegexPattern",
+            "__QinJavaUtilRegexMatcher",
+            "__qin_java_functional",
+            "__qin_java_class_info__",
+            "__qin_binary__",
+            "__qin_logical__",
+            "__qin_subhuti_rule_cache_key",
+            "__qin_init_enum_value");
     private Set<String> generatedClassBinaryNames = Set.of();
     private Map<String, QinIrClassDeclaration> generatedClassesByBinaryName = Map.of();
     private Map<String, String> generatedClassReferencesBySimpleName = Map.of();
     private Map<String, String> generatedJavaFieldAliases = Map.of();
     private Set<String> externallyBoundJavaBinaryNames = Set.of();
+    private boolean externalJavaSdkRuntime;
+    private Set<String> externalJavaSdkRuntimeImports = new LinkedHashSet<>();
     private Map<String, String> bindingAliases = new LinkedHashMap<>();
     private Map<String, String> currentJavaFieldAliases = Map.of();
     private QinIrClassDeclaration currentJavaClassDeclaration;
@@ -94,17 +164,48 @@ public final class QinJsBackend {
     }
 
     public String compileProgram(QinIrProgram program, Set<String> externallyBoundJavaBinaryNames) {
+        return compileProgram(program, externallyBoundJavaBinaryNames, false);
+    }
+
+    public String compileProgramWithExternalJavaSdk(
+            QinIrProgram program,
+            Set<String> externallyBoundJavaBinaryNames) {
+        return compileProgram(program, externallyBoundJavaBinaryNames, true, program.classDeclarations());
+    }
+
+    public String compileProgramWithExternalJavaSdk(
+            QinIrProgram program,
+            Set<String> externallyBoundJavaBinaryNames,
+            List<QinIrClassDeclaration> contextClassDeclarations) {
+        return compileProgram(program, externallyBoundJavaBinaryNames, true, contextClassDeclarations);
+    }
+
+    private String compileProgram(
+            QinIrProgram program,
+            Set<String> externallyBoundJavaBinaryNames,
+            boolean externalJavaSdkRuntime) {
+        return compileProgram(program, externallyBoundJavaBinaryNames, externalJavaSdkRuntime, program.classDeclarations());
+    }
+
+    private String compileProgram(
+            QinIrProgram program,
+            Set<String> externallyBoundJavaBinaryNames,
+            boolean externalJavaSdkRuntime,
+            List<QinIrClassDeclaration> contextClassDeclarations) {
         Objects.requireNonNull(program, "program cannot be null");
         Objects.requireNonNull(externallyBoundJavaBinaryNames, "externallyBoundJavaBinaryNames cannot be null");
         generatedClassBinaryNames = generatedClassBinaryNames(program.classDeclarations());
-        generatedClassesByBinaryName = generatedClassesByBinaryName(program.classDeclarations());
-        generatedClassReferencesBySimpleName = generatedClassReferencesBySimpleName(program.classDeclarations());
-        generatedJavaFieldAliases = javaFieldAliases(program.classDeclarations());
+        generatedClassesByBinaryName = generatedClassesByBinaryName(contextClassDeclarations);
+        generatedClassReferencesBySimpleName = generatedClassReferencesBySimpleName(contextClassDeclarations);
+        generatedJavaFieldAliases = javaFieldAliases(contextClassDeclarations);
         this.externallyBoundJavaBinaryNames = Set.copyOf(externallyBoundJavaBinaryNames);
+        this.externalJavaSdkRuntime = externalJavaSdkRuntime;
+        externalJavaSdkRuntimeImports = new LinkedHashSet<>();
         bindingAliases = new LinkedHashMap<>();
 
         StringBuilder js = new StringBuilder();
         js.append("// Generated by Qin JS backend\n");
+        int externalJavaSdkImportOffset = js.length();
         Map<String, String> javaAliases = new LinkedHashMap<>();
         emitBuiltinRuntimeHelpers(js, program);
         emitJavaAliases(js, program.javaImports(), javaAliases);
@@ -141,6 +242,56 @@ public final class QinJsBackend {
         js.append("  globalThis.__qinResult = __qinResult;\n");
         js.append("}\n");
 
+        if (externalJavaSdkRuntime) {
+            js.insert(externalJavaSdkImportOffset, externalJavaSdkImportStatement());
+        }
+
+        return js.toString();
+    }
+
+    public static String javaSdkJsPackageName() {
+        return JAVA_SDK_JS_PACKAGE;
+    }
+
+    public static String javaSdkJsModule() {
+        QinJsBackend backend = new QinJsBackend();
+        StringBuilder js = new StringBuilder();
+        js.append("// Qin Java SDK for generated JavaScript\n");
+        backend.emitBuiltinRuntimeHelpers(js, null);
+        backend.emitJavaLangBooleanRuntime(js);
+        backend.emitSlf4jRuntime(js);
+        backend.emitJavaLangIntegerRuntime(js);
+        backend.emitJavaLangDoubleRuntime(js);
+        backend.emitJavaLangEnumRuntime(js);
+        backend.emitJavaLangExceptionRuntime(js);
+        backend.emitJavaLangSystemRuntime(js);
+        backend.emitJavaLangStringBuilderRuntime(js);
+        backend.emitJavaIoFileRuntime(js);
+        backend.emitJavaNioFileRuntime(js);
+        backend.emitJavaIoWriterRuntime(js);
+        backend.emitJavaTimeRuntime(js);
+        backend.emitJavaUtilArrayListRuntime(js);
+        backend.emitJavaUtilListRuntime(js);
+        backend.emitJavaUtilHashSetRuntime(js);
+        backend.emitJavaUtilSetRuntime(js);
+        backend.emitJavaHashRuntimeHelpers(js);
+        backend.emitJavaUtilArraysRuntime(js);
+        backend.emitJavaUtilCollectionsRuntime(js);
+        backend.emitJavaUtilHashMapRuntime(js);
+        backend.emitJavaUtilObjectsRuntime(js);
+        backend.emitJavaUtilOptionalRuntime(js);
+        backend.emitJavaUtilStreamRuntime(js);
+        backend.emitJavaUtilConcurrentAtomicLongRuntime(js);
+        backend.emitCaffeineRuntime(js);
+        backend.emitJavaUtilRegexRuntime(js);
+        backend.emitSubhutiRuleRuntimeHelpers(js, null);
+        backend.emitJavaEnumValueRuntimeHelper(js);
+        js.append("\nexport {\n");
+        for (int i = 0; i < JAVA_SDK_RUNTIME_EXPORTS.size(); i++) {
+            js.append("  ").append(JAVA_SDK_RUNTIME_EXPORTS.get(i));
+            js.append(i == JAVA_SDK_RUNTIME_EXPORTS.size() - 1 ? "\n" : ",\n");
+        }
+        js.append("};\n");
         return js.toString();
     }
 
@@ -699,6 +850,30 @@ public final class QinJsBackend {
         }
     }
 
+    private void requireExternalJavaSdkRuntime(String name) {
+        if (externalJavaSdkRuntime) {
+            externalJavaSdkRuntimeImports.add(name);
+        }
+    }
+
+    private void requireExternalJavaSdkRuntime(String... names) {
+        if (!externalJavaSdkRuntime) {
+            return;
+        }
+        for (String name : names) {
+            externalJavaSdkRuntimeImports.add(name);
+        }
+    }
+
+    private String externalJavaSdkImportStatement() {
+        Set<String> imports = externalJavaSdkRuntimeImports.isEmpty()
+                ? new LinkedHashSet<>(JAVA_SDK_RUNTIME_EXPORTS)
+                : new LinkedHashSet<>(JAVA_SDK_RUNTIME_EXPORTS);
+        imports.addAll(externalJavaSdkRuntimeImports);
+        return "import { " + String.join(", ", imports)
+                + " } from \"" + JAVA_SDK_JS_PACKAGE + "\";\n\n";
+    }
+
     private boolean isJsIdentifier(String value) {
         return value != null && value.matches("[A-Za-z_$][A-Za-z0-9_$]*");
     }
@@ -824,6 +999,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangStringRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangString");
+            return;
+        }
         if (js.indexOf("const __QinJavaLangString") >= 0) {
             return;
         }
@@ -927,6 +1106,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangBooleanRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangBoolean");
+            return;
+        }
         if (js.indexOf("const __QinJavaLangBoolean") >= 0) {
             return;
         }
@@ -953,6 +1136,10 @@ public final class QinJsBackend {
     }
 
     private void emitSlf4jRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinSlf4jLogger", "__QinSlf4jLoggerFactory");
+            return;
+        }
         if (js.indexOf("const __QinSlf4jLoggerFactory") >= 0) {
             return;
         }
@@ -971,6 +1158,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangIntegerRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangInteger");
+            return;
+        }
         if (js.indexOf("const __QinJavaLangInteger") >= 0) {
             return;
         }
@@ -985,6 +1176,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangDoubleRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangDouble");
+            return;
+        }
         if (js.indexOf("const __QinJavaLangDouble") >= 0) {
             return;
         }
@@ -1011,6 +1206,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangEnumRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangEnum");
+            return;
+        }
         if (js.indexOf("class __QinJavaLangEnum") >= 0) {
             return;
         }
@@ -1032,6 +1231,23 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangExceptionRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime(
+                    "__QinJavaLangThrowable",
+                    "__QinJavaLangException",
+                    "__QinJavaLangRuntimeException",
+                    "__QinJavaLangReflectiveOperationException",
+                    "__QinJavaLangClassNotFoundException",
+                    "__QinJavaLangNoSuchMethodException",
+                    "__QinJavaLangError",
+                    "__QinJavaLangStackOverflowError",
+                    "__QinJavaLangIllegalArgumentException",
+                    "__QinJavaLangNumberFormatException",
+                    "__QinJavaLangIllegalStateException",
+                    "__QinJavaLangUnsupportedOperationException",
+                    "__QinJavaIoIOException");
+            return;
+        }
         if (js.indexOf("class __QinJavaLangThrowable") >= 0) {
             return;
         }
@@ -1082,6 +1298,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangSystemRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangSystem");
+            return;
+        }
         if (js.indexOf("const __QinJavaLangSystem") >= 0) {
             return;
         }
@@ -1139,6 +1359,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaLangStringBuilderRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangStringBuilder");
+            return;
+        }
         if (js.indexOf("class __QinJavaLangStringBuilder") >= 0) {
             return;
         }
@@ -1171,6 +1395,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaIoFileRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaIoFile");
+            return;
+        }
         if (js.indexOf("class __QinJavaIoFile") >= 0) {
             return;
         }
@@ -1338,6 +1566,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaNioFileRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         emitJavaIoFileRuntime(js);
         if (js.indexOf("class __QinJavaNioFilePath") >= 0) {
             return;
@@ -1376,6 +1608,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaIoWriterRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaIoBufferedWriter") >= 0) {
             return;
         }
@@ -1419,6 +1655,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaTimeRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaTimeLocalDateTime") >= 0) {
             return;
         }
@@ -1479,6 +1719,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilArrayListRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaUtilArrayList") >= 0) {
             return;
         }
@@ -1611,6 +1855,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilListRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("const __QinJavaUtilList") >= 0) {
             return;
         }
@@ -1625,6 +1873,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilHashSetRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaUtilHashSet") >= 0) {
             return;
         }
@@ -1760,6 +2012,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilSetRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("const __QinJavaUtilSet") >= 0) {
             return;
         }
@@ -1774,6 +2030,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaHashRuntimeHelpers(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("function __qin_java_value_hash_code__") >= 0) {
             return;
         }
@@ -1838,6 +2098,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilArraysRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("const __QinJavaUtilArrays") >= 0) {
             return;
         }
@@ -1923,6 +2187,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilCollectionsRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("const __QinJavaUtilCollections") >= 0) {
             return;
         }
@@ -2023,6 +2291,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilHashMapRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaUtilHashMap") >= 0) {
             return;
         }
@@ -2165,6 +2437,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilObjectsRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("const __QinJavaUtilObjects") >= 0) {
             return;
         }
@@ -2181,6 +2457,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilOptionalRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaUtilOptionalValue") >= 0) {
             return;
         }
@@ -2229,6 +2509,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilStreamRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaUtilStream") >= 0) {
             return;
         }
@@ -2286,6 +2570,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilConcurrentAtomicLongRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaUtilConcurrentAtomicLong") >= 0) {
             return;
         }
@@ -2330,6 +2618,10 @@ public final class QinJsBackend {
     }
 
     private void emitCaffeineRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinCaffeineCache") >= 0) {
             return;
         }
@@ -2439,6 +2731,10 @@ public final class QinJsBackend {
     }
 
     private void emitJavaUtilRegexRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
         if (js.indexOf("class __QinJavaUtilRegexPattern") >= 0) {
             return;
         }
@@ -2672,6 +2968,9 @@ public final class QinJsBackend {
     }
 
     private void emitBuiltinRuntimeHelpers(StringBuilder js, QinIrProgram program) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
         js.append("""
                 const __qin_builtin_constructor__ = globalThis.__qin_builtin_constructor__ || ((name) => {
                   const ctor = globalThis[name];
@@ -2736,6 +3035,17 @@ public final class QinJsBackend {
                   return {
                     getName() { return className; },
                     getSimpleName() { return simpleName; },
+                    getDeclaredConstructor(...__qin_types) {
+                      const __qin_ctor = ctor == null ? Object : ctor;
+                      return {
+                        newInstance(...__qin_args) {
+                          return new __qin_ctor(...__qin_args);
+                        }
+                      };
+                    },
+                    getConstructor(...__qin_types) {
+                      return this.getDeclaredConstructor(...__qin_types);
+                    },
                     getMethod(name, ...params) { return findMethod(name); },
                     getDeclaredMethod(name, ...params) { return findMethod(name); },
                     getSuperclass() {
@@ -2766,8 +3076,8 @@ public final class QinJsBackend {
                   });
                 }
                 """);
-        boolean usesBinary = usesBuiltin(program, "__qin_binary__");
-        boolean usesLogical = usesBuiltin(program, "__qin_logical__");
+        boolean usesBinary = program == null || usesBuiltin(program, "__qin_binary__");
+        boolean usesLogical = program == null || usesBuiltin(program, "__qin_logical__");
         if (!usesBinary && !usesLogical) {
             return;
         }
@@ -2810,7 +3120,10 @@ public final class QinJsBackend {
     }
 
     private void emitSubhutiRuleRuntimeHelpers(StringBuilder js, QinIrProgram program) {
-        if (!usesSubhutiRuleMethod(program)) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+        if (program != null && !usesSubhutiRuleMethod(program)) {
             return;
         }
         emitJavaHashRuntimeHelpers(js);
@@ -3237,7 +3550,8 @@ public final class QinJsBackend {
                 ? classLiteralExpression.typeName()
                 : classLiteralExpression.binaryName();
         String constructorReference = classLiteralExpression.binaryName() != null
-                && isGeneratedClassOwner(classLiteralExpression.binaryName())
+                && (isGeneratedClassOwner(classLiteralExpression.binaryName())
+                        || externallyBoundJavaBinaryNames.contains(classLiteralExpression.binaryName()))
                         ? jsClassReference(classLiteralExpression.binaryName())
                         : null;
         String simpleName = displayName;
@@ -3337,19 +3651,11 @@ public final class QinJsBackend {
         if (!hasJavaEnumStaticValues(classDeclarations)) {
             return;
         }
-        js.append("""
-                function __qin_init_enum_value(value, name, ordinal) {
-                  Object.defineProperty(value, "__qinEnumName", {
-                    value: "" + name,
-                    configurable: true
-                  });
-                  Object.defineProperty(value, "__qinEnumOrdinal", {
-                    value: ordinal,
-                    configurable: true
-                  });
-                  return value;
-                }
-                """);
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__qin_init_enum_value");
+        } else {
+            emitJavaEnumValueRuntimeHelper(js);
+        }
         for (QinIrClassDeclaration classDeclaration : classDeclarations) {
             if (!isJavaEnumClass(classDeclaration)) {
                 continue;
@@ -3361,7 +3667,7 @@ public final class QinJsBackend {
                 }
                 js.append(jsClassReference(classDeclaration.binaryName()))
                         .append(".")
-                        .append(field.name())
+                        .append(jsJavaFieldName(field.name()))
                         .append(" = __qin_init_enum_value(");
                 if (field.initializer() == null) {
                     js.append("new ").append(jsClassReference(classDeclaration.binaryName())).append("()");
@@ -3376,6 +3682,25 @@ public final class QinJsBackend {
                 ordinal++;
             }
         }
+    }
+
+    private void emitJavaEnumValueRuntimeHelper(StringBuilder js) {
+        if (js.indexOf("function __qin_init_enum_value") >= 0) {
+            return;
+        }
+        js.append("""
+                function __qin_init_enum_value(value, name, ordinal) {
+                  Object.defineProperty(value, "__qinEnumName", {
+                    value: "" + name,
+                    configurable: true
+                  });
+                  Object.defineProperty(value, "__qinEnumOrdinal", {
+                    value: ordinal,
+                    configurable: true
+                  });
+                  return value;
+                }
+                """);
     }
 
     private void emitJavaRecordDefaultMethods(StringBuilder js, QinIrClassDeclaration classDeclaration) {

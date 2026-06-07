@@ -101,6 +101,7 @@ public final class QinJavaProjectJsCompiler {
         }
 
         List<EsmFileOutput> outputs = new ArrayList<>();
+        writeJavaSdkJsPackage(outputRoot);
         for (Map.Entry<String, Path> sourceEntry : sourceFiles.entrySet()) {
             String sourceBinaryName = sourceEntry.getKey();
             Path sourceFile = sourceEntry.getValue();
@@ -110,6 +111,12 @@ public final class QinJavaProjectJsCompiler {
             Set<String> dependencyBinaryNames = referencedSourceBinaryNames(
                     parsedPrograms.get(sourceBinaryName),
                     sourceFiles.keySet());
+            dependencyBinaryNames.addAll(superclassClosureDependencyBinaryNames(
+                    sourceBinaryName,
+                    sourceFiles.keySet()));
+            dependencyBinaryNames.addAll(superclassDependencyBinaryNames(
+                    parsedPrograms.get(sourceBinaryName),
+                    sourceFiles.keySet()));
             Set<String> externallyBoundClassBinaryNames = externallyBoundClassBinaryNames(
                     sourceBinaryName,
                     outputFile,
@@ -122,13 +129,72 @@ public final class QinJavaProjectJsCompiler {
                     dependencyBinaryNames,
                     outputFilesByBinaryName,
                     programClassBinaryNames)
-                    + new QinJsBackend().compileProgram(fileProgram, externallyBoundClassBinaryNames)
+                    + new QinJsBackend().compileProgramWithExternalJavaSdk(
+                            fileProgram,
+                            externallyBoundClassBinaryNames,
+                            bundleProgram.classDeclarations())
                     + esmExports(fileProgram);
             Files.createDirectories(outputFile.getParent());
             Files.writeString(outputFile, generated, StandardCharsets.UTF_8);
             outputs.add(new EsmFileOutput(sourceBinaryName, sourceFile, outputFile, generated));
         }
         return List.copyOf(outputs);
+    }
+
+    private Set<String> superclassClosureDependencyBinaryNames(String binaryName, Set<String> sourceBinaryNames) {
+        Set<String> dependencies = new LinkedHashSet<>();
+        Class<?> current = loadClass(binaryName).getSuperclass();
+        while (current != null && current != Object.class) {
+            String superclassBinaryName = current.getName();
+            if (sourceBinaryNames.contains(superclassBinaryName)) {
+                dependencies.add(superclassBinaryName);
+            }
+            current = current.getSuperclass();
+        }
+        return dependencies;
+    }
+
+    private Set<String> superclassDependencyBinaryNames(JavaAstProgram program, Set<String> sourceBinaryNames) {
+        TypeResolver resolver = new TypeResolver(program, sourceBinaryNames);
+        Set<String> referenced = new LinkedHashSet<>();
+        for (JavaAstClassDeclaration classDeclaration : program.classes()) {
+            collectSuperclassDependencyBinaryNames(classDeclaration, resolver, sourceBinaryNames, referenced);
+        }
+        return referenced;
+    }
+
+    private void collectSuperclassDependencyBinaryNames(
+            JavaAstClassDeclaration classDeclaration,
+            TypeResolver resolver,
+            Set<String> sourceBinaryNames,
+            Set<String> referenced) {
+        collectTypeReference(classDeclaration.superTypeName(), resolver, sourceBinaryNames, referenced);
+        for (JavaAstClassDeclaration nestedClass : classDeclaration.nestedClasses()) {
+            collectSuperclassDependencyBinaryNames(nestedClass, resolver, sourceBinaryNames, referenced);
+        }
+    }
+
+    private void writeJavaSdkJsPackage(Path outputRoot) throws IOException {
+        Path packageRoot = outputRoot
+                .resolve("node_modules")
+                .resolve(QinJsBackend.javaSdkJsPackageName())
+                .normalize();
+        Files.createDirectories(packageRoot);
+        Files.writeString(
+                packageRoot.resolve("package.json"),
+                """
+                        {
+                          "name": "@qin/java-sdk-js",
+                          "version": "0.0.0-qin-generated",
+                          "type": "module",
+                          "exports": "./index.js"
+                        }
+                        """,
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                packageRoot.resolve("index.js"),
+                QinJsBackend.javaSdkJsModule(),
+                StandardCharsets.UTF_8);
     }
 
     private Map<String, JavaAstProgram> parseSourceFiles(Map<String, Path> sourceFiles) {
@@ -264,6 +330,7 @@ public final class QinJavaProjectJsCompiler {
             Map<String, Set<String>> programClassBinaryNames) {
         StringBuilder js = new StringBuilder();
         Set<String> importedClassBinaryNames = new LinkedHashSet<>();
+        List<String> simpleAliases = new ArrayList<>();
         for (String dependencyBinaryName : dependencyBinaryNames) {
             Path dependencyOutputFile = outputFilesByBinaryName.get(dependencyBinaryName);
             if (dependencyOutputFile == null || outputFile.equals(dependencyOutputFile)) {
@@ -277,6 +344,12 @@ public final class QinJavaProjectJsCompiler {
             for (String classBinaryName : dependencyClassBinaryNames) {
                 if (importedClassBinaryNames.add(classBinaryName)) {
                     identifiers.add(QinJsBackend.generatedJavaClassIdentifier(classBinaryName));
+                    String simpleName = nestedSimpleClassName(classBinaryName);
+                    if (isJsIdentifier(simpleName)
+                            && uniqueSimpleClassName(simpleName, sourceBinaryName, programClassBinaryNames)) {
+                        simpleAliases.add("const " + simpleName + " = "
+                                + QinJsBackend.generatedJavaClassIdentifier(classBinaryName) + ";");
+                    }
                 }
             }
             if (identifiers.isEmpty()) {
@@ -289,9 +362,48 @@ public final class QinJavaProjectJsCompiler {
                     .append("\";\n");
         }
         if (js.length() > 0) {
+            for (String simpleAlias : simpleAliases) {
+                js.append(simpleAlias).append('\n');
+            }
             js.append('\n');
         }
         return js.toString();
+    }
+
+    private boolean uniqueSimpleClassName(
+            String simpleName,
+            String sourceBinaryName,
+            Map<String, Set<String>> programClassBinaryNames) {
+        int count = 0;
+        for (Map.Entry<String, Set<String>> entry : programClassBinaryNames.entrySet()) {
+            if (entry.getKey().equals(sourceBinaryName)) {
+                continue;
+            }
+            for (String classBinaryName : entry.getValue()) {
+                if (simpleName.equals(nestedSimpleClassName(classBinaryName))) {
+                    count++;
+                    if (count > 1) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return count == 1;
+    }
+
+    private String nestedSimpleClassName(String binaryName) {
+        String simpleName = simpleClassName(binaryName);
+        int nestedSeparator = simpleName.lastIndexOf('$');
+        return nestedSeparator < 0 ? simpleName : simpleName.substring(nestedSeparator + 1);
+    }
+
+    private String simpleClassName(String binaryName) {
+        int dot = binaryName.lastIndexOf('.');
+        return dot < 0 ? binaryName : binaryName.substring(dot + 1);
+    }
+
+    private boolean isJsIdentifier(String value) {
+        return value != null && value.matches("[A-Za-z_$][A-Za-z0-9_$]*");
     }
 
     private Set<String> externallyBoundClassBinaryNames(
