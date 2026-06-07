@@ -789,7 +789,7 @@ public final class QinFrontendEsmService {
             return source;
         }
         String transformed = source.substring(0, exportIndex)
-                + "const __qinOvsDefault = "
+                + "const __qinOvsComponent = "
                 + source.substring(exportIndex + marker.length());
         return """
                 import { createApp as __qinCreateApp } from "%s";
@@ -799,15 +799,19 @@ public final class QinFrontendEsmService {
                   const __qinOvsTarget = target || document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo');
                   if (!__qinOvsTarget) return null;
                   __qinOvsTarget.innerHTML = '';
-                  return __qinCreateApp(__qinOvsDefault).mount(__qinOvsTarget);
+                  const __qinVueComponent = __qinOvsComponent && __qinOvsComponent.__vueComponent
+                    ? __qinOvsComponent.__vueComponent
+                    : __qinOvsComponent;
+                  return __qinCreateApp(__qinVueComponent).mount(__qinOvsTarget);
                 }
                 function __qinMountVue(target) {
                   return __qinMountOvs(target);
                 }
-                if (__qinOvsDefault && (typeof __qinOvsDefault === 'object' || typeof __qinOvsDefault === 'function')) {
-                  __qinOvsDefault.__qinMountVue = __qinMountVue;
-                  __qinOvsDefault.__qinMountOvs = __qinMountOvs;
-                }
+                const __qinOvsDefault = {
+                  component: __qinOvsComponent,
+                  __qinMountVue,
+                  __qinMountOvs
+                };
                 if (typeof document !== 'undefined') {
                   setTimeout(__qinMountOvs, 0);
                 }

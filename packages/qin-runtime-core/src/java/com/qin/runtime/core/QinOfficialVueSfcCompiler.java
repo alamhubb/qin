@@ -36,6 +36,11 @@ final class QinOfficialVueSfcCompiler implements QinVueSfcCompiler {
             QinVueSpecifierRewriter specifierRewriter) {
         QinVueCompilerSfcPackageLocator.QinVueCompilerSfcPackageLocation location =
                 packageLocator.locate(moduleFile);
+        Path projectRoot = findProjectRoot(moduleFile);
+        if (!location.found()) {
+            ensureOfficialCompilerSfcPackage(projectRoot);
+            location = packageLocator.locate(moduleFile);
+        }
         if (!location.found()) {
             throw new IllegalStateException(
                     "Qin official Vue SFC compiler package not found for " + moduleFile.toAbsolutePath()
@@ -43,7 +48,6 @@ final class QinOfficialVueSfcCompiler implements QinVueSfcCompiler {
         }
 
         try {
-            Path projectRoot = findProjectRoot(moduleFile);
             Object parseResult = invokeOfficialParseSlice(
                     projectRoot,
                     location.entryFile(),
@@ -71,6 +75,20 @@ final class QinOfficialVueSfcCompiler implements QinVueSfcCompiler {
             throw new IllegalStateException(
                     "Qin official Vue SFC compiler failed for " + moduleFile.toAbsolutePath()
                             + ". Qin should compile @vue/compiler-sfc directly without legacy fallback.",
+                    error);
+        }
+    }
+
+    private void ensureOfficialCompilerSfcPackage(Path projectRoot) {
+        try {
+            new QinNpmDependencyMaterializer().materializePackageDependency(
+                    "@vue/compiler-sfc",
+                    "latest",
+                    projectRoot.resolve("node_modules"));
+        } catch (Exception error) {
+            throw new IllegalStateException(
+                    "Cannot materialize official @vue/compiler-sfc for Qin Vue SFC compilation in "
+                            + projectRoot.toAbsolutePath(),
                     error);
         }
     }

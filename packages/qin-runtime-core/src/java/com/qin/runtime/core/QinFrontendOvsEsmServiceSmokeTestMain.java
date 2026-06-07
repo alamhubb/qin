@@ -18,7 +18,8 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
                     "ovsjs": "0.2.2",
                     "vue": "latest",
                     "cssts-compiler": "0.2.87",
-                    "cssts-ts": "0.2.87"
+                    "cssts-ts": "0.2.87",
+                    "vite-plugin-ovs": "0.2.2"
                   }
                 }
                 """, StandardCharsets.UTF_8);
@@ -41,7 +42,9 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
         if (module == null
                 || !module.contains("__qinMountOvs")
                 || !module.contains("__qinMountVue")
-                || !module.contains("__qinOvsDefault.__qinMountVue")
+                || !module.contains("component: __qinOvsComponent")
+                || !module.contains("__qinOvsComponent.__vueComponent")
+                || !module.contains("export default __qinOvsDefault")
                 || !module.contains("qin-ovs=runtime")
                 || !module.contains("/@qin-mod/__virtual/cssts.css.js")
                 || !module.contains("$OvsHtmlTag")) {

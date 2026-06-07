@@ -19,6 +19,7 @@ public final class QinGeneratedCsstsOvsJavaParserSmokeTestMain {
                     "vue": "latest",
                     "cssts-compiler": "0.2.87",
                     "cssts-ts": "0.2.87",
+                    "vite-plugin-ovs": "0.2.2",
                     "ovs-compiler": "0.2.2",
                     "ovsjs": "0.2.2"
                   }
