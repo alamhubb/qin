@@ -53,6 +53,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public final class QinJavaProjectJsCompiler {
@@ -180,21 +182,67 @@ public final class QinJavaProjectJsCompiler {
                 .resolve(QinJsBackend.javaSdkJsPackageName())
                 .normalize();
         Files.createDirectories(packageRoot);
+        JavaSdkSource javaSdkSource = findSiblingJavaSdkSource(outputRoot);
         Files.writeString(
                 packageRoot.resolve("package.json"),
-                """
-                        {
-                          "name": "@qin/java-sdk-js",
-                          "version": "0.0.0-qin-generated",
-                          "type": "module",
-                          "exports": "./index.js"
-                        }
-                        """,
+                javaSdkPackageJson(javaSdkSource.packageName()),
                 StandardCharsets.UTF_8);
-        Files.writeString(
-                packageRoot.resolve("index.js"),
+        String source = javaSdkSource.source();
+        if (javaSdkSource.fromSiblingProject()) {
+            source = source.replaceFirst("^// Qin Java SDK for generated JavaScript\\R", "");
+            source = "// Qin Java SDK for generated JavaScript\n"
+                    + "// Source: " + javaSdkSource.sourceFile().toAbsolutePath().normalize() + "\n"
+                    + source;
+        }
+        Files.writeString(packageRoot.resolve("index.js"), source, StandardCharsets.UTF_8);
+    }
+
+    private JavaSdkSource findSiblingJavaSdkSource(Path outputRoot) throws IOException {
+        Path current = outputRoot.toAbsolutePath().normalize();
+        while (current != null) {
+            Path candidate = current.resolve("java-sdk").resolve("qin.config.js");
+            if (Files.isRegularFile(candidate)) {
+                return readJavaSdkSource(candidate);
+            }
+            current = current.getParent();
+        }
+        return new JavaSdkSource(
+                QinJsBackend.javaSdkJsPackageName(),
+                null,
                 QinJsBackend.javaSdkJsModule(),
-                StandardCharsets.UTF_8);
+                false);
+    }
+
+    private JavaSdkSource readJavaSdkSource(Path configFile) throws IOException {
+        String config = Files.readString(configFile, StandardCharsets.UTF_8);
+        String packageName = readConfigString(config, "name", QinJsBackend.javaSdkJsPackageName());
+        String entry = readConfigString(config, "entry", "src/index.ts");
+        Path sourceFile = configFile.getParent().resolve(entry).normalize();
+        if (!Files.isRegularFile(sourceFile)) {
+            throw new IllegalStateException("java-sdk qin.config.js entry does not exist: " + sourceFile);
+        }
+        return new JavaSdkSource(
+                packageName,
+                sourceFile,
+                Files.readString(sourceFile, StandardCharsets.UTF_8),
+                true);
+    }
+
+    private String readConfigString(String config, String name, String defaultValue) {
+        Matcher matcher = Pattern.compile("\\b" + Pattern.quote(name) + "\\s*:\\s*['\"]([^'\"]+)['\"]")
+                .matcher(config);
+        return matcher.find() ? matcher.group(1) : defaultValue;
+    }
+
+    private String javaSdkPackageJson(String packageName) {
+        return """
+                {
+                  "name": "%s",
+                  "version": "0.0.0-qin-generated",
+                  "type": "module",
+                  "exports": "./index.js"
+                }
+                """.formatted(packageName);
     }
 
     private Map<String, JavaAstProgram> parseSourceFiles(Map<String, Path> sourceFiles) {
@@ -500,6 +548,13 @@ public final class QinJavaProjectJsCompiler {
             Path sourceFile,
             Path outputFile,
             String js) {
+    }
+
+    private record JavaSdkSource(
+            String packageName,
+            Path sourceFile,
+            String source,
+            boolean fromSiblingProject) {
     }
 
     public Map<String, Path> superclassSourceFiles(List<Path> sourceRoots, String entryBinaryName) {
