@@ -37,6 +37,7 @@ public final class QinJavaProjectSlimeParserJsParseSmokeTestMain {
 
                         const SlimeParser = globalThis.__qinJavaProjectExports["com.slime.parser.SlimeParser"];
                         const SourceType = globalThis.__qinJavaProjectExports["com.slime.parser.SlimeJavascriptParser$SourceType"];
+                        const moduleSourceType = SourceType.__qin_field_MODULE;
                         const JavaScriptTokens = globalThis.__qinJavaProjectExports["com.slime.token.JavaScriptTokens"];
                         if (typeof SlimeParser !== "function") {
                           throw new Error("Generated SlimeParser export is missing");
@@ -45,12 +46,12 @@ public final class QinJavaProjectSlimeParserJsParseSmokeTestMain {
                         const programParser = new SlimeParser("const answer = 42;");
                         const parseParser = new SlimeParser("const answer = 42;");
                         (() => {
-                              const programValue = programParser.Program(SourceType.MODULE);
+                              const programValue = programParser.Program(moduleSourceType);
                               const parseValue = parseParser.parse();
                               return "slime=" + typeof SlimeParser
                                 + ";tokensPositive=" + (tokenCount > 0)
                                 + ";sourceType=" + typeof SourceType
-                                + ";moduleNull=" + (SourceType.MODULE == null)
+                                + ";moduleNull=" + (moduleSourceType == null)
                                 + ";programIndex=" + programParser.getCurrentIndex()
                                 + ";programFail=" + programParser.isParserFail()
                                 + ";programError=" + programParser.getErrorInfo()
