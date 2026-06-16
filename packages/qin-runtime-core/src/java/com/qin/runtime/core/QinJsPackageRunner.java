@@ -96,7 +96,7 @@ final class QinJsPackageRunner {
                 String className = "com.qin.runtime.generated.npm.Invoke"
                         + capitalize(token)
                         + sequence;
-                Object result = runner.compileAndRun(wrapperFile, root, className);
+                Object result = runner.compileAndRunModuleClasses(wrapperFile, root, className);
                 logPhase("compile and run wrapper", startNanos, className);
                 return result;
             }

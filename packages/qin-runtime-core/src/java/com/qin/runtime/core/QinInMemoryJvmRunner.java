@@ -2,6 +2,8 @@ package com.qin.runtime.core;
 
 import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
 import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
+import com.qin.lang.pipeline.cfa.QinCfaModuleClassCompileResult;
+import com.qin.lang.pipeline.cfa.QinCfaModuleClassFile;
 import com.qin.lang.pipeline.cfa.QinCfaPipeline;
 import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
 import com.qin.lang.backend.jvm.QinJvmDeclarationClassEmitter;
@@ -91,6 +93,48 @@ public final class QinInMemoryJvmRunner {
         return result;
     }
 
+    public Object compileAndRunModuleClasses(Path sourceFile, Path projectRoot, String className) throws Exception {
+        long startNanos = System.nanoTime();
+        sourceFile = requireFile(sourceFile);
+        Path normalizedProjectRoot = projectRoot == null
+                ? (sourceFile.getParent() == null
+                ? Path.of("").toAbsolutePath().normalize()
+                : sourceFile.getParent().toAbsolutePath().normalize())
+                : projectRoot.toAbsolutePath().normalize();
+        if (!(cfaPipeline instanceof QinSlimeCfaCompiler compiler)) {
+            throw new IllegalStateException("Module-class execution requires QinSlimeCfaCompiler");
+        }
+
+        logPhase("module-class compile start", startNanos, sourceFile.toAbsolutePath().toString());
+        QinCfaModuleClassCompileResult compileResult = compiler.compileModuleClasses(
+                QinCfaCompileRequest.forJvm(sourceFile, normalizedProjectRoot, className));
+        logPhase("module-class compile done", startNanos, className);
+
+        ByteArrayClassLoader classLoader = new ByteArrayClassLoader(getClass().getClassLoader());
+        bindModuleDeclarationClasses(classLoader, compileResult);
+
+        Object result = null;
+        QinCfaModuleClassFile initializerClassFile = compileResult.initializerClass();
+        if (initializerClassFile != null) {
+            Class<?> initializerClass = classLoader.define(
+                    initializerClassFile.className(),
+                    initializerClassFile.classBytes());
+            registerFunctionModelArtifacts(initializerClassFile);
+            logPhase("module-class initializer run start", startNanos, initializerClassFile.className());
+            result = invokeRunWithRuntimeStack(initializerClass, initializerClassFile.className());
+            logPhase("module-class initializer run done", startNanos, initializerClassFile.className());
+        }
+
+        for (QinCfaModuleClassFile moduleClassFile : compileResult.moduleClasses()) {
+            Class<?> moduleClass = classLoader.define(moduleClassFile.className(), moduleClassFile.classBytes());
+            registerFunctionModelArtifacts(moduleClassFile);
+            logPhase("module-class run start", startNanos, moduleClassFile.className());
+            result = invokeRunWithRuntimeStack(moduleClass, moduleClassFile.className());
+            logPhase("module-class run done", startNanos, moduleClassFile.className());
+        }
+        return result;
+    }
+
     private void bindDeclarationClasses(Map<String, Class<?>> declarationClasses) {
         for (Map.Entry<String, Class<?>> entry : declarationClasses.entrySet()) {
             Class<?> declarationClass = entry.getValue();
@@ -104,6 +148,25 @@ public final class QinInMemoryJvmRunner {
             return Map.of();
         }
         return new QinJvmDeclarationClassEmitter().compileAllClasses(compileResult.loweredProgram());
+    }
+
+    private void bindModuleDeclarationClasses(
+            ByteArrayClassLoader classLoader,
+            QinCfaModuleClassCompileResult compileResult) {
+        QinCfaModuleClassFile initializerClassFile = compileResult.initializerClass();
+        if (initializerClassFile != null) {
+            bindDeclarationClasses(classLoader.defineAll(compileDeclarationClassBytes(initializerClassFile)));
+        }
+        for (QinCfaModuleClassFile moduleClassFile : compileResult.moduleClasses()) {
+            bindDeclarationClasses(classLoader.defineAll(compileDeclarationClassBytes(moduleClassFile)));
+        }
+    }
+
+    private Map<String, byte[]> compileDeclarationClassBytes(QinCfaModuleClassFile moduleClassFile) {
+        if (moduleClassFile.loweredProgram().classDeclarations().isEmpty()) {
+            return Map.of();
+        }
+        return new QinJvmDeclarationClassEmitter().compileAllClasses(moduleClassFile.loweredProgram());
     }
 
     private Object invokeRunWithRuntimeStack(Class<?> generatedClass, String className) throws Exception {
@@ -139,7 +202,14 @@ public final class QinInMemoryJvmRunner {
     }
 
     private void registerFunctionModelArtifacts(QinCfaCompileResult compileResult) {
-        List<QinIrFunctionModelArtifact> artifacts = compileResult.loweredProgram().functionModelArtifacts();
+        registerFunctionModelArtifacts(compileResult.loweredProgram().functionModelArtifacts());
+    }
+
+    private void registerFunctionModelArtifacts(QinCfaModuleClassFile moduleClassFile) {
+        registerFunctionModelArtifacts(moduleClassFile.loweredProgram().functionModelArtifacts());
+    }
+
+    private void registerFunctionModelArtifacts(List<QinIrFunctionModelArtifact> artifacts) {
         if (artifacts.isEmpty()) {
             return;
         }
