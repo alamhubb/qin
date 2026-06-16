@@ -674,6 +674,16 @@ public final class QinBuiltinRegistry {
                             "(Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"),
                     List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ARRAY_REST)));
         }
+        if ("__qin_optional_call_method__".equals(methodName) && argCount >= 2) {
+            return Optional.of(new BuiltinMethod(
+                    receiverName,
+                    methodName,
+                    "com.qin.lang.runtime.JavaEsmGlobal",
+                    "__qin_optional_call_method_array__",
+                    MethodTypeDesc.ofDescriptor(
+                            "(Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"),
+                    List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ARRAY_REST)));
+        }
         if ("__qin_new__".equals(methodName) && argCount >= 1) {
             return Optional.of(new BuiltinMethod(
                     receiverName,

@@ -3778,11 +3778,13 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 || "ArrowFunctionExpression".equals(nodeType)) {
             return lowerFunctionLikeOrNull(expressionAst, nodeType, javaImportLookup, declarationLookup);
         }
-        if ("CallExpression".equals(nodeType)) {
+        if ("CallExpression".equals(nodeType) || "OptionalCallExpression".equals(nodeType)) {
             if (isNoOpRuntimeShimCall(expressionAst)) {
                 return lowerGlobalBuiltinCallExpression(expressionAst, javaImportLookup, declarationLookup);
             }
             Object callee = invokeByName(expressionAst, "callee");
+            boolean optionalCall = "OptionalCallExpression".equals(nodeType)
+                    || Boolean.TRUE.equals(invokeByName(expressionAst, "optional"));
             if (isDynamicImportCallee(callee)) {
                 List<QinIrExpression> args = lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup);
                 return new QinIrBuiltinCallExpression(
@@ -3809,7 +3811,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                         arguments.add(new QinIrIdentifierReference(receiverName));
                         arguments.add(new QinIrStringLiteral(methodName));
                         arguments.addAll(lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup));
-                        return new QinIrBuiltinCallExpression("Global", "__qin_call_method__", arguments);
+                        return new QinIrBuiltinCallExpression(
+                                "Global",
+                                optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
+                                arguments);
                     }
                     if (!declarationLookup.containsKey(receiverName) && "Identifier".equals(simpleName(propertyAst))) {
                         String methodName = extractIdentifierName(propertyAst, "CallExpression.callee.property");
@@ -3827,7 +3832,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                                 List.of(new QinIrStringLiteral(receiverName))));
                         arguments.add(new QinIrStringLiteral(methodName));
                         arguments.addAll(runtimeArguments);
-                        return new QinIrBuiltinCallExpression("Global", "__qin_call_method__", arguments);
+                        return new QinIrBuiltinCallExpression(
+                                "Global",
+                                optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
+                                arguments);
                     }
                 }
                 QinIrExpression targetExpression =
@@ -3841,7 +3849,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 arguments.add(targetExpression);
                 arguments.add(propertyExpression);
                 arguments.addAll(lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup));
-                return new QinIrBuiltinCallExpression("Global", "__qin_call_method__", arguments);
+                return new QinIrBuiltinCallExpression(
+                        "Global",
+                        optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
+                        arguments);
             }
             if ("Identifier".equals(simpleName(callee))) {
                 String calleeName = extractIdentifierName(callee, "CallExpression.callee");
@@ -4094,6 +4105,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             Map<String, String> javaImportLookup,
             Map<String, QinIrExpression> declarationLookup) {
         com.slime.ast.Expression callee = expressionAst.callee();
+        boolean optionalCall = Boolean.TRUE.equals(invokeByName(expressionAst, "optional"));
         if (isNoOpRuntimeShimCall(expressionAst)) {
             return lowerGlobalBuiltinCallExpression(expressionAst, javaImportLookup, declarationLookup);
         }
@@ -4121,7 +4133,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                     arguments.add(new QinIrIdentifierReference(receiverName));
                     arguments.add(new QinIrStringLiteral(methodName));
                     arguments.addAll(lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup));
-                    return new QinIrBuiltinCallExpression("Global", "__qin_call_method__", arguments);
+                    return new QinIrBuiltinCallExpression(
+                            "Global",
+                            optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
+                            arguments);
                 }
                 if (!declarationLookup.containsKey(receiverName) && propertyAst instanceof Identifier propertyIdentifier) {
                     String methodName = propertyIdentifier.name();
@@ -4139,7 +4154,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                             List.of(new QinIrStringLiteral(receiverName))));
                     arguments.add(new QinIrStringLiteral(methodName));
                     arguments.addAll(runtimeArguments);
-                    return new QinIrBuiltinCallExpression("Global", "__qin_call_method__", arguments);
+                    return new QinIrBuiltinCallExpression(
+                            "Global",
+                            optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
+                            arguments);
                 }
             }
             QinIrExpression targetExpression =
@@ -4153,7 +4171,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             arguments.add(targetExpression);
             arguments.add(propertyExpression);
             arguments.addAll(lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup));
-            return new QinIrBuiltinCallExpression("Global", "__qin_call_method__", arguments);
+            return new QinIrBuiltinCallExpression(
+                    "Global",
+                    optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
+                    arguments);
         }
         if (callee instanceof Identifier identifierCallee) {
             String calleeName = identifierCallee.name();

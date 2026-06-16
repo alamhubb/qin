@@ -426,6 +426,41 @@ public final class JavaEsmGlobal {
         return callMethod(target, methodName, args);
     }
 
+    public static Object __qin_optional_call_method__(Object target, Object methodName) {
+        return optionalCallMethod(target, methodName);
+    }
+
+    public static Object __qin_optional_call_method__(Object target, Object methodName, Object arg0) {
+        return optionalCallMethod(target, methodName, arg0);
+    }
+
+    public static Object __qin_optional_call_method__(Object target, Object methodName, Object arg0, Object arg1) {
+        return optionalCallMethod(target, methodName, arg0, arg1);
+    }
+
+    public static Object __qin_optional_call_method__(
+            Object target,
+            Object methodName,
+            Object arg0,
+            Object arg1,
+            Object arg2) {
+        return optionalCallMethod(target, methodName, arg0, arg1, arg2);
+    }
+
+    public static Object __qin_optional_call_method__(
+            Object target,
+            Object methodName,
+            Object arg0,
+            Object arg1,
+            Object arg2,
+            Object arg3) {
+        return optionalCallMethod(target, methodName, arg0, arg1, arg2, arg3);
+    }
+
+    public static Object __qin_optional_call_method_array__(Object target, Object methodName, Object[] args) {
+        return optionalCallMethod(target, methodName, args);
+    }
+
     public static Object __qin_binary__(Object operator, Object left, Object right) {
         String op = String.valueOf(operator);
         Double leftNumber = asNumber(left);
@@ -2652,6 +2687,43 @@ public final class JavaEsmGlobal {
         public String toString() {
             return "class " + binaryName;
         }
+    }
+
+    private static Object optionalCallMethod(Object target, Object methodName, Object... args) {
+        target = unwrapExportSlotValue(target);
+        if (target == null || !hasCallableMember(target, methodName)) {
+            return null;
+        }
+        return callMethod(target, methodName, args);
+    }
+
+    private static boolean hasCallableMember(Object target, Object property) {
+        target = unwrapExportSlotValue(target);
+        if (target == null) {
+            return false;
+        }
+        String name = propertyKey(property);
+        if (target instanceof QinRuntimeObject runtimeObject) {
+            return runtimeObject.has(property)
+                    || tryCallObjectPrototypeMethod(target, name, new Object[0]) != BUILTIN_MISS;
+        }
+        if (target instanceof Map<?, ?> map) {
+            return JavaEsmObject.resolveStoredPropertyValue(castMap(map).get(name)) != null;
+        }
+        if (target instanceof CharSequence && JavaEsmString.supports(name)) {
+            return true;
+        }
+        if (target instanceof Number && JavaEsmNumber.supports(name)) {
+            return true;
+        }
+        if (target instanceof List<?> && JavaEsmArray.supports(name)) {
+            return true;
+        }
+        if (target instanceof JavaEsmRegExp regexp && regexp.supports(name)) {
+            return true;
+        }
+        Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
+        return findCompatibleMethod(ownerClass, name, new Object[0], target instanceof Class<?>) != null;
     }
 
     private static ThrownValue noSuchMethod(String message) {
@@ -5025,6 +5097,9 @@ public final class JavaEsmGlobal {
                                         + "; method=" + property
                                         + "; object=" + summarizeAstNode(calleeAst.get("object")));
                     }
+                    if (isOptionalCall(astNode, calleeAst) && !hasCallableMember(target, property)) {
+                        return null;
+                    }
                     try {
                         return callMethod(target, property, evaluated);
                     } catch (ThrownValue thrown) {
@@ -5112,6 +5187,13 @@ public final class JavaEsmGlobal {
 
         private boolean isMemberExpressionType(Object type) {
             return "MemberExpression".equals(type) || "OptionalMemberExpression".equals(type);
+        }
+
+        private boolean isOptionalCall(Map<String, Object> callAst, Map<String, Object> calleeAst) {
+            return Boolean.TRUE.equals(calleeAst.get("optional"))
+                    || "OptionalMemberExpression".equals(calleeAst.get("type"))
+                    || "OptionalCallExpression".equals(callAst.get("type"))
+                    || Boolean.TRUE.equals(callAst.get("optional"));
         }
 
         private boolean isSuperNode(Object node) {
