@@ -172,6 +172,7 @@ public final class QinJavaProjectJsCompiler {
             Files.writeString(outputFile, generated, StandardCharsets.UTF_8);
             outputs.add(new EsmFileOutput(sourceBinaryName, sourceFile, outputFile, generated));
         }
+        writeGeneratedEsmPackage(outputRoot, entryBinaryName, backend, bundleProgram);
         return List.copyOf(outputs);
     }
 
@@ -325,6 +326,201 @@ public final class QinJavaProjectJsCompiler {
                   }
                 }
                 """.formatted(packageName);
+    }
+
+    private void writeGeneratedEsmPackage(
+            Path outputRoot,
+            String entryBinaryName,
+            QinIrCodeBackend backend,
+            QinIrProgram program) throws IOException {
+        String packageName = generatedPackageName(entryBinaryName, backend);
+        String extension = backend.fileExtension();
+        Files.createDirectories(outputRoot);
+        Files.writeString(
+                outputRoot.resolve("package.json"),
+                generatedPackageJson(packageName, entryBinaryName, extension, backend.options().emitTypeAnnotations()),
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                outputRoot.resolve("qin.config.js"),
+                generatedQinConfig(packageName, entryBinaryName, extension),
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                outputRoot.resolve("index." + extension),
+                generatedPackageIndex(entryBinaryName, extension, program, backend.options().emitTypeAnnotations()),
+                StandardCharsets.UTF_8);
+    }
+
+    private String generatedPackageName(String entryBinaryName, QinIrCodeBackend backend) {
+        String suffix = backend.options().emitTypeAnnotations() ? "-ts" : "-js";
+        return "@qin/generated-" + kebabCase(simpleClassName(entryBinaryName)) + suffix;
+    }
+
+    private String kebabCase(String value) {
+        String spaced = value.replaceAll("([a-z0-9])([A-Z])", "$1-$2");
+        return spaced.replace('_', '-').replace('$', '-').toLowerCase();
+    }
+
+    private String generatedPackageJson(
+            String packageName,
+            String entryBinaryName,
+            String extension,
+            boolean typeScript) {
+        String indexFile = "./index." + extension;
+        String entryFile = "./" + entryBinaryName.replace('.', '/') + "." + extension;
+        String type = typeScript ? "typescript" : "javascript";
+        return """
+                {
+                  "name": "%s",
+                  "version": "0.0.0-qin-generated",
+                  "private": true,
+                  "type": "module",
+                  "description": "Qin generated %s ESM package for %s.",
+                  "main": "%s",
+                  "module": "%s",
+                  "exports": {
+                    ".": {
+                      "types": "%s",
+                      "import": "%s",
+                      "default": "%s"
+                    },
+                    "./entry": {
+                      "types": "%s",
+                      "import": "%s",
+                      "default": "%s"
+                    },
+                    "./package.json": "./package.json"
+                  },
+                  "qin": {
+                    "generated": true,
+                    "entryBinaryName": "%s",
+                    "format": "%s-esm-files"
+                  },
+                  "dependencies": {
+                    "%s": "file:./node_modules/%s"
+                  },
+                  "files": [
+                    "com",
+                    "index.%s",
+                    "qin.config.js",
+                    "node_modules/%s"
+                  ]
+                }
+                """.formatted(
+                escapeJs(packageName),
+                type,
+                escapeJs(entryBinaryName),
+                indexFile,
+                indexFile,
+                indexFile,
+                indexFile,
+                indexFile,
+                entryFile,
+                entryFile,
+                entryFile,
+                escapeJs(entryBinaryName),
+                typeScript ? "ts" : "js",
+                QinJsBackend.javaSdkJsPackageName(),
+                QinJsBackend.javaSdkJsPackageName(),
+                extension,
+                QinJsBackend.javaSdkJsPackageName());
+    }
+
+    private String generatedQinConfig(String packageName, String entryBinaryName, String extension) {
+        return """
+                export default {
+                  name: "%s",
+                  type: "library",
+                  entry: "./index.%s",
+                  generated: {
+                    source: "java",
+                    entryBinaryName: "%s"
+                  }
+                }
+                """.formatted(escapeJs(packageName), extension, escapeJs(entryBinaryName));
+    }
+
+    private String generatedPackageIndex(
+            String entryBinaryName,
+            String extension,
+            QinIrProgram program,
+            boolean typeScript) {
+        Set<String> binaryNames = new LinkedHashSet<>();
+        for (var classDeclaration : program.classDeclarations()) {
+            binaryNames.add(classDeclaration.binaryName());
+        }
+
+        StringBuilder js = new StringBuilder();
+        js.append("// Generated package entry by Qin. Source Java entry: ")
+                .append(entryBinaryName)
+                .append('\n');
+        appendExportAlias(js, entryBinaryName, simpleClassName(entryBinaryName), extension, binaryNames);
+        appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser", "SlimeJavascriptParser", extension, binaryNames);
+        appendExportAlias(js, "com.slime.parser.consumer.SlimeTokenConsumer", "SlimeTokenConsumer", extension, binaryNames);
+        appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser$SourceType", "SlimeJavascriptParserSourceType", extension, binaryNames);
+
+        if (binaryNames.contains("com.slime.token.JavaScriptTokens")) {
+            String tokenIdentifier = QinJsBackend.generatedJavaClassIdentifier("com.slime.token.JavaScriptTokens");
+            js.append("import { ")
+                    .append(tokenIdentifier)
+                    .append(" } from \"./com/slime/token/JavaScriptTokens.")
+                    .append(extension)
+                    .append("\";\n");
+            js.append("export { ")
+                    .append(tokenIdentifier)
+                    .append(" as JavaScriptTokens };\n");
+            js.append("const __qinSlimeTokens = ")
+                    .append(tokenIdentifier)
+                    .append(".getTokens();\n");
+            if (typeScript) {
+                js.append("const __qinSlimeTokenEntries: any[] = [];\n");
+                js.append("for (const token of __qinSlimeTokens as any) {\n");
+            } else {
+                js.append("const __qinSlimeTokenEntries = [];\n");
+                js.append("for (const token of __qinSlimeTokens) {\n");
+            }
+            js.append("  __qinSlimeTokenEntries.push([token.getName(), token]);\n");
+            js.append("}\n");
+            js.append("export const SlimeTokensObj = Object.fromEntries(__qinSlimeTokenEntries);\n");
+            js.append("export const slimeTokens = Object.values(SlimeTokensObj);\n");
+            if (typeScript) {
+                js.append("export const ReservedWords = new Set(slimeTokens.filter((token: any) => token.isKeyword?.()).map((token: any) => token.getValue?.()).filter(Boolean));\n");
+            } else {
+                js.append("export const ReservedWords = new Set(slimeTokens.filter((token) => token.isKeyword?.()).map((token) => token.getValue?.()).filter(Boolean));\n");
+            }
+        }
+        if (typeScript) {
+            js.append("export type ExpressionParams = any;\n");
+            js.append("export type StatementParams = any;\n");
+            js.append("export type DeclarationParams = any;\n");
+            js.append("export type TemplateLiteralParams = any;\n");
+        }
+        return js.toString();
+    }
+
+    private void appendExportAlias(
+            StringBuilder js,
+            String binaryName,
+            String alias,
+            String extension,
+            Set<String> binaryNames) {
+        if (!binaryNames.contains(binaryName)) {
+            return;
+        }
+        String identifier = QinJsBackend.generatedJavaClassIdentifier(binaryName);
+        String sourceBinaryName = binaryName.contains("$")
+                ? binaryName.substring(0, binaryName.indexOf('$'))
+                : binaryName;
+        js.append("export { ")
+                .append(identifier)
+                .append(", ")
+                .append(identifier)
+                .append(" as ")
+                .append(alias)
+                .append(" } from \"./")
+                .append(sourceBinaryName.replace('.', '/'))
+                .append(".")
+                .append(extension)
+                .append("\";\n");
     }
 
     private Map<String, JavaAstProgram> parseSourceFiles(Map<String, Path> sourceFiles) {
