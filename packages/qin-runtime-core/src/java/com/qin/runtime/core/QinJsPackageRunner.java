@@ -225,6 +225,50 @@ final class QinJsPackageRunner {
         if (patched.contains("function tryRequire(id, from)")) {
             patched = patched.replace(
                     """
+                    function createDescriptor(filename, source, { root, isProduction, sourceMap, compiler, template, features }, hmr = false) {
+                    \tconst { descriptor, errors } = compiler.parse(source, {
+                    """,
+                    """
+                    function createDescriptor(filename, source, { root, isProduction, sourceMap, compiler, template, features }, hmr = false) {
+                    \tconst { descriptor, errors } = __qinVueCompilerSfc.parse(source, {
+                    """);
+            patched = patched.replace(
+                    """
+                    function transformMain(code, filename, options, pluginContext, ssr, customElement) {
+                    \tconst { devServer, isProduction, devToolsEnabled } = options;
+                    """,
+                    """
+                    function transformMain(code, filename, options, pluginContext, ssr, customElement) {
+                    \toptions.compiler = __qinVueCompilerSfc;
+                    \tconst { devServer, isProduction, devToolsEnabled } = options;
+                    """);
+            patched = patched.replace(
+                    """
+                    function resolveCompiler(root) {
+                    \tconst compiler = tryResolveCompiler(root) || tryResolveCompiler();
+                    \tif (!compiler) throw new Error("Failed to resolve vue/compiler-sfc.\\n@vitejs/plugin-vue requires vue (>=3.2.25) to be present in the dependency tree.");
+                    \treturn compiler;
+                    }
+                    """,
+                    """
+                    function resolveCompiler(root) {
+                    \treturn __qinVueCompilerSfc;
+                    }
+                    """);
+            patched = patched.replace(
+                    """
+                    function tryResolveCompiler(root) {
+                    \tconst vueMeta = tryRequire("vue/package.json", root);
+                    \tif (vueMeta && vueMeta.version.split(".")[0] >= 3) return tryRequire("vue/compiler-sfc", root);
+                    }
+                    """,
+                    """
+                    function tryResolveCompiler(root) {
+                    \treturn __qinVueCompilerSfc;
+                    }
+                    """);
+            patched = patched.replace(
+                    """
                     function tryRequire(id, from) {
                     \ttry {
                     \t\treturn from ? _require(_require.resolve(id, { paths: [from] })) : _require(id);
@@ -233,7 +277,7 @@ final class QinJsPackageRunner {
                     """,
                     """
                     function tryRequire(id, from) {
-                    \tif (id === "vue/package.json") return { version: __qinVueCompilerSfc.version || "3.5.0" };
+                    \tif (id === "vue/package.json") return { version: "3.5.0" };
                     \tif (id === "vue/compiler-sfc") return __qinVueCompilerSfc;
                     }
                     """);
@@ -277,9 +321,17 @@ final class QinJsPackageRunner {
     }
 
     private String replaceQinVueCompilerSfcHost(String source) {
-        String startMarker = "const __qinVueCompilerSfc = (() => {";
-        String endMarker = System.lineSeparator() + "//#region package.json";
+        String startMarker = "function __qinCreateVueCompilerSfc() {";
         int start = source.indexOf(startMarker);
+        if (start < 0) {
+            startMarker = "const __qinVueCompilerSfc = (function() {";
+            start = source.indexOf(startMarker);
+        }
+        if (start < 0) {
+            startMarker = "const __qinVueCompilerSfc = (() => {";
+            start = source.indexOf(startMarker);
+        }
+        String endMarker = System.lineSeparator() + "//#region package.json";
         int end = source.indexOf(endMarker, start);
         if (start < 0 || end < 0) {
             return source;
@@ -326,7 +378,7 @@ final class QinJsPackageRunner {
 
     private String qinVueCompilerSfcHostSource() {
         return """
-                const __qinVueCompilerSfc = (() => {
+                function __qinCreateVueCompilerSfc() {
                   const nl = String.fromCharCode(10);
                   function loc(source, start, end) {
                     return { start: position(source, start), end: position(source, end), source: source.slice(start, end) };
@@ -423,23 +475,55 @@ final class QinJsPackageRunner {
                   }
                   function namesFromSetup(code) {
                     const names = [];
+                    let depth = 0;
                     for (const line of String(code || "").split("\\n")) {
                       const text = line.trim();
-                      for (const kind of ["const ", "let ", "var "]) {
-                        if (!text.startsWith(kind)) continue;
-                        let rest = text.slice(kind.length).trim();
-                        let name = "";
-                        for (let i = 0; i < rest.length; i++) {
-                          const ch = rest[i];
-                          const isStart = (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch === "_" || ch === "$";
-                          const isPart = isStart || (i > 0 && ch >= "0" && ch <= "9");
-                          if (!isPart) break;
-                          name += ch;
+                      if (depth === 0) {
+                        for (const kind of ["const ", "let ", "var "]) {
+                          if (!text.startsWith(kind)) continue;
+                          let rest = text.slice(kind.length).trim();
+                          let name = "";
+                          for (let i = 0; i < rest.length; i++) {
+                            const ch = rest[i];
+                            const isStart = (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") || ch === "_" || ch === "$";
+                            const isPart = isStart || (i > 0 && ch >= "0" && ch <= "9");
+                            if (!isPart) break;
+                            name += ch;
+                          }
+                          if (name) names.push(name);
                         }
-                        if (name) names.push(name);
                       }
+                      depth += braceDeltaOutsideStrings(text);
+                      if (depth < 0) depth = 0;
                     }
                     return names;
+                  }
+                  function braceDeltaOutsideStrings(text) {
+                    let delta = 0;
+                    let quote = "";
+                    let escaped = false;
+                    for (let i = 0; i < text.length; i++) {
+                      const ch = text[i];
+                      if (escaped) {
+                        escaped = false;
+                        continue;
+                      }
+                      if (ch === "\\\\") {
+                        escaped = true;
+                        continue;
+                      }
+                      if (quote) {
+                        if (ch === quote) quote = "";
+                        continue;
+                      }
+                      if (ch === '"' || ch === "'" || ch === "`") {
+                        quote = ch;
+                        continue;
+                      }
+                      if (ch === "{") delta++;
+                      else if (ch === "}") delta--;
+                    }
+                    return delta;
                   }
                   function importLinesFromCode(code) {
                     let importsText = "";
@@ -451,6 +535,7 @@ final class QinJsPackageRunner {
                   function appendDefaultNamesFromImportText(importsText, names) {
                     for (const line of String(importsText || "").split("\\n")) {
                       appendDefaultNameFromImport(line, names);
+                      appendNamedNamesFromImport(line, names);
                     }
                   }
                   function appendDefaultNameFromImport(line, names) {
@@ -463,6 +548,21 @@ final class QinJsPackageRunner {
                     if (comma >= 0) clause = clause.slice(0, comma).trim();
                     if (!clause || clause.startsWith("{") || clause.startsWith("*")) return;
                     names.push(clause);
+                  }
+                  function appendNamedNamesFromImport(line, names) {
+                    const text = String(line || "").trim();
+                    if (!text.startsWith("import ")) return;
+                    const open = text.indexOf("{");
+                    const close = text.indexOf("}", open + 1);
+                    if (open < 0 || close < 0) return;
+                    const body = text.slice(open + 1, close);
+                    for (const rawPart of body.split(",")) {
+                      let part = rawPart.trim();
+                      if (!part) continue;
+                      const asIndex = part.indexOf(" as ");
+                      if (asIndex >= 0) part = part.slice(asIndex + 4).trim();
+                      if (/^[A-Za-z_$][\\w$]*$/.test(part)) names.push(part);
+                    }
                   }
                   function compileScript(descriptor, options = {}) {
                     if (descriptor.scriptSetup) {
@@ -483,6 +583,7 @@ final class QinJsPackageRunner {
                           if (!importsText) {
                             importsText += line + nl;
                             appendDefaultNameFromImport(line, names);
+                            appendNamedNamesFromImport(line, names);
                           }
                         } else {
                           bodyText += line + nl;
@@ -701,7 +802,8 @@ final class QinJsPackageRunner {
                     compileStyleAsync,
                     rewriteDefault
                   };
-                })();
+                }
+                const __qinVueCompilerSfc = __qinCreateVueCompilerSfc();
                 """;
     }
 
@@ -873,11 +975,19 @@ final class QinJsPackageRunner {
                   "version": "0.0.0-qin-plugin-host-shim",
                   "type": "module",
                   "exports": {
-                    ".": "./index.js"
+                    ".": "./index.js",
+                    "./compiler-sfc": "./compiler-sfc/index.js",
+                    "./compiler-sfc/*": "./compiler-sfc/*"
                   },
                   "main": "./index.js",
                   "module": "./index.js"
                 }
+                """, StandardCharsets.UTF_8);
+        Path compilerSfcDir = shimDir.resolve("compiler-sfc").normalize();
+        Files.createDirectories(compilerSfcDir);
+        Files.writeString(compilerSfcDir.resolve("index.js"), """
+                export * from "@vue/compiler-sfc";
+                export { default } from "@vue/compiler-sfc";
                 """, StandardCharsets.UTF_8);
         Files.writeString(shimDir.resolve("index.js"), """
                 export function shallowRef(value) {

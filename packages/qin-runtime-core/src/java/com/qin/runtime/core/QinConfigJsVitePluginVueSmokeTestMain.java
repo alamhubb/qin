@@ -53,8 +53,14 @@ public final class QinConfigJsVitePluginVueSmokeTestMain {
                 """, StandardCharsets.UTF_8);
         Files.writeString(src.resolve("Comp.vue"), """
                 <template>
-                  <section>Qin Config JS Works</section>
+                  <section>{{ label }}</section>
                 </template>
+
+                <script setup>
+                import { computed } from 'vue'
+
+                const label = computed(() => 'Qin Config JS Works')
+                </script>
                 """, StandardCharsets.UTF_8);
 
         if (Files.exists(root.resolve("package.json")) || Files.exists(root.resolve("vite.config.js"))) {
