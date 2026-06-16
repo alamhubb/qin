@@ -172,7 +172,30 @@ public final class QinEsmSpecifierResolver {
 
     private Path resolveBareModule(Path importerFile, String specifier) {
         BareSpecifier bare = parseBareSpecifier(specifier);
-        Path search = importerFile.getParent();
+        Path resolved = resolveBareModuleFromSearch(importerFile.getParent(), bare, specifier, false);
+        if (resolved != null) {
+            return resolved;
+        }
+        try {
+            Path realImporter = importerFile.toRealPath();
+            if (!realImporter.equals(importerFile.toAbsolutePath().normalize())) {
+                resolved = resolveBareModuleFromSearch(realImporter.getParent(), bare, specifier, false);
+                if (resolved != null) {
+                    return resolved;
+                }
+            }
+        } catch (Exception ignored) {
+            // Fall through to the stable error below.
+        }
+        throw new IllegalArgumentException(
+                "Cannot resolve bare module import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
+    }
+
+    private Path resolveBareModuleFromSearch(
+            Path search,
+            BareSpecifier bare,
+            String specifier,
+            boolean optional) {
         while (search != null) {
             Path qinNpmHostPackageDir = search.resolve(".qin")
                     .resolve("runtime")
@@ -184,6 +207,9 @@ public final class QinEsmSpecifierResolver {
                 if (resolved != null) {
                     return resolved;
                 }
+                if (optional) {
+                    return null;
+                }
                 throw new IllegalArgumentException(
                         "Cannot resolve bare module import \"" + specifier + "\" from Qin npm host package "
                                 + qinNpmHostPackageDir.toAbsolutePath());
@@ -194,14 +220,16 @@ public final class QinEsmSpecifierResolver {
                 if (resolved != null) {
                     return resolved;
                 }
+                if (optional) {
+                    return null;
+                }
                 throw new IllegalArgumentException(
                         "Cannot resolve bare module import \"" + specifier + "\" from package "
                                 + packageDir.toAbsolutePath());
             }
             search = search.getParent();
         }
-        throw new IllegalArgumentException(
-                "Cannot resolve bare module import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
+        return null;
     }
 
     private Path resolvePackageImport(Path importerFile, String specifier) {
