@@ -20,6 +20,17 @@ import java.util.stream.*;
  * Compiles and runs Java programs
  */
 public class JavaRunner {
+    private static final List<String> DEFAULT_RUN_JVM_ARGS = List.of(
+            "-Xms16m",
+            "-Xmx768m",
+            "-Xshare:off",
+            "-XX:+UseSerialGC",
+            "-XX:-UseJVMCICompiler",
+            "-XX:TieredStopAtLevel=1",
+            "-Dfile.encoding=UTF-8",
+            "-Dstdout.encoding=UTF-8",
+            "-Dstderr.encoding=UTF-8");
+
     private final QinConfig config;
     private final String classpath;
     private final String cwd;
@@ -390,6 +401,7 @@ public class JavaRunner {
 
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("java");
+        appendDefaultRunJvmArgs(javaArgs, jvmArgs);
         if (jvmArgs != null && !jvmArgs.isEmpty()) {
             javaArgs.addAll(jvmArgs);
         }
@@ -416,6 +428,45 @@ public class JavaRunner {
         if (exitCode != 0) {
             throw new RuntimeException("Java program exited with code " + exitCode);
         }
+    }
+
+    private void appendDefaultRunJvmArgs(List<String> javaArgs, List<String> explicitJvmArgs) {
+        for (String defaultArg : DEFAULT_RUN_JVM_ARGS) {
+            if (!isOverridden(defaultArg, explicitJvmArgs)) {
+                javaArgs.add(defaultArg);
+            }
+        }
+    }
+
+    private boolean isOverridden(String defaultArg, List<String> explicitJvmArgs) {
+        if (explicitJvmArgs == null || explicitJvmArgs.isEmpty()) {
+            return false;
+        }
+        String key = defaultArg;
+        int equals = defaultArg.indexOf('=');
+        if (equals > 0) {
+            key = defaultArg.substring(0, equals + 1);
+        } else if (defaultArg.startsWith("-XX:+") || defaultArg.startsWith("-XX:-")) {
+            key = "-XX:" + defaultArg.substring(5);
+        } else if (defaultArg.startsWith("-Xms")) {
+            key = "-Xms";
+        } else if (defaultArg.startsWith("-Xmx")) {
+            key = "-Xmx";
+        } else if (defaultArg.startsWith("-Xss")) {
+            key = "-Xss";
+        }
+        for (String arg : explicitJvmArgs) {
+            if (arg.equals(defaultArg) || arg.startsWith(key)) {
+                return true;
+            }
+            if (defaultArg.startsWith("-XX:+") && arg.equals("-XX:-" + defaultArg.substring(5))) {
+                return true;
+            }
+            if (defaultArg.startsWith("-XX:-") && arg.equals("-XX:+" + defaultArg.substring(5))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

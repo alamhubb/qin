@@ -67,6 +67,22 @@ public final class QinConfigJsParserSmokeTestMain {
         require("qin dev --port 19097".equals(config.scripts().get("dev")), "scripts.dev");
         require(config.packages().size() == 1 && "packages/*".equals(config.packages().getFirst()), "packages");
 
+        Path frontendOnlyRoot = Files.createTempDirectory("qin-config-js-frontend-only-");
+        Files.createDirectories(frontendOnlyRoot.resolve("src"));
+        Files.writeString(frontendOnlyRoot.resolve("src").resolve("main.ts"), "console.log('frontend only')\n", StandardCharsets.UTF_8);
+        Files.writeString(frontendOnlyRoot.resolve("qin.config.js"), """
+                export default {
+                  name: 'com.qin.demo:frontend-only',
+                  frontend: {
+                    srcDir: 'src',
+                    entry: 'src/main.ts'
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        QinConfig frontendOnlyConfig = new ConfigLoader(frontendOnlyRoot.toString()).load();
+        require(frontendOnlyConfig.entry() == null, "frontend-only top-level entry");
+        require("src/main.ts".equals(frontendOnlyConfig.frontend().entry()), "frontend-only frontend.entry");
+
         System.out.println("QinConfigJsParserSmokeTestMain OK");
     }
 

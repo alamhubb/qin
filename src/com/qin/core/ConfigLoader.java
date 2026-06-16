@@ -247,7 +247,8 @@ public class ConfigLoader {
             return config;
         }
 
-        String entry = config.entry() != null ? config.entry() : findEntry();
+        boolean frontendOnly = config.frontend() != null && config.backend() == null;
+        String entry = config.entry() != null ? config.entry() : (frontendOnly ? null : findEntry());
         OutputConfig output = config.output() != null ? config.output() : new OutputConfig();
         JavaConfig java = config.java() != null ? config.java() : new JavaConfig(QinConstants.DEFAULT_JAVA_VERSION);
 

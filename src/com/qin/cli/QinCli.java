@@ -208,6 +208,8 @@ public class QinCli {
         String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
                 ? compileOutputDir
                 : compileOutputDir + separator + dependencyClasspath;
+        runtimeClasspath = appendBundledQinRuntimeClasspath(runtimeClasspath);
+        runtimeClasspath = appendBundledQinRuntimeClasspath(runtimeClasspath);
 
         if (!isClassAvailableOnClasspath(runtimeClasspath, conformanceMainClass)) {
             System.out.println(yellow("-> Conformance class missing in cached classpath, forcing dependency resync..."));
@@ -555,6 +557,7 @@ public class QinCli {
         String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
                 ? compileOutputDir
                 : compileOutputDir + separator + dependencyClasspath;
+        runtimeClasspath = appendBundledQinRuntimeClasspath(runtimeClasspath);
 
         int port = resolveQinRuntimePort(config, args);
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
@@ -679,6 +682,124 @@ public class QinCli {
 
         System.out.println(yellow("-> qin-plugin-jite not found in classpath, fallback to built-in dev runtime."));
         return QinConstants.FULLSTACK_MAIN_CLASS;
+    }
+
+    private static String appendBundledQinRuntimeClasspath(String runtimeClasspath) {
+        Path qinHome = locateQinHomeFromCli();
+        if (qinHome == null) {
+            return runtimeClasspath;
+        }
+
+        List<String> entries = new ArrayList<>();
+        addClasspathEntry(entries, qinHome.resolve("build").resolve("classes"));
+        addCachedClasspathEntries(entries, qinHome.resolve(QinConstants.CLASSPATH_CACHE_PATH));
+        Path packagesDir = qinHome.resolve("packages");
+        if (Files.isDirectory(packagesDir)) {
+            try (var paths = Files.list(packagesDir)) {
+                paths
+                        .map(path -> path.resolve("build").resolve("classes"))
+                        .filter(Files::isDirectory)
+                        .forEach(path -> addClasspathEntry(entries, path));
+            } catch (IOException ignored) {
+                // Fall back to whatever classpath the target project already resolved.
+            }
+        }
+        addSiblingWorkspaceRuntimeClasspath(entries, qinHome.getParent());
+
+        if (entries.isEmpty()) {
+            return runtimeClasspath;
+        }
+        String separator = QinConstants.getClasspathSeparator();
+        if (runtimeClasspath == null || runtimeClasspath.isBlank()) {
+            return String.join(separator, entries);
+        }
+        return runtimeClasspath + separator + String.join(separator, entries);
+    }
+
+    private static Path locateQinHomeFromCli() {
+        try {
+            Path codeSource = Paths.get(QinCli.class.getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation()
+                            .toURI())
+                    .toAbsolutePath()
+                    .normalize();
+            Path current = Files.isRegularFile(codeSource) ? codeSource.getParent() : codeSource;
+            while (current != null) {
+                if (Files.isDirectory(current.resolve("src").resolve("com").resolve("qin"))
+                        && Files.isDirectory(current.resolve("packages").resolve("qin-runtime-core"))) {
+                    return current;
+                }
+                current = current.getParent();
+            }
+        } catch (Exception ignored) {
+            // Use the resolved project classpath only if the CLI home cannot be inferred.
+        }
+        return null;
+    }
+
+    private static void addClasspathEntry(List<String> entries, Path path) {
+        if (Files.isDirectory(path)) {
+            String value = path.toAbsolutePath().normalize().toString();
+            if (!entries.contains(value)) {
+                entries.add(value);
+            }
+        }
+    }
+
+    private static void addCachedClasspathEntries(List<String> entries, Path classpathCache) {
+        if (!Files.isRegularFile(classpathCache)) {
+            return;
+        }
+        try {
+            String cachedClasspath = CacheValidator.getCachedClasspath(classpathCache.getParent().getParent().toString());
+            if (cachedClasspath == null || cachedClasspath.isBlank()) {
+                return;
+            }
+            String separator = QinConstants.getClasspathSeparator();
+            for (String rawEntry : cachedClasspath.split(Pattern.quote(separator))) {
+                if (rawEntry == null || rawEntry.isBlank()) {
+                    continue;
+                }
+                Path path = Paths.get(rawEntry.trim());
+                if (Files.exists(path)) {
+                    String value = path.toAbsolutePath().normalize().toString();
+                    if (!entries.contains(value)) {
+                        entries.add(value);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // A stale cache should not prevent the target project from resolving its own classpath.
+        }
+    }
+
+    private static void addSiblingWorkspaceRuntimeClasspath(List<String> entries, Path workspaceRoot) {
+        if (workspaceRoot == null || !Files.isDirectory(workspaceRoot)) {
+            return;
+        }
+        List<Path> packageRoots = List.of(
+                workspaceRoot.resolve("slime").resolve("java-slime"),
+                workspaceRoot.resolve("subhuti"),
+                workspaceRoot.resolve("cssts"),
+                workspaceRoot.resolve("ovsjs"));
+        for (Path packageRoot : packageRoots) {
+            if (!Files.isDirectory(packageRoot)) {
+                continue;
+            }
+            try (var paths = Files.walk(packageRoot, 4)) {
+                paths
+                        .filter(path -> path.getFileName() != null
+                                && "classes".equals(path.getFileName().toString()))
+                        .filter(path -> path.getParent() != null
+                                && path.getParent().getFileName() != null
+                                && "build".equals(path.getParent().getFileName().toString()))
+                        .filter(Files::isDirectory)
+                        .forEach(path -> addClasspathEntry(entries, path));
+            } catch (IOException ignored) {
+                // Missing sibling projects are fine; qin.config.js dependencies may still resolve them remotely.
+            }
+        }
     }
 
     private static boolean isClassAvailableOnClasspath(String classpath, String className) {
@@ -1096,6 +1217,21 @@ public class QinCli {
             String[] qinArgs = hasPositionalTarget
                     ? Arrays.copyOfRange(args, 1, args.length)
                     : args;
+            if (configuredFrontendOnly && !hasArg(qinArgs, "--frontend-file")) {
+                Path frontendRoot = resolveQinFrontendRoot(config, Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize());
+                Path frontendEntry = resolveQinFrontendEntry(
+                        config,
+                        Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize(),
+                        frontendRoot);
+                if (frontendEntry != null) {
+                    List<String> adjusted = new ArrayList<>(Arrays.asList(qinArgs));
+                    adjusted.add("--frontend-file");
+                    adjusted.add(Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize()
+                            .relativize(frontendEntry)
+                            .toString());
+                    qinArgs = adjusted.toArray(String[]::new);
+                }
+            }
             runQinRuntime(config, qinDevEntry, true, qinArgs);
             return;
         }
