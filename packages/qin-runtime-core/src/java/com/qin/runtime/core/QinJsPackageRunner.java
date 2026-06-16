@@ -116,6 +116,13 @@ final class QinJsPackageRunner {
 
     private void materializeWorkspaceDependencies(Path projectRoot, Path wrapperDir, String wrapperSource) throws IOException {
         Set<String> bareSpecifiers = extractBareModuleSpecifiers(wrapperSource);
+        collectLocalImportBareModuleSpecifiers(
+                projectRoot.toAbsolutePath().normalize(),
+                wrapperDir.toAbsolutePath().normalize(),
+                wrapperSource,
+                bareSpecifiers,
+                new LinkedHashSet<>(),
+                0);
         if (bareSpecifiers.isEmpty()) {
             return;
         }
@@ -282,8 +289,27 @@ final class QinJsPackageRunner {
                     }
                     """);
         }
+        patched = patchVitePluginVueSourcemapParseName(patched);
         patched = patchVitePluginVueSyncTransforms(patched);
         Files.writeString(entry, patched, StandardCharsets.UTF_8);
+    }
+
+    private String patchVitePluginVueSourcemapParseName(String source) {
+        return source
+                .replace(
+                        """
+                        function parse(map) {
+                        \treturn typeof map === "string" ? JSON.parse(map) : map;
+                        }
+                        var TraceMap = class {
+                        """,
+                        """
+                        function qinSourcemapParse(map) {
+                        \treturn typeof map === "string" ? JSON.parse(map) : map;
+                        }
+                        var TraceMap = class {
+                        """)
+                .replace("const parsed = parse(map);", "const parsed = qinSourcemapParse(map);");
     }
 
     private boolean isVitePluginPackage(String packageName) {
@@ -1099,6 +1125,73 @@ final class QinJsPackageRunner {
         collectBareSpecifiers(specifiers, code, FROM_IMPORT_PATTERN.matcher(source));
         collectBareSpecifiers(specifiers, code, SIDE_EFFECT_IMPORT_PATTERN.matcher(source));
         return specifiers;
+    }
+
+    private void collectLocalImportBareModuleSpecifiers(
+            Path projectRoot,
+            Path importerDir,
+            String source,
+            Set<String> bareSpecifiers,
+            Set<Path> visited,
+            int depth) {
+        if (source == null || source.isBlank() || depth > 2) {
+            return;
+        }
+        boolean[] code = codeMask(source);
+        collectLocalImportBareModuleSpecifiers(projectRoot, importerDir, code, FROM_IMPORT_PATTERN.matcher(source),
+                bareSpecifiers, visited, depth);
+        collectLocalImportBareModuleSpecifiers(projectRoot, importerDir, code, SIDE_EFFECT_IMPORT_PATTERN.matcher(source),
+                bareSpecifiers, visited, depth);
+    }
+
+    private void collectLocalImportBareModuleSpecifiers(
+            Path projectRoot,
+            Path importerDir,
+            boolean[] code,
+            Matcher matcher,
+            Set<String> bareSpecifiers,
+            Set<Path> visited,
+            int depth) {
+        while (matcher.find()) {
+            if (!isCodePosition(code, matcher.start())) {
+                continue;
+            }
+            String specifier = matcher.group(1);
+            Path local = resolveLocalImport(importerDir, specifier);
+            if (local == null || !local.startsWith(projectRoot) || !visited.add(local)) {
+                continue;
+            }
+            try {
+                String localSource = Files.readString(local, StandardCharsets.UTF_8);
+                bareSpecifiers.addAll(extractBareModuleSpecifiers(localSource));
+                Path parent = local.getParent();
+                if (parent != null) {
+                    collectLocalImportBareModuleSpecifiers(projectRoot, parent, localSource, bareSpecifiers, visited, depth + 1);
+                }
+            } catch (IOException ignored) {
+                // A missing optional config import should not block package materialization.
+            }
+        }
+    }
+
+    private Path resolveLocalImport(Path importerDir, String specifier) {
+        if (specifier == null
+                || specifier.isBlank()
+                || (!specifier.startsWith("./") && !specifier.startsWith("../"))) {
+            return null;
+        }
+        Path candidate = importerDir.resolve(specifier).normalize();
+        if (Files.isRegularFile(candidate)) {
+            return candidate;
+        }
+        for (String extension : List.of(".js", ".mjs", ".cjs")) {
+            Path withExtension = importerDir.resolve(specifier + extension).normalize();
+            if (Files.isRegularFile(withExtension)) {
+                return withExtension;
+            }
+        }
+        Path index = candidate.resolve("index.js").normalize();
+        return Files.isRegularFile(index) ? index : null;
     }
 
     private void collectBareSpecifiers(Set<String> specifiers, boolean[] code, Matcher matcher) {

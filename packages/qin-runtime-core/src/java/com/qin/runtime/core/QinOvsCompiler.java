@@ -27,7 +27,7 @@ public final class QinOvsCompiler {
         try {
             Object result = packageRunner.runModuleSource(
                     projectRoot,
-                    buildWrapperSource(source),
+                    buildWrapperSource(projectRoot, source),
                     "vite_plugin_ovs_transform");
             QinOvsCompileResult decoded = decodeResult(result);
             synchronized (cache) {
@@ -39,11 +39,28 @@ public final class QinOvsCompiler {
         }
     }
 
-    private String buildWrapperSource(String source) {
+    private String buildWrapperSource(Path projectRoot, String source) {
         String sourceLiteral = QinJsPackageRunner.renderJsLiteral(source);
         return """
                 import vitePluginOvs from "vite-plugin-ovs";
-                const __qin_plugins__ = vitePluginOvs({ cssts: { classPrefix: "cmp-" } }).flat();
+                %s
+                function __qinFlattenPlugins(value) {
+                  const out = [];
+                  for (const item of Array.isArray(value) ? value : []) {
+                    if (!item) continue;
+                    if (Array.isArray(item)) out.push(...__qinFlattenPlugins(item));
+                    else out.push(item);
+                  }
+                  return out;
+                }
+                function __qinPluginName(plugin) {
+                  return plugin && typeof plugin.name === "string" ? plugin.name : "";
+                }
+                const __qin_user_config__ = qinUserViteConfig || {};
+                const __qin_plugins__ = __qinFlattenPlugins(__qin_user_config__.plugins);
+                if (!__qin_plugins__.find(plugin => __qinPluginName(plugin) === "vite-plugin-ovs")) {
+                  __qin_plugins__.push(...__qinFlattenPlugins(vitePluginOvs({ cssts: { classPrefix: "cmp-" } })));
+                }
                 const __qin_plugin__ = __qin_plugins__.find(plugin => plugin && plugin.name === "vite-plugin-ovs");
                 if (!__qin_plugin__ || !__qin_plugin__.transform) {
                   throw new Error("vite-plugin-ovs transform hook not found");
@@ -102,7 +119,38 @@ public final class QinOvsCompiler {
                   atomModule: __qin_atom__,
                   pluginName: __qin_plugin__.name
                 });
-                """.formatted(sourceLiteral);
+                """.formatted(viteConfigImportSource(projectRoot), sourceLiteral);
+    }
+
+    private String viteConfigImportSource(Path projectRoot) {
+        Path config = findQinConfig(projectRoot);
+        if (!java.nio.file.Files.isRegularFile(config)) {
+            return "const qinUserViteConfig = null;";
+        }
+        try {
+            String text = java.nio.file.Files.readString(config);
+            if (!text.contains("export default")) {
+                return "const qinUserViteConfig = null;";
+            }
+        } catch (Exception ignored) {
+            return "const qinUserViteConfig = null;";
+        }
+        Path wrapperDir = projectRoot.toAbsolutePath().normalize()
+                .resolve(".qin")
+                .resolve("runtime")
+                .resolve("npm-host")
+                .normalize();
+        String relative = wrapperDir.relativize(config.toAbsolutePath().normalize()).toString().replace('\\', '/');
+        if (!relative.startsWith(".")) {
+            relative = "./" + relative;
+        }
+        return "import qinUserViteConfig from "
+                + QinJsPackageRunner.renderJsLiteral(relative)
+                + ";";
+    }
+
+    private Path findQinConfig(Path projectRoot) {
+        return projectRoot.toAbsolutePath().normalize().resolve("qin.config.js");
     }
 
     @SuppressWarnings("unchecked")
