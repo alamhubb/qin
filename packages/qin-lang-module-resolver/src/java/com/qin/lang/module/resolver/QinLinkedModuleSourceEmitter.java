@@ -103,6 +103,7 @@ public final class QinLinkedModuleSourceEmitter {
     public QinLinkedModuleSource emit(QinModuleGraph graph) {
         StringBuilder output = new StringBuilder();
         List<Path> moduleFiles = new ArrayList<>();
+        List<QinLinkedModuleSection> moduleSections = new ArrayList<>();
         List<QinImportDescriptor> allImports = new ArrayList<>();
         Map<Path, ModuleParsed> parsedModules = new LinkedHashMap<>();
         Map<Path, Integer> moduleIndex = new LinkedHashMap<>();
@@ -113,7 +114,10 @@ public final class QinLinkedModuleSourceEmitter {
             parsedModules.put(module.file(), parseModule(module));
         }
 
-        List<String> instantiateLines = emitExportSlotDeclarations(parsedModules, moduleIndex);
+        List<String> exportSlots = collectExportSlots(parsedModules, moduleIndex);
+        List<String> instantiateLines = emitExportSlotDeclarations(exportSlots);
+        String moduleInitializerSource = joinLines(emitExportSlotGlobalInitializers(exportSlots)).trim();
+        List<String> moduleClassSlotAccesses = emitExportSlotGlobalAccesses(exportSlots);
         if (!instantiateLines.isEmpty()) {
             output.append("// instantiate exports");
             appendLines(output, instantiateLines);
@@ -141,6 +145,16 @@ public final class QinLinkedModuleSourceEmitter {
                     parsedModules,
                     moduleIndex);
             String rewritten = joinModuleSection(importAliases, rewrittenBody, exportAliases).trim();
+            String classSource = joinModuleClassSection(
+                    moduleClassSlotAccesses,
+                    importAliases,
+                    rewrittenBody,
+                    exportAliases).trim();
+            moduleSections.add(new QinLinkedModuleSection(
+                    module.file(),
+                    moduleIndex.get(module.file()),
+                    rewritten,
+                    classSource));
             if (!rewritten.isEmpty()) {
                 if (output.length() > 0) {
                     output.append(System.lineSeparator()).append(System.lineSeparator());
@@ -155,7 +169,9 @@ public final class QinLinkedModuleSourceEmitter {
         return new QinLinkedModuleSource(
                 graph.entryFile(),
                 output.toString(),
+                moduleInitializerSource,
                 moduleFiles,
+                moduleSections,
                 allImports,
                 graph);
     }
@@ -1208,7 +1224,7 @@ public final class QinLinkedModuleSourceEmitter {
         return idx >= 0 ? idx : source.length();
     }
 
-    private List<String> emitExportSlotDeclarations(
+    private List<String> collectExportSlots(
             Map<Path, ModuleParsed> parsedModules,
             Map<Path, Integer> moduleIndex) {
         LinkedHashSet<String> slots = new LinkedHashSet<>();
@@ -1250,9 +1266,31 @@ public final class QinLinkedModuleSourceEmitter {
             }
         }
 
+        return new ArrayList<>(slots);
+    }
+
+    private List<String> emitExportSlotDeclarations(List<String> slots) {
         List<String> lines = new ArrayList<>();
         for (String slot : slots) {
             lines.add("const " + slot + " = " + exportSlotCreateCall() + ";");
+        }
+        return lines;
+    }
+
+    private List<String> emitExportSlotGlobalInitializers(List<String> slots) {
+        List<String> lines = new ArrayList<>();
+        for (String slot : slots) {
+            lines.add("const " + slot + " = " + exportSlotCreateCall() + ";");
+            lines.add("const " + exportGlobalBindTempSymbol(slot)
+                    + " = __qin_bind_global__(" + stringLiteral(slot) + ", " + slot + ");");
+        }
+        return lines;
+    }
+
+    private List<String> emitExportSlotGlobalAccesses(List<String> slots) {
+        List<String> lines = new ArrayList<>();
+        for (String slot : slots) {
+            lines.add("const " + slot + " = __qin_global__(" + stringLiteral(slot) + ");");
         }
         return lines;
     }
@@ -1275,6 +1313,10 @@ public final class QinLinkedModuleSourceEmitter {
 
     private String exportInitTempSymbol(String slotExpr) {
         return "__qesm_init_" + slotExpr.replaceAll("[^A-Za-z0-9_$]", "_");
+    }
+
+    private String exportGlobalBindTempSymbol(String slotExpr) {
+        return "__qesm_bind_" + slotExpr.replaceAll("[^A-Za-z0-9_$]", "_");
     }
 
     private List<String> emitImportAliases(
@@ -1693,6 +1735,29 @@ public final class QinLinkedModuleSourceEmitter {
             }
             appendLines(out, exportAliases);
         }
+        return out.toString();
+    }
+
+    private String joinModuleClassSection(
+            List<String> slotAccesses,
+            List<String> importAliases,
+            String body,
+            List<String> exportAliases) {
+        StringBuilder out = new StringBuilder();
+        appendLines(out, slotAccesses);
+        String moduleBody = joinModuleSection(importAliases, body, exportAliases);
+        if (!moduleBody.isBlank()) {
+            if (out.length() > 0) {
+                out.append(System.lineSeparator());
+            }
+            out.append(moduleBody);
+        }
+        return out.toString();
+    }
+
+    private String joinLines(List<String> lines) {
+        StringBuilder out = new StringBuilder();
+        appendLines(out, lines);
         return out.toString();
     }
 
