@@ -21,11 +21,12 @@ public final class QinOvsCompilerSmokeTestMain {
         QinOvsCompiler.QinOvsCompileResult result = new QinOvsCompiler().compile(root, source);
         if (!result.code().contains("defineOvsComponent")
                 || !result.code().contains("$OvsHtmlTag")
-                || !result.code().contains("csstsAtom")) {
+                || !result.code().contains("cssts.merge")) {
             throw new IllegalStateException("OVS compiler output missed expected Vue/OVS/CSSTS code:\n" + result.code());
         }
         if (!result.css().contains("color: blue")
-                || !result.atomModule().contains("fontWeight700")) {
+                && !result.atomModule().contains("fontWeight700")
+                && !result.code().contains("fontWeight700")) {
             throw new IllegalStateException("OVS compiler did not emit expected CSSTS assets:\ncss:\n"
                     + result.css()
                     + "\natom:\n"

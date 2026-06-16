@@ -22,7 +22,7 @@ public final class QinFullstackMvpFrontendSmokeTestMain {
         if (ovsModule == null
                 || !ovsModule.contains("__qinMountOvs")
                 || !ovsModule.contains("__qinMountVue")
-                || !ovsModule.contains("__qinOvsDefault.__qinMountVue")
+                || !ovsModule.contains("__qinVueComponent.__qinMountVue")
                 || !ovsModule.contains("qin-ovs=runtime")
                 || !ovsModule.contains("/@qin-mod/__virtual/cssts.css.js")) {
             throw new IllegalStateException("Fullstack MVP OVS module missing runtime wiring:\n" + ovsModule);

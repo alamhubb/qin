@@ -47,7 +47,7 @@ final class QinVueScriptBlockCompiler {
             try {
                 QinCsstsCompiler.QinCsstsCompileResult result = new QinCsstsCompiler().compile(projectRoot, source);
                 return new CompiledBlock(
-                        rewriteImports(result.code(), importRewriter),
+                        rewriteImports(result.rawCode(), importRewriter),
                         result.css(),
                         rewriteImports(result.atomModule(), importRewriter));
             } catch (Exception error) {

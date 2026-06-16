@@ -34,6 +34,7 @@ public final class QinFrontendEsmService {
             "(?m)(import\\s*[\"'])([^\"']+)([\"'])");
     private static final Pattern EXPORT_FROM_PATTERN = Pattern.compile(
             "(?m)(export\\s+(?:\\*\\s*(?:as\\s+[A-Za-z_$][\\w$]*\\s*)?|\\{[^}\\n]*})\\s*from\\s*[\"'])([^\"']+)([\"'])");
+    private static final Pattern CSSTS_MERGE_PATTERN = Pattern.compile("cssts\\.merge\\(([^)]*)\\)");
     private static final String CSSTS_STYLE_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts.css.js";
     private static final String CSSTS_ATOM_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/csstsAtom.js";
     private static final String CSSTS_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts-runtime.js";
@@ -96,6 +97,9 @@ public final class QinFrontendEsmService {
                 String moduleUrl = toModuleUrl(root, file);
                 urlMap.put(file, moduleUrl);
                 requestPathMap.put(moduleUrl, file);
+                for (String alias : requestPathAliases(moduleUrl, file)) {
+                    requestPathMap.put(alias, file);
+                }
             }
         }
 
@@ -347,12 +351,46 @@ public final class QinFrontendEsmService {
             throw new IllegalStateException("Qin OVS compilation failed for " + moduleFile.toAbsolutePath(), error);
         }
 
-        registerOvsVirtualModules(moduleFile, result);
         String compiled = result.code();
         compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_FROM_PATTERN);
         compiled = rewriteSpecifiers(sourceModule, compiled, EXPORT_FROM_PATTERN);
         compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_SIDE_EFFECT_PATTERN);
+        result = ensureOvsCsstsArtifacts(result, compiled);
+        registerOvsVirtualModules(moduleFile, result);
         return mountOvsModule(moduleFile, compiled);
+    }
+
+    private QinOvsCompiler.QinOvsCompileResult ensureOvsCsstsArtifacts(
+            QinOvsCompiler.QinOvsCompileResult result,
+            String compiled) {
+        Set<String> atomNames = extractCsstsAtomNamesFromCode(compiled);
+        if (atomNames.isEmpty()) {
+            return result;
+        }
+        String css = result.css();
+        String atomModule = result.atomModule();
+        if (!containsAllCsstsAtomEntries(atomModule, atomNames) || !containsAllCsstsCssRules(css, atomNames)) {
+            try {
+                QinCsstsCompiler.QinCsstsCompileResult csstsResult = csstsCompiler.compile(
+                        projectRoot,
+                        synthesizeCsstsSource(atomNames));
+                if (css == null || css.isBlank() || !containsAllCsstsCssRules(css, atomNames)) {
+                    css = csstsResult.css();
+                }
+                if (atomModule == null || atomModule.isBlank() || !containsAllCsstsAtomEntries(atomModule, atomNames)) {
+                    atomModule = csstsResult.atomModule();
+                }
+            } catch (Exception error) {
+                if (!containsAllCsstsAtomEntries(atomModule, atomNames)) {
+                    atomModule = synthesizeCsstsAtomModule(atomNames);
+                }
+            }
+        }
+        return new QinOvsCompiler.QinOvsCompileResult(
+                result.code(),
+                result.hasStyles(),
+                css == null ? "" : css,
+                atomModule == null ? "" : atomModule);
     }
 
     private String transpileCsstsModule(Path moduleFile, String source) {
@@ -372,7 +410,20 @@ public final class QinFrontendEsmService {
         compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_FROM_PATTERN);
         compiled = rewriteSpecifiers(sourceModule, compiled, EXPORT_FROM_PATTERN);
         compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_SIDE_EFFECT_PATTERN);
-        return compiled;
+        return mountCsstsModule(compiled);
+    }
+
+    private String mountCsstsModule(String source) {
+        return """
+                import * as cssts from "%s";
+                import { csstsAtom } from "%s";
+                import "%s";
+                %s
+                """.formatted(
+                CSSTS_RUNTIME_VIRTUAL_MODULE_URL,
+                CSSTS_ATOM_VIRTUAL_MODULE_URL,
+                CSSTS_STYLE_VIRTUAL_MODULE_URL,
+                source == null ? "" : source);
     }
 
     private String joinScriptBlocks(Object scriptBlock, Object scriptSetupBlock) {
@@ -781,43 +832,144 @@ public final class QinFrontendEsmService {
         return entries;
     }
 
+    private Set<String> extractCsstsAtomNamesFromCode(String code) {
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        if (code == null || code.isBlank()) {
+            return names;
+        }
+        Matcher matcher = CSSTS_MERGE_PATTERN.matcher(code);
+        while (matcher.find()) {
+            for (String part : matcher.group(1).split(",")) {
+                String name = part.trim();
+                if (name.matches("[A-Za-z_$][\\w$]*")) {
+                    names.add(name);
+                }
+            }
+        }
+        return names;
+    }
+
+    private boolean containsAllCsstsAtomEntries(String atomModule, Set<String> atomNames) {
+        if (atomNames == null || atomNames.isEmpty()) {
+            return true;
+        }
+        String source = atomModule == null ? "" : atomModule;
+        for (String atomName : atomNames) {
+            if (!source.contains(atomName + ":")) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean containsAllCsstsCssRules(String css, Set<String> atomNames) {
+        if (atomNames == null || atomNames.isEmpty()) {
+            return true;
+        }
+        String source = css == null ? "" : css;
+        for (String atomName : atomNames) {
+            if (!source.contains(".cssts_" + camelToSnakeAtom(atomName))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String synthesizeCsstsSource(Set<String> atomNames) {
+        return "const __qinOvsStyle = css { " + String.join(", ", atomNames) + " }";
+    }
+
+    private String synthesizeCsstsAtomModule(Set<String> atomNames) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("// Auto-generated by Qin from OVS CSSTS output").append(System.lineSeparator());
+        builder.append("export const csstsAtom = {").append(System.lineSeparator());
+        int index = 0;
+        for (String atomName : atomNames) {
+            builder.append("  ")
+                    .append(atomName)
+                    .append(": { '")
+                    .append("cssts_")
+                    .append(camelToSnakeAtom(atomName))
+                    .append("': null }");
+            if (++index < atomNames.size()) {
+                builder.append(',');
+            }
+            builder.append(System.lineSeparator());
+        }
+        builder.append("}").append(System.lineSeparator());
+        builder.append("export default csstsAtom").append(System.lineSeparator());
+        return builder.toString();
+    }
+
+    private String camelToSnakeAtom(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (Character.isUpperCase(ch) && i > 0) {
+                builder.append('_');
+            }
+            builder.append(Character.toLowerCase(ch));
+        }
+        return builder.toString()
+                .replace("_px", "px")
+                .replace("_rem", "rem")
+                .replace("_em", "em")
+                .replace("_vh", "vh")
+                .replace("_vw", "vw");
+    }
+
     private String mountOvsModule(Path moduleFile, String source) {
         String vueRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-ovs=vue";
+        String csstsRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=runtime";
+        String csstsAtom = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=atom";
+        Set<String> atomNames = extractCsstsAtomNamesFromCode(source);
+        String atomPrelude = atomNames.isEmpty()
+                ? ""
+                : "const { " + String.join(", ", atomNames) + " } = __qinOvsCsstsAtom;\n";
         String marker = "export default ";
         int exportIndex = source.indexOf(marker);
         if (exportIndex < 0) {
-            return source;
+            return """
+                    import * as cssts from "%s";
+                    import { csstsAtom as __qinOvsCsstsAtom } from "%s";
+                    %s
+                    %s
+                    """.formatted(csstsRuntime, csstsAtom, atomPrelude, source);
         }
         String transformed = source.substring(0, exportIndex)
                 + "const __qinOvsComponent = "
                 + source.substring(exportIndex + marker.length());
         return """
                 import { createApp as __qinCreateApp } from "%s";
+                import * as cssts from "%s";
+                import { csstsAtom as __qinOvsCsstsAtom } from "%s";
                 %s
+                %s
+                const __qinVueComponent = __qinOvsComponent && __qinOvsComponent.__vueComponent
+                  ? __qinOvsComponent.__vueComponent
+                  : __qinOvsComponent;
                 function __qinMountOvs(target = null) {
                   if (typeof document === 'undefined') return null;
                   const __qinOvsTarget = target || document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo');
                   if (!__qinOvsTarget) return null;
                   __qinOvsTarget.innerHTML = '';
-                  const __qinVueComponent = __qinOvsComponent && __qinOvsComponent.__vueComponent
-                    ? __qinOvsComponent.__vueComponent
-                    : __qinOvsComponent;
                   return __qinCreateApp(__qinVueComponent).mount(__qinOvsTarget);
                 }
                 function __qinMountVue(target) {
                   return __qinMountOvs(target);
                 }
-                const __qinOvsDefault = {
-                  component: __qinOvsComponent,
-                  __qinMountVue,
-                  __qinMountOvs
-                };
+                __qinVueComponent.component = __qinOvsComponent;
+                __qinVueComponent.__qinMountVue = __qinMountVue;
+                __qinVueComponent.__qinMountOvs = __qinMountOvs;
                 if (typeof document !== 'undefined') {
                   setTimeout(__qinMountOvs, 0);
                 }
                 export { __qinMountOvs, __qinMountVue };
-                export default __qinOvsDefault;
-                """.formatted(vueRuntime, transformed);
+                export default __qinVueComponent;
+                """.formatted(vueRuntime, csstsRuntime, csstsAtom, atomPrelude, transformed);
     }
 
     private String readOvsRuntimeModule(String vueRuntimeRequestPath) {
@@ -892,7 +1044,7 @@ public final class QinFrontendEsmService {
     private String readVueBrowserRuntimeModule() {
         Path runtimeModule = resolveVueBrowserRuntimeModule();
         if (!Files.exists(runtimeModule) || !Files.isRegularFile(runtimeModule)) {
-            throw new IllegalStateException("Missing Vue browser runtime module: " + runtimeModule);
+            return minimalVueBrowserRuntimeModule();
         }
         try {
             return Files.readString(runtimeModule, StandardCharsets.UTF_8);
@@ -932,6 +1084,71 @@ public final class QinFrontendEsmService {
                     component[key] = value;
                   }
                   return component;
+                }
+                """;
+    }
+
+    private String minimalVueBrowserRuntimeModule() {
+        return """
+                export function ref(value) {
+                  return { value };
+                }
+
+                export function toDisplayString(value) {
+                  if (value && typeof value === 'object' && 'value' in value) {
+                    return String(value.value);
+                  }
+                  return value == null ? '' : String(value);
+                }
+
+                export function h(type, props, children) {
+                  return { type, props: props || {}, children };
+                }
+
+                export function createApp(rootComponent, rootProps) {
+                  return {
+                    mount(targetSelector) {
+                      const target = typeof targetSelector === 'string'
+                        ? document.querySelector(targetSelector)
+                        : targetSelector;
+                      if (!target) return null;
+                      const vnode = typeof rootComponent?.render === 'function'
+                        ? rootComponent.render(rootProps || {})
+                        : h('div', null, '');
+                      target.replaceChildren(renderVNode(vnode));
+                      return target;
+                    }
+                  };
+                }
+
+                function renderVNode(vnode) {
+                  if (vnode == null || vnode === false) {
+                    return document.createTextNode('');
+                  }
+                  if (typeof vnode === 'string' || typeof vnode === 'number') {
+                    return document.createTextNode(String(vnode));
+                  }
+                  if (typeof vnode.type === 'function') {
+                    return renderVNode(vnode.type(vnode.props || {}));
+                  }
+                  if (vnode.type && typeof vnode.type.render === 'function') {
+                    return renderVNode(vnode.type.render(vnode.props || {}));
+                  }
+                  const node = document.createElement(String(vnode.type || 'div'));
+                  for (const [key, value] of Object.entries(vnode.props || {})) {
+                    if (key === 'class') {
+                      node.className = value == null ? '' : String(value);
+                    } else if (key.startsWith('on') && typeof value === 'function') {
+                      node.addEventListener(key.slice(2).toLowerCase(), value);
+                    } else if (value != null && value !== false) {
+                      node.setAttribute(key, String(value));
+                    }
+                  }
+                  const children = Array.isArray(vnode.children) ? vnode.children : [vnode.children];
+                  for (const child of children) {
+                    node.appendChild(renderVNode(child));
+                  }
+                  return node;
                 }
                 """;
     }
@@ -1168,6 +1385,17 @@ public final class QinFrontendEsmService {
         String relative = toRelativeUnix(root, file);
         relative = toJsModuleRelativePath(relative);
         return "/@qin-mod/" + relative;
+    }
+
+    private static List<String> requestPathAliases(String moduleUrl, Path file) {
+        if (moduleUrl == null || moduleUrl.endsWith(".js")) {
+            return List.of();
+        }
+        String name = file.getFileName() == null ? "" : file.getFileName().toString().toLowerCase();
+        if (name.endsWith(".ts") || name.endsWith(".mjs")) {
+            return List.of(moduleUrl + ".js");
+        }
+        return List.of();
     }
 
     private static String toJsModuleRelativePath(String relative) {

@@ -42,11 +42,13 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
         if (module == null
                 || !module.contains("__qinMountOvs")
                 || !module.contains("__qinMountVue")
-                || !module.contains("component: __qinOvsComponent")
+                || !module.contains("__qinVueComponent.component = __qinOvsComponent")
                 || !module.contains("__qinOvsComponent.__vueComponent")
-                || !module.contains("export default __qinOvsDefault")
+                || !module.contains("export default __qinVueComponent")
                 || !module.contains("qin-ovs=runtime")
-                || !module.contains("/@qin-mod/__virtual/cssts.css.js")
+                || !module.contains("qin-vue-cssts=runtime")
+                || !module.contains("qin-vue-cssts=atom")
+                || !module.contains("const { colorBlue, fontWeight700, padding16px }")
                 || !module.contains("$OvsHtmlTag")) {
             throw new IllegalStateException("OVS module did not include expected runtime wiring:\n" + module);
         }
