@@ -67,7 +67,7 @@ public class ConfigLoader {
                 stringField(source, "version", "1.0.0"),
                 stringField(source, "description", null),
                 null,
-                null,
+                integerField(source, "port"),
                 false,
                 null,
                 null,
@@ -92,6 +92,14 @@ public class ConfigLoader {
     private int intField(Map<String, Object> source, String key, int fallback) {
         Object value = source.get(key);
         return value instanceof Number number ? number.intValue() : fallback;
+    }
+
+    private Integer integerField(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return null;
     }
 
     private Map<String, String> stringMapField(Map<String, Object> source, String key) {
