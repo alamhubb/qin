@@ -1034,7 +1034,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 throw qjsError("QJS2019", "Only normal object property is supported in declaration subset");
             }
             String key = extractPropertyKey(property.key());
-            QinIrExpression value = lowerDeclarationExpression(property.value(), javaImportLookup, classContext, locals);
+            QinIrExpression value = lowerDeclarationExpression(propertyValue(property), javaImportLookup, classContext, locals);
             validateDeclarationObjectPropertyValue(value);
             irProperties.add(new QinIrObjectProperty(key, value));
         }
@@ -1585,7 +1585,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                                 + propertyNode.getClass().getSimpleName());
             }
             String key = extractPropertyKey(property.key());
-            QinIrExpression value = lowerObjectPropertyValue(property.value());
+            QinIrExpression value = lowerObjectPropertyValue(propertyValue(property));
             irProperties.add(new QinIrObjectProperty(key, value));
         }
         return new QinIrObjectLiteral(irProperties);
@@ -2096,7 +2096,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 return null;
             }
             String key = extractPropertyKey(property.key());
-            QinIrExpression value = lowerFunctionReturnExpression(property.value(), permissive);
+            QinIrExpression value = lowerFunctionReturnExpression(propertyValue(property), permissive);
             if (value == null) {
                 if (permissive) {
                     value = new QinIrNullLiteral();
@@ -4288,11 +4288,11 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             }
             QinIrExpression value = property.method()
                     ? lowerRequiredFunctionRuntimeDefinition(
-                            property.value(),
+                            propertyValue(property),
                             property.computed() ? "ObjectMethod:[computed]" : "ObjectMethod:" + extractPropertyKey(property.key()),
                             javaImportLookup,
                             declarationLookup)
-                    : lowerRuntimeExpression(property.value(), javaImportLookup, declarationLookup);
+                    : lowerRuntimeExpression(propertyValue(property), javaImportLookup, declarationLookup);
             validateRuntimeObjectPropertyValue(value);
             if (property.computed()) {
                 flushRuntimeObjectLiteralSegment(segments, currentProperties);
@@ -4326,6 +4326,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             return;
         }
         throw qjsError("QJS2002", "Unsupported runtime object property value expression");
+    }
+
+    private AstNode propertyValue(Property property) {
+        return property.value();
     }
 
     private void flushRuntimeObjectLiteralSegment(
