@@ -9,7 +9,7 @@ public final class QinJdkInteropPolicy {
     private final Set<String> allowedModulePrefixes;
 
     public QinJdkInteropPolicy() {
-        this(Set.of("java.lang", "java.util", "java.nio.file"));
+        this(Set.of("java.lang", "java.util", "java.nio.file", "com.slime.parser"));
     }
 
     public QinJdkInteropPolicy(Set<String> allowedModulePrefixes) {
