@@ -1,6 +1,8 @@
 package com.qin.runtime.core;
 
 import com.qin.lang.backend.js.QinJsBackend;
+import com.qin.lang.backend.js.QinIrCodeBackend;
+import com.qin.lang.backend.js.QinTsBackend;
 import com.qin.lang.frontend.adapter.QinJavaAstIrLowerer;
 import com.qin.lang.ir.QinIrProgram;
 import com.slime.java.ast.JavaAstArrayAccessExpression;
@@ -62,6 +64,21 @@ public final class QinJavaProjectJsCompiler {
             List<Path> sourceRoots,
             String entryBinaryName,
             Path outputFile) throws IOException {
+        return compileSuperclassClosure(sourceRoots, entryBinaryName, outputFile, new QinJsBackend());
+    }
+
+    public String compileSuperclassClosureTs(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            Path outputFile) throws IOException {
+        return compileSuperclassClosure(sourceRoots, entryBinaryName, outputFile, new QinTsBackend());
+    }
+
+    private String compileSuperclassClosure(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            Path outputFile,
+            QinIrCodeBackend backend) throws IOException {
         Map<String, Path> sourceFiles = sourceDependencyFiles(sourceRoots, entryBinaryName);
         Map<String, JavaAstProgram> parsedPrograms = parseSourceFiles(sourceFiles);
 
@@ -71,8 +88,8 @@ public final class QinJavaProjectJsCompiler {
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Could not lower Java source bundle for " + entryBinaryName, e);
         }
-        String generated = new QinJsBackend().compileProgram(bundleProgram)
-                + projectExports(bundleProgram);
+        String generated = backend.compileProgram(bundleProgram)
+                + projectExports(bundleProgram, backend.options().emitTypeAnnotations());
         Files.createDirectories(outputFile.getParent());
         Files.writeString(outputFile, generated, StandardCharsets.UTF_8);
         return generated;
@@ -82,6 +99,21 @@ public final class QinJavaProjectJsCompiler {
             List<Path> sourceRoots,
             String entryBinaryName,
             Path outputRoot) throws IOException {
+        return compileSuperclassClosureEsmFiles(sourceRoots, entryBinaryName, outputRoot, new QinJsBackend());
+    }
+
+    public List<EsmFileOutput> compileSuperclassClosureEsmTsFiles(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            Path outputRoot) throws IOException {
+        return compileSuperclassClosureEsmFiles(sourceRoots, entryBinaryName, outputRoot, new QinTsBackend());
+    }
+
+    private List<EsmFileOutput> compileSuperclassClosureEsmFiles(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            Path outputRoot,
+            QinIrCodeBackend backend) throws IOException {
         Map<String, Path> sourceFiles = sourceDependencyFiles(sourceRoots, entryBinaryName);
         Map<String, JavaAstProgram> parsedPrograms = parseSourceFiles(sourceFiles);
         QinIrProgram bundleProgram;
@@ -95,7 +127,7 @@ public final class QinJavaProjectJsCompiler {
         Map<String, Set<String>> programClassBinaryNames = new LinkedHashMap<>();
         for (Map.Entry<String, Path> sourceEntry : sourceFiles.entrySet()) {
             String sourceBinaryName = sourceEntry.getKey();
-            Path outputFile = outputFileForSource(sourceRoots, sourceEntry.getValue(), outputRoot);
+            Path outputFile = outputFileForSource(sourceRoots, sourceEntry.getValue(), outputRoot, backend.fileExtension());
             outputFilesByBinaryName.put(sourceBinaryName, outputFile);
             programClassBinaryNames.put(
                     sourceBinaryName,
@@ -131,7 +163,7 @@ public final class QinJavaProjectJsCompiler {
                     dependencyBinaryNames,
                     outputFilesByBinaryName,
                     programClassBinaryNames)
-                    + new QinJsBackend().compileProgramWithExternalJavaSdk(
+                    + backend.compileProgramWithExternalJavaSdk(
                             fileProgram,
                             externallyBoundClassBinaryNames,
                             bundleProgram.classDeclarations())
@@ -380,15 +412,20 @@ public final class QinJavaProjectJsCompiler {
         sorted.add(classDeclaration);
     }
 
-    private String projectExports(QinIrProgram program) {
+    private String projectExports(QinIrProgram program, boolean typeScript) {
         if (program.classDeclarations().isEmpty()) {
             return "";
         }
         StringBuilder js = new StringBuilder();
         js.append("\nif (typeof globalThis !== 'undefined') {\n");
-        js.append("  globalThis.__qinJavaProjectExports = globalThis.__qinJavaProjectExports || {};\n");
+        if (typeScript) {
+            js.append("  const __qinGlobal = globalThis as any;\n");
+            js.append("  __qinGlobal.__qinJavaProjectExports = __qinGlobal.__qinJavaProjectExports || {};\n");
+        } else {
+            js.append("  globalThis.__qinJavaProjectExports = globalThis.__qinJavaProjectExports || {};\n");
+        }
         for (var classDeclaration : program.classDeclarations()) {
-            js.append("  globalThis.__qinJavaProjectExports[\"")
+            js.append(typeScript ? "  __qinGlobal.__qinJavaProjectExports[\"" : "  globalThis.__qinJavaProjectExports[\"")
                     .append(escapeJs(classDeclaration.binaryName()))
                     .append("\"] = ")
                     .append(QinJsBackend.generatedJavaClassIdentifier(classDeclaration.binaryName()))
@@ -536,13 +573,19 @@ public final class QinJavaProjectJsCompiler {
     }
 
     private Path outputFileForSource(List<Path> sourceRoots, Path sourceFile, Path outputRoot) {
+        return outputFileForSource(sourceRoots, sourceFile, outputRoot, "js");
+    }
+
+    private Path outputFileForSource(List<Path> sourceRoots, Path sourceFile, Path outputRoot, String extension) {
         Path normalizedSourceFile = sourceFile.toAbsolutePath().normalize();
         for (Path sourceRoot : sourceRoots) {
             Path normalizedSourceRoot = sourceRoot.toAbsolutePath().normalize();
             if (normalizedSourceFile.startsWith(normalizedSourceRoot)) {
                 Path relative = normalizedSourceRoot.relativize(normalizedSourceFile);
                 String relativeText = relative.toString();
-                relativeText = relativeText.substring(0, relativeText.length() - ".java".length()) + ".js";
+                relativeText = relativeText.substring(0, relativeText.length() - ".java".length())
+                        + "."
+                        + extension;
                 return outputRoot.resolve(relativeText).normalize();
             }
         }
@@ -598,6 +641,9 @@ public final class QinJavaProjectJsCompiler {
             Path sourceFile,
             Path outputFile,
             String js) {
+        public String code() {
+            return js;
+        }
     }
 
     private record JavaSdkSource(
