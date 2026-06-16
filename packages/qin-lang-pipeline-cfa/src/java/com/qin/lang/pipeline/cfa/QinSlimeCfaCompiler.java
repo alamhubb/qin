@@ -1,10 +1,14 @@
 package com.qin.lang.pipeline.cfa;
 
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.module.resolver.QinLinkedModuleSection;
+import com.qin.lang.module.resolver.QinLinkedModuleSource;
 import com.qin.lang.pipeline.cfa.ir.QinCfaProgram;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -69,6 +73,83 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
                 loweredProgram,
                 cfaProgram,
                 astText,
+                classBytes);
+    }
+
+    public QinCfaModuleClassCompileResult compileModuleClasses(QinCfaCompileRequest request) throws Exception {
+        Objects.requireNonNull(request, "request cannot be null");
+        if (!request.emitClassBytes()) {
+            throw new IllegalArgumentException("compileModuleClasses requires emitClassBytes=true");
+        }
+        long startNanos = System.nanoTime();
+
+        Path sourceFile = requireFile(request.sourceFile());
+        Path projectRoot = request.projectRoot().toAbsolutePath().normalize();
+
+        logPhase("module-class semantic start", startNanos, sourceFile.toString());
+        QinCfaSemanticStageResult semanticStageResult = semanticStage.execute(sourceFile, projectRoot);
+        QinLinkedModuleSource linkedSource = semanticStageResult.linkedSource();
+        logPhase("module-class semantic done", startNanos, "modules=" + linkedSource.moduleSections().size());
+
+        QinCfaModuleClassFile initializerClass = null;
+        if (!linkedSource.moduleInitializerSource().isBlank()) {
+            initializerClass = compileModuleClassSource(
+                    semanticStageResult,
+                    sourceFile,
+                    -1,
+                    request.className() + "$QinModuleInitializer",
+                    linkedSource.moduleInitializerSource());
+            logPhase("module-class initializer done", startNanos, initializerClass.className());
+        }
+
+        List<QinCfaModuleClassFile> moduleClasses = new ArrayList<>();
+        for (QinLinkedModuleSection section : linkedSource.moduleSections()) {
+            String className = request.className() + "$QinModule" + section.index();
+            QinCfaModuleClassFile moduleClass = compileModuleClassSource(
+                    semanticStageResult,
+                    section.file(),
+                    section.index(),
+                    className,
+                    section.classSource());
+            moduleClasses.add(moduleClass);
+            logPhase("module-class emit done", startNanos, className);
+        }
+
+        return new QinCfaModuleClassCompileResult(
+                projectRoot,
+                sourceFile,
+                linkedSource,
+                semanticStageResult.semanticModel(),
+                initializerClass,
+                moduleClasses);
+    }
+
+    private QinCfaModuleClassFile compileModuleClassSource(
+            QinCfaSemanticStageResult originalResult,
+            Path sourceFile,
+            int moduleIndex,
+            String className,
+            String source) {
+        QinLinkedModuleSource originalLinkedSource = originalResult.linkedSource();
+        QinLinkedModuleSource classLinkedSource = new QinLinkedModuleSource(
+                originalLinkedSource.entryFile(),
+                source == null ? "" : source,
+                "",
+                originalLinkedSource.modules(),
+                List.of(),
+                originalLinkedSource.imports(),
+                originalLinkedSource.moduleGraph());
+        QinCfaIrStageResult irStageResult = irStage.execute(
+                new QinCfaSemanticStageResult(classLinkedSource, originalResult.semanticModel()));
+        byte[] classBytes = emitStage.emit(irStageResult, className);
+        return new QinCfaModuleClassFile(
+                sourceFile,
+                moduleIndex,
+                className,
+                irStageResult.irBeforeLowering(),
+                irStageResult.loweredProgram(),
+                irStageResult.cfaProgram(),
+                irStageResult.astText(),
                 classBytes);
     }
 

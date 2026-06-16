@@ -1,13 +1,10 @@
 package com.qin.runtime.core;
 
 import com.qin.lang.backend.jvm.QinJvmDeclarationClassEmitter;
-import com.qin.lang.module.resolver.QinLinkedModuleSection;
-import com.qin.lang.module.resolver.QinLinkedModuleSource;
-import com.qin.lang.module.resolver.QinLinkedModuleSourceEmitter;
-import com.qin.lang.module.resolver.QinModuleGraph;
-import com.qin.lang.module.resolver.QinModuleGraphBuilder;
 import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
 import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
+import com.qin.lang.pipeline.cfa.QinCfaModuleClassCompileResult;
+import com.qin.lang.pipeline.cfa.QinCfaModuleClassFile;
 import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
 import com.qin.lang.runtime.JavaEsmGlobal;
 
@@ -27,46 +24,29 @@ public final class QinModuleClassSourceSmokeTestMain {
         Files.writeString(dep, "export const value = 41;\n");
         Files.writeString(entry, "import { value } from './dep.ts';\nconst result = value + 1;\n");
 
-        QinModuleGraph graph = new QinModuleGraphBuilder().build(entry);
-        QinLinkedModuleSource linkedSource = new QinLinkedModuleSourceEmitter().emit(graph);
-        if (linkedSource.moduleSections().size() != 2) {
-            throw new IllegalStateException("Expected two module sections");
+        QinCfaModuleClassCompileResult compiled = new QinSlimeCfaCompiler().compileModuleClasses(
+                QinCfaCompileRequest.forJvm(entry, root, "probe.QinModuleClassSourceSmoke"));
+        if (compiled.moduleClasses().size() != 2) {
+            throw new IllegalStateException("Expected two module classes");
         }
-
-        QinSlimeCfaCompiler compiler = new QinSlimeCfaCompiler();
-        Path classSourceRoot = Files.createDirectory(root.resolve("class-sources"));
-        Path initializerSource = classSourceRoot.resolve("__qesm_initializer.ts");
-        Files.writeString(initializerSource, linkedSource.moduleInitializerSource());
-        QinCfaCompileResult initializer = compiler.compile(QinCfaCompileRequest.forJvm(
-                initializerSource,
-                classSourceRoot,
-                "probe.QinModuleInitializer"));
-
-        Map<String, QinCfaCompileResult> moduleResults = new LinkedHashMap<>();
-        int classIndex = 0;
-        for (QinLinkedModuleSection section : linkedSource.moduleSections()) {
-            String className = "probe.QinModule" + classIndex;
-            Path sourceFile = classSourceRoot.resolve("module" + classIndex + ".ts");
-            Files.writeString(sourceFile, section.classSource());
-            moduleResults.put(className, compiler.compile(QinCfaCompileRequest.forJvm(
-                    sourceFile,
-                    classSourceRoot,
-                    className)));
-            classIndex++;
+        if (compiled.initializerClass() == null) {
+            throw new IllegalStateException("Expected initializer class for exported value slot");
         }
 
         Loader loader = new Loader(QinModuleClassSourceSmokeTestMain.class.getClassLoader());
-        defineDeclarations(loader, initializer);
-        for (QinCfaCompileResult moduleResult : moduleResults.values()) {
+        defineDeclarations(loader, compiled.initializerClass());
+        for (QinCfaModuleClassFile moduleResult : compiled.moduleClasses()) {
             defineDeclarations(loader, moduleResult);
         }
 
-        Class<?> initializerClass = loader.define("probe.QinModuleInitializer", initializer.classBytes());
+        Class<?> initializerClass = loader.define(
+                compiled.initializerClass().className(),
+                compiled.initializerClass().classBytes());
         initializerClass.getMethod("run").invoke(null);
 
         Object result = null;
-        for (Map.Entry<String, QinCfaCompileResult> moduleResult : moduleResults.entrySet()) {
-            Class<?> moduleClass = loader.define(moduleResult.getKey(), moduleResult.getValue().classBytes());
+        for (QinCfaModuleClassFile moduleResult : compiled.moduleClasses()) {
+            Class<?> moduleClass = loader.define(moduleResult.className(), moduleResult.classBytes());
             result = moduleClass.getMethod("run").invoke(null);
         }
         if (!(result instanceof Number number) || number.doubleValue() != 42.0d) {
@@ -77,6 +57,19 @@ public final class QinModuleClassSourceSmokeTestMain {
     }
 
     private static void defineDeclarations(Loader loader, QinCfaCompileResult result) {
+        if (result.loweredProgram().classDeclarations().isEmpty()) {
+            return;
+        }
+        Map<String, byte[]> declarationBytes = new QinJvmDeclarationClassEmitter()
+                .compileAllClasses(result.loweredProgram());
+        for (Map.Entry<String, byte[]> entry : declarationBytes.entrySet()) {
+            Class<?> declarationClass = loader.define(entry.getKey(), entry.getValue());
+            JavaEsmGlobal.__qin_bind_global__(declarationClass.getSimpleName(), declarationClass);
+            JavaEsmGlobal.__qin_bind_global__(entry.getKey(), declarationClass);
+        }
+    }
+
+    private static void defineDeclarations(Loader loader, QinCfaModuleClassFile result) {
         if (result.loweredProgram().classDeclarations().isEmpty()) {
             return;
         }
