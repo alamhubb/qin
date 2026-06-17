@@ -147,6 +147,7 @@ final class QinJsPackageRunner {
                     specifier,
                     null,
                     null,
+                    projectRoot,
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
@@ -189,6 +190,7 @@ final class QinJsPackageRunner {
             String specifier,
             String versionRange,
             Path dependencyBaseDir,
+            Path projectRoot,
             Path runtimeNodeModules,
             Path workspaceRoot,
             Map<String, Path> workspacePackages,
@@ -223,7 +225,7 @@ final class QinJsPackageRunner {
                 ? filePackageDir
                 : workspacePackage
                 ? workspacePackageDir
-                : resolveInstalledPackageDir(packageName, workspaceRoot);
+                : resolveInstalledPackageDir(packageName, workspaceRoot, projectRoot, runtimeNodeModules);
         if (sourcePackageDir == null || !Files.isDirectory(sourcePackageDir)) {
             if (versionRange != null && !versionRange.isBlank()) {
                 npmDependencyMaterializer.materializePackageDependency(packageName, versionRange, runtimeNodeModules);
@@ -248,6 +250,7 @@ final class QinJsPackageRunner {
                     dependency.getKey(),
                     dependency.getValue(),
                     sourcePackageDir,
+                    projectRoot,
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
@@ -266,6 +269,7 @@ final class QinJsPackageRunner {
                     importedSpecifier,
                     null,
                     null,
+                    projectRoot,
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
@@ -1576,8 +1580,17 @@ final class QinJsPackageRunner {
         }
     }
 
-    private Path resolveInstalledPackageDir(String packageName, Path workspaceRoot) {
+    private Path resolveInstalledPackageDir(String packageName, Path workspaceRoot, Path projectRoot, Path runtimeNodeModules) {
+        if (runtimeNodeModules != null) {
+            Path runtimeCandidate = runtimeNodeModules.resolve(packageName.replace('/', java.io.File.separatorChar));
+            if (Files.isDirectory(runtimeCandidate)
+                    && Files.isRegularFile(runtimeCandidate.resolve("package.json"))
+                    && packageManifestNameMatches(runtimeCandidate, packageName)) {
+                return runtimeCandidate.toAbsolutePath().normalize();
+            }
+        }
         List<Path> searchRoots = List.of(
+                projectRoot,
                 workspaceRoot,
                 workspaceRoot.resolve("qin"),
                 Path.of("").toAbsolutePath().normalize());
