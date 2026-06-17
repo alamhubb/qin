@@ -34,11 +34,29 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                   "name": "mini-pkg",
                   "version": "0.0.0-local",
                   "type": "module",
-                  "local": "./src/index.ts"
+                  "local": "./src/index.ts",
+                  "dependencies": {
+                    "child-pkg": "file:./child-pkg"
+                  }
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(packageRoot.resolve("src").resolve("index.ts"), """
-                export const value = "override-ts-package"
+                import { childValue } from "child-pkg"
+                export const value = "override-ts-package:" + childValue
+                """, StandardCharsets.UTF_8);
+
+        Path childPackageRoot = packageRoot.resolve("child-pkg");
+        Files.createDirectories(childPackageRoot);
+        Files.writeString(childPackageRoot.resolve("package.json"), """
+                {
+                  "name": "child-pkg",
+                  "version": "0.0.0-local",
+                  "type": "module",
+                  "main": "./index.js"
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(childPackageRoot.resolve("index.js"), """
+                export const childValue = "file-dependency"
                 """, StandardCharsets.UTF_8);
 
         Path wrapperDir = root.resolve(".qin").resolve("runtime").resolve("npm-host");
@@ -64,6 +82,10 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         if (!manifest.contains("\"main\": \"./src/index.ts\"")
                 || !Files.isRegularFile(wrapperDir.resolve("node_modules").resolve("mini-pkg").resolve("src").resolve("index.ts"))) {
             throw new IllegalStateException("Package override did not materialize the local TS package: " + manifest);
+        }
+        Path materializedChildManifest = wrapperDir.resolve("node_modules").resolve("child-pkg").resolve("package.json");
+        if (!Files.isRegularFile(materializedChildManifest)) {
+            throw new IllegalStateException("Package override did not materialize file: dependency: " + materializedChildManifest);
         }
 
         System.out.println("QinJsPackageRunnerPackageOverridesSmokeTestMain OK");

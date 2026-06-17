@@ -146,6 +146,7 @@ final class QinJsPackageRunner {
             materializeDependency(
                     specifier,
                     null,
+                    null,
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
@@ -187,6 +188,7 @@ final class QinJsPackageRunner {
     private void materializeDependency(
             String specifier,
             String versionRange,
+            Path dependencyBaseDir,
             Path runtimeNodeModules,
             Path workspaceRoot,
             Map<String, Path> workspacePackages,
@@ -211,10 +213,14 @@ final class QinJsPackageRunner {
 
         Path overridePackageDir = packageOverrides.get(packageName);
         boolean overridePackage = overridePackageDir != null;
+        Path filePackageDir = overridePackage ? null : resolveFileDependencyDir(versionRange, dependencyBaseDir);
+        boolean filePackage = filePackageDir != null;
         Path workspacePackageDir = overridePackage ? null : workspacePackages.get(packageName);
         boolean workspacePackage = workspacePackageDir != null;
         Path sourcePackageDir = overridePackage
                 ? overridePackageDir
+                : filePackage
+                ? filePackageDir
                 : workspacePackage
                 ? workspacePackageDir
                 : resolveInstalledPackageDir(packageName, workspaceRoot);
@@ -233,7 +239,7 @@ final class QinJsPackageRunner {
             patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
         }
 
-        if ((workspacePackage || overridePackage) && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir)) {
+        if ((workspacePackage || overridePackage || filePackage) && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir)) {
             rewriteWorkspacePackageManifest(targetPackageDir, sourcePackageDir, packageName);
         }
 
@@ -241,6 +247,7 @@ final class QinJsPackageRunner {
             materializeDependency(
                     dependency.getKey(),
                     dependency.getValue(),
+                    sourcePackageDir,
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
@@ -258,12 +265,32 @@ final class QinJsPackageRunner {
             materializeDependency(
                     importedSpecifier,
                     null,
+                    null,
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
                     packageOverrides,
                     materialized);
         }
+    }
+
+    private Path resolveFileDependencyDir(String versionRange, Path dependencyBaseDir) {
+        if (versionRange == null || dependencyBaseDir == null || !versionRange.startsWith("file:")) {
+            return null;
+        }
+        String pathText = versionRange.substring("file:".length());
+        if (pathText.isBlank()) {
+            return null;
+        }
+        Path candidate = Path.of(pathText);
+        if (!candidate.isAbsolute()) {
+            candidate = dependencyBaseDir.resolve(pathText);
+        }
+        candidate = candidate.toAbsolutePath().normalize();
+        if (Files.isDirectory(candidate) && Files.isRegularFile(candidate.resolve("package.json"))) {
+            return candidate;
+        }
+        return null;
     }
 
     private void patchVitePluginVueForQinStaticCompilerImport(Path packageDir) throws IOException {
