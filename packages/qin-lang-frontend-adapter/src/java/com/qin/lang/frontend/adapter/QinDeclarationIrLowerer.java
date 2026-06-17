@@ -455,9 +455,12 @@ final class QinDeclarationIrLowerer {
             return;
         }
         if (pattern instanceof ObjectPattern objectPattern) {
-            for (Property property : objectPattern.properties()) {
-                if (property == null) {
+            for (AstNode propertyNode : objectPattern.properties()) {
+                if (propertyNode == null) {
                     continue;
+                }
+                if (!(propertyNode instanceof Property property)) {
+                    throw qjsError("QJS2022", "Unsupported object destructuring element: " + propertyNode.getClass().getName());
                 }
                 if (property.computed()) {
                     throw qjsError("QJS2022", "Computed object destructuring keys are not supported yet");
@@ -993,9 +996,12 @@ final class QinDeclarationIrLowerer {
             return;
         }
         if (pattern instanceof ObjectPattern objectPattern) {
-            for (Property property : objectPattern.properties()) {
-                if (property == null) {
+            for (AstNode propertyNode : objectPattern.properties()) {
+                if (propertyNode == null) {
                     continue;
+                }
+                if (!(propertyNode instanceof Property property)) {
+                    throw qjsError("QJS2022", "Unsupported object destructuring element: " + propertyNode.getClass().getName());
                 }
                 if (property.computed()) {
                     throw qjsError("QJS2022", "Computed object destructuring keys are not supported yet");
