@@ -105,6 +105,7 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
         List<QinCfaModuleClassFile> moduleClasses = new ArrayList<>();
         for (QinLinkedModuleSection section : linkedSource.moduleSections()) {
             String className = request.className() + "$QinModule" + section.index();
+            logPhase("module-class emit start", startNanos, className + " :: " + section.file());
             QinCfaModuleClassFile moduleClass = compileModuleClassSource(
                     semanticStageResult,
                     section.file(),
