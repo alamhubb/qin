@@ -1527,6 +1527,13 @@ final class QinJsPackageRunner {
 
     private boolean isScannablePackageSourceFile(Path path, boolean includeTypeScript) {
         String name = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
+        if (name.endsWith(".test.ts")
+                || name.endsWith(".test.tsx")
+                || name.endsWith(".spec.ts")
+                || name.endsWith(".spec.tsx")
+                || name.contains("-debug.")) {
+            return false;
+        }
         return name.endsWith(".js")
                 || name.endsWith(".mjs")
                 || name.endsWith(".cjs")
