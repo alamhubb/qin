@@ -42,7 +42,8 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 """, StandardCharsets.UTF_8);
         Files.writeString(packageRoot.resolve("src").resolve("index.ts"), """
                 import { childValue } from "child-pkg"
-                export const value = "override-ts-package:" + childValue
+                import { cachedValue } from "cached-pkg"
+                export const value = "override-ts-package:" + childValue + ":" + cachedValue
                 """, StandardCharsets.UTF_8);
 
         Path childPackageRoot = packageRoot.resolve("child-pkg");
@@ -61,6 +62,19 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
 
         Path wrapperDir = root.resolve(".qin").resolve("runtime").resolve("npm-host");
         Files.createDirectories(wrapperDir);
+        Path cachedPackageRoot = wrapperDir.resolve("node_modules").resolve("cached-pkg");
+        Files.createDirectories(cachedPackageRoot);
+        Files.writeString(cachedPackageRoot.resolve("package.json"), """
+                {
+                  "name": "cached-pkg",
+                  "version": "0.0.0-runtime",
+                  "type": "module",
+                  "main": "./index.js"
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(cachedPackageRoot.resolve("index.js"), """
+                export const cachedValue = "runtime-cache"
+                """, StandardCharsets.UTF_8);
         QinJsPackageRunner runner = allocateRunnerWithoutCompiler();
         Method materialize = QinJsPackageRunner.class.getDeclaredMethod(
                 "materializeWorkspaceDependencies",
@@ -86,6 +100,9 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         Path materializedChildManifest = wrapperDir.resolve("node_modules").resolve("child-pkg").resolve("package.json");
         if (!Files.isRegularFile(materializedChildManifest)) {
             throw new IllegalStateException("Package override did not materialize file: dependency: " + materializedChildManifest);
+        }
+        if (!Files.isRegularFile(cachedPackageRoot.resolve("index.js"))) {
+            throw new IllegalStateException("Runtime node_modules package was deleted while materializing: " + cachedPackageRoot);
         }
 
         System.out.println("QinJsPackageRunnerPackageOverridesSmokeTestMain OK");

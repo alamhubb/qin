@@ -234,9 +234,13 @@ final class QinJsPackageRunner {
         }
 
         Path targetPackageDir = runtimeNodeModules.resolve(packageName.replace('/', java.io.File.separatorChar)).normalize();
-        deleteRecursively(targetPackageDir);
-        Files.createDirectories(targetPackageDir.getParent());
-        copyPackageTree(sourcePackageDir, targetPackageDir, workspacePackage, overridePackage);
+        boolean sourceIsTarget = sourcePackageDir.toAbsolutePath().normalize()
+                .equals(targetPackageDir.toAbsolutePath().normalize());
+        if (!sourceIsTarget) {
+            deleteRecursively(targetPackageDir);
+            Files.createDirectories(targetPackageDir.getParent());
+            copyPackageTree(sourcePackageDir, targetPackageDir, workspacePackage, overridePackage);
+        }
         if ("@vitejs/plugin-vue".equals(packageName)) {
             patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
         }
