@@ -123,6 +123,9 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 """);
         if (patchedVuePlugin.contains("const helperCode = `")
                 || patchedVuePlugin.contains("export default")
+                || patchedVuePlugin.contains("EXPORT_HELPER_ID")
+                || patchedVuePlugin.contains("plugin-vue:export-helper")
+                || patchedVuePlugin.contains("_export_sfc")
                 || patchedVuePlugin.contains("port default")
                 || !patchedVuePlugin.contains("String.fromCharCode(101, 120, 112, 111, 114, 116)")) {
             throw new IllegalStateException("Vite plugin vue helper template was not patched: " + patchedVuePlugin);

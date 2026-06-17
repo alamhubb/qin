@@ -396,7 +396,11 @@ final class QinJsPackageRunner {
         if (!source.contains(helperTemplate)) {
             return source;
         }
-        return source.replace(
+        return source
+                .replace("EXPORT_HELPER_ID", "QIN_VUE_HELPER_ID")
+                .replace("plugin-vue:export-helper", "plugin-vue:qin-helper")
+                .replace("_export_sfc", "_qin_sfc_helper")
+                .replace(
                 helperTemplate,
                 "const helperCode = \"\\n\" + String.fromCharCode(101, 120, 112, 111, 114, 116) + \" default (sfc, props) => {\\n\"\n"
                         + "  + \"  const target = sfc.__vccOpts || sfc;\\n\"\n"
