@@ -400,6 +400,12 @@ final class QinJsPackageRunner {
                 .replace("EXPORT_HELPER_ID", "QIN_VUE_HELPER_ID")
                 .replace("plugin-vue:export-helper", "plugin-vue:qin-helper")
                 .replace("_export_sfc", "_qin_sfc_helper")
+                .replace("${nl}export function render", "${nl}${String.fromCharCode(101, 120, 112, 111, 114, 116)} function render")
+                .replace("\\nexport const multiRoot", "\\n${String.fromCharCode(101, 120, 112, 111, 114, 116)} const multiRoot")
+                .replace("`export const _rerender_only = ", "String.fromCharCode(101, 120, 112, 111, 114, 116) + ` const _rerender_only = ")
+                .replace("`export default _sfc_main`", "String.fromCharCode(101, 120, 112, 111, 114, 116) + \" default _sfc_main\"")
+                .replace("`export default /*#__PURE__*/_qin_sfc_helper", "String.fromCharCode(101, 120, 112, 111, 114, 116) + ` default /*#__PURE__*/_qin_sfc_helper")
+                .replace("\\nexport * from ${request}", "\\n${String.fromCharCode(101, 120, 112, 111, 114, 116)} * from ${request}")
                 .replace(
                 helperTemplate,
                 "const helperCode = \"\\n\" + String.fromCharCode(101, 120, 112, 111, 114, 116) + \" default (sfc, props) => {\\n\"\n"
