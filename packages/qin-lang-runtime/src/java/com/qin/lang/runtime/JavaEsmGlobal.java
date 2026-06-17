@@ -999,6 +999,10 @@ public final class JavaEsmGlobal {
         if (builtinResult != BUILTIN_MISS) {
             return builtinResult;
         }
+        if (target instanceof InterpretedFunction interpretedFunction
+                && isJavaFunctionalAdapterMethod(name, args.length)) {
+            return interpretedFunction.call("apply".equals(name) ? args : new Object[0]);
+        }
         if (target instanceof CharSequence text && JavaEsmString.supports(name)) {
             return JavaEsmString.invoke(text, name, args);
         }
@@ -1081,6 +1085,14 @@ public final class JavaEsmGlobal {
         } catch (IllegalAccessException | InvocationTargetException error) {
             throw new IllegalArgumentException("Failed to invoke method: " + ownerClass.getName() + "." + name, error);
         }
+    }
+
+    private static boolean isJavaFunctionalAdapterMethod(String name, int argCount) {
+        return switch (name) {
+            case "get", "run", "execute" -> argCount == 0;
+            case "apply" -> true;
+            default -> false;
+        };
     }
 
     private static String describeArgs(Object[] args) {
