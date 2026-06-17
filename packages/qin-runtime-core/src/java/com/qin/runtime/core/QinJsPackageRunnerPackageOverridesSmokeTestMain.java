@@ -121,7 +121,9 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 }
                 `;
                 """);
-        if (patchedVuePlugin.contains("const helperCode = `") || !patchedVuePlugin.contains("\\nexport default")) {
+        if (patchedVuePlugin.contains("const helperCode = `")
+                || patchedVuePlugin.contains("export default")
+                || !patchedVuePlugin.contains("\"\\nex\" + \"port default")) {
             throw new IllegalStateException("Vite plugin vue helper template was not patched: " + patchedVuePlugin);
         }
 

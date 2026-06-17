@@ -404,7 +404,15 @@ final class QinJsPackageRunner {
                 + "  }\n"
                 + "  return target;\n"
                 + "}\n";
-        return source.replace(helperTemplate, "const helperCode = " + quoteJsString(helperCode) + ";\n");
+        return source.replace(
+                helperTemplate,
+                "const helperCode = \"\\nex\" + \"port default (sfc, props) => {\\n\"\n"
+                        + "  + \"  const target = sfc.__vccOpts || sfc;\\n\"\n"
+                        + "  + \"  for (const [key, val] of props) {\\n\"\n"
+                        + "  + \"    target[key] = val;\\n\"\n"
+                        + "  + \"  }\\n\"\n"
+                        + "  + \"  return target;\\n\"\n"
+                        + "  + \"}\\n\";\n");
     }
 
     private String patchVitePluginVueSourcemapParseName(String source) {
