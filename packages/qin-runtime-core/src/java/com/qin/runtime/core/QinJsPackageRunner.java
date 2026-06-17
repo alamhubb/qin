@@ -1603,6 +1603,9 @@ final class QinJsPackageRunner {
                 return candidate.toAbsolutePath().normalize();
             }
         }
+        if (!Boolean.getBoolean("qin.scanWorkspaceNodeModules")) {
+            return null;
+        }
         Path discovered = scanWorkspaceNodeModules(workspaceRoot, packageName);
         if (discovered != null) {
             return discovered;
