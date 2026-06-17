@@ -247,7 +247,10 @@ final class QinJsPackageRunner {
                     packageOverrides,
                     materialized);
         }
-        for (String importedSpecifier : scanPackageBareModuleSpecifiers(targetPackageDir, sourcePackageDir)) {
+        for (String importedSpecifier : scanPackageBareModuleSpecifiers(
+                targetPackageDir,
+                sourcePackageDir,
+                workspacePackage || overridePackage)) {
             String importedPackage = parseBarePackageName(importedSpecifier);
             if (packageName.equals(importedPackage)) {
                 continue;
@@ -1498,7 +1501,10 @@ final class QinJsPackageRunner {
         return dependencies;
     }
 
-    private Set<String> scanPackageBareModuleSpecifiers(Path packageDir, Path sourcePackageDir) throws IOException {
+    private Set<String> scanPackageBareModuleSpecifiers(
+            Path packageDir,
+            Path sourcePackageDir,
+            boolean scanTypeScriptSources) throws IOException {
         if (packageDir == null || !Files.isDirectory(packageDir)) {
             return Set.of();
         }
@@ -1513,19 +1519,19 @@ final class QinJsPackageRunner {
         try (var paths = Files.walk(packageDir)) {
             paths
                     .filter(Files::isRegularFile)
-                    .filter(this::isScannablePackageSourceFile)
+                    .filter(path -> isScannablePackageSourceFile(path, scanTypeScriptSources))
                     .forEach(path -> collectPackageSourceBareSpecifiers(specifiers, path));
         }
         return specifiers;
     }
 
-    private boolean isScannablePackageSourceFile(Path path) {
+    private boolean isScannablePackageSourceFile(Path path, boolean includeTypeScript) {
         String name = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
         return name.endsWith(".js")
                 || name.endsWith(".mjs")
                 || name.endsWith(".cjs")
-                || name.endsWith(".ts")
-                || name.endsWith(".tsx");
+                || (includeTypeScript && name.endsWith(".ts"))
+                || (includeTypeScript && name.endsWith(".tsx"));
     }
 
     private void collectPackageSourceBareSpecifiers(Set<String> specifiers, Path sourceFile) {
