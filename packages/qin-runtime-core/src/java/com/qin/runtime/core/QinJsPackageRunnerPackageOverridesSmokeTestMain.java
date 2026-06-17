@@ -104,6 +104,26 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         if (!Files.isRegularFile(cachedPackageRoot.resolve("index.js"))) {
             throw new IllegalStateException("Runtime node_modules package was deleted while materializing: " + cachedPackageRoot);
         }
+        Method patchVueHelper = QinJsPackageRunner.class.getDeclaredMethod(
+                "patchVitePluginVueHelperCodeTemplate",
+                String.class);
+        patchVueHelper.setAccessible(true);
+        String patchedVuePlugin = (String) patchVueHelper.invoke(
+                runner,
+                """
+                const helperCode = `
+                export default (sfc, props) => {
+                  const target = sfc.__vccOpts || sfc;
+                  for (const [key, val] of props) {
+                    target[key] = val;
+                  }
+                  return target;
+                }
+                `;
+                """);
+        if (patchedVuePlugin.contains("const helperCode = `") || !patchedVuePlugin.contains("\\nexport default")) {
+            throw new IllegalStateException("Vite plugin vue helper template was not patched: " + patchedVuePlugin);
+        }
 
         System.out.println("QinJsPackageRunnerPackageOverridesSmokeTestMain OK");
     }

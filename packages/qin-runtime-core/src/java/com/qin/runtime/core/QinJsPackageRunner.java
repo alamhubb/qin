@@ -376,8 +376,35 @@ final class QinJsPackageRunner {
                     """);
         }
         patched = patchVitePluginVueSourcemapParseName(patched);
+        patched = patchVitePluginVueHelperCodeTemplate(patched);
         patched = patchVitePluginVueSyncTransforms(patched);
         Files.writeString(entry, patched, StandardCharsets.UTF_8);
+    }
+
+    private String patchVitePluginVueHelperCodeTemplate(String source) {
+        String helperTemplate = """
+                const helperCode = `
+                export default (sfc, props) => {
+                  const target = sfc.__vccOpts || sfc;
+                  for (const [key, val] of props) {
+                    target[key] = val;
+                  }
+                  return target;
+                }
+                `;
+                """;
+        if (!source.contains(helperTemplate)) {
+            return source;
+        }
+        String helperCode = "\n"
+                + "export default (sfc, props) => {\n"
+                + "  const target = sfc.__vccOpts || sfc;\n"
+                + "  for (const [key, val] of props) {\n"
+                + "    target[key] = val;\n"
+                + "  }\n"
+                + "  return target;\n"
+                + "}\n";
+        return source.replace(helperTemplate, "const helperCode = " + quoteJsString(helperCode) + ";\n");
     }
 
     private String patchVitePluginVueSourcemapParseName(String source) {
@@ -396,6 +423,22 @@ final class QinJsPackageRunner {
                         var TraceMap = class {
                         """)
                 .replace("const parsed = parse(map);", "const parsed = qinSourcemapParse(map);");
+    }
+
+    private String quoteJsString(String value) {
+        StringBuilder out = new StringBuilder("\"");
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            switch (ch) {
+                case '\\' -> out.append("\\\\");
+                case '"' -> out.append("\\\"");
+                case '\n' -> out.append("\\n");
+                case '\r' -> out.append("\\r");
+                case '\t' -> out.append("\\t");
+                default -> out.append(ch);
+            }
+        }
+        return out.append('"').toString();
     }
 
     private boolean isVitePluginPackage(String packageName) {
