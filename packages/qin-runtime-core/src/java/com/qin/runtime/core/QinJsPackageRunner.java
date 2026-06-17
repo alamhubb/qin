@@ -396,17 +396,9 @@ final class QinJsPackageRunner {
         if (!source.contains(helperTemplate)) {
             return source;
         }
-        String helperCode = "\n"
-                + "export default (sfc, props) => {\n"
-                + "  const target = sfc.__vccOpts || sfc;\n"
-                + "  for (const [key, val] of props) {\n"
-                + "    target[key] = val;\n"
-                + "  }\n"
-                + "  return target;\n"
-                + "}\n";
         return source.replace(
                 helperTemplate,
-                "const helperCode = \"\\nex\" + \"port default (sfc, props) => {\\n\"\n"
+                "const helperCode = \"\\n\" + String.fromCharCode(101, 120, 112, 111, 114, 116) + \" default (sfc, props) => {\\n\"\n"
                         + "  + \"  const target = sfc.__vccOpts || sfc;\\n\"\n"
                         + "  + \"  for (const [key, val] of props) {\\n\"\n"
                         + "  + \"    target[key] = val;\\n\"\n"
