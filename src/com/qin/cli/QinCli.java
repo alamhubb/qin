@@ -584,6 +584,7 @@ public class QinCli {
 
         List<String> command = new ArrayList<>();
         command.add("java");
+        command.addAll(resolveJvmArgs(args));
         command.add("-cp");
         command.add(runtimeClasspath);
         command.add(runtimeMainClass);
@@ -626,6 +627,21 @@ public class QinCli {
         }
 
         System.out.println(green(devMode ? "[OK] Qin dev runtime stopped" : "[OK] Done!"));
+    }
+
+    private static List<String> resolveJvmArgs(String[] args) {
+        List<String> jvmArgs = new ArrayList<>();
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (arg.startsWith("--jvm-args=")) {
+                jvmArgs.addAll(tokenizeArguments(arg.substring("--jvm-args=".length())));
+                continue;
+            }
+            if ("--jvm-args".equals(arg)) {
+                jvmArgs.addAll(tokenizeArguments(nextArg(args, ++i, "--jvm-args")));
+            }
+        }
+        return jvmArgs;
     }
 
     private static int resolveQinRuntimePort(QinConfig config, String[] args) {
