@@ -42,6 +42,10 @@ final class QinJsPackageRunner {
             Pattern.DOTALL);
     private static final Pattern JSON_DEPENDENCY_NAME = Pattern.compile("\"([^\"]+)\"\\s*:");
     private static final Pattern JSON_STRING_FIELD = Pattern.compile("\"([^\"]+)\"\\s*:\\s*\"([^\"]*)\"");
+    private static final Pattern QIN_PACKAGE_OVERRIDES_BLOCK = Pattern.compile(
+            "packageOverrides\\s*:\\s*\\{([^}]*)\\}",
+            Pattern.DOTALL);
+    private static final Pattern QIN_STRING_FIELD = Pattern.compile("[\"']([^\"']+)[\"']\\s*:\\s*[\"']([^\"']*)[\"']");
     private static final Pattern FROM_IMPORT_PATTERN = Pattern.compile("\\bfrom\\s+[\"']([^\"']+)[\"']");
     private static final Pattern SIDE_EFFECT_IMPORT_PATTERN = Pattern.compile(
             "\\bimport\\s+[\"']([^\"']+)[\"']");
@@ -132,15 +136,52 @@ final class QinJsPackageRunner {
             return;
         }
 
+        Map<String, Path> packageOverrides = readProjectPackageOverrides(projectRoot);
         Map<String, Path> workspacePackages = indexWorkspacePackages(workspaceRoot);
         Path runtimeNodeModules = wrapperDir.resolve("node_modules");
         Files.createDirectories(runtimeNodeModules);
 
         Set<String> materialized = new LinkedHashSet<>();
         for (String specifier : bareSpecifiers) {
-            materializeDependency(specifier, null, runtimeNodeModules, workspaceRoot, workspacePackages, materialized);
+            materializeDependency(
+                    specifier,
+                    null,
+                    runtimeNodeModules,
+                    workspaceRoot,
+                    workspacePackages,
+                    packageOverrides,
+                    materialized);
         }
         materializeQinViteShimIfNeeded(bareSpecifiers, runtimeNodeModules);
+    }
+
+    private Map<String, Path> readProjectPackageOverrides(Path projectRoot) throws IOException {
+        Path configFile = projectRoot.resolve("qin.config.js");
+        if (!Files.isRegularFile(configFile)) {
+            return Map.of();
+        }
+        String configSource = Files.readString(configFile, StandardCharsets.UTF_8);
+        Matcher blockMatcher = QIN_PACKAGE_OVERRIDES_BLOCK.matcher(configSource);
+        if (!blockMatcher.find()) {
+            return Map.of();
+        }
+
+        Map<String, Path> overrides = new LinkedHashMap<>();
+        Matcher fieldMatcher = QIN_STRING_FIELD.matcher(blockMatcher.group(1));
+        while (fieldMatcher.find()) {
+            String packageName = fieldMatcher.group(1);
+            String pathText = fieldMatcher.group(2);
+            if (packageName == null || packageName.isBlank() || pathText == null || pathText.isBlank()) {
+                continue;
+            }
+            Path overridePath = projectRoot.resolve(pathText).toAbsolutePath().normalize();
+            if (!Files.isDirectory(overridePath)) {
+                throw new IllegalStateException(
+                        "Qin package override for " + packageName + " does not exist: " + overridePath);
+            }
+            overrides.put(packageName, overridePath);
+        }
+        return overrides;
     }
 
     private void materializeDependency(
@@ -149,6 +190,7 @@ final class QinJsPackageRunner {
             Path runtimeNodeModules,
             Path workspaceRoot,
             Map<String, Path> workspacePackages,
+            Map<String, Path> packageOverrides,
             Set<String> materialized) throws IOException {
         String packageName = parseBarePackageName(specifier);
         if (packageName == null || packageName.isBlank() || !materialized.add(packageName)) {
@@ -167,9 +209,13 @@ final class QinJsPackageRunner {
             return;
         }
 
-        Path workspacePackageDir = workspacePackages.get(packageName);
+        Path overridePackageDir = packageOverrides.get(packageName);
+        boolean overridePackage = overridePackageDir != null;
+        Path workspacePackageDir = overridePackage ? null : workspacePackages.get(packageName);
         boolean workspacePackage = workspacePackageDir != null;
-        Path sourcePackageDir = workspacePackage
+        Path sourcePackageDir = overridePackage
+                ? overridePackageDir
+                : workspacePackage
                 ? workspacePackageDir
                 : resolveInstalledPackageDir(packageName, workspaceRoot);
         if (sourcePackageDir == null || !Files.isDirectory(sourcePackageDir)) {
@@ -182,12 +228,12 @@ final class QinJsPackageRunner {
         Path targetPackageDir = runtimeNodeModules.resolve(packageName.replace('/', java.io.File.separatorChar)).normalize();
         deleteRecursively(targetPackageDir);
         Files.createDirectories(targetPackageDir.getParent());
-        copyPackageTree(sourcePackageDir, targetPackageDir, workspacePackage);
+        copyPackageTree(sourcePackageDir, targetPackageDir, workspacePackage, overridePackage);
         if ("@vitejs/plugin-vue".equals(packageName)) {
             patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
         }
 
-        if (workspacePackage && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir)) {
+        if ((workspacePackage || overridePackage) && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir)) {
             rewriteWorkspacePackageManifest(targetPackageDir, sourcePackageDir, packageName);
         }
 
@@ -198,6 +244,7 @@ final class QinJsPackageRunner {
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
+                    packageOverrides,
                     materialized);
         }
         for (String importedSpecifier : scanPackageBareModuleSpecifiers(targetPackageDir, sourcePackageDir)) {
@@ -211,6 +258,7 @@ final class QinJsPackageRunner {
                     runtimeNodeModules,
                     workspaceRoot,
                     workspacePackages,
+                    packageOverrides,
                     materialized);
         }
     }
@@ -1475,7 +1523,9 @@ final class QinJsPackageRunner {
         String name = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
         return name.endsWith(".js")
                 || name.endsWith(".mjs")
-                || name.endsWith(".cjs");
+                || name.endsWith(".cjs")
+                || name.endsWith(".ts")
+                || name.endsWith(".tsx");
     }
 
     private void collectPackageSourceBareSpecifiers(Set<String> specifiers, Path sourceFile) {
@@ -1529,15 +1579,20 @@ final class QinJsPackageRunner {
         return expectedName.equals(actualName);
     }
 
-    private void copyPackageTree(Path sourceDir, Path targetDir, boolean workspacePackage) throws IOException {
+    private void copyPackageTree(Path sourceDir, Path targetDir, boolean workspacePackage, boolean includeNodeModules) throws IOException {
         Set<String> ignoredDirs = workspacePackage ? IGNORED_COPY_DIRS : IGNORED_INSTALLED_PACKAGE_DIRS;
+        if (includeNodeModules && ignoredDirs.contains("node_modules")) {
+            ignoredDirs = new LinkedHashSet<>(ignoredDirs);
+            ignoredDirs.remove("node_modules");
+        }
+        Set<String> finalIgnoredDirs = ignoredDirs;
         Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 Path relative = sourceDir.relativize(dir);
                 if (!relative.toString().isEmpty()) {
                     String name = dir.getFileName() == null ? "" : dir.getFileName().toString();
-                    if (ignoredDirs.contains(name)) {
+                    if (finalIgnoredDirs.contains(name)) {
                         return FileVisitResult.SKIP_SUBTREE;
                     }
                 }
