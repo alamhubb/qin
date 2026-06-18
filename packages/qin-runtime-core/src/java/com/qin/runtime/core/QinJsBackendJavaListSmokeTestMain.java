@@ -76,15 +76,41 @@ public final class QinJsBackendJavaListSmokeTestMain {
             throw new IllegalStateException("Expected ArrayList copy/addAll/set/subList/indexOf result alpha:gamma:3:alpha:1:true:beta:delta:2:-1, got: "
                     + copyResult);
         }
+        Object arrayLikeResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                generated
+                        + "\nconst source = new __QinJavaUtilArrayList([\"alpha\", \"beta\", \"gamma\"]);\n"
+                        + "let visited = \"\";\n"
+                        + "source.forEach((item, index) => { visited += index + item[0]; });\n"
+                        + "const sliced = source.slice(1).join(\",\");\n"
+                        + "const mapped = source.map(item => item.toUpperCase()).join(\",\");\n"
+                        + "const filtered = source.filter(item => item.includes(\"a\")).join(\",\");\n"
+                        + "const found = source.find(item => item.startsWith(\"g\"));\n"
+                        + "const foundIndex = source.findIndex(item => item.startsWith(\"b\"));\n"
+                        + "const hasBeta = source.some(item => item === \"beta\");\n"
+                        + "const allHaveA = source.every(item => item.includes(\"a\"));\n"
+                        + "const flattened = new __QinJavaUtilArrayList([[\"x\"], [\"y\"]]).flat().join(\",\");\n"
+                        + "visited + \":\" + sliced + \":\" + mapped + \":\" + filtered"
+                        + " + \":\" + source[1] + \":\" + source.length + \":\" + found"
+                        + " + \":\" + foundIndex + \":\" + hasBeta + \":\" + allHaveA + \":\" + flattened;\n",
+                "js_backend_array_list_array_like");
+        if (!"0a1b2g:beta,gamma:ALPHA,BETA,GAMMA:alpha,beta,gamma:beta:3:gamma:1:true:true:x,y"
+                .equals(arrayLikeResult)) {
+            throw new IllegalStateException("Expected ArrayList array-like read methods result, got: "
+                    + arrayLikeResult);
+        }
         Object listSubListResult = new QinJsPackageRunner().runModuleSource(
                 root,
                 generated
                         + "\nconst pair = globalThis.__qinResult.subList(0, 2);\n"
+                        + "const sliced = globalThis.__qinResult.slice(0, 1).join(\",\");\n"
+                        + "const mapped = pair.map(item => item.toUpperCase()).join(\",\");\n"
                         + "pair.get(0) + \":\" + pair.get(1) + \":\" + pair.size()"
-                        + " + \":\" + pair.indexOf(\"beta\") + \":\" + pair.indexOf(\"missing\");\n",
+                        + " + \":\" + pair.indexOf(\"beta\") + \":\" + pair.indexOf(\"missing\")"
+                        + " + \":\" + sliced + \":\" + mapped + \":\" + pair[1] + \":\" + pair.length;\n",
                 "js_backend_list_sub_list");
-        if (!"alpha:beta:2:1:-1".equals(listSubListResult)) {
-            throw new IllegalStateException("Expected List.of subList/indexOf result alpha:beta:2:1:-1, got: "
+        if (!"alpha:beta:2:1:-1:alpha:ALPHA,BETA:beta:2".equals(listSubListResult)) {
+            throw new IllegalStateException("Expected List.of subList/indexOf/slice/map/index/length result alpha:beta:2:1:-1:alpha:ALPHA,BETA:beta:2, got: "
                     + listSubListResult);
         }
         System.out.println("QinJsBackendJavaListSmokeTestMain OK");

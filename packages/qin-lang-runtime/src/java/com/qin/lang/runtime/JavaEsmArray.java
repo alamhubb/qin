@@ -43,8 +43,9 @@ public final class JavaEsmArray {
     static boolean supports(String methodName) {
         return switch (methodName) {
             case "push", "pop", "unshift", "shift", "concat", "map", "forEach", "at", "filter", "fill", "join", "slice", "splice",
-                    "includes", "indexOf", "find", "some", "every",
-                    "reduce", "flat", "flatMap", "sort" -> true;
+                    "includes", "indexOf", "find", "findIndex", "some", "every",
+                    "reduce", "flat", "flatMap", "sort",
+                    "add", "addAll", "size", "isEmpty", "clear", "get", "set", "remove", "subList", "toArray" -> true;
             default -> false;
         };
     }
@@ -69,12 +70,23 @@ public final class JavaEsmArray {
             case "includes" -> includes(list, args);
             case "indexOf" -> indexOf(list, args);
             case "find" -> find(list, args);
+            case "findIndex" -> findIndex(list, args);
             case "some" -> some(list, args);
             case "every" -> every(list, args);
             case "reduce" -> reduce(list, args);
             case "flat" -> flat(list, args);
             case "flatMap" -> flatMap(list, args);
             case "sort" -> sort(list, args);
+            case "add" -> javaListAdd(list, args);
+            case "addAll" -> javaListAddAll(list, args);
+            case "size" -> javaListSize(list, args);
+            case "isEmpty" -> javaListIsEmpty(list, args);
+            case "clear" -> javaListClear(list, args);
+            case "get" -> javaListGet(list, args);
+            case "set" -> javaListSet(list, args);
+            case "remove" -> javaListRemove(list, args);
+            case "subList" -> javaListSubList(list, args);
+            case "toArray" -> javaListToArray(list, args);
             default -> throw new IllegalArgumentException("Unsupported Array builtin: " + methodName);
         };
     }
@@ -308,6 +320,18 @@ public final class JavaEsmArray {
         return null;
     }
 
+    private static Object findIndex(List<Object> list, Object[] args) {
+        Object callback = requireCallback("Array.findIndex", args);
+        callback = bindCallbackThis(callback, args);
+        for (int i = 0; i < list.size(); i++) {
+            Object result = JavaEsmGlobal.callRuntimeCallable(callback, list.get(i), (double) i, list);
+            if (JavaEsmGlobal.isRuntimeTruthy(result)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     private static Object some(List<Object> list, Object[] args) {
         Object callback = requireCallback("Array.some", args);
         callback = bindCallbackThis(callback, args);
@@ -464,6 +488,81 @@ public final class JavaEsmArray {
         return list;
     }
 
+    private static Object javaListAdd(List<Object> list, Object[] args) {
+        requireArgRange("List.add", args, 1, 2);
+        if (args.length == 1) {
+            return list.add(args[0]);
+        }
+        list.add(normalizeInsertIndex(args[0], list.size()), args[1]);
+        return null;
+    }
+
+    private static Object javaListAddAll(List<Object> list, Object[] args) {
+        requireArgRange("List.addAll", args, 1, 2);
+        List<Object> values = runtimeListValues(args.length == 1 ? args[0] : args[1]);
+        if (args.length == 1) {
+            return list.addAll(values);
+        }
+        return list.addAll(normalizeInsertIndex(args[0], list.size()), values);
+    }
+
+    private static Object javaListSize(List<Object> list, Object[] args) {
+        requireArgCount("List.size", args, 0);
+        return list.size();
+    }
+
+    private static Object javaListIsEmpty(List<Object> list, Object[] args) {
+        requireArgCount("List.isEmpty", args, 0);
+        return list.isEmpty();
+    }
+
+    private static Object javaListClear(List<Object> list, Object[] args) {
+        requireArgCount("List.clear", args, 0);
+        list.clear();
+        return null;
+    }
+
+    private static Object javaListGet(List<Object> list, Object[] args) {
+        requireArgCount("List.get", args, 1);
+        return list.get(normalizeExistingIndex(args[0], list.size()));
+    }
+
+    private static Object javaListSet(List<Object> list, Object[] args) {
+        requireArgCount("List.set", args, 2);
+        return list.set(normalizeExistingIndex(args[0], list.size()), args[1]);
+    }
+
+    private static Object javaListRemove(List<Object> list, Object[] args) {
+        requireArgCount("List.remove", args, 1);
+        if (args[0] instanceof Number || args[0] instanceof String) {
+            return list.remove(normalizeExistingIndex(args[0], list.size()));
+        }
+        return list.remove(args[0]);
+    }
+
+    private static Object javaListSubList(List<Object> list, Object[] args) {
+        requireArgCount("List.subList", args, 2);
+        int from = normalizeRangeIndex(args[0], list.size());
+        int to = normalizeRangeIndex(args[1], list.size());
+        if (to < from) {
+            to = from;
+        }
+        return new ArrayList<>(list.subList(from, to));
+    }
+
+    private static Object javaListToArray(List<Object> list, Object[] args) {
+        requireArgRange("List.toArray", args, 0, 1);
+        return new ArrayList<>(list);
+    }
+
+    private static List<Object> runtimeListValues(Object value) {
+        Object arrayLike = JavaEsmArray.from(value);
+        if (arrayLike instanceof List<?> values) {
+            return new ArrayList<>(values);
+        }
+        throw new IllegalArgumentException("List.addAll expects iterable/list value; got=" + value);
+    }
+
     private static Object requireCallback(String methodName, Object[] args) {
         requireArgRange(methodName, args, 1, 2);
         return args[0];
@@ -479,6 +578,30 @@ public final class JavaEsmArray {
             index = Math.max(size + index, 0);
         }
         return Math.min(index, size);
+    }
+
+    private static int normalizeInsertIndex(Object value, int size) {
+        int index = toIndex(value);
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+        return index;
+    }
+
+    private static int normalizeExistingIndex(Object value, int size) {
+        int index = toIndex(value);
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+        return index;
+    }
+
+    private static int normalizeRangeIndex(Object value, int size) {
+        int index = toIndex(value);
+        if (index < 0 || index > size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+        return index;
     }
 
     private static int toIndex(Object value) {

@@ -237,15 +237,20 @@ final class QinJsPackageRunner {
         boolean sourceIsTarget = sourcePackageDir.toAbsolutePath().normalize()
                 .equals(targetPackageDir.toAbsolutePath().normalize());
         if (!sourceIsTarget) {
-            deleteRecursively(targetPackageDir);
-            Files.createDirectories(targetPackageDir.getParent());
-            copyPackageTree(sourcePackageDir, targetPackageDir, workspacePackage, overridePackage);
+            boolean workspaceLikePackage = workspacePackage || overridePackage;
+            if (!isMaterializedPackageFresh(sourcePackageDir, targetPackageDir, workspaceLikePackage, false)) {
+                deleteRecursively(targetPackageDir);
+                Files.createDirectories(targetPackageDir.getParent());
+                copyPackageTree(sourcePackageDir, targetPackageDir, workspaceLikePackage, false);
+                writeMaterializedPackageStamp(sourcePackageDir, targetPackageDir, workspaceLikePackage, false);
+            }
         }
         if ("@vitejs/plugin-vue".equals(packageName)) {
             patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
         }
 
-        if ((workspacePackage || overridePackage || filePackage) && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir)) {
+        if ((workspacePackage || overridePackage || filePackage)
+                && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir, overridePackage)) {
             rewriteWorkspacePackageManifest(targetPackageDir, sourcePackageDir, packageName);
         }
 
@@ -303,10 +308,130 @@ final class QinJsPackageRunner {
 
     private void patchVitePluginVueForQinStaticCompilerImport(Path packageDir) throws IOException {
         Path entry = packageDir.resolve("dist").resolve("index.mjs");
-        if (!Files.isRegularFile(entry)) {
-            return;
-        }
-        String source = Files.readString(entry, StandardCharsets.UTF_8);
+        Files.createDirectories(entry.getParent());
+        Files.writeString(entry, qinVitePluginVueShimSource(), StandardCharsets.UTF_8);
+    }
+
+    private String qinVitePluginVueShimSource() {
+        return qinVueCompilerSfcHostSource()
+                + System.lineSeparator()
+                + """
+                function __qinParseVueQuery(id) {
+                  const text = String(id || "");
+                  const question = text.indexOf("?");
+                  const query = {};
+                  if (question < 0) return query;
+                  for (const part of text.slice(question + 1).split("&")) {
+                    if (!part) continue;
+                    const eq = part.indexOf("=");
+                    if (eq < 0) query[decodeURIComponent(part)] = true;
+                    else query[decodeURIComponent(part.slice(0, eq))] = decodeURIComponent(part.slice(eq + 1));
+                  }
+                  return query;
+                }
+                function __qinStripVueQuery(id) {
+                  const text = String(id || "");
+                  const question = text.indexOf("?");
+                  return question < 0 ? text : text.slice(0, question);
+                }
+                function __qinTemplateAsModule(templateCode) {
+                  return String(templateCode || "")
+                    .replace(/export\\s+function\\s+render\\s*\\(/, "function render(")
+                    .replace(/export\\s+function\\s+ssrRender\\s*\\(/, "function ssrRender(");
+                }
+                const __qinExportDefaultPrefix = String.fromCharCode(101, 120, 112, 111, 114, 116) + " default ";
+                function __qinCompileVueMain(code, id, options) {
+                  const compiler = (options && options.compiler) || __qinVueCompilerSfc;
+                  const parsed = compiler.parse(String(code || ""), { filename: id });
+                  const descriptor = parsed.descriptor || {};
+                  if (parsed.errors && parsed.errors.length) {
+                    throw new Error(String(parsed.errors[0]));
+                  }
+                  const script = compiler.compileScript(descriptor, { id, genDefaultAs: "_sfc_main" });
+                  let out = String(script && script.content || "const _sfc_main = {}") + "\\n";
+                  if (descriptor.template) {
+                    const template = compiler.compileTemplate({
+                      source: descriptor.template.content || "",
+                      filename: id,
+                      id
+                    });
+                    if (template.errors && template.errors.length) {
+                      throw new Error(String(template.errors[0]));
+                    }
+                    out += __qinTemplateAsModule(template.code) + "\\n";
+                    out += "_sfc_main.render = render;\\n";
+                  }
+                  out += __qinExportDefaultPrefix + "_sfc_main;\\n";
+                  return { code: out, map: null };
+                }
+                function __qinCompileVueQuery(code, id, options) {
+                  const query = __qinParseVueQuery(id);
+                  const filename = __qinStripVueQuery(id);
+                  const compiler = (options && options.compiler) || __qinVueCompilerSfc;
+                  const parsed = compiler.parse(String(code || ""), { filename });
+                  const descriptor = parsed.descriptor || {};
+                  if (query.type === "template" && descriptor.template) {
+                    const template = compiler.compileTemplate({
+                      source: descriptor.template.content || "",
+                      filename,
+                      id: filename
+                    });
+                    return { code: template.code, map: null };
+                  }
+                  if (query.type === "script") {
+                    const script = compiler.compileScript(descriptor, { id: filename, genDefaultAs: "_sfc_main" });
+                    return { code: String(script && script.content || "const _sfc_main = {}") + "\\n" + __qinExportDefaultPrefix + "_sfc_main;\\n", map: null };
+                  }
+                  if (query.type === "style") {
+                    const index = Number(query.index || 0);
+                    const style = descriptor.styles && descriptor.styles[index];
+                    return { code: style ? style.content || "" : "", map: null };
+                  }
+                  return null;
+                }
+                function vuePlugin(rawOptions = {}) {
+                  const options = rawOptions || {};
+                  return {
+                    name: "vite:vue",
+                    config() {
+                      return { define: { __VUE_OPTIONS_API__: true, __VUE_PROD_DEVTOOLS__: false } };
+                    },
+                    configResolved(config) {
+                      options.devServer = config && config.server ? { config } : null;
+                      options.root = config && config.root;
+                      options.isProduction = !!(config && config.isProduction);
+                      options.compiler = options.compiler || __qinVueCompilerSfc;
+                    },
+                    resolveId(id) {
+                      if (String(id || "").includes("plugin-vue:export-helper")) return "plugin-vue:qin-helper";
+                      return null;
+                    },
+                    load(id) {
+                      if (id === "plugin-vue:qin-helper") {
+                        return __qinExportDefaultPrefix + "(sfc, props) => { for (const [key, val] of props) sfc[key] = val; return sfc; }";
+                      }
+                      return null;
+                    },
+                    transform(code, id) {
+                      const text = String(id || "");
+                      if (!text.includes(".vue")) return null;
+                      if (text.includes("?vue")) return __qinCompileVueQuery(code, id, options);
+                      return __qinCompileVueMain(code, id, options);
+                    },
+                    handleHotUpdate(ctx) {
+                      if (ctx && ctx.server && ctx.server.ws) {
+                        ctx.server.ws.send({ type: "full-reload", path: ctx.file });
+                      }
+                      return ctx && ctx.modules ? ctx.modules : [];
+                    }
+                  };
+                }
+                export { vuePlugin as default };
+                """;
+    }
+
+    @SuppressWarnings("unused")
+    private String patchVitePluginVueForQinStaticCompilerImportLegacy(String source) {
         String patched = source.replace("import * as __qinVueCompilerSfc from \"@vue/compiler-sfc\";\n", "");
         if (patched.contains("const __qinVueCompilerSfc =")) {
             patched = replaceQinVueCompilerSfcHost(patched);
@@ -378,7 +503,7 @@ final class QinJsPackageRunner {
         patched = patchVitePluginVueSourcemapParseName(patched);
         patched = patchVitePluginVueHelperCodeTemplate(patched);
         patched = patchVitePluginVueSyncTransforms(patched);
-        Files.writeString(entry, patched, StandardCharsets.UTF_8);
+        return patched;
     }
 
     private String patchVitePluginVueHelperCodeTemplate(String source) {
@@ -456,7 +581,13 @@ final class QinJsPackageRunner {
                 && (packageName.startsWith("vite-plugin-") || packageName.startsWith("@vitejs/plugin-"));
     }
 
-    private boolean shouldRewriteWorkspacePackageManifest(String packageName, Path sourcePackageDir) throws IOException {
+    private boolean shouldRewriteWorkspacePackageManifest(
+            String packageName,
+            Path sourcePackageDir,
+            boolean packageOverride) throws IOException {
+        if (packageOverride && hasDeclaredWorkspaceSourceEntry(sourcePackageDir)) {
+            return true;
+        }
         if (isPublishedRuntimePackage(packageName, sourcePackageDir)) {
             return false;
         }
@@ -892,7 +1023,7 @@ final class QinJsPackageRunner {
                     if (node.type === "expression") return `_toDisplayString(_ctx.${node.value})`;
                     const tagExpression = isComponentTag(node.tag) ? `_ctx.${node.tag}` : JSON.stringify(node.tag);
                     const props = emitProps(node.attrs);
-                    const children = node.children.map(emitTemplateNode).filter(Boolean);
+                    const children = node.children.map(emitTemplateNode).filter((child) => !!child);
                     const childrenExpression = children.length === 0
                       ? "null"
                       : children.length === 1
@@ -1723,6 +1854,83 @@ final class QinJsPackageRunner {
         });
     }
 
+    private boolean isMaterializedPackageFresh(
+            Path sourceDir,
+            Path targetDir,
+            boolean workspacePackage,
+            boolean includeNodeModules) throws IOException {
+        Path stampFile = targetDir.resolve(".qin-package-sync.json");
+        if (!Files.isRegularFile(stampFile) || !Files.isRegularFile(targetDir.resolve("package.json"))) {
+            return false;
+        }
+        String expected = materializedPackageStamp(sourceDir, workspacePackage, includeNodeModules);
+        String actual = Files.readString(stampFile, StandardCharsets.UTF_8).trim();
+        return expected.equals(actual);
+    }
+
+    private void writeMaterializedPackageStamp(
+            Path sourceDir,
+            Path targetDir,
+            boolean workspacePackage,
+            boolean includeNodeModules) throws IOException {
+        Files.writeString(
+                targetDir.resolve(".qin-package-sync.json"),
+                materializedPackageStamp(sourceDir, workspacePackage, includeNodeModules),
+                StandardCharsets.UTF_8);
+    }
+
+    private String materializedPackageStamp(
+            Path sourceDir,
+            boolean workspacePackage,
+            boolean includeNodeModules) throws IOException {
+        PackageTreeFingerprint fingerprint = fingerprintPackageTree(sourceDir, workspacePackage, includeNodeModules);
+        return "{"
+                + "\"source\":\"" + escapeJson(sourceDir.toAbsolutePath().normalize().toString()) + "\","
+                + "\"files\":" + fingerprint.files + ","
+                + "\"bytes\":" + fingerprint.bytes + ","
+                + "\"modifiedMillis\":" + fingerprint.modifiedMillis
+                + "}";
+    }
+
+    private PackageTreeFingerprint fingerprintPackageTree(
+            Path sourceDir,
+            boolean workspacePackage,
+            boolean includeNodeModules) throws IOException {
+        Set<String> ignoredDirs = workspacePackage ? IGNORED_COPY_DIRS : IGNORED_INSTALLED_PACKAGE_DIRS;
+        if (includeNodeModules && ignoredDirs.contains("node_modules")) {
+            ignoredDirs = new LinkedHashSet<>(ignoredDirs);
+            ignoredDirs.remove("node_modules");
+        }
+        Set<String> finalIgnoredDirs = ignoredDirs;
+        PackageTreeFingerprint fingerprint = new PackageTreeFingerprint();
+        Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                Path relative = sourceDir.relativize(dir);
+                if (!relative.toString().isEmpty()) {
+                    String name = dir.getFileName() == null ? "" : dir.getFileName().toString();
+                    if (finalIgnoredDirs.contains(name)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                fingerprint.files++;
+                fingerprint.bytes += attrs.size();
+                fingerprint.modifiedMillis = Math.max(fingerprint.modifiedMillis, attrs.lastModifiedTime().toMillis());
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        return fingerprint;
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     private void deleteRecursively(Path path) throws IOException {
         if (path == null || !Files.exists(path)) {
             return;
@@ -1924,5 +2132,11 @@ final class QinJsPackageRunner {
             return "Module";
         }
         return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
+    private static final class PackageTreeFingerprint {
+        private long files;
+        private long bytes;
+        private long modifiedMillis;
     }
 }

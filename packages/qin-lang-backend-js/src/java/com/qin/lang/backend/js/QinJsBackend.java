@@ -1935,6 +1935,33 @@ public class QinJsBackend implements QinIrCodeBackend {
                   subList(fromIndex, toIndex) {
                     return new __QinJavaUtilUnmodifiableList(this.__items.slice(fromIndex, toIndex));
                   }
+                  slice(start, end) {
+                    return end == null ? this.__items.slice(start) : this.__items.slice(start, end);
+                  }
+                  map(callback, thisArg) {
+                    return this.__items.map(callback, thisArg);
+                  }
+                  forEach(callback, thisArg) {
+                    return this.__items.forEach(callback, thisArg);
+                  }
+                  filter(callback, thisArg) {
+                    return this.__items.filter(callback, thisArg);
+                  }
+                  find(callback, thisArg) {
+                    return this.__items.find(callback, thisArg);
+                  }
+                  findIndex(callback, thisArg) {
+                    return this.__items.findIndex(callback, thisArg);
+                  }
+                  some(callback, thisArg) {
+                    return this.__items.some(callback, thisArg);
+                  }
+                  every(callback, thisArg) {
+                    return this.__items.every(callback, thisArg);
+                  }
+                  flat(depth) {
+                    return this.__items.flat(depth == null ? 1 : depth);
+                  }
                   toArray() {
                     return this.__items.slice();
                   }
@@ -1971,6 +1998,34 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                   subList(fromIndex, toIndex) {
                     return new __QinJavaUtilUnmodifiableList(this.__values().slice(fromIndex, toIndex));
+                  }
+                  slice(start, end) {
+                    const values = this.__values();
+                    return end == null ? values.slice(start) : values.slice(start, end);
+                  }
+                  map(callback, thisArg) {
+                    return this.__values().map(callback, thisArg);
+                  }
+                  forEach(callback, thisArg) {
+                    return this.__values().forEach(callback, thisArg);
+                  }
+                  filter(callback, thisArg) {
+                    return this.__values().filter(callback, thisArg);
+                  }
+                  find(callback, thisArg) {
+                    return this.__values().find(callback, thisArg);
+                  }
+                  findIndex(callback, thisArg) {
+                    return this.__values().findIndex(callback, thisArg);
+                  }
+                  some(callback, thisArg) {
+                    return this.__values().some(callback, thisArg);
+                  }
+                  every(callback, thisArg) {
+                    return this.__values().every(callback, thisArg);
+                  }
+                  flat(depth) {
+                    return this.__values().flat(depth == null ? 1 : depth);
                   }
                   size() {
                     return this.__values().length;
@@ -3134,6 +3189,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     "__qin_java_class_info__",
                     "__qin_binary__",
                     "__qin_logical__");
+            emitStructuralObjectHelper(js);
             return;
         }
         js.append("""
@@ -3156,6 +3212,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 });
                 """);
         emitJavaLangStringRuntime(js);
+        emitStructuralObjectHelper(js);
         js.append("""
                 function __qin_java_functional(fn) {
                   if (fn == null || fn.__qinJavaFunctional) return fn;
@@ -3282,6 +3339,15 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     """);
         }
+    }
+
+    private void emitStructuralObjectHelper(StringBuilder js) {
+        js.append("""
+                function __qin_structural_object__(value) {
+                  if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
+                  return value.constructor == null || value.constructor === Object;
+                }
+                """);
     }
 
     private void emitSubhutiRuleRuntimeHelpers(StringBuilder js, QinIrProgram program) {
@@ -4383,6 +4449,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append(")");
         emitAnyTypeAnnotation(js);
         js.append(" {\n");
+        emitSubhutiExecuteRuleWrapperExternalArgsDispatch(js, methodName, overloads);
         for (int i = 0; i < overloads.size(); i++) {
             QinIrMethodDeclaration overload = overloads.get(i);
             if (isVarargsMethod(overload)) {
@@ -4415,6 +4482,53 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("  }\n");
     }
 
+    private void emitSubhutiExecuteRuleWrapperExternalArgsDispatch(
+            StringBuilder js,
+            String methodName,
+            List<QinIrMethodDeclaration> overloads) {
+        if (!hasSubhutiExecuteRuleWrapperCacheKeyOverload(methodName, overloads)) {
+            return;
+        }
+        String cacheKeyMethodName = null;
+        for (int i = 0; i < overloads.size(); i++) {
+            QinIrMethodDeclaration overload = overloads.get(i);
+            if (isSubhutiExecuteRuleWrapperCacheKeyOverload(overload)) {
+                cacheKeyMethodName = overloadedMethodImplementationName(methodName, overload.parameters().size(), i);
+                break;
+            }
+        }
+        if (cacheKeyMethodName == null) {
+            return;
+        }
+        js.append("    if (__qin_args.length >= 4\n");
+        js.append("        && __qin_args[0] !== null\n");
+        js.append("        && typeof __qin_args[0] === \"function\"\n");
+        js.append("        && __qin_args[0].__qinJavaFunctional !== true\n");
+        js.append("        && (__qin_args[1] === null || typeof __qin_args[1] === \"string\")\n");
+        js.append("        && (__qin_args[2] === null || typeof __qin_args[2] === \"string\")) {\n");
+        js.append("      const __qin_targetFun = __qin_args[0];\n");
+        js.append("      const __qin_ruleArgs = __qin_args.slice(3);\n");
+        js.append("      return this.")
+                .append(cacheKeyMethodName)
+                .append("(__qin_java_functional(() => __qin_targetFun.call(this, ...__qin_ruleArgs)), ")
+                .append("__qin_args[1], __qin_args[2], __qin_subhuti_rule_cache_key(__qin_ruleArgs));\n")
+                .append("    }\n");
+    }
+
+    private boolean hasSubhutiExecuteRuleWrapperCacheKeyOverload(
+            String methodName,
+            List<QinIrMethodDeclaration> overloads) {
+        if (!"executeRuleWrapper".equals(methodName)) {
+            return false;
+        }
+        for (QinIrMethodDeclaration overload : overloads) {
+            if (isSubhutiExecuteRuleWrapperCacheKeyOverload(overload)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean isVarargsMethod(QinIrMethodDeclaration method) {
         List<QinIrParameter> parameters = method.parameters();
         return !parameters.isEmpty() && parameters.get(parameters.size() - 1).varargs();
@@ -4424,9 +4538,21 @@ public class QinJsBackend implements QinIrCodeBackend {
         List<String> checks = new java.util.ArrayList<>();
         List<QinIrParameter> parameters = overload.parameters();
         for (int i = 0; i < parameters.size(); i++) {
-            checks.add(overloadArgumentTypeGuard("__qin_args[" + i + "]", parameters.get(i).type()));
+            checks.add(isSubhutiExecuteRuleWrapperCacheKeyParameter(overload, i)
+                    ? "true"
+                    : overloadArgumentTypeGuard("__qin_args[" + i + "]", parameters.get(i).type()));
         }
         return checks.isEmpty() ? "true" : String.join(" && ", checks);
+    }
+
+    private boolean isSubhutiExecuteRuleWrapperCacheKeyParameter(QinIrMethodDeclaration overload, int parameterIndex) {
+        return false;
+    }
+
+    private boolean isSubhutiExecuteRuleWrapperCacheKeyOverload(QinIrMethodDeclaration overload) {
+        return "executeRuleWrapper".equals(overload.name())
+                && overload.parameters().size() == 4
+                && overload.parameters().get(3).type().kind() == QinIrTypeKind.STRING;
     }
 
     private String overloadVarargsGuard(QinIrMethodDeclaration overload) {
@@ -4494,13 +4620,18 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         if ("com.subhuti.parser.Alternative".equals(binaryName)) {
             return "(" + argumentExpression + " === null || "
-                    + argumentExpression + ".__qinSubhutiAlternative === true)";
+                    + "(typeof " + argumentExpression + " !== \"function\" && ("
+                    + argumentExpression + ".__qinSubhutiAlternative === true"
+                    + " || typeof " + argumentExpression + ".alt === \"function\""
+                    + " || typeof " + argumentExpression + ".execute === \"function\""
+                    + " || typeof " + argumentExpression + ".run === \"function\")))";
         }
         if ("java.util.Collection".equals(binaryName)) {
             return "true";
         }
         if ("java.util.List".equals(binaryName)) {
             return "(" + argumentExpression + " === null"
+                    + " || Array.isArray(" + argumentExpression + ")"
                     + " || " + argumentExpression + " instanceof __QinJavaUtilArrayList"
                     + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableList)";
         }
@@ -4514,11 +4645,24 @@ public class QinJsBackend implements QinIrCodeBackend {
                     + " || " + argumentExpression + " instanceof __QinJavaUtilHashMap"
                     + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableMap)";
         }
+        if (isSlimeParserParamsClass(binaryName)) {
+            String ownerReference = javaOwnerReference(binaryName, simpleClassName(binaryName));
+            if (ownerReference != null && isJsIdentifier(ownerReference)) {
+                return "(" + argumentExpression + " === null"
+                        + " || " + argumentExpression + " instanceof " + ownerReference
+                        + " || __qin_structural_object__(" + argumentExpression + "))";
+            }
+        }
         String ownerReference = javaOwnerReference(binaryName, simpleClassName(binaryName));
         if (ownerReference != null && isJsIdentifier(ownerReference)) {
             return "(" + argumentExpression + " === null || " + argumentExpression + " instanceof " + ownerReference + ")";
         }
         return "true";
+    }
+
+    private boolean isSlimeParserParamsClass(String binaryName) {
+        return binaryName.startsWith("com.slime.parser.base.SlimeJavascriptParserBase$")
+                && binaryName.endsWith("Params");
     }
 
     private boolean isJavaFunctionalInterface(String binaryName) {
@@ -4557,6 +4701,26 @@ public class QinJsBackend implements QinIrCodeBackend {
         return "__qin_subhuti_raw_" + jsMethodName;
     }
 
+    private void emitFunctionalInterfaceParameterNormalization(
+            StringBuilder js,
+            List<QinIrParameter> parameters,
+            List<String> jsParameterNames,
+            String indent) {
+        for (int i = 0; i < parameters.size(); i++) {
+            QinIrParameter parameter = parameters.get(i);
+            if (parameter.type() != null
+                    && parameter.type().binaryName() != null
+                    && isJavaFunctionalInterface(parameter.type().binaryName())) {
+                String parameterName = jsParameterNames.get(i);
+                js.append(indent)
+                        .append(parameterName)
+                        .append(" = __qin_java_functional(")
+                        .append(parameterName)
+                        .append(");\n");
+            }
+        }
+    }
+
     private void emitMethodDeclaration(
             StringBuilder js,
             String className,
@@ -4593,6 +4757,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append(")");
         emitAnyTypeAnnotation(js);
         js.append(" {\n");
+        emitFunctionalInterfaceParameterNormalization(js, parameters, jsParameterNames, "    ");
         if (isSubhutiRuleMethod(method)) {
             js.append("    return this.executeRuleWrapper(__qin_java_functional(() => {\n");
             js.append("      return this.")
@@ -4604,7 +4769,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                     .append(escapeJs(subhutiRuleName(method)))
                     .append("\", \"")
                     .append(escapeJs(className))
-                    .append("\", __qin_subhuti_rule_cache_key(arguments));\n");
+                    .append("\", __qin_subhuti_rule_cache_key(")
+                    .append(subhutiRuleCacheKeyArguments(jsParameterNames, parameters))
+                    .append("));\n");
             js.append("  }\n");
             js.append("  ");
             if (method.staticMethod()) {
@@ -4630,6 +4797,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append(")");
             emitAnyTypeAnnotation(js);
             js.append(" {\n");
+            emitFunctionalInterfaceParameterNormalization(js, parameters, jsParameterNames, "    ");
             emitPatternVariableDeclarations(js, method.bodyStatements(), method.returnExpression(), "    ");
             if (!method.bodyStatements().isEmpty()) {
                 emitStatements(js, method.bodyStatements(), "    ");
@@ -5022,6 +5190,24 @@ public class QinJsBackend implements QinIrCodeBackend {
 
     private String subhutiRuleName(QinIrMethodDeclaration method) {
         return method.name();
+    }
+
+    private String subhutiRuleCacheKeyArguments(
+            List<String> parameterNames,
+            List<QinIrParameter> parameters) {
+        if (parameterNames.isEmpty()) {
+            return "[]";
+        }
+        List<String> values = new java.util.ArrayList<>();
+        for (int i = 0; i < parameterNames.size(); i++) {
+            QinIrParameter parameter = parameters.get(i);
+            if (parameter.varargs() && i == parameterNames.size() - 1) {
+                values.add("..." + parameterNames.get(i));
+            } else {
+                values.add(parameterNames.get(i));
+            }
+        }
+        return "[" + String.join(", ", values) + "]";
     }
 
     private void emitConsoleLogs(

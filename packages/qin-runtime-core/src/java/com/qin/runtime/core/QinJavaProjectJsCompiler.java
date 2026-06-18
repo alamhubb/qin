@@ -348,6 +348,59 @@ public final class QinJavaProjectJsCompiler {
                 outputRoot.resolve("index." + extension),
                 generatedPackageIndex(entryBinaryName, extension, program, backend.options().emitTypeAnnotations()),
                 StandardCharsets.UTF_8);
+        if ("com.slime.parser.SlimeParser".equals(entryBinaryName)) {
+            writeGeneratedSlimeParserCompatibilityEntries(outputRoot, extension);
+        }
+    }
+
+    private void writeGeneratedSlimeParserCompatibilityEntries(Path outputRoot, String extension) throws IOException {
+        Path src = outputRoot.resolve("src");
+        Path languageEs2025 = src.resolve("language").resolve("es2025");
+        Files.createDirectories(languageEs2025);
+        Files.writeString(src.resolve("index." + extension), """
+                export * from "../index.%1$s";
+                export { default } from "../index.%1$s";
+                """.formatted(extension), StandardCharsets.UTF_8);
+        Files.writeString(src.resolve("SlimeParser." + extension), """
+                export * from "../index.%1$s";
+                export { default } from "../index.%1$s";
+                """.formatted(extension), StandardCharsets.UTF_8);
+        Files.writeString(src.resolve("SlimeTokenConsumer." + extension), """
+                export {
+                  SlimeTokenConsumer,
+                  SlimeTokenConsumer as default
+                } from "../index.%1$s";
+                """.formatted(extension), StandardCharsets.UTF_8);
+        Files.writeString(src.resolve("SlimeTokens." + extension), """
+                export {
+                  JavaScriptTokens,
+                  ReservedWords,
+                  SlimeTokensObj,
+                  SlimeJavascriptTokensObj,
+                  slimeTokens,
+                  slimeTokens as default
+                } from "../index.%1$s";
+                """.formatted(extension), StandardCharsets.UTF_8);
+        Files.writeString(languageEs2025.resolve("SlimeParser." + extension), """
+                export * from "../../../index.%1$s";
+                export { default } from "../../../index.%1$s";
+                """.formatted(extension), StandardCharsets.UTF_8);
+        Files.writeString(languageEs2025.resolve("SlimeTokenConsumer." + extension), """
+                export {
+                  SlimeTokenConsumer,
+                  SlimeTokenConsumer as default
+                } from "../../../index.%1$s";
+                """.formatted(extension), StandardCharsets.UTF_8);
+        Files.writeString(languageEs2025.resolve("SlimeTokens." + extension), """
+                export {
+                  JavaScriptTokens,
+                  ReservedWords,
+                  SlimeTokensObj,
+                  SlimeJavascriptTokensObj,
+                  slimeTokens,
+                  slimeTokens as default
+                } from "../../../index.%1$s";
+                """.formatted(extension), StandardCharsets.UTF_8);
     }
 
     private String generatedPackageName(String entryBinaryName, QinIrCodeBackend backend) {
@@ -368,6 +421,12 @@ public final class QinJavaProjectJsCompiler {
         String indexFile = "./index." + extension;
         String entryFile = "./" + entryBinaryName.replace('.', '/') + "." + extension;
         String type = typeScript ? "typescript" : "javascript";
+        String compatibilityExports = "com.slime.parser.SlimeParser".equals(entryBinaryName)
+                ? generatedSlimeParserCompatibilityPackageExports(extension)
+                : "";
+        String compatibilityFiles = "com.slime.parser.SlimeParser".equals(entryBinaryName)
+                ? "    \"src\",\n"
+                : "";
         return """
                 {
                   "name": "%s",
@@ -383,6 +442,7 @@ public final class QinJavaProjectJsCompiler {
                       "import": "%s",
                       "default": "%s"
                     },
+                %s
                     "./entry": {
                       "types": "%s",
                       "import": "%s",
@@ -400,6 +460,7 @@ public final class QinJavaProjectJsCompiler {
                   },
                   "files": [
                     "com",
+                %s
                     "index.%s",
                     "qin.config.js",
                     "node_modules/%s"
@@ -414,6 +475,7 @@ public final class QinJavaProjectJsCompiler {
                 indexFile,
                 indexFile,
                 indexFile,
+                compatibilityExports,
                 entryFile,
                 entryFile,
                 entryFile,
@@ -421,8 +483,54 @@ public final class QinJavaProjectJsCompiler {
                 typeScript ? "ts" : "js",
                 QinJsBackend.javaSdkJsPackageName(),
                 QinJsBackend.javaSdkJsPackageName(),
+                compatibilityFiles,
                 extension,
                 QinJsBackend.javaSdkJsPackageName());
+    }
+
+    private String generatedSlimeParserCompatibilityPackageExports(String extension) {
+        return """
+                    "./src": {
+                      "types": "./src/index.%1$s",
+                      "import": "./src/index.%1$s",
+                      "default": "./src/index.%1$s"
+                    },
+                    "./src/index.%1$s": {
+                      "types": "./src/index.%1$s",
+                      "import": "./src/index.%1$s",
+                      "default": "./src/index.%1$s"
+                    },
+                    "./src/SlimeParser.%1$s": {
+                      "types": "./src/SlimeParser.%1$s",
+                      "import": "./src/SlimeParser.%1$s",
+                      "default": "./src/SlimeParser.%1$s"
+                    },
+                    "./src/SlimeTokenConsumer.%1$s": {
+                      "types": "./src/SlimeTokenConsumer.%1$s",
+                      "import": "./src/SlimeTokenConsumer.%1$s",
+                      "default": "./src/SlimeTokenConsumer.%1$s"
+                    },
+                    "./src/SlimeTokens.%1$s": {
+                      "types": "./src/SlimeTokens.%1$s",
+                      "import": "./src/SlimeTokens.%1$s",
+                      "default": "./src/SlimeTokens.%1$s"
+                    },
+                    "./src/language/es2025/SlimeParser.%1$s": {
+                      "types": "./src/language/es2025/SlimeParser.%1$s",
+                      "import": "./src/language/es2025/SlimeParser.%1$s",
+                      "default": "./src/language/es2025/SlimeParser.%1$s"
+                    },
+                    "./src/language/es2025/SlimeTokenConsumer.%1$s": {
+                      "types": "./src/language/es2025/SlimeTokenConsumer.%1$s",
+                      "import": "./src/language/es2025/SlimeTokenConsumer.%1$s",
+                      "default": "./src/language/es2025/SlimeTokenConsumer.%1$s"
+                    },
+                    "./src/language/es2025/SlimeTokens.%1$s": {
+                      "types": "./src/language/es2025/SlimeTokens.%1$s",
+                      "import": "./src/language/es2025/SlimeTokens.%1$s",
+                      "default": "./src/language/es2025/SlimeTokens.%1$s"
+                    },
+                """.formatted(extension);
     }
 
     private String generatedQinConfig(String packageName, String entryBinaryName, String extension) {
@@ -453,7 +561,36 @@ public final class QinJavaProjectJsCompiler {
         js.append("// Generated package entry by Qin. Source Java entry: ")
                 .append(entryBinaryName)
                 .append('\n');
-        appendExportAlias(js, entryBinaryName, simpleClassName(entryBinaryName), extension, binaryNames);
+        boolean slimeParserEntry = "com.slime.parser.SlimeParser".equals(entryBinaryName)
+                && binaryNames.contains(entryBinaryName);
+        if (binaryNames.contains(entryBinaryName)) {
+            String entryIdentifier = QinJsBackend.generatedJavaClassIdentifier(entryBinaryName);
+            String sourceBinaryName = entryBinaryName.contains("$")
+                    ? entryBinaryName.substring(0, entryBinaryName.indexOf('$'))
+                    : entryBinaryName;
+            js.append("import { ")
+                    .append(entryIdentifier)
+                    .append(slimeParserEntry ? " as __QinGeneratedSlimeParserBase" : "")
+                    .append(" } from \"./")
+                    .append(sourceBinaryName.replace('.', '/'))
+                    .append(".")
+                    .append(extension)
+                    .append("\";\n");
+            if (slimeParserEntry) {
+                appendGeneratedSlimeParserAdapter(js);
+                js.append("export { __QinGeneratedSlimeParserBase as ")
+                        .append(entryIdentifier)
+                        .append(" };\n");
+                js.append("export default SlimeParser;\n");
+            } else {
+                js.append("export default ")
+                        .append(entryIdentifier)
+                        .append(";\n");
+            }
+        }
+        if (!slimeParserEntry) {
+            appendExportAlias(js, entryBinaryName, simpleClassName(entryBinaryName), extension, binaryNames);
+        }
         appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser", "SlimeJavascriptParser", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.consumer.SlimeTokenConsumer", "SlimeTokenConsumer", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser$SourceType", "SlimeJavascriptParserSourceType", extension, binaryNames);
@@ -478,9 +615,12 @@ public final class QinJavaProjectJsCompiler {
                 js.append("const __qinSlimeTokenEntries = [];\n");
                 js.append("for (const token of __qinSlimeTokens) {\n");
             }
-            js.append("  __qinSlimeTokenEntries.push([token.getName(), token]);\n");
+            js.append("  const tokenName = token.getName();\n");
+            js.append("  __qinSlimeTokenEntries.push([tokenName, token]);\n");
+            js.append("  if (!tokenName.endsWith(\"Tok\")) __qinSlimeTokenEntries.push([tokenName + \"Tok\", token]);\n");
             js.append("}\n");
             js.append("export const SlimeTokensObj = Object.fromEntries(__qinSlimeTokenEntries);\n");
+            js.append("export const SlimeJavascriptTokensObj = SlimeTokensObj;\n");
             js.append("export const slimeTokens = Object.values(SlimeTokensObj);\n");
             if (typeScript) {
                 js.append("export const ReservedWords = new Set(slimeTokens.filter((token: any) => token.isKeyword?.()).map((token: any) => token.getValue?.()).filter(Boolean));\n");
@@ -495,6 +635,44 @@ public final class QinJavaProjectJsCompiler {
             js.append("export type TemplateLiteralParams = any;\n");
         }
         return js.toString();
+    }
+
+    private void appendGeneratedSlimeParserAdapter(StringBuilder js) {
+        js.append("""
+                function __qinToJsArray(value) {
+                  if (value == null) return [];
+                  if (Array.isArray(value)) return value;
+                  if (typeof value.toArray === "function") return value.toArray();
+                  if (typeof value[Symbol.iterator] === "function") return Array.from(value);
+                  return [];
+                }
+                class SlimeParser extends __QinGeneratedSlimeParserBase {
+                  constructor(...args) {
+                    super(...args);
+                    this.parsedTokens = [];
+                    this.unparsedTokens = [];
+                    this.tokenConsumer = super.getTokenConsumer();
+                    this.__qinSyncJsParserProperties();
+                  }
+                  __qinSyncJsParserProperties() {
+                    this.parsedTokens = __qinToJsArray(super.parsedTokens());
+                    this.unparsedTokens = __qinToJsArray(super.unparsedTokens());
+                    this.tokenConsumer = super.getTokenConsumer();
+                    return null;
+                  }
+                  Program(...args) {
+                    const result = super.Program(...args);
+                    this.__qinSyncJsParserProperties();
+                    return result;
+                  }
+                  parse(...args) {
+                    const result = super.parse(...args);
+                    this.__qinSyncJsParserProperties();
+                    return result;
+                  }
+                }
+                export { SlimeParser };
+                """);
     }
 
     private void appendExportAlias(
