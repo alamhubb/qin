@@ -131,6 +131,16 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
             throw new IllegalStateException("Vite plugin vue helper template was not patched: " + patchedVuePlugin);
         }
 
+        Method vueShimSource = QinJsPackageRunner.class.getDeclaredMethod("qinVitePluginVueShimSource");
+        vueShimSource.setAccessible(true);
+        String shimSource = (String) vueShimSource.invoke(runner);
+        if (shimSource.contains("export default")
+                || !shimSource.contains("export { vuePlugin as default };")
+                || !shimSource.contains("String.fromCharCode(101, 120, 112, 111, 114, 116) + \" default \"")) {
+            throw new IllegalStateException("Vite plugin vue Qin shim exposes parser-hostile default export text:\n"
+                    + shimSource);
+        }
+
         System.out.println("QinJsPackageRunnerPackageOverridesSmokeTestMain OK");
     }
 

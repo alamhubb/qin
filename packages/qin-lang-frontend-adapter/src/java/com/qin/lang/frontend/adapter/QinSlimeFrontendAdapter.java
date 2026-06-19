@@ -2206,7 +2206,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
     }
 
     private boolean shouldExternalizeFunctionModel(int sourceLength, int encodedNodeCount, boolean required) {
-        if (sourceLength > 300_000) {
+        if (sourceLength > 50_000) {
             return true;
         }
         return required && encodedNodeCount > 8_000;
@@ -4645,10 +4645,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         QinIrExpression callee;
         if ("Identifier".equals(simpleName(calleeAst))) {
             String calleeName = extractIdentifierName(calleeAst, "NewExpression.callee");
-            if (javaImportLookup.containsKey(calleeName)) {
-                return lowerJavaNewExpression(expressionAst, javaImportLookup);
-            } else if (declarationLookup.containsKey(calleeName)) {
+            if (declarationLookup.containsKey(calleeName)) {
                 callee = new QinIrIdentifierReference(calleeName);
+            } else if (javaImportLookup.containsKey(calleeName)) {
+                return lowerJavaNewExpression(expressionAst, javaImportLookup);
             } else if (isKnownGlobalConstructor(calleeName)) {
                 callee = new QinIrStringLiteral(calleeName);
             } else {
@@ -4673,10 +4673,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         QinIrExpression callee;
         if (expressionAst.callee() instanceof Identifier calleeIdentifier) {
             String calleeName = calleeIdentifier.name();
-            if (javaImportLookup.containsKey(calleeName)) {
-                return lowerJavaNewExpression(expressionAst, javaImportLookup);
-            } else if (declarationLookup.containsKey(calleeName)) {
+            if (declarationLookup.containsKey(calleeName)) {
                 callee = new QinIrIdentifierReference(calleeName);
+            } else if (javaImportLookup.containsKey(calleeName)) {
+                return lowerJavaNewExpression(expressionAst, javaImportLookup);
             } else if (isKnownGlobalConstructor(calleeName)) {
                 callee = new QinIrStringLiteral(calleeName);
             } else {

@@ -214,8 +214,7 @@ public final class QinInMemoryJvmRunner {
             return;
         }
         for (QinIrFunctionModelArtifact artifact : artifacts) {
-            Map<String, Object> astModel = toRuntimeMap(artifact.ast());
-            QinFunctionModelRegistry.register(artifact.id(), () -> astModel);
+            QinFunctionModelRegistry.register(artifact.id(), () -> toRuntimeMap(artifact.ast()));
         }
     }
 

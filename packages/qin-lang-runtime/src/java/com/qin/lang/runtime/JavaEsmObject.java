@@ -232,7 +232,11 @@ public final class JavaEsmObject {
         }
         if (value instanceof Map<?, ?> map) {
             for (Map.Entry<?, ?> entry : map.entrySet()) {
-                entries.put(String.valueOf(entry.getKey()), resolveStoredPropertyValue(entry.getValue()));
+                String key = String.valueOf(entry.getKey());
+                if (JavaEsmGlobal.isRuntimeHiddenObjectKey(key)) {
+                    continue;
+                }
+                entries.put(key, resolveStoredPropertyValue(entry.getValue()));
             }
             return entries;
         }

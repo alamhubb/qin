@@ -25,6 +25,21 @@ public final class QinCliJvmArgsSmokeTestMain {
                 "-Dqin.second=true");
         require(combined.equals(List.of("-Xms64m", "-Dqin.second=true")), "combined JVM args");
 
+        List<String> windowsSplitEqualsForm = invoke(method,
+                "--jvm-args=-Xms16m",
+                "-Xmx384m",
+                "-XX:+UseSerialGC",
+                "-XX:-UseJVMCICompiler",
+                "-XX:TieredStopAtLevel=1",
+                "--port",
+                "19115");
+        require(windowsSplitEqualsForm.equals(List.of(
+                "-Xms16m",
+                "-Xmx384m",
+                "-XX:+UseSerialGC",
+                "-XX:-UseJVMCICompiler",
+                "-XX:TieredStopAtLevel=1")), "windows split equals-form JVM args");
+
         System.out.println("QinCliJvmArgsSmokeTestMain OK");
     }
 

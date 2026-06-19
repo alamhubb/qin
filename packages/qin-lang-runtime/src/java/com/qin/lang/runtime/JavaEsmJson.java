@@ -30,6 +30,17 @@ public final class JavaEsmJson {
         if (json == null) {
             return null;
         }
+        return parseSource(json);
+    }
+
+    public static Object parseChunks(String[] chunks) {
+        if (chunks == null) {
+            return null;
+        }
+        return parseSource(new ChunkedJsonSource(chunks));
+    }
+
+    private static Object parseSource(CharSequence json) {
         Parser parser = new Parser(json);
         Object value = parser.parseValue();
         parser.skipWhitespace();
@@ -178,11 +189,100 @@ public final class JavaEsmJson {
         out.append(number);
     }
 
+    private static final class ChunkedJsonSource implements CharSequence {
+        private final String[] chunks;
+        private final int[] starts;
+        private final int[] lengths;
+        private final int length;
+        private int discardCursor;
+
+        private ChunkedJsonSource(String[] chunks) {
+            this.chunks = chunks.clone();
+            this.starts = new int[chunks.length];
+            this.lengths = new int[chunks.length];
+            int cursor = 0;
+            for (int i = 0; i < chunks.length; i++) {
+                starts[i] = cursor;
+                String chunk = chunks[i] == null ? "" : chunks[i];
+                this.chunks[i] = chunk;
+                lengths[i] = chunk.length();
+                cursor += lengths[i];
+            }
+            this.length = cursor;
+        }
+
+        @Override
+        public int length() {
+            return length;
+        }
+
+        @Override
+        public char charAt(int index) {
+            if (index < 0 || index >= length) {
+                throw new IndexOutOfBoundsException(index);
+            }
+            int chunkIndex = chunkIndex(index);
+            return chunks[chunkIndex].charAt(index - starts[chunkIndex]);
+        }
+
+        @Override
+        public CharSequence subSequence(int start, int end) {
+            return slice(start, end);
+        }
+
+        private String slice(int start, int end) {
+            if (start < 0 || end < start || end > length) {
+                throw new IndexOutOfBoundsException(start + ".." + end);
+            }
+            if (start == end) {
+                return "";
+            }
+            int startChunk = chunkIndex(start);
+            int endChunk = chunkIndex(end - 1);
+            if (startChunk == endChunk) {
+                return chunks[startChunk].substring(start - starts[startChunk], end - starts[startChunk]);
+            }
+            StringBuilder out = new StringBuilder(end - start);
+            int firstOffset = start - starts[startChunk];
+            out.append(chunks[startChunk], firstOffset, chunks[startChunk].length());
+            for (int chunk = startChunk + 1; chunk < endChunk; chunk++) {
+                out.append(chunks[chunk]);
+            }
+            out.append(chunks[endChunk], 0, end - starts[endChunk]);
+            return out.toString();
+        }
+
+        private void discardBefore(int index) {
+            while (discardCursor < chunks.length && starts[discardCursor] + lengths[discardCursor] <= index) {
+                chunks[discardCursor] = "";
+                discardCursor++;
+            }
+        }
+
+        private int chunkIndex(int index) {
+            int low = 0;
+            int high = starts.length - 1;
+            while (low <= high) {
+                int mid = (low + high) >>> 1;
+                int start = starts[mid];
+                int end = start + lengths[mid];
+                if (index < start) {
+                    high = mid - 1;
+                } else if (index >= end) {
+                    low = mid + 1;
+                } else {
+                    return mid;
+                }
+            }
+            throw new IndexOutOfBoundsException(index);
+        }
+    }
+
     private static final class Parser {
-        private final String source;
+        private final CharSequence source;
         private int index;
 
-        private Parser(String source) {
+        private Parser(CharSequence source) {
             this.source = source;
         }
 
@@ -218,9 +318,11 @@ public final class JavaEsmJson {
                 expect(':');
                 Object value = parseValue();
                 object.put(key, value);
+                discardConsumedChunks();
                 skipWhitespace();
                 if (peek('}')) {
                     index++;
+                    discardConsumedChunks();
                     return object;
                 }
                 expect(',');
@@ -237,9 +339,11 @@ public final class JavaEsmJson {
             }
             while (true) {
                 array.add(parseValue());
+                discardConsumedChunks();
                 skipWhitespace();
                 if (peek(']')) {
                     index++;
+                    discardConsumedChunks();
                     return array;
                 }
                 expect(',');
@@ -248,6 +352,20 @@ public final class JavaEsmJson {
 
         private String parseString() {
             expect('"');
+            int start = index;
+            while (!isDone()) {
+                char current = source.charAt(index);
+                if (current == '"') {
+                    String text = slice(start, index);
+                    index++;
+                    return text;
+                }
+                if (current == '\\' || current < 0x20) {
+                    index = start;
+                    break;
+                }
+                index++;
+            }
             StringBuilder out = new StringBuilder();
             while (!isDone()) {
                 char current = source.charAt(index++);
@@ -270,7 +388,7 @@ public final class JavaEsmJson {
                             if (index + 4 > source.length()) {
                                 throw new IllegalArgumentException("Invalid unicode escape");
                             }
-                            String hex = source.substring(index, index + 4);
+                            String hex = slice(index, index + 4);
                             out.append((char) Integer.parseInt(hex, 16));
                             index += 4;
                         }
@@ -284,7 +402,7 @@ public final class JavaEsmJson {
         }
 
         private Object parseLiteral(String token, Object value) {
-            if (!source.startsWith(token, index)) {
+            if (!startsWith(token, index)) {
                 throw new IllegalArgumentException("Invalid JSON literal at index " + index);
             }
             index += token.length();
@@ -308,7 +426,7 @@ public final class JavaEsmJson {
                 }
                 consumeDigits();
             }
-            return Double.parseDouble(source.substring(start, index));
+            return Double.parseDouble(slice(start, index));
         }
 
         private void consumeDigits() {
@@ -341,6 +459,31 @@ public final class JavaEsmJson {
 
         private boolean isDone() {
             return index >= source.length();
+        }
+
+        private boolean startsWith(String token, int offset) {
+            if (offset < 0 || offset + token.length() > source.length()) {
+                return false;
+            }
+            for (int i = 0; i < token.length(); i++) {
+                if (source.charAt(offset + i) != token.charAt(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void discardConsumedChunks() {
+            if (source instanceof ChunkedJsonSource chunkedSource) {
+                chunkedSource.discardBefore(index);
+            }
+        }
+
+        private String slice(int start, int end) {
+            if (source instanceof ChunkedJsonSource chunkedSource) {
+                return chunkedSource.slice(start, end);
+            }
+            return source.subSequence(start, end).toString();
         }
     }
 }

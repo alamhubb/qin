@@ -220,12 +220,79 @@ public final class QinLinkedModuleSourceEmitter {
         rewritten = EXPORT_FUNCTION_REWRITE_PATTERN.matcher(rewritten).replaceAll("function ");
         rewritten = EXPORT_CLASS_REWRITE_PATTERN.matcher(rewritten).replaceAll("class ");
         rewritten = ABSTRACT_CLASS_REWRITE_PATTERN.matcher(rewritten).replaceAll("class ");
+        rewritten = stripTypeOnlyAbstractClassMembers(rewritten);
         rewritten = rewriteDefaultExports(rewritten, moduleFile, moduleIndex);
         rewritten = appendInlineExportInitializers(rewritten, moduleFile, moduleIndex, parsedExports);
         // Local `export { ... }` has no runtime effect for flattened source.
         rewritten = IMPORT_TYPE_LOCAL_PATTERN.matcher(rewritten).replaceAll("");
         rewritten = EXPORT_TYPE_NAMED_LOCAL_PATTERN.matcher(rewritten).replaceAll("");
         return EXPORT_NAMED_LOCAL_PATTERN.matcher(rewritten).replaceAll("");
+    }
+
+    private String stripTypeOnlyAbstractClassMembers(String source) {
+        if (source == null || source.indexOf("abstract") < 0) {
+            return source;
+        }
+        StringBuilder out = new StringBuilder(source.length());
+        int cursor = 0;
+        while (cursor < source.length()) {
+            int lineEnd = findLineEndIncludingSeparator(source, cursor);
+            String line = source.substring(cursor, lineEnd);
+            if (!isTypeOnlyAbstractClassMemberStart(line)) {
+                out.append(line);
+                cursor = lineEnd;
+                continue;
+            }
+
+            int memberEnd = lineEnd;
+            int parenDepth = parenthesisDelta(line);
+            while (parenDepth > 0 && memberEnd < source.length()) {
+                int nextLineEnd = findLineEndIncludingSeparator(source, memberEnd);
+                String nextLine = source.substring(memberEnd, nextLineEnd);
+                parenDepth += parenthesisDelta(nextLine);
+                memberEnd = nextLineEnd;
+            }
+            cursor = memberEnd;
+        }
+        return out.toString();
+    }
+
+    private boolean isTypeOnlyAbstractClassMemberStart(String line) {
+        String trimmed = line.strip();
+        if (trimmed.startsWith("abstract class ") || trimmed.startsWith("class ")) {
+            return false;
+        }
+        return trimmed.matches("^(?:(?:public|protected|private)\\s+)?(?:static\\s+)?abstract\\s+.*");
+    }
+
+    private int parenthesisDelta(String text) {
+        int delta = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '(') {
+                delta++;
+            } else if (ch == ')') {
+                delta--;
+            }
+        }
+        return delta;
+    }
+
+    private int findLineEndIncludingSeparator(String source, int start) {
+        int i = start;
+        while (i < source.length()) {
+            char ch = source.charAt(i++);
+            if (ch == '\n') {
+                return i;
+            }
+            if (ch == '\r') {
+                if (i < source.length() && source.charAt(i) == '\n') {
+                    i++;
+                }
+                return i;
+            }
+        }
+        return source.length();
     }
 
     private String appendInlineExportInitializers(

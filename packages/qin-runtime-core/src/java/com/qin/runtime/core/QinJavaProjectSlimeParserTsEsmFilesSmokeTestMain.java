@@ -43,6 +43,22 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
                 "SlimeParser class declaration remains local");
         require(parserOutput.code().contains("constructor(...__qin_args: any[])"),
                 "TypeScript backend emits constructor type annotations");
+        require(parserOutput.code().contains("__qin_subhuti_rule_cache_key([params])"),
+                "Subhuti rule cache key uses explicit TS parameter array");
+        require(!parserOutput.code().contains("__qin_subhuti_rule_cache_key(arguments)"),
+                "Subhuti rule cache key avoids runtime arguments object");
+        String subhutiCoreCode = byBinaryName.get("com.subhuti.parser.SubhutiParserCore").code();
+        require(subhutiCoreCode.contains("__qin_targetFun.call(this, ...__qin_ruleArgs)"),
+                "Subhuti TS runtime accepts external decorator rule args");
+        require(subhutiCoreCode.contains("__qin_args[3] === null || typeof __qin_args[3] === \"string\""),
+                "Subhuti cacheKey overload keeps string guard");
+        String allGeneratedCode = outputs.stream()
+                .map(QinJavaProjectJsCompiler.EsmFileOutput::code)
+                .collect(Collectors.joining("\n"));
+        require(allGeneratedCode.contains("typeof __qin_arg.alt === \"function\""),
+                "Subhuti Alternative varargs guard accepts local TS Alternative.alt");
+        require(allGeneratedCode.contains("typeof __qin_arg.run === \"function\""),
+                "Subhuti Alternative varargs guard accepts local TS Alternative.run");
         require(parserOutput.code().contains("export { com_slime_parser_SlimeParser };"),
                 "SlimeParser named ESM export");
         require(byBinaryName.containsKey("com.subhuti.struct.SubhutiCst"),
@@ -54,9 +70,30 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
         Path packageJson = outputRoot.resolve("package.json");
         Path qinConfig = outputRoot.resolve("qin.config.js");
         Path indexTs = outputRoot.resolve("index.ts");
+        Path sourceIndexTs = outputRoot.resolve("src").resolve("index.ts");
+        Path sourceSlimeParserTs = outputRoot.resolve("src").resolve("SlimeParser.ts");
+        Path sourceSlimeTokensTs = outputRoot.resolve("src").resolve("SlimeTokens.ts");
+        Path sourceSlimeTokenConsumerTs = outputRoot.resolve("src").resolve("SlimeTokenConsumer.ts");
+        Path es2025SlimeParserTs = outputRoot.resolve("src").resolve("language").resolve("es2025")
+                .resolve("SlimeParser.ts");
+        Path es2025SlimeTokensTs = outputRoot.resolve("src").resolve("language").resolve("es2025")
+                .resolve("SlimeTokens.ts");
+        Path es2025SlimeTokenConsumerTs = outputRoot.resolve("src").resolve("language").resolve("es2025")
+                .resolve("SlimeTokenConsumer.ts");
         require(Files.isRegularFile(packageJson), "generated TS ESM npm package.json");
         require(Files.isRegularFile(qinConfig), "generated TS ESM qin.config.js");
         require(Files.isRegularFile(indexTs), "generated TS ESM package index.ts");
+        require(Files.isRegularFile(sourceIndexTs), "generated TS ESM src/index.ts compatibility entry");
+        require(Files.isRegularFile(sourceSlimeParserTs), "generated TS ESM src/SlimeParser.ts compatibility entry");
+        require(Files.isRegularFile(sourceSlimeTokensTs), "generated TS ESM src/SlimeTokens.ts compatibility entry");
+        require(Files.isRegularFile(sourceSlimeTokenConsumerTs),
+                "generated TS ESM src/SlimeTokenConsumer.ts compatibility entry");
+        require(Files.isRegularFile(es2025SlimeParserTs),
+                "generated TS ESM src/language/es2025/SlimeParser.ts compatibility entry");
+        require(Files.isRegularFile(es2025SlimeTokensTs),
+                "generated TS ESM src/language/es2025/SlimeTokens.ts compatibility entry");
+        require(Files.isRegularFile(es2025SlimeTokenConsumerTs),
+                "generated TS ESM src/language/es2025/SlimeTokenConsumer.ts compatibility entry");
         String packageJsonText = Files.readString(packageJson, StandardCharsets.UTF_8);
         String qinConfigText = Files.readString(qinConfig, StandardCharsets.UTF_8);
         String indexText = Files.readString(indexTs, StandardCharsets.UTF_8);
@@ -64,12 +101,27 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
                 "generated package has stable npm name");
         require(packageJsonText.contains("\"entryBinaryName\": \"com.slime.parser.SlimeParser\""),
                 "generated package records Java entry binary name");
+        require(packageJsonText.contains("\"./src/language/es2025/SlimeParser.ts\""),
+                "generated package exports legacy SlimeParser deep import");
+        require(packageJsonText.contains("\"src\""),
+                "generated package includes source compatibility entries in files list");
         require(qinConfigText.contains("entry: \"./index.ts\""),
                 "generated qin.config.js points to TS package entry");
-        require(indexText.contains("export { com_slime_parser_SlimeParser, com_slime_parser_SlimeParser as SlimeParser }"),
-                "generated package index exports friendly SlimeParser alias");
+        require(indexText.contains("class SlimeParser extends __QinGeneratedSlimeParserBase"),
+                "generated package index wraps SlimeParser for JS/TS package ABI");
+        require(indexText.contains("this.parsedTokens = __qinToJsArray(super.parsedTokens())"),
+                "generated package index exposes parsedTokens as a synced JS property");
+        require(indexText.contains("export { __QinGeneratedSlimeParserBase as com_slime_parser_SlimeParser }"),
+                "generated package index keeps raw Java class export");
+        require(indexText.contains("export default SlimeParser;"),
+                "generated package index exports SlimeParser wrapper as default");
         require(indexText.contains("export const SlimeTokensObj = Object.fromEntries"),
                 "generated package index exposes slime token object");
+        require(indexText.contains("export const SlimeJavascriptTokensObj = SlimeTokensObj;"),
+                "generated package index exposes Slime JavaScript token compatibility alias");
+        require(Files.readString(es2025SlimeParserTs, StandardCharsets.UTF_8)
+                        .contains("export { default } from \"../../../index.ts\""),
+                "legacy SlimeParser deep import re-exports generated package index");
 
         System.out.println("Generated ESM TS files: " + outputRoot);
         System.out.println("Generated ESM TS npm package: @qin/generated-slime-parser-ts");

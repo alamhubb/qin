@@ -46,7 +46,7 @@ final class QinVueTemplateBlockCompiler {
                 }
                 function __qinNormalizeClass(value) {
                   if (Array.isArray(value)) {
-                    return value.map(__qinNormalizeClass).filter(Boolean).join(' ');
+                    return value.map(__qinNormalizeClass).filter((item) => !!item).join(' ');
                   }
                   if (value && typeof value === 'object') {
                     return Object.entries(value)

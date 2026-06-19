@@ -20,7 +20,9 @@ public final class QinJsBackendJavaHashSetRemoveCallLimitSmokeTestMain {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(new QinIrJavaImport("java:java.util", "HashSet", "HashSet", "java.util.HashSet")),
+                List.of(
+                        new QinIrJavaImport("java:java.util", "HashSet", "HashSet", "java.util.HashSet"),
+                        new QinIrJavaImport("java:java.lang", "String", "JString", "java.lang.String")),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -44,11 +46,20 @@ public final class QinJsBackendJavaHashSetRemoveCallLimitSmokeTestMain {
                             const set = new HashSet();
                             const key = "AsyncFunctionDeclaration:0.0:null:<null>";
                             set.add(key);
-                            String(set.remove(key)) + ":" + set.size();
+                            const containsViaStringShim = JString.contains(set, key);
+                            const emptyBeforeRemove = JString.isEmpty(set);
+                            const removed = set.remove(key);
+                            const emptyAfterRemove = JString.isEmpty(set);
+                            String(containsViaStringShim) + ":"
+                              + String(emptyBeforeRemove) + ":"
+                              + String(removed) + ":"
+                              + String(emptyAfterRemove) + ":"
+                              + set.size();
                             """,
                     "js_backend_hashset_remove_call_limit");
-            if (!"true:0.0".equals(result) && !"true:0".equals(result)) {
-                throw new IllegalStateException("Expected HashSet remove result true:0, got: " + result);
+            if (!"true:false:true:true:0.0".equals(result) && !"true:false:true:true:0".equals(result)) {
+                throw new IllegalStateException(
+                        "Expected HashSet contains/isEmpty/remove result true:false:true:true:0, got: " + result);
             }
         } finally {
             JavaEsmGlobal.clearInterpretedCallCountLimit();

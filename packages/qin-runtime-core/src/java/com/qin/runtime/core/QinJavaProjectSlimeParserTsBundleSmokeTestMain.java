@@ -31,6 +31,18 @@ public final class QinJavaProjectSlimeParserTsBundleSmokeTestMain {
                 "generated SlimeParser TS class");
         require(generated.contains("constructor(...__qin_args: any[])"),
                 "generated constructor type annotation");
+        require(generated.contains("__qin_subhuti_rule_cache_key([params])"),
+                "Subhuti rule cache key uses explicit TS parameter array");
+        require(!generated.contains("__qin_subhuti_rule_cache_key(arguments)"),
+                "Subhuti rule cache key avoids runtime arguments object");
+        require(generated.contains("__qin_targetFun.call(this, ...__qin_ruleArgs)"),
+                "Subhuti TS runtime accepts external decorator rule args");
+        require(generated.contains("__qin_args[3] === null || typeof __qin_args[3] === \"string\""),
+                "Subhuti cacheKey overload keeps string guard");
+        require(generated.contains("typeof __qin_arg.alt === \"function\""),
+                "Subhuti Alternative varargs guard accepts local TS Alternative.alt");
+        require(generated.contains("typeof __qin_arg.run === \"function\""),
+                "Subhuti Alternative varargs guard accepts local TS Alternative.run");
         require(generated.contains("const __qinGlobal = globalThis as any;"),
                 "generated TS-safe global export bridge");
 

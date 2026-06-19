@@ -27,8 +27,23 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
         Files.createDirectories(appDir);
         Path ovsFile = appDir.resolve("OvsDemo.ovs");
         Files.writeString(ovsFile, """
+                import { ref } from 'vue'
+
+                let count = ref(0)
+
                 div(class = css { colorBlue, fontWeight700, padding16px }) {
-                  "Hello Qin OVS frontend"
+                  h2 { "Rendered from .ovs" }
+                  p {
+                    "OVS count: "
+                    count.value
+                  }
+                  button(
+                    onClick() {
+                      count.value++
+                    }
+                  ) {
+                    "Increment OVS"
+                  }
                 }
                 """, StandardCharsets.UTF_8);
 
@@ -49,6 +64,8 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
                 || !module.contains("qin-vue-cssts=runtime")
                 || !module.contains("qin-vue-cssts=atom")
                 || !module.contains("const { colorBlue, fontWeight700, padding16px }")
+                || !module.contains("Increment OVS")
+                || !module.contains("count.value")
                 || !module.contains("$OvsHtmlTag")) {
             throw new IllegalStateException("OVS module did not include expected runtime wiring:\n" + module);
         }

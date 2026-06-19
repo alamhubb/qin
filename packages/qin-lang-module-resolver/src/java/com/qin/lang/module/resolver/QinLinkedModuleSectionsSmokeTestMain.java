@@ -11,7 +11,18 @@ public final class QinLinkedModuleSectionsSmokeTestMain {
         Path root = Files.createTempDirectory("qin-linked-module-sections-");
         Path dep = root.resolve("dep.ts");
         Path entry = root.resolve("entry.ts");
-        Files.writeString(dep, "export const value = 41;\n");
+        Files.writeString(dep, """
+                export abstract class Base {
+                    protected abstract pending: boolean
+                    protected abstract makeValue(
+                        input: number
+                    ): number
+                    public value() {
+                        return 41;
+                    }
+                }
+                export const value = 41;
+                """);
         Files.writeString(entry, "import { value } from './dep.ts';\nconst result = value + 1;\n");
 
         QinModuleGraph graph = new QinModuleGraphBuilder().build(entry);
@@ -32,6 +43,15 @@ public final class QinLinkedModuleSectionsSmokeTestMain {
         if (!depSection.source().contains("__qesm_m0_e_value")) {
             throw new IllegalStateException("Dep section did not initialize its export slot:\n"
                     + depSection.source());
+        }
+        if (depSection.classSource().contains("abstract pending")
+                || depSection.classSource().contains("abstract makeValue")) {
+            throw new IllegalStateException("Dep section still contains type-only abstract class members:\n"
+                    + depSection.classSource());
+        }
+        if (!depSection.classSource().contains("public value()")) {
+            throw new IllegalStateException("Dep section removed a concrete class member:\n"
+                    + depSection.classSource());
         }
         if (!entrySection.source().contains("const value = __qin_export_get__(__qesm_m0_e_value)")) {
             throw new IllegalStateException("Entry section did not include import alias:\n"

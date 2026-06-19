@@ -330,11 +330,20 @@ public class QinCli {
             }
 
             if (arg.startsWith("--jvm-args=")) {
-                options.jvmArgs.addAll(tokenizeArguments(arg.substring("--jvm-args=".length())));
+                i = appendJvmArgsWithContinuations(
+                        options.jvmArgs,
+                        args,
+                        i,
+                        arg.substring("--jvm-args=".length()));
                 continue;
             }
             if ("--jvm-args".equals(arg)) {
-                options.jvmArgs.addAll(tokenizeArguments(nextArg(args, ++i, "--jvm-args")));
+                int valueIndex = i + 1;
+                i = appendJvmArgsWithContinuations(
+                        options.jvmArgs,
+                        args,
+                        valueIndex,
+                        nextArg(args, valueIndex, "--jvm-args"));
                 continue;
             }
 
@@ -634,14 +643,43 @@ public class QinCli {
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             if (arg.startsWith("--jvm-args=")) {
-                jvmArgs.addAll(tokenizeArguments(arg.substring("--jvm-args=".length())));
+                i = appendJvmArgsWithContinuations(jvmArgs, args, i, arg.substring("--jvm-args=".length()));
                 continue;
             }
             if ("--jvm-args".equals(arg)) {
-                jvmArgs.addAll(tokenizeArguments(nextArg(args, ++i, "--jvm-args")));
+                int valueIndex = i + 1;
+                i = appendJvmArgsWithContinuations(jvmArgs, args, valueIndex, nextArg(args, valueIndex, "--jvm-args"));
             }
         }
         return jvmArgs;
+    }
+
+    private static int appendJvmArgsWithContinuations(
+            List<String> out,
+            String[] args,
+            int valueIndex,
+            String rawValue) {
+        out.addAll(tokenizeArguments(rawValue));
+        int i = valueIndex + 1;
+        while (i < args.length && isLooseJvmArg(args[i])) {
+            out.add(args[i]);
+            i++;
+        }
+        return i - 1;
+    }
+
+    private static boolean isLooseJvmArg(String arg) {
+        if (arg == null || arg.isBlank()) {
+            return false;
+        }
+        return arg.startsWith("-X")
+                || arg.startsWith("-D")
+                || arg.startsWith("-agentlib:")
+                || arg.startsWith("-javaagent:")
+                || arg.startsWith("-ea")
+                || arg.startsWith("-da")
+                || arg.startsWith("-esa")
+                || arg.startsWith("-dsa");
     }
 
     private static int resolveQinRuntimePort(QinConfig config, String[] args) {

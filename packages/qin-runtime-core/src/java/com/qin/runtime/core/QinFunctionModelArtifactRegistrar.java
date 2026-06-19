@@ -30,8 +30,7 @@ public final class QinFunctionModelArtifactRegistrar {
             return;
         }
         for (QinIrFunctionModelArtifact artifact : program.functionModelArtifacts()) {
-            Map<String, Object> astModel = toRuntimeMap(artifact.ast());
-            QinFunctionModelRegistry.register(artifact.id(), () -> astModel);
+            QinFunctionModelRegistry.register(artifact.id(), () -> toRuntimeMap(artifact.ast()));
         }
     }
 

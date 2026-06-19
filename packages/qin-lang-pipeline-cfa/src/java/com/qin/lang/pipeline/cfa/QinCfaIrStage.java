@@ -12,7 +12,7 @@ import java.util.Objects;
  * Stage 2: Slime AST -> QinIr -> lowered QinIr -> QinCfaProgram.
  */
 public final class QinCfaIrStage {
-    private static final int FULL_AST_RENDER_SOURCE_LIMIT = 120_000;
+    private static final int FULL_AST_RENDER_SOURCE_LIMIT = 32_000;
 
     private final QinFrontendLowerer frontendLowerer;
     private final QinStrictEsmJvmLowerer lowerer;
