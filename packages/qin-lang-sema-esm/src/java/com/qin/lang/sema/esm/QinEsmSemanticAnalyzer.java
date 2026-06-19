@@ -34,12 +34,18 @@ public final class QinEsmSemanticAnalyzer {
             "\\bexport\\s*\\*\\s*(?:as\\s+([A-Za-z_$][\\w$]*)\\s*)?from\\s*[\"']([^\"']+)[\"']\\s*;?");
     private static final Pattern COMMONJS_EXPORT_PATTERN = Pattern.compile(
             "\\bmodule\\s*\\.\\s*exports\\b|\\bexports\\s*\\.");
+    private final QinEsmAstBindingCollector astBindingCollector = new QinEsmAstBindingCollector();
 
     public QinEsmSemanticModel analyze(QinModuleGraph graph) {
         Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
         for (QinModuleSource module : graph.modules()) {
-            List<QinEsmImportBinding> imports = parseImports(module);
-            List<QinEsmExportBinding> exports = parseExports(module);
+            QinEsmAstBindingCollector.Result astBindings = astBindingCollector.collect(module).orElse(null);
+            List<QinEsmImportBinding> imports = astBindings == null
+                    ? parseImports(module)
+                    : astBindings.imports();
+            List<QinEsmExportBinding> exports = astBindings == null
+                    ? parseExports(module)
+                    : parseExports(module, astBindings.exports());
             modules.put(
                     module.file(),
                     new QinEsmModuleSemantic(module.file(), imports, exports));
@@ -93,30 +99,7 @@ public final class QinEsmSemanticAnalyzer {
     private List<QinEsmExportBinding> parseExports(QinModuleSource module) {
         List<QinEsmExportBinding> exports = new ArrayList<>();
         boolean[] code = codeMask(module.source());
-        if (isVirtualDefaultExportModule(module)) {
-            exports.add(new QinEsmExportBinding(
-                    module.file(),
-                    QinEsmExportKind.LOCAL_DEFAULT,
-                    "default",
-                    "default",
-                    false,
-                    null,
-                    null,
-                    1,
-                    1));
-        }
-        if (isCommonJsInteropDefaultModule(module, code)) {
-            exports.add(new QinEsmExportBinding(
-                    module.file(),
-                    QinEsmExportKind.LOCAL_DEFAULT,
-                    "default",
-                    "default",
-                    false,
-                    null,
-                    null,
-                    1,
-                    1));
-        }
+        addSyntheticDefaultExports(module, code, exports);
         Matcher matcher = EXPORT_DECLARATION_PATTERN.matcher(module.source());
         while (matcher.find()) {
             if (!isCodePosition(code, matcher.start())) {
@@ -212,6 +195,46 @@ public final class QinEsmSemanticAnalyzer {
             }
         }
         return deduplicateExports(exports);
+    }
+
+    private List<QinEsmExportBinding> parseExports(
+            QinModuleSource module,
+            List<QinEsmExportBinding> astExports) {
+        List<QinEsmExportBinding> exports = new ArrayList<>();
+        boolean[] code = codeMask(module.source());
+        addSyntheticDefaultExports(module, code, exports);
+        exports.addAll(astExports == null ? List.of() : astExports);
+        return deduplicateExports(exports);
+    }
+
+    private void addSyntheticDefaultExports(
+            QinModuleSource module,
+            boolean[] code,
+            List<QinEsmExportBinding> exports) {
+        if (isVirtualDefaultExportModule(module)) {
+            exports.add(new QinEsmExportBinding(
+                    module.file(),
+                    QinEsmExportKind.LOCAL_DEFAULT,
+                    "default",
+                    "default",
+                    false,
+                    null,
+                    null,
+                    1,
+                    1));
+        }
+        if (isCommonJsInteropDefaultModule(module, code)) {
+            exports.add(new QinEsmExportBinding(
+                    module.file(),
+                    QinEsmExportKind.LOCAL_DEFAULT,
+                    "default",
+                    "default",
+                    false,
+                    null,
+                    null,
+                    1,
+                    1));
+        }
     }
 
     private boolean isVirtualDefaultExportModule(QinModuleSource module) {
@@ -499,7 +522,7 @@ public final class QinEsmSemanticAnalyzer {
         }
     }
 
-    private Path resolveTargetModule(QinModuleSource module, String specifier) {
+    static Path resolveTargetModule(QinModuleSource module, String specifier) {
         Path fallback = null;
         for (QinResolvedImport resolvedImport : module.imports()) {
             if (specifier.equals(resolvedImport.descriptor().moduleSpecifier())) {

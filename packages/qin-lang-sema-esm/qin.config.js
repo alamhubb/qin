@@ -4,7 +4,9 @@ export default {
     "description":  "ESM semantic analysis for Qin module graph",
     "entry":  "src/java/com/qin/lang/sema/esm/EsmSemaPackageMarker.java",
     "dependencies":  {
-                         "com.qin:qin-lang-module-resolver":  "0.1.0"
+                         "com.qin:qin-lang-module-resolver":  "0.1.0",
+                         "com.qin:qin-parser":  "0.1.0",
+                         "com.slime:slime-parser":  "1.0.0"
                      },
     "java":  {
                  "version":  "21",
