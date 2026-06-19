@@ -28,30 +28,32 @@ import com.slime.ast.nodes.typescript.TSTypeAliasDeclaration;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * AST-first ESM binding extraction.
  *
- * <p>The semantic layer should read the same parser facts as the IR lowerer.
- * Regex extraction remains a compatibility fallback in {@link QinEsmSemanticAnalyzer}
- * for parser gaps such as import stripping or type-only export statements.
+ * <p>The semantic layer reads the same parser facts as the IR lowerer; import
+ * and export bindings come from the Slime AST rather than a parallel text
+ * scanner.
  */
 final class QinEsmAstBindingCollector {
     private final QinParserFacade parserFacade = new QinParserFacade();
 
-    Optional<Result> collect(QinModuleSource module) {
-        if (module == null || module.source() == null || requiresLegacyExtraction(module.source())) {
-            return Optional.empty();
+    Result collect(QinModuleSource module) {
+        if (module == null || module.source() == null) {
+            return new Result(List.of(), List.of());
         }
         QinParsedSource parsed;
         try {
             parsed = parserFacade.parseSource(module.source());
         } catch (IllegalArgumentException ex) {
-            return Optional.empty();
+            if (isVirtualDefaultExportModule(module)) {
+                return new Result(List.of(), List.of());
+            }
+            throw ex;
         }
         if (!parsed.hasProgram() || parsed.hasAnyPreExtractedImport()) {
-            return Optional.empty();
+            return new Result(List.of(), List.of());
         }
         Program program = parsed.requireProgram();
         List<QinEsmImportBinding> imports = new ArrayList<>();
@@ -73,18 +75,33 @@ final class QinEsmAstBindingCollector {
                 collectExportAll(module, exportAllDeclaration, exports);
             }
         }
-        return Optional.of(new Result(List.copyOf(imports), List.copyOf(exports)));
+        return new Result(List.copyOf(imports), List.copyOf(exports));
     }
 
-    private boolean requiresLegacyExtraction(String source) {
-        return source.matches("(?s).*\\bimport\\s+type\\b.*")
-                || source.matches("(?s).*\\bexport\\s+type\\s*\\{.*");
+    private boolean isVirtualDefaultExportModule(QinModuleSource module) {
+        if (module == null || module.file() == null || module.file().getFileName() == null) {
+            return false;
+        }
+        String fileName = module.file().getFileName().toString().toLowerCase();
+        return fileName.endsWith(".vue")
+                || fileName.endsWith(".ovs")
+                || fileName.endsWith(".svg")
+                || fileName.endsWith(".png")
+                || fileName.endsWith(".jpg")
+                || fileName.endsWith(".jpeg")
+                || fileName.endsWith(".gif")
+                || fileName.endsWith(".webp")
+                || fileName.endsWith(".ico")
+                || fileName.endsWith(".avif");
     }
 
     private void collectImport(
             QinModuleSource module,
             ImportDeclaration importDeclaration,
             List<QinEsmImportBinding> out) {
+        if (importDeclaration.typeOnly()) {
+            return;
+        }
         String moduleSpecifier = sourceValue(importDeclaration.source());
         if (moduleSpecifier.isBlank() || moduleSpecifier.startsWith("java:")) {
             return;
@@ -161,12 +178,13 @@ final class QinEsmAstBindingCollector {
             String localName = identifierName(specifier.local());
             String exportName = identifierName(specifier.exported());
             boolean reExport = !moduleSpecifier.isBlank();
+            boolean typeOnly = exportNamedDeclaration.typeOnly();
             out.add(new QinEsmExportBinding(
                     module.file(),
                     reExport ? QinEsmExportKind.RE_EXPORT_NAMED : QinEsmExportKind.LOCAL_NAMED,
                     exportName,
                     localName,
-                    false,
+                    typeOnly,
                     reExport ? moduleSpecifier : null,
                     reExport ? resolvedModule : null,
                     lineCol[0],

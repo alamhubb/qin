@@ -16,22 +16,6 @@ import java.util.regex.Pattern;
  * Extracts ESM semantic model from resolved module graph.
  */
 public final class QinEsmSemanticAnalyzer {
-    private static final Pattern IMPORT_FROM_PATTERN = Pattern.compile(
-            "(?m)^\\s*import\\s+(?!type\\b)(.+?)\\s+from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
-    private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
-            "(?m)^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$");
-    private static final Pattern EXPORT_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+(?:declare\\s+)?(?:abstract\\s+)?"
-                    + "(const|let|var|function|class|interface|type|enum)\\s+([A-Za-z_$][\\w$]*)\\b");
-    private static final Pattern EXPORT_DEFAULT_DECLARATION_PATTERN = Pattern.compile(
-            "\\bexport\\s+default\\s+(?:abstract\\s+)?"
-                    + "(?:class|function)\\s+([A-Za-z_$][\\w$]*)(?:\\s*<[^>{};=]*>)?\\b");
-    private static final Pattern EXPORT_DEFAULT_PATTERN = Pattern.compile(
-            "\\bexport\\s+default\\b");
-    private static final Pattern EXPORT_NAMED_PATTERN = Pattern.compile(
-            "\\bexport\\s*(type\\s+)?\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?");
-    private static final Pattern EXPORT_ALL_PATTERN = Pattern.compile(
-            "\\bexport\\s*\\*\\s*(?:as\\s+([A-Za-z_$][\\w$]*)\\s*)?from\\s*[\"']([^\"']+)[\"']\\s*;?");
     private static final Pattern COMMONJS_EXPORT_PATTERN = Pattern.compile(
             "\\bmodule\\s*\\.\\s*exports\\b|\\bexports\\s*\\.");
     private final QinEsmAstBindingCollector astBindingCollector = new QinEsmAstBindingCollector();
@@ -39,13 +23,9 @@ public final class QinEsmSemanticAnalyzer {
     public QinEsmSemanticModel analyze(QinModuleGraph graph) {
         Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
         for (QinModuleSource module : graph.modules()) {
-            QinEsmAstBindingCollector.Result astBindings = astBindingCollector.collect(module).orElse(null);
-            List<QinEsmImportBinding> imports = astBindings == null
-                    ? parseImports(module)
-                    : astBindings.imports();
-            List<QinEsmExportBinding> exports = astBindings == null
-                    ? parseExports(module)
-                    : parseExports(module, astBindings.exports());
+            QinEsmAstBindingCollector.Result astBindings = astBindingCollector.collect(module);
+            List<QinEsmImportBinding> imports = astBindings.imports();
+            List<QinEsmExportBinding> exports = finalizeExports(module, astBindings.exports());
             modules.put(
                     module.file(),
                     new QinEsmModuleSemantic(module.file(), imports, exports));
@@ -53,151 +33,7 @@ public final class QinEsmSemanticAnalyzer {
         return new QinEsmSemanticModel(graph.entryFile(), modules);
     }
 
-    private List<QinEsmImportBinding> parseImports(QinModuleSource module) {
-        List<QinEsmImportBinding> bindings = new ArrayList<>();
-        boolean[] code = codeMask(module.source());
-        Matcher matcher = IMPORT_FROM_PATTERN.matcher(module.source());
-        while (matcher.find()) {
-            if (!isCodePosition(code, matcher.start())) {
-                continue;
-            }
-            String clause = matcher.group(1).trim();
-            String moduleSpecifier = matcher.group(2).trim();
-            Path resolvedModule = resolveTargetModule(module, moduleSpecifier);
-            int[] lineCol = lineCol(module.source(), matcher.start(2));
-            parseImportClause(
-                    module.file(),
-                    moduleSpecifier,
-                    resolvedModule,
-                    lineCol[0],
-                    lineCol[1],
-                    clause,
-                    bindings);
-        }
-
-        Matcher sideEffectMatcher = IMPORT_SIDE_EFFECT_PATTERN.matcher(module.source());
-        while (sideEffectMatcher.find()) {
-            if (!isCodePosition(code, sideEffectMatcher.start())) {
-                continue;
-            }
-            String moduleSpecifier = sideEffectMatcher.group(1).trim();
-            Path resolvedModule = resolveTargetModule(module, moduleSpecifier);
-            int[] lineCol = lineCol(module.source(), sideEffectMatcher.start(1));
-            bindings.add(new QinEsmImportBinding(
-                    module.file(),
-                    moduleSpecifier,
-                    QinEsmImportKind.SIDE_EFFECT,
-                    "",
-                    "",
-                    lineCol[0],
-                    lineCol[1],
-                    resolvedModule));
-        }
-        return bindings;
-    }
-
-    private List<QinEsmExportBinding> parseExports(QinModuleSource module) {
-        List<QinEsmExportBinding> exports = new ArrayList<>();
-        boolean[] code = codeMask(module.source());
-        addSyntheticDefaultExports(module, code, exports);
-        Matcher matcher = EXPORT_DECLARATION_PATTERN.matcher(module.source());
-        while (matcher.find()) {
-            if (!isCodePosition(code, matcher.start())) {
-                continue;
-            }
-            String declarationKind = matcher.group(1).trim();
-            String name = matcher.group(2).trim();
-            int[] lineCol = lineCol(module.source(), matcher.start(2));
-            exports.add(new QinEsmExportBinding(
-                    module.file(),
-                    QinEsmExportKind.LOCAL_NAMED,
-                    name,
-                    name,
-                    isTypeOnlyDeclarationKind(declarationKind),
-                    null,
-                    null,
-                    lineCol[0],
-                    lineCol[1]));
-        }
-
-        Matcher defaultMatcher = EXPORT_DEFAULT_PATTERN.matcher(module.source());
-        while (defaultMatcher.find()) {
-            if (!isCodePosition(code, defaultMatcher.start())) {
-                continue;
-            }
-            int[] lineCol = lineCol(module.source(), defaultMatcher.start());
-            exports.add(new QinEsmExportBinding(
-                    module.file(),
-                    QinEsmExportKind.LOCAL_DEFAULT,
-                    "default",
-                    "default",
-                    false,
-                    null,
-                    null,
-                    lineCol[0],
-                    lineCol[1]));
-        }
-        addDefaultDeclarationNamedExports(module, code, exports);
-
-        Matcher namedMatcher = EXPORT_NAMED_PATTERN.matcher(module.source());
-        while (namedMatcher.find()) {
-            if (!isCodePosition(code, exportKeywordIndex(module.source(), namedMatcher.start(), namedMatcher.end()))) {
-                continue;
-            }
-            boolean statementTypeOnly = namedMatcher.group(1) != null && !namedMatcher.group(1).isBlank();
-            String block = namedMatcher.group(2);
-            String moduleSpecifier = namedMatcher.group(3) == null ? null : namedMatcher.group(3).trim();
-            Path resolvedModule = moduleSpecifier == null ? null : resolveTargetModule(module, moduleSpecifier);
-            int[] lineCol = lineCol(module.source(), namedMatcher.start());
-            parseNamedExportBlock(
-                    module.file(),
-                    block,
-                    statementTypeOnly,
-                    moduleSpecifier,
-                    resolvedModule,
-                    lineCol[0],
-                    lineCol[1],
-                    exports);
-        }
-        parseNamedExportLines(module, code, exports);
-
-        Matcher exportAllMatcher = EXPORT_ALL_PATTERN.matcher(module.source());
-        while (exportAllMatcher.find()) {
-            if (!isCodePosition(code, exportKeywordIndex(module.source(), exportAllMatcher.start(), exportAllMatcher.end()))) {
-                continue;
-            }
-            String namespace = exportAllMatcher.group(1);
-            String moduleSpecifier = exportAllMatcher.group(2).trim();
-            Path resolvedModule = resolveTargetModule(module, moduleSpecifier);
-            int[] lineCol = lineCol(module.source(), exportAllMatcher.start(2));
-            if (namespace != null && !namespace.isBlank()) {
-                exports.add(new QinEsmExportBinding(
-                        module.file(),
-                        QinEsmExportKind.RE_EXPORT_NAMESPACE,
-                        namespace,
-                        "*",
-                        false,
-                        moduleSpecifier,
-                        resolvedModule,
-                        lineCol[0],
-                        lineCol[1]));
-            } else {
-                exports.add(new QinEsmExportBinding(
-                        module.file(),
-                        QinEsmExportKind.RE_EXPORT_ALL,
-                        "*",
-                        "*",
-                        false,
-                        moduleSpecifier,
-                        resolvedModule,
-                        lineCol[0],
-                        lineCol[1]));
-            }
-        }
-        return deduplicateExports(exports);
-    }
-
-    private List<QinEsmExportBinding> parseExports(
+    private List<QinEsmExportBinding> finalizeExports(
             QinModuleSource module,
             List<QinEsmExportBinding> astExports) {
         List<QinEsmExportBinding> exports = new ArrayList<>();
@@ -267,30 +103,6 @@ public final class QinEsmSemanticAnalyzer {
         return false;
     }
 
-    private void addDefaultDeclarationNamedExports(
-            QinModuleSource module,
-            boolean[] code,
-            List<QinEsmExportBinding> exports) {
-        Matcher matcher = EXPORT_DEFAULT_DECLARATION_PATTERN.matcher(module.source());
-        while (matcher.find()) {
-            if (!isCodePosition(code, matcher.start())) {
-                continue;
-            }
-            String name = matcher.group(1).trim();
-            int[] lineCol = lineCol(module.source(), matcher.start(1));
-            exports.add(new QinEsmExportBinding(
-                    module.file(),
-                    QinEsmExportKind.LOCAL_NAMED,
-                    name,
-                    name,
-                    false,
-                    null,
-                    null,
-                    lineCol[0],
-                    lineCol[1]));
-        }
-    }
-
     private List<QinEsmExportBinding> deduplicateExports(List<QinEsmExportBinding> exports) {
         Map<String, QinEsmExportBinding> dedup = new LinkedHashMap<>();
         for (QinEsmExportBinding exportBinding : exports) {
@@ -303,223 +115,6 @@ public final class QinEsmSemanticAnalyzer {
             dedup.putIfAbsent(key, exportBinding);
         }
         return new ArrayList<>(dedup.values());
-    }
-
-    private void parseNamedExportLines(
-            QinModuleSource module,
-            boolean[] code,
-            List<QinEsmExportBinding> exports) {
-        String source = module.source();
-        int lineStart = 0;
-        while (lineStart < source.length()) {
-            int lineEnd = source.indexOf('\n', lineStart);
-            if (lineEnd < 0) {
-                lineEnd = source.length();
-            }
-            String line = source.substring(lineStart, lineEnd);
-            int exportOffset = firstNonWhitespaceOffset(line);
-            int exportIndex = exportOffset < 0 ? -1 : lineStart + exportOffset;
-            if (exportIndex >= 0 && line.startsWith("export", exportOffset)) {
-                parseNamedExportLine(module, line, lineStart, exportOffset, exports);
-            }
-            lineStart = lineEnd + 1;
-        }
-    }
-
-    private void parseNamedExportLine(
-            QinModuleSource module,
-            String line,
-            int lineStart,
-            int exportOffset,
-            List<QinEsmExportBinding> exports) {
-        int braceStart = line.indexOf('{', exportOffset + "export".length());
-        int braceEnd = line.lastIndexOf('}');
-        if (braceStart < 0 || braceEnd <= braceStart) {
-            return;
-        }
-        String prefix = line.substring(exportOffset, braceStart).trim();
-        if (!"export".equals(prefix) && !"export type".equals(prefix)) {
-            return;
-        }
-        String after = line.substring(braceEnd + 1).trim();
-        String moduleSpecifier = null;
-        if (after.startsWith("from")) {
-            Matcher fromMatcher = Pattern.compile("^from\\s*[\"']([^\"']+)[\"']").matcher(after);
-            if (fromMatcher.find()) {
-                moduleSpecifier = fromMatcher.group(1).trim();
-            }
-        }
-        boolean typeOnly = "export type".equals(prefix);
-        Path resolvedModule = moduleSpecifier == null ? null : resolveTargetModule(module, moduleSpecifier);
-        int[] lineCol = lineCol(module.source(), lineStart + exportOffset);
-        parseNamedExportBlock(
-                module.file(),
-                line.substring(braceStart + 1, braceEnd),
-                typeOnly,
-                moduleSpecifier,
-                resolvedModule,
-                lineCol[0],
-                lineCol[1],
-                exports);
-    }
-
-    private int firstNonWhitespaceOffset(String line) {
-        for (int i = 0; i < line.length(); i++) {
-            if (!Character.isWhitespace(line.charAt(i))) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private void parseImportClause(
-            Path sourceFile,
-            String moduleSpecifier,
-            Path resolvedModule,
-            int line,
-            int column,
-            String clause,
-            List<QinEsmImportBinding> out) {
-        String trimmed = clause == null ? "" : clause.trim();
-        if (trimmed.isEmpty()) {
-            return;
-        }
-
-        String defaultPart = null;
-        String namedOrNamespacePart = null;
-
-        int commaIndex = indexOfTopLevelComma(trimmed);
-        if (commaIndex >= 0) {
-            defaultPart = trimmed.substring(0, commaIndex).trim();
-            namedOrNamespacePart = trimmed.substring(commaIndex + 1).trim();
-        } else if (trimmed.startsWith("{") || trimmed.startsWith("*")) {
-            namedOrNamespacePart = trimmed;
-        } else {
-            defaultPart = trimmed;
-        }
-
-        if (defaultPart != null && !defaultPart.isBlank()) {
-            out.add(new QinEsmImportBinding(
-                    sourceFile,
-                    moduleSpecifier,
-                    QinEsmImportKind.DEFAULT,
-                    "default",
-                    defaultPart,
-                    line,
-                    column,
-                    resolvedModule));
-        }
-
-        if (namedOrNamespacePart == null || namedOrNamespacePart.isBlank()) {
-            return;
-        }
-
-        if (namedOrNamespacePart.startsWith("*")) {
-            String ns = namedOrNamespacePart.replaceFirst("^\\*\\s*as\\s*", "").trim();
-            out.add(new QinEsmImportBinding(
-                    sourceFile,
-                    moduleSpecifier,
-                    QinEsmImportKind.NAMESPACE,
-                    "*",
-                    ns,
-                    line,
-                    column,
-                    resolvedModule));
-            return;
-        }
-
-        if (namedOrNamespacePart.startsWith("{") && namedOrNamespacePart.endsWith("}")) {
-            String block = namedOrNamespacePart.substring(1, namedOrNamespacePart.length() - 1);
-            String[] items = block.split(",");
-            for (String raw : items) {
-                String spec = raw.trim();
-                if (spec.isEmpty()) {
-                    continue;
-                }
-                if (spec.startsWith("type ")) {
-                    continue;
-                }
-                String importedName;
-                String localName;
-                int asIndex = spec.indexOf(" as ");
-                if (asIndex > 0) {
-                    importedName = spec.substring(0, asIndex).trim();
-                    localName = spec.substring(asIndex + 4).trim();
-                } else {
-                    importedName = spec;
-                    localName = spec;
-                }
-                out.add(new QinEsmImportBinding(
-                        sourceFile,
-                        moduleSpecifier,
-                        QinEsmImportKind.NAMED,
-                        importedName,
-                        localName,
-                        line,
-                        column,
-                        resolvedModule));
-            }
-        }
-    }
-
-    private void parseNamedExportBlock(
-            Path sourceFile,
-            String block,
-            boolean statementTypeOnly,
-            String moduleSpecifier,
-            Path resolvedModule,
-            int line,
-            int column,
-            List<QinEsmExportBinding> out) {
-        String[] items = block.split(",");
-        for (String raw : items) {
-            String spec = raw.trim();
-            if (spec.isEmpty()) {
-                continue;
-            }
-            boolean typeOnly = statementTypeOnly;
-            if (spec.startsWith("type ")) {
-                spec = spec.substring("type ".length()).trim();
-                typeOnly = true;
-                if (spec.isEmpty()) {
-                    continue;
-                }
-            }
-            String importedOrLocal;
-            String exported;
-            int asIndex = spec.indexOf(" as ");
-            if (asIndex > 0) {
-                importedOrLocal = spec.substring(0, asIndex).trim();
-                exported = spec.substring(asIndex + 4).trim();
-            } else {
-                importedOrLocal = spec;
-                exported = spec;
-            }
-
-            if (moduleSpecifier == null || moduleSpecifier.isBlank()) {
-                out.add(new QinEsmExportBinding(
-                        sourceFile,
-                        QinEsmExportKind.LOCAL_NAMED,
-                        exported,
-                        importedOrLocal,
-                        typeOnly,
-                        null,
-                        null,
-                        line,
-                        column));
-            } else {
-                out.add(new QinEsmExportBinding(
-                        sourceFile,
-                        QinEsmExportKind.RE_EXPORT_NAMED,
-                        exported,
-                        importedOrLocal,
-                        typeOnly,
-                        moduleSpecifier,
-                        resolvedModule,
-                        line,
-                        column));
-            }
-        }
     }
 
     static Path resolveTargetModule(QinModuleSource module, String specifier) {
@@ -537,39 +132,6 @@ public final class QinEsmSemanticAnalyzer {
         return fallback;
     }
 
-    private boolean isTypeOnlyDeclarationKind(String declarationKind) {
-        return "type".equals(declarationKind) || "interface".equals(declarationKind);
-    }
-
-    private int[] lineCol(String source, int index) {
-        int line = 1;
-        int col = 1;
-        for (int i = 0; i < index && i < source.length(); i++) {
-            char ch = source.charAt(i);
-            if (ch == '\n') {
-                line++;
-                col = 1;
-            } else {
-                col++;
-            }
-        }
-        return new int[] {line, col};
-    }
-
-    private int indexOfTopLevelComma(String text) {
-        int depth = 0;
-        for (int i = 0; i < text.length(); i++) {
-            char ch = text.charAt(i);
-            if (ch == '{' || ch == '[' || ch == '(') {
-                depth++;
-            } else if (ch == '}' || ch == ']' || ch == ')') {
-                depth = Math.max(0, depth - 1);
-            } else if (ch == ',' && depth == 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
 
     private boolean[] codeMask(String source) {
         boolean[] code = new boolean[source.length()];
@@ -662,11 +224,6 @@ public final class QinEsmSemanticAnalyzer {
 
     private boolean isCodePosition(boolean[] code, int index) {
         return index >= 0 && index < code.length && code[index];
-    }
-
-    private int exportKeywordIndex(String source, int start, int end) {
-        int index = source.indexOf("export", start);
-        return index >= 0 && index < end ? index : start;
     }
 
     private boolean startsRegexLiteral(String source, int slashIndex) {
