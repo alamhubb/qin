@@ -301,12 +301,15 @@ public final class QinEsmSpecifierResolver {
         if (Files.isRegularFile(packageJson)) {
             try {
                 String json = Files.readString(packageJson);
-                String entry = readExportsImport(json);
+                String entry = readPackageSpecifierMapEntry(json, ".");
                 if (entry == null) {
-                    entry = readExportsNodeImportDefaultDot(json);
+                    entry = readExportsImport(json);
                 }
                 if (entry == null) {
                     entry = readExportsImportDefaultFallbackDot(json);
+                }
+                if (entry == null) {
+                    entry = readExportsNodeImportDefaultDot(json);
                 }
                 if (entry == null) {
                     entry = readExportsDefault(json);
@@ -318,10 +321,10 @@ public final class QinEsmSpecifierResolver {
                     entry = readExportsImportRoot(json);
                 }
                 if (entry == null) {
-                    entry = readExportsNodeImportDefaultRoot(json);
+                    entry = readExportsImportDefaultFallbackRoot(json);
                 }
                 if (entry == null) {
-                    entry = readExportsImportDefaultFallbackRoot(json);
+                    entry = readExportsNodeImportDefaultRoot(json);
                 }
                 if (entry == null) {
                     entry = readExportsDefaultRoot(json);
@@ -482,17 +485,100 @@ public final class QinEsmSpecifierResolver {
             return null;
         }
         String exportObject = json.substring(valueStart, valueEnd + 1);
-        String entry = readField(exportObject, "import");
+        String entry = readTopLevelStringField(exportObject, "import");
         if (entry == null) {
-            entry = readExportsNodeImportDefaultRoot(exportObject);
+            String importObject = readJsonObjectField(exportObject, "import");
+            if (importObject != null) {
+                entry = readConditionalObjectEntry(importObject);
+            }
         }
         if (entry == null) {
             entry = readExportsImportDefaultFallbackRoot(exportObject);
         }
         if (entry == null) {
-            entry = readField(exportObject, "default");
+            entry = readExportsNodeImportDefaultRoot(exportObject);
+        }
+        if (entry == null) {
+            entry = readTopLevelStringField(exportObject, "default");
         }
         return entry;
+    }
+
+    private String readConditionalObjectEntry(String jsonObject) {
+        String entry = readTopLevelStringField(jsonObject, "default");
+        if (entry != null) {
+            return entry;
+        }
+        String nodeObject = readJsonObjectField(jsonObject, "node");
+        if (nodeObject != null) {
+            entry = readTopLevelStringField(nodeObject, "default");
+            if (entry != null) {
+                return entry;
+            }
+        }
+        return readTopLevelStringField(jsonObject, "node");
+    }
+
+    private String readTopLevelStringField(String jsonObject, String field) {
+        int colonIndex = findTopLevelFieldColon(jsonObject, field);
+        if (colonIndex < 0) {
+            return null;
+        }
+        int valueStart = skipWhitespace(jsonObject, colonIndex + 1);
+        if (valueStart >= jsonObject.length() || jsonObject.charAt(valueStart) != '"') {
+            return null;
+        }
+        return readJsonStringAt(jsonObject, valueStart);
+    }
+
+    private String readJsonObjectField(String jsonObject, String field) {
+        int colonIndex = findTopLevelFieldColon(jsonObject, field);
+        if (colonIndex < 0) {
+            return null;
+        }
+        int valueStart = skipWhitespace(jsonObject, colonIndex + 1);
+        if (valueStart >= jsonObject.length() || jsonObject.charAt(valueStart) != '{') {
+            return null;
+        }
+        int valueEnd = findMatchingBrace(jsonObject, valueStart);
+        if (valueEnd < 0) {
+            return null;
+        }
+        return jsonObject.substring(valueStart, valueEnd + 1);
+    }
+
+    private int findTopLevelFieldColon(String jsonObject, String field) {
+        String key = "\"" + field + "\"";
+        int depth = 0;
+        boolean inString = false;
+        boolean escaping = false;
+        for (int cursor = 0; cursor < jsonObject.length(); cursor++) {
+            char ch = jsonObject.charAt(cursor);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (ch == '"') {
+                if (depth == 1 && jsonObject.startsWith(key, cursor)) {
+                    int colonIndex = jsonObject.indexOf(':', cursor + key.length());
+                    if (colonIndex >= 0) {
+                        return colonIndex;
+                    }
+                }
+                inString = true;
+            } else if (ch == '{') {
+                depth++;
+            } else if (ch == '}') {
+                depth--;
+            }
+        }
+        return -1;
     }
 
     private int skipWhitespace(String text, int index) {

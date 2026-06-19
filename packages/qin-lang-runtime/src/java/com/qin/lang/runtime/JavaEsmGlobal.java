@@ -898,22 +898,26 @@ public final class JavaEsmGlobal {
     }
 
     public static Object __qin_dynamic_import__(Object source) {
-        Object hostNamespace = resolveDynamicHostNamespace(source);
-        if (hostNamespace != null) {
-            return hostNamespace;
-        }
-        return QinRuntimeModuleRegistry.importModule(source);
+        return dynamicImportPromise(source, null);
     }
 
     public static Object __qin_dynamic_import__(Object source, Object options) {
-        if (options != null) {
-            return options;
+        return dynamicImportPromise(source, options);
+    }
+
+    private static Object dynamicImportPromise(Object source, Object staticallyResolvedNamespace) {
+        try {
+            if (staticallyResolvedNamespace != null) {
+                return ImmediatePromise.resolved(staticallyResolvedNamespace);
+            }
+            Object hostNamespace = resolveDynamicHostNamespace(source);
+            if (hostNamespace != null) {
+                return ImmediatePromise.resolved(hostNamespace);
+            }
+            return ImmediatePromise.resolved(QinRuntimeModuleRegistry.importModule(source));
+        } catch (Throwable throwable) {
+            return ImmediatePromise.rejected(throwable);
         }
-        Object hostNamespace = resolveDynamicHostNamespace(source);
-        if (hostNamespace != null) {
-            return hostNamespace;
-        }
-        return QinRuntimeModuleRegistry.importModule(source);
     }
 
     public static Object __qin_top_level_await__(Object value) {

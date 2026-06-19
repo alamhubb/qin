@@ -70,6 +70,31 @@ public final class QinLinkedModuleSectionsSmokeTestMain {
             throw new IllegalStateException("Linked source no longer contains all module sections");
         }
 
+        Path defaultRoot = Files.createTempDirectory("qin-linked-default-function-");
+        Path plugin = defaultRoot.resolve("plugin.ts");
+        Path defaultEntry = defaultRoot.resolve("entry.ts");
+        Files.writeString(plugin, """
+                type Plugin = { name: string }
+                export default function cssTsPlugin(options: Plugin = {}): Plugin {
+                    return options;
+                }
+                """);
+        Files.writeString(defaultEntry, "import cssTsPlugin from './plugin.ts';\nconst plugin = cssTsPlugin;\n");
+
+        QinLinkedModuleSource defaultLinked = new QinLinkedModuleSourceEmitter()
+                .emit(new QinModuleGraphBuilder().build(defaultEntry));
+        QinLinkedModuleSection pluginSection = defaultLinked.moduleSections().get(0);
+        String pluginClassSource = pluginSection.classSource();
+        if (!pluginClassSource.contains("function cssTsPlugin(options: Plugin = {}): Plugin {")) {
+            throw new IllegalStateException("Default function signature was corrupted:\n" + pluginClassSource);
+        }
+        int returnIndex = pluginClassSource.indexOf("return options;");
+        int defaultAssignIndex = pluginClassSource.indexOf("const __qesm_m0_default_local = cssTsPlugin;");
+        if (returnIndex < 0 || defaultAssignIndex < returnIndex) {
+            throw new IllegalStateException("Default function export initializer was inserted inside the body/header:\n"
+                    + pluginClassSource);
+        }
+
         System.out.println("QinLinkedModuleSectionsSmokeTestMain OK");
     }
 }

@@ -146,6 +146,9 @@ final class QinEsmAstBindingCollector {
                 continue;
             }
             if (specifier instanceof ImportSpecifier importSpecifier) {
+                if (importSpecifier.typeOnly()) {
+                    continue;
+                }
                 out.add(new QinEsmImportBinding(
                         module.file(),
                         moduleSpecifier,
@@ -178,7 +181,7 @@ final class QinEsmAstBindingCollector {
             String localName = identifierName(specifier.local());
             String exportName = identifierName(specifier.exported());
             boolean reExport = !moduleSpecifier.isBlank();
-            boolean typeOnly = exportNamedDeclaration.typeOnly();
+            boolean typeOnly = exportNamedDeclaration.typeOnly() || specifier.typeOnly();
             out.add(new QinEsmExportBinding(
                     module.file(),
                     reExport ? QinEsmExportKind.RE_EXPORT_NAMED : QinEsmExportKind.LOCAL_NAMED,

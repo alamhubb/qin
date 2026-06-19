@@ -23,7 +23,7 @@ public final class QinEsmSemanticAnalyzer {
     public QinEsmSemanticModel analyze(QinModuleGraph graph) {
         Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
         for (QinModuleSource module : graph.modules()) {
-            QinEsmAstBindingCollector.Result astBindings = astBindingCollector.collect(module);
+            QinEsmAstBindingCollector.Result astBindings = collectAstBindings(module);
             List<QinEsmImportBinding> imports = astBindings.imports();
             List<QinEsmExportBinding> exports = finalizeExports(module, astBindings.exports());
             modules.put(
@@ -31,6 +31,23 @@ public final class QinEsmSemanticAnalyzer {
                     new QinEsmModuleSemantic(module.file(), imports, exports));
         }
         return new QinEsmSemanticModel(graph.entryFile(), modules);
+    }
+
+    private QinEsmAstBindingCollector.Result collectAstBindings(QinModuleSource module) {
+        if (!shouldCollectAstBindings(module)) {
+            return new QinEsmAstBindingCollector.Result(List.of(), List.of());
+        }
+        try {
+            return astBindingCollector.collect(module);
+        } catch (RuntimeException error) {
+            throw new IllegalArgumentException(
+                    "Failed to collect ESM AST bindings for module: " + module.file(),
+                    error);
+        }
+    }
+
+    private boolean shouldCollectAstBindings(QinModuleSource module) {
+        return !isVirtualDefaultExportModule(module);
     }
 
     private List<QinEsmExportBinding> finalizeExports(
@@ -80,6 +97,8 @@ public final class QinEsmSemanticAnalyzer {
         String fileName = module.file().getFileName().toString().toLowerCase();
         return fileName.endsWith(".vue")
                 || fileName.endsWith(".ovs")
+                || fileName.endsWith(".cssts")
+                || fileName.endsWith(".css")
                 || fileName.endsWith(".svg")
                 || fileName.endsWith(".png")
                 || fileName.endsWith(".jpg")

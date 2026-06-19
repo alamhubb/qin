@@ -31,17 +31,18 @@ public final class QinEsmAstBindingCollectorSmokeTestMain {
                 // import { commentBad } from './missing.js'
                 /* export * from './missing.js' */
                 import type { ValueType } from "./dep.js";
+                import { named as mixedAlias, type ValueType as MixedValueType } from "./dep.js";
                 import depDefault, { named as alias } from "./dep.js";
                 import * as depNamespace from "./dep.js";
                 import "./side.js";
                 export type { ValueType } from "./dep.js";
                 export const localValue = alias;
                 export { alias as aliasOut };
-                export { named as forwarded } from "./dep.js";
+                export { named as forwarded, type ValueType as ForwardedValueType } from "./dep.js";
                 export * as depBag from "./dep.js";
                 export * from "./dep.js";
                 export default function main() {
-                  return depDefault() + depNamespace.named;
+                  return depDefault() + depNamespace.named + mixedAlias;
                 }
                 """, StandardCharsets.UTF_8);
 
@@ -62,6 +63,9 @@ public final class QinEsmAstBindingCollectorSmokeTestMain {
             if ("ValueType".equals(binding.localName()) || "ValueType".equals(binding.importedName())) {
                 throw new IllegalStateException("Type-only import leaked into runtime imports: " + binding);
             }
+            if ("MixedValueType".equals(binding.localName()) || "MixedValueType".equals(binding.importedName())) {
+                throw new IllegalStateException("Mixed type-only import leaked into runtime imports: " + binding);
+            }
         });
         require(importKinds.contains(QinEsmImportKind.DEFAULT), "default import missing");
         require(importKinds.contains(QinEsmImportKind.NAMED), "named import missing");
@@ -78,6 +82,12 @@ public final class QinEsmAstBindingCollectorSmokeTestMain {
         require(semantic.exports().stream()
                         .anyMatch(binding -> binding.typeOnly() && "ValueType".equals(binding.exportName())),
                 "type-only export missing");
+        require(semantic.exports().stream()
+                        .anyMatch(binding -> binding.typeOnly() && "ForwardedValueType".equals(binding.exportName())),
+                "mixed type-only export missing");
+        require(semantic.exports().stream()
+                        .anyMatch(binding -> !binding.typeOnly() && "forwarded".equals(binding.exportName())),
+                "mixed runtime re-export missing");
         require(exportKinds.contains(QinEsmExportKind.LOCAL_NAMED), "local named export missing");
         require(exportKinds.contains(QinEsmExportKind.LOCAL_DEFAULT), "default export missing");
         require(exportKinds.contains(QinEsmExportKind.RE_EXPORT_NAMED), "named re-export missing");

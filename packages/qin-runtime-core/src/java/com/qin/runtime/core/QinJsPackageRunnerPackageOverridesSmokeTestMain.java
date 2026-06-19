@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.LinkedHashSet;
+import java.util.Map;
 
 import sun.misc.Unsafe;
 
@@ -104,6 +106,7 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         if (!Files.isRegularFile(cachedPackageRoot.resolve("index.js"))) {
             throw new IllegalStateException("Runtime node_modules package was deleted while materializing: " + cachedPackageRoot);
         }
+        verifyWorkspaceSourcePackageEntrypointPolicy(runner, root, wrapperDir);
         Method patchVueHelper = QinJsPackageRunner.class.getDeclaredMethod(
                 "patchVitePluginVueHelperCodeTemplate",
                 String.class);
@@ -142,6 +145,119 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         }
 
         System.out.println("QinJsPackageRunnerPackageOverridesSmokeTestMain OK");
+    }
+
+    private static void verifyWorkspaceSourcePackageEntrypointPolicy(
+            QinJsPackageRunner runner,
+            Path root,
+            Path wrapperDir) throws Exception {
+        Path runtimeNodeModules = wrapperDir.resolve("node_modules");
+        Path missingDistPackageRoot = root.resolve("workspace-vite-plugin-source");
+        Files.createDirectories(missingDistPackageRoot.resolve("src"));
+        Files.writeString(missingDistPackageRoot.resolve("package.json"), """
+                {
+                  "name": "vite-plugin-local-source",
+                  "version": "0.0.0-local",
+                  "type": "module",
+                  "main": "./dist/index.cjs",
+                  "module": "./dist/index.mjs",
+                  "exports": {
+                    ".": {
+                      "import": "./dist/index.mjs",
+                      "default": "./dist/index.mjs"
+                    }
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(missingDistPackageRoot.resolve("src").resolve("index.ts"), """
+                export default function plugin() {
+                  return { name: "vite-plugin-local-source" }
+                }
+                """, StandardCharsets.UTF_8);
+
+        Path builtPackageRoot = root.resolve("workspace-vite-plugin-built");
+        Files.createDirectories(builtPackageRoot.resolve("dist"));
+        Files.createDirectories(builtPackageRoot.resolve("src"));
+        Files.writeString(builtPackageRoot.resolve("package.json"), """
+                {
+                  "name": "vite-plugin-built-source",
+                  "version": "0.0.0-local",
+                  "type": "module",
+                  "main": "./dist/index.cjs",
+                  "module": "./dist/index.mjs",
+                  "exports": {
+                    ".": {
+                      "import": "./dist/index.mjs",
+                      "default": "./dist/index.mjs"
+                    }
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(builtPackageRoot.resolve("dist").resolve("index.mjs"), """
+                export default function plugin() {
+                  return { name: "vite-plugin-built-source" }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(builtPackageRoot.resolve("src").resolve("index.ts"), """
+                export default function sourcePlugin() {
+                  return { name: "vite-plugin-built-source-src" }
+                }
+                """, StandardCharsets.UTF_8);
+
+        Method materializeDependency = QinJsPackageRunner.class.getDeclaredMethod(
+                "materializeDependency",
+                String.class,
+                String.class,
+                Path.class,
+                Path.class,
+                Path.class,
+                Path.class,
+                Map.class,
+                Map.class,
+                java.util.Set.class);
+        materializeDependency.setAccessible(true);
+        Map<String, Path> workspacePackages = Map.of(
+                "vite-plugin-local-source", missingDistPackageRoot,
+                "vite-plugin-built-source", builtPackageRoot);
+        materializeDependency.invoke(
+                runner,
+                "vite-plugin-local-source",
+                null,
+                null,
+                root,
+                runtimeNodeModules,
+                root,
+                workspacePackages,
+                Map.of(),
+                new LinkedHashSet<String>());
+        materializeDependency.invoke(
+                runner,
+                "vite-plugin-built-source",
+                null,
+                null,
+                root,
+                runtimeNodeModules,
+                root,
+                workspacePackages,
+                Map.of(),
+                new LinkedHashSet<String>());
+
+        String missingDistManifest = Files.readString(
+                runtimeNodeModules.resolve("vite-plugin-local-source").resolve("package.json"),
+                StandardCharsets.UTF_8);
+        if (!missingDistManifest.contains("\"main\": \"./src/index.ts\"")
+                || !missingDistManifest.contains("\"module\": \"./src/index.ts\"")) {
+            throw new IllegalStateException("Workspace source package with missing dist was not rewritten:\n"
+                    + missingDistManifest);
+        }
+        String builtManifest = Files.readString(
+                runtimeNodeModules.resolve("vite-plugin-built-source").resolve("package.json"),
+                StandardCharsets.UTF_8);
+        if (!builtManifest.contains("\"module\": \"./dist/index.mjs\"")
+                || builtManifest.contains("\"main\": \"./src/index.ts\"")) {
+            throw new IllegalStateException("Workspace package with resolvable dist entry was rewritten:\n"
+                    + builtManifest);
+        }
     }
 
     private static QinJsPackageRunner allocateRunnerWithoutCompiler() throws Exception {

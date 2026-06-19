@@ -576,34 +576,26 @@ final class QinJsPackageRunner {
         return out.append('"').toString();
     }
 
-    private boolean isVitePluginPackage(String packageName) {
-        return packageName != null
-                && (packageName.startsWith("vite-plugin-") || packageName.startsWith("@vitejs/plugin-"));
-    }
-
     private boolean shouldRewriteWorkspacePackageManifest(
             String packageName,
             Path sourcePackageDir,
             boolean packageOverride) throws IOException {
-        if (packageOverride && hasDeclaredWorkspaceSourceEntry(sourcePackageDir)) {
+        WorkspacePackageEntrypoint entrypoint = inspectWorkspacePackageEntrypoint(sourcePackageDir);
+        if (packageOverride && entrypoint.hasSourceEntry()) {
             return true;
         }
-        if (isPublishedRuntimePackage(packageName, sourcePackageDir)) {
+        if (isPublishedRuntimePackage(packageName, entrypoint)) {
             return false;
         }
-        return hasDeclaredWorkspaceSourceEntry(sourcePackageDir)
-                || readExistingPackageEntry(sourcePackageDir) == null;
+        return entrypoint.hasSourceEntry()
+                && (entrypoint.declaredSourceEntry() || !entrypoint.hasManifestEntry());
     }
 
-    private boolean isPublishedRuntimePackage(String packageName, Path sourcePackageDir) throws IOException {
-        if (isVitePluginPackage(packageName)) {
-            return true;
-        }
-        String entry = readExistingPackageEntry(sourcePackageDir);
-        if (entry == null || entry.isBlank()) {
+    private boolean isPublishedRuntimePackage(String packageName, WorkspacePackageEntrypoint entrypoint) {
+        if (!entrypoint.hasManifestEntry()) {
             return false;
         }
-        String normalizedEntry = entry.replace('\\', '/');
+        String normalizedEntry = entrypoint.manifestEntry().replace('\\', '/');
         if (!normalizedEntry.startsWith("./dist/") && !normalizedEntry.startsWith("dist/")) {
             return false;
         }
@@ -1302,7 +1294,11 @@ final class QinJsPackageRunner {
 
     private void rewriteWorkspacePackageManifest(Path targetPackageDir, Path sourcePackageDir, String packageName)
             throws IOException {
-        String sourceEntry = readWorkspaceSourceEntry(sourcePackageDir);
+        WorkspacePackageEntrypoint entrypoint = inspectWorkspacePackageEntrypoint(sourcePackageDir);
+        String sourceEntry = entrypoint.sourceEntry();
+        if (sourceEntry == null || sourceEntry.isBlank()) {
+            throw new IllegalStateException("Cannot determine workspace source entry for package: " + sourcePackageDir);
+        }
         String manifest = """
                 {
                   "name": %s,
@@ -1325,7 +1321,18 @@ final class QinJsPackageRunner {
         Files.writeString(targetPackageDir.resolve("package.json"), manifest, StandardCharsets.UTF_8);
     }
 
-    private String readExistingPackageEntry(Path sourcePackageDir) throws IOException {
+    private WorkspacePackageEntrypoint inspectWorkspacePackageEntrypoint(Path sourcePackageDir) throws IOException {
+        String declaredSourceEntry = readDeclaredWorkspaceSourceEntry(sourcePackageDir);
+        String sourceEntry = declaredSourceEntry != null
+                ? declaredSourceEntry
+                : detectWorkspaceSourceEntry(sourcePackageDir);
+        return new WorkspacePackageEntrypoint(
+                readResolvableManifestEntry(sourcePackageDir),
+                sourceEntry,
+                declaredSourceEntry != null);
+    }
+
+    private String readResolvableManifestEntry(Path sourcePackageDir) throws IOException {
         Path packageJson = sourcePackageDir.resolve("package.json");
         if (!Files.isRegularFile(packageJson)) {
             return null;
@@ -1343,7 +1350,7 @@ final class QinJsPackageRunner {
         return null;
     }
 
-    private String readWorkspaceSourceEntry(Path sourcePackageDir) throws IOException {
+    private String readDeclaredWorkspaceSourceEntry(Path sourcePackageDir) throws IOException {
         Path packageJson = sourcePackageDir.resolve("package.json");
         if (Files.isRegularFile(packageJson)) {
             String json = Files.readString(packageJson, StandardCharsets.UTF_8);
@@ -1352,7 +1359,10 @@ final class QinJsPackageRunner {
                 return normalizeManifestRelativePath(localMatcher.group(1));
             }
         }
+        return null;
+    }
 
+    private String detectWorkspaceSourceEntry(Path sourcePackageDir) {
         Path srcIndex = sourcePackageDir.resolve("src").resolve("index.ts");
         if (Files.isRegularFile(srcIndex)) {
             return "./src/index.ts";
@@ -1369,16 +1379,7 @@ final class QinJsPackageRunner {
         if (Files.isRegularFile(indexJs)) {
             return "./index.js";
         }
-        throw new IllegalStateException("Cannot determine workspace source entry for package: " + sourcePackageDir);
-    }
-
-    private boolean hasDeclaredWorkspaceSourceEntry(Path sourcePackageDir) throws IOException {
-        Path packageJson = sourcePackageDir.resolve("package.json");
-        if (!Files.isRegularFile(packageJson)) {
-            return false;
-        }
-        String json = Files.readString(packageJson, StandardCharsets.UTF_8);
-        return JSON_LOCAL_FIELD.matcher(json).find();
+        return null;
     }
 
     private String normalizeManifestRelativePath(String value) {
@@ -1728,18 +1729,21 @@ final class QinJsPackageRunner {
             return Set.of();
         }
         Set<String> specifiers = new LinkedHashSet<>();
-        String entry = readExistingPackageEntry(sourcePackageDir);
+        String entry = readResolvableManifestEntry(sourcePackageDir);
         if (entry != null) {
             Path entryFile = packageDir.resolve(entry).normalize();
             if (Files.isRegularFile(entryFile)) {
-                collectPackageSourceBareSpecifiers(specifiers, entryFile);
+                collectPackageSourceBareSpecifiers(specifiers, packageDir, entryFile);
             }
+        }
+        if (!scanTypeScriptSources) {
+            return specifiers;
         }
         try (var paths = Files.walk(packageDir)) {
             paths
                     .filter(Files::isRegularFile)
                     .filter(path -> isScannablePackageSourceFile(path, scanTypeScriptSources))
-                    .forEach(path -> collectPackageSourceBareSpecifiers(specifiers, path));
+                    .forEach(path -> collectPackageSourceBareSpecifiers(specifiers, packageDir, path));
         }
         return specifiers;
     }
@@ -1755,14 +1759,24 @@ final class QinJsPackageRunner {
         }
         return name.endsWith(".js")
                 || name.endsWith(".mjs")
-                || name.endsWith(".cjs")
                 || (includeTypeScript && name.endsWith(".ts"))
                 || (includeTypeScript && name.endsWith(".tsx"));
     }
 
-    private void collectPackageSourceBareSpecifiers(Set<String> specifiers, Path sourceFile) {
+    private void collectPackageSourceBareSpecifiers(Set<String> specifiers, Path packageDir, Path sourceFile) {
         try {
-            specifiers.addAll(extractBareModuleSpecifiers(Files.readString(sourceFile, StandardCharsets.UTF_8)));
+            String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
+            specifiers.addAll(extractBareModuleSpecifiers(source));
+            Path parent = sourceFile.getParent();
+            if (parent != null) {
+                collectLocalImportBareModuleSpecifiers(
+                        packageDir.toAbsolutePath().normalize(),
+                        parent,
+                        source,
+                        specifiers,
+                        new LinkedHashSet<>(Set.of(sourceFile.toAbsolutePath().normalize())),
+                        0);
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to scan package imports: " + sourceFile, e);
         }
@@ -1821,6 +1835,19 @@ final class QinJsPackageRunner {
     private boolean packageManifestNameMatches(Path packageDir, String expectedName) {
         String actualName = readPackageName(packageDir.resolve("package.json"));
         return expectedName.equals(actualName);
+    }
+
+    private record WorkspacePackageEntrypoint(
+            String manifestEntry,
+            String sourceEntry,
+            boolean declaredSourceEntry) {
+        private boolean hasManifestEntry() {
+            return manifestEntry != null && !manifestEntry.isBlank();
+        }
+
+        private boolean hasSourceEntry() {
+            return sourceEntry != null && !sourceEntry.isBlank();
+        }
     }
 
     private void copyPackageTree(Path sourceDir, Path targetDir, boolean workspacePackage, boolean includeNodeModules) throws IOException {

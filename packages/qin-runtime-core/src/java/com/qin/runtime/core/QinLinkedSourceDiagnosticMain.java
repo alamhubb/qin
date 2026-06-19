@@ -39,6 +39,9 @@ public final class QinLinkedSourceDiagnosticMain {
         }
         System.out.println("entry=" + entryFile);
         System.out.println("modules=" + linkedSource.modules().size());
+        for (var module : linkedSource.modules()) {
+            System.out.println("module=" + module);
+        }
         System.out.println("length=" + linkedSource.source().length());
         System.out.println("output=" + outputFile);
         if (sectionOutputDir != null) {

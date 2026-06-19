@@ -19,6 +19,7 @@ public final class QinParserLineSliceProbeMain {
         int startLine = Integer.parseInt(args[1]);
         int endLine = Integer.parseInt(args[2]);
         boolean forceQin = args.length > 3 && "force-qin".equalsIgnoreCase(args[3]);
+        boolean noCache = args.length > 4 && "no-cache".equalsIgnoreCase(args[4]);
         if (startLine <= 0 || endLine < startLine) {
             throw new IllegalArgumentException("Invalid line range: " + startLine + ".." + endLine);
         }
@@ -33,7 +34,7 @@ public final class QinParserLineSliceProbeMain {
         String source = String.join(System.lineSeparator(), lines.subList(startIndex, endIndex));
         try {
             if (forceQin) {
-                probeWithQinParser(file, startLine, endLine, source);
+                probeWithQinParser(file, startLine, endLine, source, noCache);
                 return;
             }
             QinParsedSource parsed = new QinParserFacade().parseSource(source);
@@ -50,9 +51,9 @@ public final class QinParserLineSliceProbeMain {
         }
     }
 
-    private static void probeWithQinParser(Path file, int startLine, int endLine, String source) {
+    private static void probeWithQinParser(Path file, int startLine, int endLine, String source, boolean noCache) {
         QinParser parser = SubhutiParser.create(QinParser.class, source);
-        parser.cache(true);
+        parser.cache(!noCache);
         try {
             SubhutiCst cst = parser.Program(QinParser.SourceType.MODULE);
             if (cst == null) {
@@ -63,6 +64,7 @@ public final class QinParserLineSliceProbeMain {
             System.out.println("range=" + startLine + ".." + endLine);
             System.out.println("success=" + !parser.isParserFail());
             System.out.println("mode=force-qin");
+            System.out.println("cache=" + !noCache);
             System.out.println("index=" + parser.getCurrentIndex());
             System.out.println("next=" + (token == null ? "null" : token.tokenName() + ":" + token.value()));
             System.out.println("cst=" + (cst == null ? "null" : cst.getName()));
@@ -72,6 +74,7 @@ public final class QinParserLineSliceProbeMain {
             System.out.println("range=" + startLine + ".." + endLine);
             System.out.println("success=false");
             System.out.println("mode=force-qin");
+            System.out.println("cache=" + !noCache);
             System.out.println("index=" + parser.getCurrentIndex());
             System.out.println("next=" + (token == null ? "null" : token.tokenName() + ":" + token.value()));
             System.out.println("error=" + e.getClass().getSimpleName() + ": " + e.getMessage());

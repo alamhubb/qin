@@ -1018,7 +1018,7 @@ public final class QinLinkedModuleSourceEmitter {
             out.append(source, cursor, start);
 
             String declarationKind = matcher.group(1);
-            int declarationEnd = findDefaultDeclarationEnd(source, matcher.end());
+            int declarationEnd = findDefaultDeclarationEnd(source, matcher.end(), declarationKind);
             String declaration = source.substring(start, declarationEnd);
             out.append(rewriteDefaultDeclaration(declaration, declarationKind, defaultSymbol));
             cursor = declarationEnd;
@@ -1064,8 +1064,8 @@ public final class QinLinkedModuleSourceEmitter {
         return value;
     }
 
-    private int findDefaultDeclarationEnd(String source, int afterKeywordIndex) {
-        int bodyStart = findBodyStartBrace(source, afterKeywordIndex);
+    private int findDefaultDeclarationEnd(String source, int afterKeywordIndex, String declarationKind) {
+        int bodyStart = findDefaultDeclarationBodyStart(source, afterKeywordIndex, declarationKind);
         if (bodyStart < 0) {
             return findLineEnd(source, afterKeywordIndex);
         }
@@ -1081,6 +1081,361 @@ public final class QinLinkedModuleSourceEmitter {
             i++;
         }
         return i;
+    }
+
+    private int findDefaultDeclarationBodyStart(String source, int afterKeywordIndex, String declarationKind) {
+        String normalizedKind = declarationKind == null ? "" : declarationKind.trim();
+        if ("function".equals(normalizedKind)) {
+            return findFunctionBodyStartBrace(source, afterKeywordIndex);
+        }
+        return findTopLevelBodyStartBrace(source, afterKeywordIndex);
+    }
+
+    private int findFunctionBodyStartBrace(String source, int afterKeywordIndex) {
+        int paramsStart = findTopLevelChar(source, afterKeywordIndex, '(');
+        if (paramsStart < 0) {
+            return findTopLevelBodyStartBrace(source, afterKeywordIndex);
+        }
+        int paramsEnd = findMatchingParen(source, paramsStart);
+        if (paramsEnd < 0) {
+            return -1;
+        }
+        return findTopLevelBodyStartBrace(source, paramsEnd + 1);
+    }
+
+    private int findTopLevelChar(String source, int fromIndex, char expected) {
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+        int parenDepth = 0;
+        int bracketDepth = 0;
+        int braceDepth = 0;
+        int angleDepth = 0;
+
+        for (int i = Math.max(0, fromIndex); i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (ch == '\n') {
+                    inLineComment = false;
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (ch == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                inLineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+
+            if (parenDepth == 0 && bracketDepth == 0 && braceDepth == 0 && angleDepth == 0 && ch == expected) {
+                return i;
+            }
+            if (ch == '(') {
+                parenDepth++;
+            } else if (ch == ')' && parenDepth > 0) {
+                parenDepth--;
+            } else if (ch == '[') {
+                bracketDepth++;
+            } else if (ch == ']' && bracketDepth > 0) {
+                bracketDepth--;
+            } else if (ch == '{') {
+                braceDepth++;
+            } else if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+            } else if (ch == '<') {
+                angleDepth++;
+            } else if (ch == '>' && angleDepth > 0) {
+                angleDepth--;
+            }
+        }
+        return -1;
+    }
+
+    private int findMatchingParen(String source, int parenStart) {
+        int depth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+
+        for (int i = parenStart; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (ch == '\n') {
+                    inLineComment = false;
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (ch == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                inLineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+
+            if (ch == '(') {
+                depth++;
+                continue;
+            }
+            if (ch == ')') {
+                depth--;
+                if (depth == 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int findTopLevelBodyStartBrace(String source, int fromIndex) {
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+        int parenDepth = 0;
+        int bracketDepth = 0;
+        int braceDepth = 0;
+        int angleDepth = 0;
+        char lastSignificant = '\0';
+
+        for (int i = Math.max(0, fromIndex); i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (ch == '\n') {
+                    inLineComment = false;
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (ch == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '\'') {
+                    inSingle = false;
+                    lastSignificant = ch;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '"') {
+                    inDouble = false;
+                    lastSignificant = ch;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == '`') {
+                    inTemplate = false;
+                    lastSignificant = ch;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                inLineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+
+            if (ch == '{' && parenDepth == 0 && bracketDepth == 0 && braceDepth == 0 && angleDepth == 0
+                    && canStartDeclarationBodyAfter(lastSignificant)) {
+                return i;
+            }
+            if (ch == '(') {
+                parenDepth++;
+                lastSignificant = ch;
+            } else if (ch == ')' && parenDepth > 0) {
+                parenDepth--;
+                lastSignificant = ch;
+            } else if (ch == '[') {
+                bracketDepth++;
+                lastSignificant = ch;
+            } else if (ch == ']' && bracketDepth > 0) {
+                bracketDepth--;
+                lastSignificant = ch;
+            } else if (ch == '{') {
+                braceDepth++;
+                lastSignificant = ch;
+            } else if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+                lastSignificant = ch;
+            } else if (ch == '<') {
+                angleDepth++;
+                lastSignificant = ch;
+            } else if (ch == '>' && angleDepth > 0) {
+                angleDepth--;
+                lastSignificant = ch;
+            } else if (!Character.isWhitespace(ch)) {
+                lastSignificant = ch;
+            }
+        }
+        return -1;
+    }
+
+    private boolean canStartDeclarationBodyAfter(char lastSignificant) {
+        return lastSignificant != ':'
+                && lastSignificant != ','
+                && lastSignificant != '|'
+                && lastSignificant != '&'
+                && lastSignificant != '<'
+                && lastSignificant != '('
+                && lastSignificant != '['
+                && lastSignificant != '?'
+                && lastSignificant != '=';
     }
 
     private int findBodyStartBrace(String source, int fromIndex) {
