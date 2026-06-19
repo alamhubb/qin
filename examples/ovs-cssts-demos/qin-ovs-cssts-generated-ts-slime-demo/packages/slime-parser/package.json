@@ -1,0 +1,78 @@
+{
+  "name": "@qin/generated-slime-parser-ts",
+  "version": "0.0.0-qin-generated",
+  "private": true,
+  "type": "module",
+  "description": "Qin generated typescript ESM package for com.slime.parser.SlimeParser.",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./src": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./src/index.ts": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./src/SlimeParser.ts": {
+      "types": "./src/SlimeParser.ts",
+      "import": "./src/SlimeParser.ts",
+      "default": "./src/SlimeParser.ts"
+    },
+    "./src/SlimeTokenConsumer.ts": {
+      "types": "./src/SlimeTokenConsumer.ts",
+      "import": "./src/SlimeTokenConsumer.ts",
+      "default": "./src/SlimeTokenConsumer.ts"
+    },
+    "./src/SlimeTokens.ts": {
+      "types": "./src/SlimeTokens.ts",
+      "import": "./src/SlimeTokens.ts",
+      "default": "./src/SlimeTokens.ts"
+    },
+    "./src/language/es2025/SlimeParser.ts": {
+      "types": "./src/language/es2025/SlimeParser.ts",
+      "import": "./src/language/es2025/SlimeParser.ts",
+      "default": "./src/language/es2025/SlimeParser.ts"
+    },
+    "./src/language/es2025/SlimeTokenConsumer.ts": {
+      "types": "./src/language/es2025/SlimeTokenConsumer.ts",
+      "import": "./src/language/es2025/SlimeTokenConsumer.ts",
+      "default": "./src/language/es2025/SlimeTokenConsumer.ts"
+    },
+    "./src/language/es2025/SlimeTokens.ts": {
+      "types": "./src/language/es2025/SlimeTokens.ts",
+      "import": "./src/language/es2025/SlimeTokens.ts",
+      "default": "./src/language/es2025/SlimeTokens.ts"
+    },
+
+    "./entry": {
+      "types": "./com/slime/parser/SlimeParser.ts",
+      "import": "./com/slime/parser/SlimeParser.ts",
+      "default": "./com/slime/parser/SlimeParser.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "qin": {
+    "generated": true,
+    "entryBinaryName": "com.slime.parser.SlimeParser",
+    "format": "ts-esm-files"
+  },
+  "dependencies": {
+    "@qin/java-sdk-js": "file:../java-sdk-js"
+  },
+  "files": [
+    "com",
+    "src",
+
+    "index.ts",
+    "qin.config.js"
+  ]
+}

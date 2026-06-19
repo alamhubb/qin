@@ -1,0 +1,77 @@
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f7fb;
+  color: #182033;
+}
+
+button {
+  font: inherit;
+}
+
+.page-shell {
+  width: min(1040px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0;
+}
+
+.comparison-header {
+  margin-bottom: 24px;
+}
+
+.comparison-header h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+}
+
+.comparison-header p {
+  margin: 8px 0;
+}
+
+.eyebrow {
+  color: #596579;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.runtime-line {
+  font-weight: 700;
+}
+
+.runtime-path {
+  overflow-wrap: anywhere;
+  color: #596579;
+  font-size: 13px;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.ovs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid #d7deea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ovs-card h2,
+.ovs-card p {
+  margin: 0;
+}
+
+.ovs-button {
+  width: fit-content;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #2166d5;
+  color: white;
+  cursor: pointer;
+}

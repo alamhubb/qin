@@ -1,0 +1,38 @@
+export const qinJavaSdkCompatibility = {
+  target: "java8-web-subset",
+  supported: {
+    "java.lang.String": "partial",
+    "java.lang.StringBuilder": "partial",
+    "java.lang.Boolean": "partial",
+    "java.lang.Integer": "partial",
+    "java.lang.Double": "partial",
+    "java.lang.Enum": "partial",
+    "java.lang.Throwable": "partial",
+    "java.io.IOException": "partial-exception-type-only",
+    "java.lang.System": "partial",
+    "java.util.ArrayList": "partial",
+    "java.util.HashSet": "partial",
+    "java.util.HashMap": "partial",
+    "java.util.Arrays": "partial",
+    "java.util.Collections": "partial",
+    "java.util.Objects": "partial",
+    "java.util.Optional": "partial",
+    "java.util.stream": "partial",
+    "java.util.regex.Pattern": "partial",
+    "java.util.regex.Matcher": "partial"
+  },
+  unsupported: [
+    "java.io.FileWriter",
+    "java.io.BufferedWriter",
+    "java.nio.file",
+    "java.lang.Thread",
+    "java.util.concurrent.ExecutorService",
+    "java.lang.Process",
+    "java.lang.Runtime.exec",
+    "java.net.Socket",
+    "java.lang.ClassLoader",
+    "java.lang.SecurityManager",
+    "sun.misc.Unsafe",
+    "JNI"
+  ]
+};
