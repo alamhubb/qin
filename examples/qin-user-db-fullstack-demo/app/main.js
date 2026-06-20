@@ -1,6 +1,7 @@
 import { createApp } from "vue"
 import UserRuntimeBadge from "./UserRuntimeBadge.ovs"
 import connectedStyle from "./tokens.cssts"
+import { createQonoClient } from "./qono-client.js"
 import "./style.css"
 
 const runtimeBadge = document.querySelector("#runtime-badge")
@@ -15,6 +16,12 @@ const emptyEl = document.querySelector("#empty")
 const form = document.querySelector("#user-form")
 const refresh = document.querySelector("#refresh")
 const dbReady = document.querySelector("#db-ready")
+const rpc = createQonoClient()
+const UserController = {
+    getAll: () => rpc.call("users.getAll"),
+    create: input => rpc.call("users.create", input),
+    delete: input => rpc.call("users.delete", input)
+}
 
 if (dbReady) {
     dbReady.className = connectedStyle
@@ -44,7 +51,7 @@ async function loadUsers() {
     try {
         statusEl.textContent = "Loading users..."
         await checkHealth()
-        const payload = await requestJson("/api/users")
+        const payload = await UserController.getAll()
         renderUsers(payload.users || [])
         statusEl.textContent = "Connected"
     } catch (error) {
@@ -79,12 +86,9 @@ form.addEventListener("submit", async (event) => {
     const data = new FormData(form)
     try {
         statusEl.textContent = "Adding user..."
-        await requestJson("/api/users", {
-            method: "POST",
-            body: JSON.stringify({
-                name: data.get("name"),
-                email: data.get("email")
-            })
+        await UserController.create({
+            name: data.get("name"),
+            email: data.get("email")
         })
         form.reset()
         await loadUsers()
@@ -100,7 +104,7 @@ usersEl.addEventListener("click", async (event) => {
     }
     try {
         statusEl.textContent = "Deleting user..."
-        await requestJson(`/api/users/${button.dataset.delete}`, { method: "DELETE" })
+        await UserController.delete({ id: button.dataset.delete })
         await loadUsers()
     } catch (error) {
         statusEl.textContent = error.message

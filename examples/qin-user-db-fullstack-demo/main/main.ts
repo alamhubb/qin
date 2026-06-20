@@ -1,9 +1,11 @@
-import { QinHttpApp } from "java:com.qin.runtime.core"
-import { UserDb } from "java:com.qin.demo.userdb"
+import { Qono } from "java:com.qin.runtime.core.qono"
+import { getAll, create, remove } from "./controllers/UserController"
 
-export const app = QinHttpApp.create()
-    .get("/api/users", request => UserDb.listUsers(request))
-    .post("/api/users", request => UserDb.createUser(request))
-    .delete("/api/users/{id}", request => UserDb.deleteUser(request))
+export const app = Qono.create()
+    .health()
+    .query("users.getAll", request => getAll(request))
+    .mutation("users.create", request => create(request))
+    .mutation("users.delete", request => remove(request))
+    .toHttpApp()
 
 "qin-user-db-fullstack-demo"
