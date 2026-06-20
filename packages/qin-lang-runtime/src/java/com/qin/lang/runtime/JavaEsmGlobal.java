@@ -994,14 +994,7 @@ public final class JavaEsmGlobal {
             }
         }
         if (callable instanceof Method method) {
-            try {
-                if (method.isVarArgs()) {
-                    return method.invoke(null, adaptVarArgs(args, method.getParameterTypes()));
-                }
-                return method.invoke(Modifier.isStatic(method.getModifiers()) ? null : null, args);
-            } catch (IllegalAccessException | InvocationTargetException error) {
-                throw new IllegalArgumentException("Failed to invoke method callable", error);
-            }
+            return invokeMethodCallable(null, method, args);
         }
         throw new IllegalArgumentException("Unsupported callable: " + simpleName(callable));
     }
@@ -1288,6 +1281,10 @@ public final class JavaEsmGlobal {
                 if (compatibilityResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                     return compatibilityResult;
                 }
+                Object javaSuperInstance = interpretedInstance.javaSuperInstance();
+                if (javaSuperInstance != null) {
+                    return callMethod(javaSuperInstance, name, args);
+                }
                 throw new IllegalArgumentException(
                         "Unknown interpreted instance method: "
                                 + name + "/" + args.length
@@ -1502,7 +1499,44 @@ public final class JavaEsmGlobal {
         if (isFunctionDefinition(value)) {
             return new InterpretedFunction(castMap((Map<?, ?>) value)).bindThis(receiver).call(callArgs);
         }
+        if (value instanceof Method method) {
+            return invokeMethodCallable(receiver, method, callArgs);
+        }
         return callAny(value, callArgs);
+    }
+
+    private static Object invokeMethodCallable(Object receiver, Method method, Object[] args) {
+        try {
+            boolean staticMethod = Modifier.isStatic(method.getModifiers());
+            Object target = staticMethod ? null : resolveMethodCallableReceiver(receiver, method);
+            if (!staticMethod && target == null) {
+                throw new IllegalArgumentException("Unbound Java method callable: "
+                        + method.getDeclaringClass().getName() + "." + method.getName());
+            }
+            Object[] invokeArgs = method.isVarArgs()
+                    ? adaptVarArgs(args, method.getParameterTypes(), method.getGenericParameterTypes())
+                    : coerceArguments(args, method.getParameterTypes(), method.getGenericParameterTypes());
+            return method.invoke(target, invokeArgs);
+        } catch (IllegalAccessException | InvocationTargetException error) {
+            throw new IllegalArgumentException("Failed to invoke method callable", error);
+        }
+    }
+
+    private static Object resolveMethodCallableReceiver(Object receiver, Method method) {
+        receiver = unwrapExportSlotValue(receiver);
+        if (receiver == null) {
+            return null;
+        }
+        if (method.getDeclaringClass().isInstance(receiver)) {
+            return receiver;
+        }
+        if (receiver instanceof InterpretedInstance interpretedInstance) {
+            Object javaSuperInstance = interpretedInstance.javaSuperInstance();
+            if (javaSuperInstance != null && method.getDeclaringClass().isInstance(javaSuperInstance)) {
+                return javaSuperInstance;
+            }
+        }
+        return null;
     }
 
     private static Method findCompatibleMethod(Class<?> ownerClass, String name, int argCount, boolean staticOnly) {
@@ -3122,6 +3156,25 @@ public final class JavaEsmGlobal {
         return key != null && key.startsWith(RUNTIME_HIDDEN_KEY_PREFIX);
     }
 
+    static Object runtimePrototypeOf(Object value) {
+        value = __qin_value__(value);
+        if (value instanceof InterpretedInstance instance) {
+            return instance.prototypeChain.isEmpty() ? null : instance.prototypeChain.get(0);
+        }
+        if (value instanceof Map<?, ?> map) {
+            return castMap(map).get(PROTOTYPE_PARENT_KEY);
+        }
+        return null;
+    }
+
+    static void setRuntimePrototypeOf(Map<String, Object> object, Object prototype) {
+        if (prototype instanceof Map<?, ?> rawPrototype) {
+            object.put(PROTOTYPE_PARENT_KEY, castMap(rawPrototype));
+            return;
+        }
+        object.remove(PROTOTYPE_PARENT_KEY);
+    }
+
     private static Object mapPrototypeChainValue(Map<String, Object> object, String key) {
         if (isRuntimeHiddenObjectKey(key)) {
             return BUILTIN_MISS;
@@ -3710,6 +3763,7 @@ public final class JavaEsmGlobal {
         private final Map<String, AccessorProperty> superAccessors;
         private final Map<String, Object> prototypeProperties;
         private final List<Object> prototypeChain;
+        private Object javaSuperInstance;
         private Object constructorFunction;
 
         private InterpretedInstance(Map<String, InterpretedFunction> methods, Map<String, AccessorProperty> accessors) {
@@ -3798,6 +3852,9 @@ public final class JavaEsmGlobal {
             if (prototypeChainValue != null || hasPrototypeChainProperty(name)) {
                 return bindPrototypeValue(prototypeChainValue);
             }
+            if (javaSuperInstance != null) {
+                return __qin_member_get__(javaSuperInstance, name);
+            }
             return null;
         }
 
@@ -3847,7 +3904,16 @@ public final class JavaEsmGlobal {
                     || methods.containsKey(name)
                     || superMethods.containsKey(name)
                     || prototypeProperties.containsKey(name)
-                    || hasPrototypeChainProperty(name);
+                    || hasPrototypeChainProperty(name)
+                    || (javaSuperInstance != null && __qin_member_get__(javaSuperInstance, name) != null);
+        }
+
+        private Object javaSuperInstance() {
+            return javaSuperInstance;
+        }
+
+        private void setJavaSuperInstance(Object javaSuperInstance) {
+            this.javaSuperInstance = javaSuperInstance;
         }
 
         @SuppressWarnings("unchecked")
@@ -5105,7 +5171,7 @@ public final class JavaEsmGlobal {
                 case "ClassDeclaration" -> evalClassDeclaration(astNode, env);
                 case "FunctionExpression", "ArrowFunctionExpression", "ClassExpression" -> createRuntimeFunction(astNode, env);
                 case "EmptyStatement", "DebuggerStatement" -> null;
-                case "ThisExpression" -> env.getOrDefault("this", GLOBAL_OBJECT);
+                case "ThisExpression" -> resolveThis(env);
                 default -> throw new IllegalArgumentException("Unsupported runtime AST node: " + type);
             };
         }
@@ -5621,8 +5687,9 @@ public final class JavaEsmGlobal {
             Object leftNode = astNode.get("left");
             Object last = null;
             for (String key : JavaEsmObject.enumerableEntries(rightValue).keySet()) {
-                assignForOfBinding(leftNode, key, env);
-                last = evalNode(astNode.get("body"), env);
+                Map<String, Object> iterationEnv = iterationLexicalEnv(leftNode, env);
+                assignForOfBinding(leftNode, key, iterationEnv);
+                last = evalNode(astNode.get("body"), iterationEnv);
                 if (last instanceof ReturnSignal) {
                     return last;
                 }
@@ -5663,8 +5730,9 @@ public final class JavaEsmGlobal {
             Object leftNode = astNode.get("left");
             Object last = null;
             for (Object item : iterable) {
-                assignForOfBinding(leftNode, item, env);
-                last = evalNode(astNode.get("body"), env);
+                Map<String, Object> iterationEnv = iterationLexicalEnv(leftNode, env);
+                assignForOfBinding(leftNode, item, iterationEnv);
+                last = evalNode(astNode.get("body"), iterationEnv);
                 if (last instanceof ReturnSignal) {
                     return last;
                 }
@@ -5676,6 +5744,22 @@ public final class JavaEsmGlobal {
                 }
             }
             return null;
+        }
+
+        private Map<String, Object> iterationLexicalEnv(Object leftNode, Map<String, Object> env) {
+            return isLexicalForDeclaration(leftNode) ? createChildLexicalEnv(env) : env;
+        }
+
+        private boolean isLexicalForDeclaration(Object leftNode) {
+            if (!(leftNode instanceof Map<?, ?> rawLeft)) {
+                return false;
+            }
+            Map<String, Object> left = castMap(rawLeft);
+            if (!"VariableDeclaration".equals(String.valueOf(left.get("type")))) {
+                return false;
+            }
+            String kind = String.valueOf(left.get("kind"));
+            return "let".equals(kind) || "const".equals(kind);
         }
 
         private String summarizeAstNode(Object node) {
@@ -6184,6 +6268,7 @@ public final class JavaEsmGlobal {
                 receiver.fields.putAll(interpretedSuper.fieldSnapshot());
                 return;
             }
+            receiver.setJavaSuperInstance(constructed);
             Map<String, Object> entries = __qin_own_enumerable_entries__(constructed);
             if (entries != null) {
                 receiver.fields.putAll(entries);
@@ -6647,6 +6732,11 @@ public final class JavaEsmGlobal {
                 return unwrapRuntimeReferenceValue(global);
             }
             return null;
+        }
+
+        private Object resolveThis(Map<String, Object> env) {
+            Object lexicalValue = resolveRawLexicalValue("this", env);
+            return lexicalValue == UNRESOLVED_MODULE_REF ? GLOBAL_OBJECT : lexicalValue;
         }
 
         private Object resolveClosureValue(String name) {

@@ -31,12 +31,21 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
 
         Path packageRoot = root.resolve("local-mini");
         Files.createDirectories(packageRoot.resolve("src"));
+        Files.createDirectories(packageRoot.resolve("dist"));
         Files.writeString(packageRoot.resolve("package.json"), """
                 {
                   "name": "mini-pkg",
                   "version": "0.0.0-local",
                   "type": "module",
                   "local": "./src/index.ts",
+                  "main": "./dist/index.cjs",
+                  "module": "./dist/index.mjs",
+                  "exports": {
+                    ".": {
+                      "import": "./dist/index.mjs",
+                      "default": "./dist/index.mjs"
+                    }
+                  },
                   "dependencies": {
                     "child-pkg": "file:./child-pkg"
                   }
@@ -46,6 +55,9 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 import { childValue } from "child-pkg"
                 import { cachedValue } from "cached-pkg"
                 export const value = "override-ts-package:" + childValue + ":" + cachedValue
+                """, StandardCharsets.UTF_8);
+        Files.writeString(packageRoot.resolve("dist").resolve("index.mjs"), """
+                export const value = new Proxy({}, {})
                 """, StandardCharsets.UTF_8);
 
         Path childPackageRoot = packageRoot.resolve("child-pkg");

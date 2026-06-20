@@ -37,6 +37,10 @@ public final class QinEsmPackageExportsSubpathSmokeTestMain {
         Files.writeString(importer, "import { parseAst } from 'rolldown/parseAst';\n");
         Path packageImporter = packageDir.resolve("dist").resolve("node.js");
         Files.writeString(packageImporter, "import enabled from '#module-sync-enabled';\n");
+        Path selfReferenceImporter = packageDir.resolve("dist").resolve("plugin.js");
+        Files.writeString(selfReferenceImporter, "import rolldown from 'rolldown';\n");
+        Path expectedSelfReference = packageDir.resolve("dist").resolve("index.mjs").toAbsolutePath().normalize();
+        Files.writeString(expectedSelfReference, "export default 'self';\n");
         Path projectPackageDir = root.resolve("node_modules").resolve("@vitejs").resolve("plugin-vue");
         Path qinHostPackageDir = root.resolve(".qin")
                 .resolve("runtime")
@@ -67,6 +71,16 @@ public final class QinEsmPackageExportsSubpathSmokeTestMain {
         if (!expectedImport.equals(resolvedImport)) {
             throw new IllegalStateException("Expected package import to resolve to " + expectedImport
                     + ", got " + resolvedImport);
+        }
+        Path resolvedSelfReference = new QinEsmSpecifierResolver().resolveModule(selfReferenceImporter, "rolldown");
+        if (!expectedSelfReference.equals(resolvedSelfReference)) {
+            throw new IllegalStateException("Expected package self-reference to resolve to " + expectedSelfReference
+                    + ", got " + resolvedSelfReference);
+        }
+        Path resolvedSelfReferenceFromPackageDir = new QinEsmSpecifierResolver().resolveModule(packageDir, "rolldown");
+        if (!expectedSelfReference.equals(resolvedSelfReferenceFromPackageDir)) {
+            throw new IllegalStateException("Expected package directory self-reference to resolve to "
+                    + expectedSelfReference + ", got " + resolvedSelfReferenceFromPackageDir);
         }
         Path resolvedQinHost = new QinEsmSpecifierResolver().resolveModule(viteConfig, "@vitejs/plugin-vue");
         if (!expectedQinHost.equals(resolvedQinHost)) {

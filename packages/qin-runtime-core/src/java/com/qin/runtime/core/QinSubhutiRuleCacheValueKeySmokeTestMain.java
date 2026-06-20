@@ -9,7 +9,7 @@ public final class QinSubhutiRuleCacheValueKeySmokeTestMain {
     }
 
     public static void main(String[] args) throws Exception {
-        Path root = Path.of("").toAbsolutePath().getParent().resolve("qin-ovs-cssts-generated-ts-slime-demo");
+        Path root = QinOvsCsstsDemoPaths.generatedTsSlimeDemoRoot();
         if (!Files.isRegularFile(root.resolve("qin.config.js"))) {
             throw new IllegalStateException("Expected generated TS Slime demo qin.config.js at " + root);
         }

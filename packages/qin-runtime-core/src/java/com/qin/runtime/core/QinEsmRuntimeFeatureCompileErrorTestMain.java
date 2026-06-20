@@ -12,6 +12,23 @@ public final class QinEsmRuntimeFeatureCompileErrorTestMain {
     public static void main(String[] args) throws Exception {
         Path root = QinEsmTestPaths.resolveStage1Root();
         expectJvmError(root.resolve("main/invalid-dynamic-import.js"), "ESM3001");
+        expectJvmError(root.resolve("main/invalid-top-level-await.js"), "QIN_JS_UNSUPPORTED_TOP_LEVEL_AWAIT");
+        expectJvmError(root.resolve("main/invalid-import-meta.js"), "QIN_JS_UNSUPPORTED_IMPORT_META");
+        expectJvmError(root.resolve("main/invalid-eval.js"), "QIN_JS_UNSUPPORTED_EVAL");
+        expectJvmError(root.resolve("main/invalid-new-function.js"), "QIN_JS_UNSUPPORTED_NEW_FUNCTION");
+        expectJvmError(root.resolve("main/invalid-with.js"), "QIN_JS_UNSUPPORTED_WITH");
+        expectJvmError(root.resolve("main/invalid-proxy.js"), "QIN_JS_UNSUPPORTED_PROXY");
+        expectJvmError(root.resolve("main/invalid-reflect.js"), "QIN_JS_UNSUPPORTED_REFLECT");
+        expectJvmError(root.resolve("main/invalid-require.js"), "QIN_JS_UNSUPPORTED_REQUIRE");
+        expectJvmError(root.resolve("main/invalid-arguments-object.js"), "QIN_JS_UNSUPPORTED_ARGUMENTS_OBJECT");
+        expectJvmError(root.resolve("main/invalid-object-define-property.js"),
+                "QIN_JS_UNSUPPORTED_OBJECT_DEFINE_PROPERTY");
+        expectJvmError(root.resolve("main/invalid-builtin-prototype-mutation.js"),
+                "QIN_JS_UNSUPPORTED_BUILTIN_PROTOTYPE_MUTATION");
+        expectJvmError(root.resolve("main/invalid-weakmap.js"), "QIN_JS_UNSUPPORTED_WEAK_REF");
+        expectJvmError(root.resolve("main/invalid-generator.js"), "QIN_JS_UNSUPPORTED_GENERATOR");
+        expectJvmError(root.resolve("main/invalid-symbol.js"), "QIN_JS_UNSUPPORTED_SYMBOL");
+        expectJvmError(root.resolve("main/invalid-intl.js"), "QIN_JS_UNSUPPORTED_INTL");
         System.out.println("QinEsmRuntimeFeatureCompileErrorTestMain passed.");
     }
 

@@ -90,6 +90,14 @@ public final class JavaEsmObject {
         return descriptors;
     }
 
+    public static Object getOwnPropertyNames(Object value) {
+        return new ArrayList<>(enumerableEntries(value).keySet());
+    }
+
+    public static Object getPrototypeOf(Object value) {
+        return JavaEsmGlobal.runtimePrototypeOf(value);
+    }
+
     public static Object getOwnPropertySymbols(Object value) {
         List<Object> symbols = new ArrayList<>();
         for (String key : enumerableEntries(value).keySet()) {
@@ -132,7 +140,9 @@ public final class JavaEsmObject {
     }
 
     public static Object create(Object prototype) {
-        return new LinkedHashMap<String, Object>();
+        LinkedHashMap<String, Object> object = new LinkedHashMap<>();
+        JavaEsmGlobal.setRuntimePrototypeOf(object, prototype);
+        return object;
     }
 
     public static Object fromEntry(Object key, Object value) {

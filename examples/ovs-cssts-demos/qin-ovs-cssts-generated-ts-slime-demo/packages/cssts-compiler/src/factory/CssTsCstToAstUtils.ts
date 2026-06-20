@@ -636,7 +636,7 @@ export class CssTsCstToAst extends SlimeCstToAst {
 }
 
 // ==================== 全局注册机制 ====================
-// 使用 Proxy 模式，确保导入的 cssTsCstToAst 能动态代理到当前注册的实例
+// Use an explicit facade so imports keep calling the currently registered instance.
 
 let _cssTsCstToAstUtils: CssTsCstToAst
 
@@ -653,10 +653,21 @@ export function registerCssTsCstToAst(instance: CssTsCstToAst): void {
   registerSlimeCstToAstUtil(instance)
 }
 
-// Proxy: 保持 cssTsCstToAst.xxx() 调用方式，同时支持动态替换
-export const CssTsCstToAstUtils = new Proxy({} as CssTsCstToAst, {
-  get(_, prop) {
-    const val = (_cssTsCstToAstUtils as any)[prop]
-    return typeof val === 'function' ? val.bind(_cssTsCstToAstUtils) : val
+export const CssTsCstToAstUtils = {} as CssTsCstToAst
+
+function bindCssTsCstToAstUtilsForwarders() {
+  let proto: any = CssTsCstToAst.prototype
+  while (proto != null) {
+    for (const prop of Object.getOwnPropertyNames(proto)) {
+      if (prop === 'constructor' || typeof proto[prop] !== 'function') {
+        continue
+      }
+      ;(CssTsCstToAstUtils as any)[prop] = function (...args: any[]) {
+        return (_cssTsCstToAstUtils as any)[prop](...args)
+      }
+    }
+    proto = Object.getPrototypeOf(proto)
   }
-})
+}
+
+bindCssTsCstToAstUtilsForwarders()

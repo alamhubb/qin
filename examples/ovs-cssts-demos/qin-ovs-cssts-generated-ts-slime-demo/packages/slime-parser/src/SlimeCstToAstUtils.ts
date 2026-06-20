@@ -291,8 +291,6 @@ export class SlimeCstToAst {
         } as any
     }
 
-    readonly expressionAstCache = new WeakMap<SubhutiCst, SlimeExpression>()
-
     // === identifier / IdentifierCstToAst ===
 
     createIdentifierNameAst(cst: SubhutiCst): SlimeIdentifier {
@@ -1598,16 +1596,28 @@ export class SlimeCstToAst {
 
 let _SlimeCstToAstUtils: SlimeCstToAst
 
-_SlimeCstToAstUtils = new SlimeCstToAst()
-
 export function registerSlimeCstToAstUtil(instance: SlimeCstToAst) {
     _SlimeCstToAstUtils = instance
 }
 
-// Proxy: 淇濇寔 SlimeCstToAstUtils.xxx() 璋冪敤鏂瑰紡锛屽悓鏃舵敮鎸佸姩鎬佹浛鎹?
-export const SlimeCstToAstUtils = new Proxy({} as SlimeCstToAst, {
-    get(_, prop) {
-        const val = (_SlimeCstToAstUtils as any)[prop]
-        return typeof val === 'function' ? val.bind(_SlimeCstToAstUtils) : val
+// Explicit facade: keep SlimeCstToAstUtils.xxx() calls while allowing the registered instance to change.
+export const SlimeCstToAstUtils = {} as SlimeCstToAst
+const SlimeCstToAstUtilsFacade: any = SlimeCstToAstUtils
+
+function bindSlimeCstToAstUtilsForwarders() {
+    let proto: any = SlimeCstToAst.prototype
+    while (proto != null) {
+        for (const prop of Object.getOwnPropertyNames(proto)) {
+            if (prop === 'constructor' || typeof proto[prop] !== 'function') {
+                continue
+            }
+            SlimeCstToAstUtilsFacade[prop] = function (...args: any[]) {
+                return _SlimeCstToAstUtils[prop](...args)
+            }
+        }
+        proto = Object.getPrototypeOf(proto)
     }
-})
+}
+
+_SlimeCstToAstUtils = new SlimeCstToAst()
+bindSlimeCstToAstUtilsForwarders()

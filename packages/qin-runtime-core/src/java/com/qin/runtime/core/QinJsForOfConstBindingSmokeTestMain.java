@@ -22,6 +22,12 @@ public final class QinJsForOfConstBindingSmokeTestMain {
                   sum += item;
                 }
                 class Counter {
+                  constructor(items) {
+                    this.items = [];
+                    for (const item of items) {
+                      this.items.push(item);
+                    }
+                  }
                   count(items) {
                     let total = 0;
                     for (const item of items) {
@@ -30,10 +36,17 @@ public final class QinJsForOfConstBindingSmokeTestMain {
                     return total;
                   }
                 }
-                "sum=" + sum + ";method=" + new Counter().count(values);
+                const fns = [];
+                for (const item of values) {
+                  fns.push(() => item);
+                }
+                const counter = new Counter(values);
+                "sum=" + sum + ";method=" + counter.count(values)
+                  + ";ctor=" + counter.items.join(",")
+                  + ";closures=" + fns.map(fn => fn()).join(",");
                 """,
                 "js_for_of_const_binding");
-        if (!"sum=6;method=6".equals(result)) {
+        if (!"sum=6;method=6;ctor=1.0,2.0,3.0;closures=1.0,2.0,3.0".equals(result)) {
             throw new IllegalStateException("Expected for-of const binding sum=6;method=6, got: " + result);
         }
         System.out.println("QinJsForOfConstBindingSmokeTestMain OK");

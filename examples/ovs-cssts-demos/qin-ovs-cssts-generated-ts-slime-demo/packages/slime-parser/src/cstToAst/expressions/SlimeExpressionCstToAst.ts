@@ -9,13 +9,7 @@ import { SlimeCstToAstUtils } from "../../SlimeCstToAstUtils.ts";
 
 export class SlimeExpressionCstToAstSingle {
     createExpressionAst(cst: SubhutiCst): SlimeExpression {
-        const cached = SlimeCstToAstUtils.expressionAstCache.get(cst)
-        if (cached) {
-            return cached
-        }
-        const result = SlimeCstToAstUtils.createExpressionAstUncached(cst)
-        SlimeCstToAstUtils.expressionAstCache.set(cst, result)
-        return result
+        return SlimeCstToAstUtils.createExpressionAstUncached(cst)
     }
 
 

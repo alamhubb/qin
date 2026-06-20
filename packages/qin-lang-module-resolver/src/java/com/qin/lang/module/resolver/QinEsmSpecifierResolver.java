@@ -172,6 +172,10 @@ public final class QinEsmSpecifierResolver {
 
     private Path resolveBareModule(Path importerFile, String specifier) {
         BareSpecifier bare = parseBareSpecifier(specifier);
+        Path selfReference = resolvePackageSelfReference(importerFile, bare);
+        if (selfReference != null) {
+            return selfReference;
+        }
         Path resolved = resolveBareModuleFromSearch(importerFile.getParent(), bare, specifier, false);
         if (resolved != null) {
             return resolved;
@@ -189,6 +193,23 @@ public final class QinEsmSpecifierResolver {
         }
         throw new IllegalArgumentException(
                 "Cannot resolve bare module import \"" + specifier + "\" from " + importerFile.toAbsolutePath());
+    }
+
+    private Path resolvePackageSelfReference(Path importerFile, BareSpecifier bare) {
+        Path packageDir = findContainingPackageDir(importerFile);
+        if (packageDir == null) {
+            return null;
+        }
+        Path packageJson = packageDir.resolve("package.json");
+        try {
+            String packageName = readPackageName(packageJson);
+            if (!bare.packageName().equals(packageName)) {
+                return null;
+            }
+            return resolvePackageEntry(packageDir, bare.subPath());
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Failed to parse package.json: " + packageJson.toAbsolutePath(), error);
+        }
     }
 
     private Path resolveBareModuleFromSearch(
@@ -267,7 +288,10 @@ public final class QinEsmSpecifierResolver {
     }
 
     private Path findContainingPackageDir(Path importerFile) {
-        Path current = importerFile == null ? null : importerFile.toAbsolutePath().normalize().getParent();
+        Path current = importerFile == null ? null : importerFile.toAbsolutePath().normalize();
+        if (current != null && !Files.isDirectory(current)) {
+            current = current.getParent();
+        }
         while (current != null) {
             if (Files.isRegularFile(current.resolve("package.json"))) {
                 return current;
@@ -365,6 +389,13 @@ public final class QinEsmSpecifierResolver {
             return matcher.group(1);
         }
         return null;
+    }
+
+    private String readPackageName(Path packageJson) throws java.io.IOException {
+        if (!Files.isRegularFile(packageJson)) {
+            return null;
+        }
+        return readField(Files.readString(packageJson), "name");
     }
 
     private String readExportsImport(String json) {

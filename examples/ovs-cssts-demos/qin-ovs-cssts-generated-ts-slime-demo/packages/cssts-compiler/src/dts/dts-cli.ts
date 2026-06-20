@@ -5,11 +5,9 @@
  */
 
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { generateDtsFiles } from './dts-writer.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.resolve('.');
 
 // 本地测试：输出到 target/cssts-dts 目录
 const OUTPUT_DIR = path.resolve(__dirname, '../../target/cssts-dts');

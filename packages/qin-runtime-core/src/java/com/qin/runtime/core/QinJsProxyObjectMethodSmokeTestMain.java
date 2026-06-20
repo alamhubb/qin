@@ -18,13 +18,19 @@ public final class QinJsProxyObjectMethodSmokeTestMain {
         Path root = Files.createTempDirectory("qin-js-proxy-object-method-");
         Path sourceFile = root.resolve("main.js");
         Files.writeString(sourceFile, source, StandardCharsets.UTF_8);
-        Object result = new QinInMemoryJvmRunner().compileAndRun(
-                sourceFile,
-                root,
-                "com.qin.runtime.generated.JsProxyObjectMethodSmoke");
-        if (!"demo".equals(result)) {
-            throw new IllegalStateException("Expected proxy get result demo, got: " + result);
+        try {
+            new QinInMemoryJvmRunner().compileAndRun(
+                    sourceFile,
+                    root,
+                    "com.qin.runtime.generated.JsProxyObjectMethodSmoke");
+        } catch (Exception ex) {
+            String message = ex.getMessage() == null ? "" : ex.getMessage();
+            if (!message.contains("QIN_JS_UNSUPPORTED_PROXY")) {
+                throw new IllegalStateException("Expected Proxy rejection, got: " + message, ex);
+            }
+            System.out.println("QinJsProxyObjectMethodSmokeTestMain OK");
+            return;
         }
-        System.out.println("QinJsProxyObjectMethodSmokeTestMain OK");
+        throw new IllegalStateException("Expected Proxy to be rejected by the Qin JVM target");
     }
 }

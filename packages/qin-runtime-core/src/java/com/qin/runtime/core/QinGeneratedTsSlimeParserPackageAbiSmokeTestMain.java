@@ -8,25 +8,20 @@ public final class QinGeneratedTsSlimeParserPackageAbiSmokeTestMain {
     }
 
     public static void main(String[] args) throws Exception {
-        Path root = Path.of("..", "qin-ovs-cssts-generated-ts-slime-demo")
-                .toAbsolutePath()
-                .normalize();
+        Path root = QinOvsCsstsDemoPaths.generatedTsSlimeDemoRoot();
         Object result = new QinJsPackageRunner().runModuleSource(root, """
                 import { SlimeParser } from "slime-parser";
 
-                const qinRead = (value, name) => {
-                  const member = value && value[name];
-                  return typeof member === "function" ? member.call(value) : member;
-                };
                 const parser = new SlimeParser("const x = 1;");
                 const cst = parser.Program();
-                const tokens = parser.parsedTokens;
+                const tokens = parser.getParsedTokens();
+                const firstToken = tokens && tokens.size() ? tokens.get(0) : null;
                 ({
-                  cstName: qinRead(cst, "name"),
-                  tokenCount: tokens ? tokens.length : -1,
-                  firstTokenName: tokens && tokens.length ? qinRead(tokens[0], "tokenName") : null,
-                  firstTokenValue: tokens && tokens.length ? qinRead(tokens[0], "getTokenValue") : null,
-                  hasTokenConsumer: !!parser.tokenConsumer
+                  cstName: cst ? cst.getName() : null,
+                  tokenCount: tokens ? tokens.size() : -1,
+                  firstTokenName: firstToken ? firstToken.getTokenName() : null,
+                  firstTokenValue: firstToken ? firstToken.getTokenValue() : null,
+                  hasTokenConsumer: !!parser.getTokenConsumer()
                 });
                 """, "generated_ts_slime_parser_package_abi");
 

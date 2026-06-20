@@ -7,9 +7,7 @@ public final class QinGeneratedTsSlimeCsstsCompilerSmokeTestMain {
     }
 
     public static void main(String[] args) throws Exception {
-        Path cwd = Path.of("").toAbsolutePath().normalize();
-        Path workspace = "qin".equals(cwd.getFileName().toString()) ? cwd.getParent() : cwd;
-        Path root = workspace.resolve("qin-ovs-cssts-generated-ts-slime-demo").normalize();
+        Path root = QinOvsCsstsDemoPaths.generatedTsSlimeDemoRoot();
         String source = """
                 import { ref } from 'vue'
 

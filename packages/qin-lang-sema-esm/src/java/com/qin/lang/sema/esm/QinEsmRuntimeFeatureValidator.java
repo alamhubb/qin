@@ -12,21 +12,82 @@ import java.util.regex.Pattern;
  * Guards runtime-level ESM features that are not implemented yet.
  */
 public final class QinEsmRuntimeFeatureValidator {
-    private static final Pattern UNSUPPORTED_EXPORT_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+(let|var)\\b");
     private static final Pattern DYNAMIC_IMPORT_PATTERN = Pattern.compile("\\bimport\\s*\\(");
+    private static final List<UnsupportedFeatureRule> STRICT_JVM_RULES = List.of(
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\beval\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_EVAL",
+                    "eval is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bnew\\s+Function\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_NEW_FUNCTION",
+                    "new Function is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bwith\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_WITH",
+                    "with statements are not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bnew\\s+Proxy\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_PROXY",
+                    "Proxy is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bReflect\\s*\\."),
+                    "QIN_JS_UNSUPPORTED_REFLECT",
+                    "Reflect is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("(?<![\\w.$])require\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_REQUIRE",
+                    "CommonJS require is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("(?<![\\w.$])arguments\\b(?!\\s*:)"),
+                    "QIN_JS_UNSUPPORTED_ARGUMENTS_OBJECT",
+                    "the JavaScript arguments object is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bObject\\s*\\.\\s*defineProperty\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_OBJECT_DEFINE_PROPERTY",
+                    "Object.defineProperty is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\b(?:Array|String|Object|Number|Boolean|Promise|Set|Map|RegExp|Date)\\s*\\.\\s*prototype\\s*(?:\\.\\s*[A-Za-z_$][\\w$]*|\\[[^\\]]+\\])\\s*(?:=|\\+\\+|--)"),
+                    "QIN_JS_UNSUPPORTED_BUILTIN_PROTOTYPE_MUTATION",
+                    "mutating built-in prototypes is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bnew\\s+(?:WeakMap|WeakSet|WeakRef|FinalizationRegistry)\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_WEAK_REF",
+                    "weak reference collections are not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\b(?:async\\s+)?function\\s*\\*"),
+                    "QIN_JS_UNSUPPORTED_GENERATOR",
+                    "generators are not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("(?m)^\\s*await\\b(?!\\s*:)"),
+                    "QIN_JS_UNSUPPORTED_TOP_LEVEL_AWAIT",
+                    "top-level await is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bimport\\s*\\.\\s*meta\\b"),
+                    "QIN_JS_UNSUPPORTED_IMPORT_META",
+                    "import.meta is not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bSymbol\\s*\\.\\s*(?!iterator\\b)[A-Za-z_$][\\w$]*|\\bSymbol\\s*\\("),
+                    "QIN_JS_UNSUPPORTED_SYMBOL",
+                    "advanced Symbol features are not supported by the Qin JVM target"),
+            new UnsupportedFeatureRule(
+                    Pattern.compile("\\bIntl\\s*\\."),
+                    "QIN_JS_UNSUPPORTED_INTL",
+                    "Intl is not supported by the Qin JVM target"));
     private final boolean allowRuntimeDynamicImport;
+    private final boolean strictJvmFeatureSubset;
 
     public QinEsmRuntimeFeatureValidator() {
-        this(true);
+        this(false, true);
     }
 
-    private QinEsmRuntimeFeatureValidator(boolean allowRuntimeDynamicImport) {
+    private QinEsmRuntimeFeatureValidator(boolean allowRuntimeDynamicImport, boolean strictJvmFeatureSubset) {
         this.allowRuntimeDynamicImport = allowRuntimeDynamicImport;
+        this.strictJvmFeatureSubset = strictJvmFeatureSubset;
     }
 
     public static QinEsmRuntimeFeatureValidator forBrowserFrontend() {
-        return new QinEsmRuntimeFeatureValidator(true);
+        return new QinEsmRuntimeFeatureValidator(true, false);
     }
 
     public void validate(QinModuleGraph graph) {
@@ -42,6 +103,9 @@ public final class QinEsmRuntimeFeatureValidator {
     private void scanOne(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
         if (!allowRuntimeDynamicImport) {
             addDynamicImportIfMatched(module, diagnostics);
+        }
+        if (strictJvmFeatureSubset && !isQinOwnedRuntimeSupportModule(module)) {
+            addStrictJvmFeatureDiagnostics(module, diagnostics);
         }
     }
 
@@ -70,16 +134,33 @@ public final class QinEsmRuntimeFeatureValidator {
             String code,
             String message) {
         Matcher matcher = pattern.matcher(module.source());
-        if (!matcher.find()) {
+        boolean[] codeMask = codeMask(module.source());
+        while (matcher.find()) {
+            if (!isCodePosition(codeMask, matcher.start())) {
+                continue;
+            }
+            int[] lineCol = lineCol(module.source(), matcher.start());
+            diagnostics.add(new QinEsmDiagnostic(
+                    code,
+                    message,
+                    module.file(),
+                    lineCol[0],
+                    lineCol[1]));
             return;
         }
-        int[] lineCol = lineCol(module.source(), matcher.start());
-        diagnostics.add(new QinEsmDiagnostic(
-                code,
-                message,
-                module.file(),
-                lineCol[0],
-                lineCol[1]));
+    }
+
+    private void addStrictJvmFeatureDiagnostics(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
+        for (UnsupportedFeatureRule rule : STRICT_JVM_RULES) {
+            addIfMatched(module, diagnostics, rule.pattern(), rule.code(), rule.message());
+        }
+    }
+
+    private boolean isQinOwnedRuntimeSupportModule(QinModuleSource module) {
+        String normalized = module.file().toAbsolutePath().normalize().toString().replace('\\', '/');
+        return normalized.contains("/packages/java-sdk-js/")
+                || normalized.contains("/node_modules/@qin/java-sdk-js/")
+                || normalized.contains("/src/generated/slime-parser.bundle.");
     }
 
     private int[] lineCol(String source, int index) {
@@ -163,5 +244,8 @@ public final class QinEsmRuntimeFeatureValidator {
 
     private boolean isCodePosition(boolean[] code, int index) {
         return index >= 0 && index < code.length && code[index];
+    }
+
+    private record UnsupportedFeatureRule(Pattern pattern, String code, String message) {
     }
 }

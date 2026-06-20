@@ -32,13 +32,19 @@ public final class QinJsProxyRegisteredLiveBindingSmokeTestMain {
         Path root = Files.createTempDirectory("qin-js-proxy-registered-live-binding-");
         Path sourceFile = root.resolve("main.js");
         Files.writeString(sourceFile, source, StandardCharsets.UTF_8);
-        Object result = new QinInMemoryJvmRunner().compileAndRun(
-                sourceFile,
-                root,
-                "com.qin.runtime.generated.JsProxyRegisteredLiveBindingSmoke");
-        if (!"child".equals(result)) {
-            throw new IllegalStateException("Expected proxy live binding child result, got: " + result);
+        try {
+            new QinInMemoryJvmRunner().compileAndRun(
+                    sourceFile,
+                    root,
+                    "com.qin.runtime.generated.JsProxyRegisteredLiveBindingSmoke");
+        } catch (Exception ex) {
+            String message = ex.getMessage() == null ? "" : ex.getMessage();
+            if (!message.contains("QIN_JS_UNSUPPORTED_PROXY")) {
+                throw new IllegalStateException("Expected Proxy rejection, got: " + message, ex);
+            }
+            System.out.println("QinJsProxyRegisteredLiveBindingSmokeTestMain OK");
+            return;
         }
-        System.out.println("QinJsProxyRegisteredLiveBindingSmokeTestMain OK");
+        throw new IllegalStateException("Expected Proxy to be rejected by the Qin JVM target");
     }
 }
