@@ -107,9 +107,9 @@ public final class Main {
 
     private static Connection connect() throws SQLException {
         String passwordEnv = property("qin.database.passwordEnv", "QIN_DEMO_DB_PASSWORD");
-        String password = env(passwordEnv, "");
+        String password = env(passwordEnv, property("qin.database.password", ""));
         if (password.isBlank()) {
-            throw new DemoConfigException("Set " + passwordEnv + " before using /api/users.");
+            throw new DemoConfigException("Set database.password or " + passwordEnv + " before using /api/users.");
         }
         String url = env("QIN_DEMO_DB_URL", property("qin.database.url", "jdbc:postgresql://localhost:5432/qin_demo"));
         String user = env("QIN_DEMO_DB_USER", property("qin.database.user", "postgres"));

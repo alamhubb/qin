@@ -33,6 +33,7 @@ public final class QinCliDatabaseConfigJvmArgsSmokeTestMain {
                 new DatabaseConfig(
                         "jdbc:postgresql://db.example.test:5432/qin_demo",
                         "qin_user",
+                        "test-password",
                         "QIN_DEMO_DB_PASSWORD"),
                 null,
                 null);
@@ -45,6 +46,7 @@ public final class QinCliDatabaseConfigJvmArgsSmokeTestMain {
         require(command.equals(List.of(
                 "-Dqin.database.url=jdbc:postgresql://db.example.test:5432/qin_demo",
                 "-Dqin.database.user=qin_user",
+                "-Dqin.database.password=test-password",
                 "-Dqin.database.passwordEnv=QIN_DEMO_DB_PASSWORD")), "database JVM args");
 
         System.out.println("QinCliDatabaseConfigJvmArgsSmokeTestMain passed.");

@@ -20,6 +20,7 @@ public final class QinDatabaseConfigSmokeTestMain {
                   database: {
                     url: "jdbc:postgresql://db.example.test:5432/qin_demo",
                     user: "qin_user",
+                    password: "test-password",
                     passwordEnv: "QIN_DEMO_DB_PASSWORD"
                   }
                 }
@@ -30,6 +31,7 @@ public final class QinDatabaseConfigSmokeTestMain {
         require(database != null, "database config");
         require("jdbc:postgresql://db.example.test:5432/qin_demo".equals(database.url()), "database url");
         require("qin_user".equals(database.user()), "database user");
+        require("test-password".equals(database.password()), "database password");
         require("QIN_DEMO_DB_PASSWORD".equals(database.passwordEnv()), "database password env");
 
         System.out.println("QinDatabaseConfigSmokeTestMain passed.");

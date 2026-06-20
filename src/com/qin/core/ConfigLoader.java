@@ -183,6 +183,7 @@ public class ConfigLoader {
         return new DatabaseConfig(
                 stringField(map, "url", null),
                 stringField(map, "user", null),
+                stringField(map, "password", null),
                 stringField(map, "passwordEnv", null));
     }
 

@@ -646,6 +646,7 @@ public class QinCli {
         DatabaseConfig database = config.database();
         appendSystemProperty(command, "qin.database.url", database.url());
         appendSystemProperty(command, "qin.database.user", database.user());
+        appendSystemProperty(command, "qin.database.password", database.password());
         appendSystemProperty(command, "qin.database.passwordEnv", database.passwordEnv());
     }
 
