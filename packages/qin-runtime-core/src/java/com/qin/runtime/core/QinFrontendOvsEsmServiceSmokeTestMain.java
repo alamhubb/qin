@@ -13,6 +13,7 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
         Files.writeString(root.resolve("qin.config.js"), """
                 {
                   "name": "qin-frontend-ovs-smoke",
+                %s
                   "dependencies": {
                     "ovs-compiler": "0.2.2",
                     "ovsjs": "0.2.2",
@@ -22,7 +23,7 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
                     "vite-plugin-ovs": "0.2.2"
                   }
                 }
-                """, StandardCharsets.UTF_8);
+                """.formatted(QinOvsCsstsDemoPaths.generatedTsSlimePackageOverridesConfig()), StandardCharsets.UTF_8);
         Path appDir = root.resolve("app");
         Files.createDirectories(appDir);
         Path ovsFile = appDir.resolve("OvsDemo.ovs");

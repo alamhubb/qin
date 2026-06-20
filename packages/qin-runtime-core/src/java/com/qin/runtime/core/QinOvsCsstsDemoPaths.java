@@ -33,4 +33,28 @@ final class QinOvsCsstsDemoPaths {
         }
         throw new IllegalStateException("Cannot find generated TS Slime OVS/CSSTS demo. Checked: " + candidates);
     }
+
+    static String generatedTsSlimePackageOverridesConfig() {
+        Path demoRoot = generatedTsSlimeDemoRoot();
+        Path qinRoot = demoRoot.getParent().getParent().getParent();
+        Path workspaceRoot = qinRoot.getParent();
+        return """
+                  packageOverrides: {
+                    "slime-parser": "%s",
+                    "@qin/java-sdk-js": "%s",
+                    "subhuti": "%s",
+                    "cssts-compiler": "%s",
+                    "ovs-compiler": "%s"
+                  },
+                """.formatted(
+                jsPath(demoRoot.resolve("packages/slime-parser")),
+                jsPath(demoRoot.resolve("packages/java-sdk-js")),
+                jsPath(workspaceRoot.resolve("subhuti")),
+                jsPath(demoRoot.resolve("packages/cssts-compiler")),
+                jsPath(workspaceRoot.resolve("ovsjs/ovs/ovs-compiler")));
+    }
+
+    private static String jsPath(Path path) {
+        return path.toAbsolutePath().normalize().toString().replace('\\', '/');
+    }
 }

@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,15 +12,45 @@ import java.util.regex.Pattern;
 public final class QinCsstsCompiler {
     private static final Pattern CSSTS_MERGE_PATTERN = Pattern.compile("cssts\\.merge\\(([^)]*)\\)");
     private static final Pattern CSS_CLASS_RULE_PATTERN = Pattern.compile("\\.cssts_([A-Za-z0-9_-]+)\\s*\\{\\s*([^:}]+):");
+    private static final int MAX_CACHE_ENTRIES = 64;
 
     private final QinJsPackageRunner packageRunner = new QinJsPackageRunner();
+    private final Map<CacheKey, QinCsstsCompileResult> cache = new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<CacheKey, QinCsstsCompileResult> eldest) {
+            return size() > MAX_CACHE_ENTRIES;
+        }
+    };
 
     public QinCsstsCompileResult compile(Path projectRoot, String source) throws Exception {
+        Path normalizedRoot = projectRoot.toAbsolutePath().normalize();
+        CacheKey key = new CacheKey(normalizedRoot, source);
+        synchronized (cache) {
+            QinCsstsCompileResult cached = cache.get(key);
+            if (cached != null) {
+                return cached;
+            }
+        }
+        String diskKey = QinFrontendTransformDiskCache.keyMaterial(normalizedRoot, source, readConfigSource(normalizedRoot));
+        QinCsstsCompileResult diskCached = QinFrontendTransformDiskCache.read(normalizedRoot, "cssts", diskKey)
+                .map(this::decodeDiskCache)
+                .orElse(null);
+        if (diskCached != null) {
+            synchronized (cache) {
+                cache.put(key, diskCached);
+            }
+            System.out.println("[QinCsstsCompiler] transform disk cache hit");
+            return diskCached;
+        }
         Object result = packageRunner.runModuleSource(
-                projectRoot,
+                normalizedRoot,
                 buildWrapperSource(source),
                 "cssts_compiler");
         QinCsstsCompileResult decoded = decodeResult(result);
+        QinFrontendTransformDiskCache.write(normalizedRoot, "cssts", diskKey, encodeDiskCache(decoded));
+        synchronized (cache) {
+            cache.put(key, decoded);
+        }
         return decoded;
     }
 
@@ -89,6 +120,42 @@ public final class QinCsstsCompiler {
                 styles,
                 cssText,
                 normalizedAtomText);
+    }
+
+    private Map<String, String> encodeDiskCache(QinCsstsCompileResult result) {
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("code", result.code());
+        values.put("rawCode", result.rawCode());
+        values.put("hasStyles", String.valueOf(result.hasStyles()));
+        values.put("css", result.css());
+        values.put("atomModule", result.atomModule());
+        return values;
+    }
+
+    private QinCsstsCompileResult decodeDiskCache(Map<String, String> values) {
+        String code = values.get("code");
+        String rawCode = values.get("rawCode");
+        if (code == null || code.isBlank() || rawCode == null || rawCode.isBlank()) {
+            return null;
+        }
+        return new QinCsstsCompileResult(
+                code,
+                rawCode,
+                Boolean.parseBoolean(values.getOrDefault("hasStyles", "false")),
+                values.getOrDefault("css", ""),
+                values.getOrDefault("atomModule", ""));
+    }
+
+    private String readConfigSource(Path projectRoot) {
+        Path config = projectRoot.toAbsolutePath().normalize().resolve("qin.config.js");
+        if (!java.nio.file.Files.isRegularFile(config)) {
+            return "";
+        }
+        try {
+            return java.nio.file.Files.readString(config);
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     private String normalizeCsstsAtomReferences(String code, Set<String> atomNames) {
@@ -270,5 +337,12 @@ public final class QinCsstsCompiler {
             boolean hasStyles,
             String css,
             String atomModule) {
+    }
+
+    private record CacheKey(Path projectRoot, String source) {
+        private CacheKey {
+            Objects.requireNonNull(projectRoot, "projectRoot cannot be null");
+            Objects.requireNonNull(source, "source cannot be null");
+        }
     }
 }

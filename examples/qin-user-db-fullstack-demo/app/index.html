@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Qin User DB Demo</title>
-    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+    <div id="app"></div>
     <main class="shell">
         <section class="toolbar">
             <div>
@@ -16,9 +16,12 @@
             <button id="refresh" type="button">Refresh</button>
         </section>
 
+        <section id="runtime-badge" class="runtime-badge"></section>
+
         <section class="status-line">
             <span id="health-dot" class="dot"></span>
             <span id="status">Checking API...</span>
+            <span id="db-ready" hidden>PostgreSQL ready</span>
         </section>
 
         <form id="user-form" class="user-form">

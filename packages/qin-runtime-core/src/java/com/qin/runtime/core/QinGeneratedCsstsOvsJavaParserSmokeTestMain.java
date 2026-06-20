@@ -15,6 +15,7 @@ public final class QinGeneratedCsstsOvsJavaParserSmokeTestMain {
         Files.writeString(root.resolve("qin.config.js"), """
                 export default {
                   name: "qin-generated-cssts-ovs-parser-smoke",
+                %s
                   dependencies: {
                     "vue": "latest",
                     "cssts-compiler": "0.2.87",
@@ -24,7 +25,7 @@ public final class QinGeneratedCsstsOvsJavaParserSmokeTestMain {
                     "ovsjs": "0.2.2"
                   }
                 };
-                """, StandardCharsets.UTF_8);
+                """.formatted(QinOvsCsstsDemoPaths.generatedTsSlimePackageOverridesConfig()), StandardCharsets.UTF_8);
 
         Path appDir = root.resolve("app");
         Files.createDirectories(appDir);

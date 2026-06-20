@@ -1,17 +1,20 @@
 package com.qin.runtime.core;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,7 +33,6 @@ import java.util.regex.Pattern;
  * Qin JVM pipeline, and invokes the wrapper's {@code run()} entry.
  */
 final class QinJsPackageRunner {
-    private static final AtomicLong INVOCATION_SEQUENCE = new AtomicLong();
     private static final Pattern JSON_NAME_FIELD = Pattern.compile("\"name\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern JSON_LOCAL_FIELD = Pattern.compile("\"(?:local|monorepo)\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern JSON_MODULE_FIELD = Pattern.compile("\"module\"\\s*:\\s*\"([^\"]+)\"");
@@ -90,16 +91,17 @@ final class QinJsPackageRunner {
                 materializeWorkspaceDependencies(root, wrapperDir, wrapperSource);
                 logPhase("materialize workspace dependencies", startNanos, wrapperDir.resolve("node_modules").toString());
 
-                long sequence = INVOCATION_SEQUENCE.incrementAndGet();
                 String token = sanitizeToken(nameHint == null || nameHint.isBlank() ? "module" : nameHint);
+                String identity = shortSha256(token + "\n" + root + "\n" + wrapperSource);
                 Path wrapperFile = wrapperDir.resolve(
-                        "invoke-" + token + "-" + sequence + ".js");
+                        "invoke-" + token + "-" + identity + ".js");
                 Files.writeString(wrapperFile, wrapperSource, StandardCharsets.UTF_8);
                 logPhase("write wrapper source", startNanos, wrapperFile.toString());
 
                 String className = "com.qin.runtime.generated.npm.Invoke"
                         + capitalize(token)
-                        + sequence;
+                        + "_"
+                        + identity;
                 Object result = runner.compileAndRunModuleClasses(wrapperFile, root, className);
                 logPhase("compile and run wrapper", startNanos, className);
                 return result;
@@ -2159,6 +2161,16 @@ final class QinJsPackageRunner {
             return "Module";
         }
         return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
+    private static String shortSha256(String text) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash, 0, 8);
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 is not available", error);
+        }
     }
 
     private static final class PackageTreeFingerprint {

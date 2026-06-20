@@ -23,10 +23,14 @@ import com.qin.lang.runtime.QinFunctionModelRegistry;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Compiles Qin source to JVM bytecode and executes the generated run() method in-memory.
@@ -36,6 +40,7 @@ public final class QinInMemoryJvmRunner {
 
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
+    private final Map<String, QinCfaModuleClassCompileResult> moduleClassCompileCache = new ConcurrentHashMap<>();
 
     public QinInMemoryJvmRunner() {
         this(new QinSlimeCfaCompiler());
@@ -105,10 +110,19 @@ public final class QinInMemoryJvmRunner {
             throw new IllegalStateException("Module-class execution requires QinSlimeCfaCompiler");
         }
 
-        logPhase("module-class compile start", startNanos, sourceFile.toAbsolutePath().toString());
-        QinCfaModuleClassCompileResult compileResult = compiler.compileModuleClasses(
-                QinCfaCompileRequest.forJvm(sourceFile, normalizedProjectRoot, className));
-        logPhase("module-class compile done", startNanos, className);
+        String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
+        String cacheKey = moduleClassCacheKey(sourceFile, normalizedProjectRoot, className, source);
+        QinCfaModuleClassCompileResult compileResult = moduleClassCompileCache.get(cacheKey);
+        if (compileResult == null) {
+            logPhase("module-class compile start", startNanos, sourceFile.toAbsolutePath().toString());
+            QinCfaModuleClassCompileResult compiled = compiler.compileModuleClasses(
+                    QinCfaCompileRequest.forJvm(sourceFile, normalizedProjectRoot, className));
+            QinCfaModuleClassCompileResult existing = moduleClassCompileCache.putIfAbsent(cacheKey, compiled);
+            compileResult = existing == null ? compiled : existing;
+            logPhase("module-class compile done", startNanos, className);
+        } else {
+            logPhase("module-class compile cache hit", startNanos, className);
+        }
 
         ByteArrayClassLoader classLoader = new ByteArrayClassLoader(getClass().getClassLoader());
         bindModuleDeclarationClasses(classLoader, compileResult);
@@ -259,6 +273,25 @@ public final class QinInMemoryJvmRunner {
     private void logPhase(String phase, long startNanos, String detail) {
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
         System.out.println("[QinInMemoryJvmRunner] " + phase + " +" + elapsedMs + "ms :: " + detail);
+    }
+
+    private String moduleClassCacheKey(Path sourceFile, Path projectRoot, String className, String source) {
+        return projectRoot.toAbsolutePath().normalize()
+                + "\n"
+                + sourceFile.toAbsolutePath().normalize()
+                + "\n"
+                + className
+                + "\n"
+                + sha256(source);
+    }
+
+    private static String sha256(String text) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(text.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 is not available", error);
+        }
     }
 
     static Path requireFile(Path file) {

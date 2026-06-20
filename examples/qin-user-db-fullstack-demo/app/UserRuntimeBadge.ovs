@@ -1,0 +1,5 @@
+div(class = css { displayFlex, flexDirectionColumn, gap12px, padding16px, borderRadius8px, backgroundColorWhite, borderWidth1px, borderStyleSolid, borderColorLightgray }) {
+  h2 { "Rendered from .ovs" }
+  p { "Frontend shell: Vue + OVS + CSSTS" }
+  p { "Backend shell: QinHttpApp on Qin single-port runtime" }
+}

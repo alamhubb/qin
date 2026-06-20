@@ -21,19 +21,33 @@ public final class QinOvsCompiler {
     };
 
     public QinOvsCompileResult compile(Path projectRoot, String source) throws Exception {
-        CacheKey key = new CacheKey(projectRoot.toAbsolutePath().normalize(), source);
+        Path normalizedRoot = projectRoot.toAbsolutePath().normalize();
+        CacheKey key = new CacheKey(normalizedRoot, source);
         synchronized (cache) {
             QinOvsCompileResult cached = cache.get(key);
             if (cached != null) {
                 return cached;
             }
         }
+        String configSource = readConfigSource(normalizedRoot);
+        String diskKey = QinFrontendTransformDiskCache.keyMaterial(normalizedRoot, source, configSource);
+        QinOvsCompileResult diskCached = QinFrontendTransformDiskCache.read(normalizedRoot, "ovs", diskKey)
+                .map(this::decodeDiskCache)
+                .orElse(null);
+        if (diskCached != null) {
+            synchronized (cache) {
+                cache.put(key, diskCached);
+            }
+            System.out.println("[QinOvsCompiler] transform disk cache hit");
+            return diskCached;
+        }
         try {
             Object result = packageRunner.runModuleSource(
-                    projectRoot,
-                    buildWrapperSource(projectRoot, source),
+                    normalizedRoot,
+                    buildWrapperSource(normalizedRoot, source),
                     "vite_plugin_ovs_transform");
             QinOvsCompileResult decoded = decodeResult(result);
+            QinFrontendTransformDiskCache.write(normalizedRoot, "ovs", diskKey, encodeDiskCache(decoded));
             synchronized (cache) {
                 cache.put(key, decoded);
             }
@@ -223,6 +237,39 @@ public final class QinOvsCompiler {
                 styles,
                 css instanceof String cssText ? cssText : "",
                 atomModule instanceof String atomText ? atomText : "");
+    }
+
+    private Map<String, String> encodeDiskCache(QinOvsCompileResult result) {
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("code", result.code());
+        values.put("hasStyles", String.valueOf(result.hasStyles()));
+        values.put("css", result.css());
+        values.put("atomModule", result.atomModule());
+        return values;
+    }
+
+    private QinOvsCompileResult decodeDiskCache(Map<String, String> values) {
+        String code = values.get("code");
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        return new QinOvsCompileResult(
+                code,
+                Boolean.parseBoolean(values.getOrDefault("hasStyles", "false")),
+                values.getOrDefault("css", ""),
+                values.getOrDefault("atomModule", ""));
+    }
+
+    private String readConfigSource(Path projectRoot) {
+        Path config = findQinConfig(projectRoot);
+        if (!java.nio.file.Files.isRegularFile(config)) {
+            return "";
+        }
+        try {
+            return java.nio.file.Files.readString(config);
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     public record QinOvsCompileResult(

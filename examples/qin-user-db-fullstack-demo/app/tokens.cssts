@@ -1,0 +1,9 @@
+const connectedStyle = css {
+  padding12px,
+  borderRadius8px,
+  backgroundColorWhite,
+  colorBlue,
+  fontWeight700
+}
+
+export default connectedStyle

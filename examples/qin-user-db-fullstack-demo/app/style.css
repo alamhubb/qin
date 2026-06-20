@@ -11,6 +11,8 @@
 
 body {
     margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
 }
 
 button,
@@ -18,12 +20,17 @@ input {
     font: inherit;
 }
 
+button:disabled {
+    opacity: 0.62;
+    cursor: wait;
+}
+
 button {
     border: 1px solid #25324a;
-    background: #25324a;
-    color: white;
     border-radius: 6px;
     padding: 10px 14px;
+    color: white;
+    background: #25324a;
     cursor: pointer;
 }
 
@@ -53,15 +60,31 @@ button:hover {
     color: #526178;
 }
 
+h1,
+h2,
+p {
+    margin-top: 0;
+}
+
 h1 {
-    margin: 0;
+    margin-bottom: 0;
     font-size: 44px;
     line-height: 1.05;
+}
+
+.runtime-grid {
+    display: grid;
+    gap: 18px;
+}
+
+.runtime-badge {
+    margin: 18px 0;
 }
 
 .status-line {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
     min-height: 32px;
     color: #526178;
@@ -83,7 +106,6 @@ h1 {
     grid-template-columns: minmax(180px, 1fr) minmax(240px, 1.4fr) auto;
     align-items: end;
     gap: 14px;
-    margin: 22px 0;
 }
 
 label {
@@ -112,8 +134,8 @@ input {
 
 table {
     width: 100%;
-    border-collapse: collapse;
     min-width: 720px;
+    border-collapse: collapse;
 }
 
 th,
@@ -135,10 +157,13 @@ td:last-child {
     white-space: nowrap;
 }
 
-td button {
-    border-color: #c44747;
-    background: #c44747;
+.danger-button {
+    border: 1px solid #c44747;
+    border-radius: 6px;
     padding: 7px 10px;
+    color: white;
+    background: #c44747;
+    cursor: pointer;
 }
 
 .empty {
