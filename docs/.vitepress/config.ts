@@ -18,6 +18,7 @@ export default defineConfig({
       { text: '指南', link: '/guide/' },
       { text: '配置', link: '/config/' },
       { text: 'API', link: '/api/' },
+      { text: 'Spec', link: '/spec/jvm-js-subset' },
       {
         text: '更多',
         items: [
@@ -73,6 +74,14 @@ export default defineConfig({
             { text: 'CLI 命令', link: '/api/' },
             { text: 'TypeScript API', link: '/api/typescript' },
             { text: '插件 API', link: '/api/plugin' },
+          ],
+        },
+      ],
+      '/spec/': [
+        {
+          text: 'Spec',
+          items: [
+            { text: 'JVM JS subset', link: '/spec/jvm-js-subset' },
           ],
         },
       ],
