@@ -50,7 +50,13 @@ for (const token of __qinSlimeTokens as any) {
 export const SlimeTokensObj = Object.fromEntries(__qinSlimeTokenEntries);
 export const SlimeJavascriptTokensObj = SlimeTokensObj;
 export const slimeTokens = Object.values(SlimeTokensObj);
-export const ReservedWords = new Set(slimeTokens.filter((token: any) => token.isKeyword?.()).map((token: any) => token.getValue?.()).filter(Boolean));
+function __qinReadTokenMember(token: any, methodName: string, fieldName: string): any {
+  if (token == null) return null;
+  const method = token[methodName];
+  if (typeof method === "function") return method.call(token);
+  return token[fieldName];
+}
+export const ReservedWords = new Set(slimeTokens.filter((token: any) => __qinReadTokenMember(token, "isKeyword", "isKeyword")).map((token: any) => __qinReadTokenMember(token, "getValue", "value")).filter(Boolean));
 export type ExpressionParams = any;
 export type StatementParams = any;
 export type DeclarationParams = any;

@@ -623,9 +623,21 @@ public final class QinJavaProjectJsCompiler {
             js.append("export const SlimeJavascriptTokensObj = SlimeTokensObj;\n");
             js.append("export const slimeTokens = Object.values(SlimeTokensObj);\n");
             if (typeScript) {
-                js.append("export const ReservedWords = new Set(slimeTokens.filter((token: any) => token.isKeyword?.()).map((token: any) => token.getValue?.()).filter(Boolean));\n");
+                js.append("function __qinReadTokenMember(token: any, methodName: string, fieldName: string): any {\n");
+                js.append("  if (token == null) return null;\n");
+                js.append("  const method = token[methodName];\n");
+                js.append("  if (typeof method === \"function\") return method.call(token);\n");
+                js.append("  return token[fieldName];\n");
+                js.append("}\n");
+                js.append("export const ReservedWords = new Set(slimeTokens.filter((token: any) => __qinReadTokenMember(token, \"isKeyword\", \"isKeyword\")).map((token: any) => __qinReadTokenMember(token, \"getValue\", \"value\")).filter(Boolean));\n");
             } else {
-                js.append("export const ReservedWords = new Set(slimeTokens.filter((token) => token.isKeyword?.()).map((token) => token.getValue?.()).filter(Boolean));\n");
+                js.append("function __qinReadTokenMember(token, methodName, fieldName) {\n");
+                js.append("  if (token == null) return null;\n");
+                js.append("  const method = token[methodName];\n");
+                js.append("  if (typeof method === \"function\") return method.call(token);\n");
+                js.append("  return token[fieldName];\n");
+                js.append("}\n");
+                js.append("export const ReservedWords = new Set(slimeTokens.filter((token) => __qinReadTokenMember(token, \"isKeyword\", \"isKeyword\")).map((token) => __qinReadTokenMember(token, \"getValue\", \"value\")).filter(Boolean));\n");
             }
         }
         if (typeScript) {
