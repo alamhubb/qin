@@ -1,0 +1,4 @@
+div(class="summary-strip") {
+  span(class="summary-dot") { "" }
+  span { "OVS component rendered by Qin dev server" }
+}
