@@ -1,6 +1,6 @@
-package demo;
-
-import com.qin.runtime.http.QinHttpApp;
+import com.qin.runtime.core.QinHttpApp;
+import com.qin.runtime.core.QinHttpRequest;
+import com.qin.runtime.core.QinHttpResponse;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -8,114 +8,182 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 public final class Main {
-    private static final String DEFAULT_DB_URL = "jdbc:postgresql://43.143.220.49:5432/qin_demo";
-    private static final String DEFAULT_DB_USER = "qin_user";
+    private static final QinHttpApp APP = QinHttpApp.create()
+            .get("/api/users", Main::listUsers)
+            .post("/api/users", Main::createUser)
+            .delete("/api/users/{id}", Main::deleteUser);
 
     private Main() {
     }
 
     public static Object run() {
-        ensureSchema();
-        return QinHttpApp.create()
-                .get("/api/users", context -> context.json(listUsers()))
-                .post("/api/users", context -> {
-                    String name = trimToNull(context.jsonString("name"));
-                    String email = trimToNull(context.jsonString("email"));
-                    if (name == null || email == null) {
-                        return context.json(Map.of("error", "name and email are required"), 400);
-                    }
-                    try {
-                        return context.json(createUser(name, email), 201);
-                    } catch (SQLException error) {
-                        if ("23505".equals(error.getSQLState())) {
-                            return context.json(Map.of("error", "email already exists"), 409);
-                        }
-                        throw error;
-                    }
-                })
-                .delete("/api/users/:id", context -> {
-                    long id = Long.parseLong(context.param("id"));
-                    deleteUser(id);
-                    return context.noContent();
-                });
+        return "qin-user-db-fullstack-demo";
     }
 
-    private static List<Map<String, Object>> listUsers() throws SQLException {
-        try (Connection connection = openConnection();
-             PreparedStatement statement = connection.prepareStatement("select id, name, email from users order by id");
-             ResultSet resultSet = statement.executeQuery()) {
-            List<Map<String, Object>> users = new ArrayList<>();
-            while (resultSet.next()) {
-                users.add(user(
-                        resultSet.getLong("id"),
-                        resultSet.getString("name"),
-                        resultSet.getString("email")));
-            }
-            return users;
-        }
+    public static QinHttpApp app() {
+        return APP;
     }
 
-    private static Map<String, Object> createUser(String name, String email) throws SQLException {
-        try (Connection connection = openConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "insert into users (name, email) values (?, ?) returning id, name, email")) {
-            statement.setString(1, name);
-            statement.setString(2, email);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new SQLException("insert did not return a row");
+    private static QinHttpResponse listUsers(QinHttpRequest request) {
+        try (Connection connection = connect()) {
+            ensureSchema(connection);
+            StringBuilder json = new StringBuilder("{\"users\":[");
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "select id, name, email, created_at from qin_demo_users order by id asc");
+                 ResultSet rows = statement.executeQuery()) {
+                boolean first = true;
+                while (rows.next()) {
+                    if (!first) {
+                        json.append(',');
+                    }
+                    first = false;
+                    appendUser(json, rows);
                 }
-                return user(
-                        resultSet.getLong("id"),
-                        resultSet.getString("name"),
-                        resultSet.getString("email"));
             }
+            json.append("]}");
+            return QinHttpResponse.json(json.toString());
+        } catch (DemoConfigException error) {
+            return configError(error);
+        } catch (SQLException error) {
+            return dbError(error);
         }
     }
 
-    private static void deleteUser(long id) throws SQLException {
-        try (Connection connection = openConnection();
-             PreparedStatement statement = connection.prepareStatement("delete from users where id = ?")) {
-            statement.setLong(1, id);
-            statement.executeUpdate();
+    private static QinHttpResponse createUser(QinHttpRequest request) {
+        String name = jsonStringField(request.bodyText(), "name");
+        String email = jsonStringField(request.bodyText(), "email");
+        if (name == null || name.isBlank() || email == null || email.isBlank()) {
+            return QinHttpResponse.json(400, "{\"error\":\"name and email are required\"}");
+        }
+
+        try (Connection connection = connect()) {
+            ensureSchema(connection);
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "insert into qin_demo_users (name, email) values (?, ?) returning id, name, email, created_at")) {
+                statement.setString(1, name.trim());
+                statement.setString(2, email.trim());
+                try (ResultSet rows = statement.executeQuery()) {
+                    rows.next();
+                    StringBuilder json = new StringBuilder("{\"user\":");
+                    appendUser(json, rows);
+                    json.append('}');
+                    return QinHttpResponse.json(201, json.toString());
+                }
+            }
+        } catch (DemoConfigException error) {
+            return configError(error);
+        } catch (SQLException error) {
+            return dbError(error);
         }
     }
 
-    private static void ensureSchema() {
-        try (Connection connection = openConnection();
-             Statement statement = connection.createStatement()) {
+    private static QinHttpResponse deleteUser(QinHttpRequest request) {
+        long id;
+        try {
+            id = Long.parseLong(Objects.requireNonNullElse(request.param("id"), ""));
+        } catch (NumberFormatException error) {
+            return QinHttpResponse.json(400, "{\"error\":\"invalid user id\"}");
+        }
+
+        try (Connection connection = connect()) {
+            ensureSchema(connection);
+            try (PreparedStatement statement = connection.prepareStatement("delete from qin_demo_users where id = ?")) {
+                statement.setLong(1, id);
+                int deleted = statement.executeUpdate();
+                if (deleted == 0) {
+                    return QinHttpResponse.json(404, "{\"error\":\"user not found\"}");
+                }
+                return QinHttpResponse.json("{\"deleted\":" + id + "}");
+            }
+        } catch (DemoConfigException error) {
+            return configError(error);
+        } catch (SQLException error) {
+            return dbError(error);
+        }
+    }
+
+    private static Connection connect() throws SQLException {
+        String password = env("QIN_DEMO_DB_PASSWORD", "");
+        if (password.isBlank()) {
+            throw new DemoConfigException("Set QIN_DEMO_DB_PASSWORD before using /api/users.");
+        }
+        String url = env("QIN_DEMO_DB_URL", "jdbc:postgresql://localhost:5432/qin_demo");
+        String user = env("QIN_DEMO_DB_USER", "postgres");
+        return DriverManager.getConnection(url, user, password);
+    }
+
+    private static void ensureSchema(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("""
-                    create table if not exists users (
-                      id bigserial primary key,
-                      name varchar(120) not null,
-                      email varchar(240) not null unique,
-                      created_at timestamptz not null default now()
+                    create table if not exists qin_demo_users (
+                        id bigserial primary key,
+                        name text not null,
+                        email text not null unique,
+                        created_at timestamptz not null default now()
                     )
                     """);
-        } catch (SQLException error) {
-            throw new IllegalStateException("Failed to initialize users table", error);
         }
     }
 
-    private static Connection openConnection() throws SQLException {
-        return DriverManager.getConnection(
-                env("QIN_DEMO_DB_URL", DEFAULT_DB_URL),
-                env("QIN_DEMO_DB_USER", DEFAULT_DB_USER),
-                requiredEnv("QIN_DEMO_DB_PASSWORD"));
+    private static QinHttpResponse configError(DemoConfigException error) {
+        return QinHttpResponse.json(503, "{\"error\":\"database config missing\",\"detail\":\""
+                + escapeJson(error.getMessage()) + "\"}");
     }
 
-    private static Map<String, Object> user(long id, String name, String email) {
-        Map<String, Object> user = new LinkedHashMap<>();
-        user.put("id", id);
-        user.put("name", name);
-        user.put("email", email);
-        return user;
+    private static QinHttpResponse dbError(SQLException error) {
+        return QinHttpResponse.json(503, "{\"error\":\"database unavailable\",\"detail\":\""
+                + escapeJson(error.getMessage()) + "\"}");
+    }
+
+    private static void appendUser(StringBuilder json, ResultSet rows) throws SQLException {
+        json.append('{')
+                .append("\"id\":").append(rows.getLong("id")).append(',')
+                .append("\"name\":\"").append(escapeJson(rows.getString("name"))).append("\",")
+                .append("\"email\":\"").append(escapeJson(rows.getString("email"))).append("\",")
+                .append("\"createdAt\":\"").append(escapeJson(rows.getString("created_at"))).append("\"")
+                .append('}');
+    }
+
+    private static String jsonStringField(String json, String field) {
+        String needle = "\"" + field + "\"";
+        int key = json.indexOf(needle);
+        if (key < 0) {
+            return null;
+        }
+        int colon = json.indexOf(':', key + needle.length());
+        if (colon < 0) {
+            return null;
+        }
+        int quote = json.indexOf('"', colon + 1);
+        if (quote < 0) {
+            return null;
+        }
+        StringBuilder value = new StringBuilder();
+        boolean escaped = false;
+        for (int i = quote + 1; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (escaped) {
+                value.append(switch (c) {
+                    case '"' -> '"';
+                    case '\\' -> '\\';
+                    case 'n' -> '\n';
+                    case 'r' -> '\r';
+                    case 't' -> '\t';
+                    default -> c;
+                });
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == '"') {
+                return value.toString();
+            } else {
+                value.append(c);
+            }
+        }
+        return null;
     }
 
     private static String env(String name, String fallback) {
@@ -123,19 +191,18 @@ public final class Main {
         return value == null || value.isBlank() ? fallback : value;
     }
 
-    private static String requiredEnv(String name) {
-        String value = System.getenv(name);
-        if (value == null || value.isBlank()) {
-            throw new IllegalStateException("Missing required environment variable: " + name);
-        }
-        return value;
+    private static String escapeJson(String value) {
+        return Objects.requireNonNullElse(value, "")
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 
-    private static String trimToNull(String value) {
-        if (value == null) {
-            return null;
+    private static final class DemoConfigException extends RuntimeException {
+        private DemoConfigException(String message) {
+            super(message);
         }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 }
