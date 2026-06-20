@@ -20,9 +20,14 @@ import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.runtime.JavaEsmGlobal;
 import com.qin.lang.runtime.QinFunctionModelRegistry;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -37,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class QinInMemoryJvmRunner {
     private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
+    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 1;
 
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
@@ -99,6 +105,14 @@ public final class QinInMemoryJvmRunner {
     }
 
     public Object compileAndRunModuleClasses(Path sourceFile, Path projectRoot, String className) throws Exception {
+        return compileAndRunModuleClasses(sourceFile, projectRoot, className, "");
+    }
+
+    public Object compileAndRunModuleClasses(
+            Path sourceFile,
+            Path projectRoot,
+            String className,
+            String cacheSalt) throws Exception {
         long startNanos = System.nanoTime();
         sourceFile = requireFile(sourceFile);
         Path normalizedProjectRoot = projectRoot == null
@@ -111,7 +125,13 @@ public final class QinInMemoryJvmRunner {
         }
 
         String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
-        String cacheKey = moduleClassCacheKey(sourceFile, normalizedProjectRoot, className, source);
+        String cacheKey = moduleClassCacheKey(sourceFile, normalizedProjectRoot, className, source, cacheSalt);
+        CachedModuleClassCompileResult diskCached = readModuleClassDiskCache(normalizedProjectRoot, cacheKey);
+        if (diskCached != null) {
+            logPhase("module-class disk cache hit", startNanos, className);
+            return runCachedModuleClasses(diskCached, startNanos);
+        }
+
         QinCfaModuleClassCompileResult compileResult = moduleClassCompileCache.get(cacheKey);
         if (compileResult == null) {
             logPhase("module-class compile start", startNanos, sourceFile.toAbsolutePath().toString());
@@ -120,6 +140,7 @@ public final class QinInMemoryJvmRunner {
             QinCfaModuleClassCompileResult existing = moduleClassCompileCache.putIfAbsent(cacheKey, compiled);
             compileResult = existing == null ? compiled : existing;
             logPhase("module-class compile done", startNanos, className);
+            writeModuleClassDiskCache(normalizedProjectRoot, cacheKey, toCachedModuleClassCompileResult(compileResult));
         } else {
             logPhase("module-class compile cache hit", startNanos, className);
         }
@@ -147,6 +168,65 @@ public final class QinInMemoryJvmRunner {
             logPhase("module-class run done", startNanos, moduleClassFile.className());
         }
         return result;
+    }
+
+    private Object runCachedModuleClasses(CachedModuleClassCompileResult compileResult, long startNanos) throws Exception {
+        ByteArrayClassLoader classLoader = new ByteArrayClassLoader(getClass().getClassLoader());
+        Object result = null;
+        if (compileResult.initializerClass != null) {
+            result = runCachedModuleClass(classLoader, compileResult.initializerClass, startNanos);
+        }
+        for (CachedModuleClassFile moduleClassFile : compileResult.moduleClasses) {
+            result = runCachedModuleClass(classLoader, moduleClassFile, startNanos);
+        }
+        return result;
+    }
+
+    private Object runCachedModuleClass(
+            ByteArrayClassLoader classLoader,
+            CachedModuleClassFile moduleClassFile,
+            long startNanos) throws Exception {
+        bindDeclarationClasses(classLoader.defineAll(moduleClassFile.declarationClassBytes));
+        registerFunctionModelArtifacts(moduleClassFile.functionModels);
+        Class<?> moduleClass = classLoader.define(moduleClassFile.className, moduleClassFile.classBytes);
+        logPhase("module-class run start", startNanos, moduleClassFile.className);
+        Object result = invokeRunWithRuntimeStack(moduleClass, moduleClassFile.className);
+        logPhase("module-class run done", startNanos, moduleClassFile.className);
+        return result;
+    }
+
+    private CachedModuleClassCompileResult toCachedModuleClassCompileResult(
+            QinCfaModuleClassCompileResult compileResult) {
+        CachedModuleClassFile initializerClass = compileResult.initializerClass() == null
+                ? null
+                : toCachedModuleClassFile(compileResult.initializerClass());
+        List<CachedModuleClassFile> moduleClasses = new ArrayList<>();
+        for (QinCfaModuleClassFile moduleClassFile : compileResult.moduleClasses()) {
+            moduleClasses.add(toCachedModuleClassFile(moduleClassFile));
+        }
+        return new CachedModuleClassCompileResult(
+                MODULE_CLASS_DISK_CACHE_VERSION,
+                initializerClass,
+                moduleClasses);
+    }
+
+    private CachedModuleClassFile toCachedModuleClassFile(QinCfaModuleClassFile moduleClassFile) {
+        return new CachedModuleClassFile(
+                moduleClassFile.className(),
+                moduleClassFile.classBytes(),
+                compileDeclarationClassBytes(moduleClassFile),
+                functionModelArtifacts(moduleClassFile.loweredProgram().functionModelArtifacts()));
+    }
+
+    private Map<String, Map<String, Object>> functionModelArtifacts(List<QinIrFunctionModelArtifact> artifacts) {
+        if (artifacts.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Map<String, Object>> models = new LinkedHashMap<>();
+        for (QinIrFunctionModelArtifact artifact : artifacts) {
+            models.put(artifact.id(), toRuntimeMap(artifact.ast()));
+        }
+        return models;
     }
 
     private void bindDeclarationClasses(Map<String, Class<?>> declarationClasses) {
@@ -232,6 +312,15 @@ public final class QinInMemoryJvmRunner {
         }
     }
 
+    private void registerFunctionModelArtifacts(Map<String, Map<String, Object>> models) {
+        if (models == null || models.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, Map<String, Object>> entry : models.entrySet()) {
+            QinFunctionModelRegistry.register(entry.getKey(), () -> deepCopyRuntimeMap(entry.getValue()));
+        }
+    }
+
     private Map<String, Object> toRuntimeMap(QinIrObjectLiteral objectLiteral) {
         Map<String, Object> map = new LinkedHashMap<>();
         for (QinIrObjectProperty property : objectLiteral.properties()) {
@@ -270,19 +359,100 @@ public final class QinInMemoryJvmRunner {
                 "Unsupported function model artifact expression: " + expression.getClass().getName());
     }
 
+    private Map<String, Object> deepCopyRuntimeMap(Map<String, Object> source) {
+        Map<String, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : source.entrySet()) {
+            copy.put(entry.getKey(), deepCopyRuntimeValue(entry.getValue()));
+        }
+        return copy;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object deepCopyRuntimeValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                copy.put(String.valueOf(entry.getKey()), deepCopyRuntimeValue(entry.getValue()));
+            }
+            return copy;
+        }
+        if (value instanceof List<?> list) {
+            List<Object> copy = new ArrayList<>();
+            for (Object element : list) {
+                copy.add(deepCopyRuntimeValue(element));
+            }
+            return copy;
+        }
+        return value;
+    }
+
     private void logPhase(String phase, long startNanos, String detail) {
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
         System.out.println("[QinInMemoryJvmRunner] " + phase + " +" + elapsedMs + "ms :: " + detail);
     }
 
-    private String moduleClassCacheKey(Path sourceFile, Path projectRoot, String className, String source) {
+    private String moduleClassCacheKey(
+            Path sourceFile,
+            Path projectRoot,
+            String className,
+            String source,
+            String cacheSalt) {
         return projectRoot.toAbsolutePath().normalize()
                 + "\n"
                 + sourceFile.toAbsolutePath().normalize()
                 + "\n"
                 + className
                 + "\n"
+                + (cacheSalt == null ? "" : cacheSalt)
+                + "\n"
                 + sha256(source);
+    }
+
+    private CachedModuleClassCompileResult readModuleClassDiskCache(Path projectRoot, String cacheKey) {
+        Path cacheFile = moduleClassDiskCacheFile(projectRoot, cacheKey);
+        if (!Files.isRegularFile(cacheFile)) {
+            return null;
+        }
+        try (ObjectInputStream input = new ObjectInputStream(Files.newInputStream(cacheFile))) {
+            Object value = input.readObject();
+            if (value instanceof CachedModuleClassCompileResult cached
+                    && cached.version == MODULE_CLASS_DISK_CACHE_VERSION) {
+                return cached;
+            }
+        } catch (IOException | ClassNotFoundException error) {
+            System.err.println("[WARN] failed to read Qin module-class disk cache: " + error.getMessage());
+        }
+        return null;
+    }
+
+    private void writeModuleClassDiskCache(
+            Path projectRoot,
+            String cacheKey,
+            CachedModuleClassCompileResult compileResult) {
+        Path cacheFile = moduleClassDiskCacheFile(projectRoot, cacheKey);
+        Path tempFile = cacheFile.resolveSibling(cacheFile.getFileName() + ".tmp");
+        try {
+            Files.createDirectories(cacheFile.getParent());
+            try (ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(tempFile))) {
+                output.writeObject(compileResult);
+            }
+            Files.move(tempFile, cacheFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException error) {
+            System.err.println("[WARN] failed to write Qin module-class disk cache: " + error.getMessage());
+            try {
+                Files.deleteIfExists(tempFile);
+            } catch (IOException ignored) {
+                // Best effort cleanup only.
+            }
+        }
+    }
+
+    private Path moduleClassDiskCacheFile(Path projectRoot, String cacheKey) {
+        return projectRoot.toAbsolutePath().normalize()
+                .resolve(".qin")
+                .resolve("cache")
+                .resolve("jvm-module-classes")
+                .resolve(sha256(cacheKey) + ".bin");
     }
 
     private static String sha256(String text) {
@@ -354,6 +524,43 @@ public final class QinInMemoryJvmRunner {
             Class<?> defined = defineClass(binaryName, bytes, 0, bytes.length);
             definedClasses.put(binaryName, defined);
             return defined;
+        }
+    }
+
+    private static final class CachedModuleClassCompileResult implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final int version;
+        private final CachedModuleClassFile initializerClass;
+        private final List<CachedModuleClassFile> moduleClasses;
+
+        private CachedModuleClassCompileResult(
+                int version,
+                CachedModuleClassFile initializerClass,
+                List<CachedModuleClassFile> moduleClasses) {
+            this.version = version;
+            this.initializerClass = initializerClass;
+            this.moduleClasses = List.copyOf(moduleClasses);
+        }
+    }
+
+    private static final class CachedModuleClassFile implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final String className;
+        private final byte[] classBytes;
+        private final Map<String, byte[]> declarationClassBytes;
+        private final Map<String, Map<String, Object>> functionModels;
+
+        private CachedModuleClassFile(
+                String className,
+                byte[] classBytes,
+                Map<String, byte[]> declarationClassBytes,
+                Map<String, Map<String, Object>> functionModels) {
+            this.className = className;
+            this.classBytes = classBytes == null ? null : classBytes.clone();
+            this.declarationClassBytes = Map.copyOf(declarationClassBytes);
+            this.functionModels = Map.copyOf(functionModels);
         }
     }
 }

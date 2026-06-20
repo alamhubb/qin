@@ -200,20 +200,57 @@ public final class QinFullstackMain {
                 jsOutputFile,
                 options.printIr);
         QinBuildResult backendResult = coordinator.build(backendRequest);
-        BackendMethods methods = loadBackendMethods(classOutputDir, options.className);
-        return new BackendBuild(backendResult.classFile(), methods.runMethod(), methods.httpAppMethod());
+        compileProjectJavaHelpers(root, classOutputDir);
+        Path adapterSource = writeQinBackendAdapterSource(
+                root,
+                classOutputDir,
+                options.className + "FullstackAdapter",
+                options.className);
+        BackendBuild adapterBuild = compileJavaBackend(root, adapterSource, classOutputDir);
+        return new BackendBuild(adapterBuild.classFile(), adapterBuild.runMethod(), adapterBuild.httpAppMethod());
+    }
+
+    private static void compileProjectJavaHelpers(Path root, Path classOutputDir) throws Exception {
+        Path mainDir = root.resolve("main").normalize();
+        if (!Files.isDirectory(mainDir)) {
+            return;
+        }
+        List<Path> sources;
+        try (var stream = Files.walk(mainDir)) {
+            sources = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".java"))
+                    .sorted()
+                    .toList();
+        }
+        if (sources.isEmpty()) {
+            return;
+        }
+        compileJavaSources(root, sources, classOutputDir, "project Java helper sources");
     }
 
     private static BackendBuild compileJavaBackend(Path root, Path sourceFile, Path classOutputDir) throws Exception {
+        compileJavaSources(root, List.of(sourceFile), classOutputDir, "backend Java source");
+        String className = inferJavaBinaryClassName(sourceFile);
+        Path classFile = classOutputDir.resolve(className.replace('.', '/') + ".class").normalize();
+        BackendMethods methods = loadBackendMethods(classOutputDir, className);
+        return new BackendBuild(classFile, methods.runMethod(), methods.httpAppMethod());
+    }
+
+    private static void compileJavaSources(
+            Path root,
+            List<Path> sourceFiles,
+            Path classOutputDir,
+            String description) throws Exception {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
-            throw new IllegalStateException("JDK compiler is required for backend .java entries.");
+            throw new IllegalStateException("JDK compiler is required for " + description + ".");
         }
 
         Files.createDirectories(classOutputDir);
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
-            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(List.of(sourceFile));
+            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sourceFiles);
             List<String> javacOptions = new ArrayList<>();
             javacOptions.add("-encoding");
             javacOptions.add("UTF-8");
@@ -222,15 +259,17 @@ public final class QinFullstackMain {
             javacOptions.add("-sourcepath");
             javacOptions.add(root.toString());
             String classpath = System.getProperty("java.class.path", "");
-            if (classpath != null && !classpath.isBlank()) {
-                javacOptions.add("-classpath");
-                javacOptions.add(classpath);
-            }
+            javacOptions.add("-classpath");
+            javacOptions.add(classpath == null || classpath.isBlank()
+                    ? classOutputDir.toString()
+                    : classOutputDir + java.io.File.pathSeparator + classpath);
 
             Boolean ok = compiler.getTask(null, fileManager, diagnostics, javacOptions, null, units).call();
             if (!Boolean.TRUE.equals(ok)) {
-                StringBuilder message = new StringBuilder("Failed to compile backend Java source: ")
-                        .append(sourceFile.toAbsolutePath());
+                StringBuilder message = new StringBuilder("Failed to compile ")
+                        .append(description)
+                        .append(": ")
+                        .append(sourceFiles);
                 diagnostics.getDiagnostics().forEach(diagnostic -> message
                         .append(System.lineSeparator())
                         .append(diagnostic.getKind())
@@ -241,11 +280,60 @@ public final class QinFullstackMain {
                 throw new IllegalStateException(message.toString());
             }
         }
+    }
 
-        String className = inferJavaBinaryClassName(sourceFile);
-        Path classFile = classOutputDir.resolve(className.replace('.', '/') + ".class").normalize();
-        BackendMethods methods = loadBackendMethods(classOutputDir, className);
-        return new BackendBuild(classFile, methods.runMethod(), methods.httpAppMethod());
+    private static Path writeQinBackendAdapterSource(
+            Path root,
+            Path classOutputDir,
+            String adapterClassName,
+            String qinModuleClassName) throws IOException {
+        int lastDot = adapterClassName.lastIndexOf('.');
+        String packageName = lastDot < 0 ? "" : adapterClassName.substring(0, lastDot);
+        String simpleName = lastDot < 0 ? adapterClassName : adapterClassName.substring(lastDot + 1);
+        String source = """
+                %s
+                public final class %s {
+                    private static boolean initialized;
+                    private static Object runResult;
+
+                    private %s() {}
+
+                    public static Object run() throws Exception {
+                        return ensureInitialized();
+                    }
+
+                    public static com.qin.runtime.core.QinHttpApp app() throws Exception {
+                        ensureInitialized();
+                        Object app = com.qin.lang.runtime.JavaEsmGlobal.__qin_module_ref_get__("app");
+                        if (!(app instanceof com.qin.runtime.core.QinHttpApp)) {
+                            app = com.qin.lang.runtime.JavaEsmGlobal.__qin_call__(app);
+                        }
+                        if (app instanceof com.qin.runtime.core.QinHttpApp qinHttpApp) {
+                            return qinHttpApp;
+                        }
+                        throw new IllegalStateException("Qin backend export `app` must be QinHttpApp or a function returning QinHttpApp");
+                    }
+
+                    private static synchronized Object ensureInitialized() throws Exception {
+                        if (!initialized) {
+                            runResult = %s.run();
+                            initialized = true;
+                        }
+                        return runResult;
+                    }
+                }
+                """.formatted(
+                packageName.isBlank() ? "" : "package " + packageName + ";" + System.lineSeparator(),
+                simpleName,
+                simpleName,
+                qinModuleClassName);
+        Path sourceFile = classOutputDir
+                .resolve("__qin_fullstack_adapter_sources")
+                .resolve(adapterClassName.replace('.', '/') + ".java")
+                .normalize();
+        Files.createDirectories(sourceFile.getParent());
+        Files.writeString(sourceFile, source, StandardCharsets.UTF_8);
+        return sourceFile;
     }
 
     private static boolean isJavaSource(Path sourceFile) {

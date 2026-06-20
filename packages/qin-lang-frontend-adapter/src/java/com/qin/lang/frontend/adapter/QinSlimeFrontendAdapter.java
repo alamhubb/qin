@@ -3797,8 +3797,18 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 Object propertyAst = invokeByName(callee, "property");
                 if ("Identifier".equals(simpleName(objectAst))) {
                     String receiverName = extractIdentifierName(objectAst, "CallExpression.callee.object");
-                    if (javaImportLookup.containsKey(receiverName)) {
-                        throw qjsError("QJS2004", "Java static call must be wrapped by console.log java interop path");
+                    if (javaImportLookup.containsKey(receiverName)
+                            && "Identifier".equals(simpleName(propertyAst))) {
+                        String methodName = extractIdentifierName(
+                                propertyAst,
+                                "CallExpression.callee.property");
+                        return lowerRuntimeJavaStaticCall(
+                                receiverName,
+                                methodName,
+                                expressionAst,
+                                optionalCall,
+                                javaImportLookup,
+                                declarationLookup);
                     }
                     if (declarationLookup.get(receiverName) instanceof QinIrJavaNewExpression) {
                         throw qjsError("QJS2005", "Java instance call must be statement form");
@@ -4121,8 +4131,14 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             com.slime.ast.Expression propertyAst = memberCallee.property();
             if (objectAst instanceof Identifier objectIdentifier) {
                 String receiverName = objectIdentifier.name();
-                if (javaImportLookup.containsKey(receiverName)) {
-                    throw qjsError("QJS2004", "Java static call must be wrapped by console.log java interop path");
+                if (javaImportLookup.containsKey(receiverName) && propertyAst instanceof Identifier propertyIdentifier) {
+                    return lowerRuntimeJavaStaticCall(
+                            receiverName,
+                            propertyIdentifier.name(),
+                            expressionAst,
+                            optionalCall,
+                            javaImportLookup,
+                            declarationLookup);
                 }
                 if (declarationLookup.get(receiverName) instanceof QinIrJavaNewExpression) {
                     throw qjsError("QJS2005", "Java instance call must be statement form");
@@ -4213,6 +4229,46 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         return new QinIrBuiltinCallExpression(
                 "Global",
                 QinParserRuntimeNames.FUNCTION_CALL_SHIM,
+                arguments);
+    }
+
+    private QinIrExpression lowerRuntimeJavaStaticCall(
+            String receiverName,
+            String methodName,
+            Object expressionAst,
+            boolean optionalCall,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        List<QinIrExpression> arguments = new ArrayList<>();
+        arguments.add(new QinIrBuiltinCallExpression(
+                "Global",
+                "__qin_global__",
+                List.of(new QinIrStringLiteral(receiverName))));
+        arguments.add(new QinIrStringLiteral(methodName));
+        arguments.addAll(lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup));
+        return new QinIrBuiltinCallExpression(
+                "Global",
+                optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
+                arguments);
+    }
+
+    private QinIrExpression lowerRuntimeJavaStaticCall(
+            String receiverName,
+            String methodName,
+            CallExpression expressionAst,
+            boolean optionalCall,
+            Map<String, String> javaImportLookup,
+            Map<String, QinIrExpression> declarationLookup) {
+        List<QinIrExpression> arguments = new ArrayList<>();
+        arguments.add(new QinIrBuiltinCallExpression(
+                "Global",
+                "__qin_global__",
+                List.of(new QinIrStringLiteral(receiverName))));
+        arguments.add(new QinIrStringLiteral(methodName));
+        arguments.addAll(lowerRuntimeArguments(expressionAst, javaImportLookup, declarationLookup));
+        return new QinIrBuiltinCallExpression(
+                "Global",
+                optionalCall ? "__qin_optional_call_method__" : "__qin_call_method__",
                 arguments);
     }
 

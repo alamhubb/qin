@@ -1,6 +1,7 @@
 package com.qin.runtime.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -90,6 +91,7 @@ final class QinJsPackageRunner {
             try (NpmHostLock ignored = acquireNpmHostLock(wrapperDir)) {
                 materializeWorkspaceDependencies(root, wrapperDir, wrapperSource);
                 logPhase("materialize workspace dependencies", startNanos, wrapperDir.resolve("node_modules").toString());
+                String dependencyFingerprint = moduleDependencyFingerprint(wrapperDir.resolve("node_modules"));
 
                 String token = sanitizeToken(nameHint == null || nameHint.isBlank() ? "module" : nameHint);
                 String identity = shortSha256(token + "\n" + root + "\n" + wrapperSource);
@@ -102,11 +104,56 @@ final class QinJsPackageRunner {
                         + capitalize(token)
                         + "_"
                         + identity;
-                Object result = runner.compileAndRunModuleClasses(wrapperFile, root, className);
+                Object result = runner.compileAndRunModuleClasses(wrapperFile, root, className, dependencyFingerprint);
                 logPhase("compile and run wrapper", startNanos, className);
                 return result;
             }
         }
+    }
+
+    private String moduleDependencyFingerprint(Path nodeModules) throws IOException {
+        if (!Files.isDirectory(nodeModules)) {
+            return "";
+        }
+        MessageDigest digest = newSha256Digest();
+        List<Path> files;
+        try (var stream = Files.walk(nodeModules)) {
+            files = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> !isIgnoredDependencyFingerprintPath(nodeModules, path))
+                    .sorted()
+                    .toList();
+        }
+        byte[] buffer = new byte[8192];
+        for (Path file : files) {
+            Path relative = nodeModules.relativize(file.toAbsolutePath().normalize());
+            digest.update(relative.toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            try (InputStream input = Files.newInputStream(file)) {
+                int read;
+                while ((read = input.read(buffer)) >= 0) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+            digest.update((byte) 0);
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private boolean isIgnoredDependencyFingerprintPath(Path nodeModules, Path path) {
+        Path relative = nodeModules.relativize(path.toAbsolutePath().normalize());
+        for (Path part : relative) {
+            String name = part.toString();
+            if (".git".equals(name)
+                    || ".idea".equals(name)
+                    || ".qin".equals(name)
+                    || "build".equals(name)
+                    || "target".equals(name)
+                    || "out".equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private NpmHostLock acquireNpmHostLock(Path wrapperDir) throws IOException {
@@ -2164,10 +2211,14 @@ final class QinJsPackageRunner {
     }
 
     private static String shortSha256(String text) {
+        MessageDigest digest = newSha256Digest();
+        byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+        return HexFormat.of().formatHex(hash, 0, 8);
+    }
+
+    private static MessageDigest newSha256Digest() {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash, 0, 8);
+            return MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException("SHA-256 is not available", error);
         }

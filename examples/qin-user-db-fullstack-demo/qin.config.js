@@ -13,7 +13,7 @@ export default {
     },
     backend: {
         sourceDir: "main",
-        entry: "main/Main.java"
+        entry: "main/main.ts"
     },
     database: {
         url: "jdbc:postgresql://43.143.220.49:5432/qin_demo",

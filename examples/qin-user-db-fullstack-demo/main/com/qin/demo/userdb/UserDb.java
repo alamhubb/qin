@@ -1,4 +1,5 @@
-import com.qin.runtime.core.QinHttpApp;
+package com.qin.demo.userdb;
+
 import com.qin.runtime.core.QinHttpRequest;
 import com.qin.runtime.core.QinHttpResponse;
 
@@ -10,24 +11,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Objects;
 
-public final class Main {
-    private static final QinHttpApp APP = QinHttpApp.create()
-            .get("/api/users", Main::listUsers)
-            .post("/api/users", Main::createUser)
-            .delete("/api/users/{id}", Main::deleteUser);
-
-    private Main() {
+public final class UserDb {
+    private UserDb() {
     }
 
-    public static Object run() {
-        return "qin-user-db-fullstack-demo";
-    }
-
-    public static QinHttpApp app() {
-        return APP;
-    }
-
-    private static QinHttpResponse listUsers(QinHttpRequest request) {
+    public static QinHttpResponse listUsers(QinHttpRequest request) {
         try (Connection connection = connect()) {
             ensureSchema(connection);
             StringBuilder json = new StringBuilder("{\"users\":[");
@@ -52,7 +40,7 @@ public final class Main {
         }
     }
 
-    private static QinHttpResponse createUser(QinHttpRequest request) {
+    public static QinHttpResponse createUser(QinHttpRequest request) {
         String name = jsonStringField(request.bodyText(), "name");
         String email = jsonStringField(request.bodyText(), "email");
         if (name == null || name.isBlank() || email == null || email.isBlank()) {
@@ -80,7 +68,7 @@ public final class Main {
         }
     }
 
-    private static QinHttpResponse deleteUser(QinHttpRequest request) {
+    public static QinHttpResponse deleteUser(QinHttpRequest request) {
         long id;
         try {
             id = Long.parseLong(Objects.requireNonNullElse(request.param("id"), ""));
