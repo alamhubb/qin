@@ -36,6 +36,8 @@ public final class QinFullstackMain {
     private static final List<String> DEV_WATCH_EXTENSIONS = List.of(
             ".html", ".css", ".cssts", ".js", ".mjs", ".ts", ".qin", ".vue", ".ovs", ".java");
     private static final Pattern JAVA_PACKAGE_PATTERN = Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s*;");
+    private static final Pattern JAVA_PUBLIC_TYPE_PATTERN = Pattern.compile("(?m)^\\s*public\\s+(?:final\\s+|abstract\\s+|sealed\\s+|non-sealed\\s+)*"
+            + "(?:class|interface|record|enum)\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
             ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
 
@@ -116,10 +118,10 @@ public final class QinFullstackMain {
         }
         System.out.println("Static root: " + staticRoot.toAbsolutePath());
 
-        return new BuildArtifacts(root, staticRoot, runMethod, frontendEsmService);
+        return new BuildArtifacts(root, staticRoot, runMethod, backendBuild.httpAppMethod(), frontendEsmService);
     }
 
-    private static Method loadRunMethod(Path classOutputDir, String className) throws Exception {
+    private static BackendMethods loadBackendMethods(Path classOutputDir, String className) throws Exception {
         Files.createDirectories(classOutputDir);
         URL[] urls = { classOutputDir.toUri().toURL() };
         URLClassLoader classLoader = newProjectClassFirstLoader(classOutputDir, urls);
@@ -128,7 +130,20 @@ public final class QinFullstackMain {
         if (!Modifier.isStatic(runMethod.getModifiers()) || runMethod.getParameterCount() != 0) {
             throw new IllegalStateException("Generated run method must be `public static Object run()`");
         }
-        return runMethod;
+        Method httpAppMethod = null;
+        try {
+            Method candidate = serverClass.getMethod("app");
+            if (!Modifier.isStatic(candidate.getModifiers()) || candidate.getParameterCount() != 0) {
+                throw new IllegalStateException("Backend app method must be `public static QinHttpApp app()`");
+            }
+            if (!QinHttpApp.class.isAssignableFrom(candidate.getReturnType())) {
+                throw new IllegalStateException("Backend app method must return QinHttpApp");
+            }
+            httpAppMethod = candidate;
+        } catch (NoSuchMethodException ignored) {
+            httpAppMethod = null;
+        }
+        return new BackendMethods(runMethod, httpAppMethod);
     }
 
     private static URLClassLoader newProjectClassFirstLoader(Path classOutputDir, URL[] urls) {
@@ -185,8 +200,8 @@ public final class QinFullstackMain {
                 jsOutputFile,
                 options.printIr);
         QinBuildResult backendResult = coordinator.build(backendRequest);
-        Method runMethod = loadRunMethod(classOutputDir, options.className);
-        return new BackendBuild(backendResult.classFile(), runMethod);
+        BackendMethods methods = loadBackendMethods(classOutputDir, options.className);
+        return new BackendBuild(backendResult.classFile(), methods.runMethod(), methods.httpAppMethod());
     }
 
     private static BackendBuild compileJavaBackend(Path root, Path sourceFile, Path classOutputDir) throws Exception {
@@ -229,8 +244,8 @@ public final class QinFullstackMain {
 
         String className = inferJavaBinaryClassName(sourceFile);
         Path classFile = classOutputDir.resolve(className.replace('.', '/') + ".class").normalize();
-        Method runMethod = loadRunMethod(classOutputDir, className);
-        return new BackendBuild(classFile, runMethod);
+        BackendMethods methods = loadBackendMethods(classOutputDir, className);
+        return new BackendBuild(classFile, methods.runMethod(), methods.httpAppMethod());
     }
 
     private static boolean isJavaSource(Path sourceFile) {
@@ -242,7 +257,10 @@ public final class QinFullstackMain {
         Matcher matcher = JAVA_PACKAGE_PATTERN.matcher(source);
         String packageName = matcher.find() ? matcher.group(1) : null;
         String fileName = sourceFile.getFileName().toString();
-        String simpleName = fileName.endsWith(".java") ? fileName.substring(0, fileName.length() - ".java".length()) : fileName;
+        Matcher typeMatcher = JAVA_PUBLIC_TYPE_PATTERN.matcher(source);
+        String simpleName = typeMatcher.find()
+                ? typeMatcher.group(1)
+                : fileName.endsWith(".java") ? fileName.substring(0, fileName.length() - ".java".length()) : fileName;
         return packageName == null || packageName.isBlank() ? simpleName : packageName + "." + simpleName;
     }
 
@@ -591,21 +609,26 @@ public final class QinFullstackMain {
         private boolean showHelp;
     }
 
-    private record BackendBuild(Path classFile, Method runMethod) {
+    private record BackendMethods(Method runMethod, Method httpAppMethod) {
+    }
+
+    private record BackendBuild(Path classFile, Method runMethod, Method httpAppMethod) {
     }
 
     static final class BuildArtifacts implements QinDevServer.RuntimeView {
         private final Path root;
         private volatile Path staticRoot;
         private final AtomicReference<Method> runMethodRef;
+        private final AtomicReference<Method> httpAppMethodRef;
         private final AtomicReference<QinFrontendEsmService> frontendEsmServiceRef;
         private final AtomicReference<List<String>> hmrMessagesRef;
         private final AtomicLong version;
 
-        private BuildArtifacts(Path root, Path staticRoot, Method runMethod, QinFrontendEsmService frontendEsmService) {
+        private BuildArtifacts(Path root, Path staticRoot, Method runMethod, Method httpAppMethod, QinFrontendEsmService frontendEsmService) {
             this.root = root;
             this.staticRoot = staticRoot;
             this.runMethodRef = new AtomicReference<>(runMethod);
+            this.httpAppMethodRef = new AtomicReference<>(httpAppMethod);
             this.frontendEsmServiceRef = new AtomicReference<>(frontendEsmService);
             this.hmrMessagesRef = new AtomicReference<>(List.of());
             this.version = new AtomicLong(System.currentTimeMillis());
@@ -626,6 +649,11 @@ public final class QinFullstackMain {
         }
 
         @Override
+        public Method currentHttpAppMethod() {
+            return httpAppMethodRef.get();
+        }
+
+        @Override
         public QinFrontendEsmService frontendEsmService() {
             return frontendEsmServiceRef.get();
         }
@@ -643,6 +671,7 @@ public final class QinFullstackMain {
         private void updateFrom(BuildArtifacts rebuilt, List<Path> changedFiles) {
             this.staticRoot = rebuilt.staticRoot;
             this.runMethodRef.set(rebuilt.currentRunMethod());
+            this.httpAppMethodRef.set(rebuilt.currentHttpAppMethod());
             this.frontendEsmServiceRef.set(rebuilt.frontendEsmService());
             QinFrontendEsmService frontend = rebuilt.frontendEsmService();
             if (frontend != null && changedFiles != null && !changedFiles.isEmpty()) {

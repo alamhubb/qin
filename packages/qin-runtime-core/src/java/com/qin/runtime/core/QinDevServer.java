@@ -78,6 +78,12 @@ final class QinDevServer {
             }
         });
 
+        server.createContext("/api/", exchange -> {
+            if (!tryHandleHttpAppExchange(runtime, exchange)) {
+                sendJson(exchange, 404, "{\"error\":\"not found\"}");
+            }
+        });
+
         if (devMode) {
             server.createContext("/@qin/version", exchange -> {
                 if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
@@ -162,6 +168,60 @@ final class QinDevServer {
         exchange.sendResponseHeaders(200, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(bytes);
+        }
+        exchange.close();
+    }
+
+    private static boolean tryHandleHttpAppExchange(RuntimeView runtime, HttpExchange exchange) throws IOException {
+        Method appMethod = runtime.currentHttpAppMethod();
+        if (appMethod == null) {
+            return false;
+        }
+        URI uri = exchange.getRequestURI();
+        Map<String, String> headers = new LinkedHashMap<>();
+        exchange.getRequestHeaders().forEach((name, values) -> {
+            if (name != null && values != null && !values.isEmpty()) {
+                headers.put(name.toLowerCase(), String.join(",", values));
+            }
+        });
+        byte[] body = exchange.getRequestBody().readAllBytes();
+        QinHttpRequest request = new QinHttpRequest(
+                exchange.getRequestMethod(),
+                uri.getPath(),
+                uri.getRawQuery(),
+                headers,
+                body,
+                Map.of());
+        QinHttpResponse response = invokeHttpApp(appMethod, request);
+        if (response == null) {
+            return false;
+        }
+        sendAppResponse(exchange, response);
+        return true;
+    }
+
+    private static QinHttpResponse invokeHttpApp(Method appMethod, QinHttpRequest request) throws IOException {
+        try {
+            Object app = appMethod.invoke(null);
+            if (!(app instanceof QinHttpApp qinHttpApp)) {
+                throw new IllegalStateException("Backend app() must return QinHttpApp");
+            }
+            return qinHttpApp.handle(request);
+        } catch (Exception error) {
+            Throwable root = unwrapInvocationError(error);
+            root.printStackTrace(System.err);
+            String escaped = escapeJson(Objects.toString(root.getMessage(), root.getClass().getName()));
+            return QinHttpResponse.json(500, "{\"error\":\"" + escaped + "\"}");
+        }
+    }
+
+    private static void sendAppResponse(HttpExchange exchange, QinHttpResponse response) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", response.contentType());
+        response.headers().forEach((name, value) -> exchange.getResponseHeaders().set(name, value));
+        byte[] body = response.body();
+        exchange.sendResponseHeaders(response.status(), body.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(body);
         }
         exchange.close();
     }
@@ -325,6 +385,20 @@ final class QinDevServer {
             return "image/x-icon";
         }
         return "application/octet-stream";
+    }
+
+    private static String reasonPhrase(int status) {
+        return switch (status) {
+            case 200 -> "OK";
+            case 201 -> "Created";
+            case 204 -> "No Content";
+            case 400 -> "Bad Request";
+            case 404 -> "Not Found";
+            case 405 -> "Method Not Allowed";
+            case 500 -> "Internal Server Error";
+            case 503 -> "Service Unavailable";
+            default -> "OK";
+        };
     }
 
     private static void sendJson(HttpExchange exchange, int status, String json) throws IOException {
@@ -639,16 +713,20 @@ final class QinDevServer {
         }
 
         private static void handleHttp(OutputStream output, RuntimeView runtime, RawRequest request, URI uri) throws IOException {
-            if (!"GET".equalsIgnoreCase(request.method())) {
-                sendRawText(output, 405, "Method Not Allowed", "method not allowed", "text/plain; charset=utf-8", Map.of());
-                return;
-            }
             String path = uri.getPath();
             if ("/api/health".equals(path)) {
+                if (!"GET".equalsIgnoreCase(request.method())) {
+                    sendRawText(output, 405, "Method Not Allowed", "{\"error\":\"method not allowed\"}", "application/json; charset=utf-8", Map.of("Allow", "GET"));
+                    return;
+                }
                 sendRawText(output, 200, "OK", "{\"ok\":true}", "application/json; charset=utf-8", Map.of());
                 return;
             }
             if ("/api/result".equals(path)) {
+                if (!"GET".equalsIgnoreCase(request.method())) {
+                    sendRawText(output, 405, "Method Not Allowed", "{\"error\":\"method not allowed\"}", "application/json; charset=utf-8", Map.of("Allow", "GET"));
+                    return;
+                }
                 try {
                     Object result = runtime.currentRunMethod().invoke(null);
                     sendRawText(output, 200, "OK", toJson(result), "application/json; charset=utf-8", Map.of());
@@ -658,6 +736,13 @@ final class QinDevServer {
                     String escaped = escapeJson(Objects.toString(root.getMessage(), root.getClass().getName()));
                     sendRawText(output, 500, "Internal Server Error", "{\"error\":\"" + escaped + "\"}", "application/json; charset=utf-8", Map.of());
                 }
+                return;
+            }
+            if (path != null && path.startsWith("/api/") && tryHandleRawHttpApp(output, runtime, request, uri)) {
+                return;
+            }
+            if (!"GET".equalsIgnoreCase(request.method())) {
+                sendRawText(output, 405, "Method Not Allowed", "method not allowed", "text/plain; charset=utf-8", Map.of("Allow", "GET"));
                 return;
             }
             if ("/@qin/version".equals(path)) {
@@ -704,6 +789,26 @@ final class QinDevServer {
                 }
             }
             serveRawStatic(output, runtime, uri);
+        }
+
+        private static boolean tryHandleRawHttpApp(OutputStream output, RuntimeView runtime, RawRequest raw, URI uri) throws IOException {
+            Method appMethod = runtime.currentHttpAppMethod();
+            if (appMethod == null) {
+                return false;
+            }
+            QinHttpRequest request = new QinHttpRequest(
+                    raw.method(),
+                    uri.getPath(),
+                    uri.getRawQuery(),
+                    raw.headers(),
+                    raw.body(),
+                    Map.of());
+            QinHttpResponse response = invokeHttpApp(appMethod, request);
+            if (response == null) {
+                return false;
+            }
+            sendRawBytes(output, response.status(), reasonPhrase(response.status()), response.body(), response.contentType(), response.headers());
+            return true;
         }
 
         private static void serveRawStatic(OutputStream output, RuntimeView runtime, URI uri) throws IOException {
@@ -817,7 +922,24 @@ final class QinDevServer {
                             lines[i].substring(colon + 1).trim());
                 }
             }
-            return new RawRequest(requestLine[0], requestLine[1], headers);
+            int contentLength = parseContentLength(headers.get("content-length"));
+            byte[] body = contentLength > 0 ? input.readNBytes(contentLength) : new byte[0];
+            return new RawRequest(requestLine[0], requestLine[1], headers, body);
+        }
+
+        private static int parseContentLength(String value) throws IOException {
+            if (value == null || value.isBlank()) {
+                return 0;
+            }
+            try {
+                int length = Integer.parseInt(value);
+                if (length < 0) {
+                    throw new IOException("Negative Content-Length: " + value);
+                }
+                return length;
+            } catch (NumberFormatException error) {
+                throw new IOException("Invalid Content-Length: " + value, error);
+            }
         }
 
         private static String readHeaderText(InputStream input) throws IOException {
@@ -878,7 +1000,7 @@ final class QinDevServer {
             return Map.of("Cache-Control", "no-store");
         }
 
-        private record RawRequest(String method, String target, Map<String, String> headers) {
+        private record RawRequest(String method, String target, Map<String, String> headers, byte[] body) {
         }
     }
 
@@ -1009,6 +1131,10 @@ final class QinDevServer {
         Path staticRoot();
 
         Method currentRunMethod();
+
+        default Method currentHttpAppMethod() {
+            return null;
+        }
 
         QinFrontendEsmService frontendEsmService();
 
