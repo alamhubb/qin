@@ -44,6 +44,7 @@ public record QinConfig(
         GraalVMConfig graalvm,
         FrontendConfig frontend,
         BackendConfig backend,
+        DatabaseConfig database,
         Map<String, String> scripts,
         List<Repository> repositories) {
 
@@ -99,6 +100,7 @@ public record QinConfig(
                 null, // graalvm
                 null, // frontend
                 null, // backend
+                null, // database
                 null, // scripts
                 null // repositories
         );

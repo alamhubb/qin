@@ -594,6 +594,7 @@ public class QinCli {
         List<String> command = new ArrayList<>();
         command.add("java");
         command.addAll(resolveJvmArgs(args));
+        appendDatabaseSystemProperties(command, config);
         command.add("-cp");
         command.add(runtimeClasspath);
         command.add(runtimeMainClass);
@@ -636,6 +637,22 @@ public class QinCli {
         }
 
         System.out.println(green(devMode ? "[OK] Qin dev runtime stopped" : "[OK] Done!"));
+    }
+
+    private static void appendDatabaseSystemProperties(List<String> command, QinConfig config) {
+        if (config == null || config.database() == null) {
+            return;
+        }
+        DatabaseConfig database = config.database();
+        appendSystemProperty(command, "qin.database.url", database.url());
+        appendSystemProperty(command, "qin.database.user", database.user());
+        appendSystemProperty(command, "qin.database.passwordEnv", database.passwordEnv());
+    }
+
+    private static void appendSystemProperty(List<String> command, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            command.add("-D" + key + "=" + value);
+        }
     }
 
     private static List<String> resolveJvmArgs(String[] args) {

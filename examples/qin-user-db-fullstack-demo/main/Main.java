@@ -106,12 +106,13 @@ public final class Main {
     }
 
     private static Connection connect() throws SQLException {
-        String password = env("QIN_DEMO_DB_PASSWORD", "");
+        String passwordEnv = property("qin.database.passwordEnv", "QIN_DEMO_DB_PASSWORD");
+        String password = env(passwordEnv, "");
         if (password.isBlank()) {
-            throw new DemoConfigException("Set QIN_DEMO_DB_PASSWORD before using /api/users.");
+            throw new DemoConfigException("Set " + passwordEnv + " before using /api/users.");
         }
-        String url = env("QIN_DEMO_DB_URL", "jdbc:postgresql://localhost:5432/qin_demo");
-        String user = env("QIN_DEMO_DB_USER", "postgres");
+        String url = env("QIN_DEMO_DB_URL", property("qin.database.url", "jdbc:postgresql://localhost:5432/qin_demo"));
+        String user = env("QIN_DEMO_DB_USER", property("qin.database.user", "postgres"));
         return DriverManager.getConnection(url, user, password);
     }
 
@@ -188,6 +189,11 @@ public final class Main {
 
     private static String env(String name, String fallback) {
         String value = System.getenv(name);
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static String property(String name, String fallback) {
+        String value = System.getProperty(name);
         return value == null || value.isBlank() ? fallback : value;
     }
 
