@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qin User DB Demo</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <main class="shell">
+        <section class="toolbar">
+            <div>
+                <p class="eyebrow">Qin single-port fullstack</p>
+                <h1>User database</h1>
+            </div>
+            <button id="refresh" type="button">Refresh</button>
+        </section>
+
+        <section class="status-line">
+            <span id="health-dot" class="dot"></span>
+            <span id="status">Checking API...</span>
+        </section>
+
+        <form id="user-form" class="user-form">
+            <label>
+                Name
+                <input id="name" name="name" autocomplete="name" required>
+            </label>
+            <label>
+                Email
+                <input id="email" name="email" type="email" autocomplete="email" required>
+            </label>
+            <button type="submit">Add user</button>
+        </form>
+
+        <section class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="users"></tbody>
+            </table>
+            <p id="empty" class="empty" hidden>No users yet.</p>
+        </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+</body>
+</html>
