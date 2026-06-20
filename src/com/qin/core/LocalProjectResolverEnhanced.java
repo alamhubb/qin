@@ -174,6 +174,7 @@ public class LocalProjectResolverEnhanced {
                     "-Xms16m",
                     "-Xmx256m",
                     "-XX:+UseSerialGC",
+                    "-XX:+UnlockExperimentalVMOptions",
                     "-XX:-UseJVMCICompiler",
                     "-XX:TieredStopAtLevel=1",
                     "-Dfile.encoding=UTF-8",

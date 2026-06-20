@@ -1488,6 +1488,7 @@ public class QinCli {
                     command.add("-Xms16m");
                     command.add("-Xmx256m");
                     command.add("-XX:+UseSerialGC");
+                    command.add("-XX:+UnlockExperimentalVMOptions");
                     command.add("-XX:-UseJVMCICompiler");
                     command.add("-XX:TieredStopAtLevel=1");
                     command.add("-Dfile.encoding=UTF-8");

@@ -155,6 +155,7 @@ public class EnvironmentChecker {
                 "-J-Xms16m",
                 "-J-Xmx128m",
                 "-J-XX:+UseSerialGC",
+                "-J-XX:+UnlockExperimentalVMOptions",
                 "-J-XX:-UseJVMCICompiler",
                 "-J-XX:TieredStopAtLevel=1",
                 "-version")) {
@@ -165,6 +166,7 @@ public class EnvironmentChecker {
                 "-J-Xms16m",
                 "-J-Xmx128m",
                 "-J-XX:+UseSerialGC",
+                "-J-XX:+UnlockExperimentalVMOptions",
                 "-J-XX:-UseJVMCICompiler",
                 "-J-XX:TieredStopAtLevel=1",
                 "-version");

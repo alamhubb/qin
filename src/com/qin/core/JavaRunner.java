@@ -25,6 +25,7 @@ public class JavaRunner {
             "-Xmx768m",
             "-Xshare:off",
             "-XX:+UseSerialGC",
+            "-XX:+UnlockExperimentalVMOptions",
             "-XX:-UseJVMCICompiler",
             "-XX:TieredStopAtLevel=1",
             "-Dfile.encoding=UTF-8",
