@@ -297,6 +297,12 @@ final class QinJsPackageRunner {
         if ("@vitejs/plugin-vue".equals(packageName)) {
             patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
         }
+        if ("ovs-compiler".equals(packageName)) {
+            patchOvsCompilerForQinJvmHost(targetPackageDir);
+        }
+        if ("lru-cache".equals(packageName)) {
+            patchLruCacheForQinJvmHost(targetPackageDir);
+        }
 
         if ((workspacePackage || overridePackage || filePackage)
                 && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir, overridePackage)) {
@@ -625,22 +631,110 @@ final class QinJsPackageRunner {
         return out.append('"').toString();
     }
 
+    private void patchOvsCompilerForQinJvmHost(Path packageDir) throws IOException {
+        Path entry = packageDir.resolve("dist").resolve("index.mjs");
+        if (!Files.isRegularFile(entry)) {
+            return;
+        }
+        String source = Files.readString(entry, StandardCharsets.UTF_8);
+        String patched = patchOvsCompilerDecorateHelpers(source);
+        patched = patchOvsCompilerCstToAstProxyFacade(patched);
+        if (!patched.equals(source)) {
+            Files.writeString(entry, patched, StandardCharsets.UTF_8);
+        }
+    }
+
+    private String patchOvsCompilerDecorateHelpers(String source) {
+        String patched = source.replace(
+                """
+                function __decorateMetadata(k, v) {
+                \tif (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+                }
+                """,
+                """
+                function __decorateMetadata(k, v) {
+                }
+                """);
+        return patched.replace(
+                """
+                function __decorate(decorators, target, key, desc) {
+                \tvar c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+                \tif (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+                \telse for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+                \treturn c > 3 && r && Object.defineProperty(target, key, r), r;
+                }
+                """,
+                """
+                function __decorate(decorators, target, key, desc) {
+                \tvar c = key === void 0 ? 2 : 4;
+                \tvar r = c < 3 ? target : desc === null ? { value: target[key], writable: true, enumerable: false, configurable: true } : desc;
+                \tvar d;
+                \tfor (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+                \tif (c > 3 && r && r.value !== void 0) target[key] = r.value;
+                \treturn r;
+                }
+                """);
+    }
+
+    private String patchOvsCompilerCstToAstProxyFacade(String source) {
+        return source.replace(
+                """
+                const OvsCstToSlimeAstUtils = new Proxy({}, { get(_, prop) {
+                \tconst val = _ovsCstToSlimeAstUtil[prop];
+                \treturn typeof val === "function" ? val.bind(_ovsCstToSlimeAstUtil) : val;
+                } });
+                """,
+                """
+                const OvsCstToSlimeAstUtils = {};
+                function bindOvsCstToSlimeAstUtilsForwarders() {
+                \tconst props = ["toProgram", "toFileAst", "clearUsedAtoms", "getUsedAtoms"];
+                \tfor (const prop of props) {
+                \t\tOvsCstToSlimeAstUtils[prop] = function(...args) {
+                \t\t\treturn _ovsCstToSlimeAstUtil[prop](...args);
+                \t\t};
+                \t}
+                }
+                bindOvsCstToSlimeAstUtilsForwarders();
+                """);
+    }
+
+    private void patchLruCacheForQinJvmHost(Path packageDir) throws IOException {
+        Path entry = packageDir.resolve("dist").resolve("esm").resolve("index.min.js");
+        if (!Files.isRegularFile(entry)) {
+            return;
+        }
+        String source = Files.readString(entry, StandardCharsets.UTF_8);
+        String patched = patchLruCacheOptionalDiagnosticsImport(source)
+                .replace("[Symbol.toStringTag]=\"LRUCache\";", "");
+        if (!patched.equals(source)) {
+            Files.writeString(entry, patched, StandardCharsets.UTF_8);
+        }
+    }
+
+    private String patchLruCacheOptionalDiagnosticsImport(String source) {
+        return Pattern.compile(
+                "import\\(\"node:diagnostics_channel\"\\)\\.then\\([^;]+?\\)\\.catch\\(\\(\\)=>\\{\\}\\);",
+                Pattern.DOTALL)
+                .matcher(source)
+                .replaceFirst("");
+    }
+
     private boolean shouldRewriteWorkspacePackageManifest(
             String packageName,
             Path sourcePackageDir,
             boolean packageOverride) throws IOException {
         WorkspacePackageEntrypoint entrypoint = inspectWorkspacePackageEntrypoint(sourcePackageDir);
-        if (packageOverride && entrypoint.hasSourceEntry()) {
+        if (packageOverride && entrypoint.hasSourceEntry() && !hasResolvablePublishedEntry(sourcePackageDir, entrypoint)) {
             return true;
         }
-        if (isPublishedRuntimePackage(packageName, entrypoint)) {
+        if (hasResolvablePublishedEntry(sourcePackageDir, entrypoint)) {
             return false;
         }
         return entrypoint.hasSourceEntry()
                 && (entrypoint.declaredSourceEntry() || !entrypoint.hasManifestEntry());
     }
 
-    private boolean isPublishedRuntimePackage(String packageName, WorkspacePackageEntrypoint entrypoint) {
+    private boolean hasResolvablePublishedEntry(Path sourcePackageDir, WorkspacePackageEntrypoint entrypoint) {
         if (!entrypoint.hasManifestEntry()) {
             return false;
         }
@@ -648,13 +742,7 @@ final class QinJsPackageRunner {
         if (!normalizedEntry.startsWith("./dist/") && !normalizedEntry.startsWith("dist/")) {
             return false;
         }
-        return packageName != null
-                && ("subhuti".equals(packageName)
-                || packageName.startsWith("slime-")
-                || packageName.startsWith("cssts-")
-                || packageName.startsWith("ovs-")
-                || "ovsjs".equals(packageName)
-                || "slime-generator".equals(packageName));
+        return Files.isRegularFile(sourcePackageDir.resolve(normalizeManifestRelativePath(normalizedEntry)));
     }
 
     private String replaceQinVueCompilerSfcHost(String source) {

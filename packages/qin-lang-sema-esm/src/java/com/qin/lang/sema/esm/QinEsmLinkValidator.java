@@ -1,10 +1,16 @@
 package com.qin.lang.sema.esm;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Validates ESM linkage constraints for Qin module graph.
@@ -46,6 +52,7 @@ public final class QinEsmLinkValidator {
             QinEsmModuleSemantic module,
             QinEsmSemanticModel model,
             List<QinEsmDiagnostic> diagnostics) {
+        Map<String, Boolean> typeDeclarationCache = new HashMap<>();
         for (QinEsmImportBinding importBinding : module.imports()) {
             if (QinEsmImportKind.SIDE_EFFECT.equals(importBinding.kind())) {
                 continue;
@@ -81,6 +88,9 @@ public final class QinEsmLinkValidator {
                         importBinding.line(),
                         importBinding.column()));
             } else if (!resolution.exists()) {
+                if (isDeclaredTypeOnlyImport(importBinding, typeDeclarationCache)) {
+                    continue;
+                }
                 diagnostics.add(new QinEsmDiagnostic(
                         "ESM2003",
                         "Imported binding does not exist: " + importBinding.importedName()
@@ -89,6 +99,70 @@ public final class QinEsmLinkValidator {
                         importBinding.line(),
                         importBinding.column()));
             }
+        }
+    }
+
+    private boolean isDeclaredTypeOnlyImport(
+            QinEsmImportBinding importBinding,
+            Map<String, Boolean> typeDeclarationCache) {
+        Path sourceFile = importBinding.sourceFile();
+        if (sourceFile == null || !isTypescriptSource(sourceFile) || importBinding.resolvedModule() == null) {
+            return false;
+        }
+        Path declarationFile = findSiblingDeclarationFile(importBinding.resolvedModule());
+        if (declarationFile == null) {
+            return false;
+        }
+        String cacheKey = declarationFile + "::" + importBinding.importedName();
+        return typeDeclarationCache.computeIfAbsent(cacheKey,
+                ignored -> declarationFileDeclaresType(declarationFile, importBinding.importedName()));
+    }
+
+    private boolean isTypescriptSource(Path sourceFile) {
+        String name = sourceFile.getFileName() == null ? "" : sourceFile.getFileName().toString();
+        return name.endsWith(".ts") || name.endsWith(".tsx") || name.endsWith(".mts") || name.endsWith(".cts");
+    }
+
+    private Path findSiblingDeclarationFile(Path moduleFile) {
+        Path parent = moduleFile.getParent();
+        String fileName = moduleFile.getFileName() == null ? "" : moduleFile.getFileName().toString();
+        if (parent == null || fileName.isBlank()) {
+            return null;
+        }
+        List<String> candidates = new ArrayList<>();
+        if (fileName.endsWith(".mjs")) {
+            candidates.add(fileName.substring(0, fileName.length() - 4) + ".d.mts");
+            candidates.add(fileName.substring(0, fileName.length() - 4) + ".d.ts");
+        } else if (fileName.endsWith(".cjs")) {
+            candidates.add(fileName.substring(0, fileName.length() - 4) + ".d.cts");
+            candidates.add(fileName.substring(0, fileName.length() - 4) + ".d.ts");
+        } else if (fileName.endsWith(".js")) {
+            candidates.add(fileName.substring(0, fileName.length() - 3) + ".d.ts");
+        } else if (fileName.endsWith(".ts")) {
+            candidates.add(fileName);
+        }
+        for (String candidate : candidates) {
+            Path path = parent.resolve(candidate);
+            if (Files.isRegularFile(path)) {
+                return path;
+            }
+        }
+        return null;
+    }
+
+    private boolean declarationFileDeclaresType(Path declarationFile, String importedName) {
+        if (importedName == null || importedName.isBlank()) {
+            return false;
+        }
+        try {
+            String source = Files.readString(declarationFile, StandardCharsets.UTF_8);
+            String quotedName = Pattern.quote(importedName);
+            return Pattern.compile("(?m)\\b(?:export\\s+)?(?:declare\\s+)?(?:interface|type)\\s+"
+                            + quotedName + "\\b")
+                    .matcher(source)
+                    .find();
+        } catch (IOException ignored) {
+            return false;
         }
     }
 

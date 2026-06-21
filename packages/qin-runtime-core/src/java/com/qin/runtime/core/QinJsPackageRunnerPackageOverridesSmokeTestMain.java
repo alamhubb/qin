@@ -57,7 +57,7 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 export const value = "override-ts-package:" + childValue + ":" + cachedValue
                 """, StandardCharsets.UTF_8);
         Files.writeString(packageRoot.resolve("dist").resolve("index.mjs"), """
-                export const value = new Proxy({}, {})
+                export const value = "override-dist-package"
                 """, StandardCharsets.UTF_8);
 
         Path childPackageRoot = packageRoot.resolve("child-pkg");
@@ -107,9 +107,10 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
 
         Path materializedManifest = wrapperDir.resolve("node_modules").resolve("mini-pkg").resolve("package.json");
         String manifest = Files.readString(materializedManifest, StandardCharsets.UTF_8);
-        if (!manifest.contains("\"main\": \"./src/index.ts\"")
-                || !Files.isRegularFile(wrapperDir.resolve("node_modules").resolve("mini-pkg").resolve("src").resolve("index.ts"))) {
-            throw new IllegalStateException("Package override did not materialize the local TS package: " + manifest);
+        if (!manifest.contains("\"module\": \"./dist/index.mjs\"")
+                || manifest.contains("\"main\": \"./src/index.ts\"")
+                || !Files.isRegularFile(wrapperDir.resolve("node_modules").resolve("mini-pkg").resolve("dist").resolve("index.mjs"))) {
+            throw new IllegalStateException("Package override with built dist did not preserve the manifest entry: " + manifest);
         }
         Path materializedChildManifest = wrapperDir.resolve("node_modules").resolve("child-pkg").resolve("package.json");
         if (!Files.isRegularFile(materializedChildManifest)) {
@@ -155,8 +156,64 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
             throw new IllegalStateException("Vite plugin vue Qin shim exposes parser-hostile default export text:\n"
                     + shimSource);
         }
+        verifyQinJvmHostPackagePatches(runner, root);
 
         System.out.println("QinJsPackageRunnerPackageOverridesSmokeTestMain OK");
+    }
+
+    private static void verifyQinJvmHostPackagePatches(QinJsPackageRunner runner, Path root) throws Exception {
+        Path ovsPackageRoot = root.resolve("ovs-compiler-host-patch");
+        Path ovsDist = ovsPackageRoot.resolve("dist");
+        Files.createDirectories(ovsDist);
+        Files.writeString(ovsDist.resolve("index.mjs"), """
+                function __decorateMetadata(k, v) {
+                \tif (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+                }
+                function __decorate(decorators, target, key, desc) {
+                \tvar c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+                \tif (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+                \telse for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+                \treturn c > 3 && r && Object.defineProperty(target, key, r), r;
+                }
+                let _ovsCstToSlimeAstUtil;
+                const OvsCstToSlimeAstUtils = new Proxy({}, { get(_, prop) {
+                \tconst val = _ovsCstToSlimeAstUtil[prop];
+                \treturn typeof val === "function" ? val.bind(_ovsCstToSlimeAstUtil) : val;
+                } });
+                """, StandardCharsets.UTF_8);
+        Method patchOvs = QinJsPackageRunner.class.getDeclaredMethod("patchOvsCompilerForQinJvmHost", Path.class);
+        patchOvs.setAccessible(true);
+        patchOvs.invoke(runner, ovsPackageRoot);
+        String patchedOvs = Files.readString(ovsDist.resolve("index.mjs"), StandardCharsets.UTF_8);
+        if (patchedOvs.contains("new Proxy")
+                || patchedOvs.contains("Reflect")
+                || patchedOvs.contains("arguments.length")
+                || patchedOvs.contains("desc === void 0")
+                || patchedOvs.contains("Object.getOwnPropertyDescriptor")
+                || patchedOvs.contains("Object.defineProperty")
+                || !patchedOvs.contains("var c = key === void 0 ? 2 : 4;")
+                || !patchedOvs.contains("{ value: target[key], writable: true, enumerable: false, configurable: true }")
+                || !patchedOvs.contains("const OvsCstToSlimeAstUtils = {};")) {
+            throw new IllegalStateException("OVS compiler Qin JVM host patch did not remove unsupported syntax:\n"
+                    + patchedOvs);
+        }
+
+        Path lruPackageRoot = root.resolve("lru-cache-host-patch");
+        Path lruDist = lruPackageRoot.resolve("dist").resolve("esm");
+        Files.createDirectories(lruDist);
+        Files.writeString(lruDist.resolve("index.min.js"), """
+                var L={hasSubscribers:!1},S=L,A=L;import("node:diagnostics_channel").then(()=>{}).catch(()=>{});class Z{[Symbol.iterator](){return this.entries()}[Symbol.toStringTag]="LRUCache";}
+                """, StandardCharsets.UTF_8);
+        Method patchLru = QinJsPackageRunner.class.getDeclaredMethod("patchLruCacheForQinJvmHost", Path.class);
+        patchLru.setAccessible(true);
+        patchLru.invoke(runner, lruPackageRoot);
+        String patchedLru = Files.readString(lruDist.resolve("index.min.js"), StandardCharsets.UTF_8);
+        if (patchedLru.contains("import(\"node:diagnostics_channel\")")
+                || patchedLru.contains("Symbol.toStringTag")
+                || !patchedLru.contains("Symbol.iterator")) {
+            throw new IllegalStateException("lru-cache Qin JVM host patch did not preserve the supported iterator path:\n"
+                    + patchedLru);
+        }
     }
 
     private static void verifyWorkspaceSourcePackageEntrypointPolicy(
