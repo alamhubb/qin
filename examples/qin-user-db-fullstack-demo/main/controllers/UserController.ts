@@ -14,7 +14,7 @@ export class UserController {
 
     @PostMapping("")
     static create(request) {
-        return Qono.jsonRaw(201, db.insertJson("user", users, request.bodyText(), "name,email"))
+        return Qono.jsonRaw(201, db.insertJson("user", users, request.bodyText(), "name"))
     }
 
     @DeleteMapping("/{id}")

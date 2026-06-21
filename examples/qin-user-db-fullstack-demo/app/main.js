@@ -67,7 +67,6 @@ function renderUsers(users) {
         row.innerHTML = `
             <td>${escapeHtml(user.id)}</td>
             <td>${escapeHtml(user.name)}</td>
-            <td>${escapeHtml(user.email)}</td>
             <td>${escapeHtml(user.createdAt)}</td>
             <td><button class="danger-button" type="button" data-delete="${escapeHtml(user.id)}">Delete</button></td>
         `
@@ -81,8 +80,7 @@ form.addEventListener("submit", async (event) => {
     try {
         statusEl.textContent = "Adding user..."
         await UserController.create({
-            name: data.get("name"),
-            email: data.get("email")
+            name: data.get("name")
         })
         form.reset()
         await loadUsers()

@@ -39,7 +39,7 @@ export class UserController {
 
     @PostMapping("")
     static create(request) {
-        return Qono.jsonRaw(201, db.insertJson("user", users, request.bodyText(), "name,email"))
+        return Qono.jsonRaw(201, db.insertJson("user", users, request.bodyText(), "name"))
     }
 
     @DeleteMapping("/{id}")
@@ -84,17 +84,16 @@ PostMapping("")(UserController, "create", Object.getOwnPropertyDescriptor(UserCo
 DeleteMapping("/{id}")(UserController, "remove", Object.getOwnPropertyDescriptor(UserController, "remove"))
 
 await UserController.getAll()
-await UserController.create({ name, email })
+await UserController.create({ name })
 await UserController.remove({ id })
 ```
 
 The database schema lives in `main/db/schema.ts`:
 
 ```ts
-export const users = QinDb.table("qin_demo_users")
+export const users = QinDb.table("qin_demo_user_names")
 users.bigserial("id").primaryKey()
 users.text("name").notNull()
-users.text("email").notNull().unique()
 users.timestamptz("created_at").notNull().defaultNow()
 ```
 
@@ -124,6 +123,6 @@ $env:QIN_DEMO_DB_PASSWORD = "<password>"
 ```powershell
 Invoke-RestMethod http://127.0.0.1:19116/api/health
 Invoke-RestMethod http://127.0.0.1:19116/api/users
-Invoke-RestMethod -Method Post http://127.0.0.1:19116/api/users -ContentType application/json -Body '{"name":"Ada","email":"ada@example.com"}'
+Invoke-RestMethod -Method Post http://127.0.0.1:19116/api/users -ContentType application/json -Body '{"name":"Ada"}'
 Invoke-RestMethod -Method Delete http://127.0.0.1:19116/api/users/1
 ```

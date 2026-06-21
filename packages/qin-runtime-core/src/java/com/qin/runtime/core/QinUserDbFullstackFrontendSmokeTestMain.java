@@ -16,7 +16,9 @@ public final class QinUserDbFullstackFrontendSmokeTestMain {
                 || !mainModule.contains("/@qin-mod/app/tokens.cssts.js")
                 || !mainModule.contains("/@qin-mod/app/style.css.js")
                 || !mainModule.contains("/@qin-mod/app/controllers/UserController.js")
-                || !mainModule.contains("dbReady.className = toClassName(connectedStyle)")) {
+                || !mainModule.contains("dbReady.className = toClassName(connectedStyle)")
+                || !mainModule.contains("name: data.get(\"name\")")
+                || mainModule.contains("email: data.get(\"email\")")) {
             throw new IllegalStateException("User DB main module missing OVS/CSSTS/controller wiring:\n" + mainModule);
         }
 

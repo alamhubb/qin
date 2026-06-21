@@ -115,10 +115,7 @@ public final class QinDb {
     public String deleteByIdJson(QinDbTable table, String inputJson) {
         ensure(table);
         QinDbColumn id = table.primaryKeyColumn();
-        String idText = jsonScalarField(inputJson, id.jsonName());
-        if (idText == null || idText.isBlank()) {
-            idText = jsonScalarField(inputJson, "id");
-        }
+        String idText = deleteIdText(inputJson, id.jsonName());
         long idValue;
         try {
             idValue = Long.parseLong(Objects.requireNonNullElse(idText, ""));
@@ -139,6 +136,20 @@ public final class QinDb {
         } catch (SQLException error) {
             throw new QinDbException("Failed to delete from " + table.name(), error);
         }
+    }
+
+    static String deleteIdText(String inputJson, String idJsonName) {
+        String idText = jsonScalarField(inputJson, idJsonName);
+        if (idText == null || idText.isBlank()) {
+            idText = jsonScalarField(inputJson, "id");
+        }
+        if ((idText == null || idText.isBlank()) && inputJson != null) {
+            String raw = inputJson.trim();
+            if (!raw.startsWith("{") && !raw.startsWith("[")) {
+                idText = raw;
+            }
+        }
+        return idText;
     }
 
     private Connection connect() throws SQLException {

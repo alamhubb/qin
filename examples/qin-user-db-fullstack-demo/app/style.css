@@ -103,7 +103,7 @@ h1 {
 
 .user-form {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(240px, 1.4fr) auto;
+    grid-template-columns: minmax(220px, 1fr) auto;
     align-items: end;
     gap: 14px;
 }
@@ -134,7 +134,7 @@ input {
 
 table {
     width: 100%;
-    min-width: 720px;
+    min-width: 560px;
     border-collapse: collapse;
 }
 
