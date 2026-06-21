@@ -12,7 +12,8 @@ This demo is a single-port Qin fullstack app:
 ```text
 app/
   main.js
-  qono-client.js
+  qono-class.js
+  controllers/UserController.js
   UserRuntimeBadge.ovs
   tokens.cssts
 main/
@@ -20,40 +21,50 @@ main/
   controllers/UserController.ts
   db/schema.ts
   db/queries.ts
-app/api/
-  users-api.js
+  qono-class.ts
 qin.config.js
 ```
 
-`app/api/users-api.js` is the shared route contract used by both the Qin/TS backend and the browser:
+`main/controllers/UserController.ts` uses the decorator controller authoring style:
 
-```js
-export const UserApi = {
-    getAll: { method: "GET", path: "/api/users" },
-    create: { method: "POST", path: "/api/users" },
-    delete: { method: "DELETE", path: "/api/users/{id}" }
+```ts
+@RestController
+@RequestMapping("/api/users")
+export class UserController {
+    static basePath = "/api/users"
+
+    @GetMapping("")
+    static getAll(request) {
+        return listUsers(request)
+    }
+
+    @PostMapping("")
+    static create(request) {
+        return createUser(request)
+    }
+
+    @DeleteMapping("/{id}")
+    static remove(request) {
+        return deleteUser(request)
+    }
 }
 ```
 
-`main/main.ts` binds the shared contract to backend handlers and exports a `QinHttpApp` through Qono:
+`main/main.ts` mounts the controller and exports a `QinHttpApp` through Qono:
 
 ```ts
-export const app = Qono.create()
+export const app = useQonoController(Qono.create()
     .health()
-    .route(UserApi.getAll.method, UserApi.getAll.path, request => getAll(request))
-    .route(UserApi.create.method, UserApi.create.path, request => create(request))
-    .route(UserApi.delete.method, UserApi.delete.path, request => remove(request))
+    , UserController)
     .toHttpApp()
 ```
 
-The browser calls the backend as direct methods generated from the same contract:
+The browser calls the backend through a matching controller proxy:
 
 ```js
-const UserController = createQonoClient(UserApi)
-
 await UserController.getAll()
 await UserController.create({ name, email })
-await UserController.delete({ id })
+await UserController.remove({ id })
 ```
 
 The database schema lives in `main/db/schema.ts`:

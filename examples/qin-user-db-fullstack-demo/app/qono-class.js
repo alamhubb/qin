@@ -1,15 +1,15 @@
-export function createQonoClient(api) {
+export function createQonoControllerClient(basePath, routes) {
     const client = {}
-    for (const name of Object.keys(api)) {
-        const route = api[name]
-        client[name] = input => requestRoute(route, input || {})
+    for (const name of Object.keys(routes)) {
+        const route = routes[name]
+        client[name] = input => requestRoute(basePath, route, input || {})
     }
     return client
 }
 
-async function requestRoute(route, input) {
+async function requestRoute(basePath, route, input) {
     const method = route.method || "GET"
-    const path = fillPath(route.path, input)
+    const path = fillPath(joinPath(basePath, route.path || ""), input)
     const options = { method, headers: { "Content-Type": "application/json" } }
     if (method !== "GET" && method !== "DELETE") {
         options.body = JSON.stringify(input)
@@ -32,4 +32,24 @@ function fillPath(path, input) {
         }
         return encodeURIComponent(String(value))
     })
+}
+
+function joinPath(basePath, path) {
+    const base = normalizePath(basePath)
+    const child = normalizePath(path)
+    if (child === "/") {
+        return base
+    }
+    if (base === "/") {
+        return child
+    }
+    return `${base}${child}`
+}
+
+function normalizePath(path) {
+    const value = path || ""
+    if (value === "") {
+        return "/"
+    }
+    return value.startsWith("/") ? value : `/${value}`
 }

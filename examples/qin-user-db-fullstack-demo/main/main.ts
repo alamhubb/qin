@@ -1,12 +1,11 @@
 import { Qono } from "java:com.qin.runtime.core.qono"
-import { UserApi } from "../app/api/users-api.js"
-import { getAll, create, remove } from "./controllers/UserController"
+import { useQonoController } from "./qono-class"
+import { UserController } from "./controllers/UserController"
 
-export const app = Qono.create()
-    .health()
-    .route(UserApi.getAll.method, UserApi.getAll.path, request => getAll(request))
-    .route(UserApi.create.method, UserApi.create.path, request => create(request))
-    .route(UserApi.delete.method, UserApi.delete.path, request => remove(request))
+export const app = useQonoController(
+    Qono.create().health(),
+    UserController
+)
     .toHttpApp()
 
 "qin-user-db-fullstack-demo"

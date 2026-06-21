@@ -1,8 +1,7 @@
 import { createApp } from "vue"
 import UserRuntimeBadge from "./UserRuntimeBadge.ovs"
 import connectedStyle from "./tokens.cssts"
-import { UserApi } from "./api/users-api.js"
-import { createQonoClient } from "./qono-client.js"
+import { UserController } from "./controllers/UserController.js"
 import "./style.css"
 
 const runtimeBadge = document.querySelector("#runtime-badge")
@@ -17,7 +16,6 @@ const emptyEl = document.querySelector("#empty")
 const form = document.querySelector("#user-form")
 const refresh = document.querySelector("#refresh")
 const dbReady = document.querySelector("#db-ready")
-const UserController = createQonoClient(UserApi)
 
 if (dbReady) {
     dbReady.className = connectedStyle
@@ -100,7 +98,7 @@ usersEl.addEventListener("click", async (event) => {
     }
     try {
         statusEl.textContent = "Deleting user..."
-        await UserController.delete({ id: button.dataset.delete })
+        await UserController.remove({ id: button.dataset.delete })
         await loadUsers()
     } catch (error) {
         statusEl.textContent = error.message
