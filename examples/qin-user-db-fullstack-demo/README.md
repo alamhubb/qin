@@ -59,9 +59,27 @@ export const app = useQonoController(Qono.create()
     .toHttpApp()
 ```
 
-The browser calls the backend through a matching controller proxy:
+The browser uses the same decorator controller shape. Its method decorators wrap static methods into HTTP calls:
 
 ```js
+@RestController
+@RequestMapping("/api/users")
+export class UserController {
+    static basePath = "/api/users"
+
+    @GetMapping("")
+    static getAll() {
+    }
+
+    @PostMapping("")
+    static create(input) {
+    }
+
+    @DeleteMapping("/{id}")
+    static remove(input) {
+    }
+}
+
 await UserController.getAll()
 await UserController.create({ name, email })
 await UserController.remove({ id })

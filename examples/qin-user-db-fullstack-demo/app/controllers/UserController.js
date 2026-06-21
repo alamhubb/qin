@@ -1,30 +1,19 @@
-import { createQonoControllerClient } from "../qono-class.js"
+import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class.js"
 
-const client = createQonoControllerClient("/api/users", {
-    getAll: {
-        method: "GET",
-        path: ""
-    },
-    create: {
-        method: "POST",
-        path: ""
-    },
-    remove: {
-        method: "DELETE",
-        path: "/{id}"
-    }
-})
-
+@RestController
+@RequestMapping("/api/users")
 export class UserController {
+    static basePath = "/api/users"
+
+    @GetMapping("")
     static getAll() {
-        return client.getAll()
     }
 
+    @PostMapping("")
     static create(input) {
-        return client.create(input)
     }
 
+    @DeleteMapping("/{id}")
     static remove(input) {
-        return client.remove(input)
     }
 }

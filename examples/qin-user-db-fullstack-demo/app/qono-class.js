@@ -1,10 +1,34 @@
-export function createQonoControllerClient(basePath, routes) {
-    const client = {}
-    for (const name of Object.keys(routes)) {
-        const route = routes[name]
-        client[name] = input => requestRoute(basePath, route, input || {})
+export function RestController(target) {
+    target.__qonoController = true
+}
+
+export function RequestMapping(path) {
+    return target => {
+        target.basePath = path
     }
-    return client
+}
+
+export function GetMapping(path) {
+    return route("GET", path)
+}
+
+export function PostMapping(path) {
+    return route("POST", path)
+}
+
+export function DeleteMapping(path) {
+    return route("DELETE", path)
+}
+
+function route(method, path) {
+    return (target, propertyKey, descriptor) => {
+        const original = descriptor.value
+        descriptor.value = function (input = {}) {
+            return requestRoute(target.basePath || "", { method, path }, input)
+        }
+        descriptor.value.original = original
+        return descriptor
+    }
 }
 
 async function requestRoute(basePath, route, input) {
