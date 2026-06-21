@@ -5,6 +5,7 @@ import com.qin.runtime.core.QinHttpRequest;
 import com.qin.runtime.core.QinHttpResponse;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -30,17 +31,26 @@ public final class QonoApp {
     }
 
     public QonoApp get(String path, QonoHandler handler) {
-        httpApp.get(path, request -> safeHandle(handler, request));
-        return this;
+        return route("GET", path, handler);
     }
 
     public QonoApp post(String path, QonoHandler handler) {
-        httpApp.post(path, request -> safeHandle(handler, request));
-        return this;
+        return route("POST", path, handler);
     }
 
     public QonoApp delete(String path, QonoHandler handler) {
-        httpApp.delete(path, request -> safeHandle(handler, request));
+        return route("DELETE", path, handler);
+    }
+
+    public QonoApp route(String method, String path, QonoHandler handler) {
+        String verb = normalizeMethod(method);
+        QonoHandler requiredHandler = Objects.requireNonNull(handler, "handler");
+        switch (verb) {
+            case "GET" -> httpApp.get(path, request -> safeHandle(requiredHandler, request));
+            case "POST" -> httpApp.post(path, request -> safeHandle(requiredHandler, request));
+            case "DELETE" -> httpApp.delete(path, request -> safeHandle(requiredHandler, request));
+            default -> throw new IllegalArgumentException("Unsupported Qono route method: " + method);
+        }
         return this;
     }
 
@@ -124,6 +134,14 @@ public final class QonoApp {
         String value = name == null ? "" : name.trim();
         if (value.isBlank()) {
             throw new IllegalArgumentException("Qono RPC method name cannot be blank");
+        }
+        return value;
+    }
+
+    private static String normalizeMethod(String method) {
+        String value = method == null ? "" : method.trim().toUpperCase(Locale.ROOT);
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("Qono route method cannot be blank");
         }
         return value;
     }

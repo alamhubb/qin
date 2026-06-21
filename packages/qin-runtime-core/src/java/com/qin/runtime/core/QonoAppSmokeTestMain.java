@@ -12,6 +12,9 @@ public final class QonoAppSmokeTestMain {
     public static void main(String[] args) throws Exception {
         QinHttpApp app = Qono.create()
                 .health()
+                .route("GET", "/api/users", request -> Qono.jsonRaw("{\"restUsers\":[]}"))
+                .route("POST", "/api/users", request -> Qono.jsonRaw(201, "{\"restUser\":" + request.bodyText() + "}"))
+                .route("DELETE", "/api/users/{id}", request -> Qono.jsonRaw("{\"deleted\":\"" + request.param("id") + "\"}"))
                 .query("users.getAll", request -> Qono.jsonRaw("{\"users\":[]}"))
                 .mutation("users.create", request -> Qono.jsonRaw(201, "{\"user\":" + request.bodyText() + "}"))
                 .mutation("users.fail", request -> {
@@ -21,6 +24,15 @@ public final class QonoAppSmokeTestMain {
 
         QinHttpResponse health = app.handle(request("GET", "/api/health", ""));
         require(health != null && health.status() == 200 && text(health).contains("\"ok\":true"), "health route failed");
+
+        QinHttpResponse restList = app.handle(request("GET", "/api/users", ""));
+        require(restList != null && restList.status() == 200 && text(restList).contains("\"restUsers\""), "REST query route failed");
+
+        QinHttpResponse restCreate = app.handle(request("POST", "/api/users", "{\"name\":\"Grace\"}"));
+        require(restCreate != null && restCreate.status() == 201 && text(restCreate).contains("Grace"), "REST mutation route failed");
+
+        QinHttpResponse restDelete = app.handle(request("DELETE", "/api/users/42", ""));
+        require(restDelete != null && restDelete.status() == 200 && text(restDelete).contains("\"42\""), "REST path param route failed");
 
         QinHttpResponse query = app.handle(request("POST", "/api/rpc/users.getAll", "{}"));
         require(query != null && query.status() == 200 && text(query).contains("\"users\""), "query route failed");

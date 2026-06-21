@@ -20,26 +20,40 @@ main/
   controllers/UserController.ts
   db/schema.ts
   db/queries.ts
+app/api/
+  users-api.js
 qin.config.js
 ```
 
-`main/main.ts` exports a `QinHttpApp` through Qono:
+`app/api/users-api.js` is the shared route contract used by both the Qin/TS backend and the browser:
+
+```js
+export const UserApi = {
+    getAll: { method: "GET", path: "/api/users" },
+    create: { method: "POST", path: "/api/users" },
+    delete: { method: "DELETE", path: "/api/users/{id}" }
+}
+```
+
+`main/main.ts` binds the shared contract to backend handlers and exports a `QinHttpApp` through Qono:
 
 ```ts
 export const app = Qono.create()
     .health()
-    .query("users.getAll", request => getAll(request))
-    .mutation("users.create", request => create(request))
-    .mutation("users.delete", request => remove(request))
+    .route(UserApi.getAll.method, UserApi.getAll.path, request => getAll(request))
+    .route(UserApi.create.method, UserApi.create.path, request => create(request))
+    .route(UserApi.delete.method, UserApi.delete.path, request => remove(request))
     .toHttpApp()
 ```
 
-The browser calls the backend through `app/qono-client.js`:
+The browser calls the backend as direct methods generated from the same contract:
 
 ```js
-await rpc.call("users.getAll")
-await rpc.call("users.create", { name, email })
-await rpc.call("users.delete", { id })
+const UserController = createQonoClient(UserApi)
+
+await UserController.getAll()
+await UserController.create({ name, email })
+await UserController.delete({ id })
 ```
 
 The database schema lives in `main/db/schema.ts`:
@@ -77,7 +91,7 @@ $env:QIN_DEMO_DB_PASSWORD = "<password>"
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:19116/api/health
-Invoke-RestMethod -Method Post http://127.0.0.1:19116/api/rpc/users.getAll -ContentType application/json -Body "{}"
-Invoke-RestMethod -Method Post http://127.0.0.1:19116/api/rpc/users.create -ContentType application/json -Body '{"name":"Ada","email":"ada@example.com"}'
-Invoke-RestMethod -Method Post http://127.0.0.1:19116/api/rpc/users.delete -ContentType application/json -Body '{"id":1}'
+Invoke-RestMethod http://127.0.0.1:19116/api/users
+Invoke-RestMethod -Method Post http://127.0.0.1:19116/api/users -ContentType application/json -Body '{"name":"Ada","email":"ada@example.com"}'
+Invoke-RestMethod -Method Delete http://127.0.0.1:19116/api/users/1
 ```

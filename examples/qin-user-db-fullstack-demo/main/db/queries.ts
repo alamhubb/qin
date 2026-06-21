@@ -10,5 +10,5 @@ export function createUser(request) {
 }
 
 export function deleteUser(request) {
-    return Qono.jsonRaw(db.deleteByIdJson(users, request.bodyText()))
+    return Qono.jsonRaw(db.deleteByIdJson(users, request.param("id")))
 }

@@ -1,6 +1,7 @@
 import { createApp } from "vue"
 import UserRuntimeBadge from "./UserRuntimeBadge.ovs"
 import connectedStyle from "./tokens.cssts"
+import { UserApi } from "./api/users-api.js"
 import { createQonoClient } from "./qono-client.js"
 import "./style.css"
 
@@ -16,12 +17,7 @@ const emptyEl = document.querySelector("#empty")
 const form = document.querySelector("#user-form")
 const refresh = document.querySelector("#refresh")
 const dbReady = document.querySelector("#db-ready")
-const rpc = createQonoClient()
-const UserController = {
-    getAll: () => rpc.call("users.getAll"),
-    create: input => rpc.call("users.create", input),
-    delete: input => rpc.call("users.delete", input)
-}
+const UserController = createQonoClient(UserApi)
 
 if (dbReady) {
     dbReady.className = connectedStyle
