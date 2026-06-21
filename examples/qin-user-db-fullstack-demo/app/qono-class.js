@@ -22,13 +22,19 @@ export function DeleteMapping(path) {
 
 function route(method, path) {
     return (target, propertyKey, descriptor) => {
-        const original = descriptor.value
-        descriptor.value = function (input = {}) {
-            return requestRoute(target.basePath || "", { method, path }, input)
-        }
-        descriptor.value.original = original
+        const routes = target.__qonoRoutes || {}
+        routes[propertyKey] = { method, path }
+        target.__qonoRoutes = routes
         return descriptor
     }
+}
+
+export function qonoCall(controller, methodName, input = {}) {
+    const route = controller.__qonoRoutes && controller.__qonoRoutes[methodName]
+    if (!route) {
+        throw new Error(`Missing Qono route metadata: ${methodName}`)
+    }
+    return requestRoute(controller.basePath || "", route, input)
 }
 
 async function requestRoute(basePath, route, input) {

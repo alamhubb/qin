@@ -1,5 +1,6 @@
 import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
-import { listUsers, createUser, deleteUser } from "../db/queries"
+import { Qono } from "java:com.qin.runtime.core.qono"
+import { db, users } from "../db/schema"
 
 @RestController
 @RequestMapping("/api/users")
@@ -8,16 +9,16 @@ export class UserController {
 
     @GetMapping("")
     static getAll(request) {
-        return listUsers(request)
+        return Qono.jsonRaw(db.selectJson("users", users, "id", "asc"))
     }
 
     @PostMapping("")
     static create(request) {
-        return createUser(request)
+        return Qono.jsonRaw(201, db.insertJson("user", users, request.bodyText(), "name,email"))
     }
 
     @DeleteMapping("/{id}")
     static remove(request) {
-        return deleteUser(request)
+        return Qono.jsonRaw(db.deleteByIdJson(users, request.param("id")))
     }
 }

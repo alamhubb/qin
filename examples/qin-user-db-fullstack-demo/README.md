@@ -20,7 +20,6 @@ main/
   main.ts
   controllers/UserController.ts
   db/schema.ts
-  db/queries.ts
   qono-class.ts
 qin.config.js
 ```
@@ -35,17 +34,17 @@ export class UserController {
 
     @GetMapping("")
     static getAll(request) {
-        return listUsers(request)
+        return Qono.jsonRaw(db.selectJson("users", users, "id", "asc"))
     }
 
     @PostMapping("")
     static create(request) {
-        return createUser(request)
+        return Qono.jsonRaw(201, db.insertJson("user", users, request.bodyText(), "name,email"))
     }
 
     @DeleteMapping("/{id}")
     static remove(request) {
-        return deleteUser(request)
+        return Qono.jsonRaw(db.deleteByIdJson(users, request.param("id")))
     }
 }
 ```
@@ -59,7 +58,7 @@ export const app = useQonoController(Qono.create()
     .toHttpApp()
 ```
 
-The browser uses the same decorator controller shape. Its method decorators wrap static methods into HTTP calls:
+The browser uses the same decorator controller shape. Decorators declare route metadata; method bodies perform the client call:
 
 ```js
 @RestController
@@ -69,14 +68,17 @@ export class UserController {
 
     @GetMapping("")
     static getAll() {
+        return qonoCall(UserController, "getAll")
     }
 
     @PostMapping("")
     static create(input) {
+        return qonoCall(UserController, "create", input)
     }
 
     @DeleteMapping("/{id}")
     static remove(input) {
+        return qonoCall(UserController, "remove", input)
     }
 }
 
