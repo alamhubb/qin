@@ -18,7 +18,7 @@ const refresh = document.querySelector("#refresh")
 const dbReady = document.querySelector("#db-ready")
 
 if (dbReady) {
-    dbReady.className = connectedStyle
+    dbReady.className = toClassName(connectedStyle)
 }
 
 async function requestJson(url, options = {}) {
@@ -113,6 +113,25 @@ function escapeHtml(value) {
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
+}
+
+function toClassName(value) {
+    if (!value) {
+        return ""
+    }
+    if (typeof value === "string") {
+        return value
+    }
+    if (Array.isArray(value)) {
+        return value.map(toClassName).filter(Boolean).join(" ")
+    }
+    if (typeof value === "object") {
+        return Object.entries(value)
+            .filter(([, enabled]) => Boolean(enabled))
+            .map(([className]) => className)
+            .join(" ")
+    }
+    return ""
 }
 
 loadUsers()
