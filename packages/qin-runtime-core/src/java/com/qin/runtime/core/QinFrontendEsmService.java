@@ -923,6 +923,7 @@ public final class QinFrontendEsmService {
 
     private String mountOvsModule(Path moduleFile, String source) {
         String vueRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-ovs=vue";
+        String csstsStyle = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=style";
         String csstsRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=runtime";
         String csstsAtom = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=atom";
         Set<String> atomNames = extractCsstsAtomNamesFromCode(source);
@@ -933,17 +934,19 @@ public final class QinFrontendEsmService {
         int exportIndex = source.indexOf(marker);
         if (exportIndex < 0) {
             return """
+                    import "%s";
                     import * as cssts from "%s";
                     import { csstsAtom as __qinOvsCsstsAtom } from "%s";
                     %s
                     %s
-                    """.formatted(csstsRuntime, csstsAtom, atomPrelude, source);
+                    """.formatted(csstsStyle, csstsRuntime, csstsAtom, atomPrelude, source);
         }
         String transformed = source.substring(0, exportIndex)
                 + "const __qinOvsComponent = "
                 + source.substring(exportIndex + marker.length());
         return """
                 import { createApp as __qinCreateApp } from "%s";
+                import "%s";
                 import * as cssts from "%s";
                 import { csstsAtom as __qinOvsCsstsAtom } from "%s";
                 %s
@@ -969,7 +972,7 @@ public final class QinFrontendEsmService {
                 }
                 export { __qinMountOvs, __qinMountVue };
                 export default __qinVueComponent;
-                """.formatted(vueRuntime, csstsRuntime, csstsAtom, atomPrelude, transformed);
+                """.formatted(vueRuntime, csstsStyle, csstsRuntime, csstsAtom, atomPrelude, transformed);
     }
 
     private String readOvsRuntimeModule(String vueRuntimeRequestPath) {

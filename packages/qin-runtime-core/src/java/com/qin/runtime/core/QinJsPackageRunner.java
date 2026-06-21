@@ -278,6 +278,8 @@ final class QinJsPackageRunner {
         if (sourcePackageDir == null || !Files.isDirectory(sourcePackageDir)) {
             if (versionRange != null && !versionRange.isBlank()) {
                 npmDependencyMaterializer.materializePackageDependency(packageName, versionRange, runtimeNodeModules);
+                patchQinJvmHostPackage(packageName, runtimeNodeModules.resolve(
+                        packageName.replace('/', java.io.File.separatorChar)).normalize());
             }
             return;
         }
@@ -294,15 +296,7 @@ final class QinJsPackageRunner {
                 writeMaterializedPackageStamp(sourcePackageDir, targetPackageDir, workspaceLikePackage, false);
             }
         }
-        if ("@vitejs/plugin-vue".equals(packageName)) {
-            patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
-        }
-        if ("ovs-compiler".equals(packageName)) {
-            patchOvsCompilerForQinJvmHost(targetPackageDir);
-        }
-        if ("lru-cache".equals(packageName)) {
-            patchLruCacheForQinJvmHost(targetPackageDir);
-        }
+        patchQinJvmHostPackage(packageName, targetPackageDir);
 
         if ((workspacePackage || overridePackage || filePackage)
                 && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir, overridePackage)) {
@@ -339,6 +333,18 @@ final class QinJsPackageRunner {
                     workspacePackages,
                     packageOverrides,
                     materialized);
+        }
+    }
+
+    private void patchQinJvmHostPackage(String packageName, Path targetPackageDir) throws IOException {
+        if ("@vitejs/plugin-vue".equals(packageName)) {
+            patchVitePluginVueForQinStaticCompilerImport(targetPackageDir);
+        }
+        if ("ovs-compiler".equals(packageName)) {
+            patchOvsCompilerForQinJvmHost(targetPackageDir);
+        }
+        if ("lru-cache".equals(packageName)) {
+            patchLruCacheForQinJvmHost(targetPackageDir);
         }
     }
 

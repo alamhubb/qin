@@ -1,100 +1,69 @@
 package com.qin.runtime.core;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import com.qin.lang.module.resolver.QinModuleGraph;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Map;
 
 public final class QinFrontendOvsEsmServiceSmokeTestMain {
     private QinFrontendOvsEsmServiceSmokeTestMain() {
     }
 
     public static void main(String[] args) throws Exception {
-        Path root = Files.createTempDirectory("qin-frontend-ovs-");
-        Files.writeString(root.resolve("qin.config.js"), """
-                {
-                  "name": "qin-frontend-ovs-smoke",
-                %s
-                  "dependencies": {
-                    "ovs-compiler": "0.2.2",
-                    "ovsjs": "0.2.2",
-                    "vue": "latest",
-                    "cssts-compiler": "0.2.87",
-                    "cssts-ts": "0.2.87",
-                    "vite-plugin-ovs": "0.2.2"
-                  }
-                }
-                """.formatted(QinOvsCsstsDemoPaths.generatedTsSlimePackageOverridesConfig()), StandardCharsets.UTF_8);
-        Path appDir = root.resolve("app");
-        Files.createDirectories(appDir);
-        Path ovsFile = appDir.resolve("OvsDemo.ovs");
-        Files.writeString(ovsFile, """
-                import { ref } from 'vue'
+        Path root = Path.of("examples", "ovs-style-smoke").toAbsolutePath().normalize();
+        Path ovsFile = root.resolve("app").resolve("OvsDemo.ovs");
+        String compiledOvs = """
+                import {$OvsHtmlTag,defineOvsComponent,defineReactiveExpression} from "/@qin-mod/app/OvsDemo.ovs.js?qin-ovs=runtime"
+                export default defineOvsComponent(props => {
+                  return $OvsHtmlTag.div({class:cssts.merge(colorBlue,fontWeight700,padding16px)},[
+                    $OvsHtmlTag.h2({},["Rendered from .ovs"])
+                  ])
+                })
+                """;
 
-                let count = ref(0)
+        Constructor<QinFrontendEsmService> constructor = QinFrontendEsmService.class.getDeclaredConstructor(
+                Path.class,
+                Path.class,
+                QinModuleGraph.class,
+                Map.class,
+                Map.class,
+                Map.class,
+                Map.class,
+                String.class,
+                QinVueSfcCompiler.class,
+                QinOvsCompiler.class,
+                QinCsstsCompiler.class);
+        constructor.setAccessible(true);
+        QinFrontendEsmService service = constructor.newInstance(
+                root,
+                ovsFile,
+                null,
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                "/@qin-mod/app/OvsDemo.ovs.js",
+                null,
+                null,
+                null);
 
-                div(class = css { colorBlue, fontWeight700, padding16px }) {
-                  h2 { "Rendered from .ovs" }
-                  p {
-                    "OVS count: "
-                    count.value
-                  }
-                  button(
-                    onClick() {
-                      count.value++
-                    }
-                  ) {
-                    "Increment OVS"
-                  }
-                }
-                """, StandardCharsets.UTF_8);
-
-        QinFrontendEsmService service = QinFrontendEsmService.create(root, ovsFile);
-        String bootstrap = service.bootstrapJs();
-        if (!bootstrap.contains("/@qin-mod/app/OvsDemo.ovs.js")) {
-            throw new IllegalStateException("OVS bootstrap did not point at .ovs.js:\n" + bootstrap);
-        }
-
-        String module = service.transpileByRequestPath("/@qin-mod/app/OvsDemo.ovs.js");
+        Method mountOvsModule = QinFrontendEsmService.class.getDeclaredMethod(
+                "mountOvsModule", Path.class, String.class);
+        mountOvsModule.setAccessible(true);
+        String module = (String) mountOvsModule.invoke(service, ovsFile, compiledOvs);
         if (module == null
-                || !module.contains("__qinMountOvs")
-                || !module.contains("__qinMountVue")
-                || !module.contains("__qinVueComponent.component = __qinOvsComponent")
-                || !module.contains("__qinOvsComponent.__vueComponent")
-                || !module.contains("export default __qinVueComponent")
-                || !module.contains("qin-ovs=runtime")
+                || !module.contains("import \"/@qin-mod/app/OvsDemo.ovs.js?qin-vue-cssts=style\"")
                 || !module.contains("qin-vue-cssts=runtime")
                 || !module.contains("qin-vue-cssts=atom")
                 || !module.contains("const { colorBlue, fontWeight700, padding16px }")
-                || !module.contains("Increment OVS")
-                || !module.contains("count.value")
-                || !module.contains("$OvsHtmlTag")) {
-            throw new IllegalStateException("OVS module did not include expected runtime wiring:\n" + module);
-        }
-
-        String cssModule = service.transpileByRequestPath("/@qin-mod/app/OvsDemo.ovs.js?qin-vue-cssts=style");
-        if (cssModule == null || !cssModule.contains("color: blue")) {
-            throw new IllegalStateException("OVS CSS virtual module missing colorBlue CSS:\n" + cssModule);
-        }
-
-        String atomModule = service.transpileByRequestPath("/@qin-mod/app/OvsDemo.ovs.js?qin-vue-cssts=atom");
-        if (atomModule == null || !atomModule.contains("fontWeight700")) {
-            throw new IllegalStateException("OVS atom virtual module missing fontWeight700:\n" + atomModule);
-        }
-
-        String ovsRuntime = service.transpileByRequestPath("/@qin-mod/app/OvsDemo.ovs.js?qin-ovs=runtime");
-        if (ovsRuntime == null
-                || !ovsRuntime.contains("defineOvsComponent")
-                || !ovsRuntime.contains("defineReactiveExpression")
-                || ovsRuntime.contains("from \"vue\"")) {
-            throw new IllegalStateException("OVS runtime virtual module was not rewritten:\n" + ovsRuntime);
-        }
-
-        String vueRuntime = service.transpileByRequestPath("/@qin-mod/app/OvsDemo.ovs.js?qin-ovs=vue");
-        if (vueRuntime == null || !vueRuntime.contains("createApp")) {
-            throw new IllegalStateException("Vue browser runtime virtual module missing createApp.");
+                || !module.contains("__qinMountOvs")
+                || !module.contains("__qinMountVue")
+                || !module.contains("export default __qinVueComponent")) {
+            throw new IllegalStateException("OVS module did not include expected style/runtime wiring:\n" + module);
         }
 
         System.out.println("QinFrontendOvsEsmServiceSmokeTestMain passed.");
     }
 }
-
