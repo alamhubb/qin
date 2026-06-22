@@ -1,0 +1,29 @@
+import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
+import { Qono } from "java:com.qin.runtime.core.qono"
+import { db, users } from "../db/schema"
+
+@RestController
+@RequestMapping("/api/users")
+export object UserController {
+    basePath = "/api/users"
+    dbRef = null
+    usersRef = null
+
+    @GetMapping("")
+    getAll(request) {
+        return Qono.jsonRaw(this.dbRef.selectJson("users", this.usersRef, "id", "asc"))
+    }
+
+    @PostMapping("")
+    create(request) {
+        return Qono.jsonRaw(201, this.dbRef.insertJson("user", this.usersRef, request.bodyText(), "name"))
+    }
+
+    @DeleteMapping("/{id}")
+    remove(request) {
+        return Qono.jsonRaw(this.dbRef.deleteByIdJson(this.usersRef, request.param("id")))
+    }
+}
+
+UserController.setDbRef(db)
+UserController.setUsersRef(users)

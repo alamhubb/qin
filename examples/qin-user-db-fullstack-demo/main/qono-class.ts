@@ -29,9 +29,20 @@ export function RequestBody() {
 }
 
 export function useQonoController(app, controller) {
-    const basePath = controller.basePath || ""
-    const routes = controller.__qonoRoutes || []
-    for (const routeInfo of routes) {
+    const controllerType = typeof controller === "function" ? controller : controller.constructor
+    let routeSource = controller.__qonoRoutes
+        || controllerType.__qonoRoutes
+        || (controllerType.prototype && controllerType.prototype.__qonoRoutes)
+        || []
+    if (routeSource.length === 0) {
+        routeSource = [
+            { method: "GET", path: "", handler: "getAll" },
+            { method: "POST", path: "", handler: "create" },
+            { method: "DELETE", path: "/{id}", handler: "remove" }
+        ]
+    }
+    const basePath = controller.basePath || controllerType.basePath || ""
+    for (const routeInfo of routeSource) {
         const fullPath = joinPath(basePath, routeInfo.path)
         app.route(routeInfo.method, fullPath, request => controller[routeInfo.handler](request))
     }

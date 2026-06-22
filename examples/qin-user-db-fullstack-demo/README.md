@@ -16,35 +16,40 @@ app/
   tokens.cssts
 main/
   main.ts
-  controllers/UserController.ts
+  controllers/UserController.qin
   db/schema.ts
   qono-class.ts
 qin.config.js
 ```
 
-`main/controllers/UserController.ts` uses the decorator controller authoring style:
+`main/controllers/UserController.qin` uses the Qin `object` singleton controller style:
 
 ```ts
 @RestController
 @RequestMapping("/api/users")
-export class UserController {
-    static basePath = "/api/users"
+export object UserController {
+    basePath = "/api/users"
+    dbRef = null
+    usersRef = null
 
     @GetMapping("")
-    static getAll(request) {
-        return Qono.jsonRaw(db.selectJson("users", users, "id", "asc"))
+    getAll(request) {
+        return Qono.jsonRaw(this.dbRef.selectJson("users", this.usersRef, "id", "asc"))
     }
 
     @PostMapping("")
-    static create(request) {
-        return Qono.jsonRaw(201, db.insertJson("user", users, request.bodyText(), "name"))
+    create(request) {
+        return Qono.jsonRaw(201, this.dbRef.insertJson("user", this.usersRef, request.bodyText(), "name"))
     }
 
     @DeleteMapping("/{id}")
-    static remove(request) {
-        return Qono.jsonRaw(db.deleteByIdJson(users, request.param("id")))
+    remove(request) {
+        return Qono.jsonRaw(this.dbRef.deleteByIdJson(this.usersRef, request.param("id")))
     }
 }
+
+UserController.setDbRef(db)
+UserController.setUsersRef(users)
 ```
 
 `main/main.ts` mounts the controller and exports a `QinHttpApp` through Qono:
