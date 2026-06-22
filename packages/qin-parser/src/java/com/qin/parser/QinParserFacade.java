@@ -320,6 +320,7 @@ public final class QinParserFacade {
     private String preprocessRuntimeSyntax(String source) {
         String rewritten = source == null ? "" : source;
         rewritten = stripHashbang(rewritten);
+        rewritten = QinObjectSyntaxLowerer.lower(rewritten);
         rewritten = SOURCE_IMPORT_META_URL_PATTERN.matcher(rewritten)
                 .replaceAll(QinParserRuntimeNames.IMPORT_META_URL_SHIM);
         rewritten = SOURCE_DYNAMIC_IMPORT_PATTERN.matcher(rewritten)
