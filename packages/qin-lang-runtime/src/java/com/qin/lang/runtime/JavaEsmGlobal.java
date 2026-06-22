@@ -1150,6 +1150,13 @@ public final class JavaEsmGlobal {
             InterpretedInstance interpretedInstance,
             String name,
             Object[] args) {
+        Object structuralParamsResult = tryCallStructuralParamsInterpretedInstanceMethod(
+                interpretedInstance,
+                name,
+                args);
+        if (structuralParamsResult != STRUCTURAL_PARAMS_MISS) {
+            return structuralParamsResult;
+        }
         if ("consume".equals(name)) {
             if (args.length == 1 && interpretedInstance.hasCallableMember("token")) {
                 return callMethod(interpretedInstance, "token", args);
@@ -1159,6 +1166,100 @@ public final class JavaEsmGlobal {
             }
         }
         return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+    }
+
+    private static Object tryCallStructuralParamsInterpretedInstanceMethod(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isStructuralParamsInterpretedInstance(interpretedInstance)) {
+            return STRUCTURAL_PARAMS_MISS;
+        }
+        if (args.length == 0) {
+            return switch (name) {
+                case "in" -> readInterpretedStructuralParam(interpretedInstance, true, "In", "in", "__qin_in");
+                case "yield" -> readInterpretedStructuralParam(interpretedInstance, false, "Yield", "yield", "__qin_yield");
+                case "await" -> readInterpretedStructuralParam(interpretedInstance, false, "Await", "await", "__qin_await");
+                case "tagged" -> readInterpretedStructuralParam(interpretedInstance, false, "Tagged", "tagged");
+                case "returnAllowed" -> readInterpretedStructuralParam(
+                        interpretedInstance,
+                        false,
+                        "Return",
+                        "ReturnAllowed",
+                        "returnAllowed");
+                case "isDefault" -> readInterpretedStructuralParam(
+                        interpretedInstance,
+                        false,
+                        "Default",
+                        "IsDefault",
+                        "isDefault",
+                        "default");
+                case "expressionParams" -> structuralExpressionParams(structuralParamsMap(interpretedInstance));
+                default -> STRUCTURAL_PARAMS_MISS;
+            };
+        }
+        if (args.length == 1) {
+            Map<String, Object> map = structuralParamsMap(interpretedInstance);
+            return switch (name) {
+                case "withIn" -> copyStructuralParam(map, "In", args[0]);
+                case "withYield" -> copyStructuralParam(map, "Yield", args[0]);
+                case "withAwait" -> copyStructuralParam(map, "Await", args[0]);
+                default -> STRUCTURAL_PARAMS_MISS;
+            };
+        }
+        return STRUCTURAL_PARAMS_MISS;
+    }
+
+    private static boolean isStructuralParamsInterpretedInstance(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.hasOwnField("In")
+                || interpretedInstance.hasOwnField("in")
+                || interpretedInstance.hasOwnField("__qin_in")
+                || interpretedInstance.hasOwnField("Yield")
+                || interpretedInstance.hasOwnField("yield")
+                || interpretedInstance.hasOwnField("__qin_yield")
+                || interpretedInstance.hasOwnField("Await")
+                || interpretedInstance.hasOwnField("await")
+                || interpretedInstance.hasOwnField("__qin_await")
+                || interpretedInstance.hasOwnField("Return")
+                || interpretedInstance.hasOwnField("returnAllowed")
+                || interpretedInstance.hasOwnField("Default")
+                || interpretedInstance.hasOwnField("isDefault")
+                || interpretedInstance.hasOwnField("Tagged")
+                || interpretedInstance.hasOwnField("tagged");
+    }
+
+    private static Object readInterpretedStructuralParam(
+            InterpretedInstance interpretedInstance,
+            Object defaultValue,
+            String... keys) {
+        for (String key : keys) {
+            if (interpretedInstance.hasOwnField(key)) {
+                return JavaEsmObject.resolveStoredPropertyValue(interpretedInstance.getOwnField(key));
+            }
+        }
+        return defaultValue;
+    }
+
+    private static Map<String, Object> structuralParamsMap(InterpretedInstance interpretedInstance) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("In", readInterpretedStructuralParam(interpretedInstance, true, "In", "in", "__qin_in"));
+        map.put("Yield", readInterpretedStructuralParam(interpretedInstance, false, "Yield", "yield", "__qin_yield"));
+        map.put("Await", readInterpretedStructuralParam(interpretedInstance, false, "Await", "await", "__qin_await"));
+        map.put("Return", readInterpretedStructuralParam(
+                interpretedInstance,
+                false,
+                "Return",
+                "ReturnAllowed",
+                "returnAllowed"));
+        map.put("Default", readInterpretedStructuralParam(
+                interpretedInstance,
+                false,
+                "Default",
+                "IsDefault",
+                "isDefault",
+                "default"));
+        map.put("Tagged", readInterpretedStructuralParam(interpretedInstance, false, "Tagged", "tagged"));
+        return map;
     }
 
     private static Object callBuiltinFunction(String builtinName, Object[] args) {
@@ -1243,6 +1344,13 @@ public final class JavaEsmGlobal {
                         args);
                 if (generatedHashSetResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                     return generatedHashSetResult;
+                }
+                Object compatibilityResult = tryCallInterpretedInstanceCompatibilityMethod(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (compatibilityResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return compatibilityResult;
                 }
                 if (isJavaFunctionalAdapterMethod(name, args.length)) {
                     Object adapterMethod = interpretedInstance.getOwnField(name);
@@ -3865,6 +3973,12 @@ public final class JavaEsmGlobal {
             AccessorProperty superAccessor = superAccessors.get(name);
             if (superAccessor != null && superAccessor.getter != null) {
                 return superAccessor.getter.bindThis(this).call();
+            }
+            if ("__qin_structural_object__".equals(name) && isStructuralParamsInterpretedInstance(this)) {
+                return true;
+            }
+            if ("constructor".equals(name) && isStructuralParamsInterpretedInstance(this)) {
+                return null;
             }
             if ("constructor".equals(name) && constructorFunction != null) {
                 return constructorFunction;

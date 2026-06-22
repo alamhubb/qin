@@ -230,11 +230,32 @@ public final class QinFullstackMain {
     }
 
     private static BackendBuild compileJavaBackend(Path root, Path sourceFile, Path classOutputDir) throws Exception {
-        compileJavaSources(root, List.of(sourceFile), classOutputDir, "backend Java source");
+        List<Path> sources = collectJavaBackendSources(root, sourceFile);
+        compileJavaSources(root, sources, classOutputDir, "backend Java sources");
         String className = inferJavaBinaryClassName(sourceFile);
         Path classFile = classOutputDir.resolve(className.replace('.', '/') + ".class").normalize();
         BackendMethods methods = loadBackendMethods(classOutputDir, className);
         return new BackendBuild(classFile, methods.runMethod(), methods.httpAppMethod());
+    }
+
+    private static List<Path> collectJavaBackendSources(Path root, Path sourceFile) throws IOException {
+        Path normalizedSource = sourceFile.toAbsolutePath().normalize();
+        Path conventionalMainDir = root.resolve("main").toAbsolutePath().normalize();
+        Path sourceRoot = normalizedSource.startsWith(conventionalMainDir)
+                ? conventionalMainDir
+                : normalizedSource.getParent();
+        if (sourceRoot == null || !Files.isDirectory(sourceRoot)) {
+            return List.of(sourceFile);
+        }
+        try (var stream = Files.walk(sourceRoot)) {
+            List<Path> sources = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".java"))
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .sorted()
+                    .toList();
+            return sources.isEmpty() ? List.of(sourceFile) : sources;
+        }
     }
 
     private static void compileJavaSources(

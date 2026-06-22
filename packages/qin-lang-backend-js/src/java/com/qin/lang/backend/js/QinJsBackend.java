@@ -3345,7 +3345,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("""
                 function __qin_structural_object__(value) {
                   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
-                  return value.constructor == null || value.constructor === Object;
+                  return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
                 }
                 """);
     }
