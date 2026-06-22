@@ -4,10 +4,14 @@ import com.google.gson.JsonParser;
 import com.qin.runtime.core.QinJson;
 
 import java.math.BigDecimal;
+import java.net.URLDecoder;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -15,7 +19,9 @@ import java.sql.ResultSet;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public final class BalanceMonitorService {
@@ -24,20 +30,22 @@ public final class BalanceMonitorService {
             .build();
 
     public String configJson() {
+        DbConfig db = dbConfig();
         return "{"
-                + "\"configured\":" + isDbConfigured()
-                + ",\"table\":" + json(env("XIXIAPI_ACCOUNT_TABLE", "xixi_accounts"))
+                + "\"configured\":" + db.configured()
+                + ",\"table\":" + json(env("XIXIAPI_ACCOUNT_TABLE", "accounts"))
                 + ",\"typeValue\":" + json(env("XIXIAPI_ACCOUNT_TYPE_VALUE", "apikey"))
                 + ",\"balancePaths\":" + json(env("XIXIAPI_BALANCE_PATHS", defaultBalancePaths()))
                 + "}";
     }
 
     public String balanceReportJson() {
-        if (!isDbConfigured()) {
+        DbConfig db = dbConfig();
+        if (!db.configured()) {
             return "{\"configured\":false,\"checkedAt\":" + json(Instant.now().toString())
-                    + ",\"accounts\":[],\"error\":\"Set XIXIAPI_DB_URL, XIXIAPI_DB_USER and XIXIAPI_DB_PASSWORD.\"}";
+                    + ",\"accounts\":[],\"error\":\"Set XIXIAPI_DB_URL, XIXIAPI_DB_USER and XIXIAPI_DB_PASSWORD, or provide DB_HOST/DB_USER/DB_PASSWORD aliases.\"}";
         }
-        List<ApiAccount> accounts = loadAccounts();
+        List<ApiAccount> accounts = loadAccounts(db);
         List<BalanceRow> rows = new ArrayList<>();
         for (ApiAccount account : accounts) {
             rows.add(checkBalance(account));
@@ -56,17 +64,14 @@ public final class BalanceMonitorService {
         return json.toString();
     }
 
-    private List<ApiAccount> loadAccounts() {
+    private List<ApiAccount> loadAccounts(DbConfig db) {
         String sql = env("XIXIAPI_ACCOUNT_SQL", "");
         boolean customSql = !sql.isBlank();
         if (!customSql) {
             sql = defaultAccountSql();
         }
         List<ApiAccount> accounts = new ArrayList<>();
-        try (Connection connection = DriverManager.getConnection(
-                requireEnv("XIXIAPI_DB_URL"),
-                requireEnv("XIXIAPI_DB_USER"),
-                requireEnv("XIXIAPI_DB_PASSWORD"));
+        try (Connection connection = DriverManager.getConnection(db.url(), db.user(), db.password());
              PreparedStatement statement = connection.prepareStatement(sql)) {
             if (!customSql) {
                 statement.setString(1, env("XIXIAPI_ACCOUNT_TYPE_VALUE", "apikey"));
@@ -90,7 +95,18 @@ public final class BalanceMonitorService {
     }
 
     private String defaultAccountSql() {
-        String table = identifier(env("XIXIAPI_ACCOUNT_TABLE", "xixi_accounts"), "table");
+        String table = identifier(env("XIXIAPI_ACCOUNT_TABLE", "accounts"), "table");
+        if ("accounts".equals(table)
+                && env("XIXIAPI_ACCOUNT_URL_COLUMN", "").isBlank()
+                && env("XIXIAPI_ACCOUNT_KEY_COLUMN", "").isBlank()) {
+            return "select id::text as id, "
+                    + "coalesce(nullif(name, ''), 'account-' || id::text) as name, "
+                    + "coalesce(nullif(credentials->>'domain', ''), nullif(credentials->>'host', ''), nullif(platform, ''), '') as domain, "
+                    + "coalesce(nullif(credentials->>'base_url', ''), nullif(credentials->>'url', ''), nullif(credentials->>'api_base', ''), nullif(credentials->>'endpoint', '')) as base_url, "
+                    + "coalesce(nullif(credentials->>'api_key', ''), nullif(credentials->>'key', ''), nullif(credentials->>'token', '')) as api_key "
+                    + "from accounts where type = ? and coalesce(status, 'active') = 'active' "
+                    + "order by domain, name";
+        }
         String id = identifier(env("XIXIAPI_ACCOUNT_ID_COLUMN", "id"), "id column");
         String name = identifier(env("XIXIAPI_ACCOUNT_NAME_COLUMN", "name"), "name column");
         String domain = identifier(env("XIXIAPI_ACCOUNT_DOMAIN_COLUMN", "domain"), "domain column");
@@ -281,18 +297,31 @@ public final class BalanceMonitorService {
         return text != null && text.trim().matches("-?\\d+(\\.\\d+)?");
     }
 
-    private static boolean isDbConfigured() {
-        return !env("XIXIAPI_DB_URL", "").isBlank()
-                && !env("XIXIAPI_DB_USER", "").isBlank()
-                && !env("XIXIAPI_DB_PASSWORD", "").isBlank();
-    }
-
-    private static String requireEnv(String name) {
-        String value = env(name, "");
-        if (value.isBlank()) {
-            throw new IllegalStateException("Missing environment variable: " + name);
+    private static DbConfig dbConfig() {
+        String url = firstEnv("XIXIAPI_DB_URL");
+        String user = firstEnv("XIXIAPI_DB_USER", "DB_USER", "DATABASE_USER", "POSTGRES_USER");
+        String password = firstEnv("XIXIAPI_DB_PASSWORD", "DB_PASSWORD", "DATABASE_PASSWORD", "POSTGRES_PASSWORD");
+        String databaseUrl = firstEnv("DATABASE_URL");
+        if (url.isBlank() && !databaseUrl.isBlank()) {
+            ParsedDatabaseUrl parsed = parseDatabaseUrl(databaseUrl);
+            url = parsed.url();
+            if (user.isBlank()) {
+                user = parsed.user();
+            }
+            if (password.isBlank()) {
+                password = parsed.password();
+            }
         }
-        return value;
+        if (url.isBlank()) {
+            String host = firstEnv("DB_HOST", "DATABASE_HOST", "POSTGRES_HOST");
+            String port = firstEnv("DB_PORT", "DATABASE_PORT", "POSTGRES_PORT");
+            String name = firstEnv("DB_NAME", "DATABASE_DBNAME", "POSTGRES_DB");
+            if (!host.isBlank()) {
+                url = "jdbc:postgresql://" + host + ":" + (port.isBlank() ? "5432" : port)
+                        + "/" + (name.isBlank() ? "sub2api" : name);
+            }
+        }
+        return new DbConfig(url, user, password);
     }
 
     private static String identifier(String value, String label) {
@@ -316,7 +345,116 @@ public final class BalanceMonitorService {
         if (value == null || value.isBlank()) {
             value = System.getProperty(name);
         }
+        if (value == null || value.isBlank()) {
+            value = dotEnv().get(name);
+        }
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static String firstEnv(String... names) {
+        for (String name : names) {
+            String value = env(name, "");
+            if (!value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    private static ParsedDatabaseUrl parseDatabaseUrl(String value) {
+        if (value.startsWith("jdbc:postgresql:")) {
+            return new ParsedDatabaseUrl(value, "", "");
+        }
+        try {
+            URI uri = URI.create(value);
+            if (!"postgres".equals(uri.getScheme()) && !"postgresql".equals(uri.getScheme())) {
+                return new ParsedDatabaseUrl("", "", "");
+            }
+            StringBuilder url = new StringBuilder("jdbc:postgresql://").append(uri.getHost());
+            if (uri.getPort() > 0) {
+                url.append(':').append(uri.getPort());
+            }
+            url.append(uri.getPath() == null || uri.getPath().isBlank() ? "/sub2api" : uri.getPath());
+            if (uri.getQuery() != null && !uri.getQuery().isBlank()) {
+                url.append('?').append(uri.getQuery());
+            }
+            String user = "";
+            String password = "";
+            String userInfo = uri.getUserInfo();
+            if (userInfo != null && !userInfo.isBlank()) {
+                int split = userInfo.indexOf(':');
+                user = decode(split >= 0 ? userInfo.substring(0, split) : userInfo);
+                password = split >= 0 ? decode(userInfo.substring(split + 1)) : "";
+            }
+            return new ParsedDatabaseUrl(url.toString(), user, password);
+        } catch (Exception ignored) {
+            return new ParsedDatabaseUrl("", "", "");
+        }
+    }
+
+    private static String decode(String text) {
+        return URLDecoder.decode(text, StandardCharsets.UTF_8);
+    }
+
+    private static Map<String, String> dotEnv() {
+        return DotEnvHolder.VALUES;
+    }
+
+    private static final class DotEnvHolder {
+        private static final Map<String, String> VALUES = loadDotEnv();
+
+        private static Map<String, String> loadDotEnv() {
+            Map<String, String> values = new LinkedHashMap<>();
+            String[] files = {
+                    System.getenv("XIXIAPI_ENV_FILE"),
+                    ".env.local",
+                    ".env",
+                    "/root/sub2api-deploy/.env"
+            };
+            for (String file : files) {
+                if (file == null || file.isBlank()) {
+                    continue;
+                }
+                loadDotEnvFile(values, Path.of(file));
+            }
+            return values;
+        }
+
+        private static void loadDotEnvFile(Map<String, String> values, Path path) {
+            if (!Files.isRegularFile(path)) {
+                return;
+            }
+            try {
+                for (String rawLine : Files.readAllLines(path, StandardCharsets.UTF_8)) {
+                    String line = rawLine.trim();
+                    if (line.isBlank() || line.startsWith("#")) {
+                        continue;
+                    }
+                    if (line.startsWith("export ")) {
+                        line = line.substring("export ".length()).trim();
+                    }
+                    int split = line.indexOf('=');
+                    if (split <= 0) {
+                        continue;
+                    }
+                    String key = line.substring(0, split).trim();
+                    String value = stripQuotes(line.substring(split + 1).trim());
+                    values.putIfAbsent(key, value);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        private static String stripQuotes(String value) {
+            if (value.length() >= 2) {
+                char first = value.charAt(0);
+                char last = value.charAt(value.length() - 1);
+                if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                    return value.substring(1, value.length() - 1);
+                }
+            }
+            return value;
+        }
     }
 
     private static String defaultBalancePaths() {
@@ -341,5 +479,14 @@ public final class BalanceMonitorService {
             String path,
             int httpStatus,
             String error) {
+    }
+
+    private record DbConfig(String url, String user, String password) {
+        boolean configured() {
+            return !url.isBlank() && !user.isBlank() && !password.isBlank();
+        }
+    }
+
+    private record ParsedDatabaseUrl(String url, String user, String password) {
     }
 }

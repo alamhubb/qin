@@ -1,6 +1,6 @@
 # 余额监控系统
 
-Qin 单端口全栈示例，用 OVS 前端和 Qono 后端监控 xixiapi 数据库里的 apikey 账户余额。
+Qin 单端口全栈示例：用 OVS 前端和 Qono 后端读取 xixiapi/sub2api 数据库里的 `apikey` 类型账户，并按账户的 URL + key 探测余额。
 
 ## Run
 
@@ -13,7 +13,17 @@ $env:XIXIAPI_DB_PASSWORD = "<password>"
 ..\..\qin.bat dev
 ```
 
-Open:
+也可以放到 `.env.local`，或者直接复用服务器常见变量名：
+
+```powershell
+$env:DB_HOST = "<host>"
+$env:DB_PORT = "5432"
+$env:DB_NAME = "sub2api"
+$env:DB_USER = "sub2api"
+$env:DB_PASSWORD = "<password>"
+```
+
+打开：
 
 ```text
 http://127.0.0.1:19117/
@@ -21,16 +31,19 @@ http://127.0.0.1:19117/
 
 ## Database Defaults
 
-默认 SQL：
+默认按 lucen/sub2api 的 `accounts` 表读取：
 
 ```sql
-select id as id, name as name, domain as domain, url as base_url, api_key as api_key
-from xixi_accounts
-where type = 'apikey'
+select id::text as id,
+       name,
+       credentials->>'base_url' as base_url,
+       credentials->>'api_key' as api_key
+from accounts
+where type = 'apikey' and coalesce(status, 'active') = 'active'
 order by domain, name
 ```
 
-可通过环境变量适配你的 xixiapi 表结构：
+也支持平铺表结构。可以通过环境变量覆盖表和字段：
 
 ```powershell
 $env:XIXIAPI_ACCOUNT_TABLE = "xixi_accounts"
@@ -43,8 +56,7 @@ $env:XIXIAPI_ACCOUNT_URL_COLUMN = "url"
 $env:XIXIAPI_ACCOUNT_KEY_COLUMN = "api_key"
 ```
 
-如果表结构差异比较大，可以直接覆盖 SQL。自定义 SQL 必须返回这些别名：
-`id`, `name`, `domain`, `base_url`, `api_key`。
+如果表结构差异比较大，可以直接覆盖 SQL。自定义 SQL 必须返回这些别名：`id`, `name`, `domain`, `base_url`, `api_key`。
 
 ```powershell
 $env:XIXIAPI_ACCOUNT_SQL = "select id, name, domain, base_url, key as api_key from accounts where kind = 'apikey'"
