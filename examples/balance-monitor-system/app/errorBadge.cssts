@@ -1,0 +1,7 @@
+const errorBadge = css {
+  colorFirebrick,
+  backgroundColorMistyrose,
+  borderColorLightcoral
+}
+
+export default errorBadge

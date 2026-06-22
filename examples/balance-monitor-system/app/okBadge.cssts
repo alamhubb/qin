@@ -1,0 +1,7 @@
+const okBadge = css {
+  colorGreen,
+  backgroundColorHoneydew,
+  borderColorLightgreen
+}
+
+export default okBadge
