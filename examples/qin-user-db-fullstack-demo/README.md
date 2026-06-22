@@ -12,8 +12,6 @@ This demo is a single-port Qin fullstack app:
 ```text
 app/
   main.js
-  qono-rpc.js
-  controllers/UserController.js
   UserRuntimeBadge.ovs
   tokens.cssts
 main/
@@ -68,12 +66,15 @@ The browser calls the mounted Qono REST routes directly from `app/main.js`.
 The browser-facing client controller calls the same backend through Qono RPC:
 
 ```js
+import { UserController } from "../main/controllers/UserController.qin"
+
 await UserController.getAll()
 await UserController.create({ name })
 await UserController.remove({ id })
 ```
 
-`app/qono-rpc.js` hides `/api/rpc/...`, so page code talks to `UserController` like a normal object.
+Qin generates the browser RPC client internally for that server-controller import, so page code talks to
+`UserController` like a normal object without a checked-in proxy file.
 The server-side controller remains the single source of route behavior.
 
 The database schema lives in `main/db/schema.ts`:

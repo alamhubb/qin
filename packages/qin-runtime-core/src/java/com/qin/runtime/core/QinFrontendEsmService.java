@@ -34,6 +34,12 @@ public final class QinFrontendEsmService {
             "(?m)(import\\s*[\"'])([^\"']+)([\"'])");
     private static final Pattern EXPORT_FROM_PATTERN = Pattern.compile(
             "(?m)(export\\s+(?:\\*\\s*(?:as\\s+[A-Za-z_$][\\w$]*\\s*)?|\\{[^}\\n]*})\\s*from\\s*[\"'])([^\"']+)([\"'])");
+    private static final Pattern CONTROLLER_EXPORT_NAME_PATTERN = Pattern.compile(
+            "\\bexport\\s+(?:object|class)\\s+([A-Za-z_$][\\w$]*)");
+    private static final Pattern CONTROLLER_NAME_FIELD_PATTERN = Pattern.compile(
+            "\\bcontrollerName\\s*=\\s*[\"']([^\"']+)[\"']");
+    private static final Pattern CONTROLLER_ROUTE_PATTERN = Pattern.compile(
+            "@(?:Get|Post|Delete)Mapping\\s*\\([^)]*\\)\\s*(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\(");
     private static final Pattern CSSTS_MERGE_PATTERN = Pattern.compile("cssts\\.merge\\(([^)]*)\\)");
     private static final String CSSTS_STYLE_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts.css.js";
     private static final String CSSTS_ATOM_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/csstsAtom.js";
@@ -83,7 +89,10 @@ public final class QinFrontendEsmService {
         Path root = projectRoot.toAbsolutePath().normalize();
         Path entry = frontendEntry.toAbsolutePath().normalize();
 
-        QinModuleGraph graph = new QinModuleGraphBuilder().build(entry);
+        QinModuleGraph graph = new QinModuleGraphBuilder(
+                (importer, descriptor, resolvedModule, resolvedSource) ->
+                        virtualFrontendServerControllerSource(root, importer, resolvedModule, resolvedSource))
+                .build(entry);
         validatePolicyAndSemantics(root, graph);
 
         Map<Path, QinModuleSource> sourceMap = new LinkedHashMap<>();
@@ -231,7 +240,9 @@ public final class QinFrontendEsmService {
 
         String source = module.source();
         String transpiled;
-        if (isVueModuleFile(moduleFile)) {
+        if (isServerControllerModule(moduleFile, readSource(moduleFile))) {
+            transpiled = renderQonoRpcControllerClient(readSource(moduleFile));
+        } else if (isVueModuleFile(moduleFile)) {
             transpiled = transpileVueModule(moduleFile, source);
         } else if (isOvsModuleFile(moduleFile)) {
             transpiled = transpileOvsModule(moduleFile, source);
@@ -249,6 +260,105 @@ public final class QinFrontendEsmService {
         }
         transpiledModuleCache.put(normalizedModuleFile, transpiled);
         return transpiled;
+    }
+
+    private static String virtualFrontendServerControllerSource(
+            Path projectRoot,
+            Path importer,
+            Path resolvedModule,
+            String resolvedSource) {
+        if (projectRoot == null || importer == null || resolvedModule == null || resolvedSource == null) {
+            return null;
+        }
+        Path root = projectRoot.toAbsolutePath().normalize();
+        Path importerFile = importer.toAbsolutePath().normalize();
+        Path resolvedFile = resolvedModule.toAbsolutePath().normalize();
+        if (!importerFile.startsWith(root.resolve("app").normalize())
+                || !resolvedFile.startsWith(root.resolve("main").resolve("controllers").normalize())
+                || !isServerControllerSource(resolvedSource)) {
+            return null;
+        }
+        String exportName = controllerExportName(resolvedSource);
+        if (exportName == null) {
+            return null;
+        }
+        return "export const " + exportName + " = null;\n";
+    }
+
+    private static boolean isServerControllerModule(Path moduleFile, String source) {
+        if (moduleFile == null || source == null) {
+            return false;
+        }
+        String normalized = moduleFile.toAbsolutePath().normalize().toString().replace('\\', '/');
+        return normalized.contains("/main/controllers/") && isServerControllerSource(source);
+    }
+
+    private static boolean isServerControllerSource(String source) {
+        return source != null
+                && source.contains("@RestController")
+                && CONTROLLER_EXPORT_NAME_PATTERN.matcher(source).find();
+    }
+
+    private static String renderQonoRpcControllerClient(String source) {
+        String exportName = controllerExportName(source);
+        if (exportName == null || exportName.isBlank()) {
+            throw new IllegalArgumentException("Qono RPC controller source must export an object or class");
+        }
+        String controllerName = controllerRpcName(source, exportName);
+        List<String> methods = controllerMethodNames(source);
+        if (methods.isEmpty()) {
+            methods = List.of("getAll", "create", "remove");
+        }
+        StringBuilder methodEntries = new StringBuilder();
+        for (String method : methods) {
+            methodEntries.append("  ")
+                    .append(method)
+                    .append("(input = {}) { return __qinQonoCall(")
+                    .append('"').append(escapeJsStringLiteral(controllerName)).append('.').append(method).append('"')
+                    .append(", input); },\n");
+        }
+        return """
+                async function __qinQonoCall(methodName, input = {}) {
+                  const response = await fetch(`/api/rpc/${encodeURIComponent(methodName)}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(input ?? {})
+                  });
+                  const text = await response.text();
+                  const payload = text ? JSON.parse(text) : {};
+                  if (!response.ok) {
+                    const detail = payload.detail ? `: ${payload.detail}` : "";
+                    throw new Error(`${payload.error || response.statusText}${detail}`);
+                  }
+                  return payload;
+                }
+
+                export const %s = {
+                %s};
+                """.formatted(exportName, methodEntries);
+    }
+
+    private static String controllerExportName(String source) {
+        Matcher matcher = CONTROLLER_EXPORT_NAME_PATTERN.matcher(source == null ? "" : source);
+        return matcher.find() ? matcher.group(1) : null;
+    }
+
+    private static String controllerRpcName(String source, String exportName) {
+        Matcher matcher = CONTROLLER_NAME_FIELD_PATTERN.matcher(source == null ? "" : source);
+        return matcher.find() ? matcher.group(1) : exportName;
+    }
+
+    private static List<String> controllerMethodNames(String source) {
+        Matcher matcher = CONTROLLER_ROUTE_PATTERN.matcher(source == null ? "" : source);
+        List<String> methods = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        while (matcher.find()) {
+            String method = matcher.group(1);
+            if (seen.add(method)) {
+                methods.add(method);
+            }
+        }
+        return methods;
     }
 
     private void prewarmCsstsGraphModules() throws IOException {

@@ -19,9 +19,27 @@ import java.util.Set;
  * Builds Qin ESM module graph from an entry source file.
  */
 public final class QinModuleGraphBuilder {
+    @FunctionalInterface
+    public interface ImportVirtualizer {
+        String virtualSource(
+                Path importerFile,
+                QinImportDescriptor descriptor,
+                Path resolvedModule,
+                String resolvedSource);
+    }
+
     private final QinImportParser importParser = new QinImportParser();
     private final QinEsmSpecifierResolver specifierResolver = new QinEsmSpecifierResolver();
     private static final char UTF8_BOM = '\uFEFF';
+    private final ImportVirtualizer importVirtualizer;
+
+    public QinModuleGraphBuilder() {
+        this(null);
+    }
+
+    public QinModuleGraphBuilder(ImportVirtualizer importVirtualizer) {
+        this.importVirtualizer = importVirtualizer;
+    }
 
     public QinModuleGraph build(Path entryFile) throws IOException {
         Path entry = requireFile(entryFile);
@@ -57,7 +75,17 @@ public final class QinModuleGraphBuilder {
                         currentFile,
                         descriptor.moduleSpecifier());
                 if (resolvedModule != null) {
-                    visit(resolvedModule, ordered, visiting);
+                    String virtualSource = virtualSourceOrNull(
+                            currentFile,
+                            descriptor,
+                            resolvedModule);
+                    if (virtualSource != null) {
+                        ordered.putIfAbsent(
+                                resolvedModule,
+                                new QinModuleSource(resolvedModule, virtualSource, List.of()));
+                    } else {
+                        visit(resolvedModule, ordered, visiting);
+                    }
                 }
             }
             resolvedImports.add(new QinResolvedImport(descriptor, resolvedModule));
@@ -65,6 +93,22 @@ public final class QinModuleGraphBuilder {
 
         ordered.put(currentFile, new QinModuleSource(currentFile, source, resolvedImports));
         visiting.remove(currentFile);
+    }
+
+    private String virtualSourceOrNull(
+            Path importerFile,
+            QinImportDescriptor descriptor,
+            Path resolvedModule) throws IOException {
+        if (importVirtualizer == null || resolvedModule == null) {
+            return null;
+        }
+        String resolvedSource = readModuleSource(resolvedModule);
+        String virtualSource = importVirtualizer.virtualSource(
+                importerFile,
+                descriptor,
+                resolvedModule,
+                resolvedSource);
+        return virtualSource == null || virtualSource.isBlank() ? null : virtualSource;
     }
 
     private String stripUtf8Bom(String source) {

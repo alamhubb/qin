@@ -1,6 +1,7 @@
 package com.qin.runtime.core;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 
 public final class QinUserDbFullstackFrontendSmokeTestMain {
     private QinUserDbFullstackFrontendSmokeTestMain() {
@@ -15,7 +16,7 @@ public final class QinUserDbFullstackFrontendSmokeTestMain {
                 || !mainModule.contains("/@qin-mod/app/UserRuntimeBadge.ovs.js")
                 || !mainModule.contains("/@qin-mod/app/tokens.cssts.js")
                 || !mainModule.contains("/@qin-mod/app/style.css.js")
-                || !mainModule.contains("/@qin-mod/app/controllers/UserController.js")
+                || !mainModule.contains("/@qin-mod/main/controllers/UserController.js")
                 || !mainModule.contains("await UserController.getAll()")
                 || !mainModule.contains("await UserController.create({")
                 || !mainModule.contains("await UserController.remove({ id:")
@@ -26,22 +27,23 @@ public final class QinUserDbFullstackFrontendSmokeTestMain {
             throw new IllegalStateException("User DB main module missing OVS/CSSTS/controller wiring:\n" + mainModule);
         }
 
-        String controllerModule = service.transpileByRequestPath("/@qin-mod/app/controllers/UserController.js");
-        if (controllerModule == null
-                || controllerModule.contains("@RestController")
-                || controllerModule.contains("@GetMapping")
-                || !controllerModule.contains("createQonoRpcClient(\"UserController\"")
-                || !controllerModule.contains("getAll: { type: \"query\" }")
-                || !controllerModule.contains("remove: { type: \"mutation\" }")) {
-            throw new IllegalStateException("User DB frontend controller is not browser-compatible:\n" + controllerModule);
+        if (Files.exists(root.resolve("app/controllers/UserController.js"))
+                || Files.exists(root.resolve("app/qono-rpc.js"))) {
+            throw new IllegalStateException("User DB demo should not check in browser RPC proxy/helper files");
         }
 
-        String rpcModule = service.transpileByRequestPath("/@qin-mod/app/qono-rpc.js");
-        if (rpcModule == null
-                || !rpcModule.contains("/api/rpc")
-                || !rpcModule.contains("encodeURIComponent(rpcMethod)")
-                || !rpcModule.contains("JSON.stringify(input ?? {})")) {
-            throw new IllegalStateException("User DB Qono RPC client helper missing fetch lowering:\n" + rpcModule);
+        String controllerModule = service.transpileByRequestPath("/@qin-mod/main/controllers/UserController.js");
+        if (controllerModule == null
+                || controllerModule.contains("@RestController")
+                || controllerModule.contains("java:")
+                || controllerModule.contains("@GetMapping")
+                || !controllerModule.contains("export const UserController = {")
+                || !controllerModule.contains("getAll(input = {})")
+                || !controllerModule.contains("create(input = {})")
+                || !controllerModule.contains("remove(input = {})")
+                || !controllerModule.contains("encodeURIComponent(methodName)")
+                || !controllerModule.contains("JSON.stringify(input ?? {})")) {
+            throw new IllegalStateException("User DB frontend controller is not browser-compatible:\n" + controllerModule);
         }
 
         String styleModule = service.transpileByRequestPath("/@qin-mod/app/style.css.js");

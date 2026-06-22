@@ -1,7 +1,7 @@
 import { createApp } from "vue"
 import UserRuntimeBadge from "./UserRuntimeBadge.ovs"
 import connectedStyle from "./tokens.cssts"
-import { UserController } from "./controllers/UserController.js"
+import { UserController } from "../main/controllers/UserController.qin"
 import "./style.css"
 
 const runtimeBadge = document.querySelector("#runtime-badge")
