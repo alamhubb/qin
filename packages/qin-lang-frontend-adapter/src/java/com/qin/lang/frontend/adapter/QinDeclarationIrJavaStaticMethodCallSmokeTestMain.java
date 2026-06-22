@@ -11,7 +11,7 @@ public final class QinDeclarationIrJavaStaticMethodCallSmokeTestMain {
 
     public static void main(String[] args) {
         String source = """
-                import { Qono } from "java:com.qin.runtime.core.qono"
+                import { Qono } from "java:com.qin.qono"
 
                 export object UserController {
                     getAll(request) {
@@ -25,7 +25,7 @@ public final class QinDeclarationIrJavaStaticMethodCallSmokeTestMain {
         if (!(method.returnExpression() instanceof QinIrStaticMethodCallExpression call)) {
             throw new AssertionError("Expected Java static method call IR, got " + method.returnExpression());
         }
-        if (!"com.qin.runtime.core.qono.Qono".equals(call.ownerBinaryName())) {
+        if (!"com.qin.qono.Qono".equals(call.ownerBinaryName())) {
             throw new AssertionError("Unexpected static owner: " + call.ownerBinaryName());
         }
         if (!"jsonRaw".equals(call.methodName())) {

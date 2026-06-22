@@ -5,6 +5,7 @@ export default {
     "entry":  "src/com/qin/cli/QinCli.java",
     "dependencies":  {
                          "com.qin:qin-conformance":  "0.1.0",
+                         "com.qin:qin-qono":  "0.1.0",
                          "com.google.code.gson@gson":  "2.10.1",
                          "io.get-coursier@coursier_2.13":  "2.1.10"
                      },

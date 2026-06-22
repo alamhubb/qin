@@ -17,7 +17,7 @@ public final class QinParserObjectDeclarationSmokeTestMain {
     private static void parsesDecoratedObjectDeclarationWithImports() {
         QinParsedSource parsed = new QinParserFacade().parseSource("""
                 import { RestController, RequestMapping, GetMapping } from "../qono-class"
-                import { Qono } from "java:com.qin.runtime.core.qono"
+                import { Qono } from "java:com.qin.qono"
                 import { db, users } from "../db/schema"
 
                 @RestController

@@ -73,6 +73,7 @@ export default defineConfig({
           items: [
             { text: 'CLI 命令', link: '/api/' },
             { text: 'TypeScript API', link: '/api/typescript' },
+            { text: 'Qono', link: '/api/qono' },
             { text: '插件 API', link: '/api/plugin' },
           ],
         },

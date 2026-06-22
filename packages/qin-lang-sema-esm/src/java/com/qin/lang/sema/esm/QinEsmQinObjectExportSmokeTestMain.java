@@ -37,7 +37,7 @@ public final class QinEsmQinObjectExportSmokeTestMain {
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("controllers/UserController.qin"), """
                 import { RestController, RequestMapping, GetMapping } from "../qono-class"
-                import { Qono } from "java:com.qin.runtime.core.qono"
+                import { Qono } from "java:com.qin.qono"
                 import { db, users } from "../db/schema"
 
                 @RestController

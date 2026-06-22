@@ -1,4 +1,4 @@
-package com.qin.runtime.core.qono;
+package com.qin.qono;
 
 import com.qin.runtime.core.QinHttpRequest;
 

@@ -1,4 +1,4 @@
-import { Qono } from "java:com.qin.runtime.core.qono"
+import { Qono } from "java:com.qin.qono"
 import { useQonoController } from "./qono-class"
 import { UserController } from "./controllers/UserController"
 

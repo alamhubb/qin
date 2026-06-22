@@ -1,7 +1,7 @@
-package com.qin.runtime.core.qono;
+package com.qin.runtime.core;
 
-public final class QonoJson {
-    private QonoJson() {
+public final class QinJson {
+    private QinJson() {
     }
 
     public static String string(String value) {

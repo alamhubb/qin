@@ -4,7 +4,7 @@ This demo is a single-port Qin fullstack app:
 
 - Frontend: Vue plus local OVS and CSSTS source modules.
 - Backend authoring: Qin/TS modules under `main/`.
-- HTTP runtime: `Qono`, a Qin-owned lightweight RPC layer.
+- HTTP runtime: `Qono` from `com.qin:qin-qono`, a Qin-owned lightweight RPC layer.
 - Database runtime: `QinDb`, a Qin-owned PostgreSQL helper with schema and query builders.
 
 ## Structure
@@ -20,6 +20,15 @@ main/
   db/schema.ts
   qono-class.ts
 qin.config.js
+```
+
+The demo depends on both the Qin HTTP runtime and Qono:
+
+```js
+dependencies: {
+    "com.qin:qin-runtime-core": "0.1.0",
+    "com.qin:qin-qono": "0.1.0"
+}
 ```
 
 `main/controllers/UserController.qin` uses the Qin `object` singleton controller style:

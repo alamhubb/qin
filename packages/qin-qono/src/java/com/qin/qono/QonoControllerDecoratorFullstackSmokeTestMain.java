@@ -1,4 +1,4 @@
-package com.qin.runtime.core;
+package com.qin.qono;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -43,7 +43,10 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                     port: 18117,
                     backend: { entry: "main/main.ts" },
                     frontend: { srcDir: "app", staticDir: "app" },
-                    dependencies: { "com.qin:qin-runtime-core": "0.1.0" }
+                    dependencies: {
+                        "com.qin:qin-runtime-core": "0.1.0",
+                        "com.qin:qin-qono": "0.1.0"
+                    }
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("app/main.js"), "console.log('qono decorator smoke')\n", StandardCharsets.UTF_8);
@@ -169,7 +172,7 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("main/controllers/UserController.qin"), """
                 import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
-                import { Qono } from "java:com.qin.runtime.core.qono"
+                import { Qono } from "java:com.qin.qono"
 
                 @RestController
                 @RequestMapping("/api/users")
@@ -194,7 +197,7 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("main/main.ts"), """
-                import { Qono } from "java:com.qin.runtime.core.qono"
+                import { Qono } from "java:com.qin.qono"
                 import { useQonoController } from "./qono-class"
                 import { UserController } from "./controllers/UserController"
 

@@ -1,8 +1,9 @@
-package com.qin.runtime.core.qono;
+package com.qin.qono;
 
 import com.qin.runtime.core.QinHttpApp;
 import com.qin.runtime.core.QinHttpRequest;
 import com.qin.runtime.core.QinHttpResponse;
+import com.qin.runtime.core.QinJson;
 
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -75,7 +76,7 @@ public final class QonoApp {
         }
         if (handler == null) {
             return QinHttpResponse.json(404, "{\"error\":\"unknown rpc method\",\"method\":\""
-                    + QonoJson.escape(method) + "\"}");
+                    + QinJson.escape(method) + "\"}");
         }
         return safeHandle(handler, request);
     }
@@ -87,7 +88,7 @@ public final class QonoApp {
             return errorResponse(error);
         } catch (Exception error) {
             return QinHttpResponse.json(500, "{\"error\":\"internal server error\",\"detail\":\""
-                    + QonoJson.escape(error.getMessage()) + "\"}");
+                    + QinJson.escape(error.getMessage()) + "\"}");
         }
     }
 
@@ -107,8 +108,8 @@ public final class QonoApp {
             case "QinDbException" -> "database unavailable";
             default -> "internal server error";
         };
-        return QinHttpResponse.json(status, "{\"error\":\"" + QonoJson.escape(code)
-                + "\",\"detail\":\"" + QonoJson.escape(error.getMessage()) + "\"}");
+        return QinHttpResponse.json(status, "{\"error\":\"" + QinJson.escape(code)
+                + "\",\"detail\":\"" + QinJson.escape(error.getMessage()) + "\"}");
     }
 
     private QinHttpResponse toResponse(Object value, int defaultStatus) {
@@ -119,7 +120,7 @@ public final class QonoApp {
             return QinHttpResponse.json(result.status(), result.json());
         }
         if (value instanceof CharSequence text) {
-            return QinHttpResponse.json(defaultStatus, QonoJson.string(String.valueOf(text)));
+            return QinHttpResponse.json(defaultStatus, QinJson.string(String.valueOf(text)));
         }
         if (value instanceof Number || value instanceof Boolean) {
             return QinHttpResponse.json(defaultStatus, String.valueOf(value));
@@ -127,7 +128,7 @@ public final class QonoApp {
         if (value == null) {
             return QinHttpResponse.json(defaultStatus, "null");
         }
-        return QinHttpResponse.json(defaultStatus, QonoJson.string(String.valueOf(value)));
+        return QinHttpResponse.json(defaultStatus, QinJson.string(String.valueOf(value)));
     }
 
     private static String normalizeName(String name) {

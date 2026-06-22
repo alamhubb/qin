@@ -15,6 +15,7 @@ public final class QinJdkInteropPolicy {
                 "java.util",
                 "java.nio.file",
                 "com.qin.demo",
+                "com.qin.qono",
                 "com.qin.runtime.core",
                 "com.slime.parser"));
     }

@@ -1,5 +1,5 @@
 import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
-import { Qono } from "java:com.qin.runtime.core.qono"
+import { Qono } from "java:com.qin.qono"
 import { db, users } from "../db/schema"
 
 @RestController

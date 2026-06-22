@@ -1,6 +1,6 @@
 package com.qin.runtime.core.db;
 
-import com.qin.runtime.core.qono.QonoJson;
+import com.qin.runtime.core.QinJson;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -58,7 +58,7 @@ public final class QinDb {
         try (Connection connection = connect();
              PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
-            StringBuilder json = new StringBuilder("{\"").append(QonoJson.escape(arrayProperty)).append("\":[");
+            StringBuilder json = new StringBuilder("{\"").append(QinJson.escape(arrayProperty)).append("\":[");
             boolean first = true;
             while (rows.next()) {
                 if (!first) {
@@ -100,7 +100,7 @@ public final class QinDb {
             }
             try (ResultSet rows = statement.executeQuery()) {
                 rows.next();
-                StringBuilder json = new StringBuilder("{\"").append(QonoJson.escape(objectProperty)).append("\":");
+                StringBuilder json = new StringBuilder("{\"").append(QinJson.escape(objectProperty)).append("\":");
                 appendRow(json, table, rows);
                 json.append('}');
                 return json.toString();
@@ -191,14 +191,14 @@ public final class QinDb {
                 json.append(',');
             }
             first = false;
-            json.append('"').append(QonoJson.escape(column.jsonName())).append("\":");
+            json.append('"').append(QinJson.escape(column.jsonName())).append("\":");
             Object value = rows.getObject(column.sqlName());
             if (value == null) {
                 json.append("null");
             } else if (value instanceof Number || value instanceof Boolean) {
                 json.append(value);
             } else {
-                json.append(QonoJson.string(String.valueOf(value)));
+                json.append(QinJson.string(String.valueOf(value)));
             }
         }
         json.append('}');

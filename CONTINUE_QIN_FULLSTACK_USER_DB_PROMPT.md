@@ -94,8 +94,8 @@ Invoke-RestMethod -Method Delete http://127.0.0.1:19116/api/users/1
 
 8. 已有验证命令：
 
-.\qin.bat run com.qin.runtime.core.QonoAppSmokeTestMain
-.\qin.bat run com.qin.runtime.core.QonoControllerDecoratorFullstackSmokeTestMain
+.\qin.bat run com.qin.qono.QonoAppSmokeTestMain
+.\qin.bat run com.qin.qono.QonoControllerDecoratorFullstackSmokeTestMain
 
 demo build-only：
 
