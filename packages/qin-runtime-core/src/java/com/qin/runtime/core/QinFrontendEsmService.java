@@ -1066,7 +1066,9 @@ public final class QinFrontendEsmService {
                   : __qinOvsComponent;
                 function __qinMountOvs(target = null) {
                   if (typeof document === 'undefined') return null;
-                  const __qinOvsTarget = target || document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo');
+                  const __qinOvsTarget = typeof target === 'string'
+                    ? document.querySelector(target)
+                    : (target || document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo'));
                   if (!__qinOvsTarget) return null;
                   __qinOvsTarget.innerHTML = '';
                   return __qinCreateApp(__qinVueComponent).mount(__qinOvsTarget);

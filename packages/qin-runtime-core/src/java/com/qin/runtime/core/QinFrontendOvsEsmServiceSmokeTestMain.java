@@ -60,6 +60,8 @@ public final class QinFrontendOvsEsmServiceSmokeTestMain {
                 || !module.contains("const { colorBlue, fontWeight700, padding16px }")
                 || !module.contains("__qinMountOvs")
                 || !module.contains("__qinMountVue")
+                || !module.contains("typeof target === 'string'")
+                || !module.contains("document.querySelector(target)")
                 || !module.contains("export default __qinVueComponent")) {
             throw new IllegalStateException("OVS module did not include expected style/runtime wiring:\n" + module);
         }
