@@ -84,9 +84,22 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                         ]
                     }
                     const basePath = controller.basePath || controllerType.basePath || ""
+                    const controllerName = controller.controllerName
+                        || controller.rpcName
+                        || controllerType.controllerName
+                        || controllerType.rpcName
+                        || cleanControllerName(controllerType.name)
                     for (const routeInfo of routeSource) {
                         const fullPath = joinPath(basePath, routeInfo.path)
-                        app.route(routeInfo.method, fullPath, request => controller[routeInfo.handler](request))
+                        const handler = request => controller[routeInfo.handler](request)
+                        app.route(routeInfo.method, fullPath, handler)
+                        if (routeInfo.method === "GET") {
+                            app.query(`${controllerName}.${routeInfo.handler}`, handler)
+                        } else {
+                            app.mutation(`${controllerName}.${routeInfo.handler}`, request => {
+                                return controller[routeInfo.handler](rpcRequest(request, routeInfo))
+                            })
+                        }
                     }
                     return app
                 }
@@ -119,6 +132,40 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                     }
                     return value.startsWith("/") ? value : `/${value}`
                 }
+
+                function cleanControllerName(name) {
+                    const value = name || "Controller"
+                    return value.startsWith("__QinObject_") ? value.slice("__QinObject_".length) : value
+                }
+
+                function rpcRequest(request, routeInfo) {
+                    if (!hasPathParams(routeInfo.path)) {
+                        return request
+                    }
+                    return {
+                        bodyText() {
+                            return request.bodyText()
+                        },
+                        queryParam(name) {
+                            return request.queryParam(name)
+                        },
+                        param(name) {
+                            return jsonField(request.bodyText(), name)
+                        }
+                    }
+                }
+
+                function hasPathParams(path) {
+                    return Boolean(path && path.includes("{") && path.includes("}"))
+                }
+
+                function jsonField(text, name) {
+                    if (!text) {
+                        return null
+                    }
+                    const value = JSON.parse(text)[name]
+                    return value == null ? null : String(value)
+                }
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("main/controllers/UserController.qin"), """
                 import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
@@ -127,6 +174,7 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                 @RestController
                 @RequestMapping("/api/users")
                 export object UserController {
+                    controllerName = "UserController"
                     basePath = "/api/users"
 
                     @GetMapping("")
@@ -200,6 +248,9 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
         requireResponse(client, "GET", "/api/users", null, 200, "\"users\"");
         requireResponse(client, "POST", "/api/users", "{\"name\":\"Ada\"}", 201, "\"Ada\"");
         requireResponse(client, "DELETE", "/api/users/7", null, 200, "\"7\"");
+        requireResponse(client, "POST", "/api/rpc/UserController.getAll", "{}", 200, "\"users\"");
+        requireResponse(client, "POST", "/api/rpc/UserController.create", "{\"name\":\"RpcAda\"}", 201, "\"RpcAda\"");
+        requireResponse(client, "POST", "/api/rpc/UserController.remove", "{\"id\":8}", 200, "\"8\"");
     }
 
     private static void requireResponse(

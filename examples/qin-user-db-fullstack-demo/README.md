@@ -12,6 +12,8 @@ This demo is a single-port Qin fullstack app:
 ```text
 app/
   main.js
+  qono-rpc.js
+  controllers/UserController.js
   UserRuntimeBadge.ovs
   tokens.cssts
 main/
@@ -28,6 +30,7 @@ qin.config.js
 @RestController
 @RequestMapping("/api/users")
 export object UserController {
+    controllerName = "UserController"
     basePath = "/api/users"
     dbRef = null
     usersRef = null
@@ -62,6 +65,15 @@ export const app = useQonoController(Qono.create()
 ```
 
 The browser calls the mounted Qono REST routes directly from `app/main.js`.
+The browser-facing client controller calls the same backend through Qono RPC:
+
+```js
+await UserController.getAll()
+await UserController.create({ name })
+await UserController.remove({ id })
+```
+
+`app/qono-rpc.js` hides `/api/rpc/...`, so page code talks to `UserController` like a normal object.
 The server-side controller remains the single source of route behavior.
 
 The database schema lives in `main/db/schema.ts`:

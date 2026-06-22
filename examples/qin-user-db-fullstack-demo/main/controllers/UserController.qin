@@ -5,6 +5,7 @@ import { db, users } from "../db/schema"
 @RestController
 @RequestMapping("/api/users")
 export object UserController {
+    controllerName = "UserController"
     basePath = "/api/users"
     dbRef = null
     usersRef = null
