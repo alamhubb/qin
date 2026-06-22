@@ -12,8 +12,6 @@ This demo is a single-port Qin fullstack app:
 ```text
 app/
   main.js
-  qono-class.js
-  controllers/UserController.js
   UserRuntimeBadge.ovs
   tokens.cssts
 main/
@@ -58,35 +56,8 @@ export const app = useQonoController(Qono.create()
     .toHttpApp()
 ```
 
-The browser uses the same route metadata shape, but applies the decorator functions explicitly so the client proxy remains native browser ESM:
-
-```js
-export class UserController {
-    static basePath = "/api/users"
-
-    static getAll() {
-        return qonoCall(UserController, "getAll")
-    }
-
-    static create(input) {
-        return qonoCall(UserController, "create", input)
-    }
-
-    static remove(input) {
-        return qonoCall(UserController, "remove", input)
-    }
-}
-
-RestController(UserController)
-RequestMapping("/api/users")(UserController)
-GetMapping("")(UserController, "getAll", Object.getOwnPropertyDescriptor(UserController, "getAll"))
-PostMapping("")(UserController, "create", Object.getOwnPropertyDescriptor(UserController, "create"))
-DeleteMapping("/{id}")(UserController, "remove", Object.getOwnPropertyDescriptor(UserController, "remove"))
-
-await UserController.getAll()
-await UserController.create({ name })
-await UserController.remove({ id })
-```
+The browser calls the mounted Qono REST routes directly from `app/main.js`.
+The server-side controller remains the single source of route behavior.
 
 The database schema lives in `main/db/schema.ts`:
 
