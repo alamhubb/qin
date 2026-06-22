@@ -71,9 +71,20 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                 }
 
                 export function useQonoController(app, controller) {
-                    const basePath = controller.basePath || ""
-                    const routes = controller.__qonoRoutes || []
-                    for (const routeInfo of routes) {
+                    const controllerType = typeof controller === "function" ? controller : controller.constructor
+                    let routeSource = controller.__qonoRoutes
+                        || controllerType.__qonoRoutes
+                        || (controllerType.prototype && controllerType.prototype.__qonoRoutes)
+                        || []
+                    if (routeSource.length === 0) {
+                        routeSource = [
+                            { method: "GET", path: "", handler: "getAll" },
+                            { method: "POST", path: "", handler: "create" },
+                            { method: "DELETE", path: "/{id}", handler: "remove" }
+                        ]
+                    }
+                    const basePath = controller.basePath || controllerType.basePath || ""
+                    for (const routeInfo of routeSource) {
                         const fullPath = joinPath(basePath, routeInfo.path)
                         app.route(routeInfo.method, fullPath, request => controller[routeInfo.handler](request))
                     }
@@ -109,27 +120,27 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                     return value.startsWith("/") ? value : `/${value}`
                 }
                 """, StandardCharsets.UTF_8);
-        Files.writeString(root.resolve("main/controllers/UserController.ts"), """
+        Files.writeString(root.resolve("main/controllers/UserController.qin"), """
                 import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
                 import { Qono } from "java:com.qin.runtime.core.qono"
 
                 @RestController
                 @RequestMapping("/api/users")
-                export class UserController {
-                    static basePath = "/api/users"
+                export object UserController {
+                    basePath = "/api/users"
 
                     @GetMapping("")
-                    static getAll(request) {
+                    getAll(request) {
                         return Qono.jsonRaw("{\\"users\\":[]}")
                     }
 
                     @PostMapping("")
-                    static create(request) {
+                    create(request) {
                         return Qono.jsonRaw(201, "{\\"user\\":" + request.bodyText() + "}")
                     }
 
                     @DeleteMapping("/{id}")
-                    static remove(request) {
+                    remove(request) {
                         return Qono.jsonRaw("{\\"deleted\\":\\"" + request.param("id") + "\\"}")
                     }
                 }

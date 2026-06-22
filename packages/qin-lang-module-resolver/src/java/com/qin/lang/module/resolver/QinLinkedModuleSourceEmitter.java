@@ -27,7 +27,7 @@ public final class QinLinkedModuleSourceEmitter {
     private static final Pattern IMPORT_SIDE_EFFECT_PATTERN = Pattern.compile(
             "(?m)^\\s*import\\s+[\"']([^\"']+)[\"']\\s*;?\\s*$");
     private static final Pattern EXPORT_CALLABLE_DECLARATION_PATTERN = Pattern.compile(
-            "(?m)^\\s*export\\s+(function|(?:abstract\\s+)?class)\\s+([A-Za-z_$][\\w$]*)\\b");
+            "(?m)^\\s*export\\s+(function|(?:abstract\\s+)?class|object)\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_VARIABLE_PREFIX_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s+(const|let|var)\\s+");
     private static final Pattern VARIABLE_DECLARATION_PREFIX_PATTERN = Pattern.compile(
@@ -92,6 +92,7 @@ public final class QinLinkedModuleSourceEmitter {
             "var",
             "function",
             "class",
+            "object",
             "interface",
             "type",
             "declare",

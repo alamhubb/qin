@@ -1281,6 +1281,13 @@ public final class JavaEsmGlobal {
                 if (compatibilityResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                     return compatibilityResult;
                 }
+                Object fieldAccessorResult = tryCallInterpretedInstanceFieldAccessor(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (fieldAccessorResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return fieldAccessorResult;
+                }
                 Object javaSuperInstance = interpretedInstance.javaSuperInstance();
                 if (javaSuperInstance != null) {
                     return callMethod(javaSuperInstance, name, args);
@@ -1353,6 +1360,44 @@ public final class JavaEsmGlobal {
         } catch (IllegalAccessException | InvocationTargetException error) {
             throw new IllegalArgumentException("Failed to invoke method: " + ownerClass.getName() + "." + name, error);
         }
+    }
+
+    private static Object tryCallInterpretedInstanceFieldAccessor(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (args.length == 1 && name.length() > 3 && name.startsWith("set")) {
+            String fieldName = decapitalizeJavaBeanName(name.substring(3));
+            if (interpretedInstance.hasOwnField(fieldName)) {
+                interpretedInstance.set(fieldName, args[0]);
+                return null;
+            }
+        }
+        if (args.length == 0 && name.length() > 3 && name.startsWith("get")) {
+            String fieldName = decapitalizeJavaBeanName(name.substring(3));
+            if (interpretedInstance.hasOwnField(fieldName)) {
+                return interpretedInstance.get(fieldName);
+            }
+        }
+        if (args.length == 0 && name.length() > 2 && name.startsWith("is")) {
+            String fieldName = decapitalizeJavaBeanName(name.substring(2));
+            if (interpretedInstance.hasOwnField(fieldName)) {
+                return interpretedInstance.get(fieldName);
+            }
+        }
+        return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+    }
+
+    private static String decapitalizeJavaBeanName(String name) {
+        if (name == null || name.isEmpty()) {
+            return "";
+        }
+        if (name.length() > 1
+                && Character.isUpperCase(name.charAt(0))
+                && Character.isUpperCase(name.charAt(1))) {
+            return name;
+        }
+        return Character.toLowerCase(name.charAt(0)) + name.substring(1);
     }
 
     private static final Object STRUCTURAL_PARAMS_MISS = new Object();
@@ -3982,6 +4027,10 @@ public final class JavaEsmGlobal {
                 return fields.get(javaFieldName);
             }
             return null;
+        }
+
+        private boolean hasOwnField(String name) {
+            return fields.containsKey(name) || fields.containsKey(javaFieldAliasName(name));
         }
 
         private String javaFieldAliasName(String name) {

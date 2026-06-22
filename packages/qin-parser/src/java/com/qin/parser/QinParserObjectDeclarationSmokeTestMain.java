@@ -6,10 +6,48 @@ public final class QinParserObjectDeclarationSmokeTestMain {
 
     public static void main(String[] args) {
         parsesPlainObjectDeclaration();
+        parsesDecoratedObjectDeclaration();
+        parsesDecoratedObjectDeclarationWithImports();
         parsesNamedExportObjectDeclaration();
         parsesDefaultExportObjectDeclaration();
         keepsTypeKeywordObjectUntouched();
         System.out.println("QinParserObjectDeclarationSmokeTestMain passed.");
+    }
+
+    private static void parsesDecoratedObjectDeclarationWithImports() {
+        QinParsedSource parsed = new QinParserFacade().parseSource("""
+                import { RestController, RequestMapping, GetMapping } from "../qono-class"
+                import { Qono } from "java:com.qin.runtime.core.qono"
+                import { db, users } from "../db/schema"
+
+                @RestController
+                @RequestMapping("/api/users")
+                export object UserController {
+                    @GetMapping("")
+                    getAll(request) {
+                        return Qono.jsonRaw(db.selectJson("users", users, "id", "asc"));
+                    }
+                }
+                """);
+        require(parsed.hasProgram(), "decorated object declaration with imports should parse");
+        requireContains(parsed.effectiveSource(), "export const UserController = new __QinObject_UserController();");
+    }
+
+    private static void parsesDecoratedObjectDeclaration() {
+        QinParsedSource parsed = new QinParserFacade().parseSource("""
+                @RestController
+                @RequestMapping("/api/users")
+                export object UserController {
+                    @GetMapping("")
+                    getAll(request) {
+                        return request;
+                    }
+                }
+                """);
+        require(parsed.hasProgram(), "decorated object declaration should parse");
+        requireContains(parsed.effectiveSource(), "@RestController");
+        requireContains(parsed.effectiveSource(), "class __QinObject_UserController");
+        requireContains(parsed.effectiveSource(), "export const UserController = new __QinObject_UserController();");
     }
 
     private static void parsesPlainObjectDeclaration() {

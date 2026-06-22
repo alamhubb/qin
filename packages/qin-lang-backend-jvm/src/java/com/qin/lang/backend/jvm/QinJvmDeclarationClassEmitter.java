@@ -683,6 +683,28 @@ public final class QinJvmDeclarationClassEmitter {
         }
     }
 
+    private void emitObjectArrayFromExpressions(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            List<QinIrExpression> expressions) {
+        code.loadConstant(expressions.size());
+        code.anewarray(OBJECT_DESC);
+        for (int i = 0; i < expressions.size(); i++) {
+            code.dup();
+            code.loadConstant(i);
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    expressions.get(i));
+            boxValueForObjectTarget(code, actualType);
+            code.aastore();
+        }
+    }
+
     private QinIrTypeRef emitDeclarationExpression(
             java.lang.classfile.CodeBuilder code,
             QinIrClassDeclaration ownerDeclaration,
@@ -835,6 +857,14 @@ public final class QinJvmDeclarationClassEmitter {
                 methodCallExpression.arguments().size(),
                 declarationIndex);
         if (resolvedMethod == null) {
+            if (isDynamicObjectType(receiverType)) {
+                return emitDynamicObjectMethodCall(
+                        code,
+                        ownerDeclaration,
+                        method,
+                        declarationIndex,
+                        methodCallExpression);
+            }
             throw new IllegalArgumentException(
                     "Unknown declaration instance method: "
                             + receiverType.binaryName() + "." + methodCallExpression.methodName());
@@ -852,6 +882,30 @@ public final class QinJvmDeclarationClassEmitter {
 
         invokeMethod(code, resolvedMethod);
         return resolvedMethod.returnType();
+    }
+
+    private QinIrTypeRef emitDynamicObjectMethodCall(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            QinIrInstanceMethodCallExpression methodCallExpression) {
+        code.ldc(methodCallExpression.methodName());
+        emitObjectArrayFromExpressions(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                methodCallExpression.arguments());
+        code.invokestatic(
+                ESM_GLOBAL_DESC,
+                "__qin_call_method_array__",
+                MethodTypeDesc.of(OBJECT_DESC, OBJECT_DESC, OBJECT_DESC, OBJECT_ARRAY_DESC));
+        return QinIrTypeRef.classType("java.lang.Object");
+    }
+
+    private boolean isDynamicObjectType(QinIrTypeRef type) {
+        return type.kind() == QinIrTypeKind.CLASS && "java.lang.Object".equals(type.binaryName());
     }
 
     private QinIrTypeRef emitStaticMethodCall(
@@ -1214,9 +1268,25 @@ public final class QinJvmDeclarationClassEmitter {
                     methodCallExpression.arguments().size(),
                     declarationIndex);
             if (resolvedMethod == null) {
+                if (isDynamicObjectType(receiverType)) {
+                    return QinIrTypeRef.classType("java.lang.Object");
+                }
                 throw new IllegalArgumentException(
                         "Unknown declaration instance method type: "
                                 + receiverType.binaryName() + "." + methodCallExpression.methodName());
+            }
+            return resolvedMethod.returnType();
+        }
+        if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
+            ResolvedStaticMethodCall resolvedMethod = resolveStaticMethodCall(
+                    staticMethodCallExpression.ownerBinaryName(),
+                    staticMethodCallExpression.methodName(),
+                    staticMethodCallExpression.arguments().size());
+            if (resolvedMethod == null) {
+                throw new IllegalArgumentException(
+                        "Unknown declaration static method type: "
+                                + staticMethodCallExpression.ownerBinaryName()
+                                + "." + staticMethodCallExpression.methodName());
             }
             return resolvedMethod.returnType();
         }
@@ -1866,6 +1936,10 @@ public final class QinJvmDeclarationClassEmitter {
         }
 
         if (actualType.kind() != targetType.kind()) {
+            if (actualType.kind() == QinIrTypeKind.DOUBLE && targetType.kind() == QinIrTypeKind.INT) {
+                code.d2i();
+                return;
+            }
             throw new IllegalArgumentException(
                     "Unsupported declaration argument coercion: " + actualType.kind() + " -> " + targetType.kind());
         }

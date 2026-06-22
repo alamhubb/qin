@@ -1,6 +1,7 @@
 package com.qin.lang.sema.esm;
 
 import com.qin.lang.module.resolver.QinModuleSource;
+import com.qin.lang.ir.QinIrJsImport;
 import com.qin.parser.QinParsedSource;
 import com.qin.parser.QinParserFacade;
 import com.slime.ast.AstNode;
@@ -52,15 +53,20 @@ final class QinEsmAstBindingCollector {
             }
             throw ex;
         }
-        if (!parsed.hasProgram() || parsed.hasAnyPreExtractedImport()) {
+        if (!parsed.hasProgram()) {
             return new Result(List.of(), List.of());
         }
         Program program = parsed.requireProgram();
         List<QinEsmImportBinding> imports = new ArrayList<>();
         List<QinEsmExportBinding> exports = new ArrayList<>();
+        if (parsed.hasAnyPreExtractedImport()) {
+            collectPreExtractedJsImports(module, parsed.jsImports(), imports);
+        }
         for (AstNode statement : program.body()) {
             if (statement instanceof ImportDeclaration importDeclaration) {
-                collectImport(module, importDeclaration, imports);
+                if (!parsed.hasAnyPreExtractedImport()) {
+                    collectImport(module, importDeclaration, imports);
+                }
                 continue;
             }
             if (statement instanceof ExportNamedDeclaration exportNamedDeclaration) {
@@ -76,6 +82,43 @@ final class QinEsmAstBindingCollector {
             }
         }
         return new Result(List.copyOf(imports), List.copyOf(exports));
+    }
+
+    private void collectPreExtractedJsImports(
+            QinModuleSource module,
+            List<QinIrJsImport> jsImports,
+            List<QinEsmImportBinding> out) {
+        if (jsImports == null || jsImports.isEmpty()) {
+            return;
+        }
+        for (QinIrJsImport jsImport : jsImports) {
+            String moduleSpecifier = jsImport.moduleName();
+            if (moduleSpecifier == null || moduleSpecifier.isBlank()) {
+                continue;
+            }
+            Path resolvedModule = QinEsmSemanticAnalyzer.resolveTargetModule(module, moduleSpecifier);
+            String importedName = jsImport.importedName() == null ? "" : jsImport.importedName();
+            String localName = jsImport.localName() == null ? "" : jsImport.localName();
+            QinEsmImportKind kind;
+            if (importedName.isBlank() && localName.isBlank()) {
+                kind = QinEsmImportKind.SIDE_EFFECT;
+            } else if ("default".equals(importedName)) {
+                kind = QinEsmImportKind.DEFAULT;
+            } else if ("*".equals(importedName)) {
+                kind = QinEsmImportKind.NAMESPACE;
+            } else {
+                kind = QinEsmImportKind.NAMED;
+            }
+            out.add(new QinEsmImportBinding(
+                    module.file(),
+                    moduleSpecifier,
+                    kind,
+                    importedName,
+                    localName,
+                    1,
+                    1,
+                    resolvedModule));
+        }
     }
 
     private boolean isVirtualDefaultExportModule(QinModuleSource module) {

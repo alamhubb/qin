@@ -13,6 +13,8 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.*;
 
 /**
@@ -20,6 +22,9 @@ import java.util.stream.*;
  * Compiles and runs Java programs
  */
 public class JavaRunner {
+    private static final Pattern JAVA_TOP_LEVEL_TYPE_PATTERN = Pattern.compile(
+            "(?m)^\\s*(?:public\\s+|protected\\s+|private\\s+|abstract\\s+|final\\s+|sealed\\s+|non-sealed\\s+|static\\s+)*"
+                    + "(?:class|interface|enum|record)\\s+([A-Za-z_$][A-Za-z0-9_$]*)\\b");
     private static final List<String> DEFAULT_RUN_JVM_ARGS = List.of(
             "-Xms16m",
             "-Xmx768m",
@@ -112,6 +117,7 @@ public class JavaRunner {
                     testResourceCopier.copyResources();
                 }
 
+                boolean hasStaleClasses = pruneStaleClassFiles(allJavaFiles, sourceDirsForCache);
                 List<Path> changedPaths = new ArrayList<>();
                 boolean hasDeletedFiles = false;
                 for (String sourceDir : sourceDirsForCache) {
@@ -121,14 +127,13 @@ public class JavaRunner {
                     }
                 }
 
-                if (hasDeletedFiles) {
-                    System.out.println("  -> Java file deletion detected, forcing full recompile...");
-                    clearOutputDirectory();
+                if (hasDeletedFiles || hasStaleClasses) {
+                    System.out.println("  -> Java output cleanup detected stale classes, forcing full recompile...");
                 }
 
                 boolean hasCompiledClass = hasAnyCompiledClass();
                 List<String> filesToCompile;
-                if (hasDeletedFiles || !hasCompiledClass) {
+                if (hasDeletedFiles || hasStaleClasses || !hasCompiledClass) {
                     filesToCompile = allJavaFiles;
                 } else {
                     LinkedHashSet<String> dedup = new LinkedHashSet<>();
@@ -589,6 +594,82 @@ public class JavaRunner {
         try (Stream<Path> walk = Files.walk(classesDir)) {
             return walk.anyMatch(path -> path.toString().endsWith(".class"));
         }
+    }
+
+    private boolean pruneStaleClassFiles(List<String> javaFiles, List<String> sourceDirsForCache) throws IOException {
+        Path outputPath = Paths.get(outputDir);
+        if (!Files.exists(outputPath)) {
+            return false;
+        }
+        Set<String> currentClassPrefixes = new HashSet<>();
+        for (String javaFile : javaFiles) {
+            Path sourcePath = Paths.get(javaFile).toAbsolutePath().normalize();
+            Path sourceRoot = findSourceRootForFile(sourcePath, sourceDirsForCache);
+            if (sourceRoot == null) {
+                continue;
+            }
+            Path relativeSource = sourceRoot.relativize(sourcePath);
+            String relative = relativeSource.toString().replace(File.separatorChar, '/');
+            if (!relative.endsWith(".java")) {
+                continue;
+            }
+            String filePrefix = relative.substring(0, relative.length() - ".java".length());
+            currentClassPrefixes.add(filePrefix);
+            currentClassPrefixes.addAll(extractTopLevelTypePrefixes(sourcePath, filePrefix));
+        }
+        if (currentClassPrefixes.isEmpty()) {
+            return false;
+        }
+
+        boolean deleted = false;
+        try (Stream<Path> walk = Files.walk(outputPath)) {
+            List<Path> classFiles = walk
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".class"))
+                    .collect(Collectors.toList());
+            for (Path classFile : classFiles) {
+                String relativeClass = outputPath.relativize(classFile).toString().replace(File.separatorChar, '/');
+                String classStem = relativeClass.substring(0, relativeClass.length() - ".class".length());
+                String topLevelStem = classStem.contains("$")
+                        ? classStem.substring(0, classStem.indexOf('$'))
+                        : classStem;
+                if (!currentClassPrefixes.contains(topLevelStem)) {
+                    Files.deleteIfExists(classFile);
+                    deleted = true;
+                }
+            }
+        }
+        return deleted;
+    }
+
+    private Set<String> extractTopLevelTypePrefixes(Path sourcePath, String filePrefix) {
+        try {
+            String source = Files.readString(sourcePath);
+            int slash = filePrefix.lastIndexOf('/');
+            String packagePrefix = slash >= 0 ? filePrefix.substring(0, slash + 1) : "";
+            Set<String> prefixes = new HashSet<>();
+            Matcher matcher = JAVA_TOP_LEVEL_TYPE_PATTERN.matcher(source);
+            while (matcher.find()) {
+                prefixes.add(packagePrefix + matcher.group(1));
+            }
+            return prefixes;
+        } catch (IOException e) {
+            return Set.of();
+        }
+    }
+
+    private Path findSourceRootForFile(Path sourcePath, List<String> sourceDirsForCache) {
+        Path best = null;
+        for (String sourceDir : sourceDirsForCache) {
+            Path sourceRoot = Paths.get(cwd, sourceDir).toAbsolutePath().normalize();
+            if (!sourcePath.startsWith(sourceRoot)) {
+                continue;
+            }
+            if (best == null || sourceRoot.getNameCount() > best.getNameCount()) {
+                best = sourceRoot;
+            }
+        }
+        return best;
     }
 
     private void clearOutputDirectory() throws IOException {

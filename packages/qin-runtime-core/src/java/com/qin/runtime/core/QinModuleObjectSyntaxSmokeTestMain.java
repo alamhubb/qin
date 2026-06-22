@@ -1,9 +1,12 @@
 package com.qin.runtime.core;
 
+import com.qin.lang.backend.jvm.QinJvmDeclarationClassEmitter;
+import com.qin.lang.pipeline.cfa.QinCfaCompileResult;
 import com.qin.lang.pipeline.cfa.QinCfaCompileRequest;
 import com.qin.lang.pipeline.cfa.QinCfaModuleClassCompileResult;
 import com.qin.lang.pipeline.cfa.QinCfaModuleClassFile;
 import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
+import com.qin.lang.runtime.JavaEsmGlobal;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,12 +31,22 @@ public final class QinModuleObjectSyntaxSmokeTestMain {
                 """);
         Files.writeString(entry, """
                 import { Counter } from './counter.ts';
+                Counter.setValue(41);
                 Counter.next();
                 """);
 
         QinCfaModuleClassCompileResult compiled = new QinSlimeCfaCompiler().compileModuleClasses(
                 QinCfaCompileRequest.forJvm(entry, root, "probe.QinModuleObjectSyntaxSmoke"));
         Loader loader = new Loader(QinModuleObjectSyntaxSmokeTestMain.class.getClassLoader());
+        defineDeclarations(loader, compiled.initializerClass());
+        for (QinCfaModuleClassFile moduleResult : compiled.moduleClasses()) {
+            defineDeclarations(loader, moduleResult);
+        }
+
+        Class<?> initializerClass = loader.define(
+                compiled.initializerClass().className(),
+                compiled.initializerClass().classBytes());
+        initializerClass.getMethod("run").invoke(null);
 
         Object result = null;
         for (QinCfaModuleClassFile moduleResult : compiled.moduleClasses()) {
@@ -45,6 +58,32 @@ public final class QinModuleObjectSyntaxSmokeTestMain {
         }
 
         System.out.println("QinModuleObjectSyntaxSmokeTestMain OK");
+    }
+
+    private static void defineDeclarations(Loader loader, QinCfaCompileResult result) {
+        if (result.loweredProgram().classDeclarations().isEmpty()) {
+            return;
+        }
+        Map<String, byte[]> declarationBytes = new QinJvmDeclarationClassEmitter()
+                .compileAllClasses(result.loweredProgram());
+        for (Map.Entry<String, byte[]> entry : declarationBytes.entrySet()) {
+            Class<?> declarationClass = loader.define(entry.getKey(), entry.getValue());
+            JavaEsmGlobal.__qin_bind_global__(declarationClass.getSimpleName(), declarationClass);
+            JavaEsmGlobal.__qin_bind_global__(entry.getKey(), declarationClass);
+        }
+    }
+
+    private static void defineDeclarations(Loader loader, QinCfaModuleClassFile result) {
+        if (result.loweredProgram().classDeclarations().isEmpty()) {
+            return;
+        }
+        Map<String, byte[]> declarationBytes = new QinJvmDeclarationClassEmitter()
+                .compileAllClasses(result.loweredProgram());
+        for (Map.Entry<String, byte[]> entry : declarationBytes.entrySet()) {
+            Class<?> declarationClass = loader.define(entry.getKey(), entry.getValue());
+            JavaEsmGlobal.__qin_bind_global__(declarationClass.getSimpleName(), declarationClass);
+            JavaEsmGlobal.__qin_bind_global__(entry.getKey(), declarationClass);
+        }
     }
 
     private static final class Loader extends ClassLoader {

@@ -60,6 +60,7 @@ final class QinObjectSyntaxLowerer {
         String internalName = INTERNAL_PREFIX + declaration.name();
         String classTail = declaration.source().substring(declaration.nameEnd(), declaration.declarationEnd());
         StringBuilder out = new StringBuilder(classTail.length() + declaration.name().length() * 3 + 96);
+        out.append(declaration.decoratorPrefix());
         out.append("class ").append(internalName).append(classTail);
         if (!classTail.endsWith("\n")) {
             out.append('\n');
@@ -81,8 +82,16 @@ final class QinObjectSyntaxLowerer {
             return null;
         }
         Prefix prefix = parsePrefix(source, objectIndex);
-        if (prefix == null || !isStatementBoundaryBefore(source, prefix.start())) {
+        if (prefix == null) {
             return null;
+        }
+        int declarationStart = prefix.start();
+        if (!isStatementBoundaryBefore(source, declarationStart)) {
+            int decoratorStart = findDecoratorStart(source, declarationStart);
+            if (decoratorStart < 0 || !isStatementBoundaryBefore(source, decoratorStart)) {
+                return null;
+            }
+            declarationStart = decoratorStart;
         }
         int nameStart = skipWhitespace(source, objectIndex + OBJECT_KEYWORD.length());
         if (!isIdentifierStart(charAt(source, nameStart))) {
@@ -102,8 +111,9 @@ final class QinObjectSyntaxLowerer {
         }
         return new ObjectDeclaration(
                 source,
-                prefix.start(),
+                declarationStart,
                 objectIndex,
+                source.substring(declarationStart, prefix.start()),
                 source.substring(nameStart, nameEnd),
                 nameEnd,
                 declarationEnd + 1,
@@ -147,6 +157,37 @@ final class QinObjectSyntaxLowerer {
             return null;
         }
         return new Word(start, end, source.substring(start, end));
+    }
+
+    private static int findDecoratorStart(String source, int declarationKeywordStart) {
+        int start = declarationKeywordStart;
+        boolean foundDecorator = false;
+        while (true) {
+            int before = skipWhitespaceBack(source, start - 1);
+            if (before < 0) {
+                return foundDecorator ? start : -1;
+            }
+            int lineStart = findLineStart(source, before);
+            int first = skipWhitespace(source, lineStart);
+            if (first <= before && charAt(source, first) == '@') {
+                foundDecorator = true;
+                start = first;
+                continue;
+            }
+            return foundDecorator ? start : -1;
+        }
+    }
+
+    private static int findLineStart(String source, int index) {
+        int i = Math.min(Math.max(0, index), source.length() - 1);
+        while (i > 0) {
+            char previous = source.charAt(i - 1);
+            if (previous == '\n' || previous == '\r') {
+                break;
+            }
+            i--;
+        }
+        return i;
     }
 
     private static boolean isStatementBoundaryBefore(String source, int start) {
@@ -323,6 +364,7 @@ final class QinObjectSyntaxLowerer {
             String source,
             int declarationStart,
             int objectKeywordStart,
+            String decoratorPrefix,
             String name,
             int nameEnd,
             int declarationEnd,

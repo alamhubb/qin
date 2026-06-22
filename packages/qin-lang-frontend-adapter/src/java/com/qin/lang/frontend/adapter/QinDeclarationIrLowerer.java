@@ -21,6 +21,7 @@ import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrSequenceExpression;
+import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrTypeRef;
@@ -1725,6 +1726,14 @@ final class QinDeclarationIrLowerer {
                 classContext,
                 locals);
         if (receiver instanceof QinIrIdentifierReference identifierReference
+                && javaImportLookup.containsKey(identifierReference.name())) {
+            return new QinIrStaticMethodCallExpression(
+                    identifierReference.name(),
+                    javaImportLookup.get(identifierReference.name()),
+                    methodName,
+                    arguments);
+        }
+        if (receiver instanceof QinIrIdentifierReference identifierReference
                 && QinBuiltinRegistry.resolve(identifierReference.name(), methodName, arguments.size()).isPresent()) {
             return new QinIrBuiltinCallExpression(identifierReference.name(), methodName, arguments);
         }
@@ -1758,6 +1767,14 @@ final class QinDeclarationIrLowerer {
                 javaImportLookup,
                 classContext,
                 locals);
+        if (receiver instanceof QinIrIdentifierReference identifierReference
+                && javaImportLookup.containsKey(identifierReference.name())) {
+            return new QinIrStaticMethodCallExpression(
+                    identifierReference.name(),
+                    javaImportLookup.get(identifierReference.name()),
+                    methodName,
+                    arguments);
+        }
         if (receiver instanceof QinIrIdentifierReference identifierReference
                 && QinBuiltinRegistry.resolve(identifierReference.name(), methodName, arguments.size()).isPresent()) {
             return new QinIrBuiltinCallExpression(identifierReference.name(), methodName, arguments);
