@@ -27,7 +27,6 @@ public class JavaRunner {
                     + "(?:class|interface|enum|record)\\s+([A-Za-z_$][A-Za-z0-9_$]*)\\b");
     private static final List<String> DEFAULT_RUN_JVM_ARGS = List.of(
             "-Xms16m",
-            "-Xmx768m",
             "-Xshare:off",
             "-XX:+UseSerialGC",
             "-XX:+UnlockExperimentalVMOptions",
@@ -437,11 +436,38 @@ public class JavaRunner {
     }
 
     private void appendDefaultRunJvmArgs(List<String> javaArgs, List<String> explicitJvmArgs) {
+        if (!hasJvmArg("-Xmx", explicitJvmArgs)) {
+            javaArgs.add("-Xmx" + configuredRunMaxHeap());
+        }
         for (String defaultArg : DEFAULT_RUN_JVM_ARGS) {
             if (!isOverridden(defaultArg, explicitJvmArgs)) {
                 javaArgs.add(defaultArg);
             }
         }
+    }
+
+    private String configuredRunMaxHeap() {
+        String property = System.getProperty("qin.run.maxHeap");
+        if (property != null && !property.isBlank()) {
+            return property.trim();
+        }
+        String env = System.getenv("QIN_RUN_MAX_HEAP");
+        if (env != null && !env.isBlank()) {
+            return env.trim();
+        }
+        return "1536m";
+    }
+
+    private boolean hasJvmArg(String key, List<String> explicitJvmArgs) {
+        if (explicitJvmArgs == null || explicitJvmArgs.isEmpty()) {
+            return false;
+        }
+        for (String arg : explicitJvmArgs) {
+            if (arg != null && arg.startsWith(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isOverridden(String defaultArg, List<String> explicitJvmArgs) {
