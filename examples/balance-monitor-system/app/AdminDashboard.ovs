@@ -1,0 +1,5 @@
+div(class = "shell") {
+  div(id = "balance-panel") {
+    p(class = "loading-line") { "Loading balance monitor..." }
+  }
+}

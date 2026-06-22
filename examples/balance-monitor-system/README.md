@@ -29,6 +29,18 @@ $env:DB_PASSWORD = "<password>"
 http://127.0.0.1:19117/
 ```
 
+## UI Direction
+
+本 demo 采用这条 Qin UI 演进路线：
+
+```text
+Reka UI primitives
+  -> shadcn-vue component style
+  -> Qin UI components
+```
+
+当前没有直接引入完整 Tailwind 构建链，而是在 `app/qin-ui.js` 中先沉淀一层轻量组件：`AppShell`, `Button`, `Card`, `StatCard`, `Alert`, `Badge`, `DataTable`。视觉结构参考 `shadcn-vue-admin` 这类 Vue admin dashboard，后续可以把这些组件替换为真正基于 Reka UI/shadcn-vue 的实现。
+
 ## Database Defaults
 
 默认按 lucen/sub2api 的 `accounts` 表读取：

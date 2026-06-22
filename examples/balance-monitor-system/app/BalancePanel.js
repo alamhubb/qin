@@ -1,89 +1,90 @@
 import { defineComponent, h, nextTick } from "vue"
 import { loading, error, config, report, rows, okCount, errorCount, refresh, statusClass, balanceText } from "./balanceState.js"
+import { Alert, AppShell, Badge, Button, Card, DataTable, PageHeader, StatCard } from "./qin-ui.js"
 
-function cell(content, props = {}) {
-    return h("td", props, content)
-}
-
-function metric(label, value, wide = false) {
-    return h("div", { class: wide ? "metric wide" : "metric" }, [
-        h("span", label),
-        h("strong", value)
-    ])
-}
-
-function renderRows() {
-    if (rows.value.length === 0) {
-        return [
-            h("tr", [
-                cell(loading.value ? "Loading..." : "No API key accounts", {
-                    colspan: "7",
-                    class: "empty"
-                })
-            ])
-        ]
-    }
-
-    return rows.value.map(row => h("tr", { key: row.id || row.keyPreview || row.domain }, [
-        cell(row.domain || "-"),
-        cell(h("div", { class: "account-cell" }, [
+const columns = [
+    {
+        key: "domain",
+        label: "Domain",
+        render: row => h("span", { class: "table-strong" }, row.domain || "-")
+    },
+    {
+        key: "account",
+        label: "Account",
+        render: row => h("div", { class: "account-cell" }, [
             h("strong", row.name || "-"),
             h("span", row.baseUrl || "-")
-        ])),
-        cell(row.keyPreview || "-", { class: "mono" }),
-        cell(balanceText(row), { class: "balance-cell" }),
-        cell(h("span", { class: "status-badge " + statusClass(row) }, row.status || "-")),
-        cell(row.path || "-", { class: "mono" }),
-        cell(row.error || "-", { class: "error-cell" })
-    ]))
-}
+        ])
+    },
+    {
+        key: "keyPreview",
+        label: "Key",
+        render: row => h("span", { class: "mono" }, row.keyPreview || "-")
+    },
+    {
+        key: "balance",
+        label: "Balance",
+        render: row => h("span", { class: "balance-cell" }, balanceText(row))
+    },
+    {
+        key: "status",
+        label: "Status",
+        render: row => Badge({
+            label: row.status || "-",
+            tone: row.status === "ok" ? statusClass(row) : "destructive"
+        })
+    },
+    {
+        key: "path",
+        label: "Path",
+        render: row => h("span", { class: "mono" }, row.path || "-")
+    },
+    {
+        key: "error",
+        label: "Error",
+        render: row => h("span", { class: "error-cell" }, row.error || "-")
+    }
+]
 
 export const BalancePanel = defineComponent({
     name: "BalancePanel",
     setup() {
         nextTick(refresh)
-        return () => h("main", [
+        return () => AppShell([
+            PageHeader({
+                eyebrow: "QIN + OVS + QONO",
+                title: "Balance Monitor",
+                description: "xixiapi API key balance dashboard",
+                action: Button({
+                    label: loading.value ? "Refreshing..." : "Refresh",
+                    disabled: loading.value,
+                    onClick: refresh
+                })
+            }),
             h("section", { class: "summary-grid" }, [
-                metric("Accounts", String(rows.value.length)),
-                metric("OK", String(okCount.value)),
-                metric("Errors", String(errorCount.value)),
-                metric("Checked at", report.value.checkedAt || "-", true)
+                StatCard({ label: "Accounts", value: String(rows.value.length), description: "API key rows" }),
+                StatCard({ label: "OK", value: String(okCount.value), description: "Healthy probes" }),
+                StatCard({ label: "Errors", value: String(errorCount.value), description: "Needs attention" }),
+                StatCard({ label: "Checked at", value: report.value.checkedAt || "-", description: "Last refresh" })
             ]),
-            error.value ? h("div", { class: "notice" }, [
-                h("strong", "Config needed"),
-                h("span", error.value)
-            ]) : null,
-            h("section", { class: "panel" }, [
-                h("div", { class: "panel-heading" }, [
+            error.value ? Alert({ title: "Config needed", description: error.value }) : null,
+            Card([
+                h("div", { class: "card-heading" }, [
                     h("div", [
                         h("h2", "API key balances"),
                         h("p", config.value && config.value.configured
                             ? "Database configured"
                             : "Waiting for xixiapi database configuration")
-                    ]),
-                    h("button", {
-                        type: "button",
-                        class: "refresh-button",
-                        disabled: loading.value,
-                        onClick: refresh
-                    }, loading.value ? "Refreshing..." : "Refresh")
-                ]),
-                h("div", { class: "table-wrap" }, [
-                    h("table", [
-                        h("thead", [
-                            h("tr", [
-                                h("th", "Domain"),
-                                h("th", "Account"),
-                                h("th", "Key"),
-                                h("th", "Balance"),
-                                h("th", "Status"),
-                                h("th", "Path"),
-                                h("th", "Error")
-                            ])
-                        ]),
-                        h("tbody", renderRows())
                     ])
-                ])
+                ]),
+                DataTable({
+                    columns,
+                    rows: rows.value.map(row => ({
+                        key: row.id || row.keyPreview || row.domain,
+                        value: row
+                    })),
+                    emptyText: loading.value ? "Loading..." : "No API key accounts"
+                })
             ])
         ])
     }

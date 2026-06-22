@@ -1,5 +1,5 @@
 import { createApp } from "vue"
-import BalanceDashboard from "./BalanceDashboard.ovs"
+import BalanceDashboard from "./AdminDashboard.ovs"
 import { BalancePanel } from "./BalancePanel.js"
 import "./style.css"
 
