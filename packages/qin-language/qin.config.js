@@ -7,7 +7,8 @@ export default {
   scripts: {
     build: "npm run build",
     dev: "tsx qin-language-server/src/index.ts --stdio",
-    test: "npm run test"
+    test: "npm run test",
+    "test:lsp": "npm run test:lsp"
   },
   dependencies: {
     "@volar/language-core": "^2.4.14",

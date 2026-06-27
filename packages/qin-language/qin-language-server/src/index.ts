@@ -27,11 +27,19 @@ connection.onInitialize((params) => {
   logToFile('Initialization options: ' + JSON.stringify(params.initializationOptions))
 
   const tsdkPath = params.initializationOptions?.typescript?.tsdk
+  if (!tsdkPath) {
+    throw new Error('Qin language server requires initializationOptions.typescript.tsdk')
+  }
+
   const tsdk = loadTsdkByPath(tsdkPath, params.locale)
   const languagePlugins = [QinLanguagePlugin]
   const languageServicePlugins = [
     QinLanguageServicePlugin,
-    ...createTypeScriptServices(tsdk.typescript),
+    ...createTypeScriptServices(tsdk.typescript, {
+      isValidationEnabled(document) {
+        return document.languageId !== 'qin' && !isQinDocumentUri(document.uri)
+      },
+    }),
   ]
   const tsProject = createTypeScriptProject(
     tsdk.typescript,
@@ -61,3 +69,12 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   logToFile('Unhandled rejection:', String(reason))
 })
+
+function isQinDocumentUri(uri: string): boolean {
+  const lowerUri = uri.toLowerCase()
+  return lowerUri.endsWith('.qin')
+    || lowerUri.includes('.qin.')
+    || lowerUri.includes('.qin%')
+    || lowerUri.includes('%2eqin')
+    || lowerUri.includes('%252eqin')
+}
