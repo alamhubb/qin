@@ -348,7 +348,7 @@ public final class QinJavaProjectJsCompiler {
                 outputRoot.resolve("index." + extension),
                 generatedPackageIndex(entryBinaryName, extension, program, backend.options().emitTypeAnnotations()),
                 StandardCharsets.UTF_8);
-        if ("com.slime.parser.SlimeParser".equals(entryBinaryName)) {
+        if (isGeneratedSlimeParserEntry(entryBinaryName)) {
             writeGeneratedSlimeParserCompatibilityEntries(outputRoot, extension);
         }
     }
@@ -421,10 +421,10 @@ public final class QinJavaProjectJsCompiler {
         String indexFile = "./index." + extension;
         String entryFile = "./" + entryBinaryName.replace('.', '/') + "." + extension;
         String type = typeScript ? "typescript" : "javascript";
-        String compatibilityExports = "com.slime.parser.SlimeParser".equals(entryBinaryName)
+        String compatibilityExports = isGeneratedSlimeParserEntry(entryBinaryName)
                 ? generatedSlimeParserCompatibilityPackageExports(extension)
                 : "";
-        String compatibilityFiles = "com.slime.parser.SlimeParser".equals(entryBinaryName)
+        String compatibilityFiles = isGeneratedSlimeParserEntry(entryBinaryName)
                 ? "    \"src\",\n"
                 : "";
         return """
@@ -486,6 +486,10 @@ public final class QinJavaProjectJsCompiler {
                 compatibilityFiles,
                 extension,
                 QinJsBackend.javaSdkJsPackageName());
+    }
+
+    private boolean isGeneratedSlimeParserEntry(String entryBinaryName) {
+        return "com.slime.parser.SlimeParser".equals(entryBinaryName);
     }
 
     private String generatedSlimeParserCompatibilityPackageExports(String extension) {
