@@ -1,0 +1,37 @@
+{
+  "name": "@qin/generated-qin-parser-ts",
+  "version": "0.0.0-qin-generated",
+  "private": true,
+  "type": "module",
+  "description": "Qin generated typescript ESM package for com.qin.parser.QinParser.",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "import": "./index.ts",
+      "default": "./index.ts"
+    },
+
+    "./entry": {
+      "types": "./com/qin/parser/QinParser.ts",
+      "import": "./com/qin/parser/QinParser.ts",
+      "default": "./com/qin/parser/QinParser.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "qin": {
+    "generated": true,
+    "entryBinaryName": "com.qin.parser.QinParser",
+    "format": "ts-esm-files"
+  },
+  "dependencies": {
+    "@qin/java-sdk-js": "file:../java-sdk-js"
+  },
+  "files": [
+    "com",
+
+    "index.ts",
+    "qin.config.js"
+  ]
+}

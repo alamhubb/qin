@@ -7,6 +7,7 @@ import {
 import type { TypeScriptExtraServiceScript } from '@volar/typescript'
 import type { IScriptSnapshot } from 'typescript'
 import { URI } from 'vscode-uri'
+import { probeGeneratedQinParser } from './QinGeneratedParserProbe'
 import { logToFile } from './logutil'
 
 const ScriptKind = {
@@ -75,6 +76,10 @@ export class QinVirtualCode implements VirtualCode {
 
   constructor(public snapshot: IScriptSnapshot) {
     const sourceCode = snapshot.getText(0, snapshot.getLength())
+    const parserProbe = probeGeneratedQinParser(sourceCode)
+    if (parserProbe.available && !parserProbe.ok) {
+      logToFile('Generated Qin parser did not accept source:', JSON.stringify(parserProbe))
+    }
     let generatedCode = sourceCode
 
     try {
