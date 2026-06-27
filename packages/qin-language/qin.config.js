@@ -7,7 +7,7 @@ export default {
   scripts: {
     build: "npm run build",
     dev: "tsx qin-language-server/src/index.ts --stdio",
-    test: "npm run test",
+    test: "npm run test; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npm run build; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npm run test:lsp",
     "test:lsp": "npm run test:lsp"
   },
   dependencies: {
