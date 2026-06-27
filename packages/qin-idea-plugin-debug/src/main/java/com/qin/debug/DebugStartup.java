@@ -17,6 +17,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import static com.qin.constants.QinConstants.*;
 
 // 闂傚倷绀侀幉锛勬暜閳哄懎纾婚柛鏇ㄥ灠缁犳牠鏌￠崶銉ョ仾闁哄拋鍓氶幈銊ヮ潨閸℃ぞ绨婚梺瀹狀嚙缁绘﹢寮?qin-cli 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佺煯閸楁娊宕洪埀顒併亜閹哄秶鍔嶉柣銊﹀灴閺屸剝鎷呴棃娑掑亾濡ゅ懎鏋佹い鏇楀亾妤犵偞鐗楅幏鍛村川婵犲簼鐢?import static com.qin.constants.QinConstants.*;
 
@@ -44,7 +45,7 @@ public class DebugStartup implements ProjectActivity {
         QinLogger.info("[STARTUP] Project base path: " + basePath);
         removeLegacyQinRunConfigurations(project);
 
-        // 鏍规嵁 Qin 閰嶇疆閾捐嚜鍔ㄨˉ榻?Project SDK銆傚凡鏈夌敤鎴烽厤缃椂涓嶈鐩栥€?        if (hasQinSdkContext(Paths.get(basePath))) {
+        if (hasQinSdkContext(Paths.get(basePath))) {
             ApplicationManager.getApplication().invokeLater(() -> configureProjectSdk(project));
         } else {
             QinLogger.info("[SDK] Skipping project SDK auto-configuration because no Qin config context was found");

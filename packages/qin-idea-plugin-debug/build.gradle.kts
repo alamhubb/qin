@@ -28,10 +28,12 @@ dependencies {
     implementation(files(qinCliClasses))
 
     implementation("com.google.code.gson:gson:2.10.1")
+
     intellijPlatform {
         intellijIdeaUltimate("2025.3.1")
         bundledPlugin("com.intellij.java")
-        bundledModule("com.intellij.modules.lsp")
+        // The 2025.3 LSP API is packaged in product-backend.jar.
+        bundledLibrary("lib/product-backend.jar")
     }
 }
 

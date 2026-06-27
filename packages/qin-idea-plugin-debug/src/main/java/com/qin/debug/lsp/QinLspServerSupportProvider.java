@@ -29,10 +29,12 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
     }
 
     private static final class QinLspServerDescriptor extends LspServerDescriptor {
+        private final Project qinProject;
         private final QinLspLanguage language;
 
         private QinLspServerDescriptor(Project project, QinLspLanguage language) {
             super(project, language.displayName);
+            this.qinProject = project;
             this.language = language;
         }
 
@@ -43,7 +45,7 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
 
         @Override
         public @NotNull GeneralCommandLine createCommandLine() {
-            Path workspaceRoot = resolveWorkspaceRoot(project);
+            Path workspaceRoot = resolveWorkspaceRoot(qinProject);
             Path serverPath = language.resolveServerPath(workspaceRoot);
             Path tsdkPath = resolveTypescriptSdk(workspaceRoot);
             String node = resolveNodeExecutable();

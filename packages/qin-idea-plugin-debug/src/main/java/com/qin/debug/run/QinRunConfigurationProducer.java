@@ -72,7 +72,7 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
      * 鏌ユ壘 main 鏂规硶
      */
     private PsiMethod findMainMethod(PsiElement element) {
-        // 妫€鏌ュ綋鍓嶅厓绱犳槸鍚﹀湪 main 鏂规硶鍐?        PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
+        PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
         if (method != null && isMainMethod(method)) {
             return method;
         }

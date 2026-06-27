@@ -111,7 +111,7 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
             throw new RuntimeConfigurationError("Project path is not specified and could not be inferred from qin.config.js");
         }
 
-        // 濡偓閺?qin.config.js 閺勵垰鎯佺€涙ê婀?        java.nio.file.Path configPath = java.nio.file.Paths.get(projectPath, CONFIG_FILE);
+        java.nio.file.Path configPath = java.nio.file.Paths.get(projectPath, CONFIG_FILE);
         if (!java.nio.file.Files.exists(configPath)) {
             QinLogger.error("[RUN] Configuration check failed: " + CONFIG_FILE + " missing at " + configPath);
             throw new RuntimeConfigurationError(CONFIG_FILE + " not found in: " + projectPath);
