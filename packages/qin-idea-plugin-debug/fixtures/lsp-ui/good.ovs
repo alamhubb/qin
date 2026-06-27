@@ -1,0 +1,7 @@
+const title = 'Qin LSP Fixture'
+
+export default div {
+  h1 { title }
+  p { 'OVS is served by the language server.' }
+}
+

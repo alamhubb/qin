@@ -8,6 +8,7 @@ plugins {
 }
 
 val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm"))
+val lspUiFixture = file("fixtures/lsp-ui").canonicalFile
 
 group = "com.qin"
 version = "0.0.1-$buildTime"
@@ -70,6 +71,9 @@ tasks {
             "-Dsun.stdout.encoding=UTF-8",
             "-Dsun.stderr.encoding=UTF-8"
         )
+        if (gradle.startParameter.taskNames.any { it == "runIdeLspFixture" || it.endsWith(":runIdeLspFixture") }) {
+            args(lspUiFixture.canonicalPath)
+        }
     }
 
     // Bundle required qin-cli classes into the plugin JAR.
@@ -133,11 +137,30 @@ tasks {
         )
     }
 
+    register<JavaExec>("lspUiFixtureSmoke") {
+        dependsOn("classes")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinLspUiFixtureSmokeTestMain")
+        args(lspUiFixture.canonicalPath)
+        jvmArgs(
+            "-Dfile.encoding=UTF-8",
+            "-Dstdout.encoding=UTF-8",
+            "-Dstderr.encoding=UTF-8"
+        )
+    }
+
+    register("runIdeLspFixture") {
+        group = "intellij platform"
+        description = "Runs the IDE with the Qin/OVS/CSSTS LSP UI fixture project opened."
+        dependsOn("runIde")
+    }
+
     named("check") {
         dependsOn("lspRegistrySmoke")
         dependsOn("lspServerDiagnosticsSmoke")
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspPluginPackageSmoke")
+        dependsOn("lspUiFixtureSmoke")
     }
 
     // Keep only the latest packaged plugin artifact.

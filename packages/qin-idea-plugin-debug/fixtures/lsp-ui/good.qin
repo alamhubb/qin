@@ -1,0 +1,8 @@
+export object Counter {
+  value = 41;
+
+  next() {
+    return this.value + 1;
+  }
+}
+

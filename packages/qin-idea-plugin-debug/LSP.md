@@ -22,3 +22,22 @@ Runtime environment:
 
 Node is only used for the Volar/LSP editor process. Qin syntax diagnostics still
 come from generated QinParser TypeScript, which is generated from the Java parser.
+
+## UI Fixture
+
+Use the bundled fixture project for a real IDEA UI check:
+
+```powershell
+.\gradlew.bat runIdeLspFixture
+```
+
+This opens `fixtures/lsp-ui` in the IDE with the plugin loaded. The fixture has
+valid and invalid `.qin`, `.ovs`, and `.cssts` files so the editor can verify
+file type registration, LSP startup, and diagnostics without adding local IDEA
+syntax parsing.
+
+The fixture itself is covered by the non-interactive smoke task:
+
+```powershell
+.\gradlew.bat lspUiFixtureSmoke
+```

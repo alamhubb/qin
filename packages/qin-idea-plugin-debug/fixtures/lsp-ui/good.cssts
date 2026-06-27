@@ -1,0 +1,9 @@
+import { css } from 'cssts-ts'
+
+export const panel = css {
+  displayFlex,
+  alignItemsCenter,
+  paddingLeft15px,
+  paddingRight15px
+}
+

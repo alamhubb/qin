@@ -1,5 +1,8 @@
 # Java 源文件使用 LF 换行符，UTF-8 无 BOM
 *.java text eol=lf encoding=utf-8
+*.qin text eol=lf encoding=utf-8
+*.ovs text eol=lf encoding=utf-8
+*.cssts text eol=lf encoding=utf-8
 
 # 配置文件
 *.xml text eol=lf
