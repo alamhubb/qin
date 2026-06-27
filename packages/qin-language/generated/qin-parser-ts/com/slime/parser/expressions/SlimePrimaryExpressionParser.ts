@@ -49,8 +49,8 @@ class com_slime_parser_expressions_SlimePrimaryExpressionParser extends com_slim
     null;
   }
   PrimaryExpression(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_PrimaryExpression_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_PrimaryExpression_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_PrimaryExpression_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_PrimaryExpression_0_1();
     throw new Error("Unsupported Java overload: PrimaryExpression/" + __qin_args.length);
   }
   __qin_overload_PrimaryExpression_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
@@ -362,8 +362,8 @@ class com_slime_parser_expressions_SlimePrimaryExpressionParser extends com_slim
     return null;
   }
   AssignmentExpression(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_AssignmentExpression_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_AssignmentExpression_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_AssignmentExpression_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_AssignmentExpression_0_1();
     throw new Error("Unsupported Java overload: AssignmentExpression/" + __qin_args.length);
   }
   __qin_overload_AssignmentExpression_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {

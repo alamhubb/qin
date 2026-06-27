@@ -149,8 +149,8 @@ class com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken$Builder().name(name).pattern(__qin_binary__("+", __QinJavaUtilRegexPattern.quote(keyword), "(?![a-zA-Z0-9_$])")).value(keyword).isKeyword(true).build();
   }
   static createRegToken(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createRegToken_2_0(...__qin_args);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_createRegToken_2_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createRegToken_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_createRegToken_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: createRegToken/" + __qin_args.length);
   }
   static __qin_overload_createRegToken_2_0(name: string, patternStr: string): any {
@@ -160,8 +160,8 @@ class com_subhuti_struct_SubhutiCreateToken {
     return new com_subhuti_struct_SubhutiCreateToken$Builder().name(name).pattern(pattern).value(pattern.pattern()).build();
   }
   static createValueRegToken(...__qin_args: any[]): any {
-    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_args[4] instanceof com_subhuti_struct_SubhutiTokenLookahead) && (__qin_args[5] === null || __qin_args[5] instanceof com_subhuti_struct_SubhutiTokenContextConstraint)) return this.__qin_overload_createValueRegToken_6_0(...__qin_args);
-    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean") return this.__qin_overload_createValueRegToken_4_1(...__qin_args);
+    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean" && (__qin_args[4] === null || __qin_args[4] instanceof com_subhuti_struct_SubhutiTokenLookahead) && (__qin_args[5] === null || __qin_args[5] instanceof com_subhuti_struct_SubhutiTokenContextConstraint)) return this.__qin_overload_createValueRegToken_6_0(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3], __qin_args[4], __qin_args[5]);
+    if (__qin_args.length === 4 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || typeof __qin_args[2] === "string") && typeof __qin_args[3] === "boolean") return this.__qin_overload_createValueRegToken_4_1(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3]);
     throw new Error("Unsupported Java overload: createValueRegToken/" + __qin_args.length);
   }
   static __qin_overload_createValueRegToken_6_0(name: string, patternStr: string, value: string, skip: boolean, lookahead: com_subhuti_struct_SubhutiTokenLookahead, contextConstraint: com_subhuti_struct_SubhutiTokenContextConstraint): any {
@@ -171,8 +171,8 @@ class com_subhuti_struct_SubhutiCreateToken {
     return com_subhuti_struct_SubhutiCreateToken.createValueRegToken(name, patternStr, value, skip, null, null);
   }
   static createEmptyValueRegToken(...__qin_args: any[]): any {
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_args[2] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_createEmptyValueRegToken_3_0(...__qin_args);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createEmptyValueRegToken_2_1(...__qin_args);
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string") && (__qin_args[2] === null || __qin_args[2] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_createEmptyValueRegToken_3_0(__qin_args[0], __qin_args[1], __qin_args[2]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_createEmptyValueRegToken_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: createEmptyValueRegToken/" + __qin_args.length);
   }
   static __qin_overload_createEmptyValueRegToken_3_0(name: string, patternStr: string, mode: com_subhuti_struct_LexerMode): any {
@@ -247,8 +247,8 @@ class com_subhuti_struct_SubhutiCreateToken$Builder {
     return this;
   }
   pattern(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_pattern_1_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_pattern_1_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_pattern_1_0(__qin_args[0]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_pattern_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: pattern/" + __qin_args.length);
   }
   __qin_overload_pattern_1_0(regex: string): any {

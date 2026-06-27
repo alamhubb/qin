@@ -48,6 +48,10 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
         require(!parserOutput.code().contains("__qin_subhuti_rule_cache_key(arguments)"),
                 "Subhuti rule cache key avoids runtime arguments object");
         String subhutiCoreCode = byBinaryName.get("com.subhuti.parser.SubhutiParserCore").code();
+        String subhutiCombinatorsCode = byBinaryName.get("com.subhuti.parser.SubhutiParserCombinators").code();
+        require(subhutiCoreCode.contains(
+                        "import { __qin_subhuti_rule_cache_key } from \"@qin/java-sdk-js/tooling\";"),
+                "Subhuti TS runtime imports cache key helper from tooling package");
         require(subhutiCoreCode.contains("__qin_targetFun.call(this, ...__qin_ruleArgs)"),
                 "Subhuti TS runtime accepts external decorator rule args");
         require(subhutiCoreCode.contains("__qin_args[3] === null || typeof __qin_args[3] === \"string\""),
@@ -59,6 +63,12 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
                 "Subhuti Alternative varargs guard accepts local TS Alternative.alt");
         require(allGeneratedCode.contains("typeof __qin_arg.run === \"function\""),
                 "Subhuti Alternative varargs guard accepts local TS Alternative.run");
+        require(subhutiCombinatorsCode.contains(
+                        "Array.from(__qin_args[0]).map((__qin_list_item) => (__qin_list_item === null || __qin_list_item.__qinSubhutiAlternative === true || typeof __qin_list_item.execute === \"function\" ? __qin_list_item : com_subhuti_parser_Alternative.of(__qin_list_item)))"),
+                "Subhuti Or List<Alternative> overload adapts Java List elements");
+        require(subhutiCombinatorsCode.contains(
+                        "alternatives = alternatives.map((__qin_arg) => __qin_java_functional(__qin_arg));"),
+                "Subhuti Runnable varargs overload adapts each Java functional element");
         require(parserOutput.code().contains("export { com_slime_parser_SlimeParser };"),
                 "SlimeParser named ESM export");
         require(byBinaryName.containsKey("com.subhuti.struct.SubhutiCst"),

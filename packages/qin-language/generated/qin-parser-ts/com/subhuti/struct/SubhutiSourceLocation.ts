@@ -91,8 +91,8 @@ class com_subhuti_struct_SubhutiSourceLocation {
     return this.__qin_field_identifierName;
   }
   static of(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiPosition) && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_SubhutiPosition)) return this.__qin_overload_of_2_0(...__qin_args);
-    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_SubhutiPosition) && (__qin_args[2] === null || __qin_args[2] instanceof com_subhuti_struct_SubhutiPosition)) return this.__qin_overload_of_3_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiPosition) && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_SubhutiPosition)) return this.__qin_overload_of_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_SubhutiPosition) && (__qin_args[2] === null || __qin_args[2] instanceof com_subhuti_struct_SubhutiPosition)) return this.__qin_overload_of_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: of/" + __qin_args.length);
   }
   static __qin_overload_of_2_0(start: com_subhuti_struct_SubhutiPosition, end: com_subhuti_struct_SubhutiPosition): any {

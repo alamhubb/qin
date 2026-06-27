@@ -63,8 +63,8 @@ class com_subhuti_struct_SubhutiPosition {
     return new com_subhuti_struct_SubhutiPosition(1.0, 1.0, 0.0);
   }
   advance(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && typeof __qin_args[0] === "number") return this.__qin_overload_advance_1_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_advance_1_1(...__qin_args);
+    if (__qin_args.length === 1 && typeof __qin_args[0] === "number") return this.__qin_overload_advance_1_0(__qin_args[0]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_advance_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: advance/" + __qin_args.length);
   }
   __qin_overload_advance_1_0(ch: number): any {

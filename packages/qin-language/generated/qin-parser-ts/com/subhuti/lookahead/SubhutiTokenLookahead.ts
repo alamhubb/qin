@@ -50,8 +50,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     return result;
   }
   lookahead(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_lookahead_2_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_lookahead_1_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_lookahead_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_lookahead_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: lookahead/" + __qin_args.length);
   }
   __qin_overload_lookahead_2_0(tokenName: string, offset: number): any {
@@ -66,8 +66,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     return this.lookahead(tokenName, 1.0);
   }
   lookaheadNot(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_lookaheadNot_2_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_lookaheadNot_1_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_lookaheadNot_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_lookaheadNot_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: lookaheadNot/" + __qin_args.length);
   }
   __qin_overload_lookaheadNot_2_0(tokenName: string, offset: number): any {
@@ -87,8 +87,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     return this.lookaheadNot(tokenName, 1.0);
   }
   lookaheadIn(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_lookaheadIn_2_0(...__qin_args);
-    if (__qin_args.length === 1 && true) return this.__qin_overload_lookaheadIn_1_1(...__qin_args);
+    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_lookaheadIn_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && true) return this.__qin_overload_lookaheadIn_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: lookaheadIn/" + __qin_args.length);
   }
   __qin_overload_lookaheadIn_2_0(tokenNames: string[], offset: number): any {
@@ -107,8 +107,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     return this.lookaheadIn(tokenNames, 1.0);
   }
   lookaheadNotIn(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_lookaheadNotIn_2_0(...__qin_args);
-    if (__qin_args.length === 1 && true) return this.__qin_overload_lookaheadNotIn_1_1(...__qin_args);
+    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_lookaheadNotIn_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && true) return this.__qin_overload_lookaheadNotIn_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: lookaheadNotIn/" + __qin_args.length);
   }
   __qin_overload_lookaheadNotIn_2_0(tokenNames: string[], offset: number): any {
@@ -185,8 +185,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     })();
   }
   assertLookahead(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookahead_2_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_assertLookahead_1_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookahead_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_assertLookahead_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: assertLookahead/" + __qin_args.length);
   }
   __qin_overload_assertLookahead_2_0(tokenName: string, offset: number): any {
@@ -208,8 +208,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     return this.assertLookahead(tokenName, 1.0);
   }
   assertLookaheadNot(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookaheadNot_2_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_assertLookaheadNot_1_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookaheadNot_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_assertLookaheadNot_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: assertLookaheadNot/" + __qin_args.length);
   }
   __qin_overload_assertLookaheadNot_2_0(tokenName: string, offset: number): any {
@@ -231,8 +231,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     return this.assertLookaheadNot(tokenName, 1.0);
   }
   assertLookaheadIn(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookaheadIn_2_0(...__qin_args);
-    if (__qin_args.length === 1 && true) return this.__qin_overload_assertLookaheadIn_1_1(...__qin_args);
+    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookaheadIn_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && true) return this.__qin_overload_assertLookaheadIn_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: assertLookaheadIn/" + __qin_args.length);
   }
   __qin_overload_assertLookaheadIn_2_0(tokenNames: string[], offset: number): any {
@@ -254,8 +254,8 @@ class com_subhuti_lookahead_SubhutiTokenLookahead {
     return this.assertLookaheadIn(tokenNames, 1.0);
   }
   assertLookaheadNotIn(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookaheadNotIn_2_0(...__qin_args);
-    if (__qin_args.length === 1 && true) return this.__qin_overload_assertLookaheadNotIn_1_1(...__qin_args);
+    if (__qin_args.length === 2 && true && typeof __qin_args[1] === "number") return this.__qin_overload_assertLookaheadNotIn_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && true) return this.__qin_overload_assertLookaheadNotIn_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: assertLookaheadNotIn/" + __qin_args.length);
   }
   __qin_overload_assertLookaheadNotIn_2_0(tokenNames: string[], offset: number): any {

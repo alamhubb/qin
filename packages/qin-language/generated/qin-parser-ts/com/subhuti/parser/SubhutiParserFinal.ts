@@ -78,8 +78,8 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
     return this.__qin_field_lastTokenName;
   }
   token(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_token_1_0(...__qin_args);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_token_2_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_token_1_0(__qin_args[0]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_token_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: token/" + __qin_args.length);
   }
   __qin_overload_token_1_0(tokenName: string): any {
@@ -89,8 +89,8 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
     return this._consumeToken(tokenName, mode);
   }
   Rule(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "function" || __qin_args[1].__qinJavaFunctional === true)) return this.__qin_overload_Rule_2_0(...__qin_args);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "function" || __qin_args[1].__qinJavaFunctional === true)) return this.__qin_overload_Rule_2_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "function" || __qin_args[1].__qinJavaFunctional === true)) return this.__qin_overload_Rule_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "function" || __qin_args[1].__qinJavaFunctional === true)) return this.__qin_overload_Rule_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: Rule/" + __qin_args.length);
   }
   __qin_overload_Rule_2_0(ruleName: string, rule: any): any {
@@ -202,9 +202,9 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
     return this;
   }
   debug(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_debug_0_0(...__qin_args);
-    if (__qin_args.length === 1 && typeof __qin_args[0] === "boolean") return this.__qin_overload_debug_1_1(...__qin_args);
-    if (__qin_args.length === 2 && typeof __qin_args[0] === "boolean" && typeof __qin_args[1] === "boolean") return this.__qin_overload_debug_2_2(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_debug_0_0();
+    if (__qin_args.length === 1 && typeof __qin_args[0] === "boolean") return this.__qin_overload_debug_1_1(__qin_args[0]);
+    if (__qin_args.length === 2 && typeof __qin_args[0] === "boolean" && typeof __qin_args[1] === "boolean") return this.__qin_overload_debug_2_2(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: debug/" + __qin_args.length);
   }
   __qin_overload_debug_0_0(): any {

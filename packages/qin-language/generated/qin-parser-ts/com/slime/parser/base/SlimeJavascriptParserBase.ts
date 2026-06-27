@@ -87,8 +87,8 @@ class com_slime_parser_base_SlimeJavascriptParserBase extends com_subhuti_parser
     })();
   }
   matchIdentifierValue(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_matchIdentifierValue_1_0(...__qin_args);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_matchIdentifierValue_2_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_matchIdentifierValue_1_0(__qin_args[0]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_matchIdentifierValue_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: matchIdentifierValue/" + __qin_args.length);
   }
   __qin_overload_matchIdentifierValue_1_0(value: string): any {

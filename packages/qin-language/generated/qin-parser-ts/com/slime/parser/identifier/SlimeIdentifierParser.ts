@@ -45,8 +45,8 @@ class com_slime_parser_identifier_SlimeIdentifierParser extends com_slime_parser
     null;
   }
   IdentifierReference(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_IdentifierReference_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_IdentifierReference_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_IdentifierReference_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_IdentifierReference_0_1();
     throw new Error("Unsupported Java overload: IdentifierReference/" + __qin_args.length);
   }
   __qin_overload_IdentifierReference_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
@@ -94,8 +94,8 @@ class com_slime_parser_identifier_SlimeIdentifierParser extends com_slime_parser
     return null;
   }
   BindingIdentifier(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_BindingIdentifier_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_BindingIdentifier_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_BindingIdentifier_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_BindingIdentifier_0_1();
     throw new Error("Unsupported Java overload: BindingIdentifier/" + __qin_args.length);
   }
   __qin_overload_BindingIdentifier_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {

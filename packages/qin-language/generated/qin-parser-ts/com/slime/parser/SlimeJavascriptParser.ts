@@ -80,8 +80,8 @@ class com_slime_parser_SlimeJavascriptParser extends com_slime_parser_module_Sli
     return this.getCurCst();
   }
   Program(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_SlimeJavascriptParser$SourceType)) return this.__qin_overload_Program_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_Program_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_SlimeJavascriptParser$SourceType)) return this.__qin_overload_Program_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_Program_0_1();
     throw new Error("Unsupported Java overload: Program/" + __qin_args.length);
   }
   __qin_overload_Program_1_0(sourceType: com_slime_parser_SlimeJavascriptParser$SourceType): any {

@@ -320,8 +320,8 @@ class com_slime_parser_class__SlimeClassParser extends com_slime_parser_function
     return null;
   }
   UniqueFormalParameters(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_UniqueFormalParameters_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_UniqueFormalParameters_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_UniqueFormalParameters_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_UniqueFormalParameters_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: UniqueFormalParameters/" + __qin_args.length);
   }
   __qin_overload_UniqueFormalParameters_0_0(): any {

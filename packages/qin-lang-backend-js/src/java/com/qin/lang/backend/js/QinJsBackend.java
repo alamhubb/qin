@@ -272,11 +272,15 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append("}\n");
         }
 
-        if (externalJavaSdkRuntime) {
-            js.insert(externalJavaSdkImportOffset, externalJavaSdkImportStatement());
+        if (!externalJavaSdkRuntime) {
+            return js.toString();
         }
 
-        return js.toString();
+        String body = js.toString();
+        String importStatement = externalJavaSdkImportStatement();
+        return body.substring(0, externalJavaSdkImportOffset)
+                + importStatement
+                + body.substring(externalJavaSdkImportOffset);
     }
 
     public static String javaSdkJsPackageName() {
@@ -4462,7 +4466,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                     .append(overloadTypeGuard(overload))
                     .append(") return this.")
                     .append(overloadedMethodImplementationName(methodName, arity, i))
-                    .append("(...__qin_args);\n");
+                    .append("(")
+                    .append(overloadDispatchArguments(overload))
+                    .append(");\n");
         }
         for (int i = 0; i < overloads.size(); i++) {
             QinIrMethodDeclaration overload = overloads.get(i);
@@ -4474,7 +4480,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                     .append(overloadVarargsGuard(overload))
                     .append(") return this.")
                     .append(overloadedMethodImplementationName(methodName, arity, i))
-                    .append("(...__qin_args);\n");
+                    .append("(")
+                    .append(overloadDispatchArguments(overload))
+                    .append(");\n");
         }
         js.append("    throw new Error(\"Unsupported Java overload: ")
                 .append(escapeJs(methodName))
@@ -4533,6 +4541,51 @@ public class QinJsBackend implements QinIrCodeBackend {
     private boolean isVarargsMethod(QinIrMethodDeclaration method) {
         List<QinIrParameter> parameters = method.parameters();
         return !parameters.isEmpty() && parameters.get(parameters.size() - 1).varargs();
+    }
+
+    private String overloadDispatchArguments(QinIrMethodDeclaration overload) {
+        List<QinIrParameter> parameters = overload.parameters();
+        List<String> arguments = new java.util.ArrayList<>();
+        for (int i = 0; i < parameters.size(); i++) {
+            QinIrParameter parameter = parameters.get(i);
+            if (parameter.varargs() && i == parameters.size() - 1) {
+                QinIrTypeRef elementType = varargsElementType(parameter.type());
+                arguments.add("...__qin_args.slice(" + i + ").map((__qin_arg) => "
+                        + adaptOverloadArgument("__qin_arg", elementType)
+                        + ")");
+            } else {
+                arguments.add(adaptOverloadArgument("__qin_args[" + i + "]", parameter.type()));
+            }
+        }
+        return String.join(", ", arguments);
+    }
+
+    private String adaptOverloadArgument(String argumentExpression, QinIrTypeRef type) {
+        if (type.kind() != QinIrTypeKind.CLASS || type.binaryName() == null) {
+            return argumentExpression;
+        }
+        if ("java.util.List".equals(type.binaryName())) {
+            requireExternalJavaSdkRuntime("__QinJavaUtilArrayList");
+            if (!type.typeArguments().isEmpty()) {
+                QinIrTypeRef elementType = type.typeArguments().get(0);
+                String adaptedElement = adaptOverloadArgument("__qin_list_item", elementType);
+                if (!"__qin_list_item".equals(adaptedElement)) {
+                    return "(" + argumentExpression + " === null ? null : new __QinJavaUtilArrayList("
+                            + "Array.from(" + argumentExpression + ").map((__qin_list_item) => "
+                            + adaptedElement + ")))";
+                }
+            }
+            return "(Array.isArray(" + argumentExpression + ") ? new __QinJavaUtilArrayList("
+                    + argumentExpression + ") : " + argumentExpression + ")";
+        }
+        if ("com.subhuti.parser.Alternative".equals(type.binaryName())) {
+            return "(" + argumentExpression + " === null"
+                    + " || " + argumentExpression + ".__qinSubhutiAlternative === true"
+                    + " || typeof " + argumentExpression + ".execute === \"function\""
+                    + " ? " + argumentExpression
+                    + " : com_subhuti_parser_Alternative.of(" + argumentExpression + "))";
+        }
+        return argumentExpression;
     }
 
     private String overloadTypeGuard(QinIrMethodDeclaration overload) {
@@ -4709,10 +4762,20 @@ public class QinJsBackend implements QinIrCodeBackend {
             String indent) {
         for (int i = 0; i < parameters.size(); i++) {
             QinIrParameter parameter = parameters.get(i);
-            if (parameter.type() != null
-                    && parameter.type().binaryName() != null
-                    && isJavaFunctionalInterface(parameter.type().binaryName())) {
-                String parameterName = jsParameterNames.get(i);
+            String parameterName = jsParameterNames.get(i);
+            QinIrTypeRef parameterType = parameter.type();
+            if (parameter.varargs() && i == parameters.size() - 1) {
+                QinIrTypeRef elementType = varargsElementType(parameterType);
+                if (elementType.binaryName() != null && isJavaFunctionalInterface(elementType.binaryName())) {
+                    js.append(indent)
+                            .append(parameterName)
+                            .append(" = ")
+                            .append(parameterName)
+                            .append(".map((__qin_arg) => __qin_java_functional(__qin_arg));\n");
+                }
+            } else if (parameterType != null
+                    && parameterType.binaryName() != null
+                    && isJavaFunctionalInterface(parameterType.binaryName())) {
                 js.append(indent)
                         .append(parameterName)
                         .append(" = __qin_java_functional(")

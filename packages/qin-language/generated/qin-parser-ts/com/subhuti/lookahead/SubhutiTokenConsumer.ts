@@ -29,8 +29,8 @@ class com_subhuti_lookahead_SubhutiTokenConsumer {
     return null;
   }
   consume(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_consume_1_0(...__qin_args);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_consume_2_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_consume_1_0(__qin_args[0]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_consume_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: consume/" + __qin_args.length);
   }
   __qin_overload_consume_1_0(tokenName: string): any {
@@ -67,8 +67,8 @@ class com_subhuti_lookahead_SubhutiTokenConsumer {
     }));
   }
   tryConsume(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_tryConsume_1_0(...__qin_args);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_tryConsume_2_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_tryConsume_1_0(__qin_args[0]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || __qin_args[1] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_tryConsume_2_1(__qin_args[0], __qin_args[1]);
     throw new Error("Unsupported Java overload: tryConsume/" + __qin_args.length);
   }
   __qin_overload_tryConsume_1_0(tokenName: string): any {

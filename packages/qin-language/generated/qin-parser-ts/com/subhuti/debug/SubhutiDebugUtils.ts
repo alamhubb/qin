@@ -70,8 +70,8 @@ class com_subhuti_debug_SubhutiDebugUtils {
     return new com_subhuti_debug_SubhutiDebugUtils$TokenValidationResult(complete, inputTokens.size(), cstTokens.size(), inputTokens, cstTokens, missing);
   }
   static validateStructure(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_validateStructure_2_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_validateStructure_1_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_validateStructure_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_validateStructure_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: validateStructure/" + __qin_args.length);
   }
   static __qin_overload_validateStructure_2_0(node: com_subhuti_struct_SubhutiCst, path: string): any {
@@ -154,8 +154,8 @@ class com_subhuti_debug_SubhutiDebugUtils {
     return null;
   }
   static formatCst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_formatCst_1_0(...__qin_args);
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && typeof __qin_args[2] === "boolean") return this.__qin_overload_formatCst_3_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_formatCst_1_0(__qin_args[0]);
+    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || typeof __qin_args[1] === "string") && typeof __qin_args[2] === "boolean") return this.__qin_overload_formatCst_3_1(__qin_args[0], __qin_args[1], __qin_args[2]);
     throw new Error("Unsupported Java overload: formatCst/" + __qin_args.length);
   }
   static __qin_overload_formatCst_1_0(cst: com_subhuti_struct_SubhutiCst): any {

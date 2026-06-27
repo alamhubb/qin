@@ -57,8 +57,8 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     null;
   }
   Statement(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$StatementParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_Statement_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_Statement_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$StatementParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_Statement_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_Statement_0_1();
     throw new Error("Unsupported Java overload: Statement/" + __qin_args.length);
   }
   __qin_overload_Statement_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {

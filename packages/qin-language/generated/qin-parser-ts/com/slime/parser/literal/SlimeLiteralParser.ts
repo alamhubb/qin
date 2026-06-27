@@ -110,9 +110,9 @@ class com_slime_parser_literal_SlimeLiteralParser extends com_slime_parser_ident
     return null;
   }
   TemplateLiteral(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_TemplateLiteral_1_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_TemplateLiteral_1_1(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_TemplateLiteral_0_2(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_TemplateLiteral_1_0(__qin_args[0]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_TemplateLiteral_1_1(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_TemplateLiteral_0_2();
     throw new Error("Unsupported Java overload: TemplateLiteral/" + __qin_args.length);
   }
   __qin_overload_TemplateLiteral_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams): any {
@@ -197,8 +197,8 @@ class com_slime_parser_literal_SlimeLiteralParser extends com_slime_parser_ident
     return null;
   }
   Expression(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_Expression_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_Expression_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_Expression_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_Expression_0_1();
     throw new Error("Unsupported Java overload: Expression/" + __qin_args.length);
   }
   __qin_overload_Expression_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {

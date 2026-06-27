@@ -126,8 +126,8 @@ class com_subhuti_struct_SubhutiTokenLookahead$Builder {
     this.__qin_field_notIn = null;
   }
   is(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_is_1_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_is_1_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_is_1_0(__qin_args[0]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_is_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: is/" + __qin_args.length);
   }
   __qin_overload_is_1_0(regex: string): any {
@@ -139,8 +139,8 @@ class com_subhuti_struct_SubhutiTokenLookahead$Builder {
     return this;
   }
   not(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_not_1_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_not_1_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_not_1_0(__qin_args[0]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof __QinJavaUtilRegexPattern)) return this.__qin_overload_not_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: not/" + __qin_args.length);
   }
   __qin_overload_not_1_0(regex: string): any {

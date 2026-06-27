@@ -102,8 +102,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   FormalParameters(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_FormalParameters_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FormalParameters_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_FormalParameters_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FormalParameters_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: FormalParameters/" + __qin_args.length);
   }
   __qin_overload_FormalParameters_0_0(): any {
@@ -155,8 +155,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   UniqueFormalParameters(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_UniqueFormalParameters_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_UniqueFormalParameters_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_UniqueFormalParameters_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_UniqueFormalParameters_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: UniqueFormalParameters/" + __qin_args.length);
   }
   __qin_overload_UniqueFormalParameters_0_0(): any {
@@ -178,8 +178,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   FormalParameterList(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_FormalParameterList_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FormalParameterList_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_FormalParameterList_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FormalParameterList_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: FormalParameterList/" + __qin_args.length);
   }
   __qin_overload_FormalParameterList_0_0(): any {
@@ -211,8 +211,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   FunctionRestParameter(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_FunctionRestParameter_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FunctionRestParameter_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_FunctionRestParameter_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FunctionRestParameter_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: FunctionRestParameter/" + __qin_args.length);
   }
   __qin_overload_FunctionRestParameter_0_0(): any {
@@ -234,8 +234,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   FormalParameter(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_FormalParameter_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FormalParameter_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_FormalParameter_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FormalParameter_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: FormalParameter/" + __qin_args.length);
   }
   __qin_overload_FormalParameter_0_0(): any {
@@ -257,8 +257,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   FunctionBody(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_FunctionBody_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FunctionBody_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_FunctionBody_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_FunctionBody_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: FunctionBody/" + __qin_args.length);
   }
   __qin_overload_FunctionBody_0_0(): any {
@@ -617,8 +617,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   BindingElement(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_BindingElement_1_0(...__qin_args);
-    if (__qin_args.length === 0 && true) return this.__qin_overload_BindingElement_0_1(...__qin_args);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_BindingElement_1_0(__qin_args[0]);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_BindingElement_0_1();
     throw new Error("Unsupported Java overload: BindingElement/" + __qin_args.length);
   }
   __qin_overload_BindingElement_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
@@ -643,8 +643,8 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     return null;
   }
   BindingRestElement(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_BindingRestElement_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_BindingRestElement_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_BindingRestElement_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams || __qin_structural_object__(__qin_args[0]))) return this.__qin_overload_BindingRestElement_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: BindingRestElement/" + __qin_args.length);
   }
   __qin_overload_BindingRestElement_0_0(): any {

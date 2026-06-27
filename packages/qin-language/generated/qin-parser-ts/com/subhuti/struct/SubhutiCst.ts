@@ -60,8 +60,8 @@ class com_subhuti_struct_SubhutiCst {
     return null;
   }
   getChildren(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_getChildren_0_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_getChildren_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_getChildren_0_0();
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_getChildren_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: getChildren/" + __qin_args.length);
   }
   __qin_overload_getChildren_0_0(): any {
@@ -101,8 +101,8 @@ class com_subhuti_struct_SubhutiCst {
     return null;
   }
   getChild(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_getChild_2_0(...__qin_args);
-    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_getChild_1_1(...__qin_args);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number") return this.__qin_overload_getChild_2_0(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) return this.__qin_overload_getChild_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: getChild/" + __qin_args.length);
   }
   __qin_overload_getChild_2_0(name: string, index: number): any {
@@ -217,8 +217,8 @@ class com_subhuti_struct_SubhutiCst {
     return null;
   }
   toTreeString(...__qin_args: any[]): any {
-    if (__qin_args.length === 0 && true) return this.__qin_overload_toTreeString_0_0(...__qin_args);
-    if (__qin_args.length === 1 && typeof __qin_args[0] === "number") return this.__qin_overload_toTreeString_1_1(...__qin_args);
+    if (__qin_args.length === 0 && true) return this.__qin_overload_toTreeString_0_0();
+    if (__qin_args.length === 1 && typeof __qin_args[0] === "number") return this.__qin_overload_toTreeString_1_1(__qin_args[0]);
     throw new Error("Unsupported Java overload: toTreeString/" + __qin_args.length);
   }
   __qin_overload_toTreeString_0_0(): any {

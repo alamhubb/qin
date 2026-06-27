@@ -393,8 +393,8 @@ class com_subhuti_lexer_SubhutiLexer {
     return com_subhuti_lexer_LexerState.initial();
   }
   readTokenAt(...__qin_args: any[]): any {
-    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || __qin_args[4] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_readTokenAt_5_0(...__qin_args);
-    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || __qin_args[4] instanceof com_subhuti_struct_LexerMode) && (__qin_args[5] === null || typeof __qin_args[5] === "string")) return this.__qin_overload_readTokenAt_6_1(...__qin_args);
+    if (__qin_args.length === 5 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || __qin_args[4] instanceof com_subhuti_struct_LexerMode)) return this.__qin_overload_readTokenAt_5_0(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3], __qin_args[4]);
+    if (__qin_args.length === 6 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && typeof __qin_args[1] === "number" && typeof __qin_args[2] === "number" && typeof __qin_args[3] === "number" && (__qin_args[4] === null || __qin_args[4] instanceof com_subhuti_struct_LexerMode) && (__qin_args[5] === null || typeof __qin_args[5] === "string")) return this.__qin_overload_readTokenAt_6_1(__qin_args[0], __qin_args[1], __qin_args[2], __qin_args[3], __qin_args[4], __qin_args[5]);
     throw new Error("Unsupported Java overload: readTokenAt/" + __qin_args.length);
   }
   __qin_overload_readTokenAt_5_0(code: string, codeIndex: number, line: number, column: number, mode: com_subhuti_struct_LexerMode): any {
