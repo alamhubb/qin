@@ -26,6 +26,13 @@ export default {
     "tsx": "^4.19.2",
     "@types/node": "^22.15.21"
   },
+  language: {
+    id: "qin",
+    extension: ".qin",
+    server: "qin-language-server/src/index.ts",
+    parser: "generated/qin-parser-ts",
+    ideaLspClient: "../qin-idea-plugin-debug"
+  },
   qinLanguage: {
     sourceExtension: ".qin",
     serviceExtension: ".ts",

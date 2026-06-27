@@ -5,6 +5,7 @@ import com.qin.types.BackendConfig;
 import com.qin.types.DatabaseConfig;
 import com.qin.types.FrontendConfig;
 import com.qin.types.JavaConfig;
+import com.qin.types.LanguageConfig;
 import com.qin.types.OutputConfig;
 import com.qin.types.ParsedEntry;
 import com.qin.types.QinConfig;
@@ -82,6 +83,7 @@ public class ConfigLoader {
                 frontendConfigField(source),
                 backendConfigField(source),
                 databaseConfigField(source),
+                languageConfigField(source),
                 stringMapField(source, "scripts"),
                 null);
     }
@@ -187,6 +189,21 @@ public class ConfigLoader {
                 stringField(map, "passwordEnv", null));
     }
 
+    private LanguageConfig languageConfigField(Map<String, Object> source) {
+        Object value = source.get("language");
+        if (!(value instanceof Map<?, ?> block)) {
+            return null;
+        }
+        Map<String, Object> map = objectMap(block);
+        return new LanguageConfig(
+                stringField(map, "id", null),
+                stringField(map, "extension", null),
+                stringField(map, "server", null),
+                stringField(map, "parser", null),
+                stringField(map, "compiler", null),
+                stringField(map, "ideaLspClient", null));
+    }
+
     private Map<String, Object> objectMap(Map<?, ?> source) {
         java.util.LinkedHashMap<String, Object> out = new java.util.LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : source.entrySet()) {
@@ -256,7 +273,55 @@ public class ConfigLoader {
             errors.add("'entry' must be a .java, .qin, .js, .mjs, or .ts file");
         }
 
+        validateLanguageConfig(config.language(), errors);
+
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.failure(errors);
+    }
+
+    private void validateLanguageConfig(LanguageConfig language, List<String> errors) {
+        if (language == null) {
+            return;
+        }
+        if (isBlank(language.id())) {
+            errors.add("'language.id' must not be blank");
+        }
+        if (isBlank(language.extension())) {
+            errors.add("'language.extension' must not be blank");
+        } else if (!language.extension().startsWith(".")) {
+            errors.add("'language.extension' must start with '.'");
+        }
+        requireExistingRelativePath(language.server(), "language.server", errors);
+        requireExistingPathLikeReference(language.parser(), "language.parser", errors);
+        requireExistingRelativePath(language.compiler(), "language.compiler", errors);
+        requireExistingRelativePath(language.ideaLspClient(), "language.ideaLspClient", errors);
+    }
+
+    private void requireExistingPathLikeReference(String rawPath, String field, List<String> errors) {
+        if (isBlank(rawPath) || isPackageReference(rawPath)) {
+            return;
+        }
+        requireExistingRelativePath(rawPath, field, errors);
+    }
+
+    private void requireExistingRelativePath(String rawPath, String field, List<String> errors) {
+        if (isBlank(rawPath)) {
+            return;
+        }
+        Path path = Paths.get(rawPath);
+        if (!path.isAbsolute()) {
+            path = Paths.get(cwd).resolve(path);
+        }
+        if (!Files.exists(path.normalize())) {
+            errors.add("'" + field + "' path does not exist: " + rawPath);
+        }
+    }
+
+    private boolean isPackageReference(String value) {
+        return !value.contains("/") && !value.contains("\\");
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     /**
@@ -294,6 +359,7 @@ public class ConfigLoader {
                 config.frontend(),
                 config.backend(),
                 config.database(),
+                config.language(),
                 config.scripts(),
                 config.repositories());
     }

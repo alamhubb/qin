@@ -55,6 +55,7 @@ public class QinCli {
                 case "clean" -> cleanProject();
                 case "install" -> QinInstallCommand.execute(cmdArgs);
                 case "sync" -> syncDependencies(cmdArgs);
+                case "language-check" -> languageCheck();
                 case "deps" -> showDependencies(cmdArgs);    // 濡絽鍟弲?闂佸搫鍊瑰姗€路?
                 case "dev" -> devMode(cmdArgs);
                 case "dist" -> distProject();
@@ -248,6 +249,36 @@ public class QinCli {
             System.exit(exitCode);
         }
         System.out.println(green("[OK] Conformance completed"));
+    }
+
+    private static void languageCheck() throws Exception {
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+        ValidationResult result = configLoader.validate(config);
+        if (!result.isValid()) {
+            for (String error : result.getErrors()) {
+                System.err.println(red("Error: ") + error);
+            }
+            System.exit(1);
+        }
+        if (config.language() == null) {
+            System.out.println(yellow("No language metadata declared in " + QinConstants.CONFIG_FILE));
+            return;
+        }
+        LanguageConfig language = config.language();
+        System.out.println(green("[OK] Language metadata is valid"));
+        System.out.println("  id: " + language.id());
+        System.out.println("  extension: " + language.extension());
+        printLanguagePath("server", language.server());
+        printLanguagePath("parser", language.parser());
+        printLanguagePath("compiler", language.compiler());
+        printLanguagePath("ideaLspClient", language.ideaLspClient());
+    }
+
+    private static void printLanguagePath(String label, String value) {
+        if (value != null && !value.isBlank()) {
+            System.out.println("  " + label + ": " + value);
+        }
     }
 
     private static void runJavaProject(String[] args) throws Exception {
@@ -2035,6 +2066,7 @@ public class QinCli {
                   clean       Clean build artifacts
                   install     Install deps (npm first, fallback to Maven)
                   sync        Sync dependencies (auto-compiles local projects)
+                  language-check Validate qin.config.js language tooling metadata
                   deps        Show dependency tree
                   dev         Start development mode (Qin: single-port dev server, Java: compile+run)
                   dist        Create distribution package
@@ -2075,6 +2107,7 @@ public class QinCli {
                   qin install org.jsoup:jsoup # Install Maven dependency
                   qin install                 # Install deps declared in qin.config.js
                   qin sync                    # Sync deps (auto-compiles local projects)
+                  qin language-check          # Validate language.server/parser/ideaLspClient metadata
                   qin conformance             # Run conformance baseline with Chrome
                   qin conformance --chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"
                   qin bsp-init                # Generate BSP config for IDE

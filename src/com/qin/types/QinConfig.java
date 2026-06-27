@@ -45,6 +45,7 @@ public record QinConfig(
         FrontendConfig frontend,
         BackendConfig backend,
         DatabaseConfig database,
+        LanguageConfig language,
         Map<String, String> scripts,
         List<Repository> repositories) {
 
@@ -101,6 +102,7 @@ public record QinConfig(
                 null, // frontend
                 null, // backend
                 null, // database
+                null, // language
                 null, // scripts
                 null // repositories
         );
