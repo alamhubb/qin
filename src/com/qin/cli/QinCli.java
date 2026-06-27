@@ -55,7 +55,8 @@ public class QinCli {
                 case "clean" -> cleanProject();
                 case "install" -> QinInstallCommand.execute(cmdArgs);
                 case "sync" -> syncDependencies(cmdArgs);
-                case "language-check" -> languageCheck();
+                case "language" -> languageCommand(cmdArgs);
+                case "language-check" -> languageCommand(new String[]{"check"});
                 case "deps" -> showDependencies(cmdArgs);    // 濡絽鍟弲?闂佸搫鍊瑰姗€路?
                 case "dev" -> devMode(cmdArgs);
                 case "dist" -> distProject();
@@ -251,6 +252,23 @@ public class QinCli {
         System.out.println(green("[OK] Conformance completed"));
     }
 
+    private static void languageCommand(String[] args) throws Exception {
+        String action = args.length == 0 ? "info" : args[0];
+        String[] actionArgs = args.length == 0 ? new String[0] : Arrays.copyOfRange(args, 1, args.length);
+        switch (action) {
+            case "check", "info" -> languageCheck();
+            case "bundle", "server-bundle" -> printLanguageBundle();
+            case "build" -> runLanguageScript("build", actionArgs);
+            case "dev" -> runLanguageScript("dev", actionArgs);
+            case "test" -> runLanguageScript("test", actionArgs);
+            case "server", "start" -> runLanguageServer(actionArgs);
+            case "help", "-h", "--help" -> printLanguageHelp();
+            default -> {
+                throw new IllegalArgumentException("Unknown language command: " + action);
+            }
+        }
+    }
+
     private static void languageCheck() throws Exception {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
@@ -276,10 +294,136 @@ public class QinCli {
         printLanguagePath("ideaLspClient", language.ideaLspClient());
     }
 
+    private static void printLanguageBundle() throws Exception {
+        LanguageConfig language = requireValidLanguageConfig();
+        Path bundlePath = resolveProjectPath(language.serverBundle());
+        if (!Files.isRegularFile(bundlePath)) {
+            throw new IllegalStateException("language.serverBundle is not a file: " + bundlePath);
+        }
+        System.out.println(bundlePath);
+    }
+
+    private static LanguageConfig requireValidLanguageConfig() throws Exception {
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+        ValidationResult result = configLoader.validate(config);
+        if (!result.isValid()) {
+            throw new IllegalStateException(String.join(System.lineSeparator(), result.getErrors()));
+        }
+        LanguageConfig language = config.language();
+        if (language == null) {
+            throw new IllegalStateException("No language metadata declared in " + QinConstants.CONFIG_FILE);
+        }
+        return language;
+    }
+
+    private static void runLanguageScript(String scriptName, String[] args) throws Exception {
+        QinConfig config = requireValidLanguageProject();
+        String script = config.scripts().get(scriptName);
+        if (script == null || script.isBlank()) {
+            throw new IllegalStateException("Missing scripts." + scriptName + " in " + QinConstants.CONFIG_FILE);
+        }
+        runShellCommand(script, "language script '" + scriptName + "'", hasArg(args, "--dry-run"));
+    }
+
+    private static QinConfig requireValidLanguageProject() throws Exception {
+        ConfigLoader configLoader = new ConfigLoader();
+        QinConfig config = configLoader.load();
+        ValidationResult result = configLoader.validate(config);
+        if (!result.isValid()) {
+            throw new IllegalStateException(String.join(System.lineSeparator(), result.getErrors()));
+        }
+        if (config.language() == null) {
+            throw new IllegalStateException("No language metadata declared in " + QinConstants.CONFIG_FILE);
+        }
+        return config;
+    }
+
+    private static void runLanguageServer(String[] args) throws Exception {
+        LanguageConfig language = requireValidLanguageConfig();
+        Path bundlePath = resolveProjectPath(language.serverBundle());
+        if (!Files.isRegularFile(bundlePath)) {
+            throw new IllegalStateException("language.serverBundle is not a file: " + bundlePath);
+        }
+
+        List<String> command = new ArrayList<>();
+        command.add("node");
+        command.add(bundlePath.toString());
+        command.add("--stdio");
+        runProcess(command, "language server '" + language.id() + "'", hasArg(args, "--dry-run"));
+    }
+
+    private static void runShellCommand(String script, String description, boolean dryRun) throws Exception {
+        List<String> command = new ArrayList<>();
+        if (QinConstants.isWindows()) {
+            command.add("cmd");
+            command.add("/c");
+            command.add(script);
+        } else {
+            command.add("sh");
+            command.add("-lc");
+            command.add(script);
+        }
+        runProcess(command, description, dryRun);
+    }
+
+    private static void runProcess(List<String> command, String description, boolean dryRun) throws Exception {
+        if (dryRun) {
+            System.out.println(String.join(" ", command));
+            return;
+        }
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.directory(Paths.get(QinConstants.getCwd()).toFile());
+        pb.inheritIO();
+        Process process = pb.start();
+        int exitCode = ChildProcessSupport.waitFor(process, description);
+        if (exitCode != 0) {
+            throw new RuntimeException(description + " exited with code " + exitCode);
+        }
+    }
+
+    private static Path resolveProjectPath(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Language path must not be empty");
+        }
+        Path path = Paths.get(value);
+        if (!path.isAbsolute()) {
+            path = Paths.get(QinConstants.getCwd()).resolve(path);
+        }
+        return path.toAbsolutePath().normalize();
+    }
+
     private static void printLanguagePath(String label, String value) {
         if (value != null && !value.isBlank()) {
             System.out.println("  " + label + ": " + value);
         }
+    }
+
+    private static void printLanguageHelp() {
+        System.out.println("""
+                Qin Language Tooling
+
+                Usage: qin language <command> [options]
+
+                Commands:
+                  info          Print language metadata from qin.config.js
+                  check         Validate language metadata from qin.config.js
+                  bundle        Print the resolved language.serverBundle path
+                  build         Run scripts.build for this language project
+                  dev           Run scripts.dev for this language project
+                  test          Run scripts.test for this language project
+                  server        Start language.serverBundle with node --stdio
+
+                Options:
+                  --dry-run     Print the resolved process command without running it
+
+                Examples:
+                  qin language check
+                  qin language bundle
+                  qin language build
+                  qin language server
+                  qin language server --dry-run
+                """);
     }
 
     private static void runJavaProject(String[] args) throws Exception {
@@ -2067,7 +2211,8 @@ public class QinCli {
                   clean       Clean build artifacts
                   install     Install deps (npm first, fallback to Maven)
                   sync        Sync dependencies (auto-compiles local projects)
-                  language-check Validate qin.config.js language tooling metadata
+                  language    Manage qin.config.js language tooling metadata and LSP scripts
+                  language-check Validate qin.config.js language tooling metadata (alias)
                   deps        Show dependency tree
                   dev         Start development mode (Qin: single-port dev server, Java: compile+run)
                   dist        Create distribution package
@@ -2108,7 +2253,10 @@ public class QinCli {
                   qin install org.jsoup:jsoup # Install Maven dependency
                   qin install                 # Install deps declared in qin.config.js
                   qin sync                    # Sync deps (auto-compiles local projects)
-                  qin language-check          # Validate language.server/parser/ideaLspClient metadata
+                  qin language check          # Validate language.server/parser/ideaLspClient metadata
+                  qin language build          # Run scripts.build for a language project
+                  qin language server         # Start language.serverBundle with node --stdio
+                  qin language-check          # Alias for qin language check
                   qin conformance             # Run conformance baseline with Chrome
                   qin conformance --chrome "C:/Program Files/Google/Chrome/Application/chrome.exe"
                   qin bsp-init                # Generate BSP config for IDE
