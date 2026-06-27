@@ -36,6 +36,8 @@ public final class QinCliDatabaseConfigJvmArgsSmokeTestMain {
                         "test-password",
                         "QIN_DEMO_DB_PASSWORD"),
                 null,
+                null,
+                null,
                 null);
 
         List<String> command = new ArrayList<>();

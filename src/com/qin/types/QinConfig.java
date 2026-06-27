@@ -23,6 +23,7 @@ import java.util.Map;
  * @param java            Java 特定配置
  * @param graalvm         GraalVM 配置
  * @param frontend        前端配置
+ * @param generated       生成包配置
  * @param scripts         自定义脚本
  * @param repositories    Maven 仓库列表
  */
@@ -46,6 +47,7 @@ public record QinConfig(
         BackendConfig backend,
         DatabaseConfig database,
         LanguageConfig language,
+        GeneratedConfig generated,
         Map<String, String> scripts,
         List<Repository> repositories) {
 
@@ -103,6 +105,7 @@ public record QinConfig(
                 null, // backend
                 null, // database
                 null, // language
+                null, // generated
                 null, // scripts
                 null // repositories
         );

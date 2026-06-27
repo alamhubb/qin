@@ -34,6 +34,17 @@ export default {
     parser: "generated/qin-parser-ts",
     ideaLspClient: "../qin-idea-plugin-debug"
   },
+  generated: {
+    source: "java",
+    entryBinaryName: "com.qin.parser.QinParser",
+    sourceRoots: [
+      "../qin-parser/src/java",
+      "../../../slime/java-slime/slime-parser/src/main/java",
+      "../../../slime/java-slime/slime-token/src/main/java",
+      "../../../slime/java-slime/subhuti-java/src/main/java"
+    ],
+    outputDir: "generated/qin-parser-ts"
+  },
   qinLanguage: {
     sourceExtension: ".qin",
     serviceExtension: ".ts",

@@ -49,6 +49,12 @@ public final class QinConfigJsParserSmokeTestMain {
                   scripts: {
                     dev: 'qin dev --port 19097'
                   },
+                  generated: {
+                    source: 'java',
+                    entryBinaryName: 'com.qin.demo.Parser',
+                    sourceRoots: ['src/main/java', '../slime/java-slime/slime-parser/src/main/java'],
+                    outputDir: 'generated/parser-ts'
+                  },
                   plugins: [vue()]
                 }
                 """, StandardCharsets.UTF_8);
@@ -67,6 +73,10 @@ public final class QinConfigJsParserSmokeTestMain {
         require("^6.0.7".equals(config.devDependencies().get("@vitejs/plugin-vue")), "scoped devDependency");
         require("25".equals(config.java().version()), "java.version");
         require("qin dev --port 19097".equals(config.scripts().get("dev")), "scripts.dev");
+        require(config.generated() != null && "java".equals(config.generated().source()), "generated.source");
+        require("com.qin.demo.Parser".equals(config.generated().entryBinaryName()), "generated.entryBinaryName");
+        require(config.generated().sourceRoots().size() == 2, "generated.sourceRoots");
+        require("generated/parser-ts".equals(config.generated().outputDir()), "generated.outputDir");
         require(config.packages().size() == 1 && "packages/*".equals(config.packages().getFirst()), "packages");
 
         Path frontendOnlyRoot = Files.createTempDirectory("qin-config-js-frontend-only-");

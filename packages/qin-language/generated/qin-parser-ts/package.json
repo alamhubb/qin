@@ -26,12 +26,13 @@
     "format": "ts-esm-files"
   },
   "dependencies": {
-    "@qin/java-sdk-js": "file:../java-sdk-js"
+    "@qin/java-sdk-js": "file:./node_modules/@qin/java-sdk-js"
   },
   "files": [
     "com",
 
     "index.ts",
-    "qin.config.js"
+    "qin.config.js",
+    "node_modules/@qin/java-sdk-js"
   ]
 }

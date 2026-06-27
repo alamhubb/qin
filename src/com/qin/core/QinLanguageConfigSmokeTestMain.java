@@ -17,6 +17,7 @@ public final class QinLanguageConfigSmokeTestMain {
         Files.createDirectories(root.resolve("src"));
         Files.writeString(root.resolve("src").resolve("language-server.ts"), "export {}\n", StandardCharsets.UTF_8);
         Files.writeString(root.resolve("src").resolve("compiler.ts"), "export {}\n", StandardCharsets.UTF_8);
+        Files.createDirectories(root.resolve("src").resolve("java"));
         Files.createDirectories(root.resolve("parser"));
         Files.createDirectories(root.resolve("idea-client"));
         Files.writeString(root.resolve("qin.config.js"), """
@@ -31,6 +32,12 @@ public final class QinLanguageConfigSmokeTestMain {
                     parser: 'parser',
                     compiler: 'src/compiler.ts',
                     ideaLspClient: 'idea-client'
+                  },
+                  generated: {
+                    source: 'java',
+                    entryBinaryName: 'com.qin.demo.Parser',
+                    sourceRoots: ['src/java'],
+                    outputDir: 'generated/parser-ts'
                   }
                 }
                 """, StandardCharsets.UTF_8);
@@ -46,6 +53,9 @@ public final class QinLanguageConfigSmokeTestMain {
         require("parser".equals(language.parser()), "language.parser");
         require("src/compiler.ts".equals(language.compiler()), "language.compiler");
         require("idea-client".equals(language.ideaLspClient()), "language.ideaLspClient");
+        require(config.generated() != null, "generated metadata");
+        require("com.qin.demo.Parser".equals(config.generated().entryBinaryName()), "generated.entryBinaryName");
+        require("generated/parser-ts".equals(config.generated().outputDir()), "generated.outputDir");
         require(loader.validate(config).isValid(), "valid language metadata");
 
         Files.writeString(root.resolve("qin.config.js"), """

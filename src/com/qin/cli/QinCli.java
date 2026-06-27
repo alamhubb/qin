@@ -261,6 +261,7 @@ public class QinCli {
             case "build" -> runLanguageScript("build", actionArgs);
             case "dev" -> runLanguageScript("dev", actionArgs);
             case "test" -> runLanguageScript("test", actionArgs);
+            case "generate-parser", "generate" -> generateLanguageParser(actionArgs);
             case "server", "start" -> runLanguageServer(actionArgs);
             case "help", "-h", "--help" -> printLanguageHelp();
             default -> {
@@ -353,6 +354,73 @@ public class QinCli {
         runProcess(command, "language server '" + language.id() + "'", hasArg(args, "--dry-run"));
     }
 
+    private static void generateLanguageParser(String[] args) throws Exception {
+        QinConfig config = requireValidLanguageProject();
+        GeneratedConfig generated = config.generated();
+        if (generated == null) {
+            throw new IllegalStateException("Missing generated metadata in " + QinConstants.CONFIG_FILE);
+        }
+        if (!"java".equals(generated.source())) {
+            throw new IllegalStateException("language generate-parser only supports generated.source = 'java'");
+        }
+        if (generated.entryBinaryName() == null || generated.entryBinaryName().isBlank()) {
+            throw new IllegalStateException("Missing generated.entryBinaryName in " + QinConstants.CONFIG_FILE);
+        }
+        if (generated.sourceRoots().isEmpty()) {
+            throw new IllegalStateException("Missing generated.sourceRoots in " + QinConstants.CONFIG_FILE);
+        }
+        if (generated.outputDir() == null || generated.outputDir().isBlank()) {
+            throw new IllegalStateException("Missing generated.outputDir in " + QinConstants.CONFIG_FILE);
+        }
+        Path outputRoot = resolveProjectPath(generated.outputDir());
+        List<Path> sourceRoots = generated.sourceRoots().stream()
+                .map(QinCli::resolveProjectPath)
+                .toList();
+        if (hasArg(args, "--dry-run")) {
+            System.out.println("generate java parser " + generated.entryBinaryName());
+            System.out.println("  outputDir: " + outputRoot);
+            for (Path sourceRoot : sourceRoots) {
+                System.out.println("  sourceRoot: " + sourceRoot);
+            }
+            return;
+        }
+
+        int outputCount = generateParserWithRuntimeCore(sourceRoots, generated.entryBinaryName(), outputRoot);
+        System.out.println(green("[OK] Generated parser TS package"));
+        System.out.println("  entryBinaryName: " + generated.entryBinaryName());
+        System.out.println("  outputDir: " + outputRoot);
+        System.out.println("  files: " + outputCount);
+    }
+
+    private static int generateParserWithRuntimeCore(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            Path outputRoot) throws Exception {
+        String runtimeClasspath = appendBundledQinRuntimeClasspath("");
+        if (!isClassAvailableOnClasspath(runtimeClasspath, "com.qin.runtime.core.QinJavaProjectJsCompiler")) {
+            throw new IllegalStateException("Qin runtime-core compiler is missing from classpath");
+        }
+        ClassLoader parent = QinCli.class.getClassLoader();
+        java.net.URL[] urls = Arrays.stream(runtimeClasspath.split(Pattern.quote(QinConstants.getClasspathSeparator())))
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> {
+                    try {
+                        return Paths.get(value).toUri().toURL();
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Invalid classpath entry: " + value, e);
+                    }
+                })
+                .toArray(java.net.URL[]::new);
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(urls, parent)) {
+            Class<?> compilerClass = Class.forName("com.qin.runtime.core.QinJavaProjectJsCompiler", true, loader);
+            Object compiler = compilerClass.getDeclaredConstructor().newInstance();
+            Object result = compilerClass
+                    .getMethod("compileSuperclassClosureEsmTsFiles", List.class, String.class, Path.class)
+                    .invoke(compiler, sourceRoots, entryBinaryName, outputRoot);
+            return ((List<?>) result).size();
+        }
+    }
+
     private static void runShellCommand(String script, String description, boolean dryRun) throws Exception {
         List<String> command = new ArrayList<>();
         if (QinConstants.isWindows()) {
@@ -412,6 +480,7 @@ public class QinCli {
                   build         Run scripts.build for this language project
                   dev           Run scripts.dev for this language project
                   test          Run scripts.test for this language project
+                  generate-parser Generate Java parser TS ESM package from generated metadata
                   server        Start language.serverBundle with node --stdio
 
                 Options:
@@ -420,6 +489,7 @@ public class QinCli {
                 Examples:
                   qin language check
                   qin language bundle
+                  qin language generate-parser
                   qin language build
                   qin language server
                   qin language server --dry-run
@@ -2254,6 +2324,7 @@ public class QinCli {
                   qin install                 # Install deps declared in qin.config.js
                   qin sync                    # Sync deps (auto-compiles local projects)
                   qin language check          # Validate language.server/parser/ideaLspClient metadata
+                  qin language generate-parser # Generate Java parser TS ESM package
                   qin language build          # Run scripts.build for a language project
                   qin language server         # Start language.serverBundle with node --stdio
                   qin language-check          # Alias for qin language check

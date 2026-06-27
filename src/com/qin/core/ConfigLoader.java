@@ -4,6 +4,7 @@ import com.qin.constants.QinConstants;
 import com.qin.types.BackendConfig;
 import com.qin.types.DatabaseConfig;
 import com.qin.types.FrontendConfig;
+import com.qin.types.GeneratedConfig;
 import com.qin.types.JavaConfig;
 import com.qin.types.LanguageConfig;
 import com.qin.types.OutputConfig;
@@ -84,6 +85,7 @@ public class ConfigLoader {
                 backendConfigField(source),
                 databaseConfigField(source),
                 languageConfigField(source),
+                generatedConfigField(source),
                 stringMapField(source, "scripts"),
                 null);
     }
@@ -205,6 +207,19 @@ public class ConfigLoader {
                 stringField(map, "ideaLspClient", null));
     }
 
+    private GeneratedConfig generatedConfigField(Map<String, Object> source) {
+        Object value = source.get("generated");
+        if (!(value instanceof Map<?, ?> block)) {
+            return null;
+        }
+        Map<String, Object> map = objectMap(block);
+        return new GeneratedConfig(
+                stringField(map, "source", null),
+                stringField(map, "entryBinaryName", null),
+                stringListField(map, "sourceRoots"),
+                stringField(map, "outputDir", null));
+    }
+
     private Map<String, Object> objectMap(Map<?, ?> source) {
         java.util.LinkedHashMap<String, Object> out = new java.util.LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : source.entrySet()) {
@@ -275,6 +290,7 @@ public class ConfigLoader {
         }
 
         validateLanguageConfig(config.language(), errors);
+        validateGeneratedConfig(config.generated(), errors);
 
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.failure(errors);
     }
@@ -303,6 +319,23 @@ public class ConfigLoader {
             return;
         }
         requireExistingRelativePath(rawPath, field, errors);
+    }
+
+    private void validateGeneratedConfig(GeneratedConfig generated, List<String> errors) {
+        if (generated == null) {
+            return;
+        }
+        if (isBlank(generated.source())) {
+            errors.add("'generated.source' must not be blank");
+        } else if (!"java".equals(generated.source())) {
+            errors.add("'generated.source' must be 'java'");
+        }
+        if (isBlank(generated.entryBinaryName())) {
+            errors.add("'generated.entryBinaryName' must not be blank");
+        }
+        for (String sourceRoot : generated.sourceRoots()) {
+            requireExistingRelativePath(sourceRoot, "generated.sourceRoots", errors);
+        }
     }
 
     private void requireExistingRelativePath(String rawPath, String field, List<String> errors) {
@@ -362,6 +395,7 @@ public class ConfigLoader {
                 config.backend(),
                 config.database(),
                 config.language(),
+                config.generated(),
                 config.scripts(),
                 config.repositories());
     }
