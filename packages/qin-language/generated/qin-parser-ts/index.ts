@@ -17,6 +17,25 @@ for (const token of __qinSlimeTokens as any) {
 export const SlimeTokensObj = Object.fromEntries(__qinSlimeTokenEntries);
 export const SlimeJavascriptTokensObj = SlimeTokensObj;
 export const slimeTokens = Object.values(SlimeTokensObj);
+const __qinSlimeTokenTypeEntries: any[] = [];
+for (const token of __qinSlimeTokens) {
+  const tokenName = token.getName();
+  __qinSlimeTokenTypeEntries.push([tokenName, tokenName]);
+}
+export const SlimeJavascriptContextualKeywordTokenTypes = Object.freeze({
+  Async: "async",
+  Static: "static",
+  Let: "let",
+  Get: "get",
+  Set: "set",
+  Of: "of",
+  From: "from",
+  As: "as",
+  Target: "target",
+  Meta: "meta"
+});
+export const SlimeContextualKeywordTokenTypes = SlimeJavascriptContextualKeywordTokenTypes;
+export const SlimeTokenType = Object.freeze(Object.assign(Object.fromEntries(__qinSlimeTokenTypeEntries), SlimeJavascriptContextualKeywordTokenTypes));
 function __qinReadTokenMember(token: any, methodName: string, fieldName: string): any {
   if (token == null) return null;
   const method = token[methodName];

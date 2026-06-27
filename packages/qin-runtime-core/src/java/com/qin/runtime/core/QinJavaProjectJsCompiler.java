@@ -627,6 +627,29 @@ public final class QinJavaProjectJsCompiler {
             js.append("export const SlimeJavascriptTokensObj = SlimeTokensObj;\n");
             js.append("export const slimeTokens = Object.values(SlimeTokensObj);\n");
             if (typeScript) {
+                js.append("const __qinSlimeTokenTypeEntries: any[] = [];\n");
+            } else {
+                js.append("const __qinSlimeTokenTypeEntries = [];\n");
+            }
+            js.append("for (const token of __qinSlimeTokens) {\n");
+            js.append("  const tokenName = token.getName();\n");
+            js.append("  __qinSlimeTokenTypeEntries.push([tokenName, tokenName]);\n");
+            js.append("}\n");
+            js.append("export const SlimeJavascriptContextualKeywordTokenTypes = Object.freeze({\n");
+            js.append("  Async: \"async\",\n");
+            js.append("  Static: \"static\",\n");
+            js.append("  Let: \"let\",\n");
+            js.append("  Get: \"get\",\n");
+            js.append("  Set: \"set\",\n");
+            js.append("  Of: \"of\",\n");
+            js.append("  From: \"from\",\n");
+            js.append("  As: \"as\",\n");
+            js.append("  Target: \"target\",\n");
+            js.append("  Meta: \"meta\"\n");
+            js.append("});\n");
+            js.append("export const SlimeContextualKeywordTokenTypes = SlimeJavascriptContextualKeywordTokenTypes;\n");
+            js.append("export const SlimeTokenType = Object.freeze(Object.assign(Object.fromEntries(__qinSlimeTokenTypeEntries), SlimeJavascriptContextualKeywordTokenTypes));\n");
+            if (typeScript) {
                 js.append("function __qinReadTokenMember(token: any, methodName: string, fieldName: string): any {\n");
                 js.append("  if (token == null) return null;\n");
                 js.append("  const method = token[methodName];\n");
