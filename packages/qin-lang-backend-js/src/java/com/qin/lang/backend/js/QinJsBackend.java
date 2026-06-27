@@ -4500,6 +4500,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (cacheKeyMethodName == null) {
             return;
         }
+        requireExternalJavaSdkRuntime("__qin_subhuti_rule_cache_key");
         js.append("    if (__qin_args.length >= 4\n");
         js.append("        && __qin_args[0] !== null\n");
         js.append("        && typeof __qin_args[0] === \"function\"\n");
