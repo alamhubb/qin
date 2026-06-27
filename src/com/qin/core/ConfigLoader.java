@@ -199,6 +199,7 @@ public class ConfigLoader {
                 stringField(map, "id", null),
                 stringField(map, "extension", null),
                 stringField(map, "server", null),
+                stringField(map, "serverBundle", null),
                 stringField(map, "parser", null),
                 stringField(map, "compiler", null),
                 stringField(map, "ideaLspClient", null));
@@ -291,6 +292,7 @@ public class ConfigLoader {
             errors.add("'language.extension' must start with '.'");
         }
         requireExistingRelativePath(language.server(), "language.server", errors);
+        requireExistingRelativePath(language.serverBundle(), "language.serverBundle", errors);
         requireExistingPathLikeReference(language.parser(), "language.parser", errors);
         requireExistingRelativePath(language.compiler(), "language.compiler", errors);
         requireExistingRelativePath(language.ideaLspClient(), "language.ideaLspClient", errors);

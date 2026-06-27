@@ -30,6 +30,7 @@ export default {
     id: "qin",
     extension: ".qin",
     server: "qin-language-server/src/index.ts",
+    serverBundle: "dist/language-server.cjs",
     parser: "generated/qin-parser-ts",
     ideaLspClient: "../qin-idea-plugin-debug"
   },

@@ -27,6 +27,7 @@ public final class QinLanguageConfigSmokeTestMain {
                     id: 'demo',
                     extension: '.demo',
                     server: 'src/language-server.ts',
+                    serverBundle: 'src/language-server.ts',
                     parser: 'parser',
                     compiler: 'src/compiler.ts',
                     ideaLspClient: 'idea-client'
@@ -41,6 +42,7 @@ public final class QinLanguageConfigSmokeTestMain {
         require("demo".equals(language.id()), "language.id");
         require(".demo".equals(language.extension()), "language.extension");
         require("src/language-server.ts".equals(language.server()), "language.server");
+        require("src/language-server.ts".equals(language.serverBundle()), "language.serverBundle");
         require("parser".equals(language.parser()), "language.parser");
         require("src/compiler.ts".equals(language.compiler()), "language.compiler");
         require("idea-client".equals(language.ideaLspClient()), "language.ideaLspClient");

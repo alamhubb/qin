@@ -270,6 +270,7 @@ public class QinCli {
         System.out.println("  id: " + language.id());
         System.out.println("  extension: " + language.extension());
         printLanguagePath("server", language.server());
+        printLanguagePath("serverBundle", language.serverBundle());
         printLanguagePath("parser", language.parser());
         printLanguagePath("compiler", language.compiler());
         printLanguagePath("ideaLspClient", language.ideaLspClient());

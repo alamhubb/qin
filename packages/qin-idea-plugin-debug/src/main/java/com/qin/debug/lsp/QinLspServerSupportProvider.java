@@ -7,11 +7,15 @@ import com.intellij.platform.lsp.api.LspServerDescriptor;
 import com.intellij.platform.lsp.api.LspServerSupportProvider;
 import com.intellij.platform.lsp.api.LspServerSupportProvider.LspServerStarter;
 import com.qin.debug.QinLogger;
+import com.qin.core.ConfigLoader;
+import com.qin.types.LanguageConfig;
+import com.qin.types.QinConfig;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 public final class QinLspServerSupportProvider implements LspServerSupportProvider {
@@ -20,7 +24,8 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
             @NotNull Project project,
             @NotNull VirtualFile file,
             @NotNull LspServerStarter serverStarter) {
-        QinLspLanguage language = QinLspLanguage.fromExtension(file.getExtension());
+        Path workspaceRoot = resolveWorkspaceRoot(project);
+        QinLspLanguage language = QinLspLanguage.fromExtension(workspaceRoot, file.getExtension());
         if (language == null) {
             return;
         }
@@ -40,7 +45,7 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
 
         @Override
         public boolean isSupportedFile(@NotNull VirtualFile file) {
-            return language == QinLspLanguage.fromExtension(file.getExtension());
+            return language.matchesExtension(file.getExtension());
         }
 
         @Override
@@ -63,36 +68,72 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
         }
     }
 
-    private enum QinLspLanguage {
-        QIN("qin", "Qin", Path.of("qin", "packages", "qin-language", "dist", "language-server.cjs")),
-        OVS("ovs", "OVS", Path.of("ovsjs", "ovs-language", "dist", "language-server.cjs")),
-        CSSTS("cssts", "CSSTS", Path.of("cssts", "cssts-language", "dist", "language-server.cjs"));
+    private record QinLspLanguage(
+            String id,
+            String extension,
+            String displayName,
+            Path projectRelativePath,
+            Path serverBundlePath) {
+        private static final List<Path> LANGUAGE_PROJECTS = List.of(
+                Path.of("qin", "packages", "qin-language"),
+                Path.of("ovsjs", "ovs-language"),
+                Path.of("cssts", "cssts-language"));
 
-        private final String extension;
-        private final String displayName;
-        private final Path serverRelativePath;
-
-        QinLspLanguage(String extension, String displayName, Path serverRelativePath) {
-            this.extension = extension;
-            this.displayName = displayName;
-            this.serverRelativePath = serverRelativePath;
-        }
-
-        private static QinLspLanguage fromExtension(String extension) {
+        private static QinLspLanguage fromExtension(Path workspaceRoot, String extension) {
             if (extension == null) {
                 return null;
             }
-            String normalized = extension.toLowerCase(Locale.ROOT);
-            for (QinLspLanguage language : values()) {
-                if (language.extension.equals(normalized)) {
+            for (Path projectRelativePath : LANGUAGE_PROJECTS) {
+                QinLspLanguage language = load(workspaceRoot, projectRelativePath);
+                if (language.matchesExtension(extension)) {
                     return language;
                 }
             }
             return null;
         }
 
+        private static QinLspLanguage load(Path workspaceRoot, Path projectRelativePath) {
+            Path projectRoot = workspaceRoot.resolve(projectRelativePath).normalize();
+            try {
+                QinConfig config = new ConfigLoader(projectRoot.toString()).load();
+                LanguageConfig language = config.language();
+                if (language == null) {
+                    throw new IllegalStateException("Missing language metadata in " + projectRoot.resolve("qin.config.js"));
+                }
+                if (language.id() == null || language.id().isBlank()) {
+                    throw new IllegalStateException("Missing language.id in " + projectRoot.resolve("qin.config.js"));
+                }
+                if (language.extension() == null || language.extension().isBlank()) {
+                    throw new IllegalStateException("Missing language.extension in " + projectRoot.resolve("qin.config.js"));
+                }
+                if (language.server() == null || language.server().isBlank()) {
+                    throw new IllegalStateException("Missing language.server in " + projectRoot.resolve("qin.config.js"));
+                }
+                if (language.serverBundle() == null || language.serverBundle().isBlank()) {
+                    throw new IllegalStateException("Missing language.serverBundle in " + projectRoot.resolve("qin.config.js"));
+                }
+                return new QinLspLanguage(
+                        language.id(),
+                        normalizeExtension(language.extension()),
+                        language.id().toUpperCase(Locale.ROOT),
+                        projectRelativePath,
+                        Path.of(language.serverBundle()));
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to load language metadata from " + projectRoot.resolve("qin.config.js"), e);
+            }
+        }
+
+        private static String normalizeExtension(String extension) {
+            String value = extension.startsWith(".") ? extension.substring(1) : extension;
+            return value.toLowerCase(Locale.ROOT);
+        }
+
+        private boolean matchesExtension(String candidate) {
+            return candidate != null && extension.equals(candidate.toLowerCase(Locale.ROOT));
+        }
+
         private Path resolveServerPath(Path workspaceRoot) {
-            Path serverPath = workspaceRoot.resolve(serverRelativePath).normalize();
+            Path serverPath = resolveServerBundle(workspaceRoot);
             if (!Files.isRegularFile(serverPath)) {
                 throw new IllegalStateException(displayName + " language server bundle not found: " + serverPath);
             }
@@ -101,6 +142,14 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
 
         private Path resolveServerRoot(Path workspaceRoot) {
             return resolveServerPath(workspaceRoot).getParent().getParent();
+        }
+
+        private Path resolveServerBundle(Path workspaceRoot) {
+            Path projectRoot = workspaceRoot.resolve(projectRelativePath).normalize();
+            Path bundlePath = serverBundlePath;
+            return bundlePath.isAbsolute()
+                    ? bundlePath.normalize()
+                    : projectRoot.resolve(bundlePath).normalize();
         }
     }
 
