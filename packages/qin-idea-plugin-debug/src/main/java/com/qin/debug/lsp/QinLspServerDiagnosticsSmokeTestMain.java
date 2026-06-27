@@ -65,7 +65,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "rootUri", workspaceRoot.toUri().toString(),
                     "initializationOptions", Map.of(
                             "typescript", Map.of("tsdk", tsdkPath.toString()))));
-            session.awaitResponse(initializeId);
+            Map<String, Object> initializeResponse = session.awaitResponse(initializeId);
+            assertLanguageCapabilities(language, initializeResponse);
             session.notification("initialized", Map.of());
 
             String uri = workspaceRoot
@@ -97,6 +98,27 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         if (!condition) {
             throw new IllegalStateException(message);
         }
+    }
+
+    private static void assertLanguageCapabilities(QinLspLanguage language, Map<String, Object> initializeResponse) {
+        Object result = initializeResponse.get("result");
+        require(result instanceof Map<?, ?>, language.id() + " initialize response missing result");
+        Map<?, ?> resultMap = (Map<?, ?>) result;
+        Object capabilities = resultMap.get("capabilities");
+        require(capabilities instanceof Map<?, ?>, language.id() + " initialize response missing capabilities");
+        Map<?, ?> capabilitiesMap = (Map<?, ?>) capabilities;
+
+        require(capabilitiesMap.containsKey("completionProvider"), language.id() + " LSP missing completionProvider");
+        require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
+        require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
+        require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
+        require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
+        require(capabilitiesMap.containsKey("semanticTokensProvider"), language.id() + " LSP missing semanticTokensProvider");
+
+        Object semanticTokensProvider = capabilitiesMap.get("semanticTokensProvider");
+        require(semanticTokensProvider instanceof Map<?, ?>, language.id() + " semanticTokensProvider must be an object");
+        Map<?, ?> semanticMap = (Map<?, ?>) semanticTokensProvider;
+        require(semanticMap.containsKey("legend"), language.id() + " semanticTokensProvider missing legend");
     }
 
     private record LanguageCase(String extension, String invalidSource, String expectedDiagnosticText) {
@@ -137,8 +159,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             send(QinLspSmokeJson.object(message));
         }
 
-        void awaitResponse(int id) {
-            await("response " + id, message -> {
+        Map<String, Object> awaitResponse(int id) {
+            return await("response " + id, message -> {
                 Object value = message.get("id");
                 return value instanceof Number number && number.intValue() == id;
             });
@@ -185,13 +207,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             return expectedName.equalsIgnoreCase(actualName);
         }
 
-        private void await(String description, MessagePredicate predicate) {
+        private Map<String, Object> await(String description, MessagePredicate predicate) {
             long deadline = System.nanoTime() + TIMEOUT.toNanos();
             synchronized (messages) {
                 while (System.nanoTime() < deadline) {
                     for (Map<String, Object> message : messages) {
                         if (predicate.test(message)) {
-                            return;
+                            return message;
                         }
                     }
                     if (!process.isAlive()) {
