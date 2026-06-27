@@ -36,6 +36,7 @@ connection.onInitialize((params) => {
   const languageServicePlugins = [
     QinLanguageServicePlugin,
     ...createTypeScriptServices(tsdk.typescript, {
+      disableAutoImportCache: true,
       isValidationEnabled(document) {
         return document.languageId !== 'qin' && !isQinDocumentUri(document.uri)
       },

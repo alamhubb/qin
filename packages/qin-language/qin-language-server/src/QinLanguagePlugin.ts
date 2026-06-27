@@ -41,12 +41,23 @@ export const QinLanguagePlugin: LanguagePlugin<URI> = {
         scriptKind: ScriptKind.Deferred,
       },
     ],
-    getServiceScript() {
-      return undefined
+    getServiceScript(root) {
+      const code = root.embeddedCodes.find(item => item.id === 'qin-script' && item.languageId === 'typescript')
+      if (!code) {
+        return undefined
+      }
+      return {
+        code,
+        extension: '.ts',
+        scriptKind: ScriptKind.TS,
+      }
     },
     getExtraServiceScripts(fileName, root) {
       const scripts: TypeScriptExtraServiceScript[] = []
       for (const code of forEachEmbeddedCode(root)) {
+        if (code.id === 'qin-script') {
+          continue
+        }
         if (code.languageId === 'typescript') {
           scripts.push({
             fileName: fileName + '.' + code.id + '.ts',

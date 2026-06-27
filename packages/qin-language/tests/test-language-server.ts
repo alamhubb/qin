@@ -2,7 +2,6 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { URI } from 'vscode-uri'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -17,14 +16,18 @@ interface LspMessage {
 
 let messageId = 0
 
-function createRequest(method: string, params: any): string {
+function createRequest(method: string, params: any): { id: number, packet: string } {
+  const id = ++messageId
   const body = JSON.stringify({
     jsonrpc: '2.0',
-    id: ++messageId,
+    id,
     method,
     params,
   })
-  return `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`
+  return {
+    id,
+    packet: `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`,
+  }
 }
 
 function createNotification(method: string, params: any): string {
@@ -32,6 +35,15 @@ function createNotification(method: string, params: any): string {
     jsonrpc: '2.0',
     method,
     params,
+  })
+  return `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`
+}
+
+function createResponse(id: number, result: any): string {
+  const body = JSON.stringify({
+    jsonrpc: '2.0',
+    id,
+    result,
   })
   return `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`
 }
@@ -94,11 +106,23 @@ function sleep(ms: number): Promise<void> {
 }
 
 function toFileUri(filePath: string): string {
-  return URI.file(filePath).toString()
+  const normalized = path.resolve(filePath).replace(/\\/g, '/')
+  if (/^[A-Za-z]:\//.test(normalized)) {
+    return `file:///${normalized}`
+  }
+  return `file://${normalized.startsWith('/') ? '' : '/'}${normalized}`
 }
 
 function sameUri(left: string | undefined, right: string): boolean {
-  return left !== undefined && left.toLowerCase() === right.toLowerCase()
+  if (left === undefined) {
+    return false
+  }
+  if (left.toLowerCase() === right.toLowerCase()) {
+    return true
+  }
+  const leftName = decodeURIComponent(left).replace(/\\/g, '/').split('/').at(-1)
+  const rightName = decodeURIComponent(right).replace(/\\/g, '/').split('/').at(-1)
+  return leftName !== undefined && leftName.toLowerCase() === rightName?.toLowerCase()
 }
 
 async function waitFor(
@@ -114,6 +138,18 @@ async function waitFor(
     await sleep(50)
   }
   throw new Error(`Timed out waiting for ${description}`)
+}
+
+async function waitForResponse(id: number, messages: LspMessage[], description: string): Promise<LspMessage> {
+  await waitFor(description, () => messages.some(message => message.id === id))
+  const message = messages.find(item => item.id === id)
+  if (!message) {
+    throw new Error(`Missing response after wait: ${description}`)
+  }
+  if (message.error) {
+    throw new Error(`${description} returned error: ${JSON.stringify(message.error)}`)
+  }
+  return message
 }
 
 async function main() {
@@ -138,6 +174,13 @@ async function main() {
     const parsed = extractMessages(stdoutBuffer)
     stdoutBuffer = parsed.rest
     messages.push(...parsed.messages)
+    for (const message of parsed.messages) {
+      if (typeof message.id === 'number' && message.method === 'workspace/configuration') {
+        server.stdin.write(createResponse(message.id, []))
+      } else if (typeof message.id === 'number' && message.method === 'client/registerCapability') {
+        server.stdin.write(createResponse(message.id, null))
+      }
+    }
   })
 
   server.stderr.on('data', chunk => {
@@ -148,7 +191,7 @@ async function main() {
     exitCode = code
   })
 
-  server.stdin.write(createRequest('initialize', {
+  const initializeRequest = createRequest('initialize', {
     processId: process.pid,
     capabilities: {
       textDocument: {
@@ -161,10 +204,11 @@ async function main() {
     initializationOptions: {
       typescript: { tsdk: tsdkPath },
     },
-  }))
+  })
+  server.stdin.write(initializeRequest.packet)
 
-  await waitFor('initialize response', () => messages.some(message => message.id === 1) || exitCode !== null)
-  const initResponse = messages.find(message => message.id === 1)
+  await waitFor('initialize response', () => messages.some(message => message.id === initializeRequest.id) || exitCode !== null)
+  const initResponse = messages.find(message => message.id === initializeRequest.id)
   if (!initResponse?.result?.capabilities) {
     throw new Error(`Qin language server initialize failed. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`)
   }
@@ -188,6 +232,22 @@ async function main() {
       languageId: 'qin',
       version: 1,
       text: 'export object Counter { value = }',
+    },
+  }))
+
+  const tsSubsetUri = toFileUri(path.join(__dirname, 'ts-subset.qin'))
+  const tsSubsetSource = [
+    'const alphaNumber = 41',
+    'const alphaText = alphaNumber.toString()',
+    'alp',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: tsSubsetUri,
+      languageId: 'qin',
+      version: 1,
+      text: tsSubsetSource,
     },
   }))
 
@@ -223,7 +283,21 @@ async function main() {
     throw new Error(`Expected qin-parser diagnostic source, got ${JSON.stringify(invalidDiagnostics[0])}`)
   }
 
-  server.stdin.write(createRequest('shutdown', null))
+  const hoverRequest = createRequest('textDocument/hover', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 0, character: 8 },
+  })
+  server.stdin.write(hoverRequest.packet)
+  const hoverResponse = await waitForResponse(
+    hoverRequest.id,
+    messages,
+    `Qin TS-subset hover response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  if (!JSON.stringify(hoverResponse.result ?? '').includes('alphaNumber')) {
+    throw new Error(`Qin hover did not return TS service content: ${JSON.stringify(hoverResponse.result)}`)
+  }
+
+  server.stdin.write(createRequest('shutdown', null).packet)
   await sleep(200)
   server.stdin.write(createNotification('exit', null))
   await sleep(200)
