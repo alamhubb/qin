@@ -6,6 +6,7 @@ import {
 } from '@volar/language-server/node'
 import { create as createTypeScriptServices } from 'volar-service-typescript'
 import { QinLanguagePlugin } from './QinLanguagePlugin'
+import { QinLanguageServicePlugin } from './QinLanguageServicePlugin'
 import { logToFile } from './logutil'
 
 logToFile('=== Qin Language Server Starting ===')
@@ -28,7 +29,10 @@ connection.onInitialize((params) => {
   const tsdkPath = params.initializationOptions?.typescript?.tsdk
   const tsdk = loadTsdkByPath(tsdkPath, params.locale)
   const languagePlugins = [QinLanguagePlugin]
-  const languageServicePlugins = [...createTypeScriptServices(tsdk.typescript)]
+  const languageServicePlugins = [
+    QinLanguageServicePlugin,
+    ...createTypeScriptServices(tsdk.typescript),
+  ]
   const tsProject = createTypeScriptProject(
     tsdk.typescript,
     tsdk.diagnosticMessages,
