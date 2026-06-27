@@ -122,10 +122,22 @@ tasks {
         )
     }
 
+    register<JavaExec>("lspPluginPackageSmoke") {
+        dependsOn("buildPlugin")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinLspPluginPackageSmokeTestMain")
+        jvmArgs(
+            "-Dfile.encoding=UTF-8",
+            "-Dstdout.encoding=UTF-8",
+            "-Dstderr.encoding=UTF-8"
+        )
+    }
+
     named("check") {
         dependsOn("lspRegistrySmoke")
         dependsOn("lspServerDiagnosticsSmoke")
         dependsOn("lspPluginDescriptorSmoke")
+        dependsOn("lspPluginPackageSmoke")
     }
 
     // Keep only the latest packaged plugin artifact.

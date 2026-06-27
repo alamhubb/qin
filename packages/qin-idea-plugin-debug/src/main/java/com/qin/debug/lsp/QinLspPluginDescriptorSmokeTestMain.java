@@ -24,12 +24,16 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pluginXml.toFile());
         document.getDocumentElement().normalize();
 
+        assertPureLspDescriptor(document);
+
+        System.out.println("Qin IDEA LSP plugin descriptor smoke passed");
+    }
+
+    static void assertPureLspDescriptor(Document document) {
         assertDepends(document, "com.intellij.modules.lsp");
         assertFileTypes(document);
         assertLspProvider(document);
         assertNoLocalParser(document);
-
-        System.out.println("Qin IDEA LSP plugin descriptor smoke passed");
     }
 
     private static void assertDepends(Document document, String expected) {
