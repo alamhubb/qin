@@ -1,0 +1,87 @@
+package com.qin.debug.lsp;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+public final class QinLspPluginDescriptorSmokeTestMain {
+    private QinLspPluginDescriptorSmokeTestMain() {
+    }
+
+    public static void main(String[] args) throws Exception {
+        Path pluginXml = args.length > 0
+                ? Path.of(args[0]).toAbsolutePath().normalize()
+                : Path.of("src", "main", "resources", "META-INF", "plugin.xml").toAbsolutePath().normalize();
+        require(Files.isRegularFile(pluginXml), "plugin.xml not found: " + pluginXml);
+
+        Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pluginXml.toFile());
+        document.getDocumentElement().normalize();
+
+        assertDepends(document, "com.intellij.modules.lsp");
+        assertFileTypes(document);
+        assertLspProvider(document);
+        assertNoLocalParser(document);
+
+        System.out.println("Qin IDEA LSP plugin descriptor smoke passed");
+    }
+
+    private static void assertDepends(Document document, String expected) {
+        NodeList depends = document.getElementsByTagName("depends");
+        for (int i = 0; i < depends.getLength(); i++) {
+            if (expected.equals(depends.item(i).getTextContent().trim())) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Missing plugin dependency: " + expected);
+    }
+
+    private static void assertFileTypes(Document document) {
+        Map<String, String> expected = Map.of(
+                "qin", "com.qin.debug.lsp.QinLspFileType",
+                "ovs", "com.qin.debug.lsp.OvsLspFileType",
+                "cssts", "com.qin.debug.lsp.CsstsLspFileType");
+        Map<String, String> actual = new HashMap<>();
+        NodeList fileTypes = document.getElementsByTagName("fileType");
+        for (int i = 0; i < fileTypes.getLength(); i++) {
+            Element fileType = (Element) fileTypes.item(i);
+            actual.put(fileType.getAttribute("extensions"), fileType.getAttribute("implementationClass"));
+        }
+        for (Map.Entry<String, String> entry : expected.entrySet()) {
+            require(entry.getValue().equals(actual.get(entry.getKey())),
+                    "Missing fileType for ." + entry.getKey() + ": " + entry.getValue());
+        }
+    }
+
+    private static void assertLspProvider(Document document) {
+        NodeList providers = document.getElementsByTagName("platform.lsp.serverSupportProvider");
+        require(providers.getLength() == 1, "Expected exactly one LSP serverSupportProvider");
+        Element provider = (Element) providers.item(0);
+        require("com.qin.debug.lsp.QinLspServerSupportProvider".equals(provider.getAttribute("implementation")),
+                "Unexpected LSP provider: " + provider.getAttribute("implementation"));
+    }
+
+    private static void assertNoLocalParser(Document document) {
+        Set<String> forbiddenTags = Set.of(
+                "lang.parserDefinition",
+                "lang.syntaxHighlighterFactory",
+                "lang.psiStructureViewFactory",
+                "lang.completion.contributor");
+        for (String tag : forbiddenTags) {
+            require(document.getElementsByTagName(tag).getLength() == 0,
+                    "Pure LSP mode must not register local IDEA language extension: " + tag);
+        }
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) {
+            throw new IllegalStateException(message);
+        }
+    }
+}
