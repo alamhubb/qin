@@ -10,9 +10,7 @@ import com.qin.debug.QinLogger;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
 
 public final class QinLspServerSupportProvider implements LspServerSupportProvider {
     @Override
@@ -48,8 +46,8 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
         public @NotNull GeneralCommandLine createCommandLine() {
             Path workspaceRoot = resolveWorkspaceRoot(qinProject);
             Path serverPath = language.resolveServerPath(workspaceRoot);
-            Path tsdkPath = resolveTypescriptSdk(workspaceRoot);
-            String node = resolveNodeExecutable();
+            Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
+            String node = QinLspLanguageRegistry.resolveNodeExecutable();
 
             QinLogger.info("[LSP] Starting " + language.displayName() + " server: " + serverPath);
 
@@ -72,33 +70,4 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
         return QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of(project.getBasePath()));
     }
 
-    private static Path resolveTypescriptSdk(Path workspaceRoot) {
-        Path[] candidates = {
-                workspaceRoot.resolve("qin").resolve("packages").resolve("qin-language").resolve("node_modules")
-                        .resolve("typescript").resolve("lib"),
-                workspaceRoot.resolve("ovsjs").resolve("node_modules").resolve("typescript").resolve("lib"),
-                workspaceRoot.resolve("cssts").resolve("node_modules").resolve("typescript").resolve("lib"),
-                workspaceRoot.resolve("node_modules").resolve("typescript").resolve("lib")
-        };
-
-        for (Path candidate : candidates) {
-            if (Files.isRegularFile(candidate.resolve("typescript.js"))
-                    || Files.isRegularFile(candidate.resolve("tsserverlibrary.js"))) {
-                return candidate.normalize();
-            }
-        }
-
-        throw new IllegalStateException("TypeScript SDK not found under " + workspaceRoot);
-    }
-
-    private static String resolveNodeExecutable() {
-        String configured = System.getenv("QIN_LSP_NODE");
-        if (configured != null && !configured.isBlank()) {
-            return configured;
-        }
-
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
-                ? "node.exe"
-                : "node";
-    }
 }

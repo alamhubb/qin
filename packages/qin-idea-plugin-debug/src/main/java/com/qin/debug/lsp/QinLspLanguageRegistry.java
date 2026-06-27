@@ -78,6 +78,36 @@ final class QinLspLanguageRegistry {
         throw new IllegalStateException("Cannot find qinall workspace root from " + projectBasePath);
     }
 
+    static Path resolveTypescriptSdk(Path workspaceRoot) {
+        Path[] candidates = {
+                workspaceRoot.resolve("qin").resolve("packages").resolve("qin-language").resolve("node_modules")
+                        .resolve("typescript").resolve("lib"),
+                workspaceRoot.resolve("ovsjs").resolve("node_modules").resolve("typescript").resolve("lib"),
+                workspaceRoot.resolve("cssts").resolve("node_modules").resolve("typescript").resolve("lib"),
+                workspaceRoot.resolve("node_modules").resolve("typescript").resolve("lib")
+        };
+
+        for (Path candidate : candidates) {
+            if (Files.isRegularFile(candidate.resolve("typescript.js"))
+                    || Files.isRegularFile(candidate.resolve("tsserverlibrary.js"))) {
+                return candidate.normalize();
+            }
+        }
+
+        throw new IllegalStateException("TypeScript SDK not found under " + workspaceRoot);
+    }
+
+    static String resolveNodeExecutable() {
+        String configured = System.getenv("QIN_LSP_NODE");
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
+                ? "node.exe"
+                : "node";
+    }
+
     private static String normalizeExtension(String extension) {
         String value = extension.startsWith(".") ? extension.substring(1) : extension;
         return value.toLowerCase(Locale.ROOT);
