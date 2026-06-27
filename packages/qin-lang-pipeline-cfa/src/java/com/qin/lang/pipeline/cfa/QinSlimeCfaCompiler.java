@@ -87,7 +87,7 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
         Path projectRoot = request.projectRoot().toAbsolutePath().normalize();
 
         logPhase("module-class semantic start", startNanos, sourceFile.toString());
-        QinCfaSemanticStageResult semanticStageResult = semanticStage.execute(sourceFile, projectRoot);
+        QinCfaSemanticStageResult semanticStageResult = semanticStage.executeForModuleClasses(sourceFile, projectRoot);
         QinLinkedModuleSource linkedSource = semanticStageResult.linkedSource();
         logPhase("module-class semantic done", startNanos, "modules=" + linkedSource.moduleSections().size());
 
