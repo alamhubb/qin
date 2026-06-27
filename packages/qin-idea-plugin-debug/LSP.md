@@ -5,10 +5,12 @@ types. IDEA does not implement Qin, OVS, or CSSTS syntax locally. It starts the
 existing Volar language servers and shows diagnostics, completion, and semantic
 tokens returned by those servers.
 
-Language server bundles are resolved from the current `qinall` workspace:
+Language server bundles are resolved from each language project's
+`qin.config.js` `language.serverBundle` field in the current `qinall`
+workspace:
 
 - `qin/packages/qin-language/dist/language-server.cjs`
-- `ovsjs/ovs-language/dist/language-server.cjs`
+- `ovsjs/ovs-language/dist/language-server.js`
 - `cssts/cssts-language/dist/language-server.cjs`
 
 Runtime environment:
