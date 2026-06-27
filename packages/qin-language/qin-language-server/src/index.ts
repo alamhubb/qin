@@ -26,9 +26,9 @@ connection.onInitialize((params) => {
   logToFile('Workspace folders: ' + JSON.stringify(params.workspaceFolders))
   logToFile('Initialization options: ' + JSON.stringify(params.initializationOptions))
 
-  const tsdkPath = params.initializationOptions?.typescript?.tsdk
+  const tsdkPath = params.initializationOptions?.typescript?.tsdk ?? process.env.QIN_LSP_TYPESCRIPT_TSDK
   if (!tsdkPath) {
-    throw new Error('Qin language server requires initializationOptions.typescript.tsdk')
+    throw new Error('Qin language server requires initializationOptions.typescript.tsdk or QIN_LSP_TYPESCRIPT_TSDK')
   }
 
   const tsdk = loadTsdkByPath(tsdkPath, params.locale)

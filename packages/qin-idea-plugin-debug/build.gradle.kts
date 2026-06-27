@@ -31,6 +31,7 @@ dependencies {
     intellijPlatform {
         intellijIdeaUltimate("2025.3.1")
         bundledPlugin("com.intellij.java")
+        bundledModule("com.intellij.modules.lsp")
     }
 }
 
@@ -104,4 +105,3 @@ sourceSets {
         }
     }
 }
-

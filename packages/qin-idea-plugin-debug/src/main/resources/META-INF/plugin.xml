@@ -8,6 +8,7 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.lsp</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.qin.debug.DebugStartup"/>
@@ -17,6 +18,23 @@
         <consoleFilterProvider implementation="com.qin.debug.console.QinConsoleFilterProvider"/>
         <externalAnnotator language="JAVA" implementationClass="com.qin.debug.annotator.QinExternalAnnotator"/>
         <projectService serviceImplementation="com.qin.debug.annotator.QinCompileErrorService"/>
+
+        <fileType
+                name="Qin Source"
+                implementationClass="com.qin.debug.lsp.QinLspFileType"
+                fieldName="INSTANCE"
+                extensions="qin"/>
+        <fileType
+                name="OVS Source"
+                implementationClass="com.qin.debug.lsp.OvsLspFileType"
+                fieldName="INSTANCE"
+                extensions="ovs"/>
+        <fileType
+                name="CSSTS Source"
+                implementationClass="com.qin.debug.lsp.CsstsLspFileType"
+                fieldName="INSTANCE"
+                extensions="cssts"/>
+        <platform.lsp.serverSupportProvider implementation="com.qin.debug.lsp.QinLspServerSupportProvider"/>
 
         <!-- Keep IDEA native Java Run/Debug; do not inject Qin run configuration. -->
     </extensions>
