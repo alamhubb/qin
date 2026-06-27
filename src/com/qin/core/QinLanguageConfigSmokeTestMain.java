@@ -75,6 +75,23 @@ public final class QinLanguageConfigSmokeTestMain {
         require(invalid.getErrors().stream().anyMatch(error -> error.contains("language.server")), "server path error");
         require(invalid.getErrors().stream().anyMatch(error -> error.contains("language.parser")), "parser path error");
 
+        Files.writeString(root.resolve("qin.config.js"), """
+                export default {
+                  name: 'com.qin.demo:scoped-parser-package',
+                  language: {
+                    id: 'scoped',
+                    extension: '.scoped',
+                    server: 'src/language-server.ts',
+                    serverBundle: 'src/language-server.ts',
+                    parser: '@qin/generated-qin-parser-ts',
+                    compiler: 'src/compiler.ts',
+                    ideaLspClient: 'idea-client'
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        ValidationResult scopedPackage = loader.validate(loader.load());
+        require(scopedPackage.isValid(), "scoped npm parser package reference");
+
         System.out.println("QinLanguageConfigSmokeTestMain OK");
     }
 

@@ -352,7 +352,17 @@ public class ConfigLoader {
     }
 
     private boolean isPackageReference(String value) {
-        return !value.contains("/") && !value.contains("\\");
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        if (value.startsWith(".") || value.startsWith("/") || value.contains("\\")) {
+            return false;
+        }
+        if (value.startsWith("@")) {
+            int slash = value.indexOf('/');
+            return slash > 1 && slash < value.length() - 1 && value.indexOf('/', slash + 1) < 0;
+        }
+        return !value.contains("/");
     }
 
     private boolean isBlank(String value) {
