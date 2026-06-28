@@ -162,6 +162,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         require(testSource.contains("@qin/generated-qin-parser-ts"),
                 project.id() + " generated parser chain smoke must pin the shared generated Qin parser target");
 
+        verifyNoLegacyParserConfigDependencies(project.id(), config, "language");
         verifyNoLegacyParserDependencies(project.id(), projectRoot.resolve("package.json").normalize(), "language");
         String server = config.language().server();
         if (server != null && !server.isBlank()) {
@@ -181,6 +182,14 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         for (String legacyParserPackage : legacyParserPackages()) {
             require(testSource.contains("'" + legacyParserPackage + "'"),
                     project.id() + " generated parser chain smoke must reject " + legacyParserPackage);
+        }
+    }
+
+    private static void verifyNoLegacyParserConfigDependencies(String id, QinConfig config, String label) {
+        for (String legacyParserPackage : legacyParserPackages()) {
+            require(!config.hasDependency(legacyParserPackage),
+                    id + " " + label + " qin.config.js must not declare legacy parser dependency "
+                            + legacyParserPackage);
         }
     }
 
