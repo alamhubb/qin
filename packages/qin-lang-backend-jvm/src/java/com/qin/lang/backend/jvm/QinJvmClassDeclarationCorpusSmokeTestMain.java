@@ -18,10 +18,11 @@ public final class QinJvmClassDeclarationCorpusSmokeTestMain {
         QinJvmJavaNewReturnSmokeTestMain.main(args);
         QinJvmJavaSlimeParserExtendsSmokeTestMain.main(args);
         QinJvmParsedMethodBodyClassSmokeTestMain.main(args);
+        QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args);
         QinJvmParsedLocalDtoMemberAccessSmokeTestMain.main(args);
         QinJvmParsedLocalInheritanceSmokeTestMain.main(args);
         QinJvmParsedFieldsConstructorSmokeTestMain.main(args);
 
-        System.out.println("Qin JVM class declaration corpus smoke passed: 13 cases");
+        System.out.println("Qin JVM class declaration corpus smoke passed: 14 cases");
     }
 }

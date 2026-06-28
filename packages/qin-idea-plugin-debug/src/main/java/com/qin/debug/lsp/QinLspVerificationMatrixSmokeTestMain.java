@@ -175,6 +175,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qin-runtime-core",
                 Path.of("qin", "packages", "qin-runtime-core"),
                 "src/java/com/qin/runtime/core/QinRuntimeMain.java");
+        verifyJvmClassDeclarationCorpus(workspaceRoot);
         String checkBlock = taskBlock(buildSource, "named(\"check\")");
         String matrixBlock = taskBlock(buildSource, "register(\"lspUnifiedMatrix\")");
         for (String smokeTask : List.of(
@@ -598,6 +599,41 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
     }
 
+    private static void verifyJvmClassDeclarationCorpus(Path workspaceRoot) throws Exception {
+        Path corpusPath = workspaceRoot.resolve("qin")
+                .resolve("packages")
+                .resolve("qin-lang-backend-jvm")
+                .resolve("src")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("lang")
+                .resolve("backend")
+                .resolve("jvm")
+                .resolve("QinJvmClassDeclarationCorpusSmokeTestMain.java")
+                .normalize();
+        Path earlyReturnPath = corpusPath.resolveSibling("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.java");
+        require(Files.isRegularFile(corpusPath),
+                "Qin JVM class declaration corpus smoke must exist: " + corpusPath);
+        require(Files.isRegularFile(earlyReturnPath),
+                "Qin JVM parsed early-return method-body smoke must exist: " + earlyReturnPath);
+
+        String corpusSource = Files.readString(corpusPath);
+        String earlyReturnSource = Files.readString(earlyReturnPath);
+        require(corpusSource.contains("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args)"),
+                "Qin JVM class declaration corpus must include parsed early-return method-body smoke");
+        require(corpusSource.contains("14 cases"),
+                "Qin JVM class declaration corpus count must cover the parsed early-return case");
+        require(earlyReturnSource.contains("const prefix = \"hello \""),
+                "Parsed early-return smoke must cover Qin local binding in a method body");
+        require(earlyReturnSource.contains("if (flag)"),
+                "Parsed early-return smoke must cover Qin if branch lowering");
+        require(earlyReturnSource.contains("return prefix + name"),
+                "Parsed early-return smoke must cover Qin early return from a block");
+        require(earlyReturnSource.contains("return \"bye \" + name"),
+                "Parsed early-return smoke must cover Qin fallthrough return after early return");
+    }
+
     private static void verifyCompletionAuditDocument(Path auditPath) throws Exception {
         require(Files.isRegularFile(auditPath), "LSP completion audit document must exist: " + auditPath);
         String audit = Files.readString(auditPath);
@@ -629,6 +665,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(audit.contains(hardeningNeedle),
                     "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
+        require(audit.contains("14-case class-declaration corpus"),
+                "LSP completion audit must record the current JVM class declaration corpus size");
+        require(audit.contains("local binding plus early-return `if`"),
+                "LSP completion audit must record parsed method-body early-return coverage");
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
