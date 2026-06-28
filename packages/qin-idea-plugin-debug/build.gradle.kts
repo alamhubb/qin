@@ -198,6 +198,13 @@ tasks {
         dependsOn("csstsLanguageTest")
     }
 
+    register<Exec>("qinJvmClassTargetSmoke") {
+        group = "verification"
+        description = "Runs the Qin CLI JVM .class smoke through qin.config.js project management."
+        workingDir = workspaceRoot.resolve("qin/packages/qin-lang-cli")
+        commandLine(qinCommand.canonicalPath, "run", "com.qin.lang.cli.SmokeTestMain")
+    }
+
     register("runIdeLspFixture") {
         group = "intellij platform"
         description = "Runs the IDE with the Qin/OVS/CSSTS LSP UI fixture project opened."
@@ -213,6 +220,7 @@ tasks {
         dependsOn("lspPluginPackageSmoke")
         dependsOn("lspUiFixtureSmoke")
         dependsOn("languageProjectsTest")
+        dependsOn("qinJvmClassTargetSmoke")
     }
 
     // Keep only the latest packaged plugin artifact.

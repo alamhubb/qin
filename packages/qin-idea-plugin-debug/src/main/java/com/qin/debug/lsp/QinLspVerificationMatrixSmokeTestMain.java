@@ -78,8 +78,15 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         require(buildSource.contains("register(\"languageProjectsTest\")"),
                 "Gradle must declare languageProjectsTest");
+        require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
+                "Gradle must declare qinJvmClassTargetSmoke");
+        require(buildSource.contains("qin/packages/qin-lang-cli"),
+                "qinJvmClassTargetSmoke must run from qin/packages/qin-lang-cli");
+        require(buildSource.contains("\"run\", \"com.qin.lang.cli.SmokeTestMain\""),
+                "qinJvmClassTargetSmoke must run the Qin CLI JVM .class smoke");
         for (String smokeTask : List.of(
                 "languageProjectsTest",
+                "qinJvmClassTargetSmoke",
                 "lspRegistrySmoke",
                 "lspServerCommandLineSmoke",
                 "lspServerDiagnosticsSmoke",
