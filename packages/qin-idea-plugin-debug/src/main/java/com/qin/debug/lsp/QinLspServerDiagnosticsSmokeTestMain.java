@@ -48,28 +48,38 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         "ovs",
                         "div { h1 { 'Broken' }",
                         "OVS transform failed",
-                        null,
-                        null,
-                        -1,
-                        -1,
-                        -1,
-                        -1,
-                        false,
-                        false,
-                        false),
+                        """
+                                const alphaNumber = 41
+                                const alphaText = alphaNumber.toString()
+                                const finalValue = alphaText
+                                al
+                                """,
+                        "alphaNumber",
+                        3,
+                        2,
+                        1,
+                        20,
+                        true,
+                        true,
+                        true),
                 new LanguageCase(
                         "cssts",
                         "import { css } from 'cssts-ts'\nconst broken = css { displayFlex,\n",
                         "CSSTS transform failed",
-                        null,
-                        null,
-                        -1,
-                        -1,
-                        -1,
-                        -1,
-                        false,
-                        false,
-                        false));
+                        """
+                                const alphaNumber = 41
+                                const alphaText = alphaNumber.toString()
+                                const finalValue = alphaText
+                                al
+                                """,
+                        "alphaNumber",
+                        3,
+                        2,
+                        1,
+                        20,
+                        true,
+                        true,
+                        true));
 
         for (LanguageCase testCase : cases) {
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, testCase.extension());
