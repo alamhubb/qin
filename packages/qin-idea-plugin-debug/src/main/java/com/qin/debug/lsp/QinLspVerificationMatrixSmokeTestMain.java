@@ -95,6 +95,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 verifyCompilerProjectConfig(matrixCase, workspaceRoot, generatedQinParserRoot);
             }
         }
+        verifyOvsCsstsGeneratedParserInheritance(workspaceRoot);
 
         Path buildFile = ideaClientPath.resolve("build.gradle.kts");
         String buildSource = Files.readString(buildFile);
@@ -251,6 +252,96 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 compilerRoot,
                 generatedQinParserRoot,
                 compilerConfig);
+    }
+
+    private static void verifyOvsCsstsGeneratedParserInheritance(Path workspaceRoot) throws Exception {
+        Path csstsCompilerRoot = workspaceRoot.resolve("cssts")
+                .resolve("cssts")
+                .resolve("cssts-compiler")
+                .normalize();
+        Path ovsCompilerRoot = workspaceRoot.resolve("ovsjs")
+                .resolve("ovs")
+                .resolve("ovs-compiler")
+                .normalize();
+
+        Path cssTsParserPath = csstsCompilerRoot.resolve("src")
+                .resolve("parser")
+                .resolve("CssTsParser.ts")
+                .normalize();
+        Path cssTsAdapterPath = csstsCompilerRoot.resolve("src")
+                .resolve("parser")
+                .resolve("generated-runtime-adapter.ts")
+                .normalize();
+        Path csstsTransformPath = csstsCompilerRoot.resolve("src")
+                .resolve("transform")
+                .resolve("index.ts")
+                .normalize();
+        Path ovsParserPath = ovsCompilerRoot.resolve("src")
+                .resolve("parser")
+                .resolve("OvsParser.ts")
+                .normalize();
+        Path ovsIndexPath = ovsCompilerRoot.resolve("src")
+                .resolve("index.ts")
+                .normalize();
+        Path forbiddenOvsAdapterPath = ovsCompilerRoot.resolve("src")
+                .resolve("parser")
+                .resolve("generated-runtime-adapter.ts")
+                .normalize();
+
+        for (Path requiredPath : List.of(
+                cssTsParserPath,
+                cssTsAdapterPath,
+                csstsTransformPath,
+                ovsParserPath,
+                ovsIndexPath)) {
+            require(requiredPath.startsWith(workspaceRoot),
+                    "Generated parser chain source must stay inside workspace: " + requiredPath);
+            require(Files.isRegularFile(requiredPath),
+                    "Generated parser chain source must exist: " + requiredPath);
+        }
+
+        String cssTsParser = Files.readString(cssTsParserPath);
+        String cssTsAdapter = Files.readString(cssTsAdapterPath);
+        String csstsTransform = Files.readString(csstsTransformPath);
+        String ovsParser = Files.readString(ovsParserPath);
+        String ovsIndex = Files.readString(ovsIndexPath);
+
+        require(cssTsParser.contains("from \"@qin/generated-qin-parser-ts\""),
+                "CSSTS parser must import the shared generated Qin parser package");
+        require(cssTsParser.contains("SlimeJavascriptParser"),
+                "CSSTS parser must use the generated SlimeJavascriptParser export");
+        require(cssTsParser.contains("extends SlimeParser"),
+                "CSSTS parser must extend the generated Slime parser base");
+        require(cssTsParser.contains("normalizeGeneratedTokens"),
+                "CSSTS parser must normalize generated parser tokens");
+        require(cssTsParser.contains("this.Or("),
+                "CSSTS parser must use generated parser Or semantics");
+        require(!cssTsParser.contains("alt:"),
+                "CSSTS parser must not use legacy { alt } fallback alternatives");
+
+        require(cssTsAdapter.contains("normalizeGeneratedCst"),
+                "CSSTS generated runtime adapter must expose normalizeGeneratedCst");
+        require(cssTsAdapter.contains("javaListToArray"),
+                "CSSTS generated runtime adapter must bridge generated Java list values");
+        require(csstsTransform.contains("normalizeGeneratedCst(parser.Program())"),
+                "CSSTS transform must normalize CST from the generated parser chain");
+
+        require(ovsParser.contains("from \"@qin/generated-qin-parser-ts\""),
+                "OVS parser must import the shared generated Qin parser package");
+        require(ovsParser.contains("from \"cssts-compiler\""),
+                "OVS parser must inherit CSSTS compiler parser support");
+        require(ovsParser.contains("extends CssTsParser"),
+                "OVS parser must extend CssTsParser");
+        require(ovsParser.contains("normalizeGeneratedTokens"),
+                "OVS parser must normalize generated parser tokens");
+        require(ovsParser.contains("Alternative.of("),
+                "OVS parser must use generated parser Alternative.of semantics");
+        require(!ovsParser.contains("alt:"),
+                "OVS parser must not use legacy { alt } fallback alternatives");
+        require(ovsIndex.contains("normalizeGeneratedCst"),
+                "OVS compiler transform must normalize CST from the generated parser chain");
+        require(!Files.exists(forbiddenOvsAdapterPath),
+                "OVS must inherit the generated runtime adapter from cssts-compiler, not keep a local copy");
     }
 
     private static void verifyLanguageServerFeatureAssertions(MatrixCase matrixCase, Path projectRoot) throws Exception {
