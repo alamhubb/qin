@@ -63,6 +63,24 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'local class extends',
+    source: [
+      'class BaseService {',
+      '  label(): string {',
+      '    return "base"',
+      '  }',
+      '}',
+      '',
+      'class ChildService extends BaseService {',
+      '  childLabel(): string {',
+      '    return "child"',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'class method expressions',
     source: [
       'class HelloService {',

@@ -65,7 +65,7 @@ The full `check` task also covers:
 
 | Requirement | Current evidence | Status |
 | --- | --- | --- |
-| Java parser is authoritative for Qin syntax | `qinGeneratedParserDryRun` verifies `com.qin.parser.QinParser` metadata, generated output package, and `generatedParserTarget`; `QinParserObjectDeclarationSmokeTestMain` verifies `object` parses through PEG CST and is not source-string rewritten; `test-generated-parser-parity.ts` compares Java QinParser and generated TypeScript QinParser acceptance on a small Qin corpus. | Proven for current Qin parser parity corpus |
+| Java parser is authoritative for Qin syntax | `qinGeneratedParserDryRun` verifies `com.qin.parser.QinParser` metadata, generated output package, and `generatedParserTarget`; `QinParserObjectDeclarationSmokeTestMain` verifies `object` parses through PEG CST and is not source-string rewritten; `test-generated-parser-parity.ts` compares Java QinParser and generated TypeScript QinParser acceptance on a small Qin corpus including `java:` and local class inheritance. | Proven for current Qin parser parity corpus |
 | Qin generated TypeScript parser is usable by Volar | `qin/packages/qin-language/qin.config.js` points `language.parser` at `generated/qin-parser-ts`; `test-language-plugin.ts` verifies generated Qin parser availability and parser diagnostics; `test-generated-parser-parity.ts` verifies generated parser behavior matches Java parser acceptance on the current corpus. | Proven for current `.qin` LSP scope |
 | OVS inherits the shared generated parser chain | `ovs/ovs-compiler/tests/test-generated-parser-chain.ts` and `ovs-language/tests/test-generated-parser-chain.ts` check `OvsParser extends CssTsParser`, `instanceof CssTsParser`, `instanceof SlimeJavascriptParser`, and parser-chain parsing through the Qin-managed compiler and language projects. | Proven for current OVS parser-chain smokes |
 | CSSTS inherits the shared generated parser chain | `cssts/cssts-compiler/tests/test-generated-parser-chain.ts` and `cssts-language/tests/test-generated-parser-chain.ts` check `CssTsParser extends SlimeParser`, `instanceof SlimeJavascriptParser`, and parser-chain parsing through the Qin-managed compiler and language projects. | Proven for current CSSTS parser-chain smokes |
@@ -85,8 +85,9 @@ These items are not proven complete yet:
 - Full grammar authority across every Slime/Qin/OVS/CSSTS syntax branch is not
   exhaustively audited. Current evidence covers the active generated-parser path,
   a Java/TypeScript parser parity corpus with export, Qin `object`, decorator,
-  `java:` import/class inheritance, class method expression, and top-level
-  function/const samples, plus parser-chain inheritance smoke fixtures.
+  `java:` import/class inheritance, local class inheritance, class method
+  expression, and top-level function/const samples, plus parser-chain
+  inheritance smoke fixtures.
 - IDEA has smoke coverage for LSP startup, capabilities, diagnostics, packaging,
   and fixture registration, but manual IDE behavior still relies on
   `runIdeLspFixture` for visual confirmation.
