@@ -217,6 +217,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String method : List.of(
                 "textDocument/completion",
                 "textDocument/definition",
+                "textDocument/references",
                 "textDocument/documentSymbol",
                 "textDocument/semanticTokens/full")) {
             require(testSource.contains(method),
@@ -225,6 +226,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String assertionNeedle : List.of(
                 "completion did not include",
                 "definition did not resolve",
+                "references did not include",
                 "documentSymbol did not include",
                 "semanticTokens did not return token data")) {
             require(testSource.contains(assertionNeedle),

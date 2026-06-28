@@ -3,7 +3,7 @@
 The IDEA plugin registers `.qin`, `.ovs`, and `.cssts` as pure LSP-backed file
 types. IDEA does not implement Qin, OVS, or CSSTS syntax locally. It starts the
 existing Volar language servers and shows diagnostics, completion, and semantic
-tokens returned by those servers.
+tokens returned by those servers, including definition and references support.
 
 Language server bundles are resolved from each language project's
 `qin.config.js` `language.serverBundle` field in the current `qinall`
@@ -43,7 +43,9 @@ The non-interactive verification path is intentionally cross-project:
   visible.
 - `lspVerificationMatrixSmoke` reads each language project's `qin.config.js`
   and verifies parser, compiler, generated package, language-server bundle, and
-  IDEA client references point at the intended workspace artifacts.
+  IDEA client references point at the intended workspace artifacts. It also
+  verifies each language test keeps completion, definition, references,
+  document-symbol, and semantic-token assertions in place.
 - `qinJvmClassTargetSmoke` verifies the Qin CLI path still compiles and runs JVM
   `.class` output; this keeps editor/LSP TypeScript usage separate from the Qin
   runtime target.
