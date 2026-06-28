@@ -24,6 +24,7 @@ import java.util.Map;
  * @param graalvm         GraalVM 配置
  * @param frontend        前端配置
  * @param generated       生成包配置
+ * @param languageServer  LSP language server 配置
  * @param qinLanguage     Qin language server 配置
  * @param scripts         自定义脚本
  * @param repositories    Maven 仓库列表
@@ -49,6 +50,7 @@ public record QinConfig(
         DatabaseConfig database,
         LanguageConfig language,
         GeneratedConfig generated,
+        LanguageServerConfig languageServer,
         QinLanguageConfig qinLanguage,
         Map<String, String> scripts,
         List<Repository> repositories) {
@@ -108,6 +110,7 @@ public record QinConfig(
                 null, // database
                 null, // language
                 null, // generated
+                null, // languageServer
                 null, // qinLanguage
                 null, // scripts
                 null // repositories

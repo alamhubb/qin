@@ -7,6 +7,7 @@ import com.qin.types.FrontendConfig;
 import com.qin.types.GeneratedConfig;
 import com.qin.types.JavaConfig;
 import com.qin.types.LanguageConfig;
+import com.qin.types.LanguageServerConfig;
 import com.qin.types.OutputConfig;
 import com.qin.types.ParsedEntry;
 import com.qin.types.QinConfig;
@@ -87,6 +88,7 @@ public class ConfigLoader {
                 databaseConfigField(source),
                 languageConfigField(source),
                 generatedConfigField(source),
+                languageServerConfigField(source),
                 qinLanguageConfigField(source),
                 stringMapField(source, "scripts"),
                 null);
@@ -230,6 +232,20 @@ public class ConfigLoader {
                 stringField(map, "outputDir", null));
     }
 
+    private LanguageServerConfig languageServerConfigField(Map<String, Object> source) {
+        Object value = source.get("languageServer");
+        if (!(value instanceof Map<?, ?> block)) {
+            return null;
+        }
+        Map<String, Object> map = objectMap(block);
+        return new LanguageServerConfig(
+                stringField(map, "sourceExtension", null),
+                stringField(map, "serviceExtension", null),
+                stringField(map, "generatedParserTarget", null),
+                stringField(map, "parserPackage", null),
+                stringField(map, "compilerPackage", null));
+    }
+
     private QinLanguageConfig qinLanguageConfigField(Map<String, Object> source) {
         Object value = source.get("qinLanguage");
         if (!(value instanceof Map<?, ?> block)) {
@@ -314,6 +330,7 @@ public class ConfigLoader {
 
         validateLanguageConfig(config.language(), errors);
         validateGeneratedConfig(config.generated(), errors);
+        validateLanguageServerConfig(config.languageServer(), errors);
         validateQinLanguageConfig(config.qinLanguage(), errors);
 
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.failure(errors);
@@ -359,6 +376,28 @@ public class ConfigLoader {
         }
         for (String sourceRoot : generated.sourceRoots()) {
             requireExistingRelativePath(sourceRoot, "generated.sourceRoots", errors);
+        }
+    }
+
+    private void validateLanguageServerConfig(LanguageServerConfig languageServer, List<String> errors) {
+        if (languageServer == null) {
+            return;
+        }
+        if (isBlank(languageServer.sourceExtension())) {
+            errors.add("'languageServer.sourceExtension' must not be blank");
+        } else if (!languageServer.sourceExtension().startsWith(".")) {
+            errors.add("'languageServer.sourceExtension' must start with '.'");
+        }
+        if (isBlank(languageServer.serviceExtension())) {
+            errors.add("'languageServer.serviceExtension' must not be blank");
+        } else if (!languageServer.serviceExtension().startsWith(".")) {
+            errors.add("'languageServer.serviceExtension' must start with '.'");
+        }
+        if (isBlank(languageServer.generatedParserTarget())) {
+            errors.add("'languageServer.generatedParserTarget' must not be blank");
+        }
+        if (isBlank(languageServer.parserPackage()) && isBlank(languageServer.compilerPackage())) {
+            errors.add("'languageServer.parserPackage' or 'languageServer.compilerPackage' must not be blank");
         }
     }
 
@@ -452,6 +491,7 @@ public class ConfigLoader {
                 config.database(),
                 config.language(),
                 config.generated(),
+                config.languageServer(),
                 config.qinLanguage(),
                 config.scripts(),
                 config.repositories());

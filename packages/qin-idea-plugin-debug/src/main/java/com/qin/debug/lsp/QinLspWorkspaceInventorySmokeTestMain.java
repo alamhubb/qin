@@ -2,6 +2,7 @@ package com.qin.debug.lsp;
 
 import com.qin.core.ConfigLoader;
 import com.qin.types.LanguageConfig;
+import com.qin.types.LanguageServerConfig;
 import com.qin.types.QinConfig;
 
 import java.nio.file.Files;
@@ -64,6 +65,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 project.id() + " language.server is required");
         require(language.serverBundle() != null && !language.serverBundle().isBlank(),
                 project.id() + " language.serverBundle is required");
+        verifyLanguageServerMetadata(project, config);
         require("tsdown".equals(config.scripts().get("build")),
                 project.id() + " language build must be managed by Qin script: " + config.scripts());
         require(config.scripts().containsKey("test"),
@@ -83,6 +85,31 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 project.id() + " compiler build must be managed by Qin script: " + config.scripts());
         require(config.scripts().containsKey("test"),
                 project.id() + " compiler test script is required");
+    }
+
+    private static void verifyLanguageServerMetadata(InventoryProject project, QinConfig config) {
+        LanguageServerConfig languageServer = config.languageServer();
+        require(languageServer != null,
+                project.id() + " must declare shared languageServer metadata");
+        require(project.extension().equals(languageServer.sourceExtension()),
+                project.id() + " languageServer.sourceExtension mismatch: "
+                        + languageServer.sourceExtension());
+        require(".ts".equals(languageServer.serviceExtension()),
+                project.id() + " languageServer.serviceExtension must be .ts");
+        require("@qin/generated-qin-parser-ts".equals(languageServer.generatedParserTarget()),
+                project.id() + " languageServer.generatedParserTarget must be @qin/generated-qin-parser-ts");
+        if ("qin".equals(project.languageId())) {
+            require("com.qin:qin-parser".equals(languageServer.parserPackage()),
+                    project.id() + " languageServer.parserPackage must be com.qin:qin-parser");
+            require(languageServer.compilerPackage() == null || languageServer.compilerPackage().isBlank(),
+                    project.id() + " languageServer.compilerPackage must stay blank for Qin");
+        } else {
+            require(project.expectedCompilerPackage().equals(languageServer.compilerPackage()),
+                    project.id() + " languageServer.compilerPackage mismatch: "
+                            + languageServer.compilerPackage());
+            require(languageServer.parserPackage() == null || languageServer.parserPackage().isBlank(),
+                    project.id() + " languageServer.parserPackage must stay blank for compiler-backed languages");
+        }
     }
 
     private static void verifyJavaRuntimeProject(InventoryProject project, QinConfig config) {
@@ -171,11 +198,11 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                                 "create-cssts",
                                 "cssts-theme-element")),
                 InventoryProject.language("qin-language", Path.of("qin", "packages", "qin-language"),
-                        "qin-language", "qin", ".qin"),
+                        "qin-language", "qin", ".qin", null),
                 InventoryProject.language("ovs-language", Path.of("ovsjs", "ovs-language"),
-                        "ovs-language", "ovs", ".ovs"),
+                        "ovs-language", "ovs", ".ovs", "ovs-compiler"),
                 InventoryProject.language("cssts-language", Path.of("cssts", "cssts-language"),
-                        "cssts-language", "cssts", ".cssts"),
+                        "cssts-language", "cssts", ".cssts", "cssts-compiler"),
                 InventoryProject.compiler("ovs-compiler", Path.of("ovsjs", "ovs", "ovs-compiler"),
                         "ovs-compiler", "ovs", ".ovs"),
                 InventoryProject.compiler("cssts-compiler", Path.of("cssts", "cssts", "cssts-compiler"),
@@ -253,6 +280,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             ProjectKind kind,
             String languageId,
             String extension,
+            String expectedCompilerPackage,
             List<String> workspaceMembers) {
 
         static InventoryProject language(
@@ -260,8 +288,17 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 Path path,
                 String expectedName,
                 String languageId,
-                String extension) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.LANGUAGE, languageId, extension, List.of());
+                String extension,
+                String expectedCompilerPackage) {
+            return new InventoryProject(
+                    id,
+                    path,
+                    expectedName,
+                    ProjectKind.LANGUAGE,
+                    languageId,
+                    extension,
+                    expectedCompilerPackage,
+                    List.of());
         }
 
         static InventoryProject compiler(
@@ -270,15 +307,23 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String expectedName,
                 String languageId,
                 String extension) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.COMPILER, languageId, extension, List.of());
+            return new InventoryProject(
+                    id,
+                    path,
+                    expectedName,
+                    ProjectKind.COMPILER,
+                    languageId,
+                    extension,
+                    null,
+                    List.of());
         }
 
         static InventoryProject javaRuntime(String id, Path path, String expectedName) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.JAVA_RUNTIME, null, null, List.of());
+            return new InventoryProject(id, path, expectedName, ProjectKind.JAVA_RUNTIME, null, null, null, List.of());
         }
 
         static InventoryProject generatedTs(String id, Path path, String expectedName) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.GENERATED_TS, null, null, List.of());
+            return new InventoryProject(id, path, expectedName, ProjectKind.GENERATED_TS, null, null, null, List.of());
         }
 
         static InventoryProject workspace(
@@ -294,6 +339,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                     ProjectKind.WORKSPACE,
                     languageId,
                     null,
+                    null,
                     workspaceMembers);
         }
 
@@ -303,7 +349,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String expectedName,
                 String languageId,
                 String extension) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.TOOLING, languageId, extension, List.of());
+            return new InventoryProject(id, path, expectedName, ProjectKind.TOOLING, languageId, extension, null, List.of());
         }
     }
 }

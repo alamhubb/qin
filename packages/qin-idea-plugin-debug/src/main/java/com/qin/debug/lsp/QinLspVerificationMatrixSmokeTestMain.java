@@ -2,6 +2,7 @@ package com.qin.debug.lsp;
 
 import com.qin.core.ConfigLoader;
 import com.qin.types.LanguageConfig;
+import com.qin.types.LanguageServerConfig;
 import com.qin.types.QinConfig;
 
 import java.nio.file.Files;
@@ -33,6 +34,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         List<MatrixCase> cases = List.of(
                 new MatrixCase("qin", ".qin", Path.of("qin", "packages", "qin-language"),
                         null, "dist/language-server.cjs", "generated/qin-parser-ts", null,
+                        "com.qin:qin-parser", null,
                         "tests/test-language-server.ts",
                         "tsx tests/test-language-plugin.ts",
                         "tsx tests/test-generated-parser-parity.ts",
@@ -40,6 +42,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 new MatrixCase("ovs", ".ovs", Path.of("ovsjs", "ovs-language"),
                         Path.of("ovsjs", "ovs", "ovs-compiler"),
                         "dist/language-server.js", "@qin/generated-qin-parser-ts", "../ovs/ovs-compiler",
+                        null, "ovs-compiler",
                         "tests/test-language-server.ts",
                         "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts --source",
@@ -47,6 +50,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 new MatrixCase("cssts", ".cssts", Path.of("cssts", "cssts-language"),
                         Path.of("cssts", "cssts", "cssts-compiler"),
                         "dist/language-server.cjs", "@qin/generated-qin-parser-ts", "../cssts/cssts-compiler",
+                        null, "cssts-compiler",
                         "tests/test-language-server.ts",
                         "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts"));
@@ -65,6 +69,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(Files.isRegularFile(projectRoot.resolve(language.serverBundle()).normalize()),
                     matrixCase.id() + " server bundle must exist before IDEA smoke runs");
             verifyLanguageToolReferences(matrixCase, projectRoot, workspaceRoot, config, language);
+            verifyLanguageServerMetadata(matrixCase, config);
 
             Path resolvedIdeaClient = projectRoot.resolve(language.ideaLspClient()).normalize();
             require(ideaClientPath.equals(resolvedIdeaClient),
@@ -431,6 +436,32 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
     }
 
+    private static void verifyLanguageServerMetadata(MatrixCase matrixCase, QinConfig config) {
+        LanguageServerConfig languageServer = config.languageServer();
+        require(languageServer != null,
+                matrixCase.id() + " must declare shared languageServer metadata");
+        require(matrixCase.extension().equals(languageServer.sourceExtension()),
+                matrixCase.id() + " languageServer.sourceExtension mismatch");
+        require(".ts".equals(languageServer.serviceExtension()),
+                matrixCase.id() + " languageServer.serviceExtension must be .ts");
+        require(GENERATED_QIN_PARSER_PACKAGE.equals(languageServer.generatedParserTarget()),
+                matrixCase.id() + " languageServer.generatedParserTarget mismatch");
+        if (matrixCase.expectedParserPackage() == null) {
+            require(languageServer.parserPackage() == null || languageServer.parserPackage().isBlank(),
+                    matrixCase.id() + " languageServer.parserPackage must stay blank");
+        } else {
+            require(matrixCase.expectedParserPackage().equals(languageServer.parserPackage()),
+                    matrixCase.id() + " languageServer.parserPackage mismatch");
+        }
+        if (matrixCase.expectedCompilerPackage() == null) {
+            require(languageServer.compilerPackage() == null || languageServer.compilerPackage().isBlank(),
+                    matrixCase.id() + " languageServer.compilerPackage must stay blank");
+        } else {
+            require(matrixCase.expectedCompilerPackage().equals(languageServer.compilerPackage()),
+                    matrixCase.id() + " languageServer.compilerPackage mismatch");
+        }
+    }
+
     private static void verifyPathLikeOrPackageReference(
             String id,
             String field,
@@ -559,8 +590,18 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
         require(languageConfigSource.contains("parser: \"generated/qin-parser-ts\""),
                 "qin-language must point language.parser at generated/qin-parser-ts");
+        require(config.languageServer() != null,
+                "qin-language must declare shared languageServer metadata");
+        require(".qin".equals(config.languageServer().sourceExtension()),
+                "qin-language languageServer.sourceExtension must be .qin");
+        require(".ts".equals(config.languageServer().serviceExtension()),
+                "qin-language languageServer.serviceExtension must be .ts");
+        require("com.qin:qin-parser".equals(config.languageServer().parserPackage()),
+                "qin-language languageServer.parserPackage must be com.qin:qin-parser");
+        require(GENERATED_QIN_PARSER_PACKAGE.equals(config.languageServer().generatedParserTarget()),
+                "qin-language languageServer.generatedParserTarget must be @qin/generated-qin-parser-ts");
         require(config.qinLanguage() != null,
-                "qin-language must declare Qin language server metadata");
+                "qin-language must keep Qin-specific language metadata");
         require(".qin".equals(config.qinLanguage().sourceExtension()),
                 "qin-language qinLanguage.sourceExtension must be .qin");
         require(".ts".equals(config.qinLanguage().serviceExtension()),
@@ -627,6 +668,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             String serverBundle,
             String expectedParser,
             String expectedCompiler,
+            String expectedParserPackage,
+            String expectedCompilerPackage,
             String languageServerTest,
             String... requiredTestScriptParts) {
     }

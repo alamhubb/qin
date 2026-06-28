@@ -45,6 +45,12 @@ export default {
     ],
     outputDir: "generated/qin-parser-ts"
   },
+  languageServer: {
+    sourceExtension: ".qin",
+    serviceExtension: ".ts",
+    generatedParserTarget: "@qin/generated-qin-parser-ts",
+    parserPackage: "com.qin:qin-parser"
+  },
   qinLanguage: {
     sourceExtension: ".qin",
     serviceExtension: ".ts",

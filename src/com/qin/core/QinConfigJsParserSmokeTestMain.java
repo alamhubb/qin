@@ -55,6 +55,12 @@ public final class QinConfigJsParserSmokeTestMain {
                     sourceRoots: ['src/main/java', '../slime/java-slime/slime-parser/src/main/java'],
                     outputDir: 'generated/parser-ts'
                   },
+                  languageServer: {
+                    sourceExtension: '.qin',
+                    serviceExtension: '.ts',
+                    generatedParserTarget: '@qin/generated-qin-parser-ts',
+                    parserPackage: 'com.qin:qin-parser'
+                  },
                   qinLanguage: {
                     sourceExtension: '.qin',
                     serviceExtension: '.ts',
@@ -83,6 +89,12 @@ public final class QinConfigJsParserSmokeTestMain {
         require("com.qin.demo.Parser".equals(config.generated().entryBinaryName()), "generated.entryBinaryName");
         require(config.generated().sourceRoots().size() == 2, "generated.sourceRoots");
         require("generated/parser-ts".equals(config.generated().outputDir()), "generated.outputDir");
+        require(config.languageServer() != null, "languageServer");
+        require(".qin".equals(config.languageServer().sourceExtension()), "languageServer.sourceExtension");
+        require(".ts".equals(config.languageServer().serviceExtension()), "languageServer.serviceExtension");
+        require("@qin/generated-qin-parser-ts".equals(config.languageServer().generatedParserTarget()),
+                "languageServer.generatedParserTarget");
+        require("com.qin:qin-parser".equals(config.languageServer().parserPackage()), "languageServer.parserPackage");
         require(config.qinLanguage() != null, "qinLanguage");
         require(".qin".equals(config.qinLanguage().sourceExtension()), "qinLanguage.sourceExtension");
         require(".ts".equals(config.qinLanguage().serviceExtension()), "qinLanguage.serviceExtension");
