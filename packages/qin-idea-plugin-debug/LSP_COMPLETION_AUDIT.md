@@ -36,7 +36,11 @@ Run the full gate, including Qin JVM `.class` runtime smokes, with:
 .\gradlew.bat check
 ```
 
-The `lspUnifiedMatrix` task currently covers:
+The `lspUnifiedMatrix` task currently covers the checks below. It also verifies
+this audit keeps its target, requirement-audit, known-gaps, and next-hardening
+sections so partial evidence cannot silently become a completion claim.
+
+The task currently covers:
 
 - `qinLanguageTest`
 - `ovsLanguageTest`

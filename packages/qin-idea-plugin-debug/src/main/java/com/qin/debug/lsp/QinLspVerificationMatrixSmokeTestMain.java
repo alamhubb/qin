@@ -195,6 +195,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(matrixBlock.contains("dependsOn(\"" + matrixTask + "\")"),
                     "lspUnifiedMatrix must depend on " + matrixTask);
         }
+        verifyCompletionAuditDocument(ideaClientPath.resolve("LSP_COMPLETION_AUDIT.md"));
 
         System.out.println("Qin LSP verification matrix smoke passed");
     }
@@ -411,6 +412,39 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         id + " runtime script " + script.getKey()
                                 + " must not use editor/LSP tooling command " + forbidden + ": " + command);
             }
+        }
+    }
+
+    private static void verifyCompletionAuditDocument(Path auditPath) throws Exception {
+        require(Files.isRegularFile(auditPath), "LSP completion audit document must exist: " + auditPath);
+        String audit = Files.readString(auditPath);
+        for (String requiredSection : List.of(
+                "## Target",
+                "## Requirement Audit",
+                "## Known Gaps",
+                "## Next Hardening Steps")) {
+            require(audit.contains(requiredSection),
+                    "LSP completion audit must keep section " + requiredSection);
+        }
+        require(audit.contains("audit map, not a completion claim"),
+                "LSP completion audit must not present partial evidence as a completion claim");
+        require(audit.contains("These items are not proven complete yet"),
+                "LSP completion audit must keep explicit non-completion wording while gaps remain");
+        for (String gapNeedle : List.of(
+                "Full grammar authority",
+                "manual IDE behavior",
+                "LSP-critical inventory",
+                "JVM `.class` execution",
+                "Node/TypeScript boundary")) {
+            require(audit.contains(gapNeedle),
+                    "LSP completion audit must keep known gap coverage for " + gapNeedle);
+        }
+        for (String hardeningNeedle : List.of(
+                "Expand the unified class-declaration `.class` gate",
+                "Keep expanding generated parser parity",
+                "Keep this audit updated")) {
+            require(audit.contains(hardeningNeedle),
+                    "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
     }
 
