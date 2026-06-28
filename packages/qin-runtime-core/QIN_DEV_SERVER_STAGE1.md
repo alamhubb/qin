@@ -41,15 +41,19 @@ Current Stage-1 development expects a sibling multi-repo workspace:
 workspace/
   qin/
   slime/
+  cssts/
+  ovsjs/
 ```
 
-`qin` owns the language, CLI, runtime, dev server, and fullstack examples. `slime` owns the shared parser infrastructure used by `qin-parser`.
+`qin` owns the language, CLI, runtime, dev server, and fullstack examples. `slime` owns the shared parser infrastructure used by `qin-parser`. `cssts` and `ovsjs` own their compiler/language packages, while their parser base is the Qin-generated TypeScript parser.
 
 This is intentionally a workspace-level dependency, not a hidden runtime fallback. Qin discovers sibling projects by scanning upward to the parent workspace and then recursively finding `qin.config.js` files. A clean machine should clone both repositories under the same parent directory before running the current fullstack dev server:
 
 ```powershell
 git clone https://gitee.com/alamhubb/qin.git qin
 git clone https://gitee.com/alamhubb/slime.git slime
+git clone https://gitee.com/alamhubb/cssts.git cssts
+git clone https://gitee.com/alamhubb/ovsjs.git ovsjs
 cd qin
 powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
 .\qin.bat dev --root packages\qin-runtime-core\examples\fullstack-mvp --port 19095 --dev
@@ -200,7 +204,7 @@ Important transition note:
 - Qin must not maintain a second primary Vue parser/compiler as a fallback path
 - the intended steady-state path is `@vue/compiler-sfc` executed under Qin's own package/module/compiler system
 - the intended plugin path is Qin-hosted plugin lifecycle compatibility for required plugins, not a generic Vite runtime
-- `lang=cssts` is handled through npm `cssts-compiler` and `cssts-ts`, not a local Qin-only CSSTS branch
+- `lang=cssts` is handled through the Qin-managed `cssts-compiler` package, backed by `@qin/generated-qin-parser-ts`, plus `cssts-ts`; it must not switch to a local Qin-only fallback branch
 
 ## Non-Goals For This Stage
 

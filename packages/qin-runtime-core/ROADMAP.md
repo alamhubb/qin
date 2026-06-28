@@ -81,7 +81,7 @@ Immediate priority:
 - push npm/package support first through Class-A Qin-compatible packages, then selective host-adapter work
 - actively support the ESM/JVM-friendly feature set; do not burn Stage-1 effort on engine-parity work
 - Vue frontend integration should run through Qin's native frontend pipeline, not through Vite or `@vitejs/plugin-vue`
-- `lang=cssts` should resolve to the npm `cssts` package as the only formal implementation source
+- `lang=cssts` should resolve through the Qin-managed `cssts-compiler` package, whose parser inherits `@qin/generated-qin-parser-ts`, with `cssts-ts` as the runtime helper package
 
 Explicitly not the current primary implementation focus:
 
