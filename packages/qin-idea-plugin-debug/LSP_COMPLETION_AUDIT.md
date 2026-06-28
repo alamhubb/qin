@@ -72,7 +72,7 @@ The full `check` task also covers:
 | IDEA plugin packaging and fixture coverage stay in the gate | `lspVerificationMatrixSmoke` verifies the LSP matrix and `check` depend on descriptor, package, and UI fixture smokes. | Proven |
 | Qin-managed project metadata is used | `lspVerificationMatrixSmoke` loads each language project's `qin.config.js` and verifies `language.parser`, `language.compiler`, `language.serverBundle`, scripts, and dependencies; `lspLanguageCliSmoke` runs `qin language check`, `bundle`, and `build`/`test`/`dev`/`server --dry-run` for Qin, OVS, and CSSTS language projects; `lspWorkspaceInventorySmoke` verifies the current LSP-critical language, compiler, parser, CLI, and runtime projects are all owned by `qin.config.js`. | Proven for the current LSP-critical inventory |
 | Qin runtime target remains JVM `.class` | `qinJvmClassTargetSmoke` runs `qin run com.qin.lang.cli.SmokeTestMain`; the smoke compiles and reflects a 5-case `.class` corpus covering top-level function calls, `export const`, object member access, array literals, and `java:` import plus Java instance calls. `qinJvmClassDeclarationSmoke` runs `QinJvmClassDeclarationCorpusSmokeTestMain`, a 10-case class-declaration corpus covering Java `extends`, field annotations, fields, constructors, local member access, `this.field.method()`, runtime function methods, Java static calls, Java constructor returns, direct Java SlimeParser inheritance from parsed Qin source, and parsed Qin method-body execution for binary and conditional returns. | Proven for current CLI and class-declaration corpus |
-| Node/TypeScript is limited to editor/LSP/tooling | `LSP.md` states the boundary; `qinJvmClassTargetSmoke` separately verifies the runtime path. | Partly proven |
+| Node/TypeScript is limited to editor/LSP/tooling | `LSP.md` states the boundary; `qinJvmClassTargetSmoke` and `qinJvmClassDeclarationSmoke` separately verify the runtime path; `lspVerificationMatrixSmoke` asserts those runtime smoke Gradle task blocks invoke `qin run` for JVM `.class` smoke mains and do not invoke `language`, `node`, `tsx`, or `tsdown`. | Proven for current checked runtime tasks |
 | No fallback success path | Language plugin tests assert invalid input does not fall back to identity source text; transform failures generate visible `Qin/OVS/CSSTS transform failed` code. | Proven for current language-server transform paths |
 
 ## Known Gaps
@@ -95,9 +95,9 @@ These items are not proven complete yet:
   class-declaration corpus, including direct parsed-source class/method
   execution, not by every Qin fullstack example,
   production-style application path, or every class declaration feature variant.
-- The Node/TypeScript boundary is documented and tested indirectly. A future
-  smoke could assert that runtime-oriented Qin checks do not call language-server
-  Node commands.
+- The Node/TypeScript boundary is proven for the current checked runtime tasks,
+  but not yet for every experimental demo or manually run helper outside the
+  `check` gate.
 
 ## Next Hardening Steps
 

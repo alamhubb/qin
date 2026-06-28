@@ -134,6 +134,16 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qinJvmClassDeclarationSmoke must run from qin/packages/qin-lang-backend-jvm");
         require(buildSource.contains("\"run\", \"com.qin.lang.backend.jvm.QinJvmClassDeclarationCorpusSmokeTestMain\""),
                 "qinJvmClassDeclarationSmoke must run the Qin JVM class declaration corpus smoke");
+        verifyRuntimeClassSmokeTask(
+                buildSource,
+                "qinJvmClassTargetSmoke",
+                "qin/packages/qin-lang-cli",
+                "com.qin.lang.cli.SmokeTestMain");
+        verifyRuntimeClassSmokeTask(
+                buildSource,
+                "qinJvmClassDeclarationSmoke",
+                "qin/packages/qin-lang-backend-jvm",
+                "com.qin.lang.backend.jvm.QinJvmClassDeclarationCorpusSmokeTestMain");
         String checkBlock = taskBlock(buildSource, "named(\"check\")");
         String matrixBlock = taskBlock(buildSource, "register(\"lspUnifiedMatrix\")");
         for (String smokeTask : List.of(
@@ -324,6 +334,28 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 || (!rawReference.contains("/")
                 && !rawReference.contains("\\")
                 && !rawReference.startsWith("."));
+    }
+
+    private static void verifyRuntimeClassSmokeTask(
+            String buildSource,
+            String taskName,
+            String expectedWorkingDirectory,
+            String expectedMainClass) {
+        String taskBlock = taskBlock(buildSource, "register<Exec>(\"" + taskName + "\")");
+        require(taskBlock.contains(expectedWorkingDirectory),
+                taskName + " must run from " + expectedWorkingDirectory);
+        require(taskBlock.contains("\"run\", \"" + expectedMainClass + "\""),
+                taskName + " must invoke Qin run for " + expectedMainClass);
+        for (String forbidden : List.of(
+                "\"language\"",
+                "\"test\"",
+                "\"server\"",
+                "\"node\"",
+                "\"tsx\"",
+                "\"tsdown\"")) {
+            require(!taskBlock.contains(forbidden),
+                    taskName + " must stay on the JVM .class path and not use " + forbidden);
+        }
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
