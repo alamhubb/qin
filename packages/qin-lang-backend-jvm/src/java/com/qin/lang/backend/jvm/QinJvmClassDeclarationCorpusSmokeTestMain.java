@@ -16,7 +16,9 @@ public final class QinJvmClassDeclarationCorpusSmokeTestMain {
         QinJvmRuntimeFunctionMethodSmokeTestMain.main(args);
         QinJvmStaticMethodCallSmokeTestMain.main(args);
         QinJvmJavaNewReturnSmokeTestMain.main(args);
+        QinJvmJavaSlimeParserExtendsSmokeTestMain.main(args);
+        QinJvmParsedMethodBodyClassSmokeTestMain.main(args);
 
-        System.out.println("Qin JVM class declaration corpus smoke passed: 8 cases");
+        System.out.println("Qin JVM class declaration corpus smoke passed: 10 cases");
     }
 }
