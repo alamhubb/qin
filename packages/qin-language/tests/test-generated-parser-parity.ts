@@ -113,6 +113,71 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'generic function',
+    source: [
+      'export function identity<T>(value: T): T {',
+      '  return value',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'generic interface and object type alias',
+    source: [
+      'export interface Box<T> {',
+      '  value: T',
+      '}',
+      'export type Pair<T, U> = { left: T, right: U }',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'namespace export',
+    source: [
+      'export namespace Api {',
+      '  export const version = "1"',
+      '  export function label(name: string) { return name + version }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'enum export',
+    source: [
+      'export enum Status {',
+      '  Ready = "ready",',
+      '  Done = "done"',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'import export variants',
+    source: [
+      'import defaultThing, { named as alias, other } from "./dep.qin"',
+      'import * as everything from "./all.qin"',
+      'export { alias, other as renamed }',
+      'export * from "./more.qin"',
+      'export { default as DefaultThing } from "./dep.qin"',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'type import export variants',
+    source: [
+      'import type { User } from "./types.qin"',
+      'export type { User }',
+      'export interface Result<T> { value: T }',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'class method expressions',
     source: [
       'class HelloService {',
@@ -122,6 +187,35 @@ const cases: ParserCase[] = [
       '',
       '  choose(flag: boolean): string {',
       '    return flag ? "yes" : "no"',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'class fields and constructor',
+    source: [
+      'class UserService {',
+      '  name: string = "qin"',
+      '  count = 0',
+      '',
+      '  constructor(name: string) {',
+      '    this.name = name',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'decorated class and method',
+    source: [
+      '@Controller',
+      'export class UserController {',
+      '  @Get("/users")',
+      '  list(): string[] {',
+      '    return []',
       '  }',
       '}',
       '',
@@ -188,6 +282,31 @@ const cases: ParserCase[] = [
   {
     name: 'invalid qin object initializer',
     source: 'export object Broken { value = }\n',
+    ok: false,
+  },
+  {
+    name: 'invalid unclosed import',
+    source: 'import { User from "./types.qin"\n',
+    ok: false,
+  },
+  {
+    name: 'invalid unclosed decorator',
+    source: [
+      '@Controller(',
+      'export object Broken {',
+      '  value = 1',
+      '}',
+      '',
+    ].join('\n'),
+    ok: false,
+  },
+  {
+    name: 'invalid unclosed class',
+    source: [
+      'export class Broken {',
+      '  value = 1',
+      '',
+    ].join('\n'),
     ok: false,
   },
 ]
