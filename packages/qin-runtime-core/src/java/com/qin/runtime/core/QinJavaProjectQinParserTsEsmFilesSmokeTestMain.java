@@ -28,7 +28,13 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 .resolve("qin-parser")
                 .resolve("ts-esm");
         List<QinJavaProjectJsCompiler.EsmFileOutput> outputs = new QinJavaProjectJsCompiler()
-                .compileSuperclassClosureEsmTsFiles(sourceRoots, "com.qin.parser.QinParser", outputRoot);
+                .compileSuperclassClosureEsmTsFiles(
+                        sourceRoots,
+                        "com.qin.parser.QinParser",
+                        List.of(
+                                "com.slime.parser.cstToAst.SlimeCstToAstUtils",
+                                "com.slime.parser.cstToAst.SlimeAstCreateUtils"),
+                        outputRoot);
 
         Map<String, QinJavaProjectJsCompiler.EsmFileOutput> byBinaryName = outputs.stream()
                 .collect(Collectors.toMap(QinJavaProjectJsCompiler.EsmFileOutput::binaryName, output -> output));
@@ -59,6 +65,16 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated qin.config.js points to TS package entry");
         require(indexText.contains("export default com_qin_parser_QinParser"),
                 "generated package index exports raw QinParser class as default");
+        require(indexText.contains("com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils"),
+                "generated package index named-exports SlimeCstToAstUtils");
+        require(indexText.contains("com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils"),
+                "generated package index named-exports SlimeAstCreateUtils");
+        require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
+                        .resolve("cstToAst").resolve("SlimeCstToAstUtils.ts")),
+                "generated SlimeCstToAstUtils TS output");
+        require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
+                        .resolve("cstToAst").resolve("SlimeAstCreateUtils.ts")),
+                "generated SlimeAstCreateUtils TS output");
 
         Path smokeRoot = Files.createTempDirectory("qin-generated-qin-parser-ts-smoke-");
         Files.writeString(smokeRoot.resolve("qin.config.js"), """
@@ -78,7 +94,11 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
 
         Object result = new QinJsPackageRunner().runModuleSource(smokeRoot, """
                 import QinParser from "@qin/generated-qin-parser-ts";
-                import { com_slime_parser_SlimeJavascriptParser$SourceType as SourceType } from "@qin/generated-qin-parser-ts";
+                import {
+                  SlimeAstCreateUtils,
+                  SlimeCstToAstUtils,
+                  com_slime_parser_SlimeJavascriptParser$SourceType as SourceType
+                } from "@qin/generated-qin-parser-ts";
 
                 const parser = new QinParser("export object Counter { value = 1; next() { return this.value + 1; } }");
                 const cst = parser.Program(SourceType.__qin_field_MODULE);
@@ -96,6 +116,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                   cstName: cst ? cst.getName() : null,
                   hasQinObjectDeclaration: names.includes("QinObjectDeclaration") || names.includes("QinObjectDeclarationBody"),
                   hasQinObjectBody: names.includes("QinObjectDeclarationBody"),
+                  hasSlimeCstToAstUtilsExport: typeof SlimeCstToAstUtils === "function",
+                  hasSlimeAstCreateUtilsExport: typeof SlimeAstCreateUtils === "function",
                   names: names.slice(0, 40).join(",")
                 });
                 """, "generated_qin_parser_object");
@@ -107,6 +129,10 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated Qin parser recognizes Qin object declaration");
         require(Boolean.TRUE.equals(map.get("hasQinObjectBody")),
                 "generated Qin parser recognizes Qin object declaration");
+        require(Boolean.TRUE.equals(map.get("hasSlimeCstToAstUtilsExport")),
+                "generated Qin parser package exports SlimeCstToAstUtils");
+        require(Boolean.TRUE.equals(map.get("hasSlimeAstCreateUtilsExport")),
+                "generated Qin parser package exports SlimeAstCreateUtils");
 
         System.out.println("Generated ESM TS files: " + outputRoot);
         System.out.println("Generated ESM TS npm package: @qin/generated-qin-parser-ts");

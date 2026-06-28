@@ -40,6 +40,7 @@ import com.slime.java.ast.JavaAstTryStatement;
 import com.slime.java.ast.JavaAstUnaryExpression;
 import com.slime.java.ast.JavaAstUpdateExpression;
 import com.slime.java.ast.JavaAstWhileStatement;
+import com.slime.java.ast.JavaAstYieldStatement;
 import com.slime.java.ast.JavaCstToAst;
 
 import java.io.IOException;
@@ -106,7 +107,20 @@ public final class QinJavaProjectJsCompiler {
             List<Path> sourceRoots,
             String entryBinaryName,
             Path outputRoot) throws IOException {
-        return compileSuperclassClosureEsmFiles(sourceRoots, entryBinaryName, outputRoot, new QinTsBackend());
+        return compileSuperclassClosureEsmFiles(sourceRoots, entryBinaryName, List.of(), outputRoot, new QinTsBackend());
+    }
+
+    public List<EsmFileOutput> compileSuperclassClosureEsmTsFiles(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            List<String> additionalEntryBinaryNames,
+            Path outputRoot) throws IOException {
+        return compileSuperclassClosureEsmFiles(
+                sourceRoots,
+                entryBinaryName,
+                additionalEntryBinaryNames,
+                outputRoot,
+                new QinTsBackend());
     }
 
     private List<EsmFileOutput> compileSuperclassClosureEsmFiles(
@@ -114,7 +128,17 @@ public final class QinJavaProjectJsCompiler {
             String entryBinaryName,
             Path outputRoot,
             QinIrCodeBackend backend) throws IOException {
-        Map<String, Path> sourceFiles = sourceDependencyFiles(sourceRoots, entryBinaryName);
+        return compileSuperclassClosureEsmFiles(sourceRoots, entryBinaryName, List.of(), outputRoot, backend);
+    }
+
+    private List<EsmFileOutput> compileSuperclassClosureEsmFiles(
+            List<Path> sourceRoots,
+            String entryBinaryName,
+            List<String> additionalEntryBinaryNames,
+            Path outputRoot,
+            QinIrCodeBackend backend) throws IOException {
+        List<String> rootBinaryNames = rootBinaryNames(entryBinaryName, additionalEntryBinaryNames);
+        Map<String, Path> sourceFiles = sourceDependencyFiles(sourceRoots, rootBinaryNames);
         Map<String, JavaAstProgram> parsedPrograms = parseSourceFiles(sourceFiles);
         QinIrProgram bundleProgram;
         try {
@@ -172,8 +196,17 @@ public final class QinJavaProjectJsCompiler {
             Files.writeString(outputFile, generated, StandardCharsets.UTF_8);
             outputs.add(new EsmFileOutput(sourceBinaryName, sourceFile, outputFile, generated));
         }
-        writeGeneratedEsmPackage(outputRoot, entryBinaryName, backend, bundleProgram);
+        writeGeneratedEsmPackage(outputRoot, entryBinaryName, additionalEntryBinaryNames, backend, bundleProgram);
         return List.copyOf(outputs);
+    }
+
+    private List<String> rootBinaryNames(String entryBinaryName, List<String> additionalEntryBinaryNames) {
+        LinkedHashSet<String> rootBinaryNames = new LinkedHashSet<>();
+        rootBinaryNames.add(entryBinaryName);
+        if (additionalEntryBinaryNames != null) {
+            rootBinaryNames.addAll(additionalEntryBinaryNames);
+        }
+        return List.copyOf(rootBinaryNames);
     }
 
     private Set<String> superclassClosureDependencyBinaryNames(String binaryName, Set<String> sourceBinaryNames) {
@@ -356,6 +389,7 @@ public final class QinJavaProjectJsCompiler {
     private void writeGeneratedEsmPackage(
             Path outputRoot,
             String entryBinaryName,
+            List<String> additionalEntryBinaryNames,
             QinIrCodeBackend backend,
             QinIrProgram program) throws IOException {
         String packageName = generatedPackageName(entryBinaryName, backend);
@@ -367,11 +401,16 @@ public final class QinJavaProjectJsCompiler {
                 StandardCharsets.UTF_8);
         Files.writeString(
                 outputRoot.resolve("qin.config.js"),
-                generatedQinConfig(packageName, entryBinaryName, extension),
+                generatedQinConfig(packageName, entryBinaryName, additionalEntryBinaryNames, extension),
                 StandardCharsets.UTF_8);
         Files.writeString(
                 outputRoot.resolve("index." + extension),
-                generatedPackageIndex(entryBinaryName, extension, program, backend.options().emitTypeAnnotations()),
+                generatedPackageIndex(
+                        entryBinaryName,
+                        additionalEntryBinaryNames,
+                        extension,
+                        program,
+                        backend.options().emitTypeAnnotations()),
                 StandardCharsets.UTF_8);
         if (isGeneratedSlimeParserEntry(entryBinaryName)) {
             writeGeneratedSlimeParserCompatibilityEntries(outputRoot, extension);
@@ -562,7 +601,19 @@ public final class QinJavaProjectJsCompiler {
                 """.formatted(extension);
     }
 
-    private String generatedQinConfig(String packageName, String entryBinaryName, String extension) {
+    private String generatedQinConfig(
+            String packageName,
+            String entryBinaryName,
+            List<String> additionalEntryBinaryNames,
+            String extension) {
+        String additionalEntries = "";
+        if (additionalEntryBinaryNames != null && !additionalEntryBinaryNames.isEmpty()) {
+            additionalEntries = ",\n    additionalEntryBinaryNames: ["
+                    + additionalEntryBinaryNames.stream()
+                    .map(value -> "\"" + escapeJs(value) + "\"")
+                    .collect(java.util.stream.Collectors.joining(", "))
+                    + "]";
+        }
         return """
                 export default {
                   name: "%s",
@@ -570,14 +621,15 @@ public final class QinJavaProjectJsCompiler {
                   entry: "./index.%s",
                   generated: {
                     source: "java",
-                    entryBinaryName: "%s"
+                    entryBinaryName: "%s"%s
                   }
                 }
-                """.formatted(escapeJs(packageName), extension, escapeJs(entryBinaryName));
+                """.formatted(escapeJs(packageName), extension, escapeJs(entryBinaryName), additionalEntries);
     }
 
     private String generatedPackageIndex(
             String entryBinaryName,
+            List<String> additionalEntryBinaryNames,
             String extension,
             QinIrProgram program,
             boolean typeScript) {
@@ -619,6 +671,16 @@ public final class QinJavaProjectJsCompiler {
         }
         if (!slimeParserEntry) {
             appendExportAlias(js, entryBinaryName, simpleClassName(entryBinaryName), extension, binaryNames);
+        }
+        if (additionalEntryBinaryNames != null) {
+            for (String additionalEntryBinaryName : additionalEntryBinaryNames) {
+                appendExportAlias(
+                        js,
+                        additionalEntryBinaryName,
+                        simpleClassName(additionalEntryBinaryName),
+                        extension,
+                        binaryNames);
+            }
         }
         appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser", "SlimeJavascriptParser", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.consumer.SlimeTokenConsumer", "SlimeTokenConsumer", extension, binaryNames);
@@ -1097,11 +1159,18 @@ public final class QinJavaProjectJsCompiler {
     }
 
     public Map<String, Path> sourceDependencyFiles(List<Path> sourceRoots, String entryBinaryName) {
+        return sourceDependencyFiles(sourceRoots, List.of(entryBinaryName));
+    }
+
+    public Map<String, Path> sourceDependencyFiles(List<Path> sourceRoots, List<String> rootBinaryNames) {
         Map<String, Path> sourceIndex = sourceIndex(sourceRoots);
         Map<String, Path> sourceFiles = new LinkedHashMap<>();
         Map<String, JavaAstProgram> parsedPrograms = new HashMap<>();
-        LinkedHashSet<String> pending = new LinkedHashSet<>(superclassBinaryNames(entryBinaryName));
-        pending.add(entryBinaryName);
+        LinkedHashSet<String> pending = new LinkedHashSet<>();
+        for (String rootBinaryName : rootBinaryNames) {
+            pending.addAll(superclassBinaryNames(rootBinaryName));
+            pending.add(rootBinaryName);
+        }
 
         while (!pending.isEmpty()) {
             String binaryName = pending.removeFirst();
@@ -1264,6 +1333,8 @@ public final class QinJavaProjectJsCompiler {
                     collectExpressionReferences(returnStatement.expression(), resolver, sourceBinaryNames, referenced);
             case JavaAstThrowStatement throwStatement ->
                     collectExpressionReferences(throwStatement.expression(), resolver, sourceBinaryNames, referenced);
+            case JavaAstYieldStatement yieldStatement ->
+                    collectExpressionReferences(yieldStatement.expression(), resolver, sourceBinaryNames, referenced);
             case JavaAstTryStatement tryStatement -> {
                 for (JavaAstStatement tryBodyStatement : tryStatement.tryStatements()) {
                     collectStatementReferences(tryBodyStatement, resolver, sourceBinaryNames, referenced);

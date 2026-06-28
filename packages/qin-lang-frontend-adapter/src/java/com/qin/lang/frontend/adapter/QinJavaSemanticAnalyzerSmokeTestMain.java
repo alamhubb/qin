@@ -88,6 +88,35 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                     Integer mergeCount(Map<String, Integer> counts, String name) {
                         return counts.merge(name, 1, Integer::sum);
                     }
+                    String firstChildName(List<SubhutiCst> children) {
+                        return children.get(0).getName();
+                    }
+                    char prefixIncrementIndex(String text) {
+                        int i = 0;
+                        return text.charAt(++i);
+                    }
+                    SubhutiCst[] typedArray(List<SubhutiCst> children) {
+                        return children.toArray(new SubhutiCst[0]);
+                    }
+                    String enhancedForVarChildName(List<SubhutiCst> children) {
+                        String name = "";
+                        for (var child : children) {
+                            name = child.getName();
+                        }
+                        return name;
+                    }
+                    String conditionalPatternName(Object value) {
+                        return value instanceof Person person ? person.display() : "";
+                    }
+                    boolean logicalPatternName(Object value) {
+                        return value instanceof Person person && person.display().isEmpty();
+                    }
+                    String guardPatternName(Object value, boolean blank) {
+                        if (!(value instanceof Person person) || blank) {
+                            return "";
+                        }
+                        return person.display();
+                    }
                 }
                 """;
 
@@ -98,7 +127,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 25, "method count");
+        require(person.methods().size() == 32, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
@@ -205,6 +234,27 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                 "merge count declared return binary name");
         require("java.lang.Integer".equals(mergeCount.returnExpressionType().binaryName()),
                 "merge count expression return binary name");
+        QinJavaSemanticMethod firstChildName = person.methods().get(25);
+        require(firstChildName.returnExpressionType().kind() == QinIrTypeKind.STRING,
+                "generic list get chained method return type");
+        QinJavaSemanticMethod prefixIncrementIndex = person.methods().get(26);
+        require(prefixIncrementIndex.returnExpressionType().kind() == QinIrTypeKind.INT,
+                "prefix increment index char return type");
+        QinJavaSemanticMethod typedArray = person.methods().get(27);
+        require("[Lcom.subhuti.struct.SubhutiCst;".equals(typedArray.returnExpressionType().binaryName()),
+                "generic collection toArray typed return type");
+        QinJavaSemanticMethod enhancedForVarChildName = person.methods().get(28);
+        require(enhancedForVarChildName.returnExpressionType().kind() == QinIrTypeKind.STRING,
+                "enhanced for var generic element method return type");
+        QinJavaSemanticMethod conditionalPatternName = person.methods().get(29);
+        require(conditionalPatternName.returnExpressionType().kind() == QinIrTypeKind.STRING,
+                "conditional expression pattern variable return type");
+        QinJavaSemanticMethod logicalPatternName = person.methods().get(30);
+        require(logicalPatternName.returnExpressionType().kind() == QinIrTypeKind.BOOLEAN,
+                "logical expression pattern variable return type");
+        QinJavaSemanticMethod guardPatternName = person.methods().get(31);
+        require(guardPatternName.returnExpressionType().kind() == QinIrTypeKind.STRING,
+                "guard return pattern variable return type");
 
         String ownerSource = """
                 package com.multi.struct;

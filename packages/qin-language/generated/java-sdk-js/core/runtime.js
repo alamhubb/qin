@@ -187,11 +187,30 @@ export function __qin_java_class_info__(ctor) {
     toString() { return "class " + className; }
   };
 }
+export function __qin_java_implements(value, interfaceName) {
+  if (value == null || interfaceName == null) return false;
+  let ctor = value.constructor;
+  while (ctor != null && ctor !== Object) {
+    const interfaces = ctor.__qin_java_interfaces || [];
+    if (interfaces.includes(interfaceName)) return true;
+    const prototype = ctor.prototype == null ? null : Object.getPrototypeOf(ctor.prototype);
+    ctor = prototype == null ? null : prototype.constructor;
+  }
+  return false;
+}
 if (Object.prototype.getClass == null) {
   Object.defineProperty(Object.prototype, "getClass", {
     value() { return __qin_java_class_info__(this == null ? Object : this.constructor); },
     configurable: true
   });
+}
+export class __QinJavaMathBigInteger {
+  constructor(value, radix = 10) {
+    this.__value = BigInt(Number.parseInt(String(value), Number(radix)));
+  }
+  doubleValue() {
+    return Number(this.__value);
+  }
 }
 export function __qin_binary__(operator, left, right) {
   switch (operator) {

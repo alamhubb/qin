@@ -8,8 +8,10 @@ export {
   __qin_builtin_constructor__,
   __qin_java_pattern_regexp__,
   __QinJavaLangString,
+  __QinJavaMathBigInteger,
   __qin_java_functional,
   __qin_java_class_info__,
+  __qin_java_implements,
   __qin_binary__,
   __qin_logical__
 } from "./core/runtime.js";

@@ -316,11 +316,23 @@ public final class QinJavaAstIrLowerer {
                 classDeclaration.superTypeName() == null
                         ? null
                         : semanticAnalyzer.resolveType(classDeclaration.superTypeName(), packageName, importedTypes),
+                lowerTypeRefs(classDeclaration.implementsTypeNames(), packageName, importedTypes),
                 lowerAnnotations(packageName, importedTypes, classDeclaration.annotations()),
                 fields,
                 methods,
                 staticInitializers,
                 classDeclaration.recordClass());
+    }
+
+    private List<QinIrTypeRef> lowerTypeRefs(
+            List<String> typeNames,
+            String packageName,
+            Map<String, String> importedTypes) {
+        List<QinIrTypeRef> types = new ArrayList<>();
+        for (String typeName : typeNames) {
+            types.add(semanticAnalyzer.resolveType(typeName, packageName, importedTypes));
+        }
+        return types;
     }
 
     private Set<String> staticMethodNames(List<JavaAstMethodDeclaration> methods) {
@@ -1580,20 +1592,24 @@ public final class QinJavaAstIrLowerer {
                     lowerExpression(assignment.value(), packageName, importedTypes, locals, valueNames));
         }
         if (expression instanceof JavaAstUpdateExpression updateExpression) {
-            QinIrExpression target = lowerExpression(updateExpression.target(), packageName, importedTypes, locals, valueNames);
-            String binaryOperator = "++".equals(updateExpression.operator()) ? "+" : "-";
-            return new QinIrAssignmentExpression(
-                    target,
-                    "=",
-                    new QinIrBuiltinCallExpression(
-                            "Global",
-                            "__qin_binary__",
-                            List.of(
-                                    new QinIrStringLiteral(binaryOperator),
-                                    target,
-                                    new QinIrNumberLiteral(1.0))));
+            return lowerUpdateExpression(
+                    updateExpression.target(),
+                    updateExpression.operator(),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    valueNames);
         }
         if (expression instanceof JavaAstUnaryExpression unaryExpression) {
+            if ("++".equals(unaryExpression.operator()) || "--".equals(unaryExpression.operator())) {
+                return lowerUpdateExpression(
+                        unaryExpression.operand(),
+                        unaryExpression.operator(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        valueNames);
+            }
             QinIrExpression operand = lowerExpression(
                     unaryExpression.operand(),
                     packageName,
@@ -1655,6 +1671,27 @@ public final class QinJavaAstIrLowerer {
                             lowerExpression(binary.right(), packageName, importedTypes, locals, valueNames)));
         }
         throw new IllegalArgumentException("Unsupported Java AST expression: " + expression);
+    }
+
+    private QinIrExpression lowerUpdateExpression(
+            JavaAstExpression targetExpression,
+            String operator,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> locals,
+            Set<String> valueNames) {
+        QinIrExpression target = lowerExpression(targetExpression, packageName, importedTypes, locals, valueNames);
+        String binaryOperator = "++".equals(operator) ? "+" : "-";
+        return new QinIrAssignmentExpression(
+                target,
+                "=",
+                new QinIrBuiltinCallExpression(
+                        "Global",
+                        "__qin_binary__",
+                        List.of(
+                                new QinIrStringLiteral(binaryOperator),
+                                target,
+                                new QinIrNumberLiteral(1.0))));
     }
 
     private List<QinIrExpression> lowerMethodCallArguments(

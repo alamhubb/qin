@@ -10,6 +10,7 @@ public record QinIrClassDeclaration(
         String packageName,
         String simpleName,
         QinIrTypeRef superType,
+        List<QinIrTypeRef> implementsTypes,
         List<QinIrAnnotation> annotations,
         List<QinIrFieldDeclaration> fields,
         List<QinIrMethodDeclaration> methods,
@@ -23,7 +24,7 @@ public record QinIrClassDeclaration(
             List<QinIrFieldDeclaration> fields,
             List<QinIrMethodDeclaration> methods,
             List<QinIrExpression> staticInitializers) {
-        this(packageName, simpleName, superType, annotations, fields, methods, staticInitializers, false);
+        this(packageName, simpleName, superType, List.of(), annotations, fields, methods, staticInitializers, false);
     }
 
     public QinIrClassDeclaration(
@@ -33,7 +34,7 @@ public record QinIrClassDeclaration(
             List<QinIrAnnotation> annotations,
             List<QinIrFieldDeclaration> fields,
             List<QinIrMethodDeclaration> methods) {
-        this(packageName, simpleName, superType, annotations, fields, methods, List.of(), false);
+        this(packageName, simpleName, superType, List.of(), annotations, fields, methods, List.of(), false);
     }
 
     public QinIrClassDeclaration {
@@ -41,6 +42,7 @@ public record QinIrClassDeclaration(
             throw new IllegalArgumentException("simpleName cannot be blank");
         }
         Objects.requireNonNull(annotations, "annotations cannot be null");
+        Objects.requireNonNull(implementsTypes, "implementsTypes cannot be null");
         Objects.requireNonNull(fields, "fields cannot be null");
         Objects.requireNonNull(methods, "methods cannot be null");
         Objects.requireNonNull(staticInitializers, "staticInitializers cannot be null");
@@ -48,6 +50,7 @@ public record QinIrClassDeclaration(
             packageName = null;
         }
         simpleName = simpleName.trim();
+        implementsTypes = List.copyOf(implementsTypes);
         annotations = List.copyOf(annotations);
         fields = List.copyOf(fields);
         methods = List.copyOf(methods);
