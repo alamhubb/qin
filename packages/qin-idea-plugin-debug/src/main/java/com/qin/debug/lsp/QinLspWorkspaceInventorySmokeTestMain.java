@@ -187,6 +187,34 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                             + " must run directly through Qin script metadata, not npm run forwarding: "
                             + script.getValue());
         }
+        if ("create-ovs".equals(project.id()) || "create-cssts".equals(project.id())) {
+            verifyScaffoldTemplateQinConfig(project, projectRoot);
+        }
+    }
+
+    private static void verifyScaffoldTemplateQinConfig(InventoryProject project, Path projectRoot) {
+        Path templateConfig = projectRoot.resolve("template").resolve("qin.config.js").normalize();
+        require(Files.isRegularFile(templateConfig),
+                project.id() + " scaffold template must include qin.config.js");
+        String source;
+        try {
+            source = Files.readString(templateConfig);
+        } catch (Exception e) {
+            throw new IllegalStateException(project.id() + " scaffold template qin.config.js must be readable", e);
+        }
+        require(source.contains("type: \"fullstack\""),
+                project.id() + " scaffold template must create a Qin fullstack project");
+        require(source.contains("frontend:"),
+                project.id() + " scaffold template must declare Qin frontend metadata");
+        for (String scriptName : List.of("dev", "build", "preview", "test")) {
+            require(source.contains(scriptName + ": "),
+                    project.id() + " scaffold template qin.config.js must declare script " + scriptName);
+        }
+        for (String forbidden : List.of("npm run", "pnpm ", "yarn ")) {
+            require(!source.contains(forbidden),
+                    project.id() + " scaffold template qin.config.js must not forward to external package scripts: "
+                            + forbidden);
+        }
     }
 
     private static List<InventoryProject> inventory() {
