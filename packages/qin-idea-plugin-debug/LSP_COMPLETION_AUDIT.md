@@ -45,6 +45,7 @@ The check task currently covers:
 - `lspPluginPackageSmoke`
 - `lspUiFixtureSmoke`
 - `qinJvmClassTargetSmoke`
+- `qinJvmClassDeclarationSmoke`
 
 ## Requirement Audit
 
@@ -59,7 +60,7 @@ The check task currently covers:
 | IDEA is only an LSP client for these languages | `plugin.xml` registers `.qin`, `.ovs`, `.cssts` file types and one `platform.lsp.serverSupportProvider`; `QinLspNoLocalParserSmokeTestMain` scans plugin sources for local parser, lexer, syntax highlighter, and completion contributor markers; `QinLspWorkspaceInventorySmokeTestMain` rejects legacy `*-intellij-client` projects under OVS/CSSTS language packages; `LSP.md` records the no-local-parser policy. | Proven for current IDEA plugin sources and language-project inventory |
 | IDEA plugin packaging and fixture coverage stay in the gate | `lspVerificationMatrixSmoke` verifies `check` depends on descriptor, package, and UI fixture smokes. | Proven |
 | Qin-managed project metadata is used | `lspVerificationMatrixSmoke` loads each language project's `qin.config.js` and verifies `language.parser`, `language.compiler`, `language.serverBundle`, scripts, and dependencies; `lspWorkspaceInventorySmoke` verifies the current LSP-critical language, compiler, parser, CLI, and runtime projects are all owned by `qin.config.js`. | Proven for the current LSP-critical inventory |
-| Qin runtime target remains JVM `.class` | `qinJvmClassTargetSmoke` runs `qin run com.qin.lang.cli.SmokeTestMain`; the smoke compiles and reflects a 5-case `.class` corpus covering top-level function calls, `export const`, object member access, array literals, and `java:` import plus Java instance calls. | Proven for current CLI corpus |
+| Qin runtime target remains JVM `.class` | `qinJvmClassTargetSmoke` runs `qin run com.qin.lang.cli.SmokeTestMain`; the smoke compiles and reflects a 5-case `.class` corpus covering top-level function calls, `export const`, object member access, array literals, and `java:` import plus Java instance calls. `qinJvmClassDeclarationSmoke` runs the class declaration emitter end-to-end through `QinJvmJavaExtendsEndToEndSmokeTestMain`. | Proven for current CLI and class-declaration corpus |
 | Node/TypeScript is limited to editor/LSP/tooling | `LSP.md` states the boundary; `qinJvmClassTargetSmoke` separately verifies the runtime path. | Partly proven |
 | No fallback success path | Language plugin tests assert invalid input does not fall back to identity source text; transform failures generate visible `Qin/OVS/CSSTS transform failed` code. | Proven for current language-server transform paths |
 
@@ -78,18 +79,18 @@ These items are not proven complete yet:
   LSP-critical inventory, not every experimental demo or unrelated adjacent
   repository in the whole workspace. Legacy language-local IDEA clients are
   explicitly rejected for the OVS/CSSTS language package roots.
-- JVM `.class` execution is proven by the current focused CLI corpus, not by
-  every Qin fullstack example or production-style application path. Class
-  declaration emission is covered by separate backend smokes and still needs to
-  be wired into the unified CLI/IDEA gate.
+- JVM `.class` execution is proven by the current focused CLI corpus and one
+  class-declaration end-to-end smoke, not by every Qin fullstack example,
+  production-style application path, or every class declaration feature variant.
 - The Node/TypeScript boundary is documented and tested indirectly. A future
   smoke could assert that runtime-oriented Qin checks do not call language-server
   Node commands.
 
 ## Next Hardening Steps
 
-1. Wire class declaration JVM emission into the unified CLI/IDEA gate so class
-   coverage is proven beside the top-level `.class` corpus.
+1. Expand the unified class-declaration `.class` gate from Java `extends`
+   coverage to fields, annotations, constructors, local class inheritance, and
+   method bodies.
 2. Keep expanding generated parser parity from the current small corpus toward
    broader Slime/Qin syntax coverage.
 3. Keep this audit updated whenever a requirement moves from "partly proven" to

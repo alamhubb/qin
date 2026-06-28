@@ -236,6 +236,13 @@ tasks {
         commandLine(qinCommand.canonicalPath, "run", "com.qin.lang.cli.SmokeTestMain")
     }
 
+    register<Exec>("qinJvmClassDeclarationSmoke") {
+        group = "verification"
+        description = "Runs the Qin JVM class-declaration emission smoke through qin.config.js project management."
+        workingDir = workspaceRoot.resolve("qin/packages/qin-lang-backend-jvm")
+        commandLine(qinCommand.canonicalPath, "run", "com.qin.lang.backend.jvm.QinJvmJavaExtendsEndToEndSmokeTestMain")
+    }
+
     register("runIdeLspFixture") {
         group = "intellij platform"
         description = "Runs the IDE with the Qin/OVS/CSSTS LSP UI fixture project opened."
@@ -255,6 +262,7 @@ tasks {
         dependsOn("qinGeneratedParserDryRun")
         dependsOn("languageProjectsTest")
         dependsOn("qinJvmClassTargetSmoke")
+        dependsOn("qinJvmClassDeclarationSmoke")
     }
 
     // Keep only the latest packaged plugin artifact.
