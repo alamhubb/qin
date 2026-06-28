@@ -41,6 +41,7 @@ The check task currently covers:
 - `lspVerificationMatrixSmoke`
 - `lspPluginDescriptorSmoke`
 - `lspNoLocalParserSmoke`
+- `lspWorkspaceInventorySmoke`
 - `lspPluginPackageSmoke`
 - `lspUiFixtureSmoke`
 - `qinJvmClassTargetSmoke`
@@ -57,7 +58,7 @@ The check task currently covers:
 | Volar LSP provides completion, definition, symbols, and semantic tokens | `lspServerDiagnosticsSmoke` requests these features for all three languages; language project tests also cover the same feature family. | Proven for current smoke fixtures |
 | IDEA is only an LSP client for these languages | `plugin.xml` registers `.qin`, `.ovs`, `.cssts` file types and one `platform.lsp.serverSupportProvider`; `QinLspNoLocalParserSmokeTestMain` scans plugin sources for local parser, lexer, syntax highlighter, and completion contributor markers; `LSP.md` records the no-local-parser policy. | Proven for current IDEA plugin sources |
 | IDEA plugin packaging and fixture coverage stay in the gate | `lspVerificationMatrixSmoke` verifies `check` depends on descriptor, package, and UI fixture smokes. | Proven |
-| Qin-managed project metadata is used | `lspVerificationMatrixSmoke` loads each language project's `qin.config.js` and verifies `language.parser`, `language.compiler`, `language.serverBundle`, scripts, and dependencies. | Proven for Qin/OVS/CSSTS language projects and OVS/CSSTS compiler projects |
+| Qin-managed project metadata is used | `lspVerificationMatrixSmoke` loads each language project's `qin.config.js` and verifies `language.parser`, `language.compiler`, `language.serverBundle`, scripts, and dependencies; `lspWorkspaceInventorySmoke` verifies the current LSP-critical language, compiler, parser, CLI, and runtime projects are all owned by `qin.config.js`. | Proven for the current LSP-critical inventory |
 | Qin runtime target remains JVM `.class` | `qinJvmClassTargetSmoke` runs `qin run com.qin.lang.cli.SmokeTestMain` and verifies generated `.class` output. | Proven for current smoke |
 | Node/TypeScript is limited to editor/LSP/tooling | `LSP.md` states the boundary; `qinJvmClassTargetSmoke` separately verifies the runtime path. | Partly proven |
 | No fallback success path | Language plugin tests assert invalid input does not fall back to identity source text; transform failures generate visible `Qin/OVS/CSSTS transform failed` code. | Proven for current language-server transform paths |
@@ -72,9 +73,9 @@ These items are not proven complete yet:
 - IDEA has smoke coverage for LSP startup, capabilities, diagnostics, packaging,
   and fixture registration, but manual IDE behavior still relies on
   `runIdeLspFixture` for visual confirmation.
-- The `qin.config.js` management guarantee is verified for the language and
-  compiler projects in the LSP matrix, not every Qin-adjacent repository in the
-  whole workspace.
+- The `qin.config.js` management guarantee is verified for the current
+  LSP-critical inventory, not every experimental demo or unrelated adjacent
+  repository in the whole workspace.
 - JVM `.class` execution is proven by a focused CLI smoke, not by every Qin
   fullstack example or production-style application path.
 - The Node/TypeScript boundary is documented and tested indirectly. A future
@@ -83,13 +84,10 @@ These items are not proven complete yet:
 
 ## Next Hardening Steps
 
-1. Add a workspace-wide Qin project inventory smoke that lists every relevant
-   non-IDEA language/compiler/runtime project and verifies `qin.config.js`
-   ownership.
-2. Expand generated parser parity checks beyond metadata: run a small corpus
+1. Expand generated parser parity checks beyond metadata: run a small corpus
    through Java QinParser and generated TypeScript QinParser and compare success
    or failure classes.
-3. Expand `.class` target smoke from one CLI sample to a small Qin backend corpus
+2. Expand `.class` target smoke from one CLI sample to a small Qin backend corpus
    that includes imports, exports, classes, functions, and `object`.
-4. Keep this audit updated whenever a requirement moves from "partly proven" to
+3. Keep this audit updated whenever a requirement moves from "partly proven" to
    "proven" or when a new gap is found.
