@@ -28,6 +28,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "qin",
                         workspaceRoot.resolve("qin").resolve("packages").resolve("qin-language").normalize(),
                         "dist/language-server.cjs",
+                        true,
                         Map.of(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-parity.ts",
@@ -36,6 +37,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "ovs",
                         workspaceRoot.resolve("ovsjs").resolve("ovs-language").normalize(),
                         "dist/language-server.js",
+                        true,
                         Map.of(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts",
@@ -44,10 +46,27 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "cssts",
                         workspaceRoot.resolve("cssts").resolve("cssts-language").normalize(),
                         "dist/language-server.cjs",
+                        true,
                         Map.of(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts",
-                                "dev", "cssts-language-server/src/index.ts --stdio")));
+                                "dev", "cssts-language-server/src/index.ts --stdio")),
+                new LanguageCliCase(
+                        "ovs-compiler",
+                        workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-compiler").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tests/test-generated-parser-chain.ts")),
+                new LanguageCliCase(
+                        "cssts-compiler",
+                        workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tests/test-generated-parser-chain.ts")));
 
         for (LanguageCliCase testCase : cases) {
             verifyLanguageCli(qinCommand, testCase);
@@ -65,19 +84,22 @@ public final class QinLspLanguageCliSmokeTestMain {
         CommandResult check = runQinLanguage(qinCommand, testCase.projectRoot(), "check");
         require(check.stdout().contains("[OK] Language metadata is valid"),
                 testCase.id() + " qin language check did not validate metadata: " + check);
-        require(check.stdout().contains("id: " + testCase.id()),
+        String expectedLanguageId = testCase.id().replace("-compiler", "");
+        require(check.stdout().contains("id: " + expectedLanguageId),
                 testCase.id() + " qin language check did not print expected language id: " + check);
 
-        CommandResult bundle = runQinLanguage(qinCommand, testCase.projectRoot(), "bundle");
-        Path expectedBundle = testCase.projectRoot().resolve(testCase.serverBundle()).normalize();
-        require(bundle.stdout().trim().equals(expectedBundle.toString()),
-                testCase.id() + " qin language bundle mismatch: " + bundle.stdout());
+        if (testCase.expectServerCommands()) {
+            CommandResult bundle = runQinLanguage(qinCommand, testCase.projectRoot(), "bundle");
+            Path expectedBundle = testCase.projectRoot().resolve(testCase.serverBundle()).normalize();
+            require(bundle.stdout().trim().equals(expectedBundle.toString()),
+                    testCase.id() + " qin language bundle mismatch: " + bundle.stdout());
 
-        CommandResult server = runQinLanguage(qinCommand, testCase.projectRoot(), "server", "--dry-run");
-        require(server.stdout().contains(expectedBundle.toString()),
-                testCase.id() + " qin language server --dry-run did not use language.serverBundle: " + server);
-        require(server.stdout().contains("--stdio"),
-                testCase.id() + " qin language server --dry-run must pass --stdio: " + server);
+            CommandResult server = runQinLanguage(qinCommand, testCase.projectRoot(), "server", "--dry-run");
+            require(server.stdout().contains(expectedBundle.toString()),
+                    testCase.id() + " qin language server --dry-run did not use language.serverBundle: " + server);
+            require(server.stdout().contains("--stdio"),
+                    testCase.id() + " qin language server --dry-run must pass --stdio: " + server);
+        }
 
         for (Map.Entry<String, String> expectedScript : testCase.expectedScriptNeedles().entrySet()) {
             CommandResult script = runQinLanguage(
@@ -140,6 +162,7 @@ public final class QinLspLanguageCliSmokeTestMain {
             String id,
             Path projectRoot,
             String serverBundle,
+            boolean expectServerCommands,
             Map<String, String> expectedScriptNeedles) {
     }
 
