@@ -23,6 +23,58 @@ Runtime environment:
 Node is only used for the Volar/LSP editor process. Qin syntax diagnostics still
 come from generated QinParser TypeScript, which is generated from the Java parser.
 
+## Verification Matrix
+
+The non-interactive verification path is intentionally cross-project:
+
+- `qinGeneratedParserDryRun` verifies the Java `com.qin.parser.QinParser`
+  generation metadata before the LSP matrix trusts the generated TypeScript
+  package.
+- `qinLanguageTest` verifies `.qin` parser diagnostics and confirms invalid
+  Qin source produces visible `Qin transform failed` virtual TypeScript instead
+  of identity source text.
+- `ovsLanguageTest` verifies `.ovs` Volar diagnostics and the OVS compiler
+  parser chain. OVS depends on the shared `@qin/generated-qin-parser-ts`
+  package and its tests assert transform failures do not fall back to identity
+  source text.
+- `csstsLanguageTest` verifies `.cssts` Volar diagnostics and the CSSTS compiler
+  parser chain. CSSTS also depends on the shared
+  `@qin/generated-qin-parser-ts` package and asserts transform failures stay
+  visible.
+- `lspVerificationMatrixSmoke` reads each language project's `qin.config.js`
+  and verifies parser, compiler, generated package, language-server bundle, and
+  IDEA client references point at the intended workspace artifacts.
+- `qinJvmClassTargetSmoke` verifies the Qin CLI path still compiles and runs JVM
+  `.class` output; this keeps editor/LSP TypeScript usage separate from the Qin
+  runtime target.
+
+Run the full gate from this directory:
+
+```powershell
+.\gradlew.bat check
+```
+
+That `check` task depends on the language-project tests, generated-parser dry
+run, LSP registry/command/diagnostic smokes, verification matrix, UI fixture
+smoke, and JVM `.class` smoke.
+
+## No Fallback Policy
+
+The IDEA plugin must not provide local parser, lexer, or completion fallback for
+Qin, OVS, or CSSTS. It registers file types, starts the configured Volar
+language server, and displays LSP results.
+
+Language servers must keep parser and transform failures visible:
+
+- Qin failures generate `throw new Error("Qin transform failed: ...")` in the
+  virtual TypeScript script.
+- OVS failures generate `throw new Error("OVS transform failed: ...")`.
+- CSSTS failures generate `throw new Error("CSSTS transform failed: ...")`.
+
+Returning no diagnostics is valid only for non-target documents or successful
+parses. It is not an acceptable success path for generated-parser, compiler, or
+transform errors.
+
 ## UI Fixture
 
 Use the bundled fixture project for a real IDEA UI check:
