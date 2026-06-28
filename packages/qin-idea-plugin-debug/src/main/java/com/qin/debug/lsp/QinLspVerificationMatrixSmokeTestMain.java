@@ -154,6 +154,21 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qinJvmClassDeclarationSmoke",
                 "qin/packages/qin-lang-backend-jvm",
                 "com.qin.lang.backend.jvm.QinJvmClassDeclarationCorpusSmokeTestMain");
+        verifyRuntimeProjectClassTarget(
+                workspaceRoot,
+                "qin-lang-cli",
+                Path.of("qin", "packages", "qin-lang-cli"),
+                "src/java/com/qin/lang/cli/QinCompileMain.java");
+        verifyRuntimeProjectClassTarget(
+                workspaceRoot,
+                "qin-lang-backend-jvm",
+                Path.of("qin", "packages", "qin-lang-backend-jvm"),
+                "src/java/com/qin/lang/backend/jvm/QinJvmClassFileBackend.java");
+        verifyRuntimeProjectClassTarget(
+                workspaceRoot,
+                "qin-runtime-core",
+                Path.of("qin", "packages", "qin-runtime-core"),
+                "src/java/com/qin/runtime/core/QinRuntimeMain.java");
         String checkBlock = taskBlock(buildSource, "named(\"check\")");
         String matrixBlock = taskBlock(buildSource, "register(\"lspUnifiedMatrix\")");
         for (String smokeTask : List.of(
@@ -368,6 +383,34 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "\"tsdown\"")) {
             require(!taskBlock.contains(forbidden),
                     taskName + " must stay on the JVM .class path and not use " + forbidden);
+        }
+    }
+
+    private static void verifyRuntimeProjectClassTarget(
+            Path workspaceRoot,
+            String id,
+            Path projectRelativePath,
+            String expectedEntry) throws Exception {
+        Path projectRoot = workspaceRoot.resolve(projectRelativePath).normalize();
+        require(Files.isRegularFile(projectRoot.resolve("qin.config.js")),
+                id + " runtime project must be managed by qin.config.js");
+        QinConfig config = new ConfigLoader(projectRoot.toString()).load();
+        require(expectedEntry.equals(config.entry()),
+                id + " runtime entry must stay on the Java/JVM path: " + config.entry());
+        require(config.java() != null,
+                id + " runtime project must declare java config for JVM .class output");
+        require("UTF-8".equalsIgnoreCase(config.java().encoding()),
+                id + " runtime project must use UTF-8 Java source encoding");
+        require("build/classes".equals(config.java().outputDir()),
+                id + " runtime project must compile to build/classes, got " + config.java().outputDir());
+
+        for (Map.Entry<String, String> script : config.scripts().entrySet()) {
+            String command = script.getValue();
+            for (String forbidden : List.of("node", "tsx", "tsdown", "language", "server")) {
+                require(!command.contains(forbidden),
+                        id + " runtime script " + script.getKey()
+                                + " must not use editor/LSP tooling command " + forbidden + ": " + command);
+            }
         }
     }
 
