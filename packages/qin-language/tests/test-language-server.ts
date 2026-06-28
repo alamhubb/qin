@@ -166,6 +166,32 @@ function collectSymbolNames(symbols: any[]): string[] {
   return names
 }
 
+function semanticTokenCovers(result: any, line: number, character: number): boolean {
+  const data = result?.data
+  if (!Array.isArray(data) || data.length % 5 !== 0) {
+    return false
+  }
+  let currentLine = 0
+  let currentCharacter = 0
+  for (let index = 0; index < data.length; index += 5) {
+    const deltaLine = data[index]
+    const deltaStart = data[index + 1]
+    const length = data[index + 2]
+    currentLine += deltaLine
+    currentCharacter = deltaLine === 0 ? currentCharacter + deltaStart : deltaStart
+    if (currentLine === line && currentCharacter <= character && character < currentCharacter + length) {
+      return true
+    }
+  }
+  return false
+}
+
+function requireSemanticTokenAt(result: any, line: number, character: number, label: string) {
+  if (!semanticTokenCovers(result, line, character)) {
+    throw new Error(`${label} semanticTokens did not cover ${line}:${character}: ${JSON.stringify(result)}`)
+  }
+}
+
 async function waitFor(
   description: string,
   predicate: () => boolean,
@@ -467,7 +493,7 @@ async function main() {
   const objectReferences = Array.isArray(objectReferencesResponse.result) ? objectReferencesResponse.result : []
   if (
     !objectReferences.some(item => sameUri(locationUri(item), objectUri) && rangeStartsAt(item, 3, 21))
-    || !objectReferences.some(item => sameUri(locationUri(item), objectUri) && rangeStartsAt(item, 2, 1))
+    || !objectReferences.some(item => sameUri(locationUri(item), objectUri) && rangeStartsAt(item, 0, 14))
   ) {
     throw new Error(`Qin object references did not include generated object usage mappings: ${JSON.stringify(objectReferencesResponse.result)}`)
   }
@@ -515,7 +541,7 @@ async function main() {
     `Qin object documentSymbol response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
   )
   const objectSymbolNames = collectSymbolNames(Array.isArray(objectDocumentSymbolResponse.result) ? objectDocumentSymbolResponse.result : [])
-  if (!objectSymbolNames.includes('Counter') || !objectSymbolNames.includes('__QinObject_Counter')) {
+  if (!objectSymbolNames.includes('__QinObject_Counter') || !objectSymbolNames.includes('value')) {
     throw new Error(`Qin object documentSymbol did not include generated object symbols: ${JSON.stringify(objectDocumentSymbolResponse.result)}`)
   }
 
@@ -532,6 +558,8 @@ async function main() {
   if (!Array.isArray(objectSemanticTokenData) || objectSemanticTokenData.length === 0) {
     throw new Error(`Qin object semanticTokens did not return token data: ${JSON.stringify(objectSemanticTokensResponse.result)}`)
   }
+  requireSemanticTokenAt(objectSemanticTokensResponse.result, 0, 14, 'Qin object declaration Counter')
+  requireSemanticTokenAt(objectSemanticTokensResponse.result, 3, 21, 'Qin object usage Counter')
 
   const semanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
     textDocument: { uri: tsSubsetUri },

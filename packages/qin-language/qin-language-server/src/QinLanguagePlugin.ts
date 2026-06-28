@@ -30,6 +30,8 @@ interface QinTextMapping {
   generatedOffset: number
   length: number
   generatedLength?: number
+  semantic?: boolean
+  structure?: boolean
 }
 
 interface QinObjectDeclarationInfo {
@@ -178,6 +180,41 @@ function lowerProgramCstToTypeScript(source: string, cst: unknown): QinLoweringR
   let generatedCursor = 0
   let generated = ''
   const mappings: QinTextMapping[] = []
+  const appendGenerated = (text: string): number => {
+    const start = generatedCursor
+    generated += text
+    generatedCursor = generated.length
+    return start
+  }
+  const appendMappedSource = (sourceStart: number, sourceEnd: number): void => {
+    if (sourceEnd <= sourceStart) {
+      return
+    }
+    const generatedStart = appendGenerated(source.slice(sourceStart, sourceEnd))
+    mappings.push({
+      sourceOffset: sourceStart,
+      generatedOffset: generatedStart,
+      length: sourceEnd - sourceStart,
+      generatedLength: sourceEnd - sourceStart,
+    })
+  }
+  const appendMappedGenerated = (
+    text: string,
+    sourceStart: number,
+    sourceEnd: number,
+    generatedOffsetInText = 0,
+    generatedLength = sourceEnd - sourceStart,
+  ): void => {
+    const generatedStart = appendGenerated(text)
+    if (sourceEnd > sourceStart) {
+      mappings.push({
+        sourceOffset: sourceStart,
+        generatedOffset: generatedStart + generatedOffsetInText,
+        length: sourceEnd - sourceStart,
+        generatedLength,
+      })
+    }
+  }
   for (const declaration of objectDeclarations) {
     const node = declaration.body
     const objectKeyword = findToken(node, item => readCstName(item) === 'IdentifierName' && readCstValue(item) === 'object')
@@ -203,40 +240,32 @@ function lowerProgramCstToTypeScript(source: string, cst: unknown): QinLoweringR
 
     const objectName = source.slice(nameStart, nameEnd)
     const internalName = `__QinObject_${objectName}`
-    const prefix = source.slice(cursor, objectStart)
-    const decorators = declaration.exported
-      ? source.slice(cursor, findExportTokenStart(declaration.wrapper, objectStart))
-      : prefix
+    const decoratorsEnd = declaration.exported
+      ? findExportTokenStart(declaration.wrapper, objectStart)
+      : objectStart
     const objectBody = source.slice(bodyStart, bodyEnd)
-    const segmentStart = generatedCursor
-    generated += decorators
-    generatedCursor += decorators.length
-    generated += `class ${internalName} ${objectBody}\n`
-    generatedCursor = generated.length
-    generated += `const ${objectName} = new ${internalName}()\n`
-    generatedCursor = generated.length
-    if (declaration.defaultExport) {
-      generated += `export default ${objectName}\n`
-    } else if (declaration.exported) {
-      generated += `export { ${objectName} }\n`
-    }
-    generatedCursor = generated.length
+    appendMappedSource(cursor, decoratorsEnd)
+    const classStart = generatedCursor
+    appendMappedGenerated(`class ${internalName} `, nameStart, nameEnd, 'class '.length, internalName.length)
+    appendMappedSource(bodyStart, bodyEnd)
+    appendGenerated('\n')
     mappings.push({
-      sourceOffset: cursor,
-      generatedOffset: segmentStart,
-      length: bodyEnd - cursor,
-      generatedLength: generatedCursor - segmentStart,
+      sourceOffset: nameStart,
+      generatedOffset: classStart,
+      length: nameEnd - nameStart,
+      generatedLength: generatedCursor - classStart,
+      semantic: false,
+      structure: true,
     })
+    appendMappedGenerated(`const ${objectName} = new ${internalName}()\n`, nameStart, nameEnd, 'const '.length)
+    if (declaration.defaultExport) {
+      appendMappedGenerated(`export default ${objectName}\n`, nameStart, nameEnd, 'export default '.length)
+    } else if (declaration.exported) {
+      appendMappedGenerated(`export { ${objectName} }\n`, nameStart, nameEnd, 'export { '.length)
+    }
     cursor = bodyEnd
   }
-  const tail = source.slice(cursor)
-  generated += tail
-  mappings.push({
-    sourceOffset: cursor,
-    generatedOffset: generatedCursor,
-    length: tail.length,
-    generatedLength: tail.length,
-  })
+  appendMappedSource(cursor, source.length)
   return {
     code: generated,
     mappings: createCodeMappings(mappings),
@@ -410,18 +439,18 @@ function createTransformErrorResult(source: string, message: string): QinLowerin
 }
 
 function createCodeMappings(mappings: QinTextMapping[]): CodeMapping[] {
-  return [{
-    sourceOffsets: mappings.map(item => item.sourceOffset),
-    generatedOffsets: mappings.map(item => item.generatedOffset),
-    lengths: mappings.map(item => item.length),
-    generatedLengths: mappings.map(item => item.generatedLength ?? item.length),
+  return mappings.map(item => ({
+    sourceOffsets: [item.sourceOffset],
+    generatedOffsets: [item.generatedOffset],
+    lengths: [item.length],
+    generatedLengths: [item.generatedLength ?? item.length],
     data: {
       completion: true,
       format: true,
       navigation: true,
-      semantic: true,
-      structure: true,
+      semantic: item.semantic ?? true,
+      structure: item.structure ?? true,
       verification: true,
     },
-  }]
+  }))
 }

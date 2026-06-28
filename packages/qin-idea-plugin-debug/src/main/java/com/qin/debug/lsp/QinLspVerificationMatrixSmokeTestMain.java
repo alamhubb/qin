@@ -384,6 +384,13 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     matrixCase.id() + " language server test must cover language syntax feature: "
                             + syntaxNeedle);
         }
+        require(testSource.contains("requireSemanticTokenAt"),
+                matrixCase.id() + " language server test must assert semantic token source positions");
+        for (String semanticNeedle : languageSemanticTokenNeedles(matrixCase.id())) {
+            require(testSource.contains(semanticNeedle),
+                    matrixCase.id() + " language server test must cover semantic token position: "
+                            + semanticNeedle);
+        }
     }
 
     private static List<String> languageSyntaxFeatureNeedles(String languageId) {
@@ -409,6 +416,21 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "CSSTS css syntax documentSymbol response",
                     "css { colorRed, displayFlex }",
                     "derivedStyle");
+            default -> throw new IllegalStateException("Unsupported language id: " + languageId);
+        };
+    }
+
+    private static List<String> languageSemanticTokenNeedles(String languageId) {
+        return switch (languageId) {
+            case "qin" -> List.of(
+                    "Qin object declaration Counter",
+                    "Qin object usage Counter");
+            case "ovs" -> List.of(
+                    "OVS syntax labelText declaration",
+                    "OVS syntax labelText render usage");
+            case "cssts" -> List.of(
+                    "CSSTS css syntax baseStyle declaration",
+                    "CSSTS css syntax baseStyle usage");
             default -> throw new IllegalStateException("Unsupported language id: " + languageId);
         };
     }

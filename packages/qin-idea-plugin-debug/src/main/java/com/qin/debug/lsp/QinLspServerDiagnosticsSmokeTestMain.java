@@ -43,7 +43,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         23,
                         true,
                         true,
-                        true),
+                        true,
+                        "__QinObject_Counter"),
                 new LanguageCase(
                         "ovs",
                         "div { h1 { 'Broken' }",
@@ -61,7 +62,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         20,
                         true,
                         true,
-                        true),
+                        true,
+                        "alphaNumber"),
                 new LanguageCase(
                         "cssts",
                         "import { css } from 'cssts-ts'\nconst broken = css { displayFlex,\n",
@@ -79,7 +81,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         20,
                         true,
                         true,
-                        true));
+                        true,
+                        "alphaNumber"));
 
         for (LanguageCase testCase : cases) {
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, testCase.extension());
@@ -187,8 +190,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
 
             Map<String, Object> symbols = session.awaitResponse(session.request("textDocument/documentSymbol", Map.of(
                     "textDocument", Map.of("uri", uri))));
-            require(symbolNames(symbols.get("result")).contains(testCase.expectedCompletionLabel()),
-                    language.id() + " documentSymbol missing " + testCase.expectedCompletionLabel() + ": " + symbols);
+            require(symbolNames(symbols.get("result")).contains(testCase.expectedDocumentSymbol()),
+                    language.id() + " documentSymbol missing " + testCase.expectedDocumentSymbol() + ": " + symbols);
         }
 
         if (testCase.expectSemanticTokens()) {
@@ -313,7 +316,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             int definitionCharacter,
             boolean expectCompletion,
             boolean expectDefinitionAndSymbols,
-            boolean expectSemanticTokens) {
+            boolean expectSemanticTokens,
+            String expectedDocumentSymbol) {
     }
 
     private static final class LspSession {
