@@ -33,18 +33,21 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         List<MatrixCase> cases = List.of(
                 new MatrixCase("qin", ".qin", Path.of("qin", "packages", "qin-language"),
                         null, "dist/language-server.cjs", "generated/qin-parser-ts", null,
+                        "tests/test-language-server.ts",
                         "tsx tests/test-language-plugin.ts",
                         "tsx tests/test-generated-parser-parity.ts",
                         "tsx tests/test-language-server.ts"),
                 new MatrixCase("ovs", ".ovs", Path.of("ovsjs", "ovs-language"),
                         Path.of("ovsjs", "ovs", "ovs-compiler"),
                         "dist/language-server.js", "@qin/generated-qin-parser-ts", "../ovs/ovs-compiler",
+                        "tests/test-language-server.ts",
                         "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts --source",
                         "tsx tests/test-language-server.ts --dist"),
                 new MatrixCase("cssts", ".cssts", Path.of("cssts", "cssts-language"),
                         Path.of("cssts", "cssts", "cssts-compiler"),
                         "dist/language-server.cjs", "@qin/generated-qin-parser-ts", "../cssts/cssts-compiler",
+                        "tests/test-language-server.ts",
                         "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts"));
 
@@ -77,6 +80,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 require(testScript.contains(requiredPart),
                         matrixCase.id() + " scripts.test missing " + requiredPart + ": " + testScript);
             }
+            verifyLanguageServerFeatureAssertions(matrixCase, projectRoot);
 
             if ("qin".equals(matrixCase.id())) {
                 verifyGeneratedQinParserPackage(projectRoot, config);
@@ -203,6 +207,29 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 compilerRoot,
                 generatedQinParserRoot,
                 compilerConfig);
+    }
+
+    private static void verifyLanguageServerFeatureAssertions(MatrixCase matrixCase, Path projectRoot) throws Exception {
+        Path testFile = projectRoot.resolve(matrixCase.languageServerTest()).normalize();
+        require(Files.isRegularFile(testFile),
+                matrixCase.id() + " language server test must exist: " + testFile);
+        String testSource = Files.readString(testFile);
+        for (String method : List.of(
+                "textDocument/completion",
+                "textDocument/definition",
+                "textDocument/documentSymbol",
+                "textDocument/semanticTokens/full")) {
+            require(testSource.contains(method),
+                    matrixCase.id() + " language server test must request " + method);
+        }
+        for (String assertionNeedle : List.of(
+                "completion did not include",
+                "definition did not resolve",
+                "documentSymbol did not include",
+                "semanticTokens did not return token data")) {
+            require(testSource.contains(assertionNeedle),
+                    matrixCase.id() + " language server test must assert " + assertionNeedle);
+        }
     }
 
     private static void verifyGeneratedParserDependency(
@@ -372,6 +399,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             String serverBundle,
             String expectedParser,
             String expectedCompiler,
+            String languageServerTest,
             String... requiredTestScriptParts) {
     }
 }
