@@ -492,6 +492,20 @@ async function main() {
     throw new Error(`Qin object documentSymbol did not include generated object symbols: ${JSON.stringify(objectDocumentSymbolResponse.result)}`)
   }
 
+  const objectSemanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
+    textDocument: { uri: objectUri },
+  })
+  server.stdin.write(objectSemanticTokensRequest.packet)
+  const objectSemanticTokensResponse = await waitForResponse(
+    objectSemanticTokensRequest.id,
+    messages,
+    `Qin object semanticTokens response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectSemanticTokenData = objectSemanticTokensResponse.result?.data ?? []
+  if (!Array.isArray(objectSemanticTokenData) || objectSemanticTokenData.length === 0) {
+    throw new Error(`Qin object semanticTokens did not return token data: ${JSON.stringify(objectSemanticTokensResponse.result)}`)
+  }
+
   const semanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
     textDocument: { uri: tsSubsetUri },
   })
