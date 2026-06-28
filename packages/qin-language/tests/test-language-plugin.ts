@@ -1,5 +1,5 @@
 import { probeGeneratedQinParser } from '../qin-language-server/src/QinGeneratedParserProbe'
-import { QinLanguageServicePlugin } from '../qin-language-server/src/QinLanguageServicePlugin'
+import { createQinParserDiagnostics, QinLanguageServicePlugin } from '../qin-language-server/src/QinLanguageServicePlugin'
 import { lowerQinToTypeScript } from '../qin-language-server/src/QinLanguagePlugin'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 
@@ -52,6 +52,18 @@ if (!invalidDiagnostics?.length) {
 }
 if (invalidDiagnostics[0].source !== 'qin-parser') {
   throw new Error(`Qin diagnostics must come from qin-parser, got ${JSON.stringify(invalidDiagnostics[0])}`)
+}
+
+const unavailableDiagnostics = createQinParserDiagnostics({
+  available: false,
+  ok: false,
+})
+if (!unavailableDiagnostics.length) {
+  throw new Error('Missing generated Qin parser package must produce a visible diagnostic')
+}
+if (unavailableDiagnostics[0].source !== 'qin-parser'
+  || !unavailableDiagnostics[0].message.includes('Generated Qin parser package is not available')) {
+  throw new Error(`Missing generated Qin parser diagnostic is not explicit: ${JSON.stringify(unavailableDiagnostics)}`)
 }
 
 console.log('Qin language plugin smoke passed')
