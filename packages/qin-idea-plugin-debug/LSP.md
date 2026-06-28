@@ -46,6 +46,9 @@ The non-interactive verification path is intentionally cross-project:
   IDEA client references point at the intended workspace artifacts. It also
   verifies each language test keeps completion, definition, references,
   document-symbol, and semantic-token assertions in place.
+- `lspLanguageCliSmoke` verifies the Qin CLI can read each language project's
+  `qin.config.js` and resolve `language check`, `bundle`, `build`, `test`,
+  `dev`, and `server --dry-run` commands for Qin, OVS, and CSSTS.
 - `qinJvmClassTargetSmoke` verifies the Qin CLI path still compiles and runs JVM
   `.class` output; this keeps editor/LSP TypeScript usage separate from the Qin
   runtime target.
