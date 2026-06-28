@@ -444,12 +444,26 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 .resolve("transform")
                 .resolve("index.ts")
                 .normalize();
+        Path csstsCstToAstPath = csstsCompilerRoot.resolve("src")
+                .resolve("factory")
+                .resolve("CssTsCstToAstUtils.ts")
+                .normalize();
         Path ovsParserPath = ovsCompilerRoot.resolve("src")
                 .resolve("parser")
                 .resolve("OvsParser.ts")
                 .normalize();
         Path ovsIndexPath = ovsCompilerRoot.resolve("src")
                 .resolve("index.ts")
+                .normalize();
+        Path ovsCstToAstPath = ovsCompilerRoot.resolve("src")
+                .resolve("factory")
+                .resolve("OvsCstToSlimeAst")
+                .resolve("OvsCstToSlimeAst.ts")
+                .normalize();
+        Path ovsStatementCstToAstPath = ovsCompilerRoot.resolve("src")
+                .resolve("factory")
+                .resolve("OvsCstToSlimeAst")
+                .resolve("OvsCstToSlimeAst.Statement.ts")
                 .normalize();
         Path forbiddenOvsAdapterPath = ovsCompilerRoot.resolve("src")
                 .resolve("parser")
@@ -460,8 +474,11 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 cssTsParserPath,
                 cssTsAdapterPath,
                 csstsTransformPath,
+                csstsCstToAstPath,
                 ovsParserPath,
-                ovsIndexPath)) {
+                ovsIndexPath,
+                ovsCstToAstPath,
+                ovsStatementCstToAstPath)) {
             require(requiredPath.startsWith(workspaceRoot),
                     "Generated parser chain source must stay inside workspace: " + requiredPath);
             require(Files.isRegularFile(requiredPath),
@@ -471,11 +488,16 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String cssTsParser = Files.readString(cssTsParserPath);
         String cssTsAdapter = Files.readString(cssTsAdapterPath);
         String csstsTransform = Files.readString(csstsTransformPath);
+        String csstsCstToAst = Files.readString(csstsCstToAstPath);
         String ovsParser = Files.readString(ovsParserPath);
         String ovsIndex = Files.readString(ovsIndexPath);
+        String ovsCstToAst = Files.readString(ovsCstToAstPath);
+        String ovsStatementCstToAst = Files.readString(ovsStatementCstToAstPath);
 
         require(cssTsParser.contains("from \"@qin/generated-qin-parser-ts\""),
                 "CSSTS parser must import the shared generated Qin parser package");
+        require(!cssTsParser.contains("slime-parser"),
+                "CSSTS parser must not import legacy slime-parser; parser inheritance uses generated Qin parser");
         require(cssTsParser.contains("QinParser"),
                 "CSSTS parser must use the generated QinParser export");
         require(cssTsParser.contains("extends QinParser"),
@@ -493,9 +515,17 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "CSSTS generated runtime adapter must bridge generated Java list values");
         require(csstsTransform.contains("normalizeGeneratedCst(parser.Program())"),
                 "CSSTS transform must normalize CST from the generated parser chain");
+        require(csstsTransform.contains("import { registerSlimeCstToAstUtil } from 'slime-parser'"),
+                "CSSTS transform may use legacy slime-parser only to register the CST-to-AST extension");
+        require(csstsCstToAst.contains("import { SlimeCstToAst, registerSlimeCstToAstUtil } from \"slime-parser\""),
+                "CSSTS CST-to-AST extension must keep its legacy slime-parser boundary explicit");
+        require(csstsCstToAst.contains("extends SlimeCstToAst"),
+                "CSSTS CST-to-AST extension must stay on the explicit SlimeCstToAst extension boundary");
 
         require(ovsParser.contains("from \"@qin/generated-qin-parser-ts\""),
                 "OVS parser must import the shared generated Qin parser package");
+        require(!ovsParser.contains("slime-parser"),
+                "OVS parser must not import legacy slime-parser; parser inheritance uses generated Qin parser");
         require(ovsParser.contains("from \"cssts-compiler\""),
                 "OVS parser must inherit CSSTS compiler parser support");
         require(ovsParser.contains("extends CssTsParser"),
@@ -510,6 +540,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "OVS parser must not use legacy { alt } fallback alternatives");
         require(ovsIndex.contains("normalizeGeneratedCst"),
                 "OVS compiler transform must normalize CST from the generated parser chain");
+        require(ovsIndex.contains("import { registerSlimeCstToAstUtil } from \"slime-parser\""),
+                "OVS transform may use legacy slime-parser only to register the CST-to-AST extension");
+        require(ovsCstToAst.contains("import { SlimeCstToAst, SlimeParser, registerSlimeCstToAstUtil } from \"slime-parser\""),
+                "OVS CST-to-AST extension must keep its legacy slime-parser boundary explicit");
+        require(ovsCstToAst.contains("Object.getPrototypeOf(SlimeCstToAst.prototype)"),
+                "OVS CST-to-AST extension must keep the SlimeCstToAst extension boundary visible");
+        require(ovsStatementCstToAst.contains("import { SlimeParser } from \"slime-parser\""),
+                "OVS statement CST-to-AST helper may use SlimeParser rule names only inside the CST-to-AST boundary");
         require(!Files.exists(forbiddenOvsAdapterPath),
                 "OVS must inherit the generated runtime adapter from cssts-compiler, not keep a local copy");
         verifyGeneratedParserChainRuntimeSmoke(
