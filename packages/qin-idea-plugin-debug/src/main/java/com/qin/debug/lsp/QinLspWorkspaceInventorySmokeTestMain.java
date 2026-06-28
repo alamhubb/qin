@@ -75,6 +75,9 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 project.id() + " language build must be managed by Qin script: " + config.scripts());
         require(config.scripts().containsKey("test"),
                 project.id() + " language test script is required");
+        if ("ovs-language".equals(project.id()) || "cssts-language".equals(project.id())) {
+            verifyGeneratedParserChainDependencyGate(project, projectRoot, config);
+        }
     }
 
     private static void verifyCompilerProject(InventoryProject project, QinConfig config) {
@@ -134,6 +137,71 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         if (Files.isRegularFile(packageRoot.resolve("package.json"))) {
             verifyPackageJsonIsNotScriptEntrypoint(project.id(), packageRoot, "language server");
         }
+    }
+
+    private static void verifyGeneratedParserChainDependencyGate(
+            InventoryProject project,
+            Path projectRoot,
+            QinConfig config) {
+        Path chainTest = projectRoot.resolve("tests").resolve("test-generated-parser-chain.ts").normalize();
+        require(Files.isRegularFile(chainTest),
+                project.id() + " must keep generated parser chain smoke: " + chainTest);
+        String testSource;
+        try {
+            testSource = Files.readString(chainTest);
+        } catch (Exception e) {
+            throw new IllegalStateException(project.id() + " generated parser chain smoke must be readable", e);
+        }
+
+        require(testSource.contains("function requireNoDependency"),
+                project.id() + " generated parser chain smoke must define legacy dependency gate");
+        require(testSource.contains("requireNoDependency(languagePackage"),
+                project.id() + " generated parser chain smoke must check language package dependencies");
+        require(testSource.contains("'" + project.id() + " package.json'"),
+                project.id() + " generated parser chain smoke must label the language package dependency gate");
+        require(testSource.contains("@qin/generated-qin-parser-ts"),
+                project.id() + " generated parser chain smoke must pin the shared generated Qin parser target");
+
+        verifyNoLegacyParserDependencies(project.id(), projectRoot.resolve("package.json").normalize(), "language");
+        String server = config.language().server();
+        if (server != null && !server.isBlank()) {
+            Path serverPackageRoot = Path.of(server).normalize().getParent();
+            if (serverPackageRoot != null) {
+                Path serverPackageJson = projectRoot.resolve(serverPackageRoot).normalize().resolve("package.json");
+                if (Files.isRegularFile(serverPackageJson)) {
+                    require(testSource.contains("requireNoDependency(languageServerPackage"),
+                            project.id() + " generated parser chain smoke must check language server package dependencies");
+                    require(testSource.contains("'" + serverPackageRoot.getFileName() + " package.json'"),
+                            project.id() + " generated parser chain smoke must label the language server dependency gate");
+                    verifyNoLegacyParserDependencies(project.id(), serverPackageJson, "language server");
+                }
+            }
+        }
+
+        for (String legacyParserPackage : legacyParserPackages()) {
+            require(testSource.contains("'" + legacyParserPackage + "'"),
+                    project.id() + " generated parser chain smoke must reject " + legacyParserPackage);
+        }
+    }
+
+    private static void verifyNoLegacyParserDependencies(String id, Path packageJson, String label) {
+        require(Files.isRegularFile(packageJson),
+                id + " " + label + " package.json must exist");
+        String source;
+        try {
+            source = Files.readString(packageJson);
+        } catch (Exception e) {
+            throw new IllegalStateException(id + " " + label + " package.json must be readable", e);
+        }
+        for (String legacyParserPackage : legacyParserPackages()) {
+            require(!source.contains("\"" + legacyParserPackage + "\""),
+                    id + " " + label + " package.json must not depend on legacy parser package "
+                            + legacyParserPackage);
+        }
+    }
+
+    private static List<String> legacyParserPackages() {
+        return List.of("slime-ast", "slime-parser", "slime-token", "subhuti");
     }
 
     private static void verifyJavaRuntimeProject(InventoryProject project, QinConfig config) {
