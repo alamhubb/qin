@@ -5,10 +5,10 @@ export default {
   type: "library",
   entry: "qin-language-server/src/index.ts",
   scripts: {
-    build: "npm run build",
+    build: "tsdown",
     dev: "tsx qin-language-server/src/index.ts --stdio",
-    test: "npm run test && npm run build && npm run test:lsp",
-    "test:lsp": "npm run test:lsp"
+    test: "tsx tests/test-language-plugin.ts && tsdown && tsx tests/test-language-server.ts",
+    "test:lsp": "tsx tests/test-language-server.ts"
   },
   dependencies: {
     "@volar/language-core": "^2.4.14",

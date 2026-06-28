@@ -125,6 +125,47 @@ function sameUri(left: string | undefined, right: string): boolean {
   return leftName !== undefined && leftName.toLowerCase() === rightName?.toLowerCase()
 }
 
+function rangeStartsAt(item: any, line: number, character?: number): boolean {
+  const start = item?.range?.start ?? item?.targetSelectionRange?.start
+  if (!start || start.line !== line) {
+    return false
+  }
+  return character === undefined || start.character === character
+}
+
+function rangeContains(item: any, line: number, character: number): boolean {
+  const range = item?.range ?? item?.targetSelectionRange
+  const start = range?.start
+  const end = range?.end
+  if (!start || !end || line < start.line || line > end.line) {
+    return false
+  }
+  if (line === start.line && character < start.character) {
+    return false
+  }
+  if (line === end.line && character > end.character) {
+    return false
+  }
+  return true
+}
+
+function locationUri(item: any): string | undefined {
+  return item?.uri ?? item?.targetUri
+}
+
+function collectSymbolNames(symbols: any[]): string[] {
+  const names: string[] = []
+  for (const symbol of symbols) {
+    if (typeof symbol.name === 'string') {
+      names.push(symbol.name)
+    }
+    if (Array.isArray(symbol.children)) {
+      names.push(...collectSymbolNames(symbol.children))
+    }
+  }
+  return names
+}
+
 async function waitFor(
   description: string,
   predicate: () => boolean,
@@ -206,6 +247,14 @@ async function main() {
           },
         },
         hover: {},
+        definition: {},
+        references: {},
+        documentSymbol: {},
+        semanticTokens: {
+          requests: {
+            full: true,
+          },
+        },
         publishDiagnostics: {},
       },
     },
@@ -323,6 +372,70 @@ async function main() {
   const completionLabels = completionItems.map((item: any) => item.label)
   if (!completionLabels.includes('alphaNumber') || !completionLabels.includes('alphaText')) {
     throw new Error(`Qin completion did not include TS service symbols: ${JSON.stringify(completionLabels.slice(0, 30))}`)
+  }
+
+  const definitionRequest = createRequest('textDocument/definition', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 1, character: 20 },
+  })
+  server.stdin.write(definitionRequest.packet)
+  const definitionResponse = await waitForResponse(
+    definitionRequest.id,
+    messages,
+    `Qin TS-subset definition response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const definitionLocations = Array.isArray(definitionResponse.result)
+    ? definitionResponse.result
+    : definitionResponse.result ? [definitionResponse.result] : []
+  if (!definitionLocations.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeContains(item, 0, 6))) {
+    throw new Error(`Qin definition did not resolve alphaNumber declaration: ${JSON.stringify(definitionResponse.result)}`)
+  }
+
+  const referencesRequest = createRequest('textDocument/references', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 0, character: 8 },
+    context: { includeDeclaration: true },
+  })
+  server.stdin.write(referencesRequest.packet)
+  const referencesResponse = await waitForResponse(
+    referencesRequest.id,
+    messages,
+    `Qin TS-subset references response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const references = Array.isArray(referencesResponse.result) ? referencesResponse.result : []
+  if (
+    !references.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeStartsAt(item, 0, 6))
+    || !references.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeStartsAt(item, 1, 18))
+  ) {
+    throw new Error(`Qin references did not include alphaNumber declaration and usage: ${JSON.stringify(referencesResponse.result)}`)
+  }
+
+  const documentSymbolRequest = createRequest('textDocument/documentSymbol', {
+    textDocument: { uri: tsSubsetUri },
+  })
+  server.stdin.write(documentSymbolRequest.packet)
+  const documentSymbolResponse = await waitForResponse(
+    documentSymbolRequest.id,
+    messages,
+    `Qin TS-subset documentSymbol response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const symbolNames = collectSymbolNames(Array.isArray(documentSymbolResponse.result) ? documentSymbolResponse.result : [])
+  if (!symbolNames.includes('alphaNumber') || !symbolNames.includes('alphaText')) {
+    throw new Error(`Qin documentSymbol did not include TS-subset symbols: ${JSON.stringify(documentSymbolResponse.result)}`)
+  }
+
+  const semanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
+    textDocument: { uri: tsSubsetUri },
+  })
+  server.stdin.write(semanticTokensRequest.packet)
+  const semanticTokensResponse = await waitForResponse(
+    semanticTokensRequest.id,
+    messages,
+    `Qin TS-subset semanticTokens response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const semanticTokenData = semanticTokensResponse.result?.data ?? []
+  if (!Array.isArray(semanticTokenData) || semanticTokenData.length === 0) {
+    throw new Error(`Qin semanticTokens did not return token data: ${JSON.stringify(semanticTokensResponse.result)}`)
   }
 
   server.stdin.write(createRequest('shutdown', null).packet)
