@@ -189,6 +189,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         }
         if ("create-ovs".equals(project.id()) || "create-cssts".equals(project.id())) {
             verifyScaffoldTemplateQinConfig(project, projectRoot);
+            verifyScaffoldUserGuidance(project, projectRoot);
         }
     }
 
@@ -214,6 +215,34 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             require(!source.contains(forbidden),
                     project.id() + " scaffold template qin.config.js must not forward to external package scripts: "
                             + forbidden);
+        }
+    }
+
+    private static void verifyScaffoldUserGuidance(InventoryProject project, Path projectRoot) {
+        for (String relativePath : List.of("src/index.ts", "template/README.md")) {
+            Path sourcePath = projectRoot.resolve(relativePath).normalize();
+            require(Files.isRegularFile(sourcePath),
+                    project.id() + " scaffold guidance file must exist: " + sourcePath);
+            String source;
+            try {
+                source = Files.readString(sourcePath);
+            } catch (Exception e) {
+                throw new IllegalStateException(project.id() + " scaffold guidance file must be readable: "
+                        + sourcePath, e);
+            }
+            require(source.contains("qin install"),
+                    project.id() + " scaffold guidance must tell users to install through Qin: " + relativePath);
+            require(source.contains("qin dev"),
+                    project.id() + " scaffold guidance must tell users to run dev through Qin: " + relativePath);
+            if (relativePath.endsWith("README.md")) {
+                require(source.contains("qin build"),
+                        project.id() + " scaffold README must tell users to build through Qin");
+            }
+            for (String forbidden : List.of("npm run", "pnpm ", "yarn ")) {
+                require(!source.contains(forbidden),
+                        project.id() + " scaffold guidance must not direct users to external package scripts: "
+                                + relativePath + " contains " + forbidden);
+            }
         }
     }
 
