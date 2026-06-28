@@ -2,6 +2,7 @@ package com.qin.debug.lsp;
 
 import com.qin.core.ConfigLoader;
 import com.qin.types.LanguageConfig;
+import com.qin.types.LanguageServerConfig;
 import com.qin.types.QinConfig;
 
 import java.io.IOException;
@@ -28,6 +29,8 @@ public final class QinLspLanguageRegistrySmokeTestMain {
             QinConfig config = loadConfig(projectRoot);
             LanguageConfig metadata = config.language();
             require(metadata != null, projectRelativePath + " must declare language metadata");
+            LanguageServerConfig serverMetadata = config.languageServer();
+            require(serverMetadata != null, projectRelativePath + " must declare languageServer metadata");
 
             String extension = normalizedExtension(metadata.extension());
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, extension);
@@ -35,6 +38,16 @@ public final class QinLspLanguageRegistrySmokeTestMain {
             require(expectedIds.get(extension).equals(language.id()), "Unexpected language id for ." + extension);
             require(metadata.id().equals(language.id()), language.id() + " id must come from qin.config.js");
             require(extension.equals(language.extension()), language.id() + " extension must come from qin.config.js");
+            require(normalizedExtension(serverMetadata.sourceExtension()).equals(language.extension()),
+                    language.id() + " extension must come from qin.config.js languageServer.sourceExtension");
+            require(serverMetadata.serviceExtension().equals(language.serviceExtension()),
+                    language.id() + " service extension must come from qin.config.js languageServer");
+            require(serverMetadata.generatedParserTarget().equals(language.generatedParserTarget()),
+                    language.id() + " generated parser target must come from qin.config.js languageServer");
+            require(equalsNullable(serverMetadata.parserPackage(), language.parserPackage()),
+                    language.id() + " parser package must come from qin.config.js languageServer");
+            require(equalsNullable(serverMetadata.compilerPackage(), language.compilerPackage()),
+                    language.id() + " compiler package must come from qin.config.js languageServer");
             require(projectRelativePath.equals(language.projectRelativePath()),
                     language.id() + " project root must come from registry language project inventory");
             require(Path.of(metadata.serverBundle()).equals(language.serverBundlePath()),
@@ -78,6 +91,10 @@ public final class QinLspLanguageRegistrySmokeTestMain {
     private static String normalizedExtension(String extension) {
         require(extension != null && !extension.isBlank(), "language.extension is required");
         return extension.startsWith(".") ? extension.substring(1) : extension;
+    }
+
+    private static boolean equalsNullable(String left, String right) {
+        return left == null ? right == null : left.equals(right);
     }
 
     private static void require(boolean condition, String message) {

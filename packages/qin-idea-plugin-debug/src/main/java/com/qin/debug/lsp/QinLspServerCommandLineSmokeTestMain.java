@@ -43,6 +43,21 @@ public final class QinLspServerCommandLineSmokeTestMain {
             require(StandardCharsets.UTF_8.equals(commandSpec.charset()), language.id() + " command must use UTF-8");
             require(tsdkPath.toString().equals(commandSpec.environment().get("QIN_LSP_TYPESCRIPT_TSDK")),
                     language.id() + " command must pass TypeScript SDK environment");
+            require(("." + language.extension()).equals(commandSpec.environment().get("QIN_LSP_SOURCE_EXTENSION")),
+                    language.id() + " command must pass languageServer.sourceExtension environment");
+            require(language.serviceExtension().equals(commandSpec.environment().get("QIN_LSP_SERVICE_EXTENSION")),
+                    language.id() + " command must pass languageServer.serviceExtension environment");
+            require(language.generatedParserTarget()
+                    .equals(commandSpec.environment().get("QIN_LSP_GENERATED_PARSER_TARGET")),
+                    language.id() + " command must pass languageServer.generatedParserTarget environment");
+            if (language.parserPackage() != null && !language.parserPackage().isBlank()) {
+                require(language.parserPackage().equals(commandSpec.environment().get("QIN_LSP_PARSER_PACKAGE")),
+                        language.id() + " command must pass languageServer.parserPackage environment");
+            }
+            if (language.compilerPackage() != null && !language.compilerPackage().isBlank()) {
+                require(language.compilerPackage().equals(commandSpec.environment().get("QIN_LSP_COMPILER_PACKAGE")),
+                        language.id() + " command must pass languageServer.compilerPackage environment");
+            }
         }
 
         System.out.println("Qin IDEA LSP server command line smoke passed");

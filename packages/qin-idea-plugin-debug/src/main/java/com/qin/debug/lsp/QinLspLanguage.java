@@ -7,6 +7,10 @@ import java.util.Locale;
 record QinLspLanguage(
         String id,
         String extension,
+        String serviceExtension,
+        String generatedParserTarget,
+        String parserPackage,
+        String compilerPackage,
         String displayName,
         Path projectRelativePath,
         Path serverBundlePath) {

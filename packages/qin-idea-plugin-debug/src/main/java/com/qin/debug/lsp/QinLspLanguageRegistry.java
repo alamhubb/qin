@@ -2,6 +2,7 @@ package com.qin.debug.lsp;
 
 import com.qin.core.ConfigLoader;
 import com.qin.types.LanguageConfig;
+import com.qin.types.LanguageServerConfig;
 import com.qin.types.QinConfig;
 
 import java.nio.file.Files;
@@ -51,9 +52,36 @@ final class QinLspLanguageRegistry {
             if (language.serverBundle() == null || language.serverBundle().isBlank()) {
                 throw new IllegalStateException("Missing language.serverBundle in " + projectRoot.resolve("qin.config.js"));
             }
+            LanguageServerConfig languageServer = config.languageServer();
+            if (languageServer == null) {
+                throw new IllegalStateException("Missing languageServer metadata in " + projectRoot.resolve("qin.config.js"));
+            }
+            if (languageServer.sourceExtension() == null || languageServer.sourceExtension().isBlank()) {
+                throw new IllegalStateException(
+                        "Missing languageServer.sourceExtension in " + projectRoot.resolve("qin.config.js"));
+            }
+            if (languageServer.serviceExtension() == null || languageServer.serviceExtension().isBlank()) {
+                throw new IllegalStateException(
+                        "Missing languageServer.serviceExtension in " + projectRoot.resolve("qin.config.js"));
+            }
+            if (languageServer.generatedParserTarget() == null || languageServer.generatedParserTarget().isBlank()) {
+                throw new IllegalStateException(
+                        "Missing languageServer.generatedParserTarget in " + projectRoot.resolve("qin.config.js"));
+            }
+            String languageExtension = normalizeExtension(language.extension());
+            String serverSourceExtension = normalizeExtension(languageServer.sourceExtension());
+            if (!languageExtension.equals(serverSourceExtension)) {
+                throw new IllegalStateException(
+                        "language.extension and languageServer.sourceExtension must match in "
+                                + projectRoot.resolve("qin.config.js"));
+            }
             return new QinLspLanguage(
                     language.id(),
-                    normalizeExtension(language.extension()),
+                    serverSourceExtension,
+                    languageServer.serviceExtension(),
+                    languageServer.generatedParserTarget(),
+                    languageServer.parserPackage(),
+                    languageServer.compilerPackage(),
                     language.id().toUpperCase(Locale.ROOT),
                     projectRelativePath,
                     Path.of(language.serverBundle()));
