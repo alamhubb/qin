@@ -152,6 +152,13 @@ tasks {
         )
     }
 
+    register<Exec>("qinLanguageLocalDependencyBuildSmoke") {
+        group = "verification"
+        description = "Verifies qin language scripts build local file: dependencies before running."
+        workingDir = workspaceRoot.resolve("qin")
+        commandLine(qinCommand.canonicalPath, "run", "com.qin.cli.QinCliLanguageLocalDependencyBuildSmokeTestMain")
+    }
+
     register<JavaExec>("lspPluginDescriptorSmoke") {
         dependsOn("classes")
         classpath = sourceSets["main"].runtimeClasspath
@@ -270,6 +277,7 @@ tasks {
         dependsOn("lspServerCommandLineSmoke")
         dependsOn("lspServerDiagnosticsSmoke")
         dependsOn("lspLanguageCliSmoke")
+        dependsOn("qinLanguageLocalDependencyBuildSmoke")
         dependsOn("lspVerificationMatrixSmoke")
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspNoLocalParserSmoke")

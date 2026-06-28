@@ -125,6 +125,15 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Gradle must declare lspLanguageCliSmoke");
         require(buildSource.contains("QinLspLanguageCliSmokeTestMain"),
                 "lspLanguageCliSmoke must run QinLspLanguageCliSmokeTestMain");
+        require(buildSource.contains("register<Exec>(\"qinLanguageLocalDependencyBuildSmoke\")"),
+                "Gradle must declare qinLanguageLocalDependencyBuildSmoke");
+        String localDependencyBuildBlock = taskBlock(
+                buildSource,
+                "register<Exec>(\"qinLanguageLocalDependencyBuildSmoke\")");
+        require(localDependencyBuildBlock.contains("workspaceRoot.resolve(\"qin\")"),
+                "qinLanguageLocalDependencyBuildSmoke must run from the Qin project root");
+        require(localDependencyBuildBlock.contains("QinCliLanguageLocalDependencyBuildSmokeTestMain"),
+                "qinLanguageLocalDependencyBuildSmoke must verify local file dependency builds through Qin CLI");
         require(buildSource.contains("register(\"languageProjectsTest\")"),
                 "Gradle must declare languageProjectsTest");
         require(buildSource.contains("register(\"compilerProjectsTest\")"),
@@ -145,6 +154,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "ovsLanguageTest must run after csstsLanguageTest so local CSSTS language artifacts are refreshed");
         require(buildSource.contains("register(\"lspUnifiedMatrix\")"),
                 "Gradle must declare lspUnifiedMatrix");
+        String lspUnifiedMatrixBlock = taskBlock(buildSource, "register(\"lspUnifiedMatrix\")");
+        require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinLanguageLocalDependencyBuildSmoke\")"),
+                "lspUnifiedMatrix must include Qin local file dependency build smoke");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
                 "Gradle must declare qinJvmClassTargetSmoke");
         require(buildSource.contains("qin/packages/qin-lang-cli"),
