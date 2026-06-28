@@ -324,7 +324,10 @@ public class QinCli {
         if (script == null || script.isBlank()) {
             throw new IllegalStateException("Missing scripts." + scriptName + " in " + QinConstants.CONFIG_FILE);
         }
-        runLanguageShellCommand(script, "language script '" + scriptName + "'", hasArg(args, "--dry-run"));
+        boolean dryRun = hasArg(args, "--dry-run");
+        Path projectRoot = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
+        ensureLocalLanguageDependenciesBuilt(config, projectRoot, dryRun);
+        runLanguageShellCommandAt(projectRoot, script, "language script '" + scriptName + "'", dryRun);
     }
 
     private static QinConfig requireValidLanguageProject() throws Exception {
@@ -536,6 +539,11 @@ public class QinCli {
     }
 
     private static void runLanguageShellCommand(String script, String description, boolean dryRun) throws Exception {
+        runLanguageShellCommandAt(Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize(), script, description, dryRun);
+    }
+
+    private static void runLanguageShellCommandAt(Path cwd, String script, String description, boolean dryRun)
+            throws Exception {
         List<String> command = new ArrayList<>();
         if (System.getProperty("os.name").toLowerCase().contains("win")) {
             command.add("cmd");
@@ -551,7 +559,6 @@ public class QinCli {
         }
 
         ProcessBuilder pb = new ProcessBuilder(command);
-        Path cwd = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         pb.directory(cwd.toFile());
         addNodeBinPaths(pb.environment(), cwd);
         pb.inheritIO();
@@ -560,6 +567,80 @@ public class QinCli {
         if (exitCode != 0) {
             throw new RuntimeException(description + " exited with code " + exitCode);
         }
+    }
+
+    private static void ensureLocalLanguageDependenciesBuilt(QinConfig config, Path projectRoot, boolean dryRun)
+            throws Exception {
+        ensureLocalLanguageDependenciesBuilt(
+                config,
+                projectRoot.toAbsolutePath().normalize(),
+                dryRun,
+                new LinkedHashSet<>(),
+                new LinkedHashSet<>());
+    }
+
+    private static void ensureLocalLanguageDependenciesBuilt(
+            QinConfig config,
+            Path projectRoot,
+            boolean dryRun,
+            Set<Path> visiting,
+            Set<Path> built) throws Exception {
+        for (Map.Entry<String, String> dependency : languageLocalDependencies(config).entrySet()) {
+            Path dependencyRoot = resolveLocalFileDependencyRoot(projectRoot, dependency.getValue());
+            if (dependencyRoot == null || !Files.isRegularFile(dependencyRoot.resolve(QinConstants.CONFIG_FILE))) {
+                continue;
+            }
+            buildLocalLanguageDependency(dependency.getKey(), dependencyRoot, dryRun, visiting, built);
+        }
+    }
+
+    private static void buildLocalLanguageDependency(
+            String dependencyName,
+            Path dependencyRoot,
+            boolean dryRun,
+            Set<Path> visiting,
+            Set<Path> built) throws Exception {
+        Path root = dependencyRoot.toAbsolutePath().normalize();
+        if (built.contains(root)) {
+            return;
+        }
+        if (!visiting.add(root)) {
+            throw new IllegalStateException("Circular local Qin dependency while building language project: " + root);
+        }
+        QinConfig dependencyConfig = new ConfigLoader(root.toString()).load();
+        ensureLocalLanguageDependenciesBuilt(dependencyConfig, root, dryRun, visiting, built);
+
+        String buildScript = dependencyConfig.scripts().get("build");
+        if (buildScript != null && !buildScript.isBlank()) {
+            runLanguageShellCommandAt(
+                    root,
+                    buildScript,
+                    "local file dependency '" + dependencyName + "' build",
+                    dryRun);
+        }
+        visiting.remove(root);
+        built.add(root);
+    }
+
+    private static Map<String, String> languageLocalDependencies(QinConfig config) {
+        LinkedHashMap<String, String> dependencies = new LinkedHashMap<>();
+        dependencies.putAll(config.dependencies());
+        return dependencies;
+    }
+
+    private static Path resolveLocalFileDependencyRoot(Path projectRoot, String version) {
+        if (version == null || !version.startsWith("file:")) {
+            return null;
+        }
+        String rawPath = version.substring("file:".length()).trim();
+        if (rawPath.isBlank()) {
+            return null;
+        }
+        Path path = Paths.get(rawPath);
+        if (!path.isAbsolute()) {
+            path = projectRoot.resolve(path);
+        }
+        return path.toAbsolutePath().normalize();
     }
 
     private static void addNodeBinPaths(Map<String, String> environment, Path cwd) {
