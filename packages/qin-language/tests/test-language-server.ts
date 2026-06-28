@@ -141,8 +141,8 @@ async function waitFor(
 }
 
 async function waitForResponse(id: number, messages: LspMessage[], description: string): Promise<LspMessage> {
-  await waitFor(description, () => messages.some(message => message.id === id))
-  const message = messages.find(item => item.id === id)
+  await waitFor(description, () => messages.some(message => message.id === id && !message.method))
+  const message = messages.find(item => item.id === id && !item.method)
   if (!message) {
     throw new Error(`Missing response after wait: ${description}`)
   }
@@ -176,7 +176,8 @@ async function main() {
     messages.push(...parsed.messages)
     for (const message of parsed.messages) {
       if (typeof message.id === 'number' && message.method === 'workspace/configuration') {
-        server.stdin.write(createResponse(message.id, []))
+        const items = message.params?.items ?? []
+        server.stdin.write(createResponse(message.id, items.map((item: any) => configurationForSection(item.section))))
       } else if (typeof message.id === 'number' && message.method === 'client/registerCapability') {
         server.stdin.write(createResponse(message.id, null))
       }
@@ -194,8 +195,16 @@ async function main() {
   const initializeRequest = createRequest('initialize', {
     processId: process.pid,
     capabilities: {
+      workspace: {
+        configuration: true,
+      },
       textDocument: {
-        completion: {},
+        completion: {
+          completionItem: {
+            snippetSupport: true,
+            insertReplaceSupport: true,
+          },
+        },
         hover: {},
         publishDiagnostics: {},
       },
@@ -239,7 +248,7 @@ async function main() {
   const tsSubsetSource = [
     'const alphaNumber = 41',
     'const alphaText = alphaNumber.toString()',
-    'alp',
+    'al',
     '',
   ].join('\n')
   server.stdin.write(createNotification('textDocument/didOpen', {
@@ -294,7 +303,26 @@ async function main() {
     `Qin TS-subset hover response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
   )
   if (!JSON.stringify(hoverResponse.result ?? '').includes('alphaNumber')) {
-    throw new Error(`Qin hover did not return TS service content: ${JSON.stringify(hoverResponse.result)}`)
+    throw new Error(`Qin hover did not return TS service content: ${JSON.stringify(hoverResponse.result)} stderr=${stderr} messages=${JSON.stringify(messages)}`)
+  }
+
+  const completionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 2, character: 2 },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(completionRequest.packet)
+  const completionResponse = await waitForResponse(
+    completionRequest.id,
+    messages,
+    `Qin TS-subset completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const completionItems = Array.isArray(completionResponse.result)
+    ? completionResponse.result
+    : completionResponse.result?.items ?? []
+  const completionLabels = completionItems.map((item: any) => item.label)
+  if (!completionLabels.includes('alphaNumber') || !completionLabels.includes('alphaText')) {
+    throw new Error(`Qin completion did not include TS service symbols: ${JSON.stringify(completionLabels.slice(0, 30))}`)
   }
 
   server.stdin.write(createRequest('shutdown', null).packet)
@@ -303,6 +331,32 @@ async function main() {
   await sleep(200)
 
   console.log('Qin language server LSP smoke passed')
+}
+
+function configurationForSection(section: string | undefined): any {
+  if (section === 'typescript') {
+    return {
+      suggest: {
+        autoImports: false,
+        includeCompletionsForImportStatements: false,
+      },
+      preferences: {
+        includePackageJsonAutoImports: 'off',
+      },
+    }
+  }
+  if (section === 'javascript') {
+    return {
+      suggest: {
+        autoImports: false,
+        includeCompletionsForImportStatements: false,
+      },
+      preferences: {
+        includePackageJsonAutoImports: 'off',
+      },
+    }
+  }
+  return {}
 }
 
 main().catch(error => {
