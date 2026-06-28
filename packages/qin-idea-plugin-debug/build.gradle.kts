@@ -224,6 +224,7 @@ tasks {
     }
 
     register<Exec>("ovsLanguageTest") {
+        dependsOn("csstsLanguageTest")
         workingDir = workspaceRoot.resolve("ovsjs/ovs-language")
         commandLine(qinCommand.canonicalPath, "language", "test")
     }
@@ -234,6 +235,7 @@ tasks {
     }
 
     register<Exec>("ovsCompilerTest") {
+        dependsOn("csstsCompilerTest")
         workingDir = workspaceRoot.resolve("ovsjs/ovs/ovs-compiler")
         commandLine(qinCommand.canonicalPath, "language", "test")
     }

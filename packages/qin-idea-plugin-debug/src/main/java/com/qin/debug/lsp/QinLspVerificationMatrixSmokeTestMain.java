@@ -137,6 +137,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Gradle must declare csstsCompilerTest");
         require(buildSource.contains("cssts/cssts/cssts-compiler"),
                 "csstsCompilerTest must run from cssts/cssts/cssts-compiler");
+        String ovsCompilerBlock = taskBlock(buildSource, "register<Exec>(\"ovsCompilerTest\")");
+        require(ovsCompilerBlock.contains("dependsOn(\"csstsCompilerTest\")"),
+                "ovsCompilerTest must run after csstsCompilerTest so local cssts-compiler dist is refreshed");
+        String ovsLanguageBlock = taskBlock(buildSource, "register<Exec>(\"ovsLanguageTest\")");
+        require(ovsLanguageBlock.contains("dependsOn(\"csstsLanguageTest\")"),
+                "ovsLanguageTest must run after csstsLanguageTest so local CSSTS language artifacts are refreshed");
         require(buildSource.contains("register(\"lspUnifiedMatrix\")"),
                 "Gradle must declare lspUnifiedMatrix");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
@@ -315,10 +321,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
         require(cssTsParser.contains("from \"@qin/generated-qin-parser-ts\""),
                 "CSSTS parser must import the shared generated Qin parser package");
-        require(cssTsParser.contains("SlimeJavascriptParser"),
-                "CSSTS parser must use the generated SlimeJavascriptParser export");
-        require(cssTsParser.contains("extends SlimeParser"),
-                "CSSTS parser must extend the generated Slime parser base");
+        require(cssTsParser.contains("QinParser"),
+                "CSSTS parser must use the generated QinParser export");
+        require(cssTsParser.contains("extends QinParser"),
+                "CSSTS parser must extend the generated Qin parser base");
         require(cssTsParser.contains("normalizeGeneratedTokens"),
                 "CSSTS parser must normalize generated parser tokens");
         require(cssTsParser.contains("this.Or("),
@@ -339,6 +345,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "OVS parser must inherit CSSTS compiler parser support");
         require(ovsParser.contains("extends CssTsParser"),
                 "OVS parser must extend CssTsParser");
+        require(ovsParser.contains("QinObjectDeclaration(params)"),
+                "OVS parser must preserve Qin declarations through the CSSTS/Qin parser chain");
         require(ovsParser.contains("normalizeGeneratedTokens"),
                 "OVS parser must normalize generated parser tokens");
         require(ovsParser.contains("Alternative.of("),
