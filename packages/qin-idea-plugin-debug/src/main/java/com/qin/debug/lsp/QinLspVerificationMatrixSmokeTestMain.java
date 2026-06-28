@@ -126,6 +126,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "lspServerDiagnosticsSmoke",
                 "lspVerificationMatrixSmoke",
                 "lspPluginDescriptorSmoke",
+                "lspNoLocalParserSmoke",
                 "lspPluginPackageSmoke",
                 "lspUiFixtureSmoke")) {
             require(buildSource.contains("dependsOn(\"" + smokeTask + "\")"),

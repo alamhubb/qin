@@ -152,6 +152,18 @@ tasks {
         )
     }
 
+    register<JavaExec>("lspNoLocalParserSmoke") {
+        dependsOn("classes")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinLspNoLocalParserSmokeTestMain")
+        args(file(".").canonicalPath)
+        jvmArgs(
+            "-Dfile.encoding=UTF-8",
+            "-Dstdout.encoding=UTF-8",
+            "-Dstderr.encoding=UTF-8"
+        )
+    }
+
     register<JavaExec>("lspPluginPackageSmoke") {
         dependsOn("buildPlugin")
         classpath = sourceSets["main"].runtimeClasspath
@@ -224,6 +236,7 @@ tasks {
         dependsOn("lspVerificationMatrixSmoke")
         dependsOn("lspServerCommandLineSmoke")
         dependsOn("lspPluginDescriptorSmoke")
+        dependsOn("lspNoLocalParserSmoke")
         dependsOn("lspPluginPackageSmoke")
         dependsOn("lspUiFixtureSmoke")
         dependsOn("qinGeneratedParserDryRun")
