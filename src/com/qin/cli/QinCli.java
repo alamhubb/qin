@@ -324,7 +324,7 @@ public class QinCli {
         if (script == null || script.isBlank()) {
             throw new IllegalStateException("Missing scripts." + scriptName + " in " + QinConstants.CONFIG_FILE);
         }
-        runShellCommand(script, "language script '" + scriptName + "'", hasArg(args, "--dry-run"));
+        runLanguageShellCommand(script, "language script '" + scriptName + "'", hasArg(args, "--dry-run"));
     }
 
     private static QinConfig requireValidLanguageProject() throws Exception {
@@ -448,6 +448,55 @@ public class QinCli {
         if (exitCode != 0) {
             throw new RuntimeException(description + " exited with code " + exitCode);
         }
+    }
+
+    private static void runLanguageShellCommand(String script, String description, boolean dryRun) throws Exception {
+        List<String> command = new ArrayList<>();
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            command.add("cmd");
+            command.add("/c");
+        } else {
+            command.add("sh");
+            command.add("-c");
+        }
+        command.add(script);
+        if (dryRun) {
+            System.out.println(String.join(" ", command));
+            return;
+        }
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        Path cwd = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
+        pb.directory(cwd.toFile());
+        addNodeBinPaths(pb.environment(), cwd);
+        pb.inheritIO();
+        Process process = pb.start();
+        int exitCode = ChildProcessSupport.waitFor(process, description);
+        if (exitCode != 0) {
+            throw new RuntimeException(description + " exited with code " + exitCode);
+        }
+    }
+
+    private static void addNodeBinPaths(Map<String, String> environment, Path cwd) {
+        String pathKey = environment.containsKey("Path") ? "Path" : "PATH";
+        String currentPath = environment.getOrDefault(pathKey, "");
+        List<String> binPaths = new ArrayList<>();
+        Path cursor = cwd;
+        while (cursor != null) {
+            Path binPath = cursor.resolve("node_modules").resolve(".bin");
+            if (Files.isDirectory(binPath)) {
+                binPaths.add(binPath.toString());
+            }
+            cursor = cursor.getParent();
+        }
+        if (binPaths.isEmpty()) {
+            return;
+        }
+        LinkedHashSet<String> uniquePaths = new LinkedHashSet<>(binPaths);
+        if (!currentPath.isBlank()) {
+            uniquePaths.addAll(Arrays.asList(currentPath.split(Pattern.quote(File.pathSeparator))));
+        }
+        environment.put(pathKey, String.join(File.pathSeparator, uniquePaths));
     }
 
     private static Path resolveProjectPath(String value) {
