@@ -124,7 +124,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "lspRegistrySmoke",
                 "lspServerCommandLineSmoke",
                 "lspServerDiagnosticsSmoke",
-                "lspVerificationMatrixSmoke")) {
+                "lspVerificationMatrixSmoke",
+                "lspPluginDescriptorSmoke",
+                "lspPluginPackageSmoke",
+                "lspUiFixtureSmoke")) {
             require(buildSource.contains("dependsOn(\"" + smokeTask + "\")"),
                     "Gradle check must depend on " + smokeTask);
         }
