@@ -122,8 +122,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Gradle must declare qinJvmClassDeclarationSmoke");
         require(buildSource.contains("qin/packages/qin-lang-backend-jvm"),
                 "qinJvmClassDeclarationSmoke must run from qin/packages/qin-lang-backend-jvm");
-        require(buildSource.contains("\"run\", \"com.qin.lang.backend.jvm.QinJvmJavaExtendsEndToEndSmokeTestMain\""),
-                "qinJvmClassDeclarationSmoke must run the Qin JVM class declaration smoke");
+        require(buildSource.contains("\"run\", \"com.qin.lang.backend.jvm.QinJvmClassDeclarationCorpusSmokeTestMain\""),
+                "qinJvmClassDeclarationSmoke must run the Qin JVM class declaration corpus smoke");
         for (String smokeTask : List.of(
                 "languageProjectsTest",
                 "qinJvmClassTargetSmoke",

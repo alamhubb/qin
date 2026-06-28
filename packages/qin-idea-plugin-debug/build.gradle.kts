@@ -238,9 +238,9 @@ tasks {
 
     register<Exec>("qinJvmClassDeclarationSmoke") {
         group = "verification"
-        description = "Runs the Qin JVM class-declaration emission smoke through qin.config.js project management."
+        description = "Runs the Qin JVM class-declaration emission corpus through qin.config.js project management."
         workingDir = workspaceRoot.resolve("qin/packages/qin-lang-backend-jvm")
-        commandLine(qinCommand.canonicalPath, "run", "com.qin.lang.backend.jvm.QinJvmJavaExtendsEndToEndSmokeTestMain")
+        commandLine(qinCommand.canonicalPath, "run", "com.qin.lang.backend.jvm.QinJvmClassDeclarationCorpusSmokeTestMain")
     }
 
     register("runIdeLspFixture") {
