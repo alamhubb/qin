@@ -11,6 +11,13 @@ val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm
 val lspUiFixture = file("fixtures/lsp-ui").canonicalFile
 val workspaceRoot = file("../../..").canonicalFile
 val qinCommand = workspaceRoot.resolve("qin/qin.bat")
+val stableSmokeJvmArgs = listOf(
+    "-Xmx256m",
+    "-Dfile.encoding=UTF-8",
+    "-Dstdout.encoding=UTF-8",
+    "-Dstderr.encoding=UTF-8",
+    "-XX:-UseJVMCICompiler"
+)
 
 group = "com.qin"
 version = "0.0.1-$buildTime"
@@ -97,11 +104,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspLanguageRegistrySmokeTestMain")
         args(file("../../..").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspServerDiagnosticsSmoke") {
@@ -109,11 +112,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspServerDiagnosticsSmokeTestMain")
         args(file("../../..").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspVerificationMatrixSmoke") {
@@ -121,11 +120,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspVerificationMatrixSmokeTestMain")
         args(file("../../..").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspServerCommandLineSmoke") {
@@ -133,11 +128,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspServerCommandLineSmokeTestMain")
         args(file("../../..").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspLanguageCliSmoke") {
@@ -145,11 +136,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspLanguageCliSmokeTestMain")
         args(file("../../..").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<Exec>("qinLanguageLocalDependencyBuildSmoke") {
@@ -164,11 +151,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspPluginDescriptorSmokeTestMain")
         args(file("src/main/resources/META-INF/plugin.xml").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspNoLocalParserSmoke") {
@@ -176,11 +159,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspNoLocalParserSmokeTestMain")
         args(file(".").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspWorkspaceInventorySmoke") {
@@ -188,22 +167,14 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspWorkspaceInventorySmokeTestMain")
         args(file("../../..").canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspPluginPackageSmoke") {
         dependsOn("buildPlugin")
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspPluginPackageSmokeTestMain")
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<JavaExec>("lspUiFixtureSmoke") {
@@ -211,11 +182,7 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspUiFixtureSmokeTestMain")
         args(lspUiFixture.canonicalPath)
-        jvmArgs(
-            "-Dfile.encoding=UTF-8",
-            "-Dstdout.encoding=UTF-8",
-            "-Dstderr.encoding=UTF-8"
-        )
+        jvmArgs(stableSmokeJvmArgs)
     }
 
     register<Exec>("qinLanguageTest") {

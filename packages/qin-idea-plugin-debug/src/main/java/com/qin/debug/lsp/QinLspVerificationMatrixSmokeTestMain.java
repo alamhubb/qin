@@ -125,6 +125,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Gradle must declare lspLanguageCliSmoke");
         require(buildSource.contains("QinLspLanguageCliSmokeTestMain"),
                 "lspLanguageCliSmoke must run QinLspLanguageCliSmokeTestMain");
+        verifyStableLspSmokeJvmArgs(buildSource);
         require(buildSource.contains("register<Exec>(\"qinLanguageLocalDependencyBuildSmoke\")"),
                 "Gradle must declare qinLanguageLocalDependencyBuildSmoke");
         String localDependencyBuildBlock = taskBlock(
@@ -267,6 +268,37 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         require(smokeSource.contains("private record ScriptNeedle"),
                 "lspLanguageCliSmoke must allow multiple script dry-run needles per command");
+    }
+
+    private static void verifyStableLspSmokeJvmArgs(String buildSource) {
+        require(buildSource.contains("val stableSmokeJvmArgs = listOf("),
+                "Gradle must centralize LSP smoke JVM args");
+        require(buildSource.contains("\"-Xmx256m\""),
+                "LSP smoke JVM args must cap heap size for stable local matrix execution");
+        require(buildSource.contains("\"-Dfile.encoding=UTF-8\""),
+                "LSP smoke JVM args must force UTF-8 file encoding");
+        require(buildSource.contains("\"-Dstdout.encoding=UTF-8\""),
+                "LSP smoke JVM args must force UTF-8 stdout encoding");
+        require(buildSource.contains("\"-Dstderr.encoding=UTF-8\""),
+                "LSP smoke JVM args must force UTF-8 stderr encoding");
+        require(buildSource.contains("\"-XX:-UseJVMCICompiler\""),
+                "LSP smoke JVM args must disable the GraalVM JVMCI compiler for stable smoke execution");
+
+        for (String taskName : List.of(
+                "lspRegistrySmoke",
+                "lspServerDiagnosticsSmoke",
+                "lspVerificationMatrixSmoke",
+                "lspServerCommandLineSmoke",
+                "lspLanguageCliSmoke",
+                "lspPluginDescriptorSmoke",
+                "lspNoLocalParserSmoke",
+                "lspWorkspaceInventorySmoke",
+                "lspPluginPackageSmoke",
+                "lspUiFixtureSmoke")) {
+            String taskBlock = taskBlock(buildSource, "register<JavaExec>(\"" + taskName + "\")");
+            require(taskBlock.contains("jvmArgs(stableSmokeJvmArgs)"),
+                    taskName + " must use stableSmokeJvmArgs");
+        }
     }
 
     private static void verifyCompilerProjectConfig(
