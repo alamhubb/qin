@@ -144,6 +144,12 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 project.id() + " tooling project must declare build script");
         require(config.scripts().containsKey("test"),
                 project.id() + " tooling project must declare test script");
+        for (var script : config.scripts().entrySet()) {
+            require(!script.getValue().contains("npm run"),
+                    project.id() + " tooling script " + script.getKey()
+                            + " must run directly through Qin script metadata, not npm run forwarding: "
+                            + script.getValue());
+        }
     }
 
     private static List<InventoryProject> inventory() {
