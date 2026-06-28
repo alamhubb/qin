@@ -54,6 +54,15 @@ if (invalidDiagnostics[0].source !== 'qin-parser') {
   throw new Error(`Qin diagnostics must come from qin-parser, got ${JSON.stringify(invalidDiagnostics[0])}`)
 }
 
+const invalidSource = invalidDocument.getText()
+const invalidGenerated = lowerQinToTypeScript(invalidSource)
+if (invalidGenerated === invalidSource) {
+  throw new Error('Invalid Qin source must not fall back to identity virtual TypeScript')
+}
+if (!invalidGenerated.includes('Qin transform failed')) {
+  throw new Error(`Invalid Qin source must produce explicit transform failure code, got: ${invalidGenerated}`)
+}
+
 const unavailableDiagnostics = createQinParserDiagnostics({
   available: false,
   ok: false,
