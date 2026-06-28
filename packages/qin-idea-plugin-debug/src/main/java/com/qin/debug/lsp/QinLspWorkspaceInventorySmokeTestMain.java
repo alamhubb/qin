@@ -20,6 +20,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         for (InventoryProject project : inventory()) {
             verifyProject(workspaceRoot, project);
         }
+        assertNoLegacyLocalIdeaClients(workspaceRoot);
 
         System.out.println("Qin LSP workspace inventory smoke passed");
     }
@@ -107,6 +108,24 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "com.qin:qin-lang-cli"),
                 InventoryProject.javaRuntime("qin-runtime-core", Path.of("qin", "packages", "qin-runtime-core"),
                         "com.qin:qin-runtime-core"));
+    }
+
+    private static void assertNoLegacyLocalIdeaClients(Path workspaceRoot) throws Exception {
+        for (Path languageProject : List.of(
+                Path.of("ovsjs", "ovs-language"),
+                Path.of("cssts", "cssts-language"))) {
+            Path languageRoot = workspaceRoot.resolve(languageProject).normalize();
+            require(languageRoot.startsWith(workspaceRoot),
+                    languageProject + " must stay inside workspace");
+            try (var children = Files.list(languageRoot)) {
+                for (Path child : children.toList()) {
+                    String name = child.getFileName().toString();
+                    require(!name.endsWith("-intellij-client"),
+                            "IDEA support must live in qin/packages/qin-idea-plugin-debug pure LSP client, "
+                                    + "not legacy local IDEA client project: " + child);
+                }
+            }
+        }
     }
 
     private static void require(boolean condition, String message) {
