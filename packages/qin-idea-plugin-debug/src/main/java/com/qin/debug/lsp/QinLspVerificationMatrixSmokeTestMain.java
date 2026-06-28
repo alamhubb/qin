@@ -24,15 +24,17 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
         List<MatrixCase> cases = List.of(
                 new MatrixCase("qin", ".qin", Path.of("qin", "packages", "qin-language"),
-                        "dist/language-server.cjs", "generated/qin-parser-ts", null,
+                        null, "dist/language-server.cjs", "generated/qin-parser-ts", null,
                         "tsx tests/test-language-plugin.ts",
                         "tsx tests/test-language-server.ts"),
                 new MatrixCase("ovs", ".ovs", Path.of("ovsjs", "ovs-language"),
+                        Path.of("ovsjs", "ovs", "ovs-compiler"),
                         "dist/language-server.js", "@qin/generated-qin-parser-ts", "../ovs/ovs-compiler",
                         "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts --source",
                         "tsx tests/test-language-server.ts --dist"),
                 new MatrixCase("cssts", ".cssts", Path.of("cssts", "cssts-language"),
+                        Path.of("cssts", "cssts", "cssts-compiler"),
                         "dist/language-server.cjs", "@qin/generated-qin-parser-ts", "../cssts/cssts-compiler",
                         "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts"));
@@ -69,6 +71,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
             if ("qin".equals(matrixCase.id())) {
                 verifyGeneratedQinParserPackage(projectRoot, config);
+            }
+            if (matrixCase.compilerProjectRelativePath() != null) {
+                verifyCompilerProjectConfig(matrixCase, workspaceRoot);
             }
         }
 
@@ -111,6 +116,49 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
 
         System.out.println("Qin LSP verification matrix smoke passed");
+    }
+
+    private static void verifyCompilerProjectConfig(MatrixCase matrixCase, Path workspaceRoot) throws Exception {
+        Path compilerRoot = workspaceRoot.resolve(matrixCase.compilerProjectRelativePath()).normalize();
+        require(compilerRoot.startsWith(workspaceRoot),
+                matrixCase.id() + " compiler project must stay inside workspace");
+        require(Files.isRegularFile(compilerRoot.resolve("qin.config.js")),
+                matrixCase.id() + " compiler project must have qin.config.js");
+
+        QinConfig compilerConfig = new ConfigLoader(compilerRoot.toString()).load();
+        LanguageConfig compilerLanguage = compilerConfig.language();
+        require(compilerLanguage != null, matrixCase.id() + " compiler must declare language metadata");
+        require(matrixCase.id().equals(compilerLanguage.id()),
+                matrixCase.id() + " compiler language.id mismatch");
+        require(matrixCase.extension().equals(compilerLanguage.extension()),
+                matrixCase.id() + " compiler language.extension mismatch");
+        require(matrixCase.expectedParser().equals(compilerLanguage.parser()),
+                matrixCase.id() + " compiler language.parser mismatch");
+        require("src/index.ts".equals(compilerLanguage.compiler()),
+                matrixCase.id() + " compiler language.compiler must point at src/index.ts");
+        verifyPathLikeOrPackageReference(
+                matrixCase.id() + " compiler",
+                "language.parser",
+                compilerLanguage.parser(),
+                compilerRoot,
+                workspaceRoot,
+                compilerConfig);
+        verifyPathLikeOrPackageReference(
+                matrixCase.id() + " compiler",
+                "language.compiler",
+                compilerLanguage.compiler(),
+                compilerRoot,
+                workspaceRoot,
+                compilerConfig);
+
+        String buildScript = compilerConfig.scripts().get("build");
+        String testScript = compilerConfig.scripts().get("test");
+        require("tsdown".equals(buildScript),
+                matrixCase.id() + " compiler scripts.build must run tsdown directly");
+        require(testScript != null && !testScript.isBlank(),
+                matrixCase.id() + " compiler scripts.test is required");
+        require(!testScript.contains("npm run"),
+                matrixCase.id() + " compiler scripts.test must run checks directly through Qin scripts");
     }
 
     private static void verifyLanguageToolReferences(
@@ -226,6 +274,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             String id,
             String extension,
             Path projectRelativePath,
+            Path compilerProjectRelativePath,
             String serverBundle,
             String expectedParser,
             String expectedCompiler,
