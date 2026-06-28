@@ -215,6 +215,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 matrixCase.id() + " compiler scripts.build must run tsdown directly");
         require(testScript != null && !testScript.isBlank(),
                 matrixCase.id() + " compiler scripts.test is required");
+        require(testScript.contains("tests/test-generated-parser-chain.ts"),
+                matrixCase.id() + " compiler scripts.test must run the generated parser chain smoke");
         require(!testScript.contains("npm run"),
                 matrixCase.id() + " compiler scripts.test must run checks directly through Qin scripts");
         verifyGeneratedParserDependency(
