@@ -372,6 +372,45 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(testSource.contains(assertionNeedle),
                     matrixCase.id() + " language server test must assert " + assertionNeedle);
         }
+        for (String metadataNeedle : List.of(
+                "initializationOptions",
+                "generatedParserTarget: '" + GENERATED_QIN_PARSER_PACKAGE + "'")) {
+            require(testSource.contains(metadataNeedle),
+                    matrixCase.id() + " language server test must pass generated parser metadata: "
+                            + metadataNeedle);
+        }
+        for (String syntaxNeedle : languageSyntaxFeatureNeedles(matrixCase.id())) {
+            require(testSource.contains(syntaxNeedle),
+                    matrixCase.id() + " language server test must cover language syntax feature: "
+                            + syntaxNeedle);
+        }
+    }
+
+    private static List<String> languageSyntaxFeatureNeedles(String languageId) {
+        return switch (languageId) {
+            case "qin" -> List.of(
+                    "Qin object completion response",
+                    "Qin object definition response",
+                    "Qin object references response",
+                    "Qin object documentSymbol response",
+                    "__QinObject_Counter",
+                    "generated object");
+            case "ovs" -> List.of(
+                    "OVS syntax completion response",
+                    "OVS syntax definition response",
+                    "OVS syntax references response",
+                    "OVS syntax documentSymbol response",
+                    "css { displayFlex }",
+                    "labelText");
+            case "cssts" -> List.of(
+                    "CSSTS css syntax completion response",
+                    "CSSTS css syntax definition response",
+                    "CSSTS css syntax references response",
+                    "CSSTS css syntax documentSymbol response",
+                    "css { colorRed, displayFlex }",
+                    "derivedStyle");
+            default -> throw new IllegalStateException("Unsupported language id: " + languageId);
+        };
     }
 
     private static void verifyGeneratedParserDependency(
