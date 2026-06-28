@@ -11,12 +11,17 @@ export object Counter {
 
 const generated = lowerQinToTypeScript(source)
 
-if (generated !== source) {
-  throw new Error('Qin language plugin must not rewrite source with a fallback transform')
+if (generated.includes('__QinObject_Counter')) {
+  if (!generated.includes('class __QinObject_Counter') || !generated.includes('const Counter = new __QinObject_Counter()')) {
+    throw new Error(`Qin object lowering must expose object class and singleton symbols, got: ${generated}`)
+  }
+} else {
+  throw new Error(`Qin object source must lower through generated Qin CST into TypeScript symbols, got: ${generated}`)
 }
 
-if (generated.includes('__QinObject_Counter')) {
-  throw new Error('Qin object syntax must be handled by the generated Qin parser, not TS string lowering')
+const tsSubset = 'const alphaNumber = 41\nconst alphaText = alphaNumber.toString()\n'
+if (lowerQinToTypeScript(tsSubset) !== tsSubset) {
+  throw new Error('Qin TS-subset source must remain unchanged when generated CST has no Qin-only syntax')
 }
 
 const parserProbe = probeGeneratedQinParser(source)

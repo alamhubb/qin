@@ -18,6 +18,10 @@ export interface QinGeneratedParserProbeResult {
   diagnostics?: QinGeneratedParserDiagnostic[]
 }
 
+export interface QinGeneratedParserParseResult extends QinGeneratedParserProbeResult {
+  cst?: unknown
+}
+
 export interface QinGeneratedParserDiagnostic {
   message: string
   line: number
@@ -26,6 +30,17 @@ export interface QinGeneratedParserDiagnostic {
 }
 
 export function probeGeneratedQinParser(source: string): QinGeneratedParserProbeResult {
+  const result = parseGeneratedQinSource(source)
+  return {
+    available: result.available,
+    ok: result.ok,
+    cstName: result.cstName,
+    error: result.error,
+    diagnostics: result.diagnostics,
+  }
+}
+
+export function parseGeneratedQinSource(source: string): QinGeneratedParserParseResult {
   const Parser = loadGeneratedQinParser()
   if (!Parser) {
     return { available: false, ok: false }
@@ -39,7 +54,7 @@ export function probeGeneratedQinParser(source: string): QinGeneratedParserProbe
         ? parser.Program()
         : null
     const cstName = readCstName(cst)
-    return { available: true, ok: cstName === 'Program', cstName }
+    return { available: true, ok: cstName === 'Program', cstName, cst }
   } catch (error) {
     const message = error instanceof Error ? error.stack || error.message : String(error)
     logToFile('Generated Qin parser probe failed:', message)

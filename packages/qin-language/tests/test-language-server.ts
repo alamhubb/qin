@@ -309,6 +309,24 @@ async function main() {
     },
   }))
 
+  const objectUri = toFileUri(path.join(__dirname, 'object-use.qin'))
+  const objectSource = [
+    'export object Counter {',
+    '  value = 1',
+    '}',
+    'const currentValue = Counter.value',
+    'Coun',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: objectUri,
+      languageId: 'qin',
+      version: 1,
+      text: objectSource,
+    },
+  }))
+
   await waitFor(
     'Qin publishDiagnostics for valid and invalid documents',
     () => {
@@ -374,6 +392,25 @@ async function main() {
     throw new Error(`Qin completion did not include TS service symbols: ${JSON.stringify(completionLabels.slice(0, 30))}`)
   }
 
+  const objectCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: objectUri },
+    position: { line: 4, character: 4 },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(objectCompletionRequest.packet)
+  const objectCompletionResponse = await waitForResponse(
+    objectCompletionRequest.id,
+    messages,
+    `Qin object completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectCompletionItems = Array.isArray(objectCompletionResponse.result)
+    ? objectCompletionResponse.result
+    : objectCompletionResponse.result?.items ?? []
+  const objectCompletionLabels = objectCompletionItems.map((item: any) => item.label)
+  if (!objectCompletionLabels.includes('Counter')) {
+    throw new Error(`Qin object completion did not include generated singleton symbol: ${JSON.stringify(objectCompletionLabels.slice(0, 30))}`)
+  }
+
   const definitionRequest = createRequest('textDocument/definition', {
     textDocument: { uri: tsSubsetUri },
     position: { line: 1, character: 20 },
@@ -389,6 +426,23 @@ async function main() {
     : definitionResponse.result ? [definitionResponse.result] : []
   if (!definitionLocations.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeContains(item, 0, 6))) {
     throw new Error(`Qin definition did not resolve alphaNumber declaration: ${JSON.stringify(definitionResponse.result)}`)
+  }
+
+  const objectDefinitionRequest = createRequest('textDocument/definition', {
+    textDocument: { uri: objectUri },
+    position: { line: 3, character: 23 },
+  })
+  server.stdin.write(objectDefinitionRequest.packet)
+  const objectDefinitionResponse = await waitForResponse(
+    objectDefinitionRequest.id,
+    messages,
+    `Qin object definition response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectDefinitionLocations = Array.isArray(objectDefinitionResponse.result)
+    ? objectDefinitionResponse.result
+    : objectDefinitionResponse.result ? [objectDefinitionResponse.result] : []
+  if (!objectDefinitionLocations.some(item => sameUri(locationUri(item), objectUri))) {
+    throw new Error(`Qin object definition did not resolve Counter through generated object lowering: ${JSON.stringify(objectDefinitionResponse.result)}`)
   }
 
   const referencesRequest = createRequest('textDocument/references', {
@@ -422,6 +476,20 @@ async function main() {
   const symbolNames = collectSymbolNames(Array.isArray(documentSymbolResponse.result) ? documentSymbolResponse.result : [])
   if (!symbolNames.includes('alphaNumber') || !symbolNames.includes('alphaText')) {
     throw new Error(`Qin documentSymbol did not include TS-subset symbols: ${JSON.stringify(documentSymbolResponse.result)}`)
+  }
+
+  const objectDocumentSymbolRequest = createRequest('textDocument/documentSymbol', {
+    textDocument: { uri: objectUri },
+  })
+  server.stdin.write(objectDocumentSymbolRequest.packet)
+  const objectDocumentSymbolResponse = await waitForResponse(
+    objectDocumentSymbolRequest.id,
+    messages,
+    `Qin object documentSymbol response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectSymbolNames = collectSymbolNames(Array.isArray(objectDocumentSymbolResponse.result) ? objectDocumentSymbolResponse.result : [])
+  if (!objectSymbolNames.includes('Counter') || !objectSymbolNames.includes('__QinObject_Counter')) {
+    throw new Error(`Qin object documentSymbol did not include generated object symbols: ${JSON.stringify(objectDocumentSymbolResponse.result)}`)
   }
 
   const semanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
