@@ -509,7 +509,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "object Labeler",
                         "css { colorRed, displayFlex }",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
-                        "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
+                        "parsedTokens.some((token: any) => token.tokenValue === 'css')",
+                        "requireNoDependency",
+                        "'slime-ast', 'slime-parser', 'slime-token', 'subhuti'"));
         verifyGeneratedParserChainRuntimeSmoke(
                 "cssts-compiler",
                 workspaceRoot,
