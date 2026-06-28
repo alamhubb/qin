@@ -189,6 +189,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         }
         if ("create-ovs".equals(project.id()) || "create-cssts".equals(project.id())) {
             verifyScaffoldOutputSmoke(project, config);
+            verifyScaffoldCliPackageJsonIsNotScriptEntrypoint(project, projectRoot);
             verifyScaffoldTemplateQinConfig(project, projectRoot);
             verifyScaffoldUserGuidance(project, projectRoot);
             verifyScaffoldPackageJsonIsNotScriptEntrypoint(project, projectRoot);
@@ -202,6 +203,26 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         require(testScript.contains("node tests/test-scaffold-output.mjs"),
                 project.id() + " scaffold output smoke must run directly through Node without package script forwarding: "
                         + testScript);
+    }
+
+    private static void verifyScaffoldCliPackageJsonIsNotScriptEntrypoint(
+            InventoryProject project,
+            Path projectRoot) {
+        Path packageJson = projectRoot.resolve("package.json").normalize();
+        require(Files.isRegularFile(packageJson),
+                project.id() + " scaffold CLI package.json must exist");
+        String source;
+        try {
+            source = Files.readString(packageJson);
+        } catch (Exception e) {
+            throw new IllegalStateException(project.id() + " scaffold CLI package.json must be readable", e);
+        }
+        require(!source.contains("\"scripts\""),
+                project.id() + " scaffold CLI package.json must not define scripts; qin.config.js is the script entrypoint");
+        for (String forbidden : List.of("npm run", "pnpm ", "yarn ")) {
+            require(!source.contains(forbidden),
+                    project.id() + " scaffold CLI package.json must not forward commands through " + forbidden);
+        }
     }
 
     private static void verifyScaffoldTemplateQinConfig(InventoryProject project, Path projectRoot) {
