@@ -704,6 +704,31 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin generated parser parity corpus must include object method branch return");
         require(paritySource.contains("return \"bye \" + name"),
                 "Qin generated parser parity corpus must include object method fallthrough return");
+        for (String caseName : List.of(
+                "decorated qin object",
+                "default export qin object",
+                "object keyword in type alias",
+                "java import class extends",
+                "local class extends",
+                "interface and type exports",
+                "generic function",
+                "generic interface and object type alias",
+                "namespace export",
+                "enum export",
+                "import export variants",
+                "type import export variants",
+                "class method expressions",
+                "class fields and constructor",
+                "decorated class and method",
+                "control flow in function body",
+                "destructuring declarations",
+                "async await function",
+                "invalid unclosed import",
+                "invalid unclosed decorator",
+                "invalid unclosed class")) {
+            require(paritySource.contains("name: '" + caseName + "'"),
+                    "Qin generated parser parity corpus must include case: " + caseName);
+        }
     }
 
     private static void verifyLanguageToolReferences(
