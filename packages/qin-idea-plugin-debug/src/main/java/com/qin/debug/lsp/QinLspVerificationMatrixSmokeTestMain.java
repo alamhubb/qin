@@ -62,6 +62,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 require(testScript.contains(requiredPart),
                         matrixCase.id() + " scripts.test missing " + requiredPart + ": " + testScript);
             }
+
+            if ("qin".equals(matrixCase.id())) {
+                verifyGeneratedQinParserPackage(projectRoot, config);
+            }
         }
 
         Path buildFile = ideaClientPath.resolve("build.gradle.kts");
@@ -103,6 +107,52 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
 
         System.out.println("Qin LSP verification matrix smoke passed");
+    }
+
+    private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
+        Path generatedRoot = qinLanguageRoot.resolve("generated").resolve("qin-parser-ts").normalize();
+        Path generatedConfig = generatedRoot.resolve("qin.config.js");
+        Path generatedPackageJson = generatedRoot.resolve("package.json");
+        Path generatedIndex = generatedRoot.resolve("index.ts");
+
+        require(Files.isRegularFile(generatedConfig),
+                "Generated Qin parser package must include qin.config.js");
+        require(Files.isRegularFile(generatedPackageJson),
+                "Generated Qin parser package must include package.json");
+        require(Files.isRegularFile(generatedIndex),
+                "Generated Qin parser package must include index.ts");
+
+        String languageConfigSource = Files.readString(qinLanguageRoot.resolve("qin.config.js"));
+        String generatedConfigSource = Files.readString(generatedConfig);
+        String packageJsonSource = Files.readString(generatedPackageJson);
+        String indexSource = Files.readString(generatedIndex);
+
+        require(languageConfigSource.contains("parser: \"generated/qin-parser-ts\""),
+                "qin-language must point language.parser at generated/qin-parser-ts");
+        require(languageConfigSource.contains("generatedParserTarget: \"@qin/generated-qin-parser-ts\""),
+                "qin-language must declare @qin/generated-qin-parser-ts as generated parser target");
+        require(generatedConfigSource.contains("name: \"@qin/generated-qin-parser-ts\""),
+                "Generated Qin parser qin.config.js must use @qin/generated-qin-parser-ts package name");
+        require(generatedConfigSource.contains("entry: \"./index.ts\""),
+                "Generated Qin parser qin.config.js must expose ./index.ts as entry");
+        require(generatedConfigSource.contains("entryBinaryName: \"com.qin.parser.QinParser\""),
+                "Generated Qin parser qin.config.js must record com.qin.parser.QinParser entry");
+        require(packageJsonSource.contains("\"name\": \"@qin/generated-qin-parser-ts\""),
+                "Generated Qin parser package.json must use @qin/generated-qin-parser-ts package name");
+        require(packageJsonSource.contains("\"entryBinaryName\": \"com.qin.parser.QinParser\""),
+                "Generated Qin parser package.json must record com.qin.parser.QinParser entry");
+        require(indexSource.contains("export default com_qin_parser_QinParser"),
+                "Generated Qin parser index.ts must default-export QinParser");
+        require(indexSource.contains("com_qin_parser_QinParser as QinParser"),
+                "Generated Qin parser index.ts must named-export QinParser");
+        require(indexSource.contains("SlimeJavascriptParser"),
+                "Generated Qin parser index.ts must expose SlimeJavascriptParser for parser inheritance");
+
+        require(config.generated() != null, "qin-language must declare generated metadata");
+        require("com.qin.parser.QinParser".equals(config.generated().entryBinaryName()),
+                "qin-language generated.entryBinaryName must be com.qin.parser.QinParser");
+        require("generated/qin-parser-ts".equals(config.generated().outputDir()),
+                "qin-language generated.outputDir must be generated/qin-parser-ts");
     }
 
     private static void require(boolean condition, String message) {
