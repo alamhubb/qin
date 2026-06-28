@@ -70,8 +70,13 @@ These items are not proven complete yet:
 
 - Full grammar authority across every Slime/Qin/OVS/CSSTS syntax branch is not
   exhaustively audited. Current evidence covers the active generated-parser path,
-  a small Java/TypeScript parser parity corpus, Qin `object`, and parser-chain
-  inheritance smoke fixtures.
+  a Java/TypeScript parser parity corpus with export, Qin `object`, decorator,
+  `java:` import/class inheritance, class method expression, and top-level
+  function/const samples, plus parser-chain inheritance smoke fixtures.
+- Generated TypeScript parser parity has a known performance gap for a top-level
+  exported object literal containing nested array literals. That case is not
+  accepted into the parity gate until the generated parser path is fixed without
+  fallback.
 - IDEA has smoke coverage for LSP startup, capabilities, diagnostics, packaging,
   and fixture registration, but manual IDE behavior still relies on
   `runIdeLspFixture` for visual confirmation.

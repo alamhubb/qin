@@ -49,14 +49,60 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'java import class extends',
+    source: [
+      'import { ArrayList } from "java:java.util"',
+      '',
+      'class MyList extends ArrayList {',
+      '  label(): string {',
+      '    return "ok"',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'class method expressions',
+    source: [
+      'class HelloService {',
+      '  greet(name: string): string {',
+      '    return "hello " + name',
+      '  }',
+      '',
+      '  choose(flag: boolean): string {',
+      '    return flag ? "yes" : "no"',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'top level function and const exports',
+    source: [
+      'export function health() {',
+      '  return true',
+      '}',
+      'export const enabled = true',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'invalid qin object initializer',
     source: 'export object Broken { value = }\n',
     ok: false,
   },
 ]
 
+const javaResults = runJavaParserBatchProbe(cases)
+
 for (const testCase of cases) {
-  const javaOk = runJavaParserProbe(testCase)
+  const javaOk = javaResults.get(testCase.name)
+  if (javaOk === undefined) {
+    throw new Error(`Java parser batch probe did not report ${testCase.name}`)
+  }
   const tsProbe = probeGeneratedQinParser(testCase.source)
   if (!tsProbe.available) {
     throw new Error('Generated Qin parser package is required for parser parity smoke')
@@ -76,17 +122,19 @@ for (const testCase of cases) {
 
 console.log('Qin generated parser parity smoke passed')
 
-function runJavaParserProbe(testCase: ParserCase): boolean {
+function runJavaParserBatchProbe(parserCases: ParserCase[]): Map<string, boolean> {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qin-parser-parity-'))
-  const sourceFile = path.join(tempDir, `${sanitizeFileName(testCase.name)}.qin`)
   try {
-    fs.writeFileSync(sourceFile, testCase.source, 'utf8')
+    const sourceFiles = parserCases.map((testCase, index) => {
+      const sourceFile = path.join(tempDir, `${String(index).padStart(2, '0')}-${sanitizeFileName(testCase.name)}.qin`)
+      fs.writeFileSync(sourceFile, testCase.source, 'utf8')
+      return sourceFile
+    })
     const qinArgs = [
       'run',
-      'com.qin.parser.QinParserRuleProbeMain',
+      'com.qin.parser.QinParserBatchProbeMain',
       'Program',
-      '--file',
-      sourceFile,
+      ...sourceFiles,
     ]
     const command = process.platform === 'win32' ? 'cmd.exe' : qinCommand
     const args = process.platform === 'win32' ? ['/c', qinCommand, ...qinArgs] : qinArgs
@@ -97,18 +145,44 @@ function runJavaParserProbe(testCase: ParserCase): boolean {
     })
     const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}\n${result.error?.stack ?? result.error?.message ?? ''}`
     if (result.status !== 0) {
-      throw new Error(`Java parser probe process failed for ${testCase.name}:\n${output}`)
+      throw new Error(`Java parser batch probe process failed:\n${output}`)
     }
-    if (output.includes('success=true')) {
-      return true
+
+    const results = new Map<string, boolean>()
+    for (const line of output.split(/\r?\n/)) {
+      if (!line.startsWith('case=')) {
+        continue
+      }
+      const fields = parseProbeFields(line)
+      const caseIndex = Number(fields.get('case'))
+      const success = fields.get('success')
+      if (!Number.isInteger(caseIndex) || caseIndex < 0 || caseIndex >= parserCases.length) {
+        throw new Error(`Java parser batch probe reported invalid case index:\n${line}`)
+      }
+      if (success !== 'true' && success !== 'false') {
+        throw new Error(`Java parser batch probe reported invalid success field:\n${line}`)
+      }
+      results.set(parserCases[caseIndex].name, success === 'true')
     }
-    if (output.includes('success=false')) {
-      return false
+
+    if (results.size !== parserCases.length) {
+      throw new Error(`Java parser batch probe reported ${results.size} of ${parserCases.length} cases:\n${output}`)
     }
-    throw new Error(`Java parser probe did not report success state for ${testCase.name}:\n${output}`)
+    return results
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true })
   }
+}
+
+function parseProbeFields(line: string): Map<string, string> {
+  const fields = new Map<string, string>()
+  for (const part of line.split('\t')) {
+    const separator = part.indexOf('=')
+    if (separator > 0) {
+      fields.set(part.slice(0, separator), part.slice(separator + 1))
+    }
+  }
+  return fields
 }
 
 function sanitizeFileName(value: string): string {
