@@ -81,6 +81,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(testScript != null && !testScript.isBlank(), matrixCase.id() + " scripts.test is required");
             require(!testScript.contains("npm run"),
                     matrixCase.id() + " scripts.test must run checks directly through Qin scripts");
+            if (!"qin".equals(matrixCase.id())) {
+                verifyPackageJsonIsNotScriptEntrypoint(matrixCase.id(), projectRoot);
+            }
             for (String requiredPart : matrixCase.requiredTestScriptParts()) {
                 require(testScript.contains(requiredPart),
                         matrixCase.id() + " scripts.test missing " + requiredPart + ": " + testScript);
@@ -385,11 +388,25 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 matrixCase.id() + " compiler scripts.test must run the generated parser chain smoke");
         require(!testScript.contains("npm run"),
                 matrixCase.id() + " compiler scripts.test must run checks directly through Qin scripts");
+        verifyPackageJsonIsNotScriptEntrypoint(matrixCase.id() + " compiler", compilerRoot);
         verifyGeneratedParserDependency(
                 matrixCase.id() + " compiler",
                 compilerRoot,
                 generatedQinParserRoot,
                 compilerConfig);
+    }
+
+    private static void verifyPackageJsonIsNotScriptEntrypoint(String id, Path projectRoot) throws Exception {
+        Path packageJson = projectRoot.resolve("package.json").normalize();
+        require(Files.isRegularFile(packageJson),
+                id + " package.json must exist for dependency metadata");
+        String source = Files.readString(packageJson);
+        require(!source.contains("\"scripts\""),
+                id + " package.json must not define scripts; qin.config.js is the command entrypoint");
+        for (String forbidden : List.of("npm run", "npx ", "pnpm ", "yarn ")) {
+            require(!source.contains(forbidden),
+                    id + " package.json must not forward commands through " + forbidden);
+        }
     }
 
     private static void verifyOvsCsstsGeneratedParserInheritance(Path workspaceRoot) throws Exception {
