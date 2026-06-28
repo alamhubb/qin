@@ -9,6 +9,8 @@ plugins {
 
 val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm"))
 val lspUiFixture = file("fixtures/lsp-ui").canonicalFile
+val workspaceRoot = file("../../..").canonicalFile
+val qinCommand = workspaceRoot.resolve("qin/qin.bat")
 
 group = "com.qin"
 version = "0.0.1-$buildTime"
@@ -173,6 +175,29 @@ tasks {
         )
     }
 
+    register<Exec>("qinLanguageTest") {
+        workingDir = workspaceRoot.resolve("qin/packages/qin-language")
+        commandLine(qinCommand.canonicalPath, "language", "test")
+    }
+
+    register<Exec>("ovsLanguageTest") {
+        workingDir = workspaceRoot.resolve("ovsjs/ovs-language")
+        commandLine(qinCommand.canonicalPath, "language", "test")
+    }
+
+    register<Exec>("csstsLanguageTest") {
+        workingDir = workspaceRoot.resolve("cssts/cssts-language")
+        commandLine(qinCommand.canonicalPath, "language", "test")
+    }
+
+    register("languageProjectsTest") {
+        group = "verification"
+        description = "Runs qin language test for Qin, OVS, and CSSTS language projects."
+        dependsOn("qinLanguageTest")
+        dependsOn("ovsLanguageTest")
+        dependsOn("csstsLanguageTest")
+    }
+
     register("runIdeLspFixture") {
         group = "intellij platform"
         description = "Runs the IDE with the Qin/OVS/CSSTS LSP UI fixture project opened."
@@ -187,6 +212,7 @@ tasks {
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspPluginPackageSmoke")
         dependsOn("lspUiFixtureSmoke")
+        dependsOn("languageProjectsTest")
     }
 
     // Keep only the latest packaged plugin artifact.

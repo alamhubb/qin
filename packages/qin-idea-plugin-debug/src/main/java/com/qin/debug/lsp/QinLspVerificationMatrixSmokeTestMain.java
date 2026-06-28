@@ -66,7 +66,20 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
         Path buildFile = ideaClientPath.resolve("build.gradle.kts");
         String buildSource = Files.readString(buildFile);
+        Map<String, String> languageTestTasks = Map.of(
+                "qinLanguageTest", "qin/packages/qin-language",
+                "ovsLanguageTest", "ovsjs/ovs-language",
+                "csstsLanguageTest", "cssts/cssts-language");
+        for (Map.Entry<String, String> task : languageTestTasks.entrySet()) {
+            require(buildSource.contains("register<Exec>(\"" + task.getKey() + "\")"),
+                    "Gradle must declare " + task.getKey());
+            require(buildSource.contains(task.getValue()),
+                    task.getKey() + " must run from " + task.getValue());
+        }
+        require(buildSource.contains("register(\"languageProjectsTest\")"),
+                "Gradle must declare languageProjectsTest");
         for (String smokeTask : List.of(
+                "languageProjectsTest",
                 "lspRegistrySmoke",
                 "lspServerCommandLineSmoke",
                 "lspServerDiagnosticsSmoke",
