@@ -482,6 +482,70 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "OVS compiler transform must normalize CST from the generated parser chain");
         require(!Files.exists(forbiddenOvsAdapterPath),
                 "OVS must inherit the generated runtime adapter from cssts-compiler, not keep a local copy");
+        verifyGeneratedParserChainRuntimeSmoke(
+                "cssts-language",
+                workspaceRoot,
+                workspaceRoot.resolve("cssts").resolve("cssts-language")
+                        .resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
+                List.of(
+                        "new CssTsParser(inheritedSyntaxSource)",
+                        "parser instanceof SlimeJavascriptParser",
+                        "object Labeler",
+                        "css { colorRed, displayFlex }",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'object')",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
+        verifyGeneratedParserChainRuntimeSmoke(
+                "cssts-compiler",
+                workspaceRoot,
+                csstsCompilerRoot.resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
+                List.of(
+                        "new CssTsParser(inheritedSyntaxSource)",
+                        "parser instanceof SlimeJavascriptParser",
+                        "object Labeler",
+                        "css { colorRed, displayFlex }",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'object')",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
+        verifyGeneratedParserChainRuntimeSmoke(
+                "ovs-language",
+                workspaceRoot,
+                workspaceRoot.resolve("ovsjs").resolve("ovs-language")
+                        .resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
+                List.of(
+                        "new OvsParser(inheritedSyntaxSource)",
+                        "parser instanceof CssTsParser",
+                        "parser instanceof SlimeJavascriptParser",
+                        "object Labeler",
+                        "div(class = css { displayFlex })",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'object')",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
+        verifyGeneratedParserChainRuntimeSmoke(
+                "ovs-compiler",
+                workspaceRoot,
+                ovsCompilerRoot.resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
+                List.of(
+                        "new OvsParser(inheritedSyntaxSource)",
+                        "parser instanceof CssTsParser",
+                        "parser instanceof SlimeJavascriptParser",
+                        "object Labeler",
+                        "div(class = css { displayFlex })",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'object')",
+                        "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
+    }
+
+    private static void verifyGeneratedParserChainRuntimeSmoke(
+            String id,
+            Path workspaceRoot,
+            Path smokePath,
+            List<String> requiredNeedles) throws Exception {
+        require(smokePath.startsWith(workspaceRoot),
+                id + " generated parser chain smoke must stay inside workspace: " + smokePath);
+        require(Files.isRegularFile(smokePath),
+                id + " generated parser chain smoke must exist: " + smokePath);
+        String source = Files.readString(smokePath);
+        for (String requiredNeedle : requiredNeedles) {
+            require(source.contains(requiredNeedle),
+                    id + " generated parser chain smoke must assert " + requiredNeedle);
+        }
     }
 
     private static void verifyLanguageServerFeatureAssertions(MatrixCase matrixCase, Path projectRoot) throws Exception {
