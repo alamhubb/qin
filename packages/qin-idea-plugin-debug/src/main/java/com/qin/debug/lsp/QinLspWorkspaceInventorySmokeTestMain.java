@@ -190,6 +190,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         if ("create-ovs".equals(project.id()) || "create-cssts".equals(project.id())) {
             verifyScaffoldTemplateQinConfig(project, projectRoot);
             verifyScaffoldUserGuidance(project, projectRoot);
+            verifyScaffoldPackageJsonIsNotScriptEntrypoint(project, projectRoot);
         }
     }
 
@@ -243,6 +244,25 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         project.id() + " scaffold guidance must not direct users to external package scripts: "
                                 + relativePath + " contains " + forbidden);
             }
+        }
+    }
+
+    private static void verifyScaffoldPackageJsonIsNotScriptEntrypoint(InventoryProject project, Path projectRoot) {
+        Path packageJson = projectRoot.resolve("template").resolve("package.json").normalize();
+        require(Files.isRegularFile(packageJson),
+                project.id() + " scaffold template must include package.json for JS tool metadata");
+        String source;
+        try {
+            source = Files.readString(packageJson);
+        } catch (Exception e) {
+            throw new IllegalStateException(project.id() + " scaffold template package.json must be readable", e);
+        }
+        require(!source.contains("\"scripts\""),
+                project.id() + " scaffold template package.json must not define scripts; qin.config.js is the script entrypoint");
+        for (String legacyScriptTool : List.of("npm-run-all", "npm-run-all2")) {
+            require(!source.contains(legacyScriptTool),
+                    project.id() + " scaffold template package.json must not keep script-runner dependency "
+                            + legacyScriptTool);
         }
     }
 
