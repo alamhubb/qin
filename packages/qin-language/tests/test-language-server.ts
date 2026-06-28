@@ -445,6 +445,25 @@ async function main() {
     throw new Error(`Qin object definition did not resolve Counter through generated object lowering: ${JSON.stringify(objectDefinitionResponse.result)}`)
   }
 
+  const objectReferencesRequest = createRequest('textDocument/references', {
+    textDocument: { uri: objectUri },
+    position: { line: 3, character: 23 },
+    context: { includeDeclaration: true },
+  })
+  server.stdin.write(objectReferencesRequest.packet)
+  const objectReferencesResponse = await waitForResponse(
+    objectReferencesRequest.id,
+    messages,
+    `Qin object references response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectReferences = Array.isArray(objectReferencesResponse.result) ? objectReferencesResponse.result : []
+  if (
+    !objectReferences.some(item => sameUri(locationUri(item), objectUri) && rangeStartsAt(item, 3, 21))
+    || !objectReferences.some(item => sameUri(locationUri(item), objectUri) && rangeStartsAt(item, 2, 1))
+  ) {
+    throw new Error(`Qin object references did not include generated object usage mappings: ${JSON.stringify(objectReferencesResponse.result)}`)
+  }
+
   const referencesRequest = createRequest('textDocument/references', {
     textDocument: { uri: tsSubsetUri },
     position: { line: 0, character: 8 },
