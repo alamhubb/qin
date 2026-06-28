@@ -39,6 +39,10 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         require(config.version() != null && !config.version().isBlank(),
                 project.id() + " qin.config.js must declare version");
 
+        if (project.kind() == ProjectKind.WORKSPACE) {
+            verifyPackageJsonIsNotScriptEntrypoint(project.id(), projectRoot, "workspace");
+        }
+
         if (project.kind() == ProjectKind.LANGUAGE) {
             verifyLanguageProject(project, config);
         } else if (project.kind() == ProjectKind.COMPILER) {
@@ -201,20 +205,27 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
     private static void verifyToolingPackageJsonIsNotScriptEntrypoint(
             InventoryProject project,
             Path projectRoot) {
+        verifyPackageJsonIsNotScriptEntrypoint(project.id(), projectRoot, "tooling");
+    }
+
+    private static void verifyPackageJsonIsNotScriptEntrypoint(
+            String id,
+            Path projectRoot,
+            String label) {
         Path packageJson = projectRoot.resolve("package.json").normalize();
         require(Files.isRegularFile(packageJson),
-                project.id() + " tooling package.json must exist");
+                id + " " + label + " package.json must exist");
         String source;
         try {
             source = Files.readString(packageJson);
         } catch (Exception e) {
-            throw new IllegalStateException(project.id() + " tooling package.json must be readable", e);
+            throw new IllegalStateException(id + " " + label + " package.json must be readable", e);
         }
         require(!source.contains("\"scripts\""),
-                project.id() + " tooling package.json must not define scripts; qin.config.js is the script entrypoint");
+                id + " " + label + " package.json must not define scripts; qin.config.js is the script entrypoint");
         for (String forbidden : List.of("npm run", "npx ", "pnpm ", "yarn ")) {
             require(!source.contains(forbidden),
-                    project.id() + " tooling package.json must not forward commands through " + forbidden);
+                    id + " " + label + " package.json must not forward commands through " + forbidden);
         }
     }
 
