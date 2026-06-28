@@ -6,7 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 public final class QinLspLanguageCliSmokeTestMain {
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
@@ -30,7 +29,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("qin").resolve("packages").resolve("qin-language").normalize(),
                         "dist/language-server.cjs",
                         true,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-parity.ts",
                                 "dev", "qin-language-server/src/index.ts --stdio")),
@@ -40,7 +39,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("ovs-language").normalize(),
                         "dist/language-server.js",
                         true,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts",
                                 "dev", "ovs-language-server/src/index.ts --stdio")),
@@ -50,17 +49,55 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("cssts-language").normalize(),
                         "dist/language-server.cjs",
                         true,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts",
                                 "dev", "cssts-language-server/src/index.ts --stdio")),
+                new LanguageCliCase(
+                        "ovsjs-workspace",
+                        "ovs",
+                        workspaceRoot.resolve("ovsjs").normalize(),
+                        null,
+                        false,
+                        scriptNeedles(
+                                "build", "language build --root ovs/ovs-runtime",
+                                "build", "language build --root ovs/ovs-compiler",
+                                "build", "language build --root create-ovs",
+                                "build", "language build --root vite-plugin-ovs",
+                                "build", "language build --root ovs-language",
+                                "test", "language test --root ovs/ovs-runtime",
+                                "test", "language test --root ovs/ovs-compiler",
+                                "test", "language test --root create-ovs",
+                                "test", "language test --root vite-plugin-ovs",
+                                "test", "language test --root ovs-language")),
+                new LanguageCliCase(
+                        "cssts-workspace",
+                        "cssts",
+                        workspaceRoot.resolve("cssts").normalize(),
+                        null,
+                        false,
+                        scriptNeedles(
+                                "build", "language build --root cssts/cssts-runtime",
+                                "build", "language build --root cssts/cssts-compiler",
+                                "build", "language build --root vite-plugin-cssts",
+                                "build", "language build --root language-plugin-cssts",
+                                "build", "language build --root cssts-language",
+                                "build", "language build --root create-cssts",
+                                "build", "language build --root cssts-theme-element",
+                                "test", "language test --root cssts/cssts-runtime",
+                                "test", "language test --root cssts/cssts-compiler",
+                                "test", "language test --root vite-plugin-cssts",
+                                "test", "language test --root language-plugin-cssts",
+                                "test", "language test --root cssts-language",
+                                "test", "language test --root create-cssts",
+                                "test", "language test --root cssts-theme-element")),
                 new LanguageCliCase(
                         "ovs-compiler",
                         "ovs",
                         workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-compiler").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts")),
                 new LanguageCliCase(
@@ -69,7 +106,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts")),
                 new LanguageCliCase(
@@ -78,7 +115,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-runtime").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
                 new LanguageCliCase(
@@ -87,7 +124,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("vite-plugin-ovs").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
                 new LanguageCliCase(
@@ -96,7 +133,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("create-ovs").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
                 new LanguageCliCase(
@@ -105,7 +142,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-runtime").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "vitest run")),
                 new LanguageCliCase(
@@ -114,7 +151,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("vite-plugin-cssts").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
                 new LanguageCliCase(
@@ -123,7 +160,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("language-plugin-cssts").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "node test-transform-error.cjs")),
                 new LanguageCliCase(
@@ -132,7 +169,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("create-cssts").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
                 new LanguageCliCase(
@@ -141,7 +178,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("cssts-theme-element").normalize(),
                         null,
                         false,
-                        Map.of(
+                        scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")));
 
@@ -177,17 +214,27 @@ public final class QinLspLanguageCliSmokeTestMain {
                     testCase.id() + " qin language server --dry-run must pass --stdio: " + server);
         }
 
-        for (Map.Entry<String, String> expectedScript : testCase.expectedScriptNeedles().entrySet()) {
+        for (ScriptNeedle expectedScript : testCase.expectedScriptNeedles()) {
             CommandResult script = runQinLanguage(
                     qinCommand,
                     testCase.projectRoot(),
-                    expectedScript.getKey(),
+                    expectedScript.command(),
                     "--dry-run");
-            require(script.stdout().contains(expectedScript.getValue()),
-                    testCase.id() + " qin language " + expectedScript.getKey()
-                            + " --dry-run did not resolve scripts." + expectedScript.getKey()
-                            + " from qin.config.js: " + script);
+            require(script.stdout().contains(expectedScript.needle()),
+                    testCase.id() + " qin language " + expectedScript.command()
+                            + " --dry-run did not resolve scripts." + expectedScript.command()
+                            + " from qin.config.js with needle " + expectedScript.needle() + ": " + script);
         }
+    }
+
+    private static List<ScriptNeedle> scriptNeedles(String... commandAndNeedlePairs) {
+        require(commandAndNeedlePairs.length % 2 == 0,
+                "Script needle pairs must be provided as command/needle tuples");
+        List<ScriptNeedle> needles = new java.util.ArrayList<>();
+        for (int index = 0; index < commandAndNeedlePairs.length; index += 2) {
+            needles.add(new ScriptNeedle(commandAndNeedlePairs[index], commandAndNeedlePairs[index + 1]));
+        }
+        return List.copyOf(needles);
     }
 
     private static CommandResult runQinLanguage(
@@ -240,7 +287,10 @@ public final class QinLspLanguageCliSmokeTestMain {
             Path projectRoot,
             String serverBundle,
             boolean expectServerCommands,
-            Map<String, String> expectedScriptNeedles) {
+            List<ScriptNeedle> expectedScriptNeedles) {
+    }
+
+    private record ScriptNeedle(String command, String needle) {
     }
 
     private record CommandResult(int exitCode, String stdout, String stderr) {

@@ -241,6 +241,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin LSP language CLI smoke source must exist: " + smokePath);
         String smokeSource = Files.readString(smokePath);
         for (String projectNeedle : List.of(
+                "ovsjs-workspace",
+                "cssts-workspace",
                 "ovs-runtime",
                 "vite-plugin-ovs",
                 "create-ovs",
@@ -255,10 +257,16 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String scriptNeedle : List.of(
                 "\"build\", \"tsdown\"",
                 "\"test\", \"vitest run\"",
-                "\"test\", \"node test-transform-error.cjs\"")) {
+                "\"test\", \"node test-transform-error.cjs\"",
+                "\"build\", \"language build --root ovs/ovs-runtime\"",
+                "\"test\", \"language test --root ovs/ovs-runtime\"",
+                "\"build\", \"language build --root cssts/cssts-runtime\"",
+                "\"test\", \"language test --root cssts/cssts-runtime\"")) {
             require(smokeSource.contains(scriptNeedle),
                     "lspLanguageCliSmoke must verify tooling script dry-run needle " + scriptNeedle);
         }
+        require(smokeSource.contains("private record ScriptNeedle"),
+                "lspLanguageCliSmoke must allow multiple script dry-run needles per command");
     }
 
     private static void verifyCompilerProjectConfig(
