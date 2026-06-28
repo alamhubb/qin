@@ -24,14 +24,17 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
         List<MatrixCase> cases = List.of(
                 new MatrixCase("qin", ".qin", Path.of("qin", "packages", "qin-language"),
-                        "dist/language-server.cjs", "tsx tests/test-language-plugin.ts",
+                        "dist/language-server.cjs", "generated/qin-parser-ts", null,
+                        "tsx tests/test-language-plugin.ts",
                         "tsx tests/test-language-server.ts"),
                 new MatrixCase("ovs", ".ovs", Path.of("ovsjs", "ovs-language"),
-                        "dist/language-server.js", "tsx tests/test-generated-parser-chain.ts",
+                        "dist/language-server.js", "@qin/generated-qin-parser-ts", "../ovs/ovs-compiler",
+                        "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts --source",
                         "tsx tests/test-language-server.ts --dist"),
                 new MatrixCase("cssts", ".cssts", Path.of("cssts", "cssts-language"),
-                        "dist/language-server.cjs", "tsx tests/test-generated-parser-chain.ts",
+                        "dist/language-server.cjs", "@qin/generated-qin-parser-ts", "../cssts/cssts-compiler",
+                        "tsx tests/test-generated-parser-chain.ts",
                         "tsx tests/test-language-server.ts"));
 
         for (MatrixCase matrixCase : cases) {
@@ -47,6 +50,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     matrixCase.id() + " server bundle must stay inside workspace");
             require(Files.isRegularFile(projectRoot.resolve(language.serverBundle()).normalize()),
                     matrixCase.id() + " server bundle must exist before IDEA smoke runs");
+            verifyLanguageToolReferences(matrixCase, projectRoot, workspaceRoot, config, language);
 
             Path resolvedIdeaClient = projectRoot.resolve(language.ideaLspClient()).normalize();
             require(ideaClientPath.equals(resolvedIdeaClient),
@@ -109,6 +113,63 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         System.out.println("Qin LSP verification matrix smoke passed");
     }
 
+    private static void verifyLanguageToolReferences(
+            MatrixCase matrixCase,
+            Path projectRoot,
+            Path workspaceRoot,
+            QinConfig config,
+            LanguageConfig language) {
+        require(matrixCase.expectedParser().equals(language.parser()),
+                matrixCase.id() + " language.parser mismatch");
+        verifyPathLikeOrPackageReference(
+                matrixCase.id(),
+                "language.parser",
+                language.parser(),
+                projectRoot,
+                workspaceRoot,
+                config);
+
+        if (matrixCase.expectedCompiler() == null) {
+            require(language.compiler() == null || language.compiler().isBlank(),
+                    matrixCase.id() + " language.compiler must stay unset");
+        } else {
+            require(matrixCase.expectedCompiler().equals(language.compiler()),
+                    matrixCase.id() + " language.compiler mismatch");
+            verifyPathLikeOrPackageReference(
+                    matrixCase.id(),
+                    "language.compiler",
+                    language.compiler(),
+                    projectRoot,
+                    workspaceRoot,
+                    config);
+        }
+    }
+
+    private static void verifyPathLikeOrPackageReference(
+            String id,
+            String field,
+            String rawReference,
+            Path projectRoot,
+            Path workspaceRoot,
+            QinConfig config) {
+        require(rawReference != null && !rawReference.isBlank(), id + " " + field + " is required");
+        if (isPackageReference(rawReference)) {
+            require(config.hasDependency(rawReference),
+                    id + " " + field + " package reference must be declared in qin.config.js dependencies");
+            return;
+        }
+        Path resolved = projectRoot.resolve(rawReference).normalize();
+        require(resolved.startsWith(workspaceRoot), id + " " + field + " must stay inside workspace");
+        require(Files.exists(resolved), id + " " + field + " must resolve to an existing path: " + resolved);
+    }
+
+    private static boolean isPackageReference(String rawReference) {
+        return rawReference.startsWith("@")
+                || (!rawReference.contains("/")
+                && !rawReference.contains("\\")
+                && !rawReference.startsWith("."));
+    }
+
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
         Path generatedRoot = qinLanguageRoot.resolve("generated").resolve("qin-parser-ts").normalize();
         Path generatedConfig = generatedRoot.resolve("qin.config.js");
@@ -166,6 +227,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             String extension,
             Path projectRelativePath,
             String serverBundle,
+            String expectedParser,
+            String expectedCompiler,
             String... requiredTestScriptParts) {
     }
 }
