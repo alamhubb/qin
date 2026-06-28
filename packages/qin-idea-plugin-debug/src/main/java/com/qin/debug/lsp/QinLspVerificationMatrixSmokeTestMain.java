@@ -89,6 +89,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
             if ("qin".equals(matrixCase.id())) {
                 verifyGeneratedQinParserPackage(projectRoot, config);
+                verifyGeneratedParserParityCorpus(projectRoot);
             } else {
                 verifyGeneratedParserDependency(
                         matrixCase.id(),
@@ -466,6 +467,27 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Generated Qin parser package.json exports must default to ./index.ts");
     }
 
+    private static void verifyGeneratedParserParityCorpus(Path qinLanguageRoot) throws Exception {
+        Path parityTestPath = qinLanguageRoot.resolve("tests")
+                .resolve("test-generated-parser-parity.ts")
+                .normalize();
+        require(Files.isRegularFile(parityTestPath),
+                "Qin generated parser parity test must exist: " + parityTestPath);
+        String paritySource = Files.readString(parityTestPath);
+        require(paritySource.contains("qin object method body control flow"),
+                "Qin generated parser parity corpus must include object method-body control flow");
+        require(paritySource.contains("export object Labeler"),
+                "Qin generated parser parity corpus must include a Qin object declaration");
+        require(paritySource.contains("const prefix = \"hello \""),
+                "Qin generated parser parity corpus must include object method local binding");
+        require(paritySource.contains("if (flag)"),
+                "Qin generated parser parity corpus must include object method early-return if");
+        require(paritySource.contains("return prefix + name"),
+                "Qin generated parser parity corpus must include object method branch return");
+        require(paritySource.contains("return \"bye \" + name"),
+                "Qin generated parser parity corpus must include object method fallthrough return");
+    }
+
     private static void verifyLanguageToolReferences(
             MatrixCase matrixCase,
             Path projectRoot,
@@ -669,6 +691,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record the current JVM class declaration corpus size");
         require(audit.contains("local binding plus early-return `if`"),
                 "LSP completion audit must record parsed method-body early-return coverage");
+        require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
+                "LSP completion audit must record object method-body parser parity coverage");
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {

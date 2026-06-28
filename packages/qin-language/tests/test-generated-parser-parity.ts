@@ -36,6 +36,22 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'qin object method body control flow',
+    source: [
+      'export object Labeler {',
+      '  label(name: string, flag: boolean): string {',
+      '    const prefix = "hello "',
+      '    if (flag) {',
+      '      return prefix + name',
+      '    }',
+      '    return "bye " + name',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'decorated qin object',
     source: [
       "import { GetMapping } from './http.qin'",
