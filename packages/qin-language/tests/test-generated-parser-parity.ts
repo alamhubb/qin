@@ -49,6 +49,26 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'default export qin object',
+    source: [
+      'export default object App {',
+      '  value = 1',
+      '  next() { return this.value + 1 }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'object keyword in type alias',
+    source: [
+      'type Box = object;',
+      'export const ok = true',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'java import class extends',
     source: [
       'import { ArrayList } from "java:java.util"',
@@ -81,6 +101,18 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'interface and type exports',
+    source: [
+      'export interface User {',
+      '  id: string',
+      '  active?: boolean',
+      '}',
+      'export type UserList = User[]',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'class method expressions',
     source: [
       'class HelloService {',
@@ -91,6 +123,43 @@ const cases: ParserCase[] = [
       '  choose(flag: boolean): string {',
       '    return flag ? "yes" : "no"',
       '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'control flow in function body',
+    source: [
+      'export function summarize(items: number[]) {',
+      '  let total = 0',
+      '  for (const item of items) {',
+      '    if (item > 0) {',
+      '      total = total + item',
+      '    }',
+      '  }',
+      '  return total',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'destructuring declarations',
+    source: [
+      'const config = { name: "qin", values: [1, 2, 3] }',
+      'const { name, values: [first] } = config',
+      'export const label = name + first',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'async await function',
+    source: [
+      'export async function load(fetcher) {',
+      '  const result = await fetcher()',
+      '  return result.ok ? result.value : null',
       '}',
       '',
     ].join('\n'),
