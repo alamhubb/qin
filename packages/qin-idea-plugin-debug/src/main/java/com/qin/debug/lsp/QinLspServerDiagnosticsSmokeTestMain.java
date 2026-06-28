@@ -25,9 +25,51 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 ? Path.of(args[0]).toAbsolutePath().normalize()
                 : QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of("."));
         List<LanguageCase> cases = List.of(
-                new LanguageCase("qin", "export object Broken { value = }", "qin-parser"),
-                new LanguageCase("ovs", "div { h1 { 'Broken' }", "OVS transform failed"),
-                new LanguageCase("cssts", "import { css } from 'cssts-ts'\nconst broken = css { displayFlex,\n", "CSSTS transform failed"));
+                new LanguageCase(
+                        "qin",
+                        "export object Broken { value = }",
+                        "qin-parser",
+                        """
+                                export object Counter {
+                                  value = 1
+                                }
+                                const currentValue = Counter.value
+                                Coun
+                                """,
+                        "Counter",
+                        4,
+                        4,
+                        3,
+                        23,
+                        true,
+                        true,
+                        true),
+                new LanguageCase(
+                        "ovs",
+                        "div { h1 { 'Broken' }",
+                        "OVS transform failed",
+                        null,
+                        null,
+                        -1,
+                        -1,
+                        -1,
+                        -1,
+                        false,
+                        false,
+                        false),
+                new LanguageCase(
+                        "cssts",
+                        "import { css } from 'cssts-ts'\nconst broken = css { displayFlex,\n",
+                        "CSSTS transform failed",
+                        null,
+                        null,
+                        -1,
+                        -1,
+                        -1,
+                        -1,
+                        false,
+                        false,
+                        false));
 
         for (LanguageCase testCase : cases) {
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, testCase.extension());
@@ -81,6 +123,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                             "text", testCase.invalidSource())));
 
             session.awaitDiagnostic(uri, testCase.expectedDiagnosticText());
+            runLanguageFeatureAssertions(session, language, testCase, workspaceRoot);
             int shutdownId = session.request("shutdown", null);
             session.awaitResponse(shutdownId);
             session.notification("exit", null);
@@ -89,6 +132,61 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             if (process.isAlive()) {
                 process.destroyForcibly();
             }
+        }
+    }
+
+    private static void runLanguageFeatureAssertions(
+            LspSession session,
+            QinLspLanguage language,
+            LanguageCase testCase,
+            Path workspaceRoot) throws IOException {
+        if (!testCase.expectCompletion()
+                && !testCase.expectDefinitionAndSymbols()
+                && !testCase.expectSemanticTokens()) {
+            return;
+        }
+        require(testCase.validSource() != null, language.id() + " feature assertions require validSource");
+        String uri = workspaceRoot
+                .resolve("tmp")
+                .resolve("idea-lsp-smoke")
+                .resolve("good." + testCase.extension())
+                .toUri()
+                .toString();
+        session.notification("textDocument/didOpen", Map.of(
+                "textDocument", Map.of(
+                        "uri", uri,
+                        "languageId", language.id(),
+                        "version", 1,
+                        "text", testCase.validSource())));
+
+        if (testCase.expectCompletion()) {
+            Map<String, Object> completion = session.awaitResponse(session.request("textDocument/completion", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.completionLine(), "character", testCase.completionCharacter()),
+                    "context", Map.of("triggerKind", 1))));
+            require(completionLabels(completion).contains(testCase.expectedCompletionLabel()),
+                    language.id() + " completion missing " + testCase.expectedCompletionLabel() + ": " + completion);
+        }
+
+        if (testCase.expectDefinitionAndSymbols()) {
+            Map<String, Object> definition = session.awaitResponse(session.request("textDocument/definition", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.definitionLine(), "character", testCase.definitionCharacter()))));
+            require(hasLocationInUri(definition.get("result"), uri),
+                    language.id() + " definition did not resolve inside current document: " + definition);
+
+            Map<String, Object> symbols = session.awaitResponse(session.request("textDocument/documentSymbol", Map.of(
+                    "textDocument", Map.of("uri", uri))));
+            require(symbolNames(symbols.get("result")).contains(testCase.expectedCompletionLabel()),
+                    language.id() + " documentSymbol missing " + testCase.expectedCompletionLabel() + ": " + symbols);
+        }
+
+        if (testCase.expectSemanticTokens()) {
+            Map<String, Object> semanticTokens = session.awaitResponse(session.request("textDocument/semanticTokens/full", Map.of(
+                    "textDocument", Map.of("uri", uri))));
+            Object data = resultMap(semanticTokens).get("data");
+            require(data instanceof List<?> list && !list.isEmpty(),
+                    language.id() + " semanticTokens returned no token data: " + semanticTokens);
         }
     }
 
@@ -119,7 +217,93 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(semanticMap.containsKey("legend"), language.id() + " semanticTokensProvider missing legend");
     }
 
-    private record LanguageCase(String extension, String invalidSource, String expectedDiagnosticText) {
+    private static Map<?, ?> resultMap(Map<String, Object> response) {
+        Object result = response.get("result");
+        return result instanceof Map<?, ?> map ? map : Map.of();
+    }
+
+    private static List<String> completionLabels(Map<String, Object> response) {
+        Object result = response.get("result");
+        Object items = result instanceof Map<?, ?> map ? map.get("items") : result;
+        if (!(items instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> labels = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> map && map.get("label") != null) {
+                labels.add(String.valueOf(map.get("label")));
+            }
+        }
+        return labels;
+    }
+
+    private static boolean hasLocationInUri(Object result, String uri) {
+        if (result instanceof List<?> list) {
+            for (Object item : list) {
+                if (hasLocationInUri(item, uri)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (!(result instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object locationUri = map.get("uri");
+        if (locationUri == null) {
+            locationUri = map.get("targetUri");
+        }
+        return locationUri != null && sameUri(uri, String.valueOf(locationUri));
+    }
+
+    private static List<String> symbolNames(Object result) {
+        if (!(result instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> names = new ArrayList<>();
+        collectSymbolNames(list, names);
+        return names;
+    }
+
+    private static void collectSymbolNames(List<?> symbols, List<String> names) {
+        for (Object symbol : symbols) {
+            if (!(symbol instanceof Map<?, ?> map)) {
+                continue;
+            }
+            if (map.get("name") != null) {
+                names.add(String.valueOf(map.get("name")));
+            }
+            Object children = map.get("children");
+            if (children instanceof List<?> childList) {
+                collectSymbolNames(childList, names);
+            }
+        }
+    }
+
+    private static boolean sameUri(String expectedUri, String actualUri) {
+        if (expectedUri.equalsIgnoreCase(actualUri)) {
+            return true;
+        }
+        int expectedSlash = Math.max(expectedUri.lastIndexOf('/'), expectedUri.lastIndexOf('\\'));
+        int actualSlash = Math.max(actualUri.lastIndexOf('/'), actualUri.lastIndexOf('\\'));
+        String expectedName = expectedSlash >= 0 ? expectedUri.substring(expectedSlash + 1) : expectedUri;
+        String actualName = actualSlash >= 0 ? actualUri.substring(actualSlash + 1) : actualUri;
+        return expectedName.equalsIgnoreCase(actualName);
+    }
+
+    private record LanguageCase(
+            String extension,
+            String invalidSource,
+            String expectedDiagnosticText,
+            String validSource,
+            String expectedCompletionLabel,
+            int completionLine,
+            int completionCharacter,
+            int definitionLine,
+            int definitionCharacter,
+            boolean expectCompletion,
+            boolean expectDefinitionAndSymbols,
+            boolean expectSemanticTokens) {
     }
 
     private static final class LspSession {
