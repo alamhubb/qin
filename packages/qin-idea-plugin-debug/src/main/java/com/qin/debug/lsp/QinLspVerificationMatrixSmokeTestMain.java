@@ -112,6 +112,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qinGeneratedParserDryRun must verify QinParser Java -> TypeScript generation metadata");
         require(buildSource.contains("register(\"languageProjectsTest\")"),
                 "Gradle must declare languageProjectsTest");
+        require(buildSource.contains("register(\"lspUnifiedMatrix\")"),
+                "Gradle must declare lspUnifiedMatrix");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
                 "Gradle must declare qinJvmClassTargetSmoke");
         require(buildSource.contains("qin/packages/qin-lang-cli"),
@@ -124,10 +126,17 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qinJvmClassDeclarationSmoke must run from qin/packages/qin-lang-backend-jvm");
         require(buildSource.contains("\"run\", \"com.qin.lang.backend.jvm.QinJvmClassDeclarationCorpusSmokeTestMain\""),
                 "qinJvmClassDeclarationSmoke must run the Qin JVM class declaration corpus smoke");
+        String checkBlock = taskBlock(buildSource, "named(\"check\")");
+        String matrixBlock = taskBlock(buildSource, "register(\"lspUnifiedMatrix\")");
         for (String smokeTask : List.of(
-                "languageProjectsTest",
                 "qinJvmClassTargetSmoke",
                 "qinJvmClassDeclarationSmoke",
+                "lspUnifiedMatrix")) {
+            require(checkBlock.contains("dependsOn(\"" + smokeTask + "\")"),
+                    "Gradle check must depend on " + smokeTask);
+        }
+        for (String matrixTask : List.of(
+                "languageProjectsTest",
                 "qinGeneratedParserDryRun",
                 "lspRegistrySmoke",
                 "lspServerCommandLineSmoke",
@@ -138,8 +147,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "lspWorkspaceInventorySmoke",
                 "lspPluginPackageSmoke",
                 "lspUiFixtureSmoke")) {
-            require(buildSource.contains("dependsOn(\"" + smokeTask + "\")"),
-                    "Gradle check must depend on " + smokeTask);
+            require(matrixBlock.contains("dependsOn(\"" + matrixTask + "\")"),
+                    "lspUnifiedMatrix must depend on " + matrixTask);
         }
 
         System.out.println("Qin LSP verification matrix smoke passed");
@@ -333,6 +342,26 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         if (!condition) {
             throw new IllegalStateException(message);
         }
+    }
+
+    private static String taskBlock(String source, String marker) {
+        int start = source.indexOf(marker);
+        require(start >= 0, "Gradle build script must contain " + marker);
+        int braceStart = source.indexOf('{', start);
+        require(braceStart >= 0, "Gradle task block must open after " + marker);
+        int depth = 0;
+        for (int index = braceStart; index < source.length(); index++) {
+            char current = source.charAt(index);
+            if (current == '{') {
+                depth++;
+            } else if (current == '}') {
+                depth--;
+                if (depth == 0) {
+                    return source.substring(braceStart, index + 1);
+                }
+            }
+        }
+        throw new IllegalStateException("Gradle task block must close after " + marker);
     }
 
     private record MatrixCase(

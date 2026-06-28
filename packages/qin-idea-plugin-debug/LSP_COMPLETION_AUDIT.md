@@ -23,13 +23,19 @@ Qin, OVS, and CSSTS should share one language architecture:
 
 ## Current Evidence
 
-Run the full gate from this directory:
+Run the unified LSP gate from this directory:
+
+```powershell
+.\gradlew.bat lspUnifiedMatrix
+```
+
+Run the full gate, including Qin JVM `.class` runtime smokes, with:
 
 ```powershell
 .\gradlew.bat check
 ```
 
-The check task currently covers:
+The `lspUnifiedMatrix` task currently covers:
 
 - `qinLanguageTest`
 - `ovsLanguageTest`
@@ -44,6 +50,9 @@ The check task currently covers:
 - `lspWorkspaceInventorySmoke`
 - `lspPluginPackageSmoke`
 - `lspUiFixtureSmoke`
+
+The full `check` task also covers:
+
 - `qinJvmClassTargetSmoke`
 - `qinJvmClassDeclarationSmoke`
 
@@ -58,7 +67,7 @@ The check task currently covers:
 | Volar LSP provides diagnostics | `lspServerDiagnosticsSmoke`, `qinLanguageTest`, `ovsLanguageTest`, and `csstsLanguageTest` verify invalid `.qin`, `.ovs`, and `.cssts` diagnostics. | Proven |
 | Volar LSP provides completion, definition, symbols, and semantic tokens | `lspServerDiagnosticsSmoke` requests these features for all three languages; language project tests also cover the same feature family. | Proven for current smoke fixtures |
 | IDEA is only an LSP client for these languages | `plugin.xml` registers `.qin`, `.ovs`, `.cssts` file types and one `platform.lsp.serverSupportProvider`; `QinLspNoLocalParserSmokeTestMain` scans plugin sources for local parser, lexer, syntax highlighter, and completion contributor markers; `QinLspWorkspaceInventorySmokeTestMain` rejects legacy `*-intellij-client` projects under OVS/CSSTS language packages; `LSP.md` records the no-local-parser policy. | Proven for current IDEA plugin sources and language-project inventory |
-| IDEA plugin packaging and fixture coverage stay in the gate | `lspVerificationMatrixSmoke` verifies `check` depends on descriptor, package, and UI fixture smokes. | Proven |
+| IDEA plugin packaging and fixture coverage stay in the gate | `lspVerificationMatrixSmoke` verifies the LSP matrix and `check` depend on descriptor, package, and UI fixture smokes. | Proven |
 | Qin-managed project metadata is used | `lspVerificationMatrixSmoke` loads each language project's `qin.config.js` and verifies `language.parser`, `language.compiler`, `language.serverBundle`, scripts, and dependencies; `lspWorkspaceInventorySmoke` verifies the current LSP-critical language, compiler, parser, CLI, and runtime projects are all owned by `qin.config.js`. | Proven for the current LSP-critical inventory |
 | Qin runtime target remains JVM `.class` | `qinJvmClassTargetSmoke` runs `qin run com.qin.lang.cli.SmokeTestMain`; the smoke compiles and reflects a 5-case `.class` corpus covering top-level function calls, `export const`, object member access, array literals, and `java:` import plus Java instance calls. `qinJvmClassDeclarationSmoke` runs `QinJvmClassDeclarationCorpusSmokeTestMain`, a 10-case class-declaration corpus covering Java `extends`, field annotations, fields, constructors, local member access, `this.field.method()`, runtime function methods, Java static calls, Java constructor returns, direct Java SlimeParser inheritance from parsed Qin source, and parsed Qin method-body execution for binary and conditional returns. | Proven for current CLI and class-declaration corpus |
 | Node/TypeScript is limited to editor/LSP/tooling | `LSP.md` states the boundary; `qinJvmClassTargetSmoke` separately verifies the runtime path. | Partly proven |

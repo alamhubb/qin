@@ -48,15 +48,24 @@ The non-interactive verification path is intentionally cross-project:
   `.class` output; this keeps editor/LSP TypeScript usage separate from the Qin
   runtime target.
 
-Run the full gate from this directory:
+Run the unified LSP gate from this directory:
+
+```powershell
+.\gradlew.bat lspUnifiedMatrix
+```
+
+That task covers generated-parser metadata, the Qin/OVS/CSSTS language-project
+tests, LSP registry/command/diagnostic smokes, IDEA plugin descriptor/package
+checks, no-local-parser policy, workspace inventory, and the UI fixture smoke.
+
+Run the full gate, including JVM `.class` runtime smokes, with:
 
 ```powershell
 .\gradlew.bat check
 ```
 
-That `check` task depends on the language-project tests, generated-parser dry
-run, LSP registry/command/diagnostic smokes, verification matrix, UI fixture
-smoke, and JVM `.class` smoke.
+That `check` task depends on `lspUnifiedMatrix` plus the Qin JVM `.class`
+target and class-declaration smokes.
 
 ## No Fallback Policy
 

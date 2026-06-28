@@ -229,6 +229,22 @@ tasks {
         dependsOn("csstsLanguageTest")
     }
 
+    register("lspUnifiedMatrix") {
+        group = "verification"
+        description = "Runs the unified Qin/OVS/CSSTS generated-parser, Volar LSP, and IDEA-client matrix."
+        dependsOn("qinGeneratedParserDryRun")
+        dependsOn("languageProjectsTest")
+        dependsOn("lspRegistrySmoke")
+        dependsOn("lspServerCommandLineSmoke")
+        dependsOn("lspServerDiagnosticsSmoke")
+        dependsOn("lspVerificationMatrixSmoke")
+        dependsOn("lspPluginDescriptorSmoke")
+        dependsOn("lspNoLocalParserSmoke")
+        dependsOn("lspWorkspaceInventorySmoke")
+        dependsOn("lspPluginPackageSmoke")
+        dependsOn("lspUiFixtureSmoke")
+    }
+
     register<Exec>("qinJvmClassTargetSmoke") {
         group = "verification"
         description = "Runs the Qin CLI JVM .class smoke through qin.config.js project management."
@@ -250,17 +266,7 @@ tasks {
     }
 
     named("check") {
-        dependsOn("lspRegistrySmoke")
-        dependsOn("lspServerDiagnosticsSmoke")
-        dependsOn("lspVerificationMatrixSmoke")
-        dependsOn("lspServerCommandLineSmoke")
-        dependsOn("lspPluginDescriptorSmoke")
-        dependsOn("lspNoLocalParserSmoke")
-        dependsOn("lspWorkspaceInventorySmoke")
-        dependsOn("lspPluginPackageSmoke")
-        dependsOn("lspUiFixtureSmoke")
-        dependsOn("qinGeneratedParserDryRun")
-        dependsOn("languageProjectsTest")
+        dependsOn("lspUnifiedMatrix")
         dependsOn("qinJvmClassTargetSmoke")
         dependsOn("qinJvmClassDeclarationSmoke")
     }
