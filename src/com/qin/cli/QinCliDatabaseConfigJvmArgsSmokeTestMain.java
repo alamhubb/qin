@@ -38,6 +38,7 @@ public final class QinCliDatabaseConfigJvmArgsSmokeTestMain {
                 null,
                 null,
                 null,
+                null,
                 null);
 
         List<String> command = new ArrayList<>();

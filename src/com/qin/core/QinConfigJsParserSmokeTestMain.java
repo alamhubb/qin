@@ -55,6 +55,12 @@ public final class QinConfigJsParserSmokeTestMain {
                     sourceRoots: ['src/main/java', '../slime/java-slime/slime-parser/src/main/java'],
                     outputDir: 'generated/parser-ts'
                   },
+                  qinLanguage: {
+                    sourceExtension: '.qin',
+                    serviceExtension: '.ts',
+                    parserPackage: 'com.qin:qin-parser',
+                    generatedParserTarget: '@qin/generated-qin-parser-ts'
+                  },
                   plugins: [vue()]
                 }
                 """, StandardCharsets.UTF_8);
@@ -77,6 +83,12 @@ public final class QinConfigJsParserSmokeTestMain {
         require("com.qin.demo.Parser".equals(config.generated().entryBinaryName()), "generated.entryBinaryName");
         require(config.generated().sourceRoots().size() == 2, "generated.sourceRoots");
         require("generated/parser-ts".equals(config.generated().outputDir()), "generated.outputDir");
+        require(config.qinLanguage() != null, "qinLanguage");
+        require(".qin".equals(config.qinLanguage().sourceExtension()), "qinLanguage.sourceExtension");
+        require(".ts".equals(config.qinLanguage().serviceExtension()), "qinLanguage.serviceExtension");
+        require("com.qin:qin-parser".equals(config.qinLanguage().parserPackage()), "qinLanguage.parserPackage");
+        require("@qin/generated-qin-parser-ts".equals(config.qinLanguage().generatedParserTarget()),
+                "qinLanguage.generatedParserTarget");
         require(config.packages().size() == 1 && "packages/*".equals(config.packages().getFirst()), "packages");
 
         Path workspaceRoot = Files.createTempDirectory("qin-config-js-workspaces-");

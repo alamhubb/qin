@@ -10,6 +10,7 @@ import com.qin.types.LanguageConfig;
 import com.qin.types.OutputConfig;
 import com.qin.types.ParsedEntry;
 import com.qin.types.QinConfig;
+import com.qin.types.QinLanguageConfig;
 import com.qin.types.ValidationResult;
 
 import java.io.IOException;
@@ -86,6 +87,7 @@ public class ConfigLoader {
                 databaseConfigField(source),
                 languageConfigField(source),
                 generatedConfigField(source),
+                qinLanguageConfigField(source),
                 stringMapField(source, "scripts"),
                 null);
     }
@@ -228,6 +230,19 @@ public class ConfigLoader {
                 stringField(map, "outputDir", null));
     }
 
+    private QinLanguageConfig qinLanguageConfigField(Map<String, Object> source) {
+        Object value = source.get("qinLanguage");
+        if (!(value instanceof Map<?, ?> block)) {
+            return null;
+        }
+        Map<String, Object> map = objectMap(block);
+        return new QinLanguageConfig(
+                stringField(map, "sourceExtension", null),
+                stringField(map, "serviceExtension", null),
+                stringField(map, "parserPackage", null),
+                stringField(map, "generatedParserTarget", null));
+    }
+
     private Map<String, Object> objectMap(Map<?, ?> source) {
         java.util.LinkedHashMap<String, Object> out = new java.util.LinkedHashMap<>();
         for (Map.Entry<?, ?> entry : source.entrySet()) {
@@ -299,6 +314,7 @@ public class ConfigLoader {
 
         validateLanguageConfig(config.language(), errors);
         validateGeneratedConfig(config.generated(), errors);
+        validateQinLanguageConfig(config.qinLanguage(), errors);
 
         return errors.isEmpty() ? ValidationResult.success() : ValidationResult.failure(errors);
     }
@@ -343,6 +359,28 @@ public class ConfigLoader {
         }
         for (String sourceRoot : generated.sourceRoots()) {
             requireExistingRelativePath(sourceRoot, "generated.sourceRoots", errors);
+        }
+    }
+
+    private void validateQinLanguageConfig(QinLanguageConfig qinLanguage, List<String> errors) {
+        if (qinLanguage == null) {
+            return;
+        }
+        if (isBlank(qinLanguage.sourceExtension())) {
+            errors.add("'qinLanguage.sourceExtension' must not be blank");
+        } else if (!qinLanguage.sourceExtension().startsWith(".")) {
+            errors.add("'qinLanguage.sourceExtension' must start with '.'");
+        }
+        if (isBlank(qinLanguage.serviceExtension())) {
+            errors.add("'qinLanguage.serviceExtension' must not be blank");
+        } else if (!qinLanguage.serviceExtension().startsWith(".")) {
+            errors.add("'qinLanguage.serviceExtension' must start with '.'");
+        }
+        if (isBlank(qinLanguage.parserPackage())) {
+            errors.add("'qinLanguage.parserPackage' must not be blank");
+        }
+        if (isBlank(qinLanguage.generatedParserTarget())) {
+            errors.add("'qinLanguage.generatedParserTarget' must not be blank");
         }
     }
 
@@ -414,6 +452,7 @@ public class ConfigLoader {
                 config.database(),
                 config.language(),
                 config.generated(),
+                config.qinLanguage(),
                 config.scripts(),
                 config.repositories());
     }

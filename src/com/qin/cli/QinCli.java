@@ -406,11 +406,22 @@ public class QinCli {
                     + config.language().parser() + " -> " + languageParserRoot + ", outputDir -> " + outputRoot);
         }
 
-        Path configPath = resolveProjectPath(QinConstants.CONFIG_FILE);
-        String configSource = Files.readString(configPath);
-        requireSourceContains(configSource,
-                "generatedParserTarget: \"@qin/generated-qin-parser-ts\"",
-                "qinLanguage.generatedParserTarget must be @qin/generated-qin-parser-ts");
+        if (config.qinLanguage() == null) {
+            throw new IllegalStateException("Missing qinLanguage metadata in " + QinConstants.CONFIG_FILE);
+        }
+        if (!".qin".equals(config.qinLanguage().sourceExtension())) {
+            throw new IllegalStateException("qinLanguage.sourceExtension must be .qin");
+        }
+        if (!".ts".equals(config.qinLanguage().serviceExtension())) {
+            throw new IllegalStateException("qinLanguage.serviceExtension must be .ts");
+        }
+        if (!"com.qin:qin-parser".equals(config.qinLanguage().parserPackage())) {
+            throw new IllegalStateException("qinLanguage.parserPackage must be com.qin:qin-parser");
+        }
+        if (!"@qin/generated-qin-parser-ts".equals(config.qinLanguage().generatedParserTarget())) {
+            throw new IllegalStateException(
+                    "qinLanguage.generatedParserTarget must be @qin/generated-qin-parser-ts");
+        }
 
         Path generatedConfig = outputRoot.resolve("qin.config.js");
         Path generatedPackageJson = outputRoot.resolve("package.json");

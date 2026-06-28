@@ -559,7 +559,15 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
         require(languageConfigSource.contains("parser: \"generated/qin-parser-ts\""),
                 "qin-language must point language.parser at generated/qin-parser-ts");
-        require(languageConfigSource.contains("generatedParserTarget: \"@qin/generated-qin-parser-ts\""),
+        require(config.qinLanguage() != null,
+                "qin-language must declare Qin language server metadata");
+        require(".qin".equals(config.qinLanguage().sourceExtension()),
+                "qin-language qinLanguage.sourceExtension must be .qin");
+        require(".ts".equals(config.qinLanguage().serviceExtension()),
+                "qin-language qinLanguage.serviceExtension must be .ts");
+        require("com.qin:qin-parser".equals(config.qinLanguage().parserPackage()),
+                "qin-language qinLanguage.parserPackage must be com.qin:qin-parser");
+        require(GENERATED_QIN_PARSER_PACKAGE.equals(config.qinLanguage().generatedParserTarget()),
                 "qin-language must declare @qin/generated-qin-parser-ts as generated parser target");
         require(generatedConfigSource.contains("name: \"" + GENERATED_QIN_PARSER_PACKAGE + "\""),
                 "Generated Qin parser qin.config.js must use " + GENERATED_QIN_PARSER_PACKAGE + " package name");
