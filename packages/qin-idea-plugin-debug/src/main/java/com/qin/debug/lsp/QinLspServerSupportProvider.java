@@ -9,7 +9,6 @@ import com.intellij.platform.lsp.api.LspServerSupportProvider.LspServerStarter;
 import com.qin.debug.QinLogger;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 public final class QinLspServerSupportProvider implements LspServerSupportProvider {
@@ -46,19 +45,8 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
         public @NotNull GeneralCommandLine createCommandLine() {
             Path workspaceRoot = resolveWorkspaceRoot(qinProject);
             Path serverPath = language.resolveServerPath(workspaceRoot);
-            Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
-            String node = QinLspLanguageRegistry.resolveNodeExecutable();
-
             QinLogger.info("[LSP] Starting " + language.displayName() + " server: " + serverPath);
-
-            GeneralCommandLine commandLine = new GeneralCommandLine(
-                    node,
-                    serverPath.toString(),
-                    "--stdio");
-            commandLine.setWorkDirectory(language.resolveServerRoot(workspaceRoot).toFile());
-            commandLine.setCharset(StandardCharsets.UTF_8);
-            commandLine.withEnvironment("QIN_LSP_TYPESCRIPT_TSDK", tsdkPath.toString());
-            return commandLine;
+            return QinLspServerCommandLineFactory.create(workspaceRoot, language);
         }
     }
 

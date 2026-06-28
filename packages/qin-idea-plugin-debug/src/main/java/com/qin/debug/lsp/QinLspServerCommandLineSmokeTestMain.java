@@ -1,0 +1,56 @@
+package com.qin.debug.lsp;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+
+public final class QinLspServerCommandLineSmokeTestMain {
+    private QinLspServerCommandLineSmokeTestMain() {
+    }
+
+    public static void main(String[] args) {
+        Path workspaceRoot = args.length > 0
+                ? Path.of(args[0]).toAbsolutePath().normalize()
+                : QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of("."));
+        Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
+        String node = QinLspLanguageRegistry.resolveNodeExecutable();
+
+        Map<String, String> expectedBundleNames = Map.of(
+                "qin", "language-server.cjs",
+                "ovs", "language-server.js",
+                "cssts", "language-server.cjs");
+
+        for (Map.Entry<String, String> expected : expectedBundleNames.entrySet()) {
+            QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, expected.getKey());
+            require(language != null, "Missing language for ." + expected.getKey());
+
+            QinLspServerCommandSpec commandSpec = QinLspServerCommandLineFactory.createSpec(workspaceRoot, language);
+            List<String> arguments = commandSpec.arguments();
+            require(arguments.size() == 2, language.id() + " arguments must have server and --stdio: " + arguments);
+            require(node.equals(commandSpec.executable()), language.id() + " command must use resolved Node executable");
+            require("--stdio".equals(arguments.get(1)), language.id() + " command must pass --stdio");
+
+            Path serverPath = Path.of(arguments.get(0)).toAbsolutePath().normalize();
+            require(serverPath.endsWith(expected.getValue()), language.id() + " unexpected server bundle: " + serverPath);
+            require(serverPath.equals(language.resolveServerPath(workspaceRoot)),
+                    language.id() + " command server path differs from registry metadata");
+
+            Path workDir = commandSpec.workDirectory().toAbsolutePath().normalize();
+            require(workDir.equals(language.resolveServerRoot(workspaceRoot)),
+                    language.id() + " command work directory differs from server root");
+
+            require(StandardCharsets.UTF_8.equals(commandSpec.charset()), language.id() + " command must use UTF-8");
+            require(tsdkPath.toString().equals(commandSpec.environment().get("QIN_LSP_TYPESCRIPT_TSDK")),
+                    language.id() + " command must pass TypeScript SDK environment");
+        }
+
+        System.out.println("Qin IDEA LSP server command line smoke passed");
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) {
+            throw new IllegalStateException(message);
+        }
+    }
+}

@@ -114,6 +114,18 @@ tasks {
         )
     }
 
+    register<JavaExec>("lspServerCommandLineSmoke") {
+        dependsOn("classes")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinLspServerCommandLineSmokeTestMain")
+        args(file("../../..").canonicalPath)
+        jvmArgs(
+            "-Dfile.encoding=UTF-8",
+            "-Dstdout.encoding=UTF-8",
+            "-Dstderr.encoding=UTF-8"
+        )
+    }
+
     register<JavaExec>("lspPluginDescriptorSmoke") {
         dependsOn("classes")
         classpath = sourceSets["main"].runtimeClasspath
@@ -158,6 +170,7 @@ tasks {
     named("check") {
         dependsOn("lspRegistrySmoke")
         dependsOn("lspServerDiagnosticsSmoke")
+        dependsOn("lspServerCommandLineSmoke")
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspPluginPackageSmoke")
         dependsOn("lspUiFixtureSmoke")

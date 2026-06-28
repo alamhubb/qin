@@ -18,6 +18,8 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/CsstsLspFileType.class",
             "com/qin/debug/lsp/QinLspLanguage.class",
             "com/qin/debug/lsp/QinLspLanguageRegistry.class",
+            "com/qin/debug/lsp/QinLspServerCommandLineFactory.class",
+            "com/qin/debug/lsp/QinLspServerCommandSpec.class",
             "com/qin/debug/lsp/QinLspServerSupportProvider.class");
 
     private QinLspPluginPackageSmokeTestMain() {
