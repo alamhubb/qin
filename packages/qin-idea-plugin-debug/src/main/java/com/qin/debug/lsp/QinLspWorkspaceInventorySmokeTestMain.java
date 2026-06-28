@@ -193,6 +193,28 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             verifyScaffoldTemplateQinConfig(project, projectRoot);
             verifyScaffoldUserGuidance(project, projectRoot);
             verifyScaffoldPackageJsonIsNotScriptEntrypoint(project, projectRoot);
+        } else {
+            verifyToolingPackageJsonIsNotScriptEntrypoint(project, projectRoot);
+        }
+    }
+
+    private static void verifyToolingPackageJsonIsNotScriptEntrypoint(
+            InventoryProject project,
+            Path projectRoot) {
+        Path packageJson = projectRoot.resolve("package.json").normalize();
+        require(Files.isRegularFile(packageJson),
+                project.id() + " tooling package.json must exist");
+        String source;
+        try {
+            source = Files.readString(packageJson);
+        } catch (Exception e) {
+            throw new IllegalStateException(project.id() + " tooling package.json must be readable", e);
+        }
+        require(!source.contains("\"scripts\""),
+                project.id() + " tooling package.json must not define scripts; qin.config.js is the script entrypoint");
+        for (String forbidden : List.of("npm run", "npx ", "pnpm ", "yarn ")) {
+            require(!source.contains(forbidden),
+                    project.id() + " tooling package.json must not forward commands through " + forbidden);
         }
     }
 

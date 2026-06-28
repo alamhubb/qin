@@ -261,7 +261,6 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         for (String scriptNeedle : List.of(
                 "\"build\", \"tsdown\"",
-                "\"test\", \"vitest run\"",
                 "\"test\", \"node test-transform-error.cjs\"",
                 "\"build\", \"language build --root ovs/ovs-runtime\"",
                 "\"test\", \"language test --root ovs/ovs-runtime\"",

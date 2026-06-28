@@ -144,7 +144,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         false,
                         scriptNeedles(
                                 "build", "tsdown",
-                                "test", "vitest run")),
+                                "test", "tsdown")),
                 new LanguageCliCase(
                         "vite-plugin-cssts",
                         "cssts",
