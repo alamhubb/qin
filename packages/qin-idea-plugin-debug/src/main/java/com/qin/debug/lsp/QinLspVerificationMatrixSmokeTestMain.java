@@ -120,6 +120,16 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "lspLanguageCliSmoke must run QinLspLanguageCliSmokeTestMain");
         require(buildSource.contains("register(\"languageProjectsTest\")"),
                 "Gradle must declare languageProjectsTest");
+        require(buildSource.contains("register(\"compilerProjectsTest\")"),
+                "Gradle must declare compilerProjectsTest");
+        require(buildSource.contains("register<Exec>(\"ovsCompilerTest\")"),
+                "Gradle must declare ovsCompilerTest");
+        require(buildSource.contains("ovsjs/ovs/ovs-compiler"),
+                "ovsCompilerTest must run from ovsjs/ovs/ovs-compiler");
+        require(buildSource.contains("register<Exec>(\"csstsCompilerTest\")"),
+                "Gradle must declare csstsCompilerTest");
+        require(buildSource.contains("cssts/cssts/cssts-compiler"),
+                "csstsCompilerTest must run from cssts/cssts/cssts-compiler");
         require(buildSource.contains("register(\"lspUnifiedMatrix\")"),
                 "Gradle must declare lspUnifiedMatrix");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
@@ -155,6 +165,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         for (String matrixTask : List.of(
                 "languageProjectsTest",
+                "compilerProjectsTest",
                 "qinGeneratedParserDryRun",
                 "lspRegistrySmoke",
                 "lspServerCommandLineSmoke",

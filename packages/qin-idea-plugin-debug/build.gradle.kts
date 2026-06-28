@@ -233,6 +233,16 @@ tasks {
         commandLine(qinCommand.canonicalPath, "language", "test")
     }
 
+    register<Exec>("ovsCompilerTest") {
+        workingDir = workspaceRoot.resolve("ovsjs/ovs/ovs-compiler")
+        commandLine(qinCommand.canonicalPath, "language", "test")
+    }
+
+    register<Exec>("csstsCompilerTest") {
+        workingDir = workspaceRoot.resolve("cssts/cssts/cssts-compiler")
+        commandLine(qinCommand.canonicalPath, "language", "test")
+    }
+
     register("languageProjectsTest") {
         group = "verification"
         description = "Runs qin language test for Qin, OVS, and CSSTS language projects."
@@ -241,11 +251,19 @@ tasks {
         dependsOn("csstsLanguageTest")
     }
 
+    register("compilerProjectsTest") {
+        group = "verification"
+        description = "Runs qin language test for OVS and CSSTS compiler projects."
+        dependsOn("ovsCompilerTest")
+        dependsOn("csstsCompilerTest")
+    }
+
     register("lspUnifiedMatrix") {
         group = "verification"
         description = "Runs the unified Qin/OVS/CSSTS generated-parser, Volar LSP, and IDEA-client matrix."
         dependsOn("qinGeneratedParserDryRun")
         dependsOn("languageProjectsTest")
+        dependsOn("compilerProjectsTest")
         dependsOn("lspRegistrySmoke")
         dependsOn("lspServerCommandLineSmoke")
         dependsOn("lspServerDiagnosticsSmoke")
