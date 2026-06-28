@@ -393,6 +393,20 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 compilerRoot,
                 generatedQinParserRoot,
                 compilerConfig);
+        verifyCompilerLegacyDependencyBoundary(matrixCase, compilerConfig);
+    }
+
+    private static void verifyCompilerLegacyDependencyBoundary(MatrixCase matrixCase, QinConfig compilerConfig) {
+        for (String requiredDependency : List.of("subhuti", "slime-ast", "slime-parser")) {
+            require(compilerConfig.hasDependency(requiredDependency),
+                    matrixCase.id() + " compiler must keep required PEG/CST/AST dependency "
+                            + requiredDependency);
+        }
+        for (String unusedDependency : List.of("slime-generator", "slime-token")) {
+            require(!compilerConfig.hasDependency(unusedDependency),
+                    matrixCase.id() + " compiler must not declare unused legacy parser dependency "
+                            + unusedDependency);
+        }
     }
 
     private static void verifyPackageJsonIsNotScriptEntrypoint(String id, Path projectRoot) throws Exception {
