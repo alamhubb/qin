@@ -41,6 +41,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         4,
                         3,
                         23,
+                        3,
+                        23,
+                        0,
+                        14,
+                        3,
+                        21,
+                        true,
                         true,
                         true,
                         true,
@@ -60,6 +67,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         2,
                         1,
                         20,
+                        0,
+                        8,
+                        0,
+                        6,
+                        1,
+                        18,
+                        true,
                         true,
                         true,
                         true,
@@ -79,6 +93,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         2,
                         1,
                         20,
+                        0,
+                        8,
+                        0,
+                        6,
+                        1,
+                        18,
+                        true,
                         true,
                         true,
                         true,
@@ -155,6 +176,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             Path workspaceRoot) throws IOException {
         if (!testCase.expectCompletion()
                 && !testCase.expectDefinitionAndSymbols()
+                && !testCase.expectReferences()
                 && !testCase.expectSemanticTokens()) {
             return;
         }
@@ -187,6 +209,24 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "position", Map.of("line", testCase.definitionLine(), "character", testCase.definitionCharacter()))));
             require(hasLocationInUri(definition.get("result"), uri),
                     language.id() + " definition did not resolve inside current document: " + definition);
+
+            if (testCase.expectReferences()) {
+                Map<String, Object> references = session.awaitResponse(session.request("textDocument/references", Map.of(
+                        "textDocument", Map.of("uri", uri),
+                        "position", Map.of("line", testCase.referencesLine(), "character", testCase.referencesCharacter()),
+                        "context", Map.of("includeDeclaration", true))));
+                require(hasLocationStartingAt(
+                                        references.get("result"),
+                                        uri,
+                                        testCase.expectedReferenceDeclarationLine(),
+                                        testCase.expectedReferenceDeclarationCharacter())
+                                && hasLocationStartingAt(
+                                        references.get("result"),
+                                        uri,
+                                        testCase.expectedReferenceUsageLine(),
+                                        testCase.expectedReferenceUsageCharacter()),
+                        language.id() + " references did not include declaration and usage: " + references);
+            }
 
             Map<String, Object> symbols = session.awaitResponse(session.request("textDocument/documentSymbol", Map.of(
                     "textDocument", Map.of("uri", uri))));
@@ -269,6 +309,44 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         return locationUri != null && sameUri(uri, String.valueOf(locationUri));
     }
 
+    private static boolean hasLocationStartingAt(Object result, String uri, int line, int character) {
+        if (result instanceof List<?> list) {
+            for (Object item : list) {
+                if (hasLocationStartingAt(item, uri, line, character)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (!(result instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object locationUri = map.get("uri");
+        if (locationUri == null) {
+            locationUri = map.get("targetUri");
+        }
+        if (locationUri == null || !sameUri(uri, String.valueOf(locationUri))) {
+            return false;
+        }
+        Object range = map.get("range");
+        if (range == null) {
+            range = map.get("targetRange");
+        }
+        if (!(range instanceof Map<?, ?> rangeMap)) {
+            return false;
+        }
+        Object start = rangeMap.get("start");
+        if (!(start instanceof Map<?, ?> startMap)) {
+            return false;
+        }
+        Object actualLine = startMap.get("line");
+        Object actualCharacter = startMap.get("character");
+        return actualLine instanceof Number lineNumber
+                && actualCharacter instanceof Number characterNumber
+                && lineNumber.intValue() == line
+                && characterNumber.intValue() == character;
+    }
+
     private static List<String> symbolNames(Object result) {
         if (!(result instanceof List<?> list)) {
             return List.of();
@@ -314,8 +392,15 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             int completionCharacter,
             int definitionLine,
             int definitionCharacter,
+            int referencesLine,
+            int referencesCharacter,
+            int expectedReferenceDeclarationLine,
+            int expectedReferenceDeclarationCharacter,
+            int expectedReferenceUsageLine,
+            int expectedReferenceUsageCharacter,
             boolean expectCompletion,
             boolean expectDefinitionAndSymbols,
+            boolean expectReferences,
             boolean expectSemanticTokens,
             String expectedDocumentSymbol) {
     }

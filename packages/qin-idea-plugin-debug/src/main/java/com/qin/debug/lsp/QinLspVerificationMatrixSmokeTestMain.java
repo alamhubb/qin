@@ -224,6 +224,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         verifyCompletionAuditDocument(ideaClientPath.resolve("LSP_COMPLETION_AUDIT.md"));
         verifyLanguageCliSmokeCoverage(ideaClientPath);
+        verifyIdeaDiagnosticsSmokeFeatureAssertions(ideaClientPath);
 
         System.out.println("Qin LSP verification matrix smoke passed");
     }
@@ -299,6 +300,43 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(taskBlock.contains("jvmArgs(stableSmokeJvmArgs)"),
                     taskName + " must use stableSmokeJvmArgs");
         }
+    }
+
+    private static void verifyIdeaDiagnosticsSmokeFeatureAssertions(Path ideaClientPath) throws Exception {
+        Path smokePath = ideaClientPath.resolve("src")
+                .resolve("main")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("debug")
+                .resolve("lsp")
+                .resolve("QinLspServerDiagnosticsSmokeTestMain.java")
+                .normalize();
+        require(Files.isRegularFile(smokePath),
+                "Qin IDEA LSP diagnostics smoke source must exist: " + smokePath);
+        String smokeSource = Files.readString(smokePath);
+        for (String method : List.of(
+                "textDocument/completion",
+                "textDocument/definition",
+                "textDocument/references",
+                "textDocument/documentSymbol",
+                "textDocument/semanticTokens/full")) {
+            require(smokeSource.contains(method),
+                    "IDEA diagnostics smoke must request " + method);
+        }
+        for (String assertionNeedle : List.of(
+                "completion missing",
+                "definition did not resolve",
+                "references did not include declaration and usage",
+                "documentSymbol missing",
+                "semanticTokens returned no token data")) {
+            require(smokeSource.contains(assertionNeedle),
+                    "IDEA diagnostics smoke must assert " + assertionNeedle);
+        }
+        require(smokeSource.contains("hasLocationStartingAt"),
+                "IDEA diagnostics smoke must verify reference source positions");
+        require(smokeSource.contains("rangeMap.get(\"start\")"),
+                "IDEA diagnostics smoke must inspect LSP reference ranges");
     }
 
     private static void verifyCompilerProjectConfig(

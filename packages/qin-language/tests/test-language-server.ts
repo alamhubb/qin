@@ -219,11 +219,19 @@ async function waitForResponse(id: number, messages: LspMessage[], description: 
   return message
 }
 
+function languageServerEnvironment(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=512'].filter(Boolean).join(' '),
+  }
+}
+
 async function main() {
   const serverPath = resolveServerPath()
   const tsdkPath = resolveTsdkPath()
   const server = spawn('node', [serverPath, '--stdio'], {
     cwd: path.join(__dirname, '..'),
+    env: languageServerEnvironment(),
     stdio: ['pipe', 'pipe', 'pipe'],
   })
 
