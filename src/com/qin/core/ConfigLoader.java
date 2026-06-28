@@ -343,9 +343,9 @@ public class ConfigLoader {
         if (isBlank(language.id())) {
             errors.add("'language.id' must not be blank");
         }
-        if (isBlank(language.extension())) {
-            errors.add("'language.extension' must not be blank");
-        } else if (!language.extension().startsWith(".")) {
+        if (requiresLanguageSourceExtension(language) && isBlank(language.extension())) {
+            errors.add("'language.extension' must not be blank for parser/compiler/server language projects");
+        } else if (!isBlank(language.extension()) && !language.extension().startsWith(".")) {
             errors.add("'language.extension' must start with '.'");
         }
         requireExistingRelativePath(language.server(), "language.server", errors);
@@ -353,6 +353,13 @@ public class ConfigLoader {
         requireExistingPathLikeReference(language.parser(), "language.parser", errors);
         requireExistingRelativePath(language.compiler(), "language.compiler", errors);
         requireExistingRelativePath(language.ideaLspClient(), "language.ideaLspClient", errors);
+    }
+
+    private boolean requiresLanguageSourceExtension(LanguageConfig language) {
+        return !isBlank(language.server())
+                || !isBlank(language.serverBundle())
+                || !isBlank(language.parser())
+                || !isBlank(language.compiler());
     }
 
     private void requireExistingPathLikeReference(String rawPath, String field, List<String> errors) {

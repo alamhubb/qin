@@ -152,6 +152,16 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         require(language != null, project.id() + " workspace must declare language metadata");
         require(project.languageId().equals(language.id()),
                 project.id() + " workspace language.id mismatch: " + language.id());
+        require(config.scripts().containsKey("build"),
+                project.id() + " workspace must declare build script");
+        require(config.scripts().containsKey("test"),
+                project.id() + " workspace must declare test script");
+        for (var script : config.scripts().entrySet()) {
+            require(!script.getValue().contains("npm run"),
+                    project.id() + " workspace script " + script.getKey()
+                            + " must run through Qin project metadata, not npm run forwarding: "
+                            + script.getValue());
+        }
     }
 
     private static void verifyToolingProject(InventoryProject project, Path projectRoot, QinConfig config) {

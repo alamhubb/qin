@@ -92,6 +92,32 @@ public final class QinLanguageConfigSmokeTestMain {
         ValidationResult scopedPackage = loader.validate(loader.load());
         require(scopedPackage.isValid(), "scoped npm parser package reference");
 
+        Files.writeString(root.resolve("qin.config.js"), """
+                export default {
+                  name: 'com.qin.demo:runtime-language-metadata',
+                  language: {
+                    id: 'runtime-only',
+                    runtime: 'src/index.ts'
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        ValidationResult runtimeOnly = loader.validate(loader.load());
+        require(runtimeOnly.isValid(), "runtime-only language metadata must not require language.extension");
+
+        Files.writeString(root.resolve("qin.config.js"), """
+                export default {
+                  name: 'com.qin.demo:parser-language-metadata',
+                  language: {
+                    id: 'parser-only',
+                    parser: '@qin/generated-qin-parser-ts'
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        ValidationResult parserOnly = loader.validate(loader.load());
+        require(!parserOnly.isValid(), "parser language metadata must require language.extension");
+        require(parserOnly.getErrors().stream().anyMatch(error -> error.contains("language.extension")),
+                "parser language metadata extension error");
+
         System.out.println("QinLanguageConfigSmokeTestMain OK");
     }
 
