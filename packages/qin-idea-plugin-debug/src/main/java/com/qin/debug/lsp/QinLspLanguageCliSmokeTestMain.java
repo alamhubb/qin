@@ -26,6 +26,7 @@ public final class QinLspLanguageCliSmokeTestMain {
         List<LanguageCliCase> cases = List.of(
                 new LanguageCliCase(
                         "qin",
+                        "qin",
                         workspaceRoot.resolve("qin").resolve("packages").resolve("qin-language").normalize(),
                         "dist/language-server.cjs",
                         true,
@@ -34,6 +35,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                                 "test", "tests/test-generated-parser-parity.ts",
                                 "dev", "qin-language-server/src/index.ts --stdio")),
                 new LanguageCliCase(
+                        "ovs",
                         "ovs",
                         workspaceRoot.resolve("ovsjs").resolve("ovs-language").normalize(),
                         "dist/language-server.js",
@@ -44,6 +46,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                                 "dev", "ovs-language-server/src/index.ts --stdio")),
                 new LanguageCliCase(
                         "cssts",
+                        "cssts",
                         workspaceRoot.resolve("cssts").resolve("cssts-language").normalize(),
                         "dist/language-server.cjs",
                         true,
@@ -53,6 +56,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                                 "dev", "cssts-language-server/src/index.ts --stdio")),
                 new LanguageCliCase(
                         "ovs-compiler",
+                        "ovs",
                         workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-compiler").normalize(),
                         null,
                         false,
@@ -61,12 +65,85 @@ public final class QinLspLanguageCliSmokeTestMain {
                                 "test", "tests/test-generated-parser-chain.ts")),
                 new LanguageCliCase(
                         "cssts-compiler",
+                        "cssts",
                         workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler").normalize(),
                         null,
                         false,
                         Map.of(
                                 "build", "tsdown",
-                                "test", "tests/test-generated-parser-chain.ts")));
+                                "test", "tests/test-generated-parser-chain.ts")),
+                new LanguageCliCase(
+                        "ovs-runtime",
+                        "ovs",
+                        workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-runtime").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tsdown")),
+                new LanguageCliCase(
+                        "vite-plugin-ovs",
+                        "ovs",
+                        workspaceRoot.resolve("ovsjs").resolve("vite-plugin-ovs").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tsdown")),
+                new LanguageCliCase(
+                        "create-ovs",
+                        "ovs",
+                        workspaceRoot.resolve("ovsjs").resolve("create-ovs").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tsdown")),
+                new LanguageCliCase(
+                        "cssts-runtime",
+                        "cssts",
+                        workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-runtime").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "vitest run")),
+                new LanguageCliCase(
+                        "vite-plugin-cssts",
+                        "cssts",
+                        workspaceRoot.resolve("cssts").resolve("vite-plugin-cssts").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tsdown")),
+                new LanguageCliCase(
+                        "language-plugin-cssts",
+                        "cssts",
+                        workspaceRoot.resolve("cssts").resolve("language-plugin-cssts").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "node test-transform-error.cjs")),
+                new LanguageCliCase(
+                        "create-cssts",
+                        "cssts",
+                        workspaceRoot.resolve("cssts").resolve("create-cssts").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tsdown")),
+                new LanguageCliCase(
+                        "cssts-theme-element",
+                        "cssts",
+                        workspaceRoot.resolve("cssts").resolve("cssts-theme-element").normalize(),
+                        null,
+                        false,
+                        Map.of(
+                                "build", "tsdown",
+                                "test", "tsdown")));
 
         for (LanguageCliCase testCase : cases) {
             verifyLanguageCli(qinCommand, testCase);
@@ -84,8 +161,7 @@ public final class QinLspLanguageCliSmokeTestMain {
         CommandResult check = runQinLanguage(qinCommand, testCase.projectRoot(), "check");
         require(check.stdout().contains("[OK] Language metadata is valid"),
                 testCase.id() + " qin language check did not validate metadata: " + check);
-        String expectedLanguageId = testCase.id().replace("-compiler", "");
-        require(check.stdout().contains("id: " + expectedLanguageId),
+        require(check.stdout().contains("id: " + testCase.expectedLanguageId()),
                 testCase.id() + " qin language check did not print expected language id: " + check);
 
         if (testCase.expectServerCommands()) {
@@ -160,6 +236,7 @@ public final class QinLspLanguageCliSmokeTestMain {
 
     private record LanguageCliCase(
             String id,
+            String expectedLanguageId,
             Path projectRoot,
             String serverBundle,
             boolean expectServerCommands,

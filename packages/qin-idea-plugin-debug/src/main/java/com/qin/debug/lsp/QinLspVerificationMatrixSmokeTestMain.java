@@ -222,8 +222,43 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "lspUnifiedMatrix must depend on " + matrixTask);
         }
         verifyCompletionAuditDocument(ideaClientPath.resolve("LSP_COMPLETION_AUDIT.md"));
+        verifyLanguageCliSmokeCoverage(ideaClientPath);
 
         System.out.println("Qin LSP verification matrix smoke passed");
+    }
+
+    private static void verifyLanguageCliSmokeCoverage(Path ideaClientPath) throws Exception {
+        Path smokePath = ideaClientPath.resolve("src")
+                .resolve("main")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("debug")
+                .resolve("lsp")
+                .resolve("QinLspLanguageCliSmokeTestMain.java")
+                .normalize();
+        require(Files.isRegularFile(smokePath),
+                "Qin LSP language CLI smoke source must exist: " + smokePath);
+        String smokeSource = Files.readString(smokePath);
+        for (String projectNeedle : List.of(
+                "ovs-runtime",
+                "vite-plugin-ovs",
+                "create-ovs",
+                "cssts-runtime",
+                "vite-plugin-cssts",
+                "language-plugin-cssts",
+                "create-cssts",
+                "cssts-theme-element")) {
+            require(smokeSource.contains("\"" + projectNeedle + "\""),
+                    "lspLanguageCliSmoke must cover Qin-managed tooling project " + projectNeedle);
+        }
+        for (String scriptNeedle : List.of(
+                "\"build\", \"tsdown\"",
+                "\"test\", \"vitest run\"",
+                "\"test\", \"node test-transform-error.cjs\"")) {
+            require(smokeSource.contains(scriptNeedle),
+                    "lspLanguageCliSmoke must verify tooling script dry-run needle " + scriptNeedle);
+        }
     }
 
     private static void verifyCompilerProjectConfig(
