@@ -15,7 +15,8 @@ public record QinIrMethodDeclaration(
         List<QinIrStatement> bodyStatements,
         List<QinIrExpression> superArguments,
         QinIrObjectLiteral runtimeFunctionDefinition,
-        boolean staticMethod) {
+        boolean staticMethod,
+        boolean abstractMethod) {
     public QinIrMethodDeclaration(
             String name,
             QinIrTypeRef returnType,
@@ -24,7 +25,20 @@ public record QinIrMethodDeclaration(
             QinIrExpression returnExpression,
             QinIrObjectLiteral runtimeFunctionDefinition,
             boolean staticMethod) {
-        this(name, returnType, parameters, annotations, returnExpression, List.of(), List.of(), runtimeFunctionDefinition, staticMethod);
+        this(name, returnType, parameters, annotations, returnExpression, List.of(), List.of(), runtimeFunctionDefinition, staticMethod, false);
+    }
+
+    public QinIrMethodDeclaration(
+            String name,
+            QinIrTypeRef returnType,
+            List<QinIrParameter> parameters,
+            List<QinIrAnnotation> annotations,
+            QinIrExpression returnExpression,
+            List<QinIrStatement> bodyStatements,
+            List<QinIrExpression> superArguments,
+            QinIrObjectLiteral runtimeFunctionDefinition,
+            boolean staticMethod) {
+        this(name, returnType, parameters, annotations, returnExpression, bodyStatements, superArguments, runtimeFunctionDefinition, staticMethod, false);
     }
 
     public QinIrMethodDeclaration(
@@ -36,7 +50,7 @@ public record QinIrMethodDeclaration(
             List<QinIrExpression> superArguments,
             QinIrObjectLiteral runtimeFunctionDefinition,
             boolean staticMethod) {
-        this(name, returnType, parameters, annotations, returnExpression, List.of(), superArguments, runtimeFunctionDefinition, staticMethod);
+        this(name, returnType, parameters, annotations, returnExpression, List.of(), superArguments, runtimeFunctionDefinition, staticMethod, false);
     }
 
     public QinIrMethodDeclaration(

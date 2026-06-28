@@ -451,7 +451,8 @@ public final class QinJavaAstIrLowerer {
                             : List.of(),
                     lowerExplicitSuperArguments(packageName, importedTypes, fieldLocals, valueNames, method),
                     null,
-                    method.staticMethod());
+                    method.staticMethod(),
+                    method.abstractMethod());
         } finally {
             currentVarargsParameterNames = previousVarargsParameterNames;
         }

@@ -90,6 +90,15 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'top level object and array literals',
+    source: [
+      'export const config = { name: "qin", values: [1, 2, 3] }',
+      'export const enabled = true',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'invalid qin object initializer',
     source: 'export object Broken { value = }\n',
     ok: false,

@@ -367,7 +367,7 @@ class com_slime_parser_expressions_SlimePrimaryExpressionParser extends com_slim
     throw new Error("Unsupported Java overload: AssignmentExpression/" + __qin_args.length);
   }
   __qin_overload_AssignmentExpression_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: AssignmentExpression");
   }
   __qin_overload_AssignmentExpression_0_1(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -379,28 +379,28 @@ class com_slime_parser_expressions_SlimePrimaryExpressionParser extends com_slim
     return null;
   }
   MethodDefinition(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: MethodDefinition");
   }
   BindingPattern(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: BindingPattern");
   }
   FunctionExpression(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: FunctionExpression");
   }
   ClassExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: ClassExpression");
   }
   GeneratorExpression(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: GeneratorExpression");
   }
   AsyncFunctionExpression(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: AsyncFunctionExpression");
   }
   AsyncGeneratorExpression(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: AsyncGeneratorExpression");
   }
   FormalParameterList(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: FormalParameterList");
   }
 }
 const SlimePrimaryExpressionParser = com_slime_parser_expressions_SlimePrimaryExpressionParser;

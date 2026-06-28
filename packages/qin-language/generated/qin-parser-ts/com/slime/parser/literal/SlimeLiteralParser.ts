@@ -202,7 +202,7 @@ class com_slime_parser_literal_SlimeLiteralParser extends com_slime_parser_ident
     throw new Error("Unsupported Java overload: Expression/" + __qin_args.length);
   }
   __qin_overload_Expression_1_0(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: Expression");
   }
   __qin_overload_Expression_0_1(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {

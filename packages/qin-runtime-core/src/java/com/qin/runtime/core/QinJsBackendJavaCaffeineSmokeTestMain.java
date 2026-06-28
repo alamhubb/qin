@@ -18,11 +18,18 @@ public final class QinJsBackendJavaCaffeineSmokeTestMain {
                 import com.github.benmanes.caffeine.cache.Caffeine;
 
                 class CacheBox {
+                    record Key(String value) {
+                    }
+
                     String run() {
+                        Cache<Object, String> valueCache = Caffeine.newBuilder().maximumSize(2).recordStats().build();
+                        valueCache.put(new Key("same"), "value-hit");
+
                         Cache<String, String> cache = Caffeine.newBuilder().maximumSize(1).recordStats().build();
                         cache.put("a", "left");
                         cache.put("b", "right");
-                        return cache.getIfPresent("a") + ":" + cache.getIfPresent("b") + ":" + cache.estimatedSize();
+                        return valueCache.getIfPresent(new Key("same")) + ":"
+                            + cache.getIfPresent("a") + ":" + cache.getIfPresent("b") + ":" + cache.estimatedSize();
                     }
                 }
                 """);
@@ -38,7 +45,7 @@ public final class QinJsBackendJavaCaffeineSmokeTestMain {
                 root,
                 generated + "\nconst box = new CacheBox(); box.run();\n",
                 "js_backend_java_caffeine");
-        if (!"null:right:1".equals(result)) {
+        if (!"value-hit:null:right:1".equals(result)) {
             throw new IllegalStateException("Expected Caffeine cache result, got: " + result);
         }
         System.out.println("QinJsBackendJavaCaffeineSmokeTestMain OK");

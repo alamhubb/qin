@@ -835,22 +835,22 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     return false;
   }
   Declaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: Declaration");
   }
   LexicalDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: LexicalDeclaration");
   }
   ForDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: ForDeclaration");
   }
   BindingRestElement(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: BindingRestElement");
   }
   BindingElement(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: BindingElement");
   }
   FunctionDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: FunctionDeclaration");
   }
 }
 const SlimeStatementParser = com_slime_parser_statements_SlimeStatementParser;

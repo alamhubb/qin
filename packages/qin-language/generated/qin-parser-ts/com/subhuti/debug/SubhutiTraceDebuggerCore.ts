@@ -216,28 +216,28 @@ class com_subhuti_debug_SubhutiTraceDebuggerCore extends com_subhuti_debug_Subhu
     return 0.0;
   }
   printRuleEnter(item: com_subhuti_debug_RuleStackItem): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: printRuleEnter");
   }
   printRuleExit(item: com_subhuti_debug_RuleStackItem, showTime: boolean): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: printRuleExit");
   }
   printTokenConsume(item: com_subhuti_debug_RuleStackItem): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: printTokenConsume");
   }
   printOrEnter(item: com_subhuti_debug_RuleStackItem): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: printOrEnter");
   }
   printOrExit(item: com_subhuti_debug_RuleStackItem): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: printOrExit");
   }
   printOrBranch(item: com_subhuti_debug_RuleStackItem): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: printOrBranch");
   }
   printBacktrack(fromTokenIndex: number, toTokenIndex: number): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: printBacktrack");
   }
   restoreFromCacheAndPrint(cacheKey: string, displayDepth: number, orBranchNeedNewLine: boolean, isRoot: boolean): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: restoreFromCacheAndPrint");
   }
 }
 const SubhutiTraceDebuggerCore = com_subhuti_debug_SubhutiTraceDebuggerCore;

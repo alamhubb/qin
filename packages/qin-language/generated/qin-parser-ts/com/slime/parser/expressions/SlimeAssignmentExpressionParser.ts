@@ -378,13 +378,13 @@ class com_slime_parser_expressions_SlimeAssignmentExpressionParser extends com_s
     return null;
   }
   UniqueFormalParameters(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: UniqueFormalParameters");
   }
   FunctionBody(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: FunctionBody");
   }
   AsyncFunctionBody(): any {
-    return null;
+    throw new Error("Abstract Java method is not implemented: AsyncFunctionBody");
   }
 }
 const SlimeAssignmentExpressionParser = com_slime_parser_expressions_SlimeAssignmentExpressionParser;

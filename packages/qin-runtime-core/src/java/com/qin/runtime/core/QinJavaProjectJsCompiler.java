@@ -246,15 +246,15 @@ public final class QinJavaProjectJsCompiler {
     }
 
     private void copyJavaSdkSourceTree(JavaSdkSource javaSdkSource, Path packageRoot) throws IOException {
-        Path sourceDir = javaSdkSource.sourceFile().getParent();
+        Path sourceDir = javaSdkSource.sourceRoot();
         try (Stream<Path> stream = Files.walk(sourceDir)) {
             for (Path sourceFile : stream.filter(Files::isRegularFile).toList()) {
                 String fileName = sourceFile.getFileName().toString();
-                if (!fileName.endsWith(".ts") && !fileName.endsWith(".js")) {
+                if (!fileName.endsWith(".ts") && !fileName.endsWith(".js") && !"package.json".equals(fileName)) {
                     continue;
                 }
                 Path relative = sourceDir.relativize(sourceFile);
-                Path target = packageRoot.resolve(jsModuleFileName(relative)).normalize();
+                Path target = packageRoot.resolve("package.json".equals(fileName) ? relative : jsModuleFileName(relative)).normalize();
                 Files.createDirectories(target.getParent());
                 String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
                 if (sourceFile.equals(javaSdkSource.sourceFile())) {
@@ -280,6 +280,14 @@ public final class QinJavaProjectJsCompiler {
     private JavaSdkSource findSiblingJavaSdkSource(Path outputRoot) throws IOException {
         Path current = outputRoot.toAbsolutePath().normalize();
         while (current != null) {
+            Path generatedPackage = current.resolve("java-sdk-js").resolve("package.json");
+            if (Files.isRegularFile(generatedPackage)) {
+                return readJavaSdkPackageSource(generatedPackage);
+            }
+            Path generatedSiblingPackage = current.resolve("generated").resolve("java-sdk-js").resolve("package.json");
+            if (Files.isRegularFile(generatedSiblingPackage)) {
+                return readJavaSdkPackageSource(generatedSiblingPackage);
+            }
             Path candidate = current.resolve("java-sdk").resolve("qin.config.js");
             if (Files.isRegularFile(candidate)) {
                 return readJavaSdkSource(candidate);
@@ -289,8 +297,24 @@ public final class QinJavaProjectJsCompiler {
         return new JavaSdkSource(
                 QinJsBackend.javaSdkJsPackageName(),
                 null,
+                null,
                 QinJsBackend.javaSdkJsModule(),
                 false);
+    }
+
+    private JavaSdkSource readJavaSdkPackageSource(Path packageJsonFile) throws IOException {
+        String packageJson = Files.readString(packageJsonFile, StandardCharsets.UTF_8);
+        String packageName = readConfigString(packageJson, "name", QinJsBackend.javaSdkJsPackageName());
+        Path sourceFile = packageJsonFile.getParent().resolve("index.js").normalize();
+        if (!Files.isRegularFile(sourceFile)) {
+            throw new IllegalStateException("java-sdk-js package index.js does not exist: " + sourceFile);
+        }
+        return new JavaSdkSource(
+                packageName,
+                packageJsonFile.getParent(),
+                sourceFile,
+                Files.readString(sourceFile, StandardCharsets.UTF_8),
+                true);
     }
 
     private JavaSdkSource readJavaSdkSource(Path configFile) throws IOException {
@@ -303,6 +327,7 @@ public final class QinJavaProjectJsCompiler {
         }
         return new JavaSdkSource(
                 packageName,
+                sourceFile.getParent(),
                 sourceFile,
                 Files.readString(sourceFile, StandardCharsets.UTF_8),
                 true);
@@ -1061,6 +1086,7 @@ public final class QinJavaProjectJsCompiler {
 
     private record JavaSdkSource(
             String packageName,
+            Path sourceRoot,
             Path sourceFile,
             String source,
             boolean fromSiblingProject) {
