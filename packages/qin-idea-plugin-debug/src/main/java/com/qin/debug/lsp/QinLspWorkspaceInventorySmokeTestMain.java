@@ -44,7 +44,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         }
 
         if (project.kind() == ProjectKind.LANGUAGE) {
-            verifyLanguageProject(project, config);
+            verifyLanguageProject(project, projectRoot, config);
         } else if (project.kind() == ProjectKind.COMPILER) {
             verifyCompilerProject(project, config);
         } else if (project.kind() == ProjectKind.JAVA_RUNTIME) {
@@ -58,7 +58,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         }
     }
 
-    private static void verifyLanguageProject(InventoryProject project, QinConfig config) {
+    private static void verifyLanguageProject(InventoryProject project, Path projectRoot, QinConfig config) {
         LanguageConfig language = config.language();
         require(language != null, project.id() + " must declare language metadata");
         require(project.languageId().equals(language.id()),
@@ -70,6 +70,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         require(language.serverBundle() != null && !language.serverBundle().isBlank(),
                 project.id() + " language.serverBundle is required");
         verifyLanguageServerMetadata(project, config);
+        verifyLanguageServerPackageJsonIsNotScriptEntrypoint(project, projectRoot, config);
         require("tsdown".equals(config.scripts().get("build")),
                 project.id() + " language build must be managed by Qin script: " + config.scripts());
         require(config.scripts().containsKey("test"),
@@ -113,6 +114,25 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                             + languageServer.compilerPackage());
             require(languageServer.parserPackage() == null || languageServer.parserPackage().isBlank(),
                     project.id() + " languageServer.parserPackage must stay blank for compiler-backed languages");
+        }
+    }
+
+    private static void verifyLanguageServerPackageJsonIsNotScriptEntrypoint(
+            InventoryProject project,
+            Path projectRoot,
+            QinConfig config) {
+        String server = config.language().server();
+        require(server != null && !server.isBlank(),
+                project.id() + " language server entry is required");
+        Path serverPackageRoot = Path.of(server).normalize().getParent();
+        if (serverPackageRoot == null) {
+            return;
+        }
+        Path packageRoot = projectRoot.resolve(serverPackageRoot).normalize();
+        require(packageRoot.startsWith(projectRoot),
+                project.id() + " language server package must stay inside language project: " + packageRoot);
+        if (Files.isRegularFile(packageRoot.resolve("package.json"))) {
+            verifyPackageJsonIsNotScriptEntrypoint(project.id(), packageRoot, "language server");
         }
     }
 
