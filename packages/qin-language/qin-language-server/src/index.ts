@@ -7,6 +7,7 @@ import {
 import { create as createTypeScriptServices } from 'volar-service-typescript'
 import { QinLanguagePlugin } from './QinLanguagePlugin'
 import { QinLanguageServicePlugin } from './QinLanguageServicePlugin'
+import { extensionWithoutDot, resolveLanguageServerMetadata } from './LanguageServerMetadata'
 import { logToFile } from './logutil'
 
 logToFile('=== Qin Language Server Starting ===')
@@ -30,15 +31,18 @@ connection.onInitialize((params) => {
   if (!tsdkPath) {
     throw new Error('Qin language server requires initializationOptions.typescript.tsdk or QIN_LSP_TYPESCRIPT_TSDK')
   }
+  const languageServerMetadata = resolveLanguageServerMetadata(params.initializationOptions)
+  const sourceExtension = extensionWithoutDot(languageServerMetadata.sourceExtension)
+  logToFile('Language server metadata: ' + JSON.stringify(languageServerMetadata))
 
   const tsdk = loadTsdkByPath(tsdkPath, params.locale)
-  const languagePlugins = [QinLanguagePlugin]
+  const languagePlugins = [QinLanguagePlugin(languageServerMetadata)]
   const languageServicePlugins = [
     QinLanguageServicePlugin,
     ...createTypeScriptServices(tsdk.typescript, {
       disableAutoImportCache: true,
       isValidationEnabled(document) {
-        return document.languageId !== 'qin' && !isQinDocumentUri(document.uri)
+        return document.languageId !== 'qin' && !isQinDocumentUri(document.uri, sourceExtension)
       },
     }),
   ]
@@ -71,11 +75,11 @@ process.on('unhandledRejection', (reason) => {
   logToFile('Unhandled rejection:', String(reason))
 })
 
-function isQinDocumentUri(uri: string): boolean {
+function isQinDocumentUri(uri: string, sourceExtension: string): boolean {
   const lowerUri = uri.toLowerCase()
-  return lowerUri.endsWith('.qin')
-    || lowerUri.includes('.qin.')
-    || lowerUri.includes('.qin%')
-    || lowerUri.includes('%2eqin')
-    || lowerUri.includes('%252eqin')
+  return lowerUri.endsWith(`.${sourceExtension}`)
+    || lowerUri.includes(`.${sourceExtension}.`)
+    || lowerUri.includes(`.${sourceExtension}%`)
+    || lowerUri.includes(`%2e${sourceExtension}`)
+    || lowerUri.includes(`%252e${sourceExtension}`)
 }

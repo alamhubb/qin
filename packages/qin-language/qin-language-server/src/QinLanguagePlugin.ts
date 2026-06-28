@@ -7,6 +7,8 @@ import {
 import type { TypeScriptExtraServiceScript } from '@volar/typescript'
 import type { IScriptSnapshot } from 'typescript'
 import { URI } from 'vscode-uri'
+import type { LanguageServerMetadata } from './LanguageServerMetadata'
+import { extensionWithoutDot } from './LanguageServerMetadata'
 import { parseGeneratedQinSource, probeGeneratedQinParser } from './QinGeneratedParserProbe'
 import { logToFile } from './logutil'
 
@@ -37,65 +39,68 @@ interface QinObjectDeclarationInfo {
   defaultExport: boolean
 }
 
-export const QinLanguagePlugin: LanguagePlugin<URI> = {
-  getLanguageId(uri) {
-    if (uri.path.endsWith('.qin')) {
-      return QIN_LANGUAGE_ID
-    }
-    return undefined
-  },
+export function QinLanguagePlugin(metadata: LanguageServerMetadata): LanguagePlugin<URI> {
+  const sourceExtension = extensionWithoutDot(metadata.sourceExtension)
+  return {
+    getLanguageId(uri) {
+      if (uri.path.endsWith(`.${sourceExtension}`)) {
+        return QIN_LANGUAGE_ID
+      }
+      return undefined
+    },
 
-  createVirtualCode(_uri, languageId, snapshot) {
-    if (languageId === QIN_LANGUAGE_ID) {
-      return new QinVirtualCode(snapshot)
-    }
-    return undefined
-  },
+    createVirtualCode(_uri, languageId, snapshot) {
+      if (languageId === QIN_LANGUAGE_ID) {
+        return new QinVirtualCode(snapshot)
+      }
+      return undefined
+    },
 
-  typescript: {
-    extraFileExtensions: [
-      {
-        extension: 'qin',
-        isMixedContent: true,
-        scriptKind: ScriptKind.Deferred,
+    typescript: {
+      extraFileExtensions: [
+        {
+          extension: sourceExtension,
+          isMixedContent: true,
+          scriptKind: ScriptKind.Deferred,
+        },
+      ],
+      getServiceScript(root) {
+        const code = root.embeddedCodes.find(item => item.id === 'qin-script' && item.languageId === 'typescript')
+        if (!code) {
+          return undefined
+        }
+        return {
+          code,
+          extension: metadata.serviceExtension,
+          scriptKind: ScriptKind.TS,
+        }
       },
-    ],
-    getServiceScript(root) {
-      const code = root.embeddedCodes.find(item => item.id === 'qin-script' && item.languageId === 'typescript')
-      if (!code) {
-        return undefined
-      }
-      return {
-        code,
-        extension: '.ts',
-        scriptKind: ScriptKind.TS,
-      }
-    },
-    getExtraServiceScripts(fileName, root) {
-      const scripts: TypeScriptExtraServiceScript[] = []
-      for (const code of forEachEmbeddedCode(root)) {
-        if (code.id === 'qin-script') {
-          continue
+      getExtraServiceScripts(fileName, root) {
+        const scripts: TypeScriptExtraServiceScript[] = []
+        for (const code of forEachEmbeddedCode(root)) {
+          if (code.id === 'qin-script') {
+            continue
+          }
+          if (code.languageId === 'typescript') {
+            scripts.push({
+              fileName: fileName + '.' + code.id + metadata.serviceExtension,
+              code,
+              extension: metadata.serviceExtension,
+              scriptKind: ScriptKind.TS,
+            })
+          } else if (code.languageId === 'js') {
+            scripts.push({
+              fileName: fileName + '.' + code.id + '.js',
+              code,
+              extension: '.js',
+              scriptKind: ScriptKind.JS,
+            })
+          }
         }
-        if (code.languageId === 'typescript') {
-          scripts.push({
-            fileName: fileName + '.' + code.id + '.ts',
-            code,
-            extension: '.ts',
-            scriptKind: ScriptKind.TS,
-          })
-        } else if (code.languageId === 'js') {
-          scripts.push({
-            fileName: fileName + '.' + code.id + '.js',
-            code,
-            extension: '.js',
-            scriptKind: ScriptKind.JS,
-          })
-        }
-      }
-      return scripts
+        return scripts
+      },
     },
-  },
+  }
 }
 
 export class QinVirtualCode implements VirtualCode {
