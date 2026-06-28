@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class QinLspVerificationMatrixSmokeTestMain {
+    private static final String GENERATED_QIN_PARSER_PACKAGE = "@qin/generated-qin-parser-ts";
+
     private QinLspVerificationMatrixSmokeTestMain() {
     }
 
@@ -20,6 +22,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         Path ideaClientPath = workspaceRoot.resolve("qin")
                 .resolve("packages")
                 .resolve("qin-idea-plugin-debug")
+                .normalize();
+        Path generatedQinParserRoot = workspaceRoot.resolve("qin")
+                .resolve("packages")
+                .resolve("qin-language")
+                .resolve("generated")
+                .resolve("qin-parser-ts")
                 .normalize();
 
         List<MatrixCase> cases = List.of(
@@ -71,9 +79,15 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
             if ("qin".equals(matrixCase.id())) {
                 verifyGeneratedQinParserPackage(projectRoot, config);
+            } else {
+                verifyGeneratedParserDependency(
+                        matrixCase.id(),
+                        projectRoot,
+                        generatedQinParserRoot,
+                        config);
             }
             if (matrixCase.compilerProjectRelativePath() != null) {
-                verifyCompilerProjectConfig(matrixCase, workspaceRoot);
+                verifyCompilerProjectConfig(matrixCase, workspaceRoot, generatedQinParserRoot);
             }
         }
 
@@ -118,7 +132,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         System.out.println("Qin LSP verification matrix smoke passed");
     }
 
-    private static void verifyCompilerProjectConfig(MatrixCase matrixCase, Path workspaceRoot) throws Exception {
+    private static void verifyCompilerProjectConfig(
+            MatrixCase matrixCase,
+            Path workspaceRoot,
+            Path generatedQinParserRoot) throws Exception {
         Path compilerRoot = workspaceRoot.resolve(matrixCase.compilerProjectRelativePath()).normalize();
         require(compilerRoot.startsWith(workspaceRoot),
                 matrixCase.id() + " compiler project must stay inside workspace");
@@ -159,6 +176,41 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 matrixCase.id() + " compiler scripts.test is required");
         require(!testScript.contains("npm run"),
                 matrixCase.id() + " compiler scripts.test must run checks directly through Qin scripts");
+        verifyGeneratedParserDependency(
+                matrixCase.id() + " compiler",
+                compilerRoot,
+                generatedQinParserRoot,
+                compilerConfig);
+    }
+
+    private static void verifyGeneratedParserDependency(
+            String id,
+            Path projectRoot,
+            Path generatedQinParserRoot,
+            QinConfig config) throws Exception {
+        String dependency = config.getDependencyVersion(GENERATED_QIN_PARSER_PACKAGE);
+        require(dependency != null && !dependency.isBlank(),
+                id + " must declare " + GENERATED_QIN_PARSER_PACKAGE + " in qin.config.js dependencies");
+        require(dependency.startsWith("file:"),
+                id + " must use a file: dependency for " + GENERATED_QIN_PARSER_PACKAGE);
+
+        Path resolvedDependency = projectRoot.resolve(dependency.substring("file:".length())).normalize();
+        require(generatedQinParserRoot.equals(resolvedDependency),
+                id + " must resolve " + GENERATED_QIN_PARSER_PACKAGE
+                        + " to the shared generated Qin parser package: " + resolvedDependency);
+
+        Path packageJson = generatedQinParserRoot.resolve("package.json");
+        require(Files.isRegularFile(packageJson),
+                "Generated Qin parser package.json must exist before dependency checks");
+        String packageJsonSource = Files.readString(packageJson);
+        require(packageJsonSource.contains("\"main\": \"./index.ts\""),
+                "Generated Qin parser package.json must expose ./index.ts as main");
+        require(packageJsonSource.contains("\"module\": \"./index.ts\""),
+                "Generated Qin parser package.json must expose ./index.ts as module");
+        require(packageJsonSource.contains("\"import\": \"./index.ts\""),
+                "Generated Qin parser package.json exports must import ./index.ts");
+        require(packageJsonSource.contains("\"default\": \"./index.ts\""),
+                "Generated Qin parser package.json exports must default to ./index.ts");
     }
 
     private static void verifyLanguageToolReferences(
@@ -240,14 +292,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qin-language must point language.parser at generated/qin-parser-ts");
         require(languageConfigSource.contains("generatedParserTarget: \"@qin/generated-qin-parser-ts\""),
                 "qin-language must declare @qin/generated-qin-parser-ts as generated parser target");
-        require(generatedConfigSource.contains("name: \"@qin/generated-qin-parser-ts\""),
-                "Generated Qin parser qin.config.js must use @qin/generated-qin-parser-ts package name");
+        require(generatedConfigSource.contains("name: \"" + GENERATED_QIN_PARSER_PACKAGE + "\""),
+                "Generated Qin parser qin.config.js must use " + GENERATED_QIN_PARSER_PACKAGE + " package name");
         require(generatedConfigSource.contains("entry: \"./index.ts\""),
                 "Generated Qin parser qin.config.js must expose ./index.ts as entry");
         require(generatedConfigSource.contains("entryBinaryName: \"com.qin.parser.QinParser\""),
                 "Generated Qin parser qin.config.js must record com.qin.parser.QinParser entry");
-        require(packageJsonSource.contains("\"name\": \"@qin/generated-qin-parser-ts\""),
-                "Generated Qin parser package.json must use @qin/generated-qin-parser-ts package name");
+        require(packageJsonSource.contains("\"name\": \"" + GENERATED_QIN_PARSER_PACKAGE + "\""),
+                "Generated Qin parser package.json must use " + GENERATED_QIN_PARSER_PACKAGE + " package name");
         require(packageJsonSource.contains("\"entryBinaryName\": \"com.qin.parser.QinParser\""),
                 "Generated Qin parser package.json must record com.qin.parser.QinParser entry");
         require(indexSource.contains("export default com_qin_parser_QinParser"),
