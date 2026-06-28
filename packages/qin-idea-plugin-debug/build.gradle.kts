@@ -180,6 +180,13 @@ tasks {
         commandLine(qinCommand.canonicalPath, "language", "test")
     }
 
+    register<Exec>("qinGeneratedParserDryRun") {
+        group = "verification"
+        description = "Verifies QinParser Java -> TypeScript generation metadata through qin.config.js."
+        workingDir = workspaceRoot.resolve("qin/packages/qin-language")
+        commandLine(qinCommand.canonicalPath, "language", "generate-parser", "--dry-run")
+    }
+
     register<Exec>("ovsLanguageTest") {
         workingDir = workspaceRoot.resolve("ovsjs/ovs-language")
         commandLine(qinCommand.canonicalPath, "language", "test")
@@ -219,6 +226,7 @@ tasks {
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspPluginPackageSmoke")
         dependsOn("lspUiFixtureSmoke")
+        dependsOn("qinGeneratedParserDryRun")
         dependsOn("languageProjectsTest")
         dependsOn("qinJvmClassTargetSmoke")
     }

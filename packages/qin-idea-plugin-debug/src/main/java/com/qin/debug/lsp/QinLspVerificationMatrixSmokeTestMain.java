@@ -76,6 +76,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(buildSource.contains(task.getValue()),
                     task.getKey() + " must run from " + task.getValue());
         }
+        require(buildSource.contains("register<Exec>(\"qinGeneratedParserDryRun\")"),
+                "Gradle must declare qinGeneratedParserDryRun");
+        require(buildSource.contains("qin/packages/qin-language"),
+                "qinGeneratedParserDryRun must run from qin/packages/qin-language");
+        require(buildSource.contains("\"language\", \"generate-parser\", \"--dry-run\""),
+                "qinGeneratedParserDryRun must verify QinParser Java -> TypeScript generation metadata");
         require(buildSource.contains("register(\"languageProjectsTest\")"),
                 "Gradle must declare languageProjectsTest");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
@@ -87,6 +93,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String smokeTask : List.of(
                 "languageProjectsTest",
                 "qinJvmClassTargetSmoke",
+                "qinGeneratedParserDryRun",
                 "lspRegistrySmoke",
                 "lspServerCommandLineSmoke",
                 "lspServerDiagnosticsSmoke",
