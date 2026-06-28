@@ -188,10 +188,20 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                             + script.getValue());
         }
         if ("create-ovs".equals(project.id()) || "create-cssts".equals(project.id())) {
+            verifyScaffoldOutputSmoke(project, config);
             verifyScaffoldTemplateQinConfig(project, projectRoot);
             verifyScaffoldUserGuidance(project, projectRoot);
             verifyScaffoldPackageJsonIsNotScriptEntrypoint(project, projectRoot);
         }
+    }
+
+    private static void verifyScaffoldOutputSmoke(InventoryProject project, QinConfig config) {
+        String testScript = config.scripts().get("test");
+        require(testScript.contains("tests/test-scaffold-output.mjs"),
+                project.id() + " scripts.test must run the real scaffold output smoke: " + testScript);
+        require(testScript.contains("node tests/test-scaffold-output.mjs"),
+                project.id() + " scaffold output smoke must run directly through Node without package script forwarding: "
+                        + testScript);
     }
 
     private static void verifyScaffoldTemplateQinConfig(InventoryProject project, Path projectRoot) {
