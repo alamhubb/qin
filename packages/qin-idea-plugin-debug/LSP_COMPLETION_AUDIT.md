@@ -50,8 +50,8 @@ The check task currently covers:
 
 | Requirement | Current evidence | Status |
 | --- | --- | --- |
-| Java parser is authoritative for Qin syntax | `qinGeneratedParserDryRun` verifies `com.qin.parser.QinParser` metadata, generated output package, and `generatedParserTarget`; `QinParserObjectDeclarationSmokeTestMain` verifies `object` parses through PEG CST and is not source-string rewritten. | Partly proven |
-| Qin generated TypeScript parser is usable by Volar | `qin/packages/qin-language/qin.config.js` points `language.parser` at `generated/qin-parser-ts`; `test-language-plugin.ts` verifies generated Qin parser availability and parser diagnostics. | Proven for current `.qin` LSP scope |
+| Java parser is authoritative for Qin syntax | `qinGeneratedParserDryRun` verifies `com.qin.parser.QinParser` metadata, generated output package, and `generatedParserTarget`; `QinParserObjectDeclarationSmokeTestMain` verifies `object` parses through PEG CST and is not source-string rewritten; `test-generated-parser-parity.ts` compares Java QinParser and generated TypeScript QinParser acceptance on a small Qin corpus. | Proven for current Qin parser parity corpus |
+| Qin generated TypeScript parser is usable by Volar | `qin/packages/qin-language/qin.config.js` points `language.parser` at `generated/qin-parser-ts`; `test-language-plugin.ts` verifies generated Qin parser availability and parser diagnostics; `test-generated-parser-parity.ts` verifies generated parser behavior matches Java parser acceptance on the current corpus. | Proven for current `.qin` LSP scope |
 | OVS inherits the shared generated parser chain | `ovs-language/tests/test-generated-parser-chain.ts` checks `OvsParser extends CssTsParser`, `instanceof CssTsParser`, `instanceof SlimeJavascriptParser`, and parser-chain parsing. | Proven for current OVS parser-chain smoke |
 | CSSTS inherits the shared generated parser chain | `cssts-language/tests/test-generated-parser-chain.ts` checks `CssTsParser extends SlimeParser`, `instanceof SlimeJavascriptParser`, and parser-chain parsing. | Proven for current CSSTS parser-chain smoke |
 | Volar LSP provides diagnostics | `lspServerDiagnosticsSmoke`, `qinLanguageTest`, `ovsLanguageTest`, and `csstsLanguageTest` verify invalid `.qin`, `.ovs`, and `.cssts` diagnostics. | Proven |
@@ -69,7 +69,8 @@ These items are not proven complete yet:
 
 - Full grammar authority across every Slime/Qin/OVS/CSSTS syntax branch is not
   exhaustively audited. Current evidence covers the active generated-parser path,
-  Qin `object`, and parser-chain inheritance smoke fixtures.
+  a small Java/TypeScript parser parity corpus, Qin `object`, and parser-chain
+  inheritance smoke fixtures.
 - IDEA has smoke coverage for LSP startup, capabilities, diagnostics, packaging,
   and fixture registration, but manual IDE behavior still relies on
   `runIdeLspFixture` for visual confirmation.
@@ -84,10 +85,9 @@ These items are not proven complete yet:
 
 ## Next Hardening Steps
 
-1. Expand generated parser parity checks beyond metadata: run a small corpus
-   through Java QinParser and generated TypeScript QinParser and compare success
-   or failure classes.
-2. Expand `.class` target smoke from one CLI sample to a small Qin backend corpus
+1. Expand `.class` target smoke from one CLI sample to a small Qin backend corpus
    that includes imports, exports, classes, functions, and `object`.
+2. Keep expanding generated parser parity from the current small corpus toward
+   broader Slime/Qin syntax coverage.
 3. Keep this audit updated whenever a requirement moves from "partly proven" to
    "proven" or when a new gap is found.

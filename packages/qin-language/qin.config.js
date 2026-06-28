@@ -7,7 +7,7 @@ export default {
   scripts: {
     build: "tsdown",
     dev: "tsx qin-language-server/src/index.ts --stdio",
-    test: "tsx tests/test-language-plugin.ts && tsdown && tsx tests/test-language-server.ts",
+    test: "tsx tests/test-language-plugin.ts && tsx tests/test-generated-parser-parity.ts && tsdown && tsx tests/test-language-server.ts",
     "test:lsp": "tsx tests/test-language-server.ts"
   },
   dependencies: {
