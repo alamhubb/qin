@@ -44,6 +44,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             verifyCompilerProject(project, config);
         } else if (project.kind() == ProjectKind.JAVA_RUNTIME) {
             verifyJavaRuntimeProject(project, config);
+        } else if (project.kind() == ProjectKind.GENERATED_TS) {
+            verifyGeneratedTsProject(project, config);
         }
     }
 
@@ -90,6 +92,15 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         + config.java().outputDir());
     }
 
+    private static void verifyGeneratedTsProject(InventoryProject project, QinConfig config) {
+        require(config.entry() != null && !config.entry().isBlank(),
+                project.id() + " generated TypeScript project must declare entry");
+        require(config.generated() != null,
+                project.id() + " generated TypeScript project must declare generated metadata");
+        require("com.qin.parser.QinParser".equals(config.generated().entryBinaryName()),
+                project.id() + " generated TypeScript entry must be com.qin.parser.QinParser");
+    }
+
     private static List<InventoryProject> inventory() {
         return List.of(
                 InventoryProject.language("qin-language", Path.of("qin", "packages", "qin-language"),
@@ -102,6 +113,15 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "ovs-compiler", "ovs", ".ovs"),
                 InventoryProject.compiler("cssts-compiler", Path.of("cssts", "cssts", "cssts-compiler"),
                         "cssts-compiler", "cssts", ".cssts"),
+                InventoryProject.generatedTs("qin-generated-parser-ts",
+                        Path.of("qin", "packages", "qin-language", "generated", "qin-parser-ts"),
+                        "@qin/generated-qin-parser-ts"),
+                InventoryProject.javaRuntime("subhuti-java", Path.of("slime", "java-slime", "subhuti-java"),
+                        "com.subhuti:subhuti-java"),
+                InventoryProject.javaRuntime("java-slime-token", Path.of("slime", "java-slime", "slime-token"),
+                        "com.slime:slime-token"),
+                InventoryProject.javaRuntime("java-slime-parser", Path.of("slime", "java-slime", "slime-parser"),
+                        "com.slime:slime-parser"),
                 InventoryProject.javaRuntime("qin-parser", Path.of("qin", "packages", "qin-parser"),
                         "com.qin:qin-parser"),
                 InventoryProject.javaRuntime("qin-lang-cli", Path.of("qin", "packages", "qin-lang-cli"),
@@ -137,7 +157,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
     private enum ProjectKind {
         LANGUAGE,
         COMPILER,
-        JAVA_RUNTIME
+        JAVA_RUNTIME,
+        GENERATED_TS
     }
 
     private record InventoryProject(
@@ -168,6 +189,10 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
 
         static InventoryProject javaRuntime(String id, Path path, String expectedName) {
             return new InventoryProject(id, path, expectedName, ProjectKind.JAVA_RUNTIME, null, null);
+        }
+
+        static InventoryProject generatedTs(String id, Path path, String expectedName) {
+            return new InventoryProject(id, path, expectedName, ProjectKind.GENERATED_TS, null, null);
         }
     }
 }
