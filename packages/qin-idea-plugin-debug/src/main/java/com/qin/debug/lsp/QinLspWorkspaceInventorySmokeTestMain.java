@@ -46,6 +46,10 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             verifyJavaRuntimeProject(project, config);
         } else if (project.kind() == ProjectKind.GENERATED_TS) {
             verifyGeneratedTsProject(project, config);
+        } else if (project.kind() == ProjectKind.WORKSPACE) {
+            verifyWorkspaceProject(workspaceRoot, project, projectRoot, config);
+        } else if (project.kind() == ProjectKind.TOOLING) {
+            verifyToolingProject(project, projectRoot, config);
         }
     }
 
@@ -101,8 +105,65 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 project.id() + " generated TypeScript entry must be com.qin.parser.QinParser");
     }
 
+    private static void verifyWorkspaceProject(
+            Path workspaceRoot,
+            InventoryProject project,
+            Path projectRoot,
+            QinConfig config) {
+        require(config.packages().size() == project.workspaceMembers().size(),
+                project.id() + " workspace member count mismatch: " + config.packages());
+        for (String member : project.workspaceMembers()) {
+            require(config.packages().contains(member),
+                    project.id() + " qin.config.js must include workspace member " + member);
+            Path memberRoot = projectRoot.resolve(member).normalize();
+            require(memberRoot.startsWith(workspaceRoot),
+                    project.id() + " workspace member must stay inside workspace: " + memberRoot);
+            require(Files.isRegularFile(memberRoot.resolve("qin.config.js")),
+                    project.id() + " workspace member must be managed by qin.config.js: " + memberRoot);
+        }
+        LanguageConfig language = config.language();
+        require(language != null, project.id() + " workspace must declare language metadata");
+        require(project.languageId().equals(language.id()),
+                project.id() + " workspace language.id mismatch: " + language.id());
+    }
+
+    private static void verifyToolingProject(InventoryProject project, Path projectRoot, QinConfig config) {
+        require(config.entry() != null && !config.entry().isBlank(),
+                project.id() + " tooling project must declare entry");
+        require(Files.exists(projectRoot.resolve(config.entry()).normalize()),
+                project.id() + " tooling entry must exist: " + config.entry());
+        LanguageConfig language = config.language();
+        require(language != null, project.id() + " tooling project must declare language metadata");
+        require(project.languageId().equals(language.id()),
+                project.id() + " tooling language.id mismatch: " + language.id());
+        if (project.extension() != null) {
+            require(project.extension().equals(language.extension()),
+                    project.id() + " tooling language.extension mismatch: " + language.extension());
+        }
+        require(config.scripts().containsKey("build"),
+                project.id() + " tooling project must declare build script");
+        require(config.scripts().containsKey("test"),
+                project.id() + " tooling project must declare test script");
+    }
+
     private static List<InventoryProject> inventory() {
         return List.of(
+                InventoryProject.workspace("ovs-workspace", Path.of("ovsjs"),
+                        "ovsjs-workspace", "ovs", List.of(
+                                "ovs/ovs-runtime",
+                                "ovs/ovs-compiler",
+                                "create-ovs",
+                                "vite-plugin-ovs",
+                                "ovs-language")),
+                InventoryProject.workspace("cssts-workspace", Path.of("cssts"),
+                        "cssts-workspace", "cssts", List.of(
+                                "cssts/cssts-runtime",
+                                "cssts/cssts-compiler",
+                                "vite-plugin-cssts",
+                                "language-plugin-cssts",
+                                "cssts-language",
+                                "create-cssts",
+                                "cssts-theme-element")),
                 InventoryProject.language("qin-language", Path.of("qin", "packages", "qin-language"),
                         "qin-language", "qin", ".qin"),
                 InventoryProject.language("ovs-language", Path.of("ovsjs", "ovs-language"),
@@ -113,6 +174,22 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "ovs-compiler", "ovs", ".ovs"),
                 InventoryProject.compiler("cssts-compiler", Path.of("cssts", "cssts", "cssts-compiler"),
                         "cssts-compiler", "cssts", ".cssts"),
+                InventoryProject.tooling("ovs-runtime", Path.of("ovsjs", "ovs", "ovs-runtime"),
+                        "ovsjs", "ovs", null),
+                InventoryProject.tooling("vite-plugin-ovs", Path.of("ovsjs", "vite-plugin-ovs"),
+                        "vite-plugin-ovs", "ovs", ".ovs"),
+                InventoryProject.tooling("create-ovs", Path.of("ovsjs", "create-ovs"),
+                        "create-ovs", "ovs", null),
+                InventoryProject.tooling("cssts-runtime", Path.of("cssts", "cssts", "cssts-runtime"),
+                        "cssts-ts", "cssts", null),
+                InventoryProject.tooling("vite-plugin-cssts", Path.of("cssts", "vite-plugin-cssts"),
+                        "vite-plugin-cssts", "cssts", ".cssts"),
+                InventoryProject.tooling("language-plugin-cssts", Path.of("cssts", "language-plugin-cssts"),
+                        "language-plugin-cssts", "cssts", ".cssts"),
+                InventoryProject.tooling("create-cssts", Path.of("cssts", "create-cssts"),
+                        "create-cssts", "cssts", null),
+                InventoryProject.tooling("cssts-theme-element", Path.of("cssts", "cssts-theme-element"),
+                        "cssts-theme-element", "cssts", null),
                 InventoryProject.generatedTs("qin-generated-parser-ts",
                         Path.of("qin", "packages", "qin-language", "generated", "qin-parser-ts"),
                         "@qin/generated-qin-parser-ts"),
@@ -158,7 +235,9 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         LANGUAGE,
         COMPILER,
         JAVA_RUNTIME,
-        GENERATED_TS
+        GENERATED_TS,
+        WORKSPACE,
+        TOOLING
     }
 
     private record InventoryProject(
@@ -167,7 +246,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             String expectedName,
             ProjectKind kind,
             String languageId,
-            String extension) {
+            String extension,
+            List<String> workspaceMembers) {
 
         static InventoryProject language(
                 String id,
@@ -175,7 +255,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String expectedName,
                 String languageId,
                 String extension) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.LANGUAGE, languageId, extension);
+            return new InventoryProject(id, path, expectedName, ProjectKind.LANGUAGE, languageId, extension, List.of());
         }
 
         static InventoryProject compiler(
@@ -184,15 +264,40 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String expectedName,
                 String languageId,
                 String extension) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.COMPILER, languageId, extension);
+            return new InventoryProject(id, path, expectedName, ProjectKind.COMPILER, languageId, extension, List.of());
         }
 
         static InventoryProject javaRuntime(String id, Path path, String expectedName) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.JAVA_RUNTIME, null, null);
+            return new InventoryProject(id, path, expectedName, ProjectKind.JAVA_RUNTIME, null, null, List.of());
         }
 
         static InventoryProject generatedTs(String id, Path path, String expectedName) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.GENERATED_TS, null, null);
+            return new InventoryProject(id, path, expectedName, ProjectKind.GENERATED_TS, null, null, List.of());
+        }
+
+        static InventoryProject workspace(
+                String id,
+                Path path,
+                String expectedName,
+                String languageId,
+                List<String> workspaceMembers) {
+            return new InventoryProject(
+                    id,
+                    path,
+                    expectedName,
+                    ProjectKind.WORKSPACE,
+                    languageId,
+                    null,
+                    workspaceMembers);
+        }
+
+        static InventoryProject tooling(
+                String id,
+                Path path,
+                String expectedName,
+                String languageId,
+                String extension) {
+            return new InventoryProject(id, path, expectedName, ProjectKind.TOOLING, languageId, extension, List.of());
         }
     }
 }

@@ -77,7 +77,7 @@ public class ConfigLoader {
                 stringField(source, "entry", null),
                 stringMapField(source, "dependencies"),
                 stringMapField(source, "devDependencies"),
-                stringListField(source, "packages"),
+                projectListField(source),
                 null,
                 javaConfigField(source),
                 null,
@@ -134,6 +134,14 @@ public class ConfigLoader {
             }
         }
         return out;
+    }
+
+    private List<String> projectListField(Map<String, Object> source) {
+        List<String> packages = stringListField(source, "packages");
+        if (packages != null && !packages.isEmpty()) {
+            return packages;
+        }
+        return stringListField(source, "workspaces");
     }
 
     private JavaConfig javaConfigField(Map<String, Object> source) {

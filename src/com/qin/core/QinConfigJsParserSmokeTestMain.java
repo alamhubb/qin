@@ -79,6 +79,22 @@ public final class QinConfigJsParserSmokeTestMain {
         require("generated/parser-ts".equals(config.generated().outputDir()), "generated.outputDir");
         require(config.packages().size() == 1 && "packages/*".equals(config.packages().getFirst()), "packages");
 
+        Path workspaceRoot = Files.createTempDirectory("qin-config-js-workspaces-");
+        Files.writeString(workspaceRoot.resolve("qin.config.js"), """
+                export default {
+                  name: 'com.qin.demo:workspace-root',
+                  version: '0.1.0',
+                  workspaces: [
+                    'packages/a',
+                    'packages/b'
+                  ]
+                }
+                """, StandardCharsets.UTF_8);
+        QinConfig workspaceConfig = new ConfigLoader(workspaceRoot.toString()).load();
+        require(workspaceConfig.packages().size() == 2, "workspaces size");
+        require("packages/a".equals(workspaceConfig.packages().get(0)), "workspaces first item");
+        require("packages/b".equals(workspaceConfig.packages().get(1)), "workspaces second item");
+
         Path frontendOnlyRoot = Files.createTempDirectory("qin-config-js-frontend-only-");
         Files.createDirectories(frontendOnlyRoot.resolve("src"));
         Files.writeString(frontendOnlyRoot.resolve("src").resolve("main.ts"), "console.log('frontend only')\n", StandardCharsets.UTF_8);
