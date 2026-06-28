@@ -24,9 +24,6 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Path workspaceRoot = args.length > 0
                 ? Path.of(args[0]).toAbsolutePath().normalize()
                 : QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of("."));
-        Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
-        String node = QinLspLanguageRegistry.resolveNodeExecutable();
-
         List<LanguageCase> cases = List.of(
                 new LanguageCase("qin", "export object Broken { value = }", "qin-parser"),
                 new LanguageCase("ovs", "div { h1 { 'Broken' }", "OVS transform failed"),
@@ -35,7 +32,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         for (LanguageCase testCase : cases) {
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, testCase.extension());
             require(language != null, "Missing language for ." + testCase.extension());
-            runLanguageCase(workspaceRoot, tsdkPath, node, language, testCase);
+            runLanguageCase(workspaceRoot, language, testCase);
         }
 
         System.out.println("Qin IDEA LSP server diagnostics smoke passed");
@@ -43,15 +40,16 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
 
     private static void runLanguageCase(
             Path workspaceRoot,
-            Path tsdkPath,
-            String node,
             QinLspLanguage language,
             LanguageCase testCase) throws Exception {
-        Path serverPath = language.resolveServerPath(workspaceRoot);
-        Process process = new ProcessBuilder(node, serverPath.toString(), "--stdio")
-                .directory(language.resolveServerRoot(workspaceRoot).toFile())
-                .redirectErrorStream(false)
-                .start();
+        QinLspServerCommandSpec commandSpec = QinLspServerCommandLineFactory.createSpec(workspaceRoot, language);
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command().add(commandSpec.executable());
+        processBuilder.command().addAll(commandSpec.arguments());
+        processBuilder.directory(commandSpec.workDirectory().toFile());
+        processBuilder.environment().putAll(commandSpec.environment());
+        processBuilder.redirectErrorStream(false);
+        Process process = processBuilder.start();
 
         LspSession session = new LspSession(process);
         try {
@@ -64,7 +62,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     "publishDiagnostics", Map.of())),
                     "rootUri", workspaceRoot.toUri().toString(),
                     "initializationOptions", Map.of(
-                            "typescript", Map.of("tsdk", tsdkPath.toString()))));
+                            "typescript", Map.of("tsdk", commandSpec.environment().get("QIN_LSP_TYPESCRIPT_TSDK")))));
             Map<String, Object> initializeResponse = session.awaitResponse(initializeId);
             assertLanguageCapabilities(language, initializeResponse);
             session.notification("initialized", Map.of());
