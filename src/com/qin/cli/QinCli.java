@@ -377,8 +377,12 @@ public class QinCli {
                 .map(QinCli::resolveProjectPath)
                 .toList();
         if (hasArg(args, "--dry-run")) {
+            verifyGeneratedParserDryRunMetadata(config, outputRoot);
             System.out.println("generate java parser " + generated.entryBinaryName());
+            System.out.println("  packageName: @qin/generated-qin-parser-ts");
+            System.out.println("  packageEntry: ./index.ts");
             System.out.println("  outputDir: " + outputRoot);
+            System.out.println("  language.parser: " + config.language().parser());
             for (Path sourceRoot : sourceRoots) {
                 System.out.println("  sourceRoot: " + sourceRoot);
             }
@@ -390,6 +394,76 @@ public class QinCli {
         System.out.println("  entryBinaryName: " + generated.entryBinaryName());
         System.out.println("  outputDir: " + outputRoot);
         System.out.println("  files: " + outputCount);
+    }
+
+    private static void verifyGeneratedParserDryRunMetadata(QinConfig config, Path outputRoot) throws Exception {
+        if (config.language() == null || config.language().parser() == null || config.language().parser().isBlank()) {
+            throw new IllegalStateException("Missing language.parser in " + QinConstants.CONFIG_FILE);
+        }
+        Path languageParserRoot = resolveProjectPath(config.language().parser());
+        if (!outputRoot.equals(languageParserRoot)) {
+            throw new IllegalStateException("language.parser must point at generated.outputDir: "
+                    + config.language().parser() + " -> " + languageParserRoot + ", outputDir -> " + outputRoot);
+        }
+
+        Path configPath = resolveProjectPath(QinConstants.CONFIG_FILE);
+        String configSource = Files.readString(configPath);
+        requireSourceContains(configSource,
+                "generatedParserTarget: \"@qin/generated-qin-parser-ts\"",
+                "qinLanguage.generatedParserTarget must be @qin/generated-qin-parser-ts");
+
+        Path generatedConfig = outputRoot.resolve("qin.config.js");
+        Path generatedPackageJson = outputRoot.resolve("package.json");
+        Path generatedIndex = outputRoot.resolve("index.ts");
+        if (!Files.isRegularFile(generatedConfig)) {
+            throw new IllegalStateException("Generated parser qin.config.js does not exist: " + generatedConfig);
+        }
+        if (!Files.isRegularFile(generatedPackageJson)) {
+            throw new IllegalStateException("Generated parser package.json does not exist: " + generatedPackageJson);
+        }
+        if (!Files.isRegularFile(generatedIndex)) {
+            throw new IllegalStateException("Generated parser index.ts does not exist: " + generatedIndex);
+        }
+
+        String generatedConfigSource = Files.readString(generatedConfig);
+        String packageJsonSource = Files.readString(generatedPackageJson);
+        String indexSource = Files.readString(generatedIndex);
+        requireSourceContains(generatedConfigSource,
+                "name: \"@qin/generated-qin-parser-ts\"",
+                "Generated parser qin.config.js package name mismatch");
+        requireSourceContains(generatedConfigSource,
+                "entry: \"./index.ts\"",
+                "Generated parser qin.config.js entry mismatch");
+        requireSourceContains(generatedConfigSource,
+                "entryBinaryName: \"" + config.generated().entryBinaryName() + "\"",
+                "Generated parser qin.config.js entryBinaryName mismatch");
+        requireSourceContains(packageJsonSource,
+                "\"name\": \"@qin/generated-qin-parser-ts\"",
+                "Generated parser package.json package name mismatch");
+        requireSourceContains(packageJsonSource,
+                "\"main\": \"./index.ts\"",
+                "Generated parser package.json main mismatch");
+        requireSourceContains(packageJsonSource,
+                "\"module\": \"./index.ts\"",
+                "Generated parser package.json module mismatch");
+        requireSourceContains(packageJsonSource,
+                "\"entryBinaryName\": \"" + config.generated().entryBinaryName() + "\"",
+                "Generated parser package.json entryBinaryName mismatch");
+        requireSourceContains(indexSource,
+                "export default com_qin_parser_QinParser",
+                "Generated parser index.ts must default-export QinParser");
+        requireSourceContains(indexSource,
+                "com_qin_parser_QinParser as QinParser",
+                "Generated parser index.ts must named-export QinParser");
+        requireSourceContains(indexSource,
+                "SlimeJavascriptParser",
+                "Generated parser index.ts must export SlimeJavascriptParser for OVS/CSSTS inheritance");
+    }
+
+    private static void requireSourceContains(String source, String expected, String message) {
+        if (!source.contains(expected)) {
+            throw new IllegalStateException(message + ": missing " + expected);
+        }
     }
 
     private static int generateParserWithRuntimeCore(
