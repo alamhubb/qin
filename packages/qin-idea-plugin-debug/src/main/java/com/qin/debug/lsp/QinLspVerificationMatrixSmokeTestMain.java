@@ -562,7 +562,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "CSSTS transform must normalize CST from the generated parser chain");
         require(csstsTransform.contains("import { registerSlimeCstToAstUtil } from 'slime-parser'"),
                 "CSSTS transform may use legacy slime-parser only to register the CST-to-AST extension");
-        require(csstsCstToAst.contains("import { SlimeCstToAst, registerSlimeCstToAstUtil } from \"slime-parser\""),
+        require(csstsCstToAst.contains("import { SlimeCstToAst, SlimeCstToAstUtils, registerSlimeCstToAstUtil } from \"slime-parser\""),
                 "CSSTS CST-to-AST extension must keep its legacy slime-parser boundary explicit");
         require(csstsCstToAst.contains("extends SlimeCstToAst"),
                 "CSSTS CST-to-AST extension must stay on the explicit SlimeCstToAst extension boundary");
@@ -773,6 +773,11 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     matrixCase.id() + " language server test must cover language syntax feature: "
                             + syntaxNeedle);
         }
+        for (String diagnosticNeedle : languageDiagnosticFeatureNeedles(matrixCase.id(), matrixCase.extension())) {
+            require(testSource.contains(diagnosticNeedle),
+                    matrixCase.id() + " language server test must cover diagnostic feature: "
+                            + diagnosticNeedle);
+        }
         require(testSource.contains("requireSemanticTokenAt"),
                 matrixCase.id() + " language server test must assert semantic token source positions");
         for (String semanticNeedle : languageSemanticTokenNeedles(matrixCase.id())) {
@@ -805,6 +810,24 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "CSSTS css syntax documentSymbol response",
                     "css { colorRed, displayFlex }",
                     "derivedStyle");
+            default -> throw new IllegalStateException("Unsupported language id: " + languageId);
+        };
+    }
+
+    private static List<String> languageDiagnosticFeatureNeedles(String languageId, String extension) {
+        return switch (languageId) {
+            case "qin" -> List.of();
+            case "ovs", "cssts" -> List.of(
+                    "qin-rich-valid" + extension,
+                    "object NestedLabeler",
+                    "const label = \"vip \"",
+                    "const standard = \"std \"",
+                    languageId.equals("ovs")
+                            ? "OVS Qin-rich valid diagnostic response"
+                            : "CSSTS Qin-rich valid diagnostic response",
+                    languageId.equals("ovs")
+                            ? "Qin-rich valid OVS source produced transform diagnostics"
+                            : "Qin-rich valid CSSTS source produced transform diagnostics");
             default -> throw new IllegalStateException("Unsupported language id: " + languageId);
         };
     }
