@@ -1085,22 +1085,28 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 .normalize();
         Path earlyReturnPath = corpusPath.resolveSibling("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.java");
         Path nestedBranchPath = corpusPath.resolveSibling("QinJvmParsedNestedBranchMethodBodySmokeTestMain.java");
+        Path selfMethodCallPath = corpusPath.resolveSibling("QinJvmParsedSelfMethodCallSmokeTestMain.java");
         require(Files.isRegularFile(corpusPath),
                 "Qin JVM class declaration corpus smoke must exist: " + corpusPath);
         require(Files.isRegularFile(earlyReturnPath),
                 "Qin JVM parsed early-return method-body smoke must exist: " + earlyReturnPath);
         require(Files.isRegularFile(nestedBranchPath),
                 "Qin JVM parsed nested-branch method-body smoke must exist: " + nestedBranchPath);
+        require(Files.isRegularFile(selfMethodCallPath),
+                "Qin JVM parsed self-method-call smoke must exist: " + selfMethodCallPath);
 
         String corpusSource = Files.readString(corpusPath);
         String earlyReturnSource = Files.readString(earlyReturnPath);
         String nestedBranchSource = Files.readString(nestedBranchPath);
+        String selfMethodCallSource = Files.readString(selfMethodCallPath);
         require(corpusSource.contains("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed early-return method-body smoke");
         require(corpusSource.contains("QinJvmParsedNestedBranchMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed nested-branch method-body smoke");
-        require(corpusSource.contains("15 cases"),
-                "Qin JVM class declaration corpus count must cover the parsed nested-branch case");
+        require(corpusSource.contains("QinJvmParsedSelfMethodCallSmokeTestMain.main(args)"),
+                "Qin JVM class declaration corpus must include parsed self-method-call smoke");
+        require(corpusSource.contains("16 cases"),
+                "Qin JVM class declaration corpus count must cover the current 16-case set");
         require(earlyReturnSource.contains("const prefix = \"hello \""),
                 "Parsed early-return smoke must cover Qin local binding in a method body");
         require(earlyReturnSource.contains("if (flag)"),
@@ -1117,6 +1123,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         require(nestedBranchSource.contains("return standard + name")
                         && nestedBranchSource.contains("return base + name"),
                 "Parsed nested-branch smoke must cover branch and fallthrough returns");
+        require(selfMethodCallSource.contains("this.prefix() + name"),
+                "Parsed self-method-call smoke must cover same-class method invocation from parsed Qin source");
+        require(selfMethodCallSource.contains("getDeclaredMethod(\"label\", String.class)"),
+                "Parsed self-method-call smoke must execute the generated JVM method with an argument");
     }
 
     private static void verifyCompletionAuditDocument(Path auditPath) throws Exception {
@@ -1150,7 +1160,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(audit.contains(hardeningNeedle),
                     "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
-        require(audit.contains("15-case class-declaration corpus"),
+        require(audit.contains("16-case class-declaration corpus"),
                 "LSP completion audit must record the current JVM class declaration corpus size");
         require(audit.contains("local binding plus early-return `if`"),
                 "LSP completion audit must record parsed method-body early-return coverage");
@@ -1162,6 +1172,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record nested object method-body parser parity coverage");
         require(audit.contains("diagnostics, completion, definition, references, document symbols, and semantic tokens"),
                 "LSP completion audit must record IDEA fixture references coverage");
+        require(audit.contains("parsed same-class method invocation through `this.method()`"),
+                "LSP completion audit must record parsed self-method-call JVM coverage");
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
