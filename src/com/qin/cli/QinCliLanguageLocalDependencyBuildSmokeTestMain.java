@@ -8,6 +8,9 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
     private QinCliLanguageLocalDependencyBuildSmokeTestMain() {
@@ -74,6 +77,53 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         require(rebuiltMarker.contains("built:") && rebuiltMarker.contains("value = 2") && !rebuiltMarker.contains("value = 1"),
                 "local file dependency rebuild marker from changed source");
 
+        Path concurrentRoot = root.resolve("concurrent");
+        Path concurrentUpstream = concurrentRoot.resolve("upstream");
+        Path downstreamA = concurrentRoot.resolve("downstream-a");
+        Path downstreamB = concurrentRoot.resolve("downstream-b");
+        Files.createDirectories(concurrentUpstream.resolve("src"));
+        Files.createDirectories(downstreamA);
+        Files.createDirectories(downstreamB);
+        createConcurrentBuildTool(concurrentUpstream);
+        Files.writeString(concurrentUpstream.resolve("src").resolve("source.ts"), "export const concurrent = true\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(concurrentUpstream.resolve("qin.config.js"), """
+                export default {
+                  name: "concurrent-upstream",
+                  version: "1.0.0",
+                  scripts: {
+                    build: "concurrent-qin-build"
+                  },
+                  language: {
+                    id: "concurrent-upstream",
+                    extension: ".cup",
+                    parser: "src/source.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        writeDownstreamConfig(downstreamA, "../upstream");
+        writeDownstreamConfig(downstreamB, "../upstream");
+
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        List<Thread> threads = List.of(
+                dependencyBuildThread(method, downstreamA, start, failure),
+                dependencyBuildThread(method, downstreamB, start, failure));
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        start.countDown();
+        for (Thread thread : threads) {
+            thread.join();
+        }
+        if (failure.get() != null) {
+            throw new IllegalStateException("Concurrent local Qin dependency build smoke failed", failure.get());
+        }
+        require(!Files.exists(concurrentUpstream.resolve("dist").resolve("violation.txt")),
+                "language local dependency build lock prevents concurrent dist clean/build entry");
+        require(Files.isRegularFile(concurrentUpstream.resolve("dist").resolve("marker.txt")),
+                "concurrent local dependency build marker");
+
         Path cycleA = root.resolve("cycle-a");
         Path cycleB = root.resolve("cycle-b");
         Files.createDirectories(cycleA);
@@ -116,6 +166,72 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         if (!tool.toFile().setExecutable(true)) {
             throw new IllegalStateException("Unable to make local-qin-build executable: " + tool);
         }
+    }
+
+    private static void createConcurrentBuildTool(Path root) throws Exception {
+        Path bin = root.resolve("node_modules").resolve(".bin");
+        Files.createDirectories(bin);
+        if (isWindows()) {
+            Files.writeString(bin.resolve("concurrent-qin-build.cmd"), """
+                    @echo off
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force dist | Out-Null; if (Test-Path dist/running.txt) { Set-Content -Encoding UTF8 dist/violation.txt 'overlap'; exit 23 }; Set-Content -Encoding UTF8 dist/running.txt 'running'; Start-Sleep -Milliseconds 700; Remove-Item -Force dist/running.txt; Set-Content -Encoding UTF8 dist/marker.txt 'built'"
+                    """, StandardCharsets.UTF_8);
+            return;
+        }
+        Path tool = bin.resolve("concurrent-qin-build");
+        Files.writeString(tool, """
+                #!/bin/sh
+                set -eu
+                mkdir -p dist
+                if [ -f dist/running.txt ]; then
+                  printf overlap > dist/violation.txt
+                  exit 23
+                fi
+                printf running > dist/running.txt
+                sleep 1
+                rm -f dist/running.txt
+                printf built > dist/marker.txt
+                """, StandardCharsets.UTF_8);
+        if (!tool.toFile().setExecutable(true)) {
+            throw new IllegalStateException("Unable to make concurrent-qin-build executable: " + tool);
+        }
+    }
+
+    private static void writeDownstreamConfig(Path root, String dependencyPath) throws Exception {
+        Files.writeString(root.resolve("qin.config.js"), """
+                export default {
+                  name: "%s",
+                  version: "1.0.0",
+                  dependencies: {
+                    upstream: "file:%s"
+                  },
+                  scripts: {
+                    test: %s
+                  },
+                  language: {
+                    id: "%s",
+                    extension: ".down",
+                    parser: "index.ts"
+                  }
+                }
+                """.formatted(root.getFileName(), dependencyPath, jsString(testScript("../upstream/dist/marker.txt")),
+                root.getFileName()), StandardCharsets.UTF_8);
+    }
+
+    private static Thread dependencyBuildThread(
+            Method method,
+            Path downstream,
+            CountDownLatch start,
+            AtomicReference<Throwable> failure) {
+        return new Thread(() -> {
+            try {
+                QinConfig config = new ConfigLoader(downstream.toString()).load();
+                start.await();
+                method.invoke(null, config, downstream, false);
+            } catch (Throwable error) {
+                failure.compareAndSet(null, error);
+            }
+        }, "qin-local-dependency-build-" + downstream.getFileName());
     }
 
     private static String testScript(String marker) {

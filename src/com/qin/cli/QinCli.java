@@ -15,6 +15,9 @@ import com.qin.npm.NpmPackageManager;
 import com.qin.utils.QinUtils;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -28,6 +31,7 @@ public class QinCli {
     private static final String VERSION = "0.1.0";
     private static final EnvironmentChecker envChecker = new EnvironmentChecker();
     private static final List<String> QIN_SCRIPT_EXTENSIONS = List.of(".qin", ".js", ".mjs", ".ts");
+    private static final String LANGUAGE_BUILD_LOCK_FILE = "language-build.lock";
 
     public static void main(String[] args) {
         ParentProcessWatchdog.install();
@@ -645,14 +649,69 @@ public class QinCli {
 
         String buildScript = dependencyConfig.scripts().get("build");
         if (buildScript != null && !buildScript.isBlank()) {
-            runLanguageShellCommandAt(
-                    root,
-                    buildScript,
-                    "local file dependency '" + dependencyName + "' build",
+            runWithLanguageBuildLock(root, () -> runLanguageShellCommandAt(
+                            root,
+                            buildScript,
+                            "local file dependency '" + dependencyName + "' build",
+                            dryRun),
                     dryRun);
         }
         visiting.remove(root);
         built.add(root);
+    }
+
+    private static void runWithLanguageBuildLock(Path projectRoot, ThrowingRunnable buildAction, boolean dryRun)
+            throws Exception {
+        if (dryRun) {
+            buildAction.run();
+            return;
+        }
+        Path lockFile = ensureLanguageBuildLockFile(projectRoot);
+        try (RandomAccessFile lockHandle = new RandomAccessFile(lockFile.toFile(), "rw");
+                FileChannel lockChannel = lockHandle.getChannel();
+                FileLock ignored = acquireLanguageBuildLock(lockChannel, projectRoot)) {
+            buildAction.run();
+        }
+    }
+
+    private static Path ensureLanguageBuildLockFile(Path projectRoot) throws IOException {
+        Path qinDir = QinConstants.getProjectQinDir(projectRoot);
+        Files.createDirectories(qinDir);
+        return qinDir.resolve(LANGUAGE_BUILD_LOCK_FILE);
+    }
+
+    private static FileLock acquireLanguageBuildLock(FileChannel lockChannel, Path projectRoot) throws IOException {
+        boolean waitingLogged = false;
+        while (true) {
+            try {
+                FileLock lock = lockChannel.tryLock();
+                if (lock != null) {
+                    if (waitingLogged) {
+                        System.out.println("  -> Language dependency build lock acquired: " + projectRoot);
+                    }
+                    return lock;
+                }
+            } catch (OverlappingFileLockException ignored) {
+                // Same JVM overlap; wait and retry just like JavaRunner's compile lock.
+            }
+
+            if (!waitingLogged) {
+                System.out.println("  -> Another language dependency build is in progress, waiting: " + projectRoot);
+                waitingLogged = true;
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted while waiting for language dependency build lock", e);
+            }
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 
     private static Map<String, String> languageLocalDependencies(QinConfig config) {
