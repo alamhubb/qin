@@ -13,6 +13,8 @@ import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfStatement;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
+import com.qin.lang.ir.QinIrAssignmentExpression;
+import com.qin.lang.ir.QinIrLocalDeclarationStatement;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrNullLiteral;
@@ -39,6 +41,7 @@ import com.slime.ast.Statement;
 import com.slime.ast.nodes.declarations.ClassDeclaration;
 import com.slime.ast.nodes.declarations.FunctionDeclaration;
 import com.slime.ast.nodes.declarations.VariableDeclaration;
+import com.slime.ast.nodes.expressions.AssignmentExpression;
 import com.slime.ast.nodes.expressions.BinaryExpression;
 import com.slime.ast.nodes.expressions.CallExpression;
 import com.slime.ast.nodes.expressions.ConditionalExpression;
@@ -990,9 +993,15 @@ final class QinDeclarationIrLowerer {
         List<QinIrStatement> lowered = new ArrayList<>();
         for (Statement statement : statements) {
             if (statement instanceof VariableDeclaration variableDeclaration) {
-                if (!lowerDeclarationLocalVariableDeclarations(variableDeclaration, javaImportLookup, classContext, scopedLocals)) {
+                List<QinIrLocalDeclarationStatement> localDeclarations = lowerDeclarationLocalDeclarationStatements(
+                        variableDeclaration,
+                        javaImportLookup,
+                        classContext,
+                        scopedLocals);
+                if (localDeclarations.isEmpty()) {
                     throw qjsError("QJS2023", "Unsupported declaration statement-body local variable");
                 }
+                lowered.addAll(localDeclarations);
                 continue;
             }
             if (statement instanceof ReturnStatement returnStatement) {
@@ -1192,6 +1201,37 @@ final class QinDeclarationIrLowerer {
             lowerBindingPatternLocals(declarator.id(), initializer, locals);
         }
         return true;
+    }
+
+    private List<QinIrLocalDeclarationStatement> lowerDeclarationLocalDeclarationStatements(
+            VariableDeclaration variableDeclaration,
+            Map<String, String> javaImportLookup,
+            DeclarationClassContext classContext,
+            Map<String, QinIrExpression> locals) {
+        if (variableDeclaration.declarations() == null || variableDeclaration.declarations().isEmpty()) {
+            return List.of();
+        }
+        List<QinIrLocalDeclarationStatement> lowered = new ArrayList<>();
+        for (var declarator : variableDeclaration.declarations()) {
+            if (declarator == null
+                    || declarator.id() == null
+                    || declarator.init() == null
+                    || !(declarator.id() instanceof Identifier identifier)
+                    || identifier.name() == null
+                    || identifier.name().isBlank()) {
+                return List.of();
+            }
+            QinIrExpression initializer = lowerDeclarationExpression(
+                    declarator.init(),
+                    javaImportLookup,
+                    classContext,
+                    locals);
+            QinIrLocalDeclarationStatement statement =
+                    new QinIrLocalDeclarationStatement(identifier.name(), initializer);
+            lowered.add(statement);
+            locals.put(identifier.name(), new QinIrIdentifierReference(identifier.name()));
+        }
+        return List.copyOf(lowered);
     }
 
     private void lowerBindingPatternLocals(
@@ -1395,6 +1435,7 @@ final class QinDeclarationIrLowerer {
             Map<String, QinIrExpression> locals) {
         QinIrExpression lowered = lowerDeclarationExpression(expression, javaImportLookup, classContext, locals);
         if (lowered instanceof QinIrBuiltinCallExpression
+                || lowered instanceof QinIrAssignmentExpression
                 || lowered instanceof QinIrInstanceMethodCallExpression) {
             return lowered;
         }
@@ -1675,6 +1716,9 @@ final class QinDeclarationIrLowerer {
         if (expressionAst instanceof ConditionalExpression conditionalExpression) {
             return lowerDeclarationConditionalExpression(conditionalExpression, javaImportLookup, classContext, locals);
         }
+        if (expressionAst instanceof AssignmentExpression assignmentExpression) {
+            return lowerDeclarationAssignmentExpression(assignmentExpression, javaImportLookup, classContext, locals);
+        }
         if (expressionAst instanceof NewExpression) {
             return adapter.lowerRuntimeExpression(expressionAst, javaImportLookup, Map.of());
         }
@@ -1716,10 +1760,40 @@ final class QinDeclarationIrLowerer {
         if ("ConditionalExpression".equals(nodeType)) {
             return lowerDeclarationConditionalExpression(expressionAst, javaImportLookup, classContext, locals);
         }
+        if ("AssignmentExpression".equals(nodeType)) {
+            return lowerDeclarationAssignmentExpression(expressionAst, javaImportLookup, classContext, locals);
+        }
         if ("NewExpression".equals(nodeType)) {
             return adapter.lowerRuntimeExpression(expressionAst, javaImportLookup, Map.of());
         }
         throw qjsError("QJS2014", "Unsupported declaration return expression: " + nodeType);
+    }
+
+    private QinIrAssignmentExpression lowerDeclarationAssignmentExpression(
+            AssignmentExpression assignmentExpression,
+            Map<String, String> javaImportLookup,
+            DeclarationClassContext classContext,
+            Map<String, QinIrExpression> locals) {
+        return new QinIrAssignmentExpression(
+                lowerDeclarationExpression(assignmentExpression.left(), javaImportLookup, classContext, locals),
+                assignmentExpression.operator(),
+                lowerDeclarationExpression(assignmentExpression.right(), javaImportLookup, classContext, locals));
+    }
+
+    private QinIrAssignmentExpression lowerDeclarationAssignmentExpression(
+            Object assignmentExpression,
+            Map<String, String> javaImportLookup,
+            DeclarationClassContext classContext,
+            Map<String, QinIrExpression> locals) {
+        Object leftAst = QinSlimeFrontendAdapter.invokeByName(assignmentExpression, "left");
+        Object rightAst = QinSlimeFrontendAdapter.invokeByName(assignmentExpression, "right");
+        String operator = QinSlimeFrontendAdapter.asStringStatic(
+                QinSlimeFrontendAdapter.invokeByName(assignmentExpression, "operator"),
+                "AssignmentExpression.operator");
+        return new QinIrAssignmentExpression(
+                lowerDeclarationExpression(leftAst, javaImportLookup, classContext, locals),
+                operator,
+                lowerDeclarationExpression(rightAst, javaImportLookup, classContext, locals));
     }
 
     private QinIrObjectLiteral lowerDeclarationObjectLiteral(

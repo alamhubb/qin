@@ -1367,6 +1367,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         Path selfMethodCallPath = corpusPath.resolveSibling("QinJvmParsedSelfMethodCallSmokeTestMain.java");
         Path tryCatchPath = corpusPath.resolveSibling("QinJvmParsedTryCatchMethodBodySmokeTestMain.java");
         Path whilePath = corpusPath.resolveSibling("QinJvmParsedWhileMethodBodySmokeTestMain.java");
+        Path whileMutableLocalPath = corpusPath.resolveSibling("QinJvmParsedWhileMutableLocalSmokeTestMain.java");
         Path slimeParserExtendsPath = corpusPath.resolveSibling("QinJvmJavaSlimeParserExtendsSmokeTestMain.java");
         require(Files.isRegularFile(corpusPath),
                 "Qin JVM class declaration corpus smoke must exist: " + corpusPath);
@@ -1380,6 +1381,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM parsed try/catch method-body smoke must exist: " + tryCatchPath);
         require(Files.isRegularFile(whilePath),
                 "Qin JVM parsed while method-body smoke must exist: " + whilePath);
+        require(Files.isRegularFile(whileMutableLocalPath),
+                "Qin JVM parsed while mutable-local smoke must exist: " + whileMutableLocalPath);
         require(Files.isRegularFile(slimeParserExtendsPath),
                 "Qin JVM Java SlimeParser inheritance smoke must exist: " + slimeParserExtendsPath);
 
@@ -1389,6 +1392,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String selfMethodCallSource = Files.readString(selfMethodCallPath);
         String tryCatchSource = Files.readString(tryCatchPath);
         String whileSource = Files.readString(whilePath);
+        String whileMutableLocalSource = Files.readString(whileMutableLocalPath);
         String slimeParserExtendsSource = Files.readString(slimeParserExtendsPath);
         require(corpusSource.contains("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed early-return method-body smoke");
@@ -1400,8 +1404,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM class declaration corpus must include parsed try/catch method-body smoke");
         require(corpusSource.contains("QinJvmParsedWhileMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed while method-body smoke");
-        require(corpusSource.contains("18 cases"),
-                "Qin JVM class declaration corpus count must cover the current 18-case set");
+        require(corpusSource.contains("QinJvmParsedWhileMutableLocalSmokeTestMain.main(args)"),
+                "Qin JVM class declaration corpus must include parsed while mutable-local smoke");
+        require(corpusSource.contains("19 cases"),
+                "Qin JVM class declaration corpus count must cover the current 19-case set");
         require(earlyReturnSource.contains("const prefix = \"hello \""),
                 "Parsed early-return smoke must cover Qin local binding in a method body");
         require(earlyReturnSource.contains("if (flag)"),
@@ -1431,6 +1437,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && whileSource.contains("return \"loop\"")
                         && whileSource.contains("return \"done\""),
                 "Parsed while smoke must cover Qin while statement lowering and both execution paths");
+        require(whileMutableLocalSource.contains("let total = 0")
+                        && whileMutableLocalSource.contains("while (total < limit)")
+                        && whileMutableLocalSource.contains("total = total + 1")
+                        && whileMutableLocalSource.contains("QinIrLocalDeclarationStatement")
+                        && whileMutableLocalSource.contains("QinIrAssignmentExpression")
+                        && whileMutableLocalSource.contains("Double.valueOf(3.0d)")
+                        && whileMutableLocalSource.contains("Double.valueOf(0.0d)"),
+                "Parsed while mutable-local smoke must cover local declaration, assignment, loop update, and execution");
         require(slimeParserExtendsSource.contains("classfile inheritance proof, not a production parser entry")
                         && slimeParserExtendsSource.contains("QinParserFacade uses SubhutiParser.create"),
                 "Direct SlimeParser construction in the JVM inheritance smoke must stay documented as non-production");
@@ -1467,7 +1481,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(audit.contains(hardeningNeedle),
                     "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
-        require(audit.contains("18-case class-declaration corpus"),
+        require(audit.contains("19-case class-declaration corpus"),
                 "LSP completion audit must record the current JVM class declaration corpus size");
         require(audit.contains("local binding plus early-return `if`"),
                 "LSP completion audit must record parsed method-body early-return coverage");
@@ -1477,6 +1491,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record parsed method-body exception-flow coverage");
         require(audit.contains("parsed Qin `while` statement execution through JVM loop control flow"),
                 "LSP completion audit must record parsed while method-body coverage");
+        require(audit.contains("parsed Qin mutable loop locals plus assignment execution through JVM while bytecode"),
+                "LSP completion audit must record parsed mutable while local/assignment JVM coverage");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
                 "LSP completion audit must record object method-body parser parity coverage");
         require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),
