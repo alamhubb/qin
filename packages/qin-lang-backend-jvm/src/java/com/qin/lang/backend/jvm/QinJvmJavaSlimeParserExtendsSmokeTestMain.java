@@ -49,6 +49,8 @@ public final class QinJvmJavaSlimeParserExtendsSmokeTestMain {
         }
 
         Class<?> defined = new ByteArrayClassLoader().define(declaration.binaryName(), classBytes);
+        // This raw constructor call is a classfile inheritance proof, not a production parser entry.
+        // QinParserFacade uses SubhutiParser.create so annotated parser rules stay AOP/packrat-enabled.
         Object instance = defined.getDeclaredConstructor(String.class).newInstance("const answer = 42;");
         if (!(instance instanceof SlimeParser)) {
             throw new IllegalStateException("Generated class is not a Java SlimeParser: " + instance);
