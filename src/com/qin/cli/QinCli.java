@@ -677,8 +677,6 @@ public class QinCli {
     }
 
     private static void addNodeBinPaths(Map<String, String> environment, Path cwd) {
-        String pathKey = environment.containsKey("Path") ? "Path" : "PATH";
-        String currentPath = environment.getOrDefault(pathKey, "");
         List<String> binPaths = new ArrayList<>();
         Path cursor = cwd;
         while (cursor != null) {
@@ -692,10 +690,22 @@ public class QinCli {
             return;
         }
         LinkedHashSet<String> uniquePaths = new LinkedHashSet<>(binPaths);
-        if (!currentPath.isBlank()) {
-            uniquePaths.addAll(Arrays.asList(currentPath.split(Pattern.quote(File.pathSeparator))));
+        addExistingPathEntries(uniquePaths, environment.get("Path"));
+        addExistingPathEntries(uniquePaths, environment.get("PATH"));
+        String path = String.join(File.pathSeparator, uniquePaths);
+        if (QinConstants.isWindows()) {
+            environment.put("Path", path);
+            environment.put("PATH", path);
+        } else {
+            environment.put("PATH", path);
         }
-        environment.put(pathKey, String.join(File.pathSeparator, uniquePaths));
+    }
+
+    private static void addExistingPathEntries(LinkedHashSet<String> paths, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        paths.addAll(Arrays.asList(value.split(Pattern.quote(File.pathSeparator))));
     }
 
     private static Path resolveProjectPath(String value) {

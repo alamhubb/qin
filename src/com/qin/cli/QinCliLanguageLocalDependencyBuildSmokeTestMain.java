@@ -25,6 +25,7 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         Path upstream = root.resolve("upstream");
         Path downstream = root.resolve("downstream");
         Files.createDirectories(upstream.resolve("src"));
+        createLocalBinBuildTool(upstream);
         Files.createDirectories(downstream);
 
         Files.writeString(upstream.resolve("src").resolve("source.ts"), "export const value = 1\n", StandardCharsets.UTF_8);
@@ -33,7 +34,7 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                   name: "upstream",
                   version: "1.0.0",
                   scripts: {
-                    build: %s
+                    build: "local-qin-build"
                   },
                   language: {
                     id: "upstream",
@@ -41,7 +42,7 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                     parser: "src/source.ts"
                   }
                 }
-                """.formatted(jsString(buildScript("src/source.ts", "dist/marker.txt"))), StandardCharsets.UTF_8);
+                """, StandardCharsets.UTF_8);
         Files.writeString(downstream.resolve("qin.config.js"), """
                 export default {
                   name: "downstream",
@@ -85,13 +86,27 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         System.out.println("QinCliLanguageLocalDependencyBuildSmokeTestMain OK");
     }
 
-    private static String buildScript(String input, String output) {
+    private static void createLocalBinBuildTool(Path root) throws Exception {
+        Path bin = root.resolve("node_modules").resolve(".bin");
+        Files.createDirectories(bin);
         if (isWindows()) {
-            return "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force dist | Out-Null; "
-                    + "$source = Get-Content -Raw -Encoding UTF8 '" + input + "'; "
-                    + "Set-Content -Encoding UTF8 '" + output + "' ('built:' + $source)\"";
+            Files.writeString(bin.resolve("local-qin-build.cmd"), """
+                    @echo off
+                    if not exist dist mkdir dist
+                    > dist\\marker.txt echo built:local-bin
+                    """, StandardCharsets.UTF_8);
+            return;
         }
-        return "mkdir -p dist && printf 'built:' > " + output + " && cat " + input + " >> " + output;
+        Path tool = bin.resolve("local-qin-build");
+        Files.writeString(tool, """
+                #!/bin/sh
+                set -eu
+                mkdir -p dist
+                printf 'built:local-bin\\n' > dist/marker.txt
+                """, StandardCharsets.UTF_8);
+        if (!tool.toFile().setExecutable(true)) {
+            throw new IllegalStateException("Unable to make local-qin-build executable: " + tool);
+        }
     }
 
     private static String testScript(String marker) {
