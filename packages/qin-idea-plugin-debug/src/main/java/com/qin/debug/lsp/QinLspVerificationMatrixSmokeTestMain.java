@@ -929,6 +929,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && paritySource.contains("throw new Error(\"boom\")")
                         && paritySource.contains("} catch (error) {"),
                 "Qin generated parser parity corpus must include try/catch/throw syntax");
+        require(paritySource.contains("while loop break continue control flow"),
+                "Qin generated parser parity corpus must include while-loop control flow");
+        require(paritySource.contains("while (index < values.length)")
+                        && paritySource.contains("continue")
+                        && paritySource.contains("break"),
+                "Qin generated parser parity corpus must include while/break/continue syntax");
         for (String caseName : List.of(
                 "qin object nested method body control flow",
                 "qin object method body exception flow",
@@ -948,6 +954,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "class fields and constructor",
                 "decorated class and method",
                 "control flow in function body",
+                "while loop break continue control flow",
                 "destructuring declarations",
                 "async await function",
                 "invalid unclosed import",

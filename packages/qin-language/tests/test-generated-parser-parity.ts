@@ -295,6 +295,27 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'while loop break continue control flow',
+    source: [
+      'export function findPositive(values: number[]): number {',
+      '  let index = 0',
+      '  let result = 0',
+      '  while (index < values.length) {',
+      '    const value = values[index]',
+      '    index = index + 1',
+      '    if (value < 0) {',
+      '      continue',
+      '    }',
+      '    result = value',
+      '    break',
+      '  }',
+      '  return result',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'destructuring declarations',
     source: [
       'const config = { name: "qin", values: [1, 2, 3] }',
