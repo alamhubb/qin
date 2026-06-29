@@ -603,7 +603,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 List.of(
                         "new CssTsParser(inheritedSyntaxSource)",
                         "parser instanceof SlimeJavascriptParser",
-                        "object Labeler",
+                        "object NestedLabeler",
+                        "token.tokenValue === 'premium'",
+                        "token.tokenValue === 'standard'",
                         "css { colorRed, displayFlex }",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')",
@@ -616,7 +618,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 List.of(
                         "new CssTsParser(inheritedSyntaxSource)",
                         "parser instanceof SlimeJavascriptParser",
-                        "object Labeler",
+                        "object NestedLabeler",
+                        "token.tokenValue === 'premium'",
+                        "token.tokenValue === 'standard'",
                         "css { colorRed, displayFlex }",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
@@ -629,7 +633,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "new OvsParser(inheritedSyntaxSource)",
                         "parser instanceof CssTsParser",
                         "parser instanceof SlimeJavascriptParser",
-                        "object Labeler",
+                        "object NestedLabeler",
+                        "token.tokenValue === 'premium'",
+                        "token.tokenValue === 'standard'",
                         "div(class = css { displayFlex })",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')",
@@ -644,7 +650,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "new OvsParser(inheritedSyntaxSource)",
                         "parser instanceof CssTsParser",
                         "parser instanceof SlimeJavascriptParser",
-                        "object Labeler",
+                        "object NestedLabeler",
+                        "token.tokenValue === 'premium'",
+                        "token.tokenValue === 'standard'",
                         "div(class = css { displayFlex })",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
@@ -1123,6 +1131,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record parsed method-body nested-branch coverage");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
                 "LSP completion audit must record object method-body parser parity coverage");
+        require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),
+                "LSP completion audit must record nested object method-body parser parity coverage");
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
