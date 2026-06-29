@@ -303,7 +303,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
     }
 
     private static void assertNoUnclassifiedOvsCsstsPackageProjects(Path workspaceRoot) throws Exception {
-        Set<String> expectedLegacyOrDemo = approvedLegacyOrDemoPackageProjects().keySet();
+        Set<String> expectedLegacyOrExternal = approvedLegacyOrExternalPackageProjects().keySet();
         Set<String> managed = new LinkedHashSet<>();
         for (InventoryProject project : inventory()) {
             Path projectPath = project.path();
@@ -327,17 +327,17 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             }
         }
 
-        require(actualPackageOnly.equals(expectedLegacyOrDemo),
+        require(actualPackageOnly.equals(expectedLegacyOrExternal),
                 "OVS/CSSTS package-only project inventory mismatch. "
                         + "Every non-IDEA Qin-related project must be qin.config.js managed; "
-                        + "legacy/demo exceptions must be explicit. expected="
-                        + expectedLegacyOrDemo + " actual=" + actualPackageOnly);
-        for (Map.Entry<String, PackageOnlyProjectKind> entry : approvedLegacyOrDemoPackageProjects().entrySet()) {
+                        + "legacy/external exceptions must be explicit; demo apps must be Qin-managed. expected="
+                        + expectedLegacyOrExternal + " actual=" + actualPackageOnly);
+        for (Map.Entry<String, PackageOnlyProjectKind> entry : approvedLegacyOrExternalPackageProjects().entrySet()) {
             verifyPackageOnlyProjectClassification(workspaceRoot, entry.getKey(), entry.getValue());
         }
     }
 
-    private static Map<String, PackageOnlyProjectKind> approvedLegacyOrDemoPackageProjects() {
+    private static Map<String, PackageOnlyProjectKind> approvedLegacyOrExternalPackageProjects() {
         return Map.of(
                 "cssts/language-plugin-pug", PackageOnlyProjectKind.EXTERNAL_LANGUAGE_PLUGIN_COPY,
                 "cssts/language-plugin-testts", PackageOnlyProjectKind.LEGACY_LANGUAGE_EXPERIMENT,
@@ -353,15 +353,6 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 "Approved package-only project must keep package.json: " + relativePath);
         String source = Files.readString(packageJson);
         switch (kind) {
-            case DEMO_APP -> {
-                require(source.contains("\"vite\"")
-                                || source.contains("@dcloudio/vite-plugin-uni")
-                                || source.contains("vite-plugin-ovs")
-                                || source.contains("vite-plugin-cssts"),
-                        relativePath + " demo exception must stay identifiable as a Vite/Uni demo app");
-                require(!source.contains("\"activationEvents\"") && !source.contains("\"contributes\""),
-                        relativePath + " demo exception must not become an editor extension");
-            }
             case LEGACY_LANGUAGE_EXPERIMENT -> {
                 require(source.contains("\"slime-parser\""),
                         relativePath + " legacy language experiment must stay explicit about legacy parser usage");
@@ -785,7 +776,6 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
     }
 
     private enum PackageOnlyProjectKind {
-        DEMO_APP,
         LEGACY_LANGUAGE_EXPERIMENT,
         LEGACY_EDITOR_EXTENSION,
         EXTERNAL_LANGUAGE_PLUGIN_COPY

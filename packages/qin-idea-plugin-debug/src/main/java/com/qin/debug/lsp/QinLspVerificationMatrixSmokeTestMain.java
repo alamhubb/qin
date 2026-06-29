@@ -1847,8 +1847,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record parsed for...of JVM coverage");
         require(audit.contains("parsed Qin `switch`/`case`/`default` execution through JVM control flow"),
                 "LSP completion audit must record parsed switch JVM coverage");
-        require(audit.contains("classifies OVS/CSSTS top-level package-only directories as explicit legacy/demo exceptions"),
+        require(audit.contains("classifies OVS/CSSTS top-level package-only directories as explicit legacy/external exceptions"),
                 "LSP completion audit must record OVS/CSSTS package-only inventory classification");
+        require(audit.contains("demo apps must be Qin-managed"),
+                "LSP completion audit must record demo apps are Qin-managed");
         require(audit.contains("unmanaged package projects cannot appear silently"),
                 "LSP completion audit must record unmanaged package project gate");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
