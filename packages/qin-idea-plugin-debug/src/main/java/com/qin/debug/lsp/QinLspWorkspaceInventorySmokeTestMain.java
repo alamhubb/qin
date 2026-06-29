@@ -25,7 +25,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             verifyProject(workspaceRoot, project);
         }
         assertNoUntrackedOvsCsstsQinConfigs(workspaceRoot);
-        assertNoLegacyLocalIdeaClients(workspaceRoot);
+        assertNoLegacyEditorClientArtifacts(workspaceRoot);
 
         System.out.println("Qin LSP workspace inventory smoke passed");
     }
@@ -75,12 +75,61 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 project.id() + " language.serverBundle is required");
         verifyLanguageServerMetadata(project, config);
         verifyLanguageServerPackageJsonIsNotScriptEntrypoint(project, projectRoot, config);
+        verifyLanguagePackageIsPureLspServer(project, projectRoot, config);
+        if ("ovs-language".equals(project.id()) || "cssts-language".equals(project.id())) {
+            require(!Files.exists(projectRoot.resolve("package-lock.json")),
+                    project.id() + " language package must not keep a child package-lock.json; "
+                            + "Qin config and package.json are the managed metadata surfaces");
+        }
         require("tsdown".equals(config.scripts().get("build")),
                 project.id() + " language build must be managed by Qin script: " + config.scripts());
         require(config.scripts().containsKey("test"),
                 project.id() + " language test script is required");
         if ("ovs-language".equals(project.id()) || "cssts-language".equals(project.id())) {
             verifyGeneratedParserChainDependencyGate(project, projectRoot, config);
+        }
+    }
+
+    private static void verifyLanguagePackageIsPureLspServer(
+            InventoryProject project,
+            Path projectRoot,
+            QinConfig config) {
+        Path packageJson = projectRoot.resolve("package.json").normalize();
+        require(Files.isRegularFile(packageJson),
+                project.id() + " language package.json must exist");
+        String packageSource;
+        try {
+            packageSource = Files.readString(packageJson);
+        } catch (Exception e) {
+            throw new IllegalStateException(project.id() + " language package.json must be readable", e);
+        }
+        if (!"qin-language".equals(project.id())) {
+            require(packageSource.contains("\"main\": \"./" + config.language().serverBundle() + "\""),
+                    project.id() + " package.json main must point at language.serverBundle");
+        }
+        for (String forbidden : List.of(
+                "\"activationEvents\"",
+                "\"contributes\"",
+                "\"vscode\"",
+                "\"@volar/vscode\"",
+                "\"@vscode/vsce\"",
+                "\"vscode-languageclient\"")) {
+            require(!packageSource.contains(forbidden),
+                    project.id() + " language package must stay a pure Volar LSP server, not an editor extension: "
+                            + forbidden);
+        }
+
+        Path tsdownConfig = projectRoot.resolve("tsdown.config.mts").normalize();
+        if (Files.isRegularFile(tsdownConfig)) {
+            try {
+                String tsdownSource = Files.readString(tsdownConfig);
+                require(!tsdownSource.contains("'extension'")
+                                && !tsdownSource.contains("\"extension\"")
+                                && !tsdownSource.contains("vscode-client"),
+                        project.id() + " tsdown config must only bundle the language server");
+            } catch (Exception e) {
+                throw new IllegalStateException(project.id() + " tsdown config must be readable", e);
+            }
         }
     }
 
@@ -545,7 +594,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "com.qin:qin-runtime-core"));
     }
 
-    private static void assertNoLegacyLocalIdeaClients(Path workspaceRoot) throws Exception {
+    private static void assertNoLegacyEditorClientArtifacts(Path workspaceRoot) throws Exception {
         for (Path languageProject : List.of(
                 Path.of("ovsjs", "ovs-language"),
                 Path.of("cssts", "cssts-language"))) {
@@ -558,6 +607,13 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                     require(!name.endsWith("-intellij-client"),
                             "IDEA support must live in qin/packages/qin-idea-plugin-debug pure LSP client, "
                                     + "not legacy local IDEA client project: " + child);
+                    require(!name.endsWith("-vscode-client"),
+                            "Editor support must be a pure Volar LSP server consumed by the shared IDEA client, "
+                                    + "not a local VSCode extension project: " + child);
+                    require(!name.endsWith(".vsix"),
+                            "Language workspaces must not keep packaged editor extension artifacts: " + child);
+                    require(!"templog.txt".equals(name),
+                            "Language workspaces must not keep checked-in LSP debug logs: " + child);
                 }
             }
         }

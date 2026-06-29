@@ -789,7 +789,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "..\\..\\qin\\qin.bat language test",
                         "..\\..\\qin\\qin.bat language server --dry-run",
                         "generated Qin parser",
-                        "不要在语言包里新增独立 parser、正则扫描或 fallback 路径"));
+                        "do not add a separate parser",
+                        "fallback path"));
         verifyDocumentationNeedles(
                 "CSSTS architecture README",
                 workspaceRoot.resolve("cssts").resolve("ARCHITECTURE.md").normalize(),
@@ -797,7 +798,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "..\\..\\qin\\qin.bat language build",
                         "..\\..\\qin\\qin.bat language test",
                         "..\\..\\qin\\qin.bat language server --dry-run",
-                        "npx vsce package"));
+                        "IDEA LSP client",
+                        "不再作为独立 VSCode 扩展发布"));
         verifyCsstsCompilerGeneratedParserDocumentation(workspaceRoot);
     }
 
