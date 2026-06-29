@@ -553,6 +553,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "CSSTS parser must use generated parser Or semantics");
         require(!cssTsParser.contains("alt:"),
                 "CSSTS parser must not use legacy { alt } fallback alternatives");
+        require(!cssTsParser.contains("fallback"),
+                "CSSTS parser source must not carry fallback parser concepts");
 
         require(cssTsAdapter.contains("normalizeGeneratedCst"),
                 "CSSTS generated runtime adapter must expose normalizeGeneratedCst");
@@ -583,6 +585,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "OVS parser must use generated parser Alternative.of semantics");
         require(!ovsParser.contains("alt:"),
                 "OVS parser must not use legacy { alt } fallback alternatives");
+        require(!ovsParser.contains("fallback"),
+                "OVS parser source must not carry fallback parser concepts");
         require(ovsIndex.contains("normalizeGeneratedCst"),
                 "OVS compiler transform must normalize CST from the generated parser chain");
         require(ovsIndex.contains("import { registerSlimeCstToAstUtil } from \"slime-parser\""),
