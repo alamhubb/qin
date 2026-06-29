@@ -430,7 +430,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             require(source.contains(scriptName + ": "),
                     project.id() + " scaffold template qin.config.js must declare script " + scriptName);
         }
-        for (String forbidden : List.of("npm run", "pnpm ", "yarn ")) {
+        for (String forbidden : List.of("npm run", "npx ", "pnpm ", "yarn ")) {
             require(!source.contains(forbidden),
                     project.id() + " scaffold template qin.config.js must not forward to external package scripts: "
                             + forbidden);
@@ -457,7 +457,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 require(source.contains("qin build"),
                         project.id() + " scaffold README must tell users to build through Qin");
             }
-            for (String forbidden : List.of("npm run", "pnpm ", "yarn ")) {
+            for (String forbidden : List.of("npm run", "npx ", "pnpm ", "yarn ")) {
                 require(!source.contains(forbidden),
                         project.id() + " scaffold guidance must not direct users to external package scripts: "
                                 + relativePath + " contains " + forbidden);
