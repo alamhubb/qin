@@ -354,6 +354,36 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'optional chaining expression',
+    source: [
+      'export function readName(user) {',
+      '  return user?.profile?.name',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'nullish coalescing expression',
+    source: [
+      'export function label(user) {',
+      '  return user.name ?? "anonymous"',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'template literal expression',
+    source: [
+      'export function greet(name: string) {',
+      '  return `hello ${name}`',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'import meta url expression',
     source: [
       'export const moduleUrl = import.meta.url',
