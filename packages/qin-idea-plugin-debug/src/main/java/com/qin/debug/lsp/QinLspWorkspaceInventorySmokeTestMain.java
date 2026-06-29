@@ -26,6 +26,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         }
         assertNoUntrackedOvsCsstsQinConfigs(workspaceRoot);
         assertNoLegacyEditorClientArtifacts(workspaceRoot);
+        assertNoLegacyCompilerSourceArtifacts(workspaceRoot);
 
         System.out.println("Qin LSP workspace inventory smoke passed");
     }
@@ -617,6 +618,19 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 }
             }
         }
+    }
+
+    private static void assertNoLegacyCompilerSourceArtifacts(Path workspaceRoot) {
+        Path ovsOldFile = workspaceRoot.resolve("ovsjs")
+                .resolve("ovs")
+                .resolve("ovs-compiler")
+                .resolve("src")
+                .resolve("factory")
+                .resolve("oldfile.ts")
+                .normalize();
+        require(!Files.exists(ovsOldFile),
+                "OVS compiler must not keep historical oldfile.ts beside the active generated-parser chain: "
+                        + ovsOldFile);
     }
 
     private static void require(boolean condition, String message) {
