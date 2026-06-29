@@ -683,6 +683,8 @@ public class QinCli {
                 FileChannel lockChannel = lockHandle.getChannel();
                 FileLock ignored = acquireLanguageBuildLock(lockChannel, projectRoot)) {
             buildAction.run();
+        } finally {
+            cleanupLanguageBuildLockFile(lockFile);
         }
     }
 
@@ -690,6 +692,24 @@ public class QinCli {
         Path qinDir = QinConstants.getProjectQinDir(projectRoot);
         Files.createDirectories(qinDir);
         return qinDir.resolve(LANGUAGE_BUILD_LOCK_FILE);
+    }
+
+    private static void cleanupLanguageBuildLockFile(Path lockFile) {
+        try {
+            Files.deleteIfExists(lockFile);
+        } catch (IOException ignored) {
+            return;
+        }
+        Path qinDir = lockFile.getParent();
+        if (qinDir != null) {
+            try {
+                Files.delete(qinDir);
+            } catch (DirectoryNotEmptyException ignored) {
+                // Other Qin cache files belong to the project and must be preserved.
+            } catch (IOException ignored) {
+                // Lock cleanup is best effort after the protected build has completed.
+            }
+        }
     }
 
     private static FileLock acquireLanguageBuildLock(FileChannel lockChannel, Path projectRoot) throws IOException {

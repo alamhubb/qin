@@ -72,12 +72,16 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         String firstMarker = Files.readString(marker, StandardCharsets.UTF_8);
         require(firstMarker.contains("built:") && firstMarker.contains("value = 1"),
                 "local file dependency build marker from initial source");
+        require(!Files.exists(upstream.resolve(".qin").resolve("language-build.lock")),
+                "local file dependency build lock cleanup after initial build");
 
         Files.writeString(upstream.resolve("src").resolve("source.ts"), "export const value = 2\n", StandardCharsets.UTF_8);
         method.invoke(null, downstreamConfig, downstream, false);
         String rebuiltMarker = Files.readString(marker, StandardCharsets.UTF_8);
         require(rebuiltMarker.contains("built:") && rebuiltMarker.contains("value = 2") && !rebuiltMarker.contains("value = 1"),
                 "local file dependency rebuild marker from changed source");
+        require(!Files.exists(upstream.resolve(".qin").resolve("language-build.lock")),
+                "local file dependency build lock cleanup after rebuild");
 
         Path concurrentRoot = root.resolve("concurrent");
         Path concurrentUpstream = concurrentRoot.resolve("upstream");
@@ -125,6 +129,8 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                 "language local dependency build lock prevents concurrent dist clean/build entry");
         require(Files.isRegularFile(concurrentUpstream.resolve("dist").resolve("marker.txt")),
                 "concurrent local dependency build marker");
+        require(!Files.exists(concurrentUpstream.resolve(".qin").resolve("language-build.lock")),
+                "concurrent local dependency build lock cleanup after serialized builds");
 
         Path cycleA = root.resolve("cycle-a");
         Path cycleB = root.resolve("cycle-b");
