@@ -2427,6 +2427,13 @@ public class QinCli {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
+        if (config.language() != null
+                && config.scripts() != null
+                && config.scripts().containsKey("test")) {
+            runLanguageScript("test", args);
+            return;
+        }
+
         // Check environment
         EnvironmentStatus envStatus = envChecker.checkAll();
         if (!envStatus.hasJavac()) {

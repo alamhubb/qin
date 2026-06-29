@@ -225,6 +225,23 @@ public final class QinLspLanguageCliSmokeTestMain {
                             + " --dry-run did not resolve scripts." + expectedScript.command()
                             + " from qin.config.js with needle " + expectedScript.needle() + ": " + script);
         }
+
+        if (testCase.expectServerCommands()) {
+            for (ScriptNeedle expectedScript : testCase.expectedScriptNeedles()) {
+                if (!"test".equals(expectedScript.command())) {
+                    continue;
+                }
+                CommandResult topLevelTest = runQin(
+                        qinCommand,
+                        testCase.projectRoot(),
+                        "test",
+                        "--dry-run");
+                require(topLevelTest.stdout().contains(expectedScript.needle()),
+                        testCase.id() + " top-level qin test --dry-run must dispatch to scripts.test "
+                                + "for language projects with needle " + expectedScript.needle() + ": "
+                                + topLevelTest);
+            }
+        }
     }
 
     private static List<ScriptNeedle> scriptNeedles(String... commandAndNeedlePairs) {
@@ -243,6 +260,17 @@ public final class QinLspLanguageCliSmokeTestMain {
             String command,
             String... extraArgs) throws Exception {
         List<String> args = new java.util.ArrayList<>();
+        args.add("language");
+        args.add(command);
+        args.addAll(List.of(extraArgs));
+        return runQin(qinCommand, workingDirectory, args.toArray(String[]::new));
+    }
+
+    private static CommandResult runQin(
+            Path qinCommand,
+            Path workingDirectory,
+            String... commandArgs) throws Exception {
+        List<String> args = new java.util.ArrayList<>();
         if (isWindows()) {
             args.add("cmd.exe");
             args.add("/c");
@@ -250,9 +278,7 @@ public final class QinLspLanguageCliSmokeTestMain {
         } else {
             args.add(qinCommand.toString());
         }
-        args.add("language");
-        args.add(command);
-        args.addAll(List.of(extraArgs));
+        args.addAll(List.of(commandArgs));
 
         ProcessBuilder processBuilder = new ProcessBuilder(args);
         processBuilder.directory(workingDirectory.toFile());
