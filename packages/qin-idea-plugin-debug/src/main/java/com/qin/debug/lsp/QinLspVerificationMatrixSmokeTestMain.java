@@ -667,6 +667,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
     }
 
     private static void verifyLanguageToolingDocumentation(Path workspaceRoot) throws Exception {
+        verifyLanguageTsdownConfig(
+                "OVS language",
+                workspaceRoot.resolve("ovsjs").resolve("ovs-language").normalize());
+        verifyLanguageTsdownConfig(
+                "CSSTS language",
+                workspaceRoot.resolve("cssts").resolve("cssts-language").normalize());
         verifyDocumentationNeedles(
                 "OVS language README",
                 workspaceRoot.resolve("ovsjs").resolve("ovs-language").resolve("README.md").normalize(),
@@ -695,6 +701,15 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "..\\..\\qin\\qin.bat language test",
                         "..\\..\\qin\\qin.bat language server --dry-run",
                         "npx vsce package"));
+    }
+
+    private static void verifyLanguageTsdownConfig(String label, Path languageRoot) {
+        Path esmConfig = languageRoot.resolve("tsdown.config.mts").normalize();
+        Path typelessConfig = languageRoot.resolve("tsdown.config.ts").normalize();
+        require(Files.isRegularFile(esmConfig),
+                label + " must use explicit ESM tsdown.config.mts: " + esmConfig);
+        require(!Files.exists(typelessConfig),
+                label + " must not use typeless tsdown.config.ts for Volar tooling: " + typelessConfig);
     }
 
     private static void verifyDocumentationNeedles(
