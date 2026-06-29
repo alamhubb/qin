@@ -2,9 +2,20 @@ package com.qin.lang.sema.esm;
 
 import com.qin.lang.module.resolver.QinModuleGraph;
 import com.qin.lang.module.resolver.QinModuleSource;
+import com.qin.parser.QinParsedSource;
+import com.qin.parser.QinParserFacade;
+import com.slime.ast.AstNode;
+import com.slime.ast.SourceLocation;
+import com.slime.ast.nodes.expressions.Identifier;
+import com.slime.ast.nodes.expressions.ImportExpression;
+import com.slime.ast.nodes.expressions.MetaProperty;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,7 +23,6 @@ import java.util.regex.Pattern;
  * Guards runtime-level ESM features that are not implemented yet.
  */
 public final class QinEsmRuntimeFeatureValidator {
-    private static final Pattern DYNAMIC_IMPORT_PATTERN = Pattern.compile("\\bimport\\s*\\(");
     private static final List<UnsupportedFeatureRule> STRICT_JVM_RULES = List.of(
             new UnsupportedFeatureRule(
                     Pattern.compile("\\beval\\s*\\("),
@@ -63,10 +73,6 @@ public final class QinEsmRuntimeFeatureValidator {
                     "QIN_JS_UNSUPPORTED_TOP_LEVEL_AWAIT",
                     "top-level await is not supported by the Qin JVM target"),
             new UnsupportedFeatureRule(
-                    Pattern.compile("\\bimport\\s*\\.\\s*meta\\b"),
-                    "QIN_JS_UNSUPPORTED_IMPORT_META",
-                    "import.meta is not supported by the Qin JVM target"),
-            new UnsupportedFeatureRule(
                     Pattern.compile("\\bSymbol\\s*\\.\\s*(?!iterator\\b)[A-Za-z_$][\\w$]*|\\bSymbol\\s*\\("),
                     "QIN_JS_UNSUPPORTED_SYMBOL",
                     "advanced Symbol features are not supported by the Qin JVM target"),
@@ -101,29 +107,33 @@ public final class QinEsmRuntimeFeatureValidator {
     }
 
     private void scanOne(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
+        RuntimeSyntaxFeatures runtimeSyntaxFeatures = null;
         if (!allowRuntimeDynamicImport) {
-            addDynamicImportIfMatched(module, diagnostics);
+            runtimeSyntaxFeatures = inspectRuntimeSyntax(module);
+            if (runtimeSyntaxFeatures.dynamicImport() != null) {
+                FeatureLocation location = runtimeSyntaxFeatures.dynamicImport();
+                diagnostics.add(new QinEsmDiagnostic(
+                        "ESM3001",
+                        "dynamic import is not implemented for the JVM runtime target yet",
+                        module.file(),
+                        location.line(),
+                        location.column()));
+            }
         }
         if (strictJvmFeatureSubset && !isQinOwnedRuntimeSupportModule(module)) {
-            addStrictJvmFeatureDiagnostics(module, diagnostics);
-        }
-    }
-
-    private void addDynamicImportIfMatched(QinModuleSource module, List<QinEsmDiagnostic> diagnostics) {
-        Matcher matcher = DYNAMIC_IMPORT_PATTERN.matcher(module.source());
-        boolean[] code = codeMask(module.source());
-        while (matcher.find()) {
-            if (!isCodePosition(code, matcher.start())) {
-                continue;
+            if (runtimeSyntaxFeatures == null) {
+                runtimeSyntaxFeatures = inspectRuntimeSyntax(module);
             }
-            int[] lineCol = lineCol(module.source(), matcher.start());
-            diagnostics.add(new QinEsmDiagnostic(
-                    "ESM3001",
-                    "dynamic import is not implemented for the JVM runtime target yet",
-                    module.file(),
-                    lineCol[0],
-                    lineCol[1]));
-            return;
+            if (runtimeSyntaxFeatures.importMeta() != null) {
+                FeatureLocation location = runtimeSyntaxFeatures.importMeta();
+                diagnostics.add(new QinEsmDiagnostic(
+                        "QIN_JS_UNSUPPORTED_IMPORT_META",
+                        "import.meta is not supported by the Qin JVM target",
+                        module.file(),
+                        location.line(),
+                        location.column()));
+            }
+            addStrictJvmFeatureDiagnostics(module, diagnostics);
         }
     }
 
@@ -246,6 +256,100 @@ public final class QinEsmRuntimeFeatureValidator {
         return index >= 0 && index < code.length && code[index];
     }
 
+    private RuntimeSyntaxFeatures inspectRuntimeSyntax(QinModuleSource module) {
+        QinParsedSource parsed = new QinParserFacade().parseSource(module.source());
+        if (!parsed.hasProgram()) {
+            return RuntimeSyntaxFeatures.NONE;
+        }
+        RuntimeSyntaxVisitor visitor = new RuntimeSyntaxVisitor();
+        visitor.visit(parsed.programAst());
+        return visitor.features();
+    }
+
+    private FeatureLocation featureLocation(SourceLocation location) {
+        if (location == null || location.start() == null) {
+            return new FeatureLocation(1, 1);
+        }
+        int line = Math.max(1, location.start().line());
+        int column = Math.max(1, location.start().column());
+        return new FeatureLocation(line, column);
+    }
+
     private record UnsupportedFeatureRule(Pattern pattern, String code, String message) {
+    }
+
+    private record FeatureLocation(int line, int column) {
+    }
+
+    private record RuntimeSyntaxFeatures(FeatureLocation dynamicImport, FeatureLocation importMeta) {
+        private static final RuntimeSyntaxFeatures NONE = new RuntimeSyntaxFeatures(null, null);
+    }
+
+    private final class RuntimeSyntaxVisitor {
+        private final Map<Object, Boolean> seen = new IdentityHashMap<>();
+        private FeatureLocation dynamicImport;
+        private FeatureLocation importMeta;
+
+        private RuntimeSyntaxFeatures features() {
+            return new RuntimeSyntaxFeatures(dynamicImport, importMeta);
+        }
+
+        private void visit(Object value) {
+            if (value == null || (dynamicImport != null && importMeta != null)) {
+                return;
+            }
+            if (value instanceof ImportExpression importExpression) {
+                if (dynamicImport == null) {
+                    dynamicImport = featureLocation(importExpression.location());
+                }
+            }
+            if (value instanceof MetaProperty metaProperty && isImportMeta(metaProperty)) {
+                if (importMeta == null) {
+                    importMeta = featureLocation(metaProperty.location());
+                }
+            }
+            if (value instanceof Iterable<?> iterable) {
+                for (Object item : iterable) {
+                    visit(item);
+                }
+                return;
+            }
+            Class<?> type = value.getClass();
+            if (type.isArray()) {
+                int length = Array.getLength(value);
+                for (int index = 0; index < length; index++) {
+                    visit(Array.get(value, index));
+                }
+                return;
+            }
+            if (!shouldTraverseRecord(value, type) || seen.put(value, Boolean.TRUE) != null) {
+                return;
+            }
+            for (RecordComponent component : type.getRecordComponents()) {
+                try {
+                    visit(component.getAccessor().invoke(value));
+                } catch (ReflectiveOperationException error) {
+                    throw new IllegalStateException(
+                            "Failed to inspect AST record component "
+                                    + type.getName()
+                                    + "."
+                                    + component.getName(),
+                            error);
+                }
+            }
+        }
+
+        private boolean shouldTraverseRecord(Object value, Class<?> type) {
+            return value instanceof AstNode || (type.isRecord() && type.getName().startsWith("com.slime.ast."));
+        }
+
+        private boolean isImportMeta(MetaProperty metaProperty) {
+            Identifier meta = metaProperty.meta();
+            Identifier property = metaProperty.property();
+            return meta != null
+                    && property != null
+                    && "import".equals(meta.name())
+                    && "meta".equals(property.name());
+        }
     }
 }

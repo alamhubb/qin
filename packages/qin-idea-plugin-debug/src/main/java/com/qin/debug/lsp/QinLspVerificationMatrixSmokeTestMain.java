@@ -139,6 +139,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         require(localDependencyBuildBlock.contains("QinCliLanguageLocalDependencyBuildSmokeTestMain"),
                 "qinLanguageLocalDependencyBuildSmoke must verify local file dependency builds through Qin CLI");
         verifyLocalDependencyBuildSmokeCoverage(workspaceRoot);
+        verifyRuntimeFeatureValidatorParserScanCoverage(workspaceRoot);
         require(buildSource.contains("register<Exec>(\"qinJavaRunnerNoCompilerFallbackSmoke\")"),
                 "Gradle must declare qinJavaRunnerNoCompilerFallbackSmoke");
         String noCompilerFallbackBlock = taskBlock(
@@ -315,6 +316,47 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(smokeSource.contains(requiredNeedle),
                     "Qin local dependency build smoke must verify changed-source rebuild coverage: "
                             + requiredNeedle);
+        }
+    }
+
+    private static void verifyRuntimeFeatureValidatorParserScanCoverage(Path workspaceRoot) throws Exception {
+        Path validatorPath = workspaceRoot.resolve("qin")
+                .resolve("packages")
+                .resolve("qin-lang-sema-esm")
+                .resolve("src")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("lang")
+                .resolve("sema")
+                .resolve("esm")
+                .resolve("QinEsmRuntimeFeatureValidator.java")
+                .normalize();
+        Path smokePath = validatorPath.resolveSibling("QinEsmRuntimeFeatureParserScanSmokeTestMain.java");
+        require(Files.isRegularFile(validatorPath),
+                "Qin ESM runtime feature validator must exist: " + validatorPath);
+        require(Files.isRegularFile(smokePath),
+                "Qin ESM runtime feature parser-scan smoke must exist: " + smokePath);
+        String validatorSource = Files.readString(validatorPath);
+        String smokeSource = Files.readString(smokePath);
+        require(validatorSource.contains("new QinParserFacade().parseSource(module.source())"),
+                "Qin ESM runtime feature validator must inspect syntax through QinParserFacade");
+        require(validatorSource.contains("ImportExpression"),
+                "Qin ESM runtime feature validator must detect dynamic import through AST");
+        require(validatorSource.contains("MetaProperty"),
+                "Qin ESM runtime feature validator must detect import.meta through AST");
+        require(!validatorSource.contains("DYNAMIC_IMPORT_PATTERN"),
+                "Qin ESM runtime feature validator must not keep dynamic import regex scanning");
+        require(!validatorSource.contains("Pattern.compile(\"\\\\bimport\\\\s*\\\\.\\\\s*meta\\\\b\")"),
+                "Qin ESM runtime feature validator must not keep import.meta regex scanning");
+        for (String smokeNeedle : List.of(
+                "QinEsmRuntimeFeatureParserScanSmokeTestMain",
+                "ESM3001",
+                "QIN_JS_UNSUPPORTED_IMPORT_META",
+                "expectNoDiagnostic",
+                "import('./not-code.js') import.meta.url")) {
+            require(smokeSource.contains(smokeNeedle),
+                    "Qin ESM runtime feature parser-scan smoke must cover " + smokeNeedle);
         }
     }
 
