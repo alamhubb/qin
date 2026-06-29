@@ -765,8 +765,11 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 List.of(
                         "generated user app",
                         "Qin-managed through `qin.config.js`",
+                        "Generated Qin Parser",
+                        "Java QinParser generated to TypeScript",
                         "..\\qin\\qin.bat language build --root ovs/ovs-compiler",
                         "..\\qin\\qin.bat language test --root ovs-language"));
+        verifyOvsCompilerGeneratedParserDocumentation(workspaceRoot);
         verifyDocumentationNeedles(
                 "OVS language README",
                 workspaceRoot.resolve("ovsjs").resolve("ovs-language").resolve("README.md").normalize(),
@@ -822,6 +825,28 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "CSSTS compiler documentation must not keep legacy parser or non-Qin tooling directive: "
                                 + documentationPath);
             }
+        }
+    }
+
+    private static void verifyOvsCompilerGeneratedParserDocumentation(Path workspaceRoot) throws Exception {
+        Path documentationPath = workspaceRoot.resolve("ovsjs")
+                .resolve("ovs")
+                .resolve("ovs-compiler")
+                .resolve("README.md")
+                .normalize();
+        require(Files.isRegularFile(documentationPath),
+                "OVS compiler generated parser documentation must exist: " + documentationPath);
+        String source = Files.readString(documentationPath);
+        for (String requiredNeedle : List.of(
+                "Parser Authority",
+                "OvsParser extends CssTsParser",
+                "CssTsParser extends QinParser",
+                "Java 版 QinParser 生成到 TypeScript",
+                "@SubhutiRule",
+                "不要用正则扫描、字符串补丁或 fallback transform",
+                "slime-parser` 只在 CST-to-AST 转换注册边界保留")) {
+            require(source.contains(requiredNeedle),
+                    "OVS compiler documentation must describe generated parser authority: " + requiredNeedle);
         }
     }
 
