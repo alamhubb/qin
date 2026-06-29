@@ -198,8 +198,58 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         }
 
         verifyLanguageScriptDryRunGeneratesParserFirst(root.resolve("generated-language"));
+        verifyNamedLanguageScriptRunDryRun(root.resolve("named-language"));
 
         System.out.println("QinCliLanguageLocalDependencyBuildSmokeTestMain OK");
+    }
+
+    private static void verifyNamedLanguageScriptRunDryRun(Path languageRoot) throws Exception {
+        Files.createDirectories(languageRoot);
+        Files.writeString(languageRoot.resolve("qin.config.js"), """
+                export default {
+                  name: "named-language",
+                  version: "1.0.0",
+                  scripts: {
+                    "dev:mp-weixin": "uni -p mp-weixin"
+                  },
+                  language: {
+                    id: "ovs",
+                    extension: ".ovs",
+                    parser: "src/main.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.createDirectories(languageRoot.resolve("src"));
+        Files.writeString(languageRoot.resolve("src").resolve("main.ts"), "export {}\n", StandardCharsets.UTF_8);
+
+        PrintStream originalOut = System.out;
+        PrintStream originalErr = System.err;
+        String originalUserDir = System.getProperty("user.dir");
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (PrintStream capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            System.setErr(capture);
+            System.setProperty("user.dir", languageRoot.toString());
+            Method languageCommand = QinCli.class.getDeclaredMethod("languageCommand", String[].class);
+            languageCommand.setAccessible(true);
+            try {
+                languageCommand.invoke(null, (Object) new String[]{"run", "dev:mp-weixin", "--dry-run"});
+            } catch (InvocationTargetException error) {
+                Throwable cause = error.getCause();
+                if (cause instanceof Exception exception) {
+                    throw exception;
+                }
+                throw error;
+            }
+        } finally {
+            System.setProperty("user.dir", originalUserDir);
+            System.setOut(originalOut);
+            System.setErr(originalErr);
+        }
+
+        String captured = output.toString(StandardCharsets.UTF_8);
+        require(captured.contains("cmd /c uni -p mp-weixin") || captured.contains("sh -c uni -p mp-weixin"),
+                "qin language run dev:mp-weixin --dry-run must execute named qin.config.js script");
     }
 
     private static void verifyLanguageScriptDryRunGeneratesParserFirst(Path languageRoot) throws Exception {

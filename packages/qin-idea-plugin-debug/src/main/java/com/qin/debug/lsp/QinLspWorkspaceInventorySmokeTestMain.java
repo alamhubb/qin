@@ -341,7 +341,6 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         return Map.of(
                 "cssts/language-plugin-pug", PackageOnlyProjectKind.EXTERNAL_LANGUAGE_PLUGIN_COPY,
                 "cssts/language-plugin-testts", PackageOnlyProjectKind.LEGACY_LANGUAGE_EXPERIMENT,
-                "ovsjs/my-uni-ovs-test", PackageOnlyProjectKind.DEMO_APP,
                 "ovsjs/os-language", PackageOnlyProjectKind.LEGACY_EDITOR_EXTENSION);
     }
 
@@ -509,7 +508,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             require(project.extension().equals(language.extension()),
                     project.id() + " app language.extension mismatch: " + language.extension());
         }
-        for (String scriptName : List.of("dev", "build", "preview", "test")) {
+        for (String scriptName : project.requiredScripts()) {
             require(config.scripts().containsKey(scriptName),
                     project.id() + " app qin.config.js must declare script " + scriptName);
         }
@@ -665,7 +664,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                                 "vite-plugin-ovs",
                                 "ovs-language",
                                 "guidebot",
-                                "ovs-test-2026")),
+                                "ovs-test-2026",
+                                "my-uni-ovs-test")),
                 InventoryProject.workspace("cssts-workspace", Path.of("cssts"),
                         "cssts-workspace", "cssts", List.of(
                                 "cssts/cssts-runtime",
@@ -696,6 +696,11 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "guidebot-web", "ovs", ".ovs"),
                 InventoryProject.app("ovs-test-2026", Path.of("ovsjs", "ovs-test-2026"),
                         "ovs-test-2026", "ovs", ".ovs"),
+                InventoryProject.app("my-uni-ovs-test", Path.of("ovsjs", "my-uni-ovs-test"),
+                        "my-uni-render-project", "ovs", ".ovs",
+                        List.of("dev", "build", "test", "type-check",
+                                "dev:mp-weixin", "build:mp-weixin",
+                                "dev:mp-alipay", "build:mp-alipay")),
                 InventoryProject.tooling("cssts-runtime", Path.of("cssts", "cssts", "cssts-runtime"),
                         "cssts-ts", "cssts", null),
                 InventoryProject.tooling("vite-plugin-cssts", Path.of("cssts", "vite-plugin-cssts"),
@@ -794,7 +799,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             String languageId,
             String extension,
             String expectedCompilerPackage,
-            List<String> workspaceMembers) {
+            List<String> workspaceMembers,
+            List<String> requiredScripts) {
 
         static InventoryProject language(
                 String id,
@@ -811,6 +817,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                     languageId,
                     extension,
                     expectedCompilerPackage,
+                    List.of(),
                     List.of());
         }
 
@@ -828,15 +835,18 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                     languageId,
                     extension,
                     null,
+                    List.of(),
                     List.of());
         }
 
         static InventoryProject javaRuntime(String id, Path path, String expectedName) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.JAVA_RUNTIME, null, null, null, List.of());
+            return new InventoryProject(
+                    id, path, expectedName, ProjectKind.JAVA_RUNTIME, null, null, null, List.of(), List.of());
         }
 
         static InventoryProject generatedTs(String id, Path path, String expectedName) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.GENERATED_TS, null, null, null, List.of());
+            return new InventoryProject(
+                    id, path, expectedName, ProjectKind.GENERATED_TS, null, null, null, List.of(), List.of());
         }
 
         static InventoryProject workspace(
@@ -853,7 +863,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                     languageId,
                     null,
                     null,
-                    workspaceMembers);
+                    workspaceMembers,
+                    List.of());
         }
 
         static InventoryProject tooling(
@@ -862,7 +873,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String expectedName,
                 String languageId,
                 String extension) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.TOOLING, languageId, extension, null, List.of());
+            return new InventoryProject(
+                    id, path, expectedName, ProjectKind.TOOLING, languageId, extension, null, List.of(), List.of());
         }
 
         static InventoryProject app(
@@ -871,7 +883,18 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String expectedName,
                 String languageId,
                 String extension) {
-            return new InventoryProject(id, path, expectedName, ProjectKind.APP, languageId, extension, null, List.of());
+            return app(id, path, expectedName, languageId, extension, List.of("dev", "build", "preview", "test"));
+        }
+
+        static InventoryProject app(
+                String id,
+                Path path,
+                String expectedName,
+                String languageId,
+                String extension,
+                List<String> requiredScripts) {
+            return new InventoryProject(
+                    id, path, expectedName, ProjectKind.APP, languageId, extension, null, List.of(), requiredScripts);
         }
     }
 }

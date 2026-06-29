@@ -265,6 +265,7 @@ public class QinCli {
             case "build" -> runLanguageScript("build", actionArgs);
             case "dev" -> runLanguageScript("dev", actionArgs);
             case "test" -> runLanguageScript("test", actionArgs);
+            case "run" -> runNamedLanguageScript(actionArgs);
             case "generate-parser", "generate" -> generateLanguageParser(actionArgs);
             case "server", "start" -> runLanguageServer(actionArgs);
             case "help", "-h", "--help" -> printLanguageHelp();
@@ -325,6 +326,13 @@ public class QinCli {
     private static void runLanguageScript(String scriptName, String[] args) throws Exception {
         Path projectRoot = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         runLanguageScriptAt(scriptName, args, projectRoot);
+    }
+
+    private static void runNamedLanguageScript(String[] args) throws Exception {
+        if (args.length == 0 || args[0].startsWith("-")) {
+            throw new IllegalArgumentException("Missing script name for qin language run <script>");
+        }
+        runLanguageScript(args[0], Arrays.copyOfRange(args, 1, args.length));
     }
 
     private static void runLanguageScriptAt(String scriptName, String[] args, Path projectRoot) throws Exception {
@@ -881,6 +889,7 @@ public class QinCli {
                   build         Run scripts.build for this language project
                   dev           Run scripts.dev for this language project
                   test          Run scripts.test for this language project
+                  run <script>  Run any named script from qin.config.js
                   generate-parser Generate Java parser TS ESM package from generated metadata
                   server        Start language.serverBundle with node --stdio
 
@@ -892,6 +901,7 @@ public class QinCli {
                   qin language bundle
                   qin language generate-parser
                   qin language build
+                  qin language run type-check
                   qin language server
                   qin language server --dry-run
                 """);
@@ -2748,6 +2758,7 @@ public class QinCli {
                   qin language check          # Validate language.server/parser/ideaLspClient metadata
                   qin language generate-parser # Generate Java parser TS ESM package
                   qin language build          # Run scripts.build for a language project
+                  qin language run type-check # Run any named script from qin.config.js
                   qin language server         # Start language.serverBundle with node --stdio
                   qin language-check          # Alias for qin language check
                   qin conformance             # Run conformance baseline with Chrome
