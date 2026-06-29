@@ -25,6 +25,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             verifyProject(workspaceRoot, project);
         }
         assertNoUntrackedOvsCsstsQinConfigs(workspaceRoot);
+        assertNoUnclassifiedOvsCsstsPackageProjects(workspaceRoot);
         assertNoLegacyEditorClientArtifacts(workspaceRoot);
         assertNoLegacyCompilerSourceArtifacts(workspaceRoot);
 
@@ -296,6 +297,45 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
 
         require(actual.equals(expected),
                 "OVS/CSSTS qin.config.js inventory mismatch. expected=" + expected + " actual=" + actual);
+    }
+
+    private static void assertNoUnclassifiedOvsCsstsPackageProjects(Path workspaceRoot) throws Exception {
+        Set<String> expectedLegacyOrDemo = new LinkedHashSet<>(List.of(
+                "cssts/language-plugin-pug",
+                "cssts/language-plugin-testts",
+                "cssts/vite-project",
+                "ovsjs/guidebot",
+                "ovsjs/my-uni-ovs-test",
+                "ovsjs/os-language",
+                "ovsjs/ovs-test-2026"));
+        Set<String> managed = new LinkedHashSet<>();
+        for (InventoryProject project : inventory()) {
+            Path projectPath = project.path();
+            if (startsWith(projectPath, "ovsjs") || startsWith(projectPath, "cssts")) {
+                managed.add(projectPath.toString().replace('\\', '/'));
+            }
+        }
+
+        Set<String> actualPackageOnly = new LinkedHashSet<>();
+        for (String root : List.of("ovsjs", "cssts")) {
+            Path scanRoot = workspaceRoot.resolve(root).normalize();
+            require(Files.isDirectory(scanRoot), "Qin package-only scan root must exist: " + scanRoot);
+            try (Stream<Path> paths = Files.list(scanRoot)) {
+                paths.filter(Files::isDirectory)
+                        .map(path -> workspaceRoot.relativize(path.normalize()).toString().replace('\\', '/'))
+                        .filter(relative -> !managed.contains(relative))
+                        .filter(relative -> Files.isRegularFile(workspaceRoot.resolve(relative).resolve("package.json")))
+                        .filter(relative -> !Files.isRegularFile(workspaceRoot.resolve(relative).resolve("qin.config.js")))
+                        .sorted()
+                        .forEach(actualPackageOnly::add);
+            }
+        }
+
+        require(actualPackageOnly.equals(expectedLegacyOrDemo),
+                "OVS/CSSTS package-only project inventory mismatch. "
+                        + "Every non-IDEA Qin-related project must be qin.config.js managed; "
+                        + "legacy/demo exceptions must be explicit. expected="
+                        + expectedLegacyOrDemo + " actual=" + actualPackageOnly);
     }
 
     private static boolean startsWith(Path path, String firstSegment) {
