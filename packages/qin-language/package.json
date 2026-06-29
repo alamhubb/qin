@@ -4,14 +4,8 @@
   "description": "Language support for Qin .qin files",
   "version": "0.1.0",
   "type": "module",
-  "main": "./dist/extension.cjs",
+  "main": "./dist/language-server.cjs",
   "license": "MIT",
-  "scripts": {
-    "build": "tsdown",
-    "dev": "tsx qin-language-server/src/index.ts --stdio",
-    "test": "tsx tests/test-language-plugin.ts && tsx tests/test-generated-parser-parity.ts && tsdown && tsx tests/test-language-server.ts",
-    "test:lsp": "tsx tests/test-language-server.ts"
-  },
   "dependencies": {
     "@volar/language-core": "^2.4.14",
     "@volar/language-server": "^2.4.14",

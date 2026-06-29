@@ -104,10 +104,10 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         } catch (Exception e) {
             throw new IllegalStateException(project.id() + " language package.json must be readable", e);
         }
-        if (!"qin-language".equals(project.id())) {
-            require(packageSource.contains("\"main\": \"./" + config.language().serverBundle() + "\""),
-                    project.id() + " package.json main must point at language.serverBundle");
-        }
+        require(packageSource.contains("\"main\": \"./" + config.language().serverBundle() + "\""),
+                project.id() + " package.json main must point at language.serverBundle");
+        require(!packageSource.contains("\"scripts\""),
+                project.id() + " language package.json must not define scripts; qin.config.js is the script entrypoint");
         for (String forbidden : List.of(
                 "\"activationEvents\"",
                 "\"contributes\"",
