@@ -3,14 +3,18 @@ package com.qin.lang.backend.jvm;
 import com.qin.lang.ir.QinIrAnnotation;
 import com.qin.lang.ir.QinIrAnnotationArgument;
 import com.qin.lang.ir.QinIrArrayLiteral;
+import com.qin.lang.ir.QinIrBreakStatement;
 import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
+import com.qin.lang.ir.QinIrContinueStatement;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
+import com.qin.lang.ir.QinIrForStatement;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaNewExpression;
+import com.qin.lang.ir.QinIrLocalVariableDeclaration;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrNullLiteral;
@@ -761,6 +765,18 @@ public final class QinJvmDeclarationClassEmitter {
             emitWhileStatement(code, ownerDeclaration, method, declarationIndex, localFrame, whileStatement);
             return;
         }
+        if (statement instanceof QinIrForStatement forStatement) {
+            emitForStatement(code, ownerDeclaration, method, declarationIndex, localFrame, forStatement);
+            return;
+        }
+        if (statement instanceof QinIrBreakStatement breakStatement) {
+            emitBreakStatement(code, localFrame, breakStatement);
+            return;
+        }
+        if (statement instanceof QinIrContinueStatement continueStatement) {
+            emitContinueStatement(code, localFrame, continueStatement);
+            return;
+        }
         throw new IllegalArgumentException(
                 "Unsupported declaration method statement: " + statement.getClass().getSimpleName());
     }
@@ -774,21 +790,115 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrWhileStatementNode whileStatement) {
         java.lang.classfile.Label startLabel = code.newLabel();
         java.lang.classfile.Label doneLabel = code.newLabel();
+        LocalFrame loopFrame = localFrame.withLoop(new LoopBinding(startLabel, doneLabel));
         code.labelBinding(startLabel);
         QinIrTypeRef testType = emitDeclarationExpression(
                 code,
                 ownerDeclaration,
                 method,
                 declarationIndex,
-                localFrame,
+                loopFrame,
                 whileStatement.test());
         if (testType.kind() != QinIrTypeKind.BOOLEAN) {
             throw new IllegalArgumentException("Declaration while statement test must be boolean");
         }
         code.ifeq(doneLabel);
-        emitStatements(code, ownerDeclaration, method, declarationIndex, localFrame, whileStatement.body());
+        emitStatements(code, ownerDeclaration, method, declarationIndex, loopFrame, whileStatement.body());
         code.goto_(startLabel);
         code.labelBinding(doneLabel);
+    }
+
+    private void emitForStatement(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrForStatement forStatement) {
+        LocalFrame forFrame = localFrame.child();
+        for (QinIrLocalVariableDeclaration initializerDeclaration : forStatement.initializerDeclarations()) {
+            QinIrTypeRef initializerType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    forFrame,
+                    initializerDeclaration.initializer());
+            LocalBinding binding = forFrame.declare(initializerDeclaration.name(), initializerType);
+            storeLocalForType(code, binding.type(), binding.localSlot(), binding.name());
+        }
+        for (QinIrExpression initializerExpression : forStatement.initializerExpressions()) {
+            QinIrTypeRef initializerType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    forFrame,
+                    initializerExpression);
+            discardExpressionResult(code, initializerType);
+        }
+
+        java.lang.classfile.Label startLabel = code.newLabel();
+        java.lang.classfile.Label updateLabel = code.newLabel();
+        java.lang.classfile.Label doneLabel = code.newLabel();
+        LocalFrame loopFrame = forFrame.withLoop(new LoopBinding(updateLabel, doneLabel));
+        code.labelBinding(startLabel);
+        if (forStatement.test() != null) {
+            QinIrTypeRef testType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    loopFrame,
+                    forStatement.test());
+            if (testType.kind() != QinIrTypeKind.BOOLEAN) {
+                throw new IllegalArgumentException("Declaration for statement test must be boolean");
+            }
+            code.ifeq(doneLabel);
+        }
+        emitStatements(code, ownerDeclaration, method, declarationIndex, loopFrame, forStatement.body());
+        code.labelBinding(updateLabel);
+        for (QinIrExpression updateExpression : forStatement.updateExpressions()) {
+            QinIrTypeRef updateType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    loopFrame,
+                    updateExpression);
+            discardExpressionResult(code, updateType);
+        }
+        code.goto_(startLabel);
+        code.labelBinding(doneLabel);
+    }
+
+    private void emitBreakStatement(
+            java.lang.classfile.CodeBuilder code,
+            LocalFrame localFrame,
+            QinIrBreakStatement breakStatement) {
+        if (breakStatement.label() != null && !breakStatement.label().isBlank()) {
+            throw new IllegalArgumentException("Declaration labeled break is not supported yet: " + breakStatement.label());
+        }
+        LoopBinding loopBinding = localFrame.loop();
+        if (loopBinding == null) {
+            throw new IllegalArgumentException("Declaration break statement must be inside a loop");
+        }
+        code.goto_(loopBinding.breakLabel());
+    }
+
+    private void emitContinueStatement(
+            java.lang.classfile.CodeBuilder code,
+            LocalFrame localFrame,
+            QinIrContinueStatement continueStatement) {
+        if (continueStatement.label() != null && !continueStatement.label().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Declaration labeled continue is not supported yet: " + continueStatement.label());
+        }
+        LoopBinding loopBinding = localFrame.loop();
+        if (loopBinding == null) {
+            throw new IllegalArgumentException("Declaration continue statement must be inside a loop");
+        }
+        code.goto_(loopBinding.continueLabel());
     }
 
     private void emitLocalDeclarationStatement(
@@ -2288,12 +2398,19 @@ public final class QinJvmDeclarationClassEmitter {
     private record LocalBinding(String name, QinIrTypeRef type, int localSlot) {
     }
 
+    private record LoopBinding(
+            java.lang.classfile.Label continueLabel,
+            java.lang.classfile.Label breakLabel) {
+    }
+
     private static final class LocalFrame {
         private final Map<String, LocalBinding> bindings = new LinkedHashMap<>();
+        private final LoopBinding loop;
         private int nextSlot;
 
-        private LocalFrame(int nextSlot) {
+        private LocalFrame(int nextSlot, LoopBinding loop) {
             this.nextSlot = nextSlot;
+            this.loop = loop;
         }
 
         static LocalFrame forMethodParameters(QinIrMethodDeclaration method) {
@@ -2301,7 +2418,19 @@ public final class QinJvmDeclarationClassEmitter {
             for (var parameter : method.parameters()) {
                 localSlot += parameter.type().kind() == QinIrTypeKind.DOUBLE ? 2 : 1;
             }
-            return new LocalFrame(localSlot);
+            return new LocalFrame(localSlot, null);
+        }
+
+        LocalFrame child() {
+            LocalFrame child = new LocalFrame(nextSlot, loop);
+            child.bindings.putAll(bindings);
+            return child;
+        }
+
+        LocalFrame withLoop(LoopBinding loopBinding) {
+            LocalFrame child = new LocalFrame(nextSlot, loopBinding);
+            child.bindings.putAll(bindings);
+            return child;
         }
 
         LocalBinding declare(String name, QinIrTypeRef type) {
@@ -2319,6 +2448,10 @@ public final class QinJvmDeclarationClassEmitter {
 
         LocalBinding resolve(String name) {
             return bindings.get(name);
+        }
+
+        LoopBinding loop() {
+            return loop;
         }
     }
 
