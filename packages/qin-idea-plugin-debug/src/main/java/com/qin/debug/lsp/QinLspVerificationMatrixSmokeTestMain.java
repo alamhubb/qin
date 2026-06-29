@@ -935,15 +935,46 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 .resolve("parser")
                 .resolve("QinParserFacadeUnifiedEntrySmokeTestMain.java")
                 .normalize();
+        Path parserRuntimeNamesPath = qinLanguageRoot.getParent()
+                .resolve("qin-parser")
+                .resolve("src")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("parser")
+                .resolve("QinParserRuntimeNames.java")
+                .normalize();
+        Path frontendAdapterPath = qinLanguageRoot.getParent()
+                .resolve("qin-lang-frontend-adapter")
+                .resolve("src")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("lang")
+                .resolve("frontend")
+                .resolve("adapter")
+                .resolve("QinSlimeFrontendAdapter.java")
+                .normalize();
+        Path importMetaShimSmokePath = frontendAdapterPath.resolveSibling(
+                "QinRuntimeImportMetaShimRemovalSmokeTestMain.java").normalize();
         require(Files.isRegularFile(parityTestPath),
                 "Qin generated parser parity test must exist: " + parityTestPath);
         require(Files.isRegularFile(parserFacadePath),
                 "Qin parser facade must exist: " + parserFacadePath);
         require(Files.isRegularFile(parserFacadeSmokePath),
                 "Qin parser facade smoke must exist: " + parserFacadeSmokePath);
+        require(Files.isRegularFile(parserRuntimeNamesPath),
+                "Qin parser runtime names must exist: " + parserRuntimeNamesPath);
+        require(Files.isRegularFile(frontendAdapterPath),
+                "Qin frontend adapter must exist: " + frontendAdapterPath);
+        require(Files.isRegularFile(importMetaShimSmokePath),
+                "Qin import.meta shim removal smoke must exist: " + importMetaShimSmokePath);
         String paritySource = Files.readString(parityTestPath);
         String parserFacadeSource = Files.readString(parserFacadePath);
         String parserFacadeSmokeSource = Files.readString(parserFacadeSmokePath);
+        String parserRuntimeNamesSource = Files.readString(parserRuntimeNamesPath);
+        String frontendAdapterSource = Files.readString(frontendAdapterPath);
+        String importMetaShimSmokeSource = Files.readString(importMetaShimSmokePath);
         require(!parserFacadeSource.contains("rewriteSimpleSwitchStatements")
                         && !parserFacadeSource.contains("__qin_switch_"),
                 "QinParserFacade must not lower switch syntax with string rewrites");
@@ -960,6 +991,18 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && parserFacadeSmokeSource.contains("runtimeSyntaxParsed.effectiveSource().contains(\"import(\\\"./dep.qin\\\")\")")
                         && parserFacadeSmokeSource.contains("Runtime ESM syntax must not be lowered by QinParserFacade"),
                 "QinParserFacade smoke must prove import.meta.url and dynamic import stay in parser input");
+        require(!parserRuntimeNamesSource.contains("IMPORT_META_URL_SHIM")
+                        && !parserRuntimeNamesSource.contains("__qin_import_meta_url__"),
+                "QinParserRuntimeNames must not keep old import.meta.url parser shim names");
+        require(!frontendAdapterSource.contains("IMPORT_META_URL_SHIM")
+                        && !frontendAdapterSource.contains("__qin_import_meta_url__"),
+                "QinSlimeFrontendAdapter must not lower old import.meta.url shim identifiers");
+        require(importMetaShimSmokeSource.contains("QinRuntimeImportMetaShimRemovalSmokeTestMain")
+                        && importMetaShimSmokeSource.contains("new Identifier(\"__qin_import_meta_url__\"")
+                        && importMetaShimSmokeSource.contains("QinIrIdentifierReference")
+                        && importMetaShimSmokeSource.contains("new MetaProperty(")
+                        && importMetaShimSmokeSource.contains("\"import.meta.url\""),
+                "Qin import.meta shim removal smoke must prove the old shim is ordinary identifier while formal AST still lowers");
         require(paritySource.contains("qin object method body control flow"),
                 "Qin generated parser parity corpus must include object method-body control flow");
         require(paritySource.contains("export object Labeler"),

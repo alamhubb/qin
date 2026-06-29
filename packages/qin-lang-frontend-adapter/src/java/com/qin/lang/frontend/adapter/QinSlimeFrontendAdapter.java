@@ -3635,10 +3635,6 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             return lowerRuntimeMemberAccessExpression(memberExpression, javaImportLookup, declarationLookup);
         }
         if (expressionAst instanceof Identifier identifier) {
-            String name = identifier.name();
-            if (QinParserRuntimeNames.IMPORT_META_URL_SHIM.equals(name)) {
-                return new QinIrStringLiteral("import.meta.url");
-            }
             return lowerIdentifierExpression(identifier);
         }
         if (expressionAst instanceof ThisExpression) {
@@ -3721,9 +3717,6 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         }
         if ("Identifier".equals(nodeType)) {
             String name = extractIdentifierName(expressionAst, "Identifier");
-            if (QinParserRuntimeNames.IMPORT_META_URL_SHIM.equals(name)) {
-                return new QinIrStringLiteral("import.meta.url");
-            }
             if (isRegexLiteralIdentifier(name)) {
                 ParsedRegexLiteral regexLiteral = parseRegexLiteral(name);
                 if (regexLiteral != null) {
