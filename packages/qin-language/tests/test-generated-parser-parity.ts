@@ -354,6 +354,25 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'import meta url expression',
+    source: [
+      'export const moduleUrl = import.meta.url',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
+    name: 'dynamic import expression',
+    source: [
+      'export async function loadModule() {',
+      '  const loaded = await import("./dep.qin")',
+      '  return loaded',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'top level function and const exports',
     source: [
       'export function health() {',

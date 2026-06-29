@@ -927,9 +927,19 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         require(!parserFacadeSource.contains("rewriteSimpleSwitchStatements")
                         && !parserFacadeSource.contains("__qin_switch_"),
                 "QinParserFacade must not lower switch syntax with string rewrites");
+        require(!parserFacadeSource.contains("SOURCE_IMPORT_META_URL_PATTERN")
+                        && !parserFacadeSource.contains("SOURCE_DYNAMIC_IMPORT_PATTERN")
+                        && !parserFacadeSource.contains("SOURCE_TYPEOF_DYNAMIC_IMPORT_SHIM_PATTERN")
+                        && !parserFacadeSource.contains("IMPORT_META_URL_SHIM")
+                        && !parserFacadeSource.contains("DYNAMIC_IMPORT_SHIM"),
+                "QinParserFacade must not lower import.meta.url or dynamic import with string rewrites");
         require(parserFacadeSmokeSource.contains("switchParsed.effectiveSource().contains(\"switch (value)\")")
                         && parserFacadeSmokeSource.contains("Switch syntax must not be lowered by QinParserFacade"),
                 "QinParserFacade smoke must prove switch syntax stays in parser input");
+        require(parserFacadeSmokeSource.contains("runtimeSyntaxParsed.effectiveSource().contains(\"import.meta.url\")")
+                        && parserFacadeSmokeSource.contains("runtimeSyntaxParsed.effectiveSource().contains(\"import(\\\"./dep.qin\\\")\")")
+                        && parserFacadeSmokeSource.contains("Runtime ESM syntax must not be lowered by QinParserFacade"),
+                "QinParserFacade smoke must prove import.meta.url and dynamic import stay in parser input");
         require(paritySource.contains("qin object method body control flow"),
                 "Qin generated parser parity corpus must include object method-body control flow");
         require(paritySource.contains("export object Labeler"),
@@ -971,6 +981,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && paritySource.contains("case \"ready\":")
                         && paritySource.contains("default:"),
                 "Qin generated parser parity corpus must include switch/case/default syntax");
+        require(paritySource.contains("import meta url expression")
+                        && paritySource.contains("import.meta.url"),
+                "Qin generated parser parity corpus must include import.meta.url syntax");
+        require(paritySource.contains("dynamic import expression")
+                        && paritySource.contains("await import(\"./dep.qin\")"),
+                "Qin generated parser parity corpus must include dynamic import syntax");
         for (String caseName : List.of(
                 "qin object nested method body control flow",
                 "qin object method body exception flow",
@@ -992,6 +1008,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "control flow in function body",
                 "while loop break continue control flow",
                 "switch statement control flow",
+                "import meta url expression",
+                "dynamic import expression",
                 "destructuring declarations",
                 "async await function",
                 "invalid unclosed import",

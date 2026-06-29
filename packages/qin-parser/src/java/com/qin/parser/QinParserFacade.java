@@ -25,10 +25,6 @@ import java.util.regex.Pattern;
  */
 public final class QinParserFacade {
     private static final DateTimeFormatter FAILURE_SNAPSHOT_TIME = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
-    private static final Pattern SOURCE_IMPORT_META_URL_PATTERN = Pattern.compile("\\bimport\\s*\\.\\s*meta\\s*\\.\\s*url\\b");
-    private static final Pattern SOURCE_DYNAMIC_IMPORT_PATTERN = Pattern.compile("\\bimport\\s*\\(([^\\n\\)]*)\\)");
-    private static final Pattern SOURCE_TYPEOF_DYNAMIC_IMPORT_SHIM_PATTERN = Pattern.compile(
-            "\\btypeof\\s+" + Pattern.quote(QinParserRuntimeNames.DYNAMIC_IMPORT_SHIM) + "\\s*\\(");
     private static final Pattern SOURCE_HASHBANG_PATTERN = Pattern.compile("\\A#![^\\r\\n]*(\\r?\\n|\\z)");
     public Program parseProgram(String source) {
         return parseSource(source).requireProgram();
@@ -84,11 +80,6 @@ public final class QinParserFacade {
     private String preprocessRuntimeSyntax(String source) {
         String rewritten = source == null ? "" : source;
         rewritten = stripHashbang(rewritten);
-        rewritten = SOURCE_IMPORT_META_URL_PATTERN.matcher(rewritten)
-                .replaceAll(QinParserRuntimeNames.IMPORT_META_URL_SHIM);
-        rewritten = SOURCE_DYNAMIC_IMPORT_PATTERN.matcher(rewritten)
-                .replaceAll(QinParserRuntimeNames.DYNAMIC_IMPORT_SHIM + "($1)");
-        rewritten = restoreTypeofImportQueries(rewritten);
         return rewritten;
     }
 
@@ -113,21 +104,6 @@ public final class QinParserFacade {
             return source;
         }
         return source.substring(1);
-    }
-
-    private String restoreTypeofImportQueries(String source) {
-        Matcher matcher = SOURCE_TYPEOF_DYNAMIC_IMPORT_SHIM_PATTERN.matcher(source);
-        StringBuffer out = new StringBuffer();
-        while (matcher.find()) {
-            String matched = matcher.group();
-            int openParen = matched.lastIndexOf('(');
-            String replacement = matched.substring(0, matched.indexOf(QinParserRuntimeNames.DYNAMIC_IMPORT_SHIM))
-                    + "import"
-                    + matched.substring(openParen);
-            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
-        }
-        matcher.appendTail(out);
-        return out.toString();
     }
 
     private static String safeMessage(Throwable throwable) {
