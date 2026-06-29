@@ -1550,6 +1550,13 @@ public class QinCli {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
+        if (config.language() != null
+                && config.scripts() != null
+                && config.scripts().containsKey("build")) {
+            runLanguageScript("build", args);
+            return;
+        }
+
         String qinBuildTarget = resolveBuildTargetToQinFile(config, args);
         if (qinBuildTarget != null) {
             buildQinProject(config, qinBuildTarget, args);
@@ -1835,6 +1842,13 @@ public class QinCli {
         System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
+
+        if (config.language() != null
+                && config.scripts() != null
+                && config.scripts().containsKey("dev")) {
+            runLanguageScript("dev", args);
+            return;
+        }
 
         String qinDevEntry = null;
         boolean frontendOnlyOverride = hasArg(args, "--frontend-file");

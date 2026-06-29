@@ -228,18 +228,19 @@ public final class QinLspLanguageCliSmokeTestMain {
 
         if (testCase.expectServerCommands()) {
             for (ScriptNeedle expectedScript : testCase.expectedScriptNeedles()) {
-                if (!"test".equals(expectedScript.command())) {
+                if (!List.of("build", "dev", "test").contains(expectedScript.command())) {
                     continue;
                 }
-                CommandResult topLevelTest = runQin(
+                CommandResult topLevelScript = runQin(
                         qinCommand,
                         testCase.projectRoot(),
-                        "test",
+                        expectedScript.command(),
                         "--dry-run");
-                require(topLevelTest.stdout().contains(expectedScript.needle()),
-                        testCase.id() + " top-level qin test --dry-run must dispatch to scripts.test "
+                require(topLevelScript.stdout().contains(expectedScript.needle()),
+                        testCase.id() + " top-level qin " + expectedScript.command()
+                                + " --dry-run must dispatch to scripts." + expectedScript.command()
                                 + "for language projects with needle " + expectedScript.needle() + ": "
-                                + topLevelTest);
+                                + topLevelScript);
             }
         }
     }
