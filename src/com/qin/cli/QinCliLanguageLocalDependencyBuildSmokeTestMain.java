@@ -63,8 +63,16 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
 
         QinConfig downstreamConfig = new ConfigLoader(downstream.toString()).load();
         method.invoke(null, downstreamConfig, downstream, false);
-        require(Files.readString(upstream.resolve("dist").resolve("marker.txt"), StandardCharsets.UTF_8).contains("built"),
-                "local file dependency build marker");
+        Path marker = upstream.resolve("dist").resolve("marker.txt");
+        String firstMarker = Files.readString(marker, StandardCharsets.UTF_8);
+        require(firstMarker.contains("built:") && firstMarker.contains("value = 1"),
+                "local file dependency build marker from initial source");
+
+        Files.writeString(upstream.resolve("src").resolve("source.ts"), "export const value = 2\n", StandardCharsets.UTF_8);
+        method.invoke(null, downstreamConfig, downstream, false);
+        String rebuiltMarker = Files.readString(marker, StandardCharsets.UTF_8);
+        require(rebuiltMarker.contains("built:") && rebuiltMarker.contains("value = 2") && !rebuiltMarker.contains("value = 1"),
+                "local file dependency rebuild marker from changed source");
 
         Path cycleA = root.resolve("cycle-a");
         Path cycleB = root.resolve("cycle-b");
@@ -93,7 +101,7 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
             Files.writeString(bin.resolve("local-qin-build.cmd"), """
                     @echo off
                     if not exist dist mkdir dist
-                    > dist\\marker.txt echo built:local-bin
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "$src = Get-Content -Raw -Encoding UTF8 'src/source.ts'; Set-Content -Encoding UTF8 'dist/marker.txt' ('built:' + $src)"
                     """, StandardCharsets.UTF_8);
             return;
         }
@@ -102,7 +110,8 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                 #!/bin/sh
                 set -eu
                 mkdir -p dist
-                printf 'built:local-bin\\n' > dist/marker.txt
+                printf 'built:' > dist/marker.txt
+                cat src/source.ts >> dist/marker.txt
                 """, StandardCharsets.UTF_8);
         if (!tool.toFile().setExecutable(true)) {
             throw new IllegalStateException("Unable to make local-qin-build executable: " + tool);

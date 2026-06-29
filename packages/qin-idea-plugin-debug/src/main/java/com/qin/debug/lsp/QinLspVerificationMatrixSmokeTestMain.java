@@ -138,6 +138,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qinLanguageLocalDependencyBuildSmoke must run from the Qin project root");
         require(localDependencyBuildBlock.contains("QinCliLanguageLocalDependencyBuildSmokeTestMain"),
                 "qinLanguageLocalDependencyBuildSmoke must verify local file dependency builds through Qin CLI");
+        verifyLocalDependencyBuildSmokeCoverage(workspaceRoot);
         require(buildSource.contains("register<Exec>(\"qinJavaRunnerNoCompilerFallbackSmoke\")"),
                 "Gradle must declare qinJavaRunnerNoCompilerFallbackSmoke");
         String noCompilerFallbackBlock = taskBlock(
@@ -282,6 +283,27 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         require(smokeSource.contains("private record ScriptNeedle"),
                 "lspLanguageCliSmoke must allow multiple script dry-run needles per command");
+    }
+
+    private static void verifyLocalDependencyBuildSmokeCoverage(Path workspaceRoot) throws Exception {
+        Path smokePath = workspaceRoot.resolve("qin")
+                .resolve("src")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("cli")
+                .resolve("QinCliLanguageLocalDependencyBuildSmokeTestMain.java")
+                .normalize();
+        require(Files.isRegularFile(smokePath),
+                "Qin local dependency build smoke source must exist: " + smokePath);
+        String smokeSource = Files.readString(smokePath);
+        for (String requiredNeedle : List.of(
+                "value = 1",
+                "value = 2",
+                "local file dependency rebuild marker from changed source")) {
+            require(smokeSource.contains(requiredNeedle),
+                    "Qin local dependency build smoke must verify changed-source rebuild coverage: "
+                            + requiredNeedle);
+        }
     }
 
     private static void verifyStableLspSmokeJvmArgs(String buildSource) {
