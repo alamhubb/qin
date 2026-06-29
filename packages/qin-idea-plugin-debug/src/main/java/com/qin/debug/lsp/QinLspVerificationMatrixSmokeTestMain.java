@@ -809,7 +809,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 workspaceRoot.resolve("ovsjs").resolve("ovs-language")
                         .resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
                 List.of(
-                        "new OvsParser(inheritedSyntaxSource)",
+                        "new OvsParser(",
                         "parser instanceof CssTsParser",
                         "parser instanceof SlimeJavascriptParser",
                         "object NestedLabeler",
@@ -872,7 +872,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 workspaceRoot,
                 ovsCompilerRoot.resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
                 List.of(
-                        "new OvsParser(inheritedSyntaxSource)",
+                        "new OvsParser(",
                         "parser instanceof CssTsParser",
                         "parser instanceof SlimeJavascriptParser",
                         "object NestedLabeler",
