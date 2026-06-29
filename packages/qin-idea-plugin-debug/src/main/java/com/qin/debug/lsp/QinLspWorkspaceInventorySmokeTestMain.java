@@ -7,7 +7,10 @@ import com.qin.types.QinConfig;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public final class QinLspWorkspaceInventorySmokeTestMain {
     private QinLspWorkspaceInventorySmokeTestMain() {
@@ -21,6 +24,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         for (InventoryProject project : inventory()) {
             verifyProject(workspaceRoot, project);
         }
+        assertNoUntrackedOvsCsstsQinConfigs(workspaceRoot);
         assertNoLegacyLocalIdeaClients(workspaceRoot);
 
         System.out.println("Qin LSP workspace inventory smoke passed");
@@ -211,6 +215,59 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
 
     private static List<String> legacyParserPackages() {
         return List.of("slime-ast", "slime-parser", "slime-token", "subhuti");
+    }
+
+    private static void assertNoUntrackedOvsCsstsQinConfigs(Path workspaceRoot) throws Exception {
+        Set<String> expected = new LinkedHashSet<>();
+        for (InventoryProject project : inventory()) {
+            Path projectPath = project.path();
+            if (startsWith(projectPath, "ovsjs") || startsWith(projectPath, "cssts")) {
+                expected.add(toWorkspaceRelativeConfigPath(projectPath));
+            }
+        }
+        expected.add("ovsjs/create-ovs/template/qin.config.js");
+        expected.add("cssts/create-cssts/template/qin.config.js");
+
+        Set<String> actual = new LinkedHashSet<>();
+        for (String root : List.of("ovsjs", "cssts")) {
+            Path scanRoot = workspaceRoot.resolve(root).normalize();
+            require(Files.isDirectory(scanRoot), "Qin workspace scan root must exist: " + scanRoot);
+            try (Stream<Path> paths = Files.find(
+                    scanRoot,
+                    4,
+                    (path, attributes) -> attributes.isRegularFile()
+                            && "qin.config.js".equals(path.getFileName().toString())
+                            && !hasIgnoredPathSegment(scanRoot.relativize(path)))) {
+                paths.map(path -> workspaceRoot.relativize(path.normalize()).toString().replace('\\', '/'))
+                        .sorted()
+                        .forEach(actual::add);
+            }
+        }
+
+        require(actual.equals(expected),
+                "OVS/CSSTS qin.config.js inventory mismatch. expected=" + expected + " actual=" + actual);
+    }
+
+    private static boolean startsWith(Path path, String firstSegment) {
+        return path.getNameCount() > 0 && firstSegment.equals(path.getName(0).toString());
+    }
+
+    private static String toWorkspaceRelativeConfigPath(Path projectPath) {
+        return projectPath.toString().replace('\\', '/') + "/qin.config.js";
+    }
+
+    private static boolean hasIgnoredPathSegment(Path relativePath) {
+        for (Path segment : relativePath) {
+            String name = segment.toString();
+            if ("node_modules".equals(name)
+                    || "dist".equals(name)
+                    || "build".equals(name)
+                    || ".git".equals(name)
+                    || ".qin".equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void verifyJavaRuntimeProject(InventoryProject project, QinConfig config) {
