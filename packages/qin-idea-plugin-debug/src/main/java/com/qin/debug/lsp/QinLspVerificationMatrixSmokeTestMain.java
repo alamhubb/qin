@@ -897,9 +897,39 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         Path parityTestPath = qinLanguageRoot.resolve("tests")
                 .resolve("test-generated-parser-parity.ts")
                 .normalize();
+        Path parserFacadePath = qinLanguageRoot.getParent()
+                .resolve("qin-parser")
+                .resolve("src")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("parser")
+                .resolve("QinParserFacade.java")
+                .normalize();
+        Path parserFacadeSmokePath = qinLanguageRoot.getParent()
+                .resolve("qin-parser")
+                .resolve("src")
+                .resolve("java")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("parser")
+                .resolve("QinParserFacadeUnifiedEntrySmokeTestMain.java")
+                .normalize();
         require(Files.isRegularFile(parityTestPath),
                 "Qin generated parser parity test must exist: " + parityTestPath);
+        require(Files.isRegularFile(parserFacadePath),
+                "Qin parser facade must exist: " + parserFacadePath);
+        require(Files.isRegularFile(parserFacadeSmokePath),
+                "Qin parser facade smoke must exist: " + parserFacadeSmokePath);
         String paritySource = Files.readString(parityTestPath);
+        String parserFacadeSource = Files.readString(parserFacadePath);
+        String parserFacadeSmokeSource = Files.readString(parserFacadeSmokePath);
+        require(!parserFacadeSource.contains("rewriteSimpleSwitchStatements")
+                        && !parserFacadeSource.contains("__qin_switch_"),
+                "QinParserFacade must not lower switch syntax with string rewrites");
+        require(parserFacadeSmokeSource.contains("switchParsed.effectiveSource().contains(\"switch (value)\")")
+                        && parserFacadeSmokeSource.contains("Switch syntax must not be lowered by QinParserFacade"),
+                "QinParserFacade smoke must prove switch syntax stays in parser input");
         require(paritySource.contains("qin object method body control flow"),
                 "Qin generated parser parity corpus must include object method-body control flow");
         require(paritySource.contains("export object Labeler"),
@@ -935,6 +965,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && paritySource.contains("continue")
                         && paritySource.contains("break"),
                 "Qin generated parser parity corpus must include while/break/continue syntax");
+        require(paritySource.contains("switch statement control flow"),
+                "Qin generated parser parity corpus must include switch statement control flow");
+        require(paritySource.contains("switch (status)")
+                        && paritySource.contains("case \"ready\":")
+                        && paritySource.contains("default:"),
+                "Qin generated parser parity corpus must include switch/case/default syntax");
         for (String caseName : List.of(
                 "qin object nested method body control flow",
                 "qin object method body exception flow",
@@ -955,6 +991,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "decorated class and method",
                 "control flow in function body",
                 "while loop break continue control flow",
+                "switch statement control flow",
                 "destructuring declarations",
                 "async await function",
                 "invalid unclosed import",

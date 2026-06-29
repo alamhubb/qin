@@ -316,6 +316,23 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'switch statement control flow',
+    source: [
+      'export function statusLabel(status: string): string {',
+      '  switch (status) {',
+      '    case "ready":',
+      '      return "Ready"',
+      '    case "done":',
+      '      return "Done"',
+      '    default:',
+      '      return "Unknown"',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'destructuring declarations',
     source: [
       'const config = { name: "qin", values: [1, 2, 3] }',
