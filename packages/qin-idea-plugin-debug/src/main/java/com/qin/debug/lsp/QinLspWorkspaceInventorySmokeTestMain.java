@@ -342,8 +342,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 "cssts/language-plugin-pug", PackageOnlyProjectKind.EXTERNAL_LANGUAGE_PLUGIN_COPY,
                 "cssts/language-plugin-testts", PackageOnlyProjectKind.LEGACY_LANGUAGE_EXPERIMENT,
                 "ovsjs/my-uni-ovs-test", PackageOnlyProjectKind.DEMO_APP,
-                "ovsjs/os-language", PackageOnlyProjectKind.LEGACY_EDITOR_EXTENSION,
-                "ovsjs/ovs-test-2026", PackageOnlyProjectKind.DEMO_APP);
+                "ovsjs/os-language", PackageOnlyProjectKind.LEGACY_EDITOR_EXTENSION);
     }
 
     private static void verifyPackageOnlyProjectClassification(
@@ -665,7 +664,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                                 "create-ovs",
                                 "vite-plugin-ovs",
                                 "ovs-language",
-                                "guidebot")),
+                                "guidebot",
+                                "ovs-test-2026")),
                 InventoryProject.workspace("cssts-workspace", Path.of("cssts"),
                         "cssts-workspace", "cssts", List.of(
                                 "cssts/cssts-runtime",
@@ -694,6 +694,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "create-ovs", "ovs", null),
                 InventoryProject.app("ovs-guidebot", Path.of("ovsjs", "guidebot"),
                         "guidebot-web", "ovs", ".ovs"),
+                InventoryProject.app("ovs-test-2026", Path.of("ovsjs", "ovs-test-2026"),
+                        "ovs-test-2026", "ovs", ".ovs"),
                 InventoryProject.tooling("cssts-runtime", Path.of("cssts", "cssts", "cssts-runtime"),
                         "cssts-ts", "cssts", null),
                 InventoryProject.tooling("vite-plugin-cssts", Path.of("cssts", "vite-plugin-cssts"),
