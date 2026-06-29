@@ -10,6 +10,7 @@ import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrContinueStatement;
+import com.qin.lang.ir.QinIrDoWhileStatementNode;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrForStatement;
@@ -71,6 +72,7 @@ import com.slime.ast.nodes.patterns.RestElement;
 import com.slime.ast.nodes.statements.BlockStatement;
 import com.slime.ast.nodes.statements.BreakStatement;
 import com.slime.ast.nodes.statements.ContinueStatement;
+import com.slime.ast.nodes.statements.DoWhileStatement;
 import com.slime.ast.nodes.statements.ExpressionStatement;
 import com.slime.ast.nodes.statements.ForStatement;
 import com.slime.ast.nodes.statements.IfStatement;
@@ -721,6 +723,12 @@ final class QinDeclarationIrLowerer {
                 }
                 continue;
             }
+            if (statement instanceof DoWhileStatement doWhileStatement) {
+                if (!isDeclarationCompatibleBranch(doWhileStatement.body())) {
+                    return false;
+                }
+                continue;
+            }
             if (statement instanceof WhileStatement whileStatement) {
                 if (!isDeclarationCompatibleBranch(whileStatement.body())) {
                     return false;
@@ -757,6 +765,9 @@ final class QinDeclarationIrLowerer {
         }
         if (statement instanceof ForStatement forStatement) {
             return isDeclarationCompatibleForStatement(forStatement);
+        }
+        if (statement instanceof DoWhileStatement doWhileStatement) {
+            return isDeclarationCompatibleBranch(doWhileStatement.body());
         }
         if (statement instanceof WhileStatement whileStatement) {
             return isDeclarationCompatibleBranch(whileStatement.body());
@@ -999,6 +1010,7 @@ final class QinDeclarationIrLowerer {
             if (statement instanceof ThrowStatement
                     || statement instanceof TryStatement
                     || statement instanceof ForStatement
+                    || statement instanceof DoWhileStatement
                     || statement instanceof BreakStatement
                     || statement instanceof ContinueStatement
                     || statement instanceof WhileStatement) {
@@ -1113,6 +1125,16 @@ final class QinDeclarationIrLowerer {
                         javaImportLookup,
                         classContext,
                         scopedLocals));
+                continue;
+            }
+            if (statement instanceof DoWhileStatement doWhileStatement) {
+                lowered.add(new QinIrDoWhileStatementNode(
+                        lowerDeclarationStatements(
+                                statementList(doWhileStatement.body()),
+                                javaImportLookup,
+                                classContext,
+                                new LinkedHashMap<>(scopedLocals)),
+                        lowerDeclarationExpression(doWhileStatement.test(), javaImportLookup, classContext, scopedLocals)));
                 continue;
             }
             if (statement instanceof WhileStatement whileStatement) {

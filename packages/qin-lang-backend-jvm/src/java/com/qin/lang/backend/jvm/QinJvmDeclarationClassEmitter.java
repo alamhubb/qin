@@ -8,6 +8,7 @@ import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrContinueStatement;
+import com.qin.lang.ir.QinIrDoWhileStatementNode;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrForStatement;
@@ -769,6 +770,10 @@ public final class QinJvmDeclarationClassEmitter {
             emitForStatement(code, ownerDeclaration, method, declarationIndex, localFrame, forStatement);
             return;
         }
+        if (statement instanceof QinIrDoWhileStatementNode doWhileStatement) {
+            emitDoWhileStatement(code, ownerDeclaration, method, declarationIndex, localFrame, doWhileStatement);
+            return;
+        }
         if (statement instanceof QinIrBreakStatement breakStatement) {
             emitBreakStatement(code, localFrame, breakStatement);
             return;
@@ -805,6 +810,34 @@ public final class QinJvmDeclarationClassEmitter {
         code.ifeq(doneLabel);
         emitStatements(code, ownerDeclaration, method, declarationIndex, loopFrame, whileStatement.body());
         code.goto_(startLabel);
+        code.labelBinding(doneLabel);
+    }
+
+    private void emitDoWhileStatement(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrDoWhileStatementNode doWhileStatement) {
+        java.lang.classfile.Label startLabel = code.newLabel();
+        java.lang.classfile.Label testLabel = code.newLabel();
+        java.lang.classfile.Label doneLabel = code.newLabel();
+        LocalFrame loopFrame = localFrame.withLoop(new LoopBinding(testLabel, doneLabel));
+        code.labelBinding(startLabel);
+        emitStatements(code, ownerDeclaration, method, declarationIndex, loopFrame, doWhileStatement.body());
+        code.labelBinding(testLabel);
+        QinIrTypeRef testType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                loopFrame,
+                doWhileStatement.test());
+        if (testType.kind() != QinIrTypeKind.BOOLEAN) {
+            throw new IllegalArgumentException("Declaration do-while statement test must be boolean");
+        }
+        code.ifne(startLabel);
         code.labelBinding(doneLabel);
     }
 
