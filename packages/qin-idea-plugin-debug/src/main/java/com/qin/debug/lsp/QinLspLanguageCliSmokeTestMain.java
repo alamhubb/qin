@@ -29,6 +29,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("qin").resolve("packages").resolve("qin-language").normalize(),
                         "dist/language-server.cjs",
                         true,
+                        true,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-parity.ts",
@@ -39,6 +40,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("ovs-language").normalize(),
                         "dist/language-server.js",
                         true,
+                        false,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts",
@@ -49,6 +51,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("cssts-language").normalize(),
                         "dist/language-server.cjs",
                         true,
+                        false,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts",
@@ -58,6 +61,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "ovs",
                         workspaceRoot.resolve("ovsjs").normalize(),
                         null,
+                        false,
                         false,
                         scriptNeedles(
                                 "build", "language build --root ovs/ovs-runtime",
@@ -75,6 +79,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "cssts",
                         workspaceRoot.resolve("cssts").normalize(),
                         null,
+                        false,
                         false,
                         scriptNeedles(
                                 "build", "language build --root cssts/cssts-runtime",
@@ -97,6 +102,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-compiler").normalize(),
                         null,
                         false,
+                        false,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tests/test-generated-parser-chain.ts")),
@@ -105,6 +111,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "cssts",
                         workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler").normalize(),
                         null,
+                        false,
                         false,
                         scriptNeedles(
                                 "build", "tsdown",
@@ -115,6 +122,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-runtime").normalize(),
                         null,
                         false,
+                        false,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
@@ -123,6 +131,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "ovs",
                         workspaceRoot.resolve("ovsjs").resolve("vite-plugin-ovs").normalize(),
                         null,
+                        false,
                         false,
                         scriptNeedles(
                                 "build", "tsdown",
@@ -133,6 +142,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("ovsjs").resolve("create-ovs").normalize(),
                         null,
                         false,
+                        false,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
@@ -141,6 +151,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "cssts",
                         workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-runtime").normalize(),
                         null,
+                        false,
                         false,
                         scriptNeedles(
                                 "build", "tsdown",
@@ -151,6 +162,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("vite-plugin-cssts").normalize(),
                         null,
                         false,
+                        false,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
@@ -159,6 +171,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "cssts",
                         workspaceRoot.resolve("cssts").resolve("language-plugin-cssts").normalize(),
                         null,
+                        false,
                         false,
                         scriptNeedles(
                                 "build", "tsdown",
@@ -169,6 +182,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         workspaceRoot.resolve("cssts").resolve("create-cssts").normalize(),
                         null,
                         false,
+                        false,
                         scriptNeedles(
                                 "build", "tsdown",
                                 "test", "tsdown")),
@@ -177,6 +191,7 @@ public final class QinLspLanguageCliSmokeTestMain {
                         "cssts",
                         workspaceRoot.resolve("cssts").resolve("cssts-theme-element").normalize(),
                         null,
+                        false,
                         false,
                         scriptNeedles(
                                 "build", "tsdown",
@@ -212,6 +227,22 @@ public final class QinLspLanguageCliSmokeTestMain {
                     testCase.id() + " qin language server --dry-run did not use language.serverBundle: " + server);
             require(server.stdout().contains("--stdio"),
                     testCase.id() + " qin language server --dry-run must pass --stdio: " + server);
+        }
+
+        if (testCase.expectGeneratedParserDryRun()) {
+            CommandResult generatedParser = runQinLanguage(qinCommand, testCase.projectRoot(),
+                    "generate-parser", "--dry-run");
+            for (String expectedNeedle : List.of(
+                    "generate java parser com.qin.parser.QinParser",
+                    "packageName: @qin/generated-qin-parser-ts",
+                    "packageEntry: ./index.ts",
+                    "language.parser: generated/qin-parser-ts",
+                    "additionalEntryBinaryName: com.slime.parser.cstToAst.SlimeCstToAstUtils",
+                    "additionalEntryBinaryName: com.slime.parser.cstToAst.SlimeAstCreateUtils")) {
+                require(generatedParser.stdout().contains(expectedNeedle),
+                        testCase.id() + " qin language generate-parser --dry-run missing "
+                                + expectedNeedle + ": " + generatedParser);
+            }
         }
 
         for (ScriptNeedle expectedScript : testCase.expectedScriptNeedles()) {
@@ -314,6 +345,7 @@ public final class QinLspLanguageCliSmokeTestMain {
             Path projectRoot,
             String serverBundle,
             boolean expectServerCommands,
+            boolean expectGeneratedParserDryRun,
             List<ScriptNeedle> expectedScriptNeedles) {
     }
 

@@ -302,6 +302,16 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         require(smokeSource.contains("private record ScriptNeedle"),
                 "lspLanguageCliSmoke must allow multiple script dry-run needles per command");
+        for (String generatedParserNeedle : List.of(
+                "expectGeneratedParserDryRun",
+                "\"generate-parser\", \"--dry-run\"",
+                "generate java parser com.qin.parser.QinParser",
+                "packageName: @qin/generated-qin-parser-ts",
+                "language.parser: generated/qin-parser-ts")) {
+            require(smokeSource.contains(generatedParserNeedle),
+                    "lspLanguageCliSmoke must verify Qin Java parser -> TypeScript parser dry-run needle "
+                            + generatedParserNeedle);
+        }
     }
 
     private static void verifyLocalDependencyBuildSmokeCoverage(Path workspaceRoot) throws Exception {
