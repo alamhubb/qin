@@ -1039,17 +1039,23 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 .resolve("QinJvmClassDeclarationCorpusSmokeTestMain.java")
                 .normalize();
         Path earlyReturnPath = corpusPath.resolveSibling("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.java");
+        Path nestedBranchPath = corpusPath.resolveSibling("QinJvmParsedNestedBranchMethodBodySmokeTestMain.java");
         require(Files.isRegularFile(corpusPath),
                 "Qin JVM class declaration corpus smoke must exist: " + corpusPath);
         require(Files.isRegularFile(earlyReturnPath),
                 "Qin JVM parsed early-return method-body smoke must exist: " + earlyReturnPath);
+        require(Files.isRegularFile(nestedBranchPath),
+                "Qin JVM parsed nested-branch method-body smoke must exist: " + nestedBranchPath);
 
         String corpusSource = Files.readString(corpusPath);
         String earlyReturnSource = Files.readString(earlyReturnPath);
+        String nestedBranchSource = Files.readString(nestedBranchPath);
         require(corpusSource.contains("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed early-return method-body smoke");
-        require(corpusSource.contains("14 cases"),
-                "Qin JVM class declaration corpus count must cover the parsed early-return case");
+        require(corpusSource.contains("QinJvmParsedNestedBranchMethodBodySmokeTestMain.main(args)"),
+                "Qin JVM class declaration corpus must include parsed nested-branch method-body smoke");
+        require(corpusSource.contains("15 cases"),
+                "Qin JVM class declaration corpus count must cover the parsed nested-branch case");
         require(earlyReturnSource.contains("const prefix = \"hello \""),
                 "Parsed early-return smoke must cover Qin local binding in a method body");
         require(earlyReturnSource.contains("if (flag)"),
@@ -1058,6 +1064,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Parsed early-return smoke must cover Qin early return from a block");
         require(earlyReturnSource.contains("return \"bye \" + name"),
                 "Parsed early-return smoke must cover Qin fallthrough return after early return");
+        require(nestedBranchSource.contains("if (active)") && nestedBranchSource.contains("if (premium)"),
+                "Parsed nested-branch smoke must cover nested Qin if branch lowering");
+        require(nestedBranchSource.contains("const label = \"vip \"")
+                        && nestedBranchSource.contains("const standard = \"std \""),
+                "Parsed nested-branch smoke must cover branch-local Qin bindings");
+        require(nestedBranchSource.contains("return standard + name")
+                        && nestedBranchSource.contains("return base + name"),
+                "Parsed nested-branch smoke must cover branch and fallthrough returns");
     }
 
     private static void verifyCompletionAuditDocument(Path auditPath) throws Exception {
@@ -1091,10 +1105,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(audit.contains(hardeningNeedle),
                     "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
-        require(audit.contains("14-case class-declaration corpus"),
+        require(audit.contains("15-case class-declaration corpus"),
                 "LSP completion audit must record the current JVM class declaration corpus size");
         require(audit.contains("local binding plus early-return `if`"),
                 "LSP completion audit must record parsed method-body early-return coverage");
+        require(audit.contains("nested `if` branches, branch-local bindings, and fallthrough returns"),
+                "LSP completion audit must record parsed method-body nested-branch coverage");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
                 "LSP completion audit must record object method-body parser parity coverage");
     }
