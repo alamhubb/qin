@@ -760,6 +760,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "CSSTS language",
                 workspaceRoot.resolve("cssts").resolve("cssts-language").normalize());
         verifyDocumentationNeedles(
+                "OVS workspace README",
+                workspaceRoot.resolve("ovsjs").resolve("README.md").normalize(),
+                List.of(
+                        "generated user app",
+                        "Qin-managed through `qin.config.js`",
+                        "..\\qin\\qin.bat language build --root ovs/ovs-compiler",
+                        "..\\qin\\qin.bat language test --root ovs-language"));
+        verifyDocumentationNeedles(
                 "OVS language README",
                 workspaceRoot.resolve("ovsjs").resolve("ovs-language").resolve("README.md").normalize(),
                 List.of(
