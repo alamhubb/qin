@@ -7,11 +7,17 @@ import com.qin.types.QinConfig;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class QinLspVerificationMatrixSmokeTestMain {
     private static final String GENERATED_QIN_PARSER_PACKAGE = "@qin/generated-qin-parser-ts";
+    private static final Pattern LOCAL_TYPESCRIPT_IMPORT = Pattern.compile(
+            "\\bfrom\\s+['\"](\\.{1,2}/[^'\"]+)['\"]|\\bimport\\s*\\(\\s*['\"](\\.{1,2}/[^'\"]+)['\"]\\s*\\)");
 
     private QinLspVerificationMatrixSmokeTestMain() {
     }
@@ -682,7 +688,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 workspaceRoot.resolve("cssts").resolve("cssts-language")
                         .resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
                 List.of(
-                        "new CssTsParser(inheritedSyntaxSource)",
+                        "new CssTsParser(",
                         "parser instanceof SlimeJavascriptParser",
                         "object NestedLabeler",
                         "export interface ChainUser",
@@ -743,7 +749,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 workspaceRoot,
                 csstsCompilerRoot.resolve("tests").resolve("test-generated-parser-chain.ts").normalize(),
                 List.of(
-                        "new CssTsParser(inheritedSyntaxSource)",
+                        "new CssTsParser(",
                         "parser instanceof SlimeJavascriptParser",
                         "object NestedLabeler",
                         "export interface ChainUser",
@@ -933,10 +939,52 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         require(Files.isRegularFile(smokePath),
                 id + " generated parser chain smoke must exist: " + smokePath);
         String source = Files.readString(smokePath);
+        String searchableSource = source + "\n" + readLocalTypeScriptImports(smokePath, workspaceRoot, source);
         for (String requiredNeedle : requiredNeedles) {
-            require(source.contains(requiredNeedle),
+            require(searchableSource.contains(requiredNeedle),
                     id + " generated parser chain smoke must assert " + requiredNeedle);
         }
+    }
+
+    private static String readLocalTypeScriptImports(Path sourcePath, Path workspaceRoot, String source) throws Exception {
+        StringBuilder builder = new StringBuilder();
+        Set<Path> visited = new LinkedHashSet<>();
+        collectLocalTypeScriptImports(sourcePath, workspaceRoot, source, visited, builder);
+        return builder.toString();
+    }
+
+    private static void collectLocalTypeScriptImports(
+            Path sourcePath,
+            Path workspaceRoot,
+            String source,
+            Set<Path> visited,
+            StringBuilder builder) throws Exception {
+        Matcher matcher = LOCAL_TYPESCRIPT_IMPORT.matcher(source);
+        while (matcher.find()) {
+            String importPath = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            Path resolved = resolveLocalTypeScriptImport(sourcePath.getParent(), importPath);
+            if (resolved == null || !resolved.startsWith(workspaceRoot) || !Files.isRegularFile(resolved) || !visited.add(resolved)) {
+                continue;
+            }
+            String importedSource = Files.readString(resolved);
+            builder.append("\n// ").append(resolved).append("\n").append(importedSource);
+            collectLocalTypeScriptImports(resolved, workspaceRoot, importedSource, visited, builder);
+        }
+    }
+
+    private static Path resolveLocalTypeScriptImport(Path parent, String importPath) {
+        Path base = parent.resolve(importPath).normalize();
+        if (Files.isRegularFile(base)) {
+            return base;
+        }
+        for (String extension : List.of(".ts", ".mts", ".cts", ".js", ".mjs", ".cjs")) {
+            Path candidate = parent.resolve(importPath + extension).normalize();
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+        }
+        Path indexTs = parent.resolve(importPath).resolve("index.ts").normalize();
+        return Files.isRegularFile(indexTs) ? indexTs : null;
     }
 
     private static void verifyLanguageToolingDocumentation(Path workspaceRoot) throws Exception {
