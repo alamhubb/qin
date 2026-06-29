@@ -610,6 +610,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "object NestedLabeler",
                         "token.tokenValue === 'premium'",
                         "token.tokenValue === 'standard'",
+                        "token.tokenValue === 'try'",
+                        "token.tokenValue === 'catch'",
+                        "token.tokenValue === 'throw'",
                         "css { colorRed, displayFlex }",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')",
@@ -625,6 +628,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "object NestedLabeler",
                         "token.tokenValue === 'premium'",
                         "token.tokenValue === 'standard'",
+                        "token.tokenValue === 'try'",
+                        "token.tokenValue === 'catch'",
+                        "token.tokenValue === 'throw'",
                         "css { colorRed, displayFlex }",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
@@ -640,6 +646,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "object NestedLabeler",
                         "token.tokenValue === 'premium'",
                         "token.tokenValue === 'standard'",
+                        "token.tokenValue === 'try'",
+                        "token.tokenValue === 'catch'",
+                        "token.tokenValue === 'throw'",
                         "div(class = css { displayFlex })",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')",
@@ -657,6 +666,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "object NestedLabeler",
                         "token.tokenValue === 'premium'",
                         "token.tokenValue === 'standard'",
+                        "token.tokenValue === 'try'",
+                        "token.tokenValue === 'catch'",
+                        "token.tokenValue === 'throw'",
                         "div(class = css { displayFlex })",
                         "parsedTokens.some((token: any) => token.tokenValue === 'object')",
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
@@ -1182,6 +1194,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record object method-body parser parity coverage");
         require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),
                 "LSP completion audit must record nested object method-body parser parity coverage");
+        require(audit.contains("Qin object method bodies with try/catch/throw"),
+                "LSP completion audit must record OVS/CSSTS parser-chain exception syntax coverage");
         require(audit.contains("diagnostics, completion, definition, references, document symbols, and semantic tokens"),
                 "LSP completion audit must record IDEA fixture references coverage");
         require(audit.contains("parsed same-class method invocation through `this.method()`"),
