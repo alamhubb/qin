@@ -249,6 +249,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "lspUnifiedMatrix must depend on " + matrixTask);
         }
         verifyCompletionAuditDocument(ideaClientPath.resolve("LSP_COMPLETION_AUDIT.md"));
+        verifyLanguageToolingDocumentation(workspaceRoot);
         verifyLanguageCliSmokeCoverage(ideaClientPath);
         verifyIdeaDiagnosticsSmokeFeatureAssertions(ideaClientPath);
 
@@ -662,6 +663,55 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String requiredNeedle : requiredNeedles) {
             require(source.contains(requiredNeedle),
                     id + " generated parser chain smoke must assert " + requiredNeedle);
+        }
+    }
+
+    private static void verifyLanguageToolingDocumentation(Path workspaceRoot) throws Exception {
+        verifyDocumentationNeedles(
+                "OVS language README",
+                workspaceRoot.resolve("ovsjs").resolve("ovs-language").resolve("README.md").normalize(),
+                List.of(
+                        "Toolchain Development",
+                        "..\\..\\qin\\qin.bat language build",
+                        "..\\..\\qin\\qin.bat language test",
+                        "..\\..\\qin\\qin.bat language server --dry-run",
+                        "generated Qin parser",
+                        "do not add a separate parser",
+                        "fallback"));
+        verifyDocumentationNeedles(
+                "CSSTS language README",
+                workspaceRoot.resolve("cssts").resolve("cssts-language").resolve("README.md").normalize(),
+                List.of(
+                        "..\\..\\qin\\qin.bat language build",
+                        "..\\..\\qin\\qin.bat language test",
+                        "..\\..\\qin\\qin.bat language server --dry-run",
+                        "generated Qin parser",
+                        "不要在语言包里新增独立 parser、正则扫描或 fallback 路径"));
+        verifyDocumentationNeedles(
+                "CSSTS architecture README",
+                workspaceRoot.resolve("cssts").resolve("ARCHITECTURE.md").normalize(),
+                List.of(
+                        "..\\..\\qin\\qin.bat language build",
+                        "..\\..\\qin\\qin.bat language test",
+                        "..\\..\\qin\\qin.bat language server --dry-run",
+                        "npx vsce package"));
+    }
+
+    private static void verifyDocumentationNeedles(
+            String label,
+            Path documentationPath,
+            List<String> requiredNeedles) throws Exception {
+        require(Files.isRegularFile(documentationPath),
+                label + " must exist: " + documentationPath);
+        String source = Files.readString(documentationPath);
+        for (String requiredNeedle : requiredNeedles) {
+            require(source.contains(requiredNeedle),
+                    label + " must document " + requiredNeedle);
+        }
+        for (String forbiddenNeedle : List.of("npm run build", "npm run package")) {
+            require(!source.contains(forbiddenNeedle),
+                    label + " must keep Qin as the documented language tooling entrypoint, not "
+                            + forbiddenNeedle);
         }
     }
 
