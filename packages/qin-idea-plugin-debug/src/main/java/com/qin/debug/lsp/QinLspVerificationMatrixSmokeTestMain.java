@@ -1160,6 +1160,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record object method-body parser parity coverage");
         require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),
                 "LSP completion audit must record nested object method-body parser parity coverage");
+        require(audit.contains("diagnostics, completion, definition, references, document symbols, and semantic tokens"),
+                "LSP completion audit must record IDEA fixture references coverage");
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {

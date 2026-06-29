@@ -69,6 +69,7 @@ public final class QinLspUiFixtureSmokeTestMain {
                 "textDocument/publishDiagnostics",
                 "textDocument/completion",
                 "textDocument/definition",
+                "textDocument/references",
                 "textDocument/documentSymbol",
                 "textDocument/semanticTokens/full")) {
             require(source.contains(method), "Diagnostics smoke must request or await " + method);
