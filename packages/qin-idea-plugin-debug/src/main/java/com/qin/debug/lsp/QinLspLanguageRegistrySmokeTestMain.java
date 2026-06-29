@@ -8,6 +8,7 @@ import com.qin.types.QinConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Map;
 
 public final class QinLspLanguageRegistrySmokeTestMain {
@@ -60,6 +61,7 @@ public final class QinLspLanguageRegistrySmokeTestMain {
         }
 
         require(QinLspLanguageRegistry.fromExtension(workspaceRoot, "txt") == null, "Unexpected language for .txt");
+        assertWorkspaceRootUsesQinConfigInventory();
         assertNoHardcodedServerBundles(Path.of("src", "main", "java", "com", "qin", "debug", "lsp"));
         System.out.println("Qin LSP language registry smoke passed");
     }
@@ -85,6 +87,44 @@ public final class QinLspLanguageRegistrySmokeTestMain {
             }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to inspect IDEA LSP source files under " + lspSourceRoot, e);
+        }
+    }
+
+    private static void assertWorkspaceRootUsesQinConfigInventory() {
+        Path tempRoot = null;
+        try {
+            tempRoot = Files.createTempDirectory("qin-lsp-workspace-root-");
+            for (Path projectRelativePath : QinLspLanguageRegistry.LANGUAGE_PROJECTS) {
+                Path projectRoot = tempRoot.resolve(projectRelativePath).normalize();
+                Files.createDirectories(projectRoot);
+                Files.writeString(projectRoot.resolve("qin.config.js"), "export default {}\n");
+            }
+
+            Path nestedBasePath = tempRoot.resolve("qin")
+                    .resolve("packages")
+                    .resolve("qin-language")
+                    .resolve("src")
+                    .normalize();
+            Files.createDirectories(nestedBasePath);
+            Path resolved = QinLspLanguageRegistry.resolveWorkspaceRoot(nestedBasePath);
+            require(tempRoot.equals(resolved),
+                    "Workspace root must resolve from qin.config.js inventory without requiring built dist bundles");
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to verify qin.config.js workspace root inventory", e);
+        } finally {
+            if (tempRoot != null) {
+                deleteRecursively(tempRoot);
+            }
+        }
+    }
+
+    private static void deleteRecursively(Path root) {
+        try (var paths = Files.walk(root)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to clean temporary workspace root fixture: " + root, e);
         }
     }
 

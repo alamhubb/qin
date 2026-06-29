@@ -93,17 +93,22 @@ final class QinLspLanguageRegistry {
     static Path resolveWorkspaceRoot(Path projectBasePath) {
         Path current = projectBasePath.toAbsolutePath().normalize();
         while (current != null) {
-            if (Files.isRegularFile(current.resolve("qin")
-                    .resolve("packages")
-                    .resolve("qin-language")
-                    .resolve("dist")
-                    .resolve("language-server.cjs"))) {
+            if (isWorkspaceRoot(current)) {
                 return current;
             }
             current = current.getParent();
         }
 
         throw new IllegalStateException("Cannot find qinall workspace root from " + projectBasePath);
+    }
+
+    private static boolean isWorkspaceRoot(Path candidate) {
+        for (Path projectRelativePath : LANGUAGE_PROJECTS) {
+            if (!Files.isRegularFile(candidate.resolve(projectRelativePath).resolve("qin.config.js"))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static Path resolveTypescriptSdk(Path workspaceRoot) {
