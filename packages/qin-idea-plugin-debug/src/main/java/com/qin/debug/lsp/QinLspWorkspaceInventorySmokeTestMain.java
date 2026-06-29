@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -300,14 +301,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
     }
 
     private static void assertNoUnclassifiedOvsCsstsPackageProjects(Path workspaceRoot) throws Exception {
-        Set<String> expectedLegacyOrDemo = new LinkedHashSet<>(List.of(
-                "cssts/language-plugin-pug",
-                "cssts/language-plugin-testts",
-                "cssts/vite-project",
-                "ovsjs/guidebot",
-                "ovsjs/my-uni-ovs-test",
-                "ovsjs/os-language",
-                "ovsjs/ovs-test-2026"));
+        Set<String> expectedLegacyOrDemo = approvedLegacyOrDemoPackageProjects().keySet();
         Set<String> managed = new LinkedHashSet<>();
         for (InventoryProject project : inventory()) {
             Path projectPath = project.path();
@@ -336,6 +330,55 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         + "Every non-IDEA Qin-related project must be qin.config.js managed; "
                         + "legacy/demo exceptions must be explicit. expected="
                         + expectedLegacyOrDemo + " actual=" + actualPackageOnly);
+        for (Map.Entry<String, PackageOnlyProjectKind> entry : approvedLegacyOrDemoPackageProjects().entrySet()) {
+            verifyPackageOnlyProjectClassification(workspaceRoot, entry.getKey(), entry.getValue());
+        }
+    }
+
+    private static Map<String, PackageOnlyProjectKind> approvedLegacyOrDemoPackageProjects() {
+        return Map.of(
+                "cssts/language-plugin-pug", PackageOnlyProjectKind.EXTERNAL_LANGUAGE_PLUGIN_COPY,
+                "cssts/language-plugin-testts", PackageOnlyProjectKind.LEGACY_LANGUAGE_EXPERIMENT,
+                "cssts/vite-project", PackageOnlyProjectKind.DEMO_APP,
+                "ovsjs/guidebot", PackageOnlyProjectKind.DEMO_APP,
+                "ovsjs/my-uni-ovs-test", PackageOnlyProjectKind.DEMO_APP,
+                "ovsjs/os-language", PackageOnlyProjectKind.LEGACY_EDITOR_EXTENSION,
+                "ovsjs/ovs-test-2026", PackageOnlyProjectKind.DEMO_APP);
+    }
+
+    private static void verifyPackageOnlyProjectClassification(
+            Path workspaceRoot,
+            String relativePath,
+            PackageOnlyProjectKind kind) throws Exception {
+        Path packageJson = workspaceRoot.resolve(relativePath).resolve("package.json").normalize();
+        require(Files.isRegularFile(packageJson),
+                "Approved package-only project must keep package.json: " + relativePath);
+        String source = Files.readString(packageJson);
+        switch (kind) {
+            case DEMO_APP -> {
+                require(source.contains("\"vite\"")
+                                || source.contains("@dcloudio/vite-plugin-uni")
+                                || source.contains("vite-plugin-ovs")
+                                || source.contains("vite-plugin-cssts"),
+                        relativePath + " demo exception must stay identifiable as a Vite/Uni demo app");
+                require(!source.contains("\"activationEvents\"") && !source.contains("\"contributes\""),
+                        relativePath + " demo exception must not become an editor extension");
+            }
+            case LEGACY_LANGUAGE_EXPERIMENT -> {
+                require(source.contains("\"slime-parser\""),
+                        relativePath + " legacy language experiment must stay explicit about legacy parser usage");
+                require(!source.contains("\"activationEvents\"") && !source.contains("\"contributes\""),
+                        relativePath + " legacy language experiment must not become an editor extension");
+            }
+            case LEGACY_EDITOR_EXTENSION -> {
+                require(source.contains("\"activationEvents\"") && source.contains("\"contributes\""),
+                        relativePath + " legacy editor extension must stay explicitly classified");
+                require(source.contains("\"vscode\""),
+                        relativePath + " legacy editor extension must stay VSCode-specific, not IDEA/LSP mainline");
+            }
+            case EXTERNAL_LANGUAGE_PLUGIN_COPY -> require(source.contains("\"@vue/language-plugin-pug\""),
+                    relativePath + " external plugin copy must stay identifiable by package name");
+        }
     }
 
     private static boolean startsWith(Path path, String firstSegment) {
@@ -686,6 +729,13 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         GENERATED_TS,
         WORKSPACE,
         TOOLING
+    }
+
+    private enum PackageOnlyProjectKind {
+        DEMO_APP,
+        LEGACY_LANGUAGE_EXPERIMENT,
+        LEGACY_EDITOR_EXTENSION,
+        EXTERNAL_LANGUAGE_PLUGIN_COPY
     }
 
     private record InventoryProject(
