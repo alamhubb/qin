@@ -1043,6 +1043,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "OVS syntax definition response",
                     "OVS syntax references response",
                     "OVS syntax documentSymbol response",
+                    "OVS for...of completion response",
+                    "OVS for...of definition response",
+                    "OVS for...of references response",
+                    "OVS for...of documentSymbol response",
                     "css { displayFlex }",
                     "labelText");
             case "cssts" -> List.of(
@@ -1050,6 +1054,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "CSSTS css syntax definition response",
                     "CSSTS css syntax references response",
                     "CSSTS css syntax documentSymbol response",
+                    "CSSTS for...of completion response",
+                    "CSSTS for...of definition response",
+                    "CSSTS for...of references response",
+                    "CSSTS for...of documentSymbol response",
                     "css { colorRed, displayFlex }",
                     "derivedStyle");
             default -> throw new IllegalStateException("Unsupported language id: " + languageId);
@@ -1081,10 +1089,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin object usage Counter");
             case "ovs" -> List.of(
                     "OVS syntax labelText declaration",
-                    "OVS syntax labelText render usage");
+                    "OVS syntax labelText render usage",
+                    "OVS for...of item declaration",
+                    "OVS for...of item render usage");
             case "cssts" -> List.of(
                     "CSSTS css syntax baseStyle declaration",
-                    "CSSTS css syntax baseStyle usage");
+                    "CSSTS css syntax baseStyle usage",
+                    "CSSTS for...of row declaration",
+                    "CSSTS for...of row usage");
             default -> throw new IllegalStateException("Unsupported language id: " + languageId);
         };
     }
