@@ -312,9 +312,34 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String requiredNeedle : List.of(
                 "value = 1",
                 "value = 2",
-                "local file dependency rebuild marker from changed source")) {
+                "local file dependency rebuild marker from changed source",
+                "CountDownLatch",
+                "AtomicReference<Throwable>",
+                "concurrent-qin-build",
+                "violation.txt",
+                "language local dependency build lock prevents concurrent dist clean/build entry")) {
             require(smokeSource.contains(requiredNeedle),
                     "Qin local dependency build smoke must verify changed-source rebuild coverage: "
+                            + requiredNeedle);
+        }
+        Path cliPath = workspaceRoot.resolve("qin")
+                .resolve("src")
+                .resolve("com")
+                .resolve("qin")
+                .resolve("cli")
+                .resolve("QinCli.java")
+                .normalize();
+        require(Files.isRegularFile(cliPath), "Qin CLI source must exist: " + cliPath);
+        String cliSource = Files.readString(cliPath);
+        for (String requiredNeedle : List.of(
+                "LANGUAGE_BUILD_LOCK_FILE",
+                "language-build.lock",
+                "runWithLanguageBuildLock",
+                "acquireLanguageBuildLock",
+                "OverlappingFileLockException",
+                "Another language dependency build is in progress")) {
+            require(cliSource.contains(requiredNeedle),
+                    "Qin CLI must serialize local language dependency builds with a real file lock: "
                             + requiredNeedle);
         }
     }
