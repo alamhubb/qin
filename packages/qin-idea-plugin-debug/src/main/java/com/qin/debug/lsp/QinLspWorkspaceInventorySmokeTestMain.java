@@ -62,6 +62,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             verifyWorkspaceProject(workspaceRoot, project, projectRoot, config);
         } else if (project.kind() == ProjectKind.TOOLING) {
             verifyToolingProject(project, projectRoot, config);
+        } else if (project.kind() == ProjectKind.APP) {
+            verifyAppProject(project, projectRoot, config);
         }
     }
 
@@ -339,7 +341,6 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         return Map.of(
                 "cssts/language-plugin-pug", PackageOnlyProjectKind.EXTERNAL_LANGUAGE_PLUGIN_COPY,
                 "cssts/language-plugin-testts", PackageOnlyProjectKind.LEGACY_LANGUAGE_EXPERIMENT,
-                "cssts/vite-project", PackageOnlyProjectKind.DEMO_APP,
                 "ovsjs/guidebot", PackageOnlyProjectKind.DEMO_APP,
                 "ovsjs/my-uni-ovs-test", PackageOnlyProjectKind.DEMO_APP,
                 "ovsjs/os-language", PackageOnlyProjectKind.LEGACY_EDITOR_EXTENSION,
@@ -495,6 +496,38 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         verifyPackageJsonIsNotScriptEntrypoint(project.id(), projectRoot, "tooling");
     }
 
+    private static void verifyAppProject(InventoryProject project, Path projectRoot, QinConfig config) {
+        require(config.frontend() != null,
+                project.id() + " app project must declare Qin frontend metadata");
+        require(config.frontend().entry() != null && !config.frontend().entry().isBlank(),
+                project.id() + " app project must declare frontend.entry");
+        require(Files.isRegularFile(projectRoot.resolve(config.frontend().entry()).normalize()),
+                project.id() + " frontend.entry must exist: " + config.frontend().entry());
+        LanguageConfig language = config.language();
+        require(language != null, project.id() + " app project must declare language metadata");
+        require(project.languageId().equals(language.id()),
+                project.id() + " app language.id mismatch: " + language.id());
+        if (project.extension() != null) {
+            require(project.extension().equals(language.extension()),
+                    project.id() + " app language.extension mismatch: " + language.extension());
+        }
+        for (String scriptName : List.of("dev", "build", "preview", "test")) {
+            require(config.scripts().containsKey(scriptName),
+                    project.id() + " app qin.config.js must declare script " + scriptName);
+        }
+        for (var script : config.scripts().entrySet()) {
+            require(!script.getValue().contains("npm run"),
+                    project.id() + " app script " + script.getKey()
+                            + " must run directly through Qin script metadata, not npm run forwarding: "
+                            + script.getValue());
+        }
+        require(config.hasDependency("cssts-ts"),
+                project.id() + " app must declare CSSTS runtime as a Qin-managed dependency");
+        require(config.hasDependency("vite-plugin-cssts"),
+                project.id() + " app must declare CSSTS Vite plugin as a Qin-managed dependency");
+        verifyPackageJsonIsNotScriptEntrypoint(project.id(), projectRoot, "app");
+    }
+
     private static void verifyPackageJsonIsNotScriptEntrypoint(
             String id,
             Path projectRoot,
@@ -634,7 +667,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                                 "language-plugin-cssts",
                                 "cssts-language",
                                 "create-cssts",
-                                "cssts-theme-element")),
+                                "cssts-theme-element",
+                                "vite-project")),
                 InventoryProject.language("qin-language", Path.of("qin", "packages", "qin-language"),
                         "qin-language", "qin", ".qin", null),
                 InventoryProject.language("ovs-language", Path.of("ovsjs", "ovs-language"),
@@ -661,6 +695,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "create-cssts", "cssts", null),
                 InventoryProject.tooling("cssts-theme-element", Path.of("cssts", "cssts-theme-element"),
                         "cssts-theme-element", "cssts", null),
+                InventoryProject.app("cssts-vite-project", Path.of("cssts", "vite-project"),
+                        "vite-project", "cssts", ".cssts"),
                 InventoryProject.generatedTs("qin-generated-parser-ts",
                         Path.of("qin", "packages", "qin-language", "generated", "qin-parser-ts"),
                         "@qin/generated-qin-parser-ts"),
@@ -728,7 +764,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         JAVA_RUNTIME,
         GENERATED_TS,
         WORKSPACE,
-        TOOLING
+        TOOLING,
+        APP
     }
 
     private enum PackageOnlyProjectKind {
@@ -815,6 +852,15 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String languageId,
                 String extension) {
             return new InventoryProject(id, path, expectedName, ProjectKind.TOOLING, languageId, extension, null, List.of());
+        }
+
+        static InventoryProject app(
+                String id,
+                Path path,
+                String expectedName,
+                String languageId,
+                String extension) {
+            return new InventoryProject(id, path, expectedName, ProjectKind.APP, languageId, extension, null, List.of());
         }
     }
 }
