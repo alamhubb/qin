@@ -1606,6 +1606,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         Path forBreakContinuePath = corpusPath.resolveSibling("QinJvmParsedForBreakContinueSmokeTestMain.java");
         Path doWhilePath = corpusPath.resolveSibling("QinJvmParsedDoWhileSmokeTestMain.java");
         Path forOfPath = corpusPath.resolveSibling("QinJvmParsedForOfSmokeTestMain.java");
+        Path switchPath = corpusPath.resolveSibling("QinJvmParsedSwitchSmokeTestMain.java");
         Path sequencePath = corpusPath.resolveSibling("QinJvmSequenceConsoleReturnSmokeTestMain.java");
         Path slimeParserExtendsPath = corpusPath.resolveSibling("QinJvmJavaSlimeParserExtendsSmokeTestMain.java");
         require(Files.isRegularFile(corpusPath),
@@ -1628,6 +1629,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM parsed do-while smoke must exist: " + doWhilePath);
         require(Files.isRegularFile(forOfPath),
                 "Qin JVM parsed for...of smoke must exist: " + forOfPath);
+        require(Files.isRegularFile(switchPath),
+                "Qin JVM parsed switch smoke must exist: " + switchPath);
         require(Files.isRegularFile(sequencePath),
                 "Qin JVM sequence expression smoke must exist: " + sequencePath);
         require(Files.isRegularFile(slimeParserExtendsPath),
@@ -1643,6 +1646,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String forBreakContinueSource = Files.readString(forBreakContinuePath);
         String doWhileSource = Files.readString(doWhilePath);
         String forOfSource = Files.readString(forOfPath);
+        String switchSource = Files.readString(switchPath);
         String sequenceSource = Files.readString(sequencePath);
         String slimeParserExtendsSource = Files.readString(slimeParserExtendsPath);
         require(corpusSource.contains("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args)"),
@@ -1663,10 +1667,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM class declaration corpus must include parsed do-while smoke");
         require(corpusSource.contains("QinJvmParsedForOfSmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed for...of smoke");
+        require(corpusSource.contains("QinJvmParsedSwitchSmokeTestMain.main(args)"),
+                "Qin JVM class declaration corpus must include parsed switch smoke");
         require(corpusSource.contains("QinJvmSequenceConsoleReturnSmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include sequence expression bytecode smoke");
-        require(corpusSource.contains("23 cases"),
-                "Qin JVM class declaration corpus count must cover the current 23-case set");
+        require(corpusSource.contains("24 cases"),
+                "Qin JVM class declaration corpus count must cover the current 24-case set");
         require(earlyReturnSource.contains("const prefix = \"hello \""),
                 "Parsed early-return smoke must cover Qin local binding in a method body");
         require(earlyReturnSource.contains("if (flag)"),
@@ -1730,6 +1736,18 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && forOfSource.contains("QinIrBreakStatement")
                         && forOfSource.contains("Double.valueOf(4.0d)"),
                 "Parsed for...of smoke must cover java: imported Iterable, control flow, and execution");
+        require(switchSource.contains("switch (status)")
+                        && switchSource.contains("case \"ready\":")
+                        && switchSource.contains("default:")
+                        && switchSource.contains("QinIrSwitchStatement")
+                        && switchSource.contains("QinIrBreakStatement")
+                        && switchSource.contains("\"Ready\".equals(readyLabel)")
+                        && switchSource.contains("\"Done\".equals(doneLabel)")
+                        && switchSource.contains("\"Other\".equals(otherLabel)")
+                        && switchSource.contains("\"Ready\".equals(readyCode)")
+                        && switchSource.contains("\"Done\".equals(doneCode)")
+                        && switchSource.contains("\"Other\".equals(otherCode)"),
+                "Parsed switch smoke must cover case/default lowering, break, and JVM execution");
         require(sequenceSource.contains("QinIrSequenceExpression")
                         && sequenceSource.contains("QinIrBuiltinCallExpression")
                         && sequenceSource.contains("\"console\"")
@@ -1773,7 +1791,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(audit.contains(hardeningNeedle),
                     "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
-        require(audit.contains("23-case class-declaration corpus"),
+        require(audit.contains("24-case class-declaration corpus"),
                 "LSP completion audit must record the current JVM class declaration corpus size");
         require(audit.contains("local binding plus early-return `if`"),
                 "LSP completion audit must record parsed method-body early-return coverage");
@@ -1791,6 +1809,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record parsed do-while JVM coverage");
         require(audit.contains("parsed Qin `for...of` execution through JVM iterator bytecode"),
                 "LSP completion audit must record parsed for...of JVM coverage");
+        require(audit.contains("parsed Qin `switch`/`case`/`default` execution through JVM control flow"),
+                "LSP completion audit must record parsed switch JVM coverage");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
                 "LSP completion audit must record object method-body parser parity coverage");
         require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),

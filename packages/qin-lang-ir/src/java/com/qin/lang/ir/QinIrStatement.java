@@ -10,6 +10,7 @@ public sealed interface QinIrStatement permits
         QinIrLocalDeclarationStatement,
         QinIrReturnStatement,
         QinIrStatementExpression,
+        QinIrSwitchStatement,
         QinIrThrowStatement,
         QinIrTryStatement,
         QinIrWhileStatementNode {

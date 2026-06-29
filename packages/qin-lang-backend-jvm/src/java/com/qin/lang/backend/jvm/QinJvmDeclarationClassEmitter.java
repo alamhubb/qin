@@ -31,6 +31,8 @@ import com.qin.lang.ir.QinIrStatement;
 import com.qin.lang.ir.QinIrStatementExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinIrSwitchCase;
+import com.qin.lang.ir.QinIrSwitchStatement;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrThrowStatement;
 import com.qin.lang.ir.QinIrTryStatement;
@@ -765,6 +767,10 @@ public final class QinJvmDeclarationClassEmitter {
             emitTryStatement(code, ownerDeclaration, method, declarationIndex, localFrame, tryStatement);
             return;
         }
+        if (statement instanceof QinIrSwitchStatement switchStatement) {
+            emitSwitchStatement(code, ownerDeclaration, method, declarationIndex, localFrame, switchStatement);
+            return;
+        }
         if (statement instanceof QinIrWhileStatementNode whileStatement) {
             emitWhileStatement(code, ownerDeclaration, method, declarationIndex, localFrame, whileStatement);
             return;
@@ -845,6 +851,81 @@ public final class QinJvmDeclarationClassEmitter {
             throw new IllegalArgumentException("Declaration do-while statement test must be boolean");
         }
         code.ifne(startLabel);
+        code.labelBinding(doneLabel);
+    }
+
+    private void emitSwitchStatement(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrSwitchStatement switchStatement) {
+        LocalFrame switchFrame = localFrame.child();
+        QinIrTypeRef discriminantType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                switchFrame,
+                switchStatement.discriminant());
+        LocalBinding discriminantBinding = switchFrame.declare(
+                switchFrame.syntheticLocalName("__qin_switch_discriminant"),
+                discriminantType);
+        storeLocalForType(
+                code,
+                discriminantBinding.type(),
+                discriminantBinding.localSlot(),
+                discriminantBinding.name());
+
+        java.lang.classfile.Label doneLabel = code.newLabel();
+        java.lang.classfile.Label defaultLabel = null;
+        List<java.lang.classfile.Label> caseLabels = new ArrayList<>();
+        for (QinIrSwitchCase switchCase : switchStatement.cases()) {
+            java.lang.classfile.Label caseLabel = code.newLabel();
+            caseLabels.add(caseLabel);
+            if (switchCase.isDefault()) {
+                if (defaultLabel != null) {
+                    throw new IllegalArgumentException("Declaration switch statement cannot contain multiple defaults");
+                }
+                defaultLabel = caseLabel;
+                continue;
+            }
+            code.ldc("===");
+            loadLocalForType(
+                    code,
+                    discriminantBinding.type(),
+                    discriminantBinding.localSlot(),
+                    discriminantBinding.name());
+            boxValueForObjectTarget(code, discriminantBinding.type());
+            QinIrTypeRef testType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    switchFrame,
+                    switchCase.test());
+            boxValueForObjectTarget(code, testType);
+            code.invokestatic(
+                    ESM_GLOBAL_DESC,
+                    "__qin_binary__",
+                    MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
+            coerceObjectResultForType(code, QinIrTypeRef.booleanType());
+            code.ifne(caseLabel);
+        }
+        code.goto_(defaultLabel == null ? doneLabel : defaultLabel);
+
+        LocalFrame caseFrame = switchFrame.withSwitchBreak(doneLabel);
+        for (int i = 0; i < switchStatement.cases().size(); i++) {
+            code.labelBinding(caseLabels.get(i));
+            emitStatements(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    caseFrame,
+                    switchStatement.cases().get(i).consequent());
+        }
         code.labelBinding(doneLabel);
     }
 
@@ -971,11 +1052,11 @@ public final class QinJvmDeclarationClassEmitter {
         if (breakStatement.label() != null && !breakStatement.label().isBlank()) {
             throw new IllegalArgumentException("Declaration labeled break is not supported yet: " + breakStatement.label());
         }
-        LoopBinding loopBinding = localFrame.loop();
-        if (loopBinding == null) {
-            throw new IllegalArgumentException("Declaration break statement must be inside a loop");
+        java.lang.classfile.Label breakLabel = localFrame.breakLabel();
+        if (breakLabel == null) {
+            throw new IllegalArgumentException("Declaration break statement must be inside a loop or switch");
         }
-        code.goto_(loopBinding.breakLabel());
+        code.goto_(breakLabel);
     }
 
     private void emitContinueStatement(
@@ -2498,11 +2579,13 @@ public final class QinJvmDeclarationClassEmitter {
     private static final class LocalFrame {
         private final Map<String, LocalBinding> bindings = new LinkedHashMap<>();
         private final LoopBinding loop;
+        private final java.lang.classfile.Label breakLabel;
         private int nextSlot;
 
-        private LocalFrame(int nextSlot, LoopBinding loop) {
+        private LocalFrame(int nextSlot, LoopBinding loop, java.lang.classfile.Label breakLabel) {
             this.nextSlot = nextSlot;
             this.loop = loop;
+            this.breakLabel = breakLabel;
         }
 
         static LocalFrame forMethodParameters(QinIrMethodDeclaration method) {
@@ -2510,17 +2593,23 @@ public final class QinJvmDeclarationClassEmitter {
             for (var parameter : method.parameters()) {
                 localSlot += parameter.type().kind() == QinIrTypeKind.DOUBLE ? 2 : 1;
             }
-            return new LocalFrame(localSlot, null);
+            return new LocalFrame(localSlot, null, null);
         }
 
         LocalFrame child() {
-            LocalFrame child = new LocalFrame(nextSlot, loop);
+            LocalFrame child = new LocalFrame(nextSlot, loop, breakLabel);
             child.bindings.putAll(bindings);
             return child;
         }
 
         LocalFrame withLoop(LoopBinding loopBinding) {
-            LocalFrame child = new LocalFrame(nextSlot, loopBinding);
+            LocalFrame child = new LocalFrame(nextSlot, loopBinding, loopBinding.breakLabel());
+            child.bindings.putAll(bindings);
+            return child;
+        }
+
+        LocalFrame withSwitchBreak(java.lang.classfile.Label breakLabel) {
+            LocalFrame child = new LocalFrame(nextSlot, loop, breakLabel);
             child.bindings.putAll(bindings);
             return child;
         }
@@ -2542,8 +2631,22 @@ public final class QinJvmDeclarationClassEmitter {
             return bindings.get(name);
         }
 
+        String syntheticLocalName(String prefix) {
+            String candidate = prefix;
+            int suffix = 0;
+            while (bindings.containsKey(candidate)) {
+                suffix++;
+                candidate = prefix + "_" + suffix;
+            }
+            return candidate;
+        }
+
         LoopBinding loop() {
             return loop;
+        }
+
+        java.lang.classfile.Label breakLabel() {
+            return breakLabel;
         }
     }
 

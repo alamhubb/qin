@@ -35,6 +35,8 @@ import com.qin.lang.ir.QinIrStatement;
 import com.qin.lang.ir.QinIrStatementExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinIrSwitchCase;
+import com.qin.lang.ir.QinIrSwitchStatement;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrThrowStatement;
 import com.qin.lang.ir.QinIrTryStatement;
@@ -66,6 +68,7 @@ import com.slime.ast.nodes.misc.FunctionParameter;
 import com.slime.ast.nodes.misc.MethodDefinition;
 import com.slime.ast.nodes.misc.Property;
 import com.slime.ast.nodes.misc.PropertyDefinition;
+import com.slime.ast.nodes.misc.SwitchCase;
 import com.slime.ast.nodes.patterns.ArrayPattern;
 import com.slime.ast.nodes.patterns.AssignmentPattern;
 import com.slime.ast.nodes.patterns.ObjectPattern;
@@ -78,6 +81,7 @@ import com.slime.ast.nodes.statements.ExpressionStatement;
 import com.slime.ast.nodes.statements.ForStatement;
 import com.slime.ast.nodes.statements.IfStatement;
 import com.slime.ast.nodes.statements.ReturnStatement;
+import com.slime.ast.nodes.statements.SwitchStatement;
 import com.slime.ast.nodes.statements.ThrowStatement;
 import com.slime.ast.nodes.statements.TryStatement;
 import com.slime.ast.nodes.statements.WhileStatement;
@@ -718,6 +722,12 @@ final class QinDeclarationIrLowerer {
                 }
                 continue;
             }
+            if (statement instanceof SwitchStatement switchStatement) {
+                if (!isDeclarationCompatibleSwitchStatement(switchStatement)) {
+                    return false;
+                }
+                continue;
+            }
             if (statement instanceof ForStatement forStatement) {
                 if (!isDeclarationCompatibleForStatement(forStatement)) {
                     return false;
@@ -770,6 +780,9 @@ final class QinDeclarationIrLowerer {
         if (statement instanceof TryStatement tryStatement) {
             return isDeclarationCompatibleTryStatement(tryStatement);
         }
+        if (statement instanceof SwitchStatement switchStatement) {
+            return isDeclarationCompatibleSwitchStatement(switchStatement);
+        }
         if (statement instanceof ForStatement forStatement) {
             return isDeclarationCompatibleForStatement(forStatement);
         }
@@ -800,6 +813,18 @@ final class QinDeclarationIrLowerer {
             return false;
         }
         return tryStatement.finalizer() == null || isDeclarationCompatibleBranch(tryStatement.finalizer());
+    }
+
+    private boolean isDeclarationCompatibleSwitchStatement(SwitchStatement switchStatement) {
+        if (switchStatement == null || switchStatement.discriminant() == null || switchStatement.cases() == null) {
+            return false;
+        }
+        for (SwitchCase switchCase : switchStatement.cases()) {
+            if (switchCase == null || !isDeclarationCompatibleStatements(switchCase.consequent())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean isDeclarationCompatibleForStatement(ForStatement forStatement) {
@@ -1055,6 +1080,7 @@ final class QinDeclarationIrLowerer {
         for (Statement statement : statements) {
             if (statement instanceof ThrowStatement
                     || statement instanceof TryStatement
+                    || statement instanceof SwitchStatement
                     || statement instanceof ForStatement
                     || "ForOfStatement".equals(QinSlimeFrontendAdapter.simpleName(statement))
                     || statement instanceof DoWhileStatement
@@ -1166,6 +1192,14 @@ final class QinDeclarationIrLowerer {
                                 new LinkedHashMap<>(scopedLocals))));
                 continue;
             }
+            if (statement instanceof SwitchStatement switchStatement) {
+                lowered.add(lowerDeclarationSwitchStatement(
+                        switchStatement,
+                        javaImportLookup,
+                        classContext,
+                        scopedLocals));
+                continue;
+            }
             if (statement instanceof ForStatement forStatement) {
                 lowered.add(lowerDeclarationForStatement(
                         forStatement,
@@ -1214,6 +1248,32 @@ final class QinDeclarationIrLowerer {
                     + QinSlimeFrontendAdapter.simpleName(statement));
         }
         return List.copyOf(lowered);
+    }
+
+    private QinIrSwitchStatement lowerDeclarationSwitchStatement(
+            SwitchStatement switchStatement,
+            Map<String, String> javaImportLookup,
+            DeclarationClassContext classContext,
+            Map<String, QinIrExpression> locals) {
+        QinIrExpression discriminant = lowerDeclarationExpression(
+                switchStatement.discriminant(),
+                javaImportLookup,
+                classContext,
+                locals);
+        List<QinIrSwitchCase> cases = new ArrayList<>();
+        for (SwitchCase switchCase : switchStatement.cases()) {
+            QinIrExpression test = switchCase.test() == null
+                    ? null
+                    : lowerDeclarationExpression(switchCase.test(), javaImportLookup, classContext, locals);
+            cases.add(new QinIrSwitchCase(
+                    test,
+                    lowerDeclarationStatements(
+                            switchCase.consequent(),
+                            javaImportLookup,
+                            classContext,
+                            new LinkedHashMap<>(locals))));
+        }
+        return new QinIrSwitchStatement(discriminant, cases);
     }
 
     private QinIrForStatement lowerDeclarationForStatement(
