@@ -138,6 +138,15 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qinLanguageLocalDependencyBuildSmoke must run from the Qin project root");
         require(localDependencyBuildBlock.contains("QinCliLanguageLocalDependencyBuildSmokeTestMain"),
                 "qinLanguageLocalDependencyBuildSmoke must verify local file dependency builds through Qin CLI");
+        require(buildSource.contains("register<Exec>(\"qinJavaRunnerNoCompilerFallbackSmoke\")"),
+                "Gradle must declare qinJavaRunnerNoCompilerFallbackSmoke");
+        String noCompilerFallbackBlock = taskBlock(
+                buildSource,
+                "register<Exec>(\"qinJavaRunnerNoCompilerFallbackSmoke\")");
+        require(noCompilerFallbackBlock.contains("workspaceRoot.resolve(\"qin\")"),
+                "qinJavaRunnerNoCompilerFallbackSmoke must run from the Qin project root");
+        require(noCompilerFallbackBlock.contains("JavaRunnerNoCompilerFallbackSmokeTestMain"),
+                "qinJavaRunnerNoCompilerFallbackSmoke must verify JavaRunner has no compiler fallback");
         require(buildSource.contains("register(\"languageProjectsTest\")"),
                 "Gradle must declare languageProjectsTest");
         require(buildSource.contains("register(\"compilerProjectsTest\")"),
@@ -161,6 +170,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String lspUnifiedMatrixBlock = taskBlock(buildSource, "register(\"lspUnifiedMatrix\")");
         require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinLanguageLocalDependencyBuildSmoke\")"),
                 "lspUnifiedMatrix must include Qin local file dependency build smoke");
+        require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinJavaRunnerNoCompilerFallbackSmoke\")"),
+                "lspUnifiedMatrix must include Qin JavaRunner no compiler fallback smoke");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
                 "Gradle must declare qinJvmClassTargetSmoke");
         require(buildSource.contains("qin/packages/qin-lang-cli"),

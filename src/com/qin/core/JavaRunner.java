@@ -250,15 +250,6 @@ public class JavaRunner {
                         errorMsg.append(diagnostic.getMessage(null)).append("\n");
                     }
                 }
-                CompileResult fallback = compileWithExternalJavac(javaFiles, fullCp);
-                if (fallback.isSuccess()) {
-                    System.out.println("  -> In-process javac failed, external javac fallback succeeded.");
-                    return fallback;
-                }
-                String externalError = fallback.getError();
-                if (externalError != null && !externalError.isBlank()) {
-                    errorMsg.append("\n[external javac]\n").append(externalError.trim());
-                }
                 return CompileResult.failure(errorMsg.toString().trim());
             }
 
@@ -266,40 +257,6 @@ public class JavaRunner {
         } catch (IOException e) {
             return CompileResult.failure(e.getMessage());
         }
-    }
-
-    private CompileResult compileWithExternalJavac(List<String> javaFiles, String fullCp) {
-        try {
-            List<String> command = new ArrayList<>();
-            command.add(currentJavacCommand());
-            command.add("-d");
-            command.add(outputDir);
-            javaCompileConfig.appendJavacOptions(command);
-            if (fullCp != null && !fullCp.isEmpty()) {
-                command.add("-cp");
-                command.add(fullCp);
-            }
-            command.addAll(javaFiles);
-
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.directory(new File(cwd));
-            pb.redirectErrorStream(true);
-
-            Process proc = pb.start();
-            String output = readStream(proc.getInputStream());
-            int exitCode = proc.waitFor();
-            if (exitCode == 0) {
-                return CompileResult.success(javaFiles.size(), outputDir);
-            }
-            return CompileResult.failure(output);
-        } catch (Exception e) {
-            return CompileResult.failure(e.getMessage());
-        }
-    }
-
-    private String currentJavacCommand() {
-        String executable = QinConstants.isWindows() ? "javac.exe" : "javac";
-        return Paths.get(System.getProperty("java.home"), "bin", executable).toString();
     }
 
     /**

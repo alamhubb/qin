@@ -146,6 +146,13 @@ tasks {
         commandLine(qinCommand.canonicalPath, "run", "com.qin.cli.QinCliLanguageLocalDependencyBuildSmokeTestMain")
     }
 
+    register<Exec>("qinJavaRunnerNoCompilerFallbackSmoke") {
+        group = "verification"
+        description = "Verifies JavaRunner exposes javac failures directly instead of using compiler fallback."
+        workingDir = workspaceRoot.resolve("qin")
+        commandLine(qinCommand.canonicalPath, "run", "com.qin.core.JavaRunnerNoCompilerFallbackSmokeTestMain")
+    }
+
     register<JavaExec>("lspPluginDescriptorSmoke") {
         dependsOn("classes")
         classpath = sourceSets["main"].runtimeClasspath
@@ -245,6 +252,7 @@ tasks {
         dependsOn("lspServerDiagnosticsSmoke")
         dependsOn("lspLanguageCliSmoke")
         dependsOn("qinLanguageLocalDependencyBuildSmoke")
+        dependsOn("qinJavaRunnerNoCompilerFallbackSmoke")
         dependsOn("lspVerificationMatrixSmoke")
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspNoLocalParserSmoke")
