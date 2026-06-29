@@ -787,6 +787,34 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "..\\..\\qin\\qin.bat language test",
                         "..\\..\\qin\\qin.bat language server --dry-run",
                         "npx vsce package"));
+        verifyCsstsCompilerGeneratedParserDocumentation(workspaceRoot);
+    }
+
+    private static void verifyCsstsCompilerGeneratedParserDocumentation(Path workspaceRoot) throws Exception {
+        for (Path documentationPath : List.of(
+                workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler").resolve("README.md").normalize(),
+                workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler").resolve("llms.txt").normalize())) {
+            require(Files.isRegularFile(documentationPath),
+                    "CSSTS compiler generated parser documentation must exist: " + documentationPath);
+            String source = Files.readString(documentationPath);
+            require(source.contains("generated Qin parser"),
+                    "CSSTS compiler documentation must describe parser inheritance through generated Qin parser: "
+                            + documentationPath);
+            require(source.contains("QinParser"),
+                    "CSSTS compiler documentation must name QinParser as the parser base: " + documentationPath);
+            for (String forbiddenNeedle : List.of(
+                    "继承 slime-parser",
+                    "继承 SlimeParser",
+                    "CssTsParser 继承 SlimeParser",
+                    "slime-parser (JS/TS 解析器)",
+                    "npm run build",
+                    "mono test-compiler.mjs",
+                    "`mono`")) {
+                require(!source.contains(forbiddenNeedle),
+                        "CSSTS compiler documentation must not keep legacy parser or non-Qin tooling directive: "
+                                + documentationPath);
+            }
+        }
     }
 
     private static void verifyLanguageTsdownConfig(String label, Path languageRoot) {
