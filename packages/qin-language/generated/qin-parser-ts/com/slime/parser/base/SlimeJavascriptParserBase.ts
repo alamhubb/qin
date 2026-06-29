@@ -32,7 +32,6 @@ function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
-const Set = __QinJavaUtilSet;
 const RuntimeException = __QinJavaLangRuntimeException;
 const StringBuilder = __QinJavaLangStringBuilder;
 const Integer = __QinJavaLangInteger;
@@ -614,13 +613,13 @@ class com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams {
   withAwait(__qin_await: boolean): any {
     return new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(this.__qin_field___qin_in, this.__qin_field___qin_yield, __qin_await);
   }
-  in(): any {
+  __qin_in(): any {
     return this.__qin_field___qin_in;
   }
-  yield(): any {
+  __qin_yield(): any {
     return this.__qin_field___qin_yield;
   }
-  await(): any {
+  __qin_await(): any {
     return this.__qin_field___qin_await;
   }
   equals(other) {
@@ -677,10 +676,10 @@ class com_slime_parser_base_SlimeJavascriptParserBase$StatementParams {
       return null;
     })();
   }
-  yield(): any {
+  __qin_yield(): any {
     return this.__qin_field___qin_yield;
   }
-  await(): any {
+  __qin_await(): any {
     return this.__qin_field___qin_await;
   }
   returnAllowed(): any {
@@ -749,10 +748,10 @@ class com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams {
       return null;
     })();
   }
-  yield(): any {
+  __qin_yield(): any {
     return this.__qin_field___qin_yield;
   }
-  await(): any {
+  __qin_await(): any {
     return this.__qin_field___qin_await;
   }
   isDefault(): any {
@@ -809,7 +808,7 @@ class com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams {
     this.__qin_constructor_com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams_4(true, false, false, false);
   }
   __qin_constructor_com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams_2(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams, tagged: boolean): void {
-    this.__qin_constructor_com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams_4(params.in(), params.yield(), params.await(), tagged);
+    this.__qin_constructor_com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams_4(params.__qin_in(), params.__qin_yield(), params.__qin_await(), tagged);
   }
   __qin_constructor_com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams_4(__qin_in: boolean, __qin_yield: boolean, __qin_await: boolean, tagged: boolean): void {
     this.__qin_field___qin_in = null;
@@ -827,13 +826,13 @@ class com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams {
   expressionParams(): any {
     return new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(this.__qin_field___qin_in, this.__qin_field___qin_yield, this.__qin_field___qin_await);
   }
-  in(): any {
+  __qin_in(): any {
     return this.__qin_field___qin_in;
   }
-  yield(): any {
+  __qin_yield(): any {
     return this.__qin_field___qin_yield;
   }
-  await(): any {
+  __qin_await(): any {
     return this.__qin_field___qin_await;
   }
   tagged(): any {

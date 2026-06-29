@@ -14,7 +14,6 @@ function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
-const List = __QinJavaUtilList;
 class com_subhuti_error_ErrorDetails {
   __qin_field_errorType: com_subhuti_error_SubhutiErrorTypes | null = null as any;
   __qin_field_expected: string | null = null as any;

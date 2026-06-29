@@ -36,7 +36,6 @@ function __qin_structural_object__(value) {
 }
 const RuntimeException = __QinJavaLangRuntimeException;
 const Exception = __QinJavaLangException;
-const List = __QinJavaUtilList;
 const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 const Integer = __QinJavaLangInteger;
 class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiParserState {

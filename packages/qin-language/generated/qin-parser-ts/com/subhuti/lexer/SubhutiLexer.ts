@@ -337,9 +337,9 @@ class com_subhuti_lexer_SubhutiLexer {
       }
     }
     if ((() => {
-      if (__qin_binary__("!=", lookahead.in(), null)) {
+      if (__qin_binary__("!=", lookahead.__qin_in(), null)) {
         return (() => {
-      if (__QinJavaLangString.isEmpty(lookahead.in())) {
+      if (__QinJavaLangString.isEmpty(lookahead.__qin_in())) {
         return false;
       }
       return true;
@@ -348,7 +348,7 @@ class com_subhuti_lexer_SubhutiLexer {
       return false;
     })()) {
       let matchesAny: any = false;
-      for (const pattern of lookahead.in()) {
+      for (const pattern of lookahead.__qin_in()) {
         let matcher: any = pattern.matcher(code);
         matcher.region(regionStart, __QinJavaLangString.length(code));
         if (matcher.lookingAt()) {

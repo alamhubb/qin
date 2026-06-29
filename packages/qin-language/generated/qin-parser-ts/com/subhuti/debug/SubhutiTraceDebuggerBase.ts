@@ -16,7 +16,6 @@ function __qin_structural_object__(value) {
 const ArrayList = __QinJavaUtilArrayList;
 const LinkedHashMap = __QinJavaUtilHashMap;
 const HashMap = __QinJavaUtilHashMap;
-const Set = __QinJavaUtilSet;
 const Exception = __QinJavaLangException;
 const StringBuilder = __QinJavaLangStringBuilder;
 const System = __QinJavaLangSystem;

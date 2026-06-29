@@ -33,7 +33,6 @@ function __qin_structural_object__(value) {
 const Arrays = __QinJavaUtilArrays;
 const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 const ArrayList = __QinJavaUtilArrayList;
-const List = __QinJavaUtilList;
 const RuntimeException = __QinJavaLangRuntimeException;
 const HashSet = __QinJavaUtilHashSet;
 const Objects = __QinJavaUtilObjects;

@@ -13,6 +13,17 @@
       "default": "./index.ts"
     },
 
+    "./SlimeCstToAstUtils": {
+      "types": "./com/slime/parser/cstToAst/SlimeCstToAstUtils.ts",
+      "import": "./com/slime/parser/cstToAst/SlimeCstToAstUtils.ts",
+      "default": "./com/slime/parser/cstToAst/SlimeCstToAstUtils.ts"
+    },
+    "./SlimeAstCreateUtils": {
+      "types": "./com/slime/parser/cstToAst/SlimeAstCreateUtils.ts",
+      "import": "./com/slime/parser/cstToAst/SlimeAstCreateUtils.ts",
+      "default": "./com/slime/parser/cstToAst/SlimeAstCreateUtils.ts"
+    },
+
     "./entry": {
       "types": "./com/qin/parser/QinParser.ts",
       "import": "./com/qin/parser/QinParser.ts",

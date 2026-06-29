@@ -143,7 +143,7 @@ class com_slime_parser_expressions_SlimeBinaryExpressionParser extends com_slime
   }
   __qin_subhuti_raw_RelationalExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
     if ((() => {
-      if (params.in()) {
+      if (params.__qin_in()) {
         return this.lookahead("PrivateIdentifier", 1.0);
       }
       return false;
@@ -166,7 +166,7 @@ class com_slime_parser_expressions_SlimeBinaryExpressionParser extends com_slime
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Instanceof();
     }), (() => {
-      if (params.in()) {
+      if (params.__qin_in()) {
         return __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.In();
     });

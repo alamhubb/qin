@@ -20,6 +20,7 @@ class com_subhuti_debug_ConsoleLogWriter {
     return null;
   }
 }
+com_subhuti_debug_ConsoleLogWriter.__qin_java_interfaces = ["com.subhuti.debug.LogWriter"];
 const ConsoleLogWriter = com_subhuti_debug_ConsoleLogWriter;
 
 function run() {

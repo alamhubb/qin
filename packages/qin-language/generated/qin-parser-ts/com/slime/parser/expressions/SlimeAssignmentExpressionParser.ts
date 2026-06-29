@@ -103,7 +103,7 @@ class com_slime_parser_expressions_SlimeAssignmentExpressionParser extends com_s
       this.AsyncArrowFunction(params);
       return null;
     }), (() => {
-      if (params.yield()) {
+      if (params.__qin_yield()) {
         return __qin_java_functional(() => {
       return this.YieldExpression(params);
     });

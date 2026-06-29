@@ -272,6 +272,33 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                   return { name: "vite-plugin-built-source-src" }
                 }
                 """, StandardCharsets.UTF_8);
+        Path sourceExportsPackageRoot = root.resolve("workspace-source-exports");
+        Files.createDirectories(sourceExportsPackageRoot.resolve("src"));
+        Files.writeString(sourceExportsPackageRoot.resolve("package.json"), """
+                {
+                  "name": "source-exports-package",
+                  "version": "0.0.0-local",
+                  "type": "module",
+                  "main": "./index.ts",
+                  "module": "./index.ts",
+                  "exports": {
+                    ".": {
+                      "import": "./index.ts",
+                      "default": "./index.ts"
+                    },
+                    "./Extra": {
+                      "import": "./src/extra.ts",
+                      "default": "./src/extra.ts"
+                    }
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(sourceExportsPackageRoot.resolve("index.ts"), """
+                export default "source";
+                """, StandardCharsets.UTF_8);
+        Files.writeString(sourceExportsPackageRoot.resolve("src").resolve("extra.ts"), """
+                export const extra = "extra";
+                """, StandardCharsets.UTF_8);
 
         Method materializeDependency = QinJsPackageRunner.class.getDeclaredMethod(
                 "materializeDependency",
@@ -287,7 +314,8 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         materializeDependency.setAccessible(true);
         Map<String, Path> workspacePackages = Map.of(
                 "vite-plugin-local-source", missingDistPackageRoot,
-                "vite-plugin-built-source", builtPackageRoot);
+                "vite-plugin-built-source", builtPackageRoot,
+                "source-exports-package", sourceExportsPackageRoot);
         materializeDependency.invoke(
                 runner,
                 "vite-plugin-local-source",
@@ -302,6 +330,17 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
         materializeDependency.invoke(
                 runner,
                 "vite-plugin-built-source",
+                null,
+                null,
+                root,
+                runtimeNodeModules,
+                root,
+                workspacePackages,
+                Map.of(),
+                new LinkedHashSet<String>());
+        materializeDependency.invoke(
+                runner,
+                "source-exports-package",
                 null,
                 null,
                 root,
@@ -326,6 +365,14 @@ public final class QinJsPackageRunnerPackageOverridesSmokeTestMain {
                 || builtManifest.contains("\"main\": \"./src/index.ts\"")) {
             throw new IllegalStateException("Workspace package with resolvable dist entry was rewritten:\n"
                     + builtManifest);
+        }
+        String sourceExportsManifest = Files.readString(
+                runtimeNodeModules.resolve("source-exports-package").resolve("package.json"),
+                StandardCharsets.UTF_8);
+        if (!sourceExportsManifest.contains("\"./Extra\"")
+                || !sourceExportsManifest.contains("\"import\": \"./src/extra.ts\"")) {
+            throw new IllegalStateException("Workspace package with source exports subpaths was rewritten:\n"
+                    + sourceExportsManifest);
         }
     }
 

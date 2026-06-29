@@ -84,7 +84,7 @@ class com_subhuti_struct_SubhutiTokenLookahead {
   not(): any {
     return this.__qin_field_not;
   }
-  in(): any {
+  __qin_in(): any {
     return this.__qin_field___qin_in;
   }
   notIn(): any {
@@ -151,7 +151,7 @@ class com_subhuti_struct_SubhutiTokenLookahead$Builder {
     this.__qin_field_not = pattern;
     return this;
   }
-  in(patterns: any): any {
+  __qin_in(patterns: any): any {
     this.__qin_field___qin_in = patterns;
     return this;
   }

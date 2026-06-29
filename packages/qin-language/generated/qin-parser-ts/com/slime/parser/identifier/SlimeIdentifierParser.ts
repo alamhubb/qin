@@ -59,7 +59,7 @@ class com_slime_parser_identifier_SlimeIdentifierParser extends com_slime_parser
       return this.Identifier();
     }), (() => {
       if ((() => {
-      if (params.yield()) {
+      if (params.__qin_yield()) {
         return false;
       }
       return true;
@@ -71,7 +71,7 @@ class com_slime_parser_identifier_SlimeIdentifierParser extends com_slime_parser
       return null;
     })(), (() => {
       if ((() => {
-      if (params.await()) {
+      if (params.__qin_await()) {
         return false;
       }
       return true;
@@ -132,7 +132,7 @@ class com_slime_parser_identifier_SlimeIdentifierParser extends com_slime_parser
       return this.Identifier();
     }), (() => {
       if ((() => {
-      if (params.yield()) {
+      if (params.__qin_yield()) {
         return false;
       }
       return true;
@@ -144,7 +144,7 @@ class com_slime_parser_identifier_SlimeIdentifierParser extends com_slime_parser
       return null;
     })(), (() => {
       if ((() => {
-      if (params.await()) {
+      if (params.__qin_await()) {
         return false;
       }
       return true;

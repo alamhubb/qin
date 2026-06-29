@@ -397,7 +397,12 @@ public final class QinJavaProjectJsCompiler {
         Files.createDirectories(outputRoot);
         Files.writeString(
                 outputRoot.resolve("package.json"),
-                generatedPackageJson(packageName, entryBinaryName, extension, backend.options().emitTypeAnnotations()),
+                generatedPackageJson(
+                        packageName,
+                        entryBinaryName,
+                        additionalEntryBinaryNames,
+                        extension,
+                        backend.options().emitTypeAnnotations()),
                 StandardCharsets.UTF_8);
         Files.writeString(
                 outputRoot.resolve("qin.config.js"),
@@ -480,6 +485,7 @@ public final class QinJavaProjectJsCompiler {
     private String generatedPackageJson(
             String packageName,
             String entryBinaryName,
+            List<String> additionalEntryBinaryNames,
             String extension,
             boolean typeScript) {
         String indexFile = "./index." + extension;
@@ -491,6 +497,7 @@ public final class QinJavaProjectJsCompiler {
         String compatibilityFiles = isGeneratedSlimeParserEntry(entryBinaryName)
                 ? "    \"src\",\n"
                 : "";
+        String additionalEntryExports = generatedAdditionalEntryPackageExports(additionalEntryBinaryNames, extension);
         return """
                 {
                   "name": "%s",
@@ -506,6 +513,7 @@ public final class QinJavaProjectJsCompiler {
                       "import": "%s",
                       "default": "%s"
                     },
+                %s
                 %s
                     "./entry": {
                       "types": "%s",
@@ -540,6 +548,7 @@ public final class QinJavaProjectJsCompiler {
                 indexFile,
                 indexFile,
                 compatibilityExports,
+                additionalEntryExports,
                 entryFile,
                 entryFile,
                 entryFile,
@@ -550,6 +559,35 @@ public final class QinJavaProjectJsCompiler {
                 compatibilityFiles,
                 extension,
                 QinJsBackend.javaSdkJsPackageName());
+    }
+
+    private String generatedAdditionalEntryPackageExports(
+            List<String> additionalEntryBinaryNames,
+            String extension) {
+        if (additionalEntryBinaryNames == null || additionalEntryBinaryNames.isEmpty()) {
+            return "";
+        }
+        StringBuilder exports = new StringBuilder();
+        for (String binaryName : additionalEntryBinaryNames) {
+            String sourceBinaryName = binaryName.contains("$")
+                    ? binaryName.substring(0, binaryName.indexOf('$'))
+                    : binaryName;
+            String sourceFile = "./" + sourceBinaryName.replace('.', '/') + "." + extension;
+            exports.append("    \"./")
+                    .append(escapeJs(simpleClassName(binaryName)))
+                    .append("\": {\n")
+                    .append("      \"types\": \"")
+                    .append(sourceFile)
+                    .append("\",\n")
+                    .append("      \"import\": \"")
+                    .append(sourceFile)
+                    .append("\",\n")
+                    .append("      \"default\": \"")
+                    .append(sourceFile)
+                    .append("\"\n")
+                    .append("    },\n");
+        }
+        return exports.toString();
     }
 
     private boolean isGeneratedSlimeParserEntry(String entryBinaryName) {
@@ -671,16 +709,6 @@ public final class QinJavaProjectJsCompiler {
         }
         if (!slimeParserEntry) {
             appendExportAlias(js, entryBinaryName, simpleClassName(entryBinaryName), extension, binaryNames);
-        }
-        if (additionalEntryBinaryNames != null) {
-            for (String additionalEntryBinaryName : additionalEntryBinaryNames) {
-                appendExportAlias(
-                        js,
-                        additionalEntryBinaryName,
-                        simpleClassName(additionalEntryBinaryName),
-                        extension,
-                        binaryNames);
-            }
         }
         appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser", "SlimeJavascriptParser", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.consumer.SlimeTokenConsumer", "SlimeTokenConsumer", extension, binaryNames);

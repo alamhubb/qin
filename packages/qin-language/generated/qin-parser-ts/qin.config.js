@@ -4,6 +4,7 @@ export default {
   entry: "./index.ts",
   generated: {
     source: "java",
-    entryBinaryName: "com.qin.parser.QinParser"
+    entryBinaryName: "com.qin.parser.QinParser",
+    additionalEntryBinaryNames: ["com.slime.parser.cstToAst.SlimeCstToAstUtils", "com.slime.parser.cstToAst.SlimeAstCreateUtils"]
   }
 }

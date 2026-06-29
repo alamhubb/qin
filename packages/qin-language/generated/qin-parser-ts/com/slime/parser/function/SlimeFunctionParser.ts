@@ -66,7 +66,7 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
   __qin_subhuti_raw_FunctionDeclaration(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
     this.__qin_field_tokenConsumer.Function();
     this.Or(__qin_java_functional(() => {
-      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }), (() => {
       if (params.isDefault()) {
         return __qin_java_functional(() => {
@@ -285,7 +285,7 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     }), "FunctionStatementList", "SlimeFunctionParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_FunctionStatementList(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    let statementParams: any = new com_slime_parser_base_SlimeJavascriptParserBase$StatementParams(params.yield(), params.await(), true);
+    let statementParams: any = new com_slime_parser_base_SlimeJavascriptParserBase$StatementParams(params.__qin_yield(), params.__qin_await(), true);
     this.Option(__qin_java_functional(() => {
       return this.StatementList(statementParams);
     }));
@@ -304,7 +304,7 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     this.__qin_field_tokenConsumer.Function();
     this.__qin_field_tokenConsumer.Asterisk();
     this.Or(__qin_java_functional(() => {
-      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, true, params.await()));
+      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, true, params.__qin_await()));
     }), (() => {
       if (params.isDefault()) {
         return __qin_java_functional(() => {
@@ -359,7 +359,7 @@ class com_slime_parser_function_SlimeFunctionParser extends com_slime_parser_sta
     this.assertNoLineBreak();
     this.__qin_field_tokenConsumer.Function();
     this.Or(__qin_java_functional(() => {
-      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), true));
+      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), true));
     }), (() => {
       if (params.isDefault()) {
         return __qin_java_functional(() => {

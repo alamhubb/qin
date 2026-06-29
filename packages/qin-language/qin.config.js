@@ -37,6 +37,10 @@ export default {
   generated: {
     source: "java",
     entryBinaryName: "com.qin.parser.QinParser",
+    additionalEntryBinaryNames: [
+      "com.slime.parser.cstToAst.SlimeCstToAstUtils",
+      "com.slime.parser.cstToAst.SlimeAstCreateUtils"
+    ],
     sourceRoots: [
       "../qin-parser/src/java",
       "../../../slime/java-slime/slime-parser/src/main/java",

@@ -136,7 +136,7 @@ class com_slime_parser_expressions_SlimeUnaryExpressionParser extends com_slime_
       this.UnaryExpression(params);
       return null;
     }), (() => {
-      if (params.await()) {
+      if (params.__qin_await()) {
         return __qin_java_functional(() => {
       return this.AwaitExpression(params);
     });

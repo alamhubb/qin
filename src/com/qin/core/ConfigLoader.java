@@ -228,6 +228,7 @@ public class ConfigLoader {
         return new GeneratedConfig(
                 stringField(map, "source", null),
                 stringField(map, "entryBinaryName", null),
+                stringListField(map, "additionalEntryBinaryNames"),
                 stringListField(map, "sourceRoots"),
                 stringField(map, "outputDir", null));
     }
@@ -380,6 +381,11 @@ public class ConfigLoader {
         }
         if (isBlank(generated.entryBinaryName())) {
             errors.add("'generated.entryBinaryName' must not be blank");
+        }
+        for (String additionalEntryBinaryName : generated.additionalEntryBinaryNames()) {
+            if (isBlank(additionalEntryBinaryName)) {
+                errors.add("'generated.additionalEntryBinaryNames' entries must not be blank");
+            }
         }
         for (String sourceRoot : generated.sourceRoots()) {
             requireExistingRelativePath(sourceRoot, "generated.sourceRoots", errors);

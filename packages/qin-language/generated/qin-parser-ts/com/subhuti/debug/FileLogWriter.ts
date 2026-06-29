@@ -91,6 +91,7 @@ class com_subhuti_debug_FileLogWriter {
     return null;
   }
 }
+com_subhuti_debug_FileLogWriter.__qin_java_interfaces = ["com.subhuti.debug.LogWriter"];
 const FileLogWriter = com_subhuti_debug_FileLogWriter;
 
 function run() {

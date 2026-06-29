@@ -730,7 +730,7 @@ final class QinJsPackageRunner {
             Path sourcePackageDir,
             boolean packageOverride) throws IOException {
         WorkspacePackageEntrypoint entrypoint = inspectWorkspacePackageEntrypoint(sourcePackageDir);
-        if (packageOverride && entrypoint.hasSourceEntry() && !hasResolvablePublishedEntry(sourcePackageDir, entrypoint)) {
+        if (packageOverride && entrypoint.hasSourceEntry() && !entrypoint.hasManifestEntry()) {
             return true;
         }
         if (hasResolvablePublishedEntry(sourcePackageDir, entrypoint)) {

@@ -152,7 +152,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   }
   __qin_subhuti_raw_StatementListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.Or(__qin_java_functional(() => {
-      return this.Declaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.yield(), params.await(), false));
+      return this.Declaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.__qin_yield(), params.__qin_await(), false));
     }), __qin_java_functional(() => {
       return this.Statement(params);
     }));
@@ -165,7 +165,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   }
   __qin_subhuti_raw_VariableStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.__qin_field_tokenConsumer.Var();
-    this.VariableDeclarationList(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.VariableDeclarationList(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.SemicolonASI();
     return null;
   }
@@ -220,7 +220,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.assertLookaheadNotIn(["LBrace", "Function", "Class"]);
     this.assertNotContextualSequenceNoLT("async", "Function");
     this.assertNotContextualSequence("let", "LBracket");
-    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.debugLog(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "ExpressionStatement after Expression: parseSuccess=", this.__qin_field_parseSuccess), ", curToken="), this.LA(1.0)), ", index="), this.__qin_field_currentIndex));
     this.SemicolonASI();
     return null;
@@ -234,7 +234,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.If();
       this.__qin_field_tokenConsumer.LParen();
-      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       this.__qin_field_tokenConsumer.RParen();
       this.IfStatementBody(params);
       this.__qin_field_tokenConsumer.Else();
@@ -243,7 +243,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     }), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.If();
       this.__qin_field_tokenConsumer.LParen();
-      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       this.__qin_field_tokenConsumer.RParen();
       this.IfStatementBody(params);
       this.assertLookaheadNot("Else");
@@ -260,7 +260,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.Or(__qin_java_functional(() => {
       return this.Statement(params);
     }), __qin_java_functional(() => {
-      return this.FunctionDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.yield(), params.await(), false));
+      return this.FunctionDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.__qin_yield(), params.__qin_await(), false));
     }));
     return null;
   }
@@ -304,7 +304,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.Statement(params);
     this.__qin_field_tokenConsumer.While();
     this.__qin_field_tokenConsumer.LParen();
-    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.__qin_field_tokenConsumer.RParen();
     this.Option(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.Semicolon();
@@ -319,7 +319,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   __qin_subhuti_raw_WhileStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.__qin_field_tokenConsumer.While();
     this.__qin_field_tokenConsumer.LParen();
-    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.__qin_field_tokenConsumer.RParen();
     this.Statement(params);
     return null;
@@ -334,14 +334,14 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
       this.__qin_field_tokenConsumer.For();
       this.__qin_field_tokenConsumer.LParen();
       this.__qin_field_tokenConsumer.Var();
-      this.VariableDeclarationList(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.yield(), params.await()));
+      this.VariableDeclarationList(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.__qin_yield(), params.__qin_await()));
       this.__qin_field_tokenConsumer.Semicolon();
       this.Option(__qin_java_functional(() => {
-      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
       this.__qin_field_tokenConsumer.Semicolon();
       this.Option(__qin_java_functional(() => {
-      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
       this.__qin_field_tokenConsumer.RParen();
       this.Statement(params);
@@ -349,13 +349,13 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     }), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.For();
       this.__qin_field_tokenConsumer.LParen();
-      this.LexicalDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.yield(), params.await()));
+      this.LexicalDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.__qin_yield(), params.__qin_await()));
       this.Option(__qin_java_functional(() => {
-      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
       this.__qin_field_tokenConsumer.Semicolon();
       this.Option(__qin_java_functional(() => {
-      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
       this.__qin_field_tokenConsumer.RParen();
       this.Statement(params);
@@ -365,15 +365,15 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
       this.__qin_field_tokenConsumer.LParen();
       this.assertNotContextualSequence("let", "LBracket");
       this.Option(__qin_java_functional(() => {
-      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.yield(), params.await()));
+      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.__qin_yield(), params.__qin_await()));
     }));
       this.__qin_field_tokenConsumer.Semicolon();
       this.Option(__qin_java_functional(() => {
-      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
       this.__qin_field_tokenConsumer.Semicolon();
       this.Option(__qin_java_functional(() => {
-      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
       this.__qin_field_tokenConsumer.RParen();
       this.Statement(params);
@@ -391,10 +391,10 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
       this.__qin_field_tokenConsumer.For();
       this.__qin_field_tokenConsumer.LParen();
       this.__qin_field_tokenConsumer.Var();
-      this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
-      this.Initializer(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.yield(), params.await()));
+      this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
+      this.Initializer(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(false, params.__qin_yield(), params.__qin_await()));
       this.__qin_field_tokenConsumer.In();
-      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       this.__qin_field_tokenConsumer.RParen();
       this.Statement(params);
       return null;
@@ -408,11 +408,11 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
       this.ForBinding(params);
       this.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.In();
-      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       return null;
     }), __qin_java_functional(() => {
       this.consumeIdentifierValue("of");
-      this.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       return null;
     }));
       this.__qin_field_tokenConsumer.RParen();
@@ -427,11 +427,11 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
       this.ForDeclaration(params);
       this.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.In();
-      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       return null;
     }), __qin_java_functional(() => {
       this.consumeIdentifierValue("of");
-      this.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       return null;
     }));
       this.__qin_field_tokenConsumer.RParen();
@@ -444,14 +444,14 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     }));
       this.__qin_field_tokenConsumer.LParen();
       this.assertNotContextual("let");
-      this.LeftHandSideExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.LeftHandSideExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       this.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.In();
-      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       return null;
     }), __qin_java_functional(() => {
       this.consumeIdentifierValue("of");
-      this.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.AssignmentExpression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       return null;
     }));
       this.__qin_field_tokenConsumer.RParen();
@@ -467,9 +467,9 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   }
   __qin_subhuti_raw_ForBinding(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.Or(__qin_java_functional(() => {
-      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }), __qin_java_functional(() => {
-      return this.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
     return null;
   }
@@ -481,7 +481,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   __qin_subhuti_raw_SwitchStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.__qin_field_tokenConsumer.Switch();
     this.__qin_field_tokenConsumer.LParen();
-    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.__qin_field_tokenConsumer.RParen();
     this.CaseBlock(params);
     return null;
@@ -532,7 +532,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   }
   __qin_subhuti_raw_CaseClause(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.__qin_field_tokenConsumer.Case();
-    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.__qin_field_tokenConsumer.Colon();
     this.Option(__qin_java_functional(() => {
       return this.StatementList(params);
@@ -561,7 +561,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.Continue();
       this.assertNoLineBreak();
-      this.LabelIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.LabelIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       this.SemicolonASI();
       return null;
     }), __qin_java_functional(() => {
@@ -580,7 +580,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.Break();
       this.assertNoLineBreak();
-      this.LabelIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.LabelIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       this.SemicolonASI();
       return null;
     }), __qin_java_functional(() => {
@@ -599,7 +599,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.Return();
       this.assertNoLineBreak();
-      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
       this.SemicolonASI();
       return null;
     }), __qin_java_functional(() => {
@@ -617,7 +617,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   __qin_subhuti_raw_WithStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.__qin_field_tokenConsumer.With();
     this.__qin_field_tokenConsumer.LParen();
-    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.__qin_field_tokenConsumer.RParen();
     this.Statement(params);
     return null;
@@ -628,7 +628,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     }), "LabelledStatement", "SlimeStatementParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_LabelledStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
-    this.LabelIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.LabelIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.__qin_field_tokenConsumer.Colon();
     this.LabelledItem(params);
     return null;
@@ -642,7 +642,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     this.Or(__qin_java_functional(() => {
       return this.Statement(params);
     }), __qin_java_functional(() => {
-      return this.FunctionDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.yield(), params.await(), false));
+      return this.FunctionDeclaration(new com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams(params.__qin_yield(), params.__qin_await(), false));
     }));
     return null;
   }
@@ -654,7 +654,7 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   __qin_subhuti_raw_ThrowStatement(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.__qin_field_tokenConsumer.Throw();
     this.assertNoLineBreak();
-    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.Expression(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.debugLog(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "ExpressionStatement after Expression: parseSuccess=", this.__qin_field_parseSuccess), ", curToken="), this.LA(1.0)), ", index="), this.__qin_field_currentIndex));
     this.SemicolonASI();
     return null;
@@ -711,9 +711,9 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
   }
   __qin_subhuti_raw_CatchParameter(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
     this.Or(__qin_java_functional(() => {
-      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }), __qin_java_functional(() => {
-      return this.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+      return this.BindingPattern(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     }));
     return null;
   }

@@ -65,10 +65,14 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated qin.config.js points to TS package entry");
         require(indexText.contains("export default com_qin_parser_QinParser"),
                 "generated package index exports raw QinParser class as default");
-        require(indexText.contains("com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils"),
-                "generated package index named-exports SlimeCstToAstUtils");
-        require(indexText.contains("com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils"),
-                "generated package index named-exports SlimeAstCreateUtils");
+        require(!indexText.contains("SlimeCstToAstUtils"),
+                "generated package index does not eager-export SlimeCstToAstUtils");
+        require(!indexText.contains("SlimeAstCreateUtils"),
+                "generated package index does not eager-export SlimeAstCreateUtils");
+        require(packageJsonText.contains("\"./SlimeCstToAstUtils\""),
+                "generated package subpath-exports SlimeCstToAstUtils");
+        require(packageJsonText.contains("\"./SlimeAstCreateUtils\""),
+                "generated package subpath-exports SlimeAstCreateUtils");
         require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
                         .resolve("cstToAst").resolve("SlimeCstToAstUtils.ts")),
                 "generated SlimeCstToAstUtils TS output");
@@ -95,10 +99,10 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
         Object result = new QinJsPackageRunner().runModuleSource(smokeRoot, """
                 import QinParser from "@qin/generated-qin-parser-ts";
                 import {
-                  SlimeAstCreateUtils,
-                  SlimeCstToAstUtils,
                   com_slime_parser_SlimeJavascriptParser$SourceType as SourceType
                 } from "@qin/generated-qin-parser-ts";
+                import { com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "@qin/generated-qin-parser-ts/SlimeCstToAstUtils";
+                import { com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "@qin/generated-qin-parser-ts/SlimeAstCreateUtils";
 
                 const parser = new QinParser("export object Counter { value = 1; next() { return this.value + 1; } }");
                 const cst = parser.Program(SourceType.__qin_field_MODULE);

@@ -11,7 +11,6 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 const Collectors = __QinJavaUtilStreamCollectors;
-const List = __QinJavaUtilList;
 const ArrayList = __QinJavaUtilArrayList;
 const StringBuilder = __QinJavaLangStringBuilder;
 class com_subhuti_struct_SubhutiCst {

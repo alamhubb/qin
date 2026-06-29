@@ -386,15 +386,25 @@ public class QinCli {
             System.out.println("  packageEntry: ./index.ts");
             System.out.println("  outputDir: " + outputRoot);
             System.out.println("  language.parser: " + config.language().parser());
+            for (String additionalEntryBinaryName : generated.additionalEntryBinaryNames()) {
+                System.out.println("  additionalEntryBinaryName: " + additionalEntryBinaryName);
+            }
             for (Path sourceRoot : sourceRoots) {
                 System.out.println("  sourceRoot: " + sourceRoot);
             }
             return;
         }
 
-        int outputCount = generateParserWithRuntimeCore(sourceRoots, generated.entryBinaryName(), outputRoot);
+        int outputCount = generateParserWithRuntimeCore(
+                sourceRoots,
+                generated.entryBinaryName(),
+                generated.additionalEntryBinaryNames(),
+                outputRoot);
         System.out.println(green("[OK] Generated parser TS package"));
         System.out.println("  entryBinaryName: " + generated.entryBinaryName());
+        for (String additionalEntryBinaryName : generated.additionalEntryBinaryNames()) {
+            System.out.println("  additionalEntryBinaryName: " + additionalEntryBinaryName);
+        }
         System.out.println("  outputDir: " + outputRoot);
         System.out.println("  files: " + outputCount);
     }
@@ -472,6 +482,23 @@ public class QinCli {
         requireSourceContains(indexSource,
                 "SlimeJavascriptParser",
                 "Generated parser index.ts must export SlimeJavascriptParser for OVS/CSSTS inheritance");
+        for (String additionalEntryBinaryName : config.generated().additionalEntryBinaryNames()) {
+            requireSourceContains(generatedConfigSource,
+                    "\"" + additionalEntryBinaryName + "\"",
+                    "Generated parser qin.config.js additionalEntryBinaryNames mismatch");
+            requireSourceContains(packageJsonSource,
+                    "\"./" + simpleClassName(additionalEntryBinaryName) + "\"",
+                    "Generated parser package.json must subpath-export additional entry " + additionalEntryBinaryName);
+            requireSourceContains(packageJsonSource,
+                    "./" + additionalEntryBinaryName.replace('.', '/') + ".ts",
+                    "Generated parser package.json additional entry target mismatch");
+            if (indexSource.contains(simpleClassName(additionalEntryBinaryName))) {
+                throw new IllegalStateException(
+                        "Generated parser index.ts must not root-export additional entry "
+                                + additionalEntryBinaryName
+                                + "; use package subpath exports to avoid eager module cycles");
+            }
+        }
     }
 
     private static void requireSourceContains(String source, String expected, String message) {
@@ -480,9 +507,15 @@ public class QinCli {
         }
     }
 
+    private static String simpleClassName(String binaryName) {
+        int dot = binaryName.lastIndexOf('.');
+        return dot < 0 ? binaryName : binaryName.substring(dot + 1);
+    }
+
     private static int generateParserWithRuntimeCore(
             List<Path> sourceRoots,
             String entryBinaryName,
+            List<String> additionalEntryBinaryNames,
             Path outputRoot) throws Exception {
         String runtimeClasspath = appendBundledQinRuntimeClasspath("");
         if (!isClassAvailableOnClasspath(runtimeClasspath, "com.qin.runtime.core.QinJavaProjectJsCompiler")) {
@@ -503,8 +536,8 @@ public class QinCli {
             Class<?> compilerClass = Class.forName("com.qin.runtime.core.QinJavaProjectJsCompiler", true, loader);
             Object compiler = compilerClass.getDeclaredConstructor().newInstance();
             Object result = compilerClass
-                    .getMethod("compileSuperclassClosureEsmTsFiles", List.class, String.class, Path.class)
-                    .invoke(compiler, sourceRoots, entryBinaryName, outputRoot);
+                    .getMethod("compileSuperclassClosureEsmTsFiles", List.class, String.class, List.class, Path.class)
+                    .invoke(compiler, sourceRoots, entryBinaryName, additionalEntryBinaryNames, outputRoot);
             return ((List<?>) result).size();
         }
     }

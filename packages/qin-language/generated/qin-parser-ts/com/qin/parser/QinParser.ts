@@ -96,7 +96,7 @@ class com_qin_parser_QinParser extends com_slime_parser_SlimeParser {
   }
   __qin_subhuti_raw_QinObjectDeclarationBody(params: com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams): any {
     this.consumeIdentifierValue("object");
-    this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.yield(), params.await()));
+    this.BindingIdentifier(new com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams(true, params.__qin_yield(), params.__qin_await()));
     this.ClassTail(params);
     return null;
   }
