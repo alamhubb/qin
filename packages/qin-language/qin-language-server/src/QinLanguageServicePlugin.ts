@@ -2,6 +2,7 @@ import type { LanguageServicePlugin } from '@volar/language-service'
 import { DiagnosticSeverity } from 'vscode-languageserver-protocol'
 import type { TextDocument } from 'vscode-languageserver-textdocument'
 import { probeGeneratedQinParser, type QinGeneratedParserProbeResult } from './QinGeneratedParserProbe'
+import { provideSourceDocumentSymbols } from './SourceDocumentSymbols'
 
 export const QinLanguageServicePlugin: LanguageServicePlugin = {
   name: 'qin-generated-parser-diagnostics',
@@ -10,11 +11,18 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
       interFileDependencies: false,
       workspaceDiagnostics: false,
     },
+    documentSymbolProvider: true,
   },
   create() {
     return {
+      provideDocumentSymbols(document: TextDocument) {
+        if (!isQinDocument(document)) {
+          return
+        }
+        return provideSourceDocumentSymbols(document)
+      },
       provideDiagnostics(document: TextDocument) {
-        if (document.languageId !== 'qin' && !document.uri.endsWith('.qin')) {
+        if (!isQinDocument(document)) {
           return []
         }
         const result = probeGeneratedQinParser(document.getText())
@@ -22,6 +30,11 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
       },
     }
   },
+}
+
+function isQinDocument(document: TextDocument): boolean {
+  const lowerUri = document.uri.toLowerCase()
+  return document.languageId === 'qin' && lowerUri.endsWith('.qin')
 }
 
 export function createQinParserDiagnostics(result: QinGeneratedParserProbeResult) {

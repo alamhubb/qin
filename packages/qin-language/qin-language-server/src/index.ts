@@ -4,6 +4,7 @@ import {
   createTypeScriptProject,
   loadTsdkByPath,
 } from '@volar/language-server/node'
+import type { LanguageServicePlugin } from '@volar/language-service'
 import { create as createTypeScriptServices } from 'volar-service-typescript'
 import { QinLanguagePlugin } from './QinLanguagePlugin'
 import { QinLanguageServicePlugin } from './QinLanguageServicePlugin'
@@ -39,12 +40,12 @@ connection.onInitialize((params) => {
   const languagePlugins = [QinLanguagePlugin(languageServerMetadata)]
   const languageServicePlugins = [
     QinLanguageServicePlugin,
-    ...createTypeScriptServices(tsdk.typescript, {
+    ...withoutTypeScriptDocumentSymbols(createTypeScriptServices(tsdk.typescript, {
       disableAutoImportCache: true,
       isValidationEnabled(document) {
         return document.languageId !== 'qin' && !isQinDocumentUri(document.uri, sourceExtension)
       },
-    }),
+    })),
   ]
   const tsProject = createTypeScriptProject(
     tsdk.typescript,
@@ -82,4 +83,26 @@ function isQinDocumentUri(uri: string, sourceExtension: string): boolean {
     || lowerUri.includes(`.${sourceExtension}%`)
     || lowerUri.includes(`%2e${sourceExtension}`)
     || lowerUri.includes(`%252e${sourceExtension}`)
+}
+
+function withoutTypeScriptDocumentSymbols(plugins: LanguageServicePlugin[]): LanguageServicePlugin[] {
+  return plugins.map(plugin => {
+    if (plugin.name !== 'typescript-syntactic') {
+      return plugin
+    }
+    return {
+      ...plugin,
+      capabilities: {
+        ...plugin.capabilities,
+        documentSymbolProvider: false,
+      },
+      create(context) {
+        const service = plugin.create(context)
+        return {
+          ...service,
+          provideDocumentSymbols: undefined,
+        }
+      },
+    }
+  })
 }

@@ -633,8 +633,8 @@ async function main() {
     `Qin object documentSymbol response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
   )
   const objectSymbolNames = collectSymbolNames(Array.isArray(objectDocumentSymbolResponse.result) ? objectDocumentSymbolResponse.result : [])
-  if (!objectSymbolNames.includes('__QinObject_Counter') || !objectSymbolNames.includes('value')) {
-    throw new Error(`Qin object documentSymbol did not include generated object symbols: ${JSON.stringify(objectDocumentSymbolResponse.result)}`)
+  if (!objectSymbolNames.includes('Counter') || objectSymbolNames.includes('__QinObject_Counter')) {
+    throw new Error(`Qin object documentSymbol did not expose source object symbols: ${JSON.stringify(objectDocumentSymbolResponse.result)}`)
   }
 
   const forOfDocumentSymbolRequest = createRequest('textDocument/documentSymbol', {
