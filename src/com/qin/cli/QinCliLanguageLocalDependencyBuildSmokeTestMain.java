@@ -5,6 +5,8 @@ import com.qin.types.QinConfig;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -141,7 +143,123 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                     "circular local Qin dependency error");
         }
 
+        verifyLanguageScriptDryRunGeneratesParserFirst(root.resolve("generated-language"));
+
         System.out.println("QinCliLanguageLocalDependencyBuildSmokeTestMain OK");
+    }
+
+    private static void verifyLanguageScriptDryRunGeneratesParserFirst(Path languageRoot) throws Exception {
+        Path generatedRoot = languageRoot.resolve("generated").resolve("qin-parser-ts");
+        Files.createDirectories(generatedRoot);
+        Files.createDirectories(languageRoot.resolve("src").resolve("java"));
+        Files.writeString(generatedRoot.resolve("qin.config.js"), """
+                export default {
+                  name: "@qin/generated-qin-parser-ts",
+                  version: "0.0.0",
+                  type: "library",
+                  entry: "./index.ts",
+                  generated: {
+                    source: "java",
+                    entryBinaryName: "com.qin.parser.QinParser",
+                    additionalEntryBinaryNames: [
+                      "com.slime.parser.cstToAst.SlimeCstToAstUtils",
+                      "com.slime.parser.cstToAst.SlimeAstCreateUtils"
+                    ]
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(generatedRoot.resolve("package.json"), """
+                {
+                  "name": "@qin/generated-qin-parser-ts",
+                  "version": "0.0.0",
+                  "type": "module",
+                  "main": "./index.ts",
+                  "module": "./index.ts",
+                  "qin": {
+                    "entryBinaryName": "com.qin.parser.QinParser"
+                  },
+                  "exports": {
+                    ".": "./index.ts",
+                    "./SlimeCstToAstUtils": "./com/slime/parser/cstToAst/SlimeCstToAstUtils.ts",
+                    "./SlimeAstCreateUtils": "./com/slime/parser/cstToAst/SlimeAstCreateUtils.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(generatedRoot.resolve("index.ts"), """
+                export default com_qin_parser_QinParser
+                export { com_qin_parser_QinParser as QinParser }
+                export { SlimeJavascriptParser }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(languageRoot.resolve("qin.config.js"), """
+                export default {
+                  name: "generated-language",
+                  version: "1.0.0",
+                  scripts: {
+                    test: "generated-language-test"
+                  },
+                  language: {
+                    id: "qin",
+                    extension: ".qin",
+                    parser: "generated/qin-parser-ts"
+                  },
+                  generated: {
+                    source: "java",
+                    entryBinaryName: "com.qin.parser.QinParser",
+                    additionalEntryBinaryNames: [
+                      "com.slime.parser.cstToAst.SlimeCstToAstUtils",
+                      "com.slime.parser.cstToAst.SlimeAstCreateUtils"
+                    ],
+                    sourceRoots: [
+                      "src/java"
+                    ],
+                    outputDir: "generated/qin-parser-ts"
+                  },
+                  qinLanguage: {
+                    sourceExtension: ".qin",
+                    serviceExtension: ".ts",
+                    parserPackage: "com.qin:qin-parser",
+                    generatedParserTarget: "@qin/generated-qin-parser-ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+
+        PrintStream originalOut = System.out;
+        PrintStream originalErr = System.err;
+        String originalUserDir = System.getProperty("user.dir");
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (PrintStream capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            System.setErr(capture);
+            System.setProperty("user.dir", languageRoot.toString());
+            Method runLanguageScript = QinCli.class.getDeclaredMethod(
+                    "runLanguageScript",
+                    String.class,
+                    String[].class);
+            runLanguageScript.setAccessible(true);
+            try {
+                runLanguageScript.invoke(null, "test", new String[]{"--dry-run"});
+            } catch (InvocationTargetException error) {
+                Throwable cause = error.getCause();
+                if (cause instanceof Exception exception) {
+                    throw exception;
+                }
+                throw error;
+            }
+        } finally {
+            System.setProperty("user.dir", originalUserDir);
+            System.setOut(originalOut);
+            System.setErr(originalErr);
+        }
+
+        String captured = output.toString(StandardCharsets.UTF_8);
+        int generateIndex = captured.indexOf("generate java parser com.qin.parser.QinParser");
+        int scriptIndex = captured.indexOf("generated-language-test");
+        require(generateIndex >= 0,
+                "qin language test --dry-run must generate parser before script execution");
+        require(scriptIndex >= 0,
+                "qin language test --dry-run must still print the configured test script command");
+        require(generateIndex < scriptIndex,
+                "qin language test --dry-run must generate parser before running scripts");
     }
 
     private static void createLocalBinBuildTool(Path root) throws Exception {

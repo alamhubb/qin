@@ -331,6 +331,7 @@ public class QinCli {
         boolean dryRun = hasArg(args, "--dry-run");
         Path projectRoot = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         ensureLocalLanguageDependenciesBuilt(config, projectRoot, dryRun);
+        ensureGeneratedLanguageParser(config, dryRun);
         runLanguageShellCommandAt(projectRoot, script, "language script '" + scriptName + "'", dryRun);
     }
 
@@ -363,6 +364,17 @@ public class QinCli {
 
     private static void generateLanguageParser(String[] args) throws Exception {
         QinConfig config = requireValidLanguageProject();
+        generateLanguageParser(config, hasArg(args, "--dry-run"));
+    }
+
+    private static void ensureGeneratedLanguageParser(QinConfig config, boolean dryRun) throws Exception {
+        if (config.generated() == null) {
+            return;
+        }
+        generateLanguageParser(config, dryRun);
+    }
+
+    private static void generateLanguageParser(QinConfig config, boolean dryRun) throws Exception {
         GeneratedConfig generated = config.generated();
         if (generated == null) {
             throw new IllegalStateException("Missing generated metadata in " + QinConstants.CONFIG_FILE);
@@ -383,7 +395,7 @@ public class QinCli {
         List<Path> sourceRoots = generated.sourceRoots().stream()
                 .map(QinCli::resolveProjectPath)
                 .toList();
-        if (hasArg(args, "--dry-run")) {
+        if (dryRun) {
             verifyGeneratedParserDryRunMetadata(config, outputRoot);
             System.out.println("generate java parser " + generated.entryBinaryName());
             System.out.println("  packageName: @qin/generated-qin-parser-ts");

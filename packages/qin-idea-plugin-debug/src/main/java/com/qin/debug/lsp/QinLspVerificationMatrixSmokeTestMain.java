@@ -313,6 +313,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "value = 1",
                 "value = 2",
                 "local file dependency rebuild marker from changed source",
+                "verifyLanguageScriptDryRunGeneratesParserFirst",
+                "generate java parser com.qin.parser.QinParser",
+                "qin language test --dry-run must generate parser before running scripts",
                 "CountDownLatch",
                 "AtomicReference<Throwable>",
                 "concurrent-qin-build",
@@ -334,6 +337,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String requiredNeedle : List.of(
                 "LANGUAGE_BUILD_LOCK_FILE",
                 "language-build.lock",
+                "ensureGeneratedLanguageParser(config, dryRun)",
                 "runWithLanguageBuildLock",
                 "acquireLanguageBuildLock",
                 "OverlappingFileLockException",
