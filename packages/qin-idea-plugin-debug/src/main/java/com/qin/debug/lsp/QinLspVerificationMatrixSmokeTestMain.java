@@ -691,10 +691,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "token.tokenValue === 'continue'",
                         "token.tokenValue === 'break'",
                         "do {",
-                        "} while (i < limit)",
-                        "token.tokenValue === 'do'",
-                        "token.tokenValue === 'countAtLeastOnce'",
-                        "const moduleUrl = import.meta.url",
+                "} while (i < limit)",
+                "token.tokenValue === 'do'",
+                "token.tokenValue === 'countAtLeastOnce'",
+                "collect(values: List)",
+                "for (const item of values)",
+                "token.tokenValue === 'of'",
+                "token.tokenValue === 'item'",
+                "const moduleUrl = import.meta.url",
                         "const loadedModule = import(\"./dep.qin\")",
                         "token.tokenValue === 'import'",
                         "token.tokenValue === 'meta'",
@@ -728,10 +732,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "token.tokenValue === 'continue'",
                         "token.tokenValue === 'break'",
                         "do {",
-                        "} while (i < limit)",
-                        "token.tokenValue === 'do'",
-                        "token.tokenValue === 'countAtLeastOnce'",
-                        "const moduleUrl = import.meta.url",
+                "} while (i < limit)",
+                "token.tokenValue === 'do'",
+                "token.tokenValue === 'countAtLeastOnce'",
+                "collect(values: List)",
+                "for (const item of values)",
+                "token.tokenValue === 'of'",
+                "token.tokenValue === 'item'",
+                "const moduleUrl = import.meta.url",
                         "const loadedModule = import(\"./dep.qin\")",
                         "token.tokenValue === 'import'",
                         "token.tokenValue === 'meta'",
@@ -765,10 +773,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "token.tokenValue === 'continue'",
                         "token.tokenValue === 'break'",
                         "do {",
-                        "} while (i < limit)",
-                        "token.tokenValue === 'do'",
-                        "token.tokenValue === 'countAtLeastOnce'",
-                        "const moduleUrl = import.meta.url",
+                "} while (i < limit)",
+                "token.tokenValue === 'do'",
+                "token.tokenValue === 'countAtLeastOnce'",
+                "collect(values: List)",
+                "for (const item of values)",
+                "token.tokenValue === 'of'",
+                "token.tokenValue === 'item'",
+                "const moduleUrl = import.meta.url",
                         "const loadedModule = import(\"./dep.qin\")",
                         "token.tokenValue === 'import'",
                         "token.tokenValue === 'meta'",
@@ -804,10 +816,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "token.tokenValue === 'continue'",
                         "token.tokenValue === 'break'",
                         "do {",
-                        "} while (i < limit)",
-                        "token.tokenValue === 'do'",
-                        "token.tokenValue === 'countAtLeastOnce'",
-                        "const moduleUrl = import.meta.url",
+                "} while (i < limit)",
+                "token.tokenValue === 'do'",
+                "token.tokenValue === 'countAtLeastOnce'",
+                "collect(values: List)",
+                "for (const item of values)",
+                "token.tokenValue === 'of'",
+                "token.tokenValue === 'item'",
+                "const moduleUrl = import.meta.url",
                         "const loadedModule = import(\"./dep.qin\")",
                         "token.tokenValue === 'import'",
                         "token.tokenValue === 'meta'",
@@ -1426,6 +1442,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         Path whileMutableLocalPath = corpusPath.resolveSibling("QinJvmParsedWhileMutableLocalSmokeTestMain.java");
         Path forBreakContinuePath = corpusPath.resolveSibling("QinJvmParsedForBreakContinueSmokeTestMain.java");
         Path doWhilePath = corpusPath.resolveSibling("QinJvmParsedDoWhileSmokeTestMain.java");
+        Path forOfPath = corpusPath.resolveSibling("QinJvmParsedForOfSmokeTestMain.java");
         Path slimeParserExtendsPath = corpusPath.resolveSibling("QinJvmJavaSlimeParserExtendsSmokeTestMain.java");
         require(Files.isRegularFile(corpusPath),
                 "Qin JVM class declaration corpus smoke must exist: " + corpusPath);
@@ -1445,6 +1462,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM parsed for/break/continue smoke must exist: " + forBreakContinuePath);
         require(Files.isRegularFile(doWhilePath),
                 "Qin JVM parsed do-while smoke must exist: " + doWhilePath);
+        require(Files.isRegularFile(forOfPath),
+                "Qin JVM parsed for...of smoke must exist: " + forOfPath);
         require(Files.isRegularFile(slimeParserExtendsPath),
                 "Qin JVM Java SlimeParser inheritance smoke must exist: " + slimeParserExtendsPath);
 
@@ -1457,6 +1476,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String whileMutableLocalSource = Files.readString(whileMutableLocalPath);
         String forBreakContinueSource = Files.readString(forBreakContinuePath);
         String doWhileSource = Files.readString(doWhilePath);
+        String forOfSource = Files.readString(forOfPath);
         String slimeParserExtendsSource = Files.readString(slimeParserExtendsPath);
         require(corpusSource.contains("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed early-return method-body smoke");
@@ -1474,8 +1494,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM class declaration corpus must include parsed for/break/continue smoke");
         require(corpusSource.contains("QinJvmParsedDoWhileSmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed do-while smoke");
-        require(corpusSource.contains("21 cases"),
-                "Qin JVM class declaration corpus count must cover the current 21-case set");
+        require(corpusSource.contains("QinJvmParsedForOfSmokeTestMain.main(args)"),
+                "Qin JVM class declaration corpus must include parsed for...of smoke");
+        require(corpusSource.contains("22 cases"),
+                "Qin JVM class declaration corpus count must cover the current 22-case set");
         require(earlyReturnSource.contains("const prefix = \"hello \""),
                 "Parsed early-return smoke must cover Qin local binding in a method body");
         require(earlyReturnSource.contains("if (flag)"),
@@ -1532,6 +1554,13 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && doWhileSource.contains("Double.valueOf(8.0d)")
                         && doWhileSource.contains("Double.valueOf(1.0d)"),
                 "Parsed do-while smoke must cover loop body-first execution, control flow, and execution");
+        require(forOfSource.contains("import { List } from 'java:java.util'")
+                        && forOfSource.contains("for (const item of values)")
+                        && forOfSource.contains("QinIrForEachStatement")
+                        && forOfSource.contains("QinIrContinueStatement")
+                        && forOfSource.contains("QinIrBreakStatement")
+                        && forOfSource.contains("Double.valueOf(4.0d)"),
+                "Parsed for...of smoke must cover java: imported Iterable, control flow, and execution");
         require(slimeParserExtendsSource.contains("classfile inheritance proof, not a production parser entry")
                         && slimeParserExtendsSource.contains("QinParserFacade uses SubhutiParser.create"),
                 "Direct SlimeParser construction in the JVM inheritance smoke must stay documented as non-production");
@@ -1568,7 +1597,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(audit.contains(hardeningNeedle),
                     "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
-        require(audit.contains("21-case class-declaration corpus"),
+        require(audit.contains("22-case class-declaration corpus"),
                 "LSP completion audit must record the current JVM class declaration corpus size");
         require(audit.contains("local binding plus early-return `if`"),
                 "LSP completion audit must record parsed method-body early-return coverage");
@@ -1584,6 +1613,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record parsed for/break/continue JVM coverage");
         require(audit.contains("parsed Qin `do while` execution through JVM loop bytecode"),
                 "LSP completion audit must record parsed do-while JVM coverage");
+        require(audit.contains("parsed Qin `for...of` execution through JVM iterator bytecode"),
+                "LSP completion audit must record parsed for...of JVM coverage");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
                 "LSP completion audit must record object method-body parser parity coverage");
         require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),

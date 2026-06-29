@@ -11,6 +11,7 @@ import com.qin.lang.ir.QinIrContinueStatement;
 import com.qin.lang.ir.QinIrDoWhileStatementNode;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
+import com.qin.lang.ir.QinIrForEachStatement;
 import com.qin.lang.ir.QinIrForStatement;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
@@ -77,6 +78,8 @@ public final class QinJvmDeclarationClassEmitter {
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
     private static final ClassDesc STRING_DESC = ClassDesc.of("java.lang.String");
     private static final ClassDesc OBJECT_ARRAY_DESC = ClassDesc.ofDescriptor("[Ljava/lang/Object;");
+    private static final ClassDesc ITERABLE_DESC = ClassDesc.of("java.lang.Iterable");
+    private static final ClassDesc ITERATOR_DESC = ClassDesc.of("java.util.Iterator");
     private static final ClassDesc LINKED_HASH_MAP_DESC = ClassDesc.of("java.util.LinkedHashMap");
     private static final ClassDesc ESM_GLOBAL_DESC = ClassDesc.of("com.qin.lang.runtime.JavaEsmGlobal");
     private static final MethodTypeDesc VOID_INIT = MethodTypeDesc.ofDescriptor("()V");
@@ -770,6 +773,10 @@ public final class QinJvmDeclarationClassEmitter {
             emitForStatement(code, ownerDeclaration, method, declarationIndex, localFrame, forStatement);
             return;
         }
+        if (statement instanceof QinIrForEachStatement forEachStatement) {
+            emitForEachStatement(code, ownerDeclaration, method, declarationIndex, localFrame, forEachStatement);
+            return;
+        }
         if (statement instanceof QinIrDoWhileStatementNode doWhileStatement) {
             emitDoWhileStatement(code, ownerDeclaration, method, declarationIndex, localFrame, doWhileStatement);
             return;
@@ -903,6 +910,58 @@ public final class QinJvmDeclarationClassEmitter {
         }
         code.goto_(startLabel);
         code.labelBinding(doneLabel);
+    }
+
+    private void emitForEachStatement(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrForEachStatement forEachStatement) {
+        LocalFrame forFrame = localFrame.child();
+        LocalBinding iteratorBinding = forFrame.declare(
+                "__qin_iter_" + forEachStatement.itemName(),
+                QinIrTypeRef.classType("java.util.Iterator"));
+        QinIrTypeRef iterableType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                forFrame,
+                forEachStatement.iterable());
+        if (!isIterableType(iterableType)) {
+            throw new IllegalArgumentException(
+                    "Declaration for...of iterable must implement java.lang.Iterable: " + iterableType);
+        }
+        code.invokeinterface(ITERABLE_DESC, "iterator", MethodTypeDesc.of(ITERATOR_DESC));
+        storeLocalForType(code, iteratorBinding.type(), iteratorBinding.localSlot(), iteratorBinding.name());
+
+        java.lang.classfile.Label testLabel = code.newLabel();
+        java.lang.classfile.Label doneLabel = code.newLabel();
+        LocalFrame bodyFrame = forFrame.withLoop(new LoopBinding(testLabel, doneLabel));
+        LocalBinding itemBinding = bodyFrame.declare(forEachStatement.itemName(), QinIrTypeRef.classType("java.lang.Object"));
+        code.labelBinding(testLabel);
+        loadLocalForType(code, iteratorBinding.type(), iteratorBinding.localSlot(), iteratorBinding.name());
+        code.invokeinterface(ITERATOR_DESC, "hasNext", MethodTypeDesc.ofDescriptor("()Z"));
+        code.ifeq(doneLabel);
+        loadLocalForType(code, iteratorBinding.type(), iteratorBinding.localSlot(), iteratorBinding.name());
+        code.invokeinterface(ITERATOR_DESC, "next", MethodTypeDesc.of(OBJECT_DESC));
+        storeLocalForType(code, itemBinding.type(), itemBinding.localSlot(), itemBinding.name());
+        emitStatements(code, ownerDeclaration, method, declarationIndex, bodyFrame, forEachStatement.body());
+        code.goto_(testLabel);
+        code.labelBinding(doneLabel);
+    }
+
+    private boolean isIterableType(QinIrTypeRef type) {
+        if (type == null || type.kind() != QinIrTypeKind.CLASS || type.binaryName() == null) {
+            return false;
+        }
+        try {
+            return Iterable.class.isAssignableFrom(resolveClass(type.binaryName()));
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
     }
 
     private void emitBreakStatement(
@@ -2588,6 +2647,16 @@ public final class QinJvmDeclarationClassEmitter {
         }
 
         if (actualType.kind() != targetType.kind()) {
+            if (actualType.kind() == QinIrTypeKind.CLASS && targetType.kind() == QinIrTypeKind.DOUBLE) {
+                code.checkcast(NUMBER_DESC);
+                code.invokevirtual(NUMBER_DESC, "doubleValue", MethodTypeDesc.ofDescriptor("()D"));
+                return;
+            }
+            if (actualType.kind() == QinIrTypeKind.CLASS && targetType.kind() == QinIrTypeKind.INT) {
+                code.checkcast(NUMBER_DESC);
+                code.invokevirtual(NUMBER_DESC, "intValue", MethodTypeDesc.ofDescriptor("()I"));
+                return;
+            }
             if (actualType.kind() == QinIrTypeKind.DOUBLE && targetType.kind() == QinIrTypeKind.INT) {
                 code.d2i();
                 return;

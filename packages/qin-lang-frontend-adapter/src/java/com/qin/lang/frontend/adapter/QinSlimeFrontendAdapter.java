@@ -364,22 +364,42 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 default -> QinIrTypeRef.classType("java.lang.Object");
             };
         }
-        if (typeAst instanceof TSTypeReference typeReference && typeReference.typeName() instanceof Identifier identifier) {
-            String importedBinaryName = javaImportLookup.get(identifier.name());
+        if (typeAst instanceof TSTypeReference typeReference) {
+            String typeName = typeReferenceName(typeReference.typeName());
+            if (typeName == null || typeName.isBlank()) {
+                return QinIrTypeRef.classType("java.lang.Object");
+            }
+            String importedBinaryName = javaImportLookup.get(typeName);
             if (importedBinaryName != null && !importedBinaryName.isBlank()) {
                 return QinIrTypeRef.classType(importedBinaryName);
             }
-            if (localDeclarationNames.contains(identifier.name())) {
-                return QinIrTypeRef.classType(identifier.name());
+            if (localDeclarationNames.contains(typeName)) {
+                return QinIrTypeRef.classType(typeName);
             }
-            return switch (identifier.name()) {
+            return switch (typeName) {
                 case "String" -> QinIrTypeRef.stringType();
                 case "Boolean" -> QinIrTypeRef.booleanType();
                 case "Double", "Number" -> QinIrTypeRef.doubleType();
-                default -> QinIrTypeRef.classType(identifier.name());
+                default -> QinIrTypeRef.classType(typeName);
             };
         }
         return QinIrTypeRef.classType("java.lang.Object");
+    }
+
+    private String typeReferenceName(Object typeNameAst) {
+        String nodeType = simpleName(typeNameAst);
+        if (typeNameAst instanceof Identifier identifier) {
+            return identifier.name();
+        }
+        if ("TSQualifiedName".equals(nodeType)) {
+            String left = typeReferenceName(invokeByName(typeNameAst, "left"));
+            String right = typeReferenceName(invokeByName(typeNameAst, "right"));
+            if (left == null || left.isBlank() || right == null || right.isBlank()) {
+                return null;
+            }
+            return left + "." + right;
+        }
+        return null;
     }
 
     java.util.Set<String> collectTopLevelClassNames(List<? extends AstNode> body) {

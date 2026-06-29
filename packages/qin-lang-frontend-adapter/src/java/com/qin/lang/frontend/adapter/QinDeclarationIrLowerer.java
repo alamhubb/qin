@@ -13,6 +13,7 @@ import com.qin.lang.ir.QinIrContinueStatement;
 import com.qin.lang.ir.QinIrDoWhileStatementNode;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
+import com.qin.lang.ir.QinIrForEachStatement;
 import com.qin.lang.ir.QinIrForStatement;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfStatement;
@@ -723,6 +724,12 @@ final class QinDeclarationIrLowerer {
                 }
                 continue;
             }
+            if ("ForOfStatement".equals(QinSlimeFrontendAdapter.simpleName(statement))) {
+                if (!isDeclarationCompatibleForOfStatement(statement)) {
+                    return false;
+                }
+                continue;
+            }
             if (statement instanceof DoWhileStatement doWhileStatement) {
                 if (!isDeclarationCompatibleBranch(doWhileStatement.body())) {
                     return false;
@@ -766,6 +773,9 @@ final class QinDeclarationIrLowerer {
         if (statement instanceof ForStatement forStatement) {
             return isDeclarationCompatibleForStatement(forStatement);
         }
+        if ("ForOfStatement".equals(QinSlimeFrontendAdapter.simpleName(statement))) {
+            return isDeclarationCompatibleForOfStatement(statement);
+        }
         if (statement instanceof DoWhileStatement doWhileStatement) {
             return isDeclarationCompatibleBranch(doWhileStatement.body());
         }
@@ -801,6 +811,22 @@ final class QinDeclarationIrLowerer {
                 || init instanceof Expression
                 || (init instanceof VariableDeclaration variableDeclaration
                 && hasIdentifierOnlyVariableDeclarators(variableDeclaration));
+    }
+
+    private boolean isDeclarationCompatibleForOfStatement(Object forOfStatement) {
+        if (forOfStatement == null) {
+            return false;
+        }
+        Object left = QinSlimeFrontendAdapter.invokeByName(forOfStatement, "left");
+        if (forOfItemNameOrNull(left) == null) {
+            return false;
+        }
+        Object right = QinSlimeFrontendAdapter.invokeByName(forOfStatement, "right");
+        if (!(right instanceof Expression)) {
+            return false;
+        }
+        Object body = QinSlimeFrontendAdapter.invokeByName(forOfStatement, "body");
+        return body == null || body instanceof Statement statement && isDeclarationCompatibleBranch(statement);
     }
 
     private boolean hasIdentifierOnlyVariableDeclarators(VariableDeclaration variableDeclaration) {
@@ -971,22 +997,42 @@ final class QinDeclarationIrLowerer {
                 default -> QinIrTypeRef.classType("java.lang.Object");
             };
         }
-        if (typeAst instanceof TSTypeReference typeReference && typeReference.typeName() instanceof Identifier identifier) {
-            String importedBinaryName = javaImportLookup.get(identifier.name());
+        if (typeAst instanceof TSTypeReference typeReference) {
+            String typeName = typeReferenceName(typeReference.typeName());
+            if (typeName == null || typeName.isBlank()) {
+                return QinIrTypeRef.classType("java.lang.Object");
+            }
+            String importedBinaryName = javaImportLookup.get(typeName);
             if (importedBinaryName != null && !importedBinaryName.isBlank()) {
                 return QinIrTypeRef.classType(importedBinaryName);
             }
-            if (localDeclarationNames.contains(identifier.name())) {
-                return QinIrTypeRef.classType(identifier.name());
+            if (localDeclarationNames.contains(typeName)) {
+                return QinIrTypeRef.classType(typeName);
             }
-            return switch (identifier.name()) {
+            return switch (typeName) {
                 case "String" -> QinIrTypeRef.stringType();
                 case "Boolean" -> QinIrTypeRef.booleanType();
                 case "Double", "Number" -> QinIrTypeRef.doubleType();
-                default -> QinIrTypeRef.classType(identifier.name());
+                default -> QinIrTypeRef.classType(typeName);
             };
         }
         return QinIrTypeRef.classType("java.lang.Object");
+    }
+
+    private String typeReferenceName(Object typeNameAst) {
+        String nodeType = QinSlimeFrontendAdapter.simpleName(typeNameAst);
+        if (typeNameAst instanceof Identifier identifier) {
+            return identifier.name();
+        }
+        if ("TSQualifiedName".equals(nodeType)) {
+            String left = typeReferenceName(QinSlimeFrontendAdapter.invokeByName(typeNameAst, "left"));
+            String right = typeReferenceName(QinSlimeFrontendAdapter.invokeByName(typeNameAst, "right"));
+            if (left == null || left.isBlank() || right == null || right.isBlank()) {
+                return null;
+            }
+            return left + "." + right;
+        }
+        return null;
     }
 
     private List<QinIrStatement> lowerMethodBodyStatementsOrEmpty(
@@ -1010,6 +1056,7 @@ final class QinDeclarationIrLowerer {
             if (statement instanceof ThrowStatement
                     || statement instanceof TryStatement
                     || statement instanceof ForStatement
+                    || "ForOfStatement".equals(QinSlimeFrontendAdapter.simpleName(statement))
                     || statement instanceof DoWhileStatement
                     || statement instanceof BreakStatement
                     || statement instanceof ContinueStatement
@@ -1127,6 +1174,14 @@ final class QinDeclarationIrLowerer {
                         scopedLocals));
                 continue;
             }
+            if ("ForOfStatement".equals(QinSlimeFrontendAdapter.simpleName(statement))) {
+                lowered.add(lowerDeclarationForOfStatement(
+                        statement,
+                        javaImportLookup,
+                        classContext,
+                        scopedLocals));
+                continue;
+            }
             if (statement instanceof DoWhileStatement doWhileStatement) {
                 lowered.add(new QinIrDoWhileStatementNode(
                         lowerDeclarationStatements(
@@ -1207,6 +1262,59 @@ final class QinDeclarationIrLowerer {
                         javaImportLookup,
                         classContext,
                         new LinkedHashMap<>(forLocals)));
+    }
+
+    private QinIrForEachStatement lowerDeclarationForOfStatement(
+            Object forOfStatement,
+            Map<String, String> javaImportLookup,
+            DeclarationClassContext classContext,
+            Map<String, QinIrExpression> locals) {
+        Object left = QinSlimeFrontendAdapter.invokeByName(forOfStatement, "left");
+        String itemName = forOfItemNameOrNull(left);
+        if (itemName == null) {
+            throw qjsError("QJS2026", "Declaration for...of supports only identifier bindings");
+        }
+        Object right = QinSlimeFrontendAdapter.invokeByName(forOfStatement, "right");
+        if (!(right instanceof Expression rightExpression)) {
+            throw qjsError("QJS2026", "Declaration for...of iterable must be an expression");
+        }
+        Object body = QinSlimeFrontendAdapter.invokeByName(forOfStatement, "body");
+        Map<String, QinIrExpression> forLocals = new LinkedHashMap<>(locals);
+        forLocals.put(itemName, new QinIrIdentifierReference(itemName));
+        return new QinIrForEachStatement(
+                itemName,
+                lowerDeclarationExpression(rightExpression, javaImportLookup, classContext, locals),
+                body instanceof Statement bodyStatement
+                        ? lowerDeclarationStatements(
+                                statementList(bodyStatement),
+                                javaImportLookup,
+                                classContext,
+                                forLocals)
+                        : List.of());
+    }
+
+    private String forOfItemNameOrNull(Object left) {
+        if (left instanceof Identifier identifier
+                && identifier.name() != null
+                && !identifier.name().isBlank()) {
+            return identifier.name();
+        }
+        if ("VariableDeclaration".equals(QinSlimeFrontendAdapter.simpleName(left))) {
+            List<?> declarations = QinSlimeFrontendAdapter.asListStatic(
+                    QinSlimeFrontendAdapter.invokeByName(left, "declarations"),
+                    "ForOfStatement.left.declarations");
+            if (declarations.size() != 1) {
+                return null;
+            }
+            Object declarator = declarations.get(0);
+            Object id = QinSlimeFrontendAdapter.invokeByName(declarator, "id");
+            if (id instanceof Identifier identifier
+                    && identifier.name() != null
+                    && !identifier.name().isBlank()) {
+                return identifier.name();
+            }
+        }
+        return null;
     }
 
     private List<QinIrLocalVariableDeclaration> lowerDeclarationForInitializerDeclarations(
