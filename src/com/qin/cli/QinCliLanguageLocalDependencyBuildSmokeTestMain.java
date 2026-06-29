@@ -132,6 +132,54 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         require(!Files.exists(concurrentUpstream.resolve(".qin").resolve("language-build.lock")),
                 "concurrent local dependency build lock cleanup after serialized builds");
 
+        Path scriptLockRoot = root.resolve("script-lock");
+        Path scriptLockUpstream = scriptLockRoot.resolve("upstream");
+        Path scriptDownstreamA = scriptLockRoot.resolve("downstream-a");
+        Path scriptDownstreamB = scriptLockRoot.resolve("downstream-b");
+        Files.createDirectories(scriptLockUpstream.resolve("src"));
+        Files.createDirectories(scriptDownstreamA);
+        Files.createDirectories(scriptDownstreamB);
+        createScriptLockBuildTool(scriptLockUpstream);
+        Files.writeString(scriptLockUpstream.resolve("src").resolve("source.ts"), "export const scriptLock = true\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(scriptLockUpstream.resolve("qin.config.js"), """
+                export default {
+                  name: "script-lock-upstream",
+                  version: "1.0.0",
+                  scripts: {
+                    build: "script-lock-qin-build"
+                  },
+                  language: {
+                    id: "script-lock-upstream",
+                    extension: ".sup",
+                    parser: "src/source.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        writeScriptLockDownstreamConfig(scriptDownstreamA, "../upstream");
+        writeScriptLockDownstreamConfig(scriptDownstreamB, "../upstream");
+
+        CountDownLatch scriptStart = new CountDownLatch(1);
+        AtomicReference<Throwable> scriptFailure = new AtomicReference<>();
+        List<Thread> scriptThreads = List.of(
+                languageScriptThread("test", scriptDownstreamA, scriptStart, scriptFailure),
+                languageScriptThread("test", scriptDownstreamB, scriptStart, scriptFailure));
+        for (Thread thread : scriptThreads) {
+            thread.start();
+        }
+        scriptStart.countDown();
+        for (Thread thread : scriptThreads) {
+            thread.join();
+        }
+        if (scriptFailure.get() != null) {
+            throw new IllegalStateException("Concurrent Qin language script dependency read-lock smoke failed",
+                    scriptFailure.get());
+        }
+        require(!Files.exists(scriptLockUpstream.resolve("dist").resolve("script-violation.txt")),
+                "language script keeps local dependency dist stable while another process wants to rebuild");
+        require(!Files.exists(scriptLockUpstream.resolve(".qin").resolve("language-build.lock")),
+                "script dependency read lock cleanup after serialized language scripts");
+
         Path cycleA = root.resolve("cycle-a");
         Path cycleB = root.resolve("cycle-b");
         Files.createDirectories(cycleA);
@@ -321,6 +369,30 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         }
     }
 
+    private static void createScriptLockBuildTool(Path root) throws Exception {
+        Path bin = root.resolve("node_modules").resolve(".bin");
+        Files.createDirectories(bin);
+        if (isWindows()) {
+            Files.writeString(bin.resolve("script-lock-qin-build.cmd"), """
+                    @echo off
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; if (Test-Path dist) { Remove-Item -Recurse -Force dist }; New-Item -ItemType Directory -Force dist | Out-Null; Set-Content -Encoding UTF8 dist/marker.txt 'built'; Start-Sleep -Milliseconds 500"
+                    """, StandardCharsets.UTF_8);
+            return;
+        }
+        Path tool = bin.resolve("script-lock-qin-build");
+        Files.writeString(tool, """
+                #!/bin/sh
+                set -eu
+                rm -rf dist
+                mkdir -p dist
+                printf built > dist/marker.txt
+                sleep 1
+                """, StandardCharsets.UTF_8);
+        if (!tool.toFile().setExecutable(true)) {
+            throw new IllegalStateException("Unable to make script-lock-qin-build executable: " + tool);
+        }
+    }
+
     private static void writeDownstreamConfig(Path root, String dependencyPath) throws Exception {
         Files.writeString(root.resolve("qin.config.js"), """
                 export default {
@@ -342,6 +414,27 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                 root.getFileName()), StandardCharsets.UTF_8);
     }
 
+    private static void writeScriptLockDownstreamConfig(Path root, String dependencyPath) throws Exception {
+        Files.writeString(root.resolve("qin.config.js"), """
+                export default {
+                  name: "%s",
+                  version: "1.0.0",
+                  dependencies: {
+                    upstream: "file:%s"
+                  },
+                  scripts: {
+                    test: %s
+                  },
+                  language: {
+                    id: "%s",
+                    extension: ".down",
+                    parser: "index.ts"
+                  }
+                }
+                """.formatted(root.getFileName(), dependencyPath, jsString(scriptLockTestScript()),
+                root.getFileName()), StandardCharsets.UTF_8);
+    }
+
     private static Thread dependencyBuildThread(
             Method method,
             Path downstream,
@@ -358,12 +451,44 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         }, "qin-local-dependency-build-" + downstream.getFileName());
     }
 
+    private static Thread languageScriptThread(
+            String scriptName,
+            Path downstream,
+            CountDownLatch start,
+            AtomicReference<Throwable> failure) {
+        return new Thread(() -> {
+            try {
+                start.await();
+                Method runLanguageScriptAt = QinCli.class.getDeclaredMethod(
+                        "runLanguageScriptAt",
+                        String.class,
+                        String[].class,
+                        Path.class);
+                runLanguageScriptAt.setAccessible(true);
+                runLanguageScriptAt.invoke(null, scriptName, new String[0], downstream);
+            } catch (Throwable error) {
+                failure.compareAndSet(null, error);
+            }
+        }, "qin-language-script-" + downstream.getFileName());
+    }
+
     private static String testScript(String marker) {
         if (isWindows()) {
             return "powershell -NoProfile -Command \"if (-not (Test-Path '" + marker
                     + "')) { throw 'missing marker' }\"";
         }
         return "test -f " + marker;
+    }
+
+    private static String scriptLockTestScript() {
+        if (isWindows()) {
+            return "powershell -NoProfile -Command \"Start-Sleep -Milliseconds 750; "
+                    + "if (-not (Test-Path '../upstream/dist/marker.txt')) { "
+                    + "Set-Content -Encoding UTF8 '../upstream/dist/script-violation.txt' 'missing marker'; "
+                    + "throw 'missing marker during language script' }\"";
+        }
+        return "sleep 1; test -f ../upstream/dist/marker.txt || "
+                + "(printf 'missing marker' > ../upstream/dist/script-violation.txt; exit 25)";
     }
 
     private static String cycleConfig(String name, String dependencyPath) {

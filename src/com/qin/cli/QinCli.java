@@ -323,16 +323,31 @@ public class QinCli {
     }
 
     private static void runLanguageScript(String scriptName, String[] args) throws Exception {
-        QinConfig config = requireValidLanguageProject();
+        Path projectRoot = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
+        runLanguageScriptAt(scriptName, args, projectRoot);
+    }
+
+    private static void runLanguageScriptAt(String scriptName, String[] args, Path projectRoot) throws Exception {
+        Path root = projectRoot.toAbsolutePath().normalize();
+        ConfigLoader configLoader = new ConfigLoader(root.toString());
+        QinConfig config = configLoader.load();
+        ValidationResult result = configLoader.validate(config);
+        if (!result.isValid()) {
+            throw new IllegalStateException(String.join(System.lineSeparator(), result.getErrors()));
+        }
+        if (config.language() == null) {
+            throw new IllegalStateException("No language metadata declared in " + QinConstants.CONFIG_FILE);
+        }
         String script = config.scripts().get(scriptName);
         if (script == null || script.isBlank()) {
             throw new IllegalStateException("Missing scripts." + scriptName + " in " + QinConstants.CONFIG_FILE);
         }
         boolean dryRun = hasArg(args, "--dry-run");
-        Path projectRoot = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
-        ensureLocalLanguageDependenciesBuilt(config, projectRoot, dryRun);
+        Set<Path> localDependencyRoots = ensureLocalLanguageDependenciesBuilt(config, root, dryRun);
         ensureGeneratedLanguageParser(config, dryRun);
-        runLanguageShellCommandAt(projectRoot, script, "language script '" + scriptName + "'", dryRun);
+        runWithLanguageDependencyReadLocks(localDependencyRoots,
+                () -> runLanguageShellCommandAt(root, script, "language script '" + scriptName + "'", dryRun),
+                dryRun);
     }
 
     private static QinConfig requireValidLanguageProject() throws Exception {
@@ -618,14 +633,17 @@ public class QinCli {
         }
     }
 
-    private static void ensureLocalLanguageDependenciesBuilt(QinConfig config, Path projectRoot, boolean dryRun)
+    private static Set<Path> ensureLocalLanguageDependenciesBuilt(QinConfig config, Path projectRoot, boolean dryRun)
             throws Exception {
+        LinkedHashSet<Path> dependencyRoots = new LinkedHashSet<>();
         ensureLocalLanguageDependenciesBuilt(
                 config,
                 projectRoot.toAbsolutePath().normalize(),
                 dryRun,
                 new LinkedHashSet<>(),
-                new LinkedHashSet<>());
+                new LinkedHashSet<>(),
+                dependencyRoots);
+        return dependencyRoots;
     }
 
     private static void ensureLocalLanguageDependenciesBuilt(
@@ -633,13 +651,14 @@ public class QinCli {
             Path projectRoot,
             boolean dryRun,
             Set<Path> visiting,
-            Set<Path> built) throws Exception {
+            Set<Path> built,
+            Set<Path> dependencyRoots) throws Exception {
         for (Map.Entry<String, String> dependency : languageLocalDependencies(config).entrySet()) {
             Path dependencyRoot = resolveLocalFileDependencyRoot(projectRoot, dependency.getValue());
             if (dependencyRoot == null || !Files.isRegularFile(dependencyRoot.resolve(QinConstants.CONFIG_FILE))) {
                 continue;
             }
-            buildLocalLanguageDependency(dependency.getKey(), dependencyRoot, dryRun, visiting, built);
+            buildLocalLanguageDependency(dependency.getKey(), dependencyRoot, dryRun, visiting, built, dependencyRoots);
         }
     }
 
@@ -648,16 +667,18 @@ public class QinCli {
             Path dependencyRoot,
             boolean dryRun,
             Set<Path> visiting,
-            Set<Path> built) throws Exception {
+            Set<Path> built,
+            Set<Path> dependencyRoots) throws Exception {
         Path root = dependencyRoot.toAbsolutePath().normalize();
         if (built.contains(root)) {
+            dependencyRoots.add(root);
             return;
         }
         if (!visiting.add(root)) {
             throw new IllegalStateException("Circular local Qin dependency while building language project: " + root);
         }
         QinConfig dependencyConfig = new ConfigLoader(root.toString()).load();
-        ensureLocalLanguageDependenciesBuilt(dependencyConfig, root, dryRun, visiting, built);
+        ensureLocalLanguageDependenciesBuilt(dependencyConfig, root, dryRun, visiting, built, dependencyRoots);
 
         String buildScript = dependencyConfig.scripts().get("build");
         if (buildScript != null && !buildScript.isBlank()) {
@@ -670,6 +691,7 @@ public class QinCli {
         }
         visiting.remove(root);
         built.add(root);
+        dependencyRoots.add(root);
     }
 
     private static void runWithLanguageBuildLock(Path projectRoot, ThrowingRunnable buildAction, boolean dryRun)
@@ -739,6 +761,36 @@ public class QinCli {
                 throw new IOException("Interrupted while waiting for language dependency build lock", e);
             }
         }
+    }
+
+    private static void runWithLanguageDependencyReadLocks(
+            Set<Path> dependencyRoots,
+            ThrowingRunnable scriptAction,
+            boolean dryRun) throws Exception {
+        if (dryRun || dependencyRoots.isEmpty()) {
+            scriptAction.run();
+            return;
+        }
+        List<Path> orderedRoots = dependencyRoots.stream()
+                .map(path -> path.toAbsolutePath().normalize())
+                .distinct()
+                .sorted(Comparator.comparing(Path::toString))
+                .toList();
+        runWithLanguageDependencyReadLocks(orderedRoots, 0, scriptAction);
+    }
+
+    private static void runWithLanguageDependencyReadLocks(
+            List<Path> orderedRoots,
+            int index,
+            ThrowingRunnable scriptAction) throws Exception {
+        if (index >= orderedRoots.size()) {
+            scriptAction.run();
+            return;
+        }
+        Path root = orderedRoots.get(index);
+        runWithLanguageBuildLock(root,
+                () -> runWithLanguageDependencyReadLocks(orderedRoots, index + 1, scriptAction),
+                false);
     }
 
     @FunctionalInterface
