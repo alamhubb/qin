@@ -11,6 +11,7 @@ import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFieldDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrIfStatement;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
@@ -20,10 +21,16 @@ import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
+import com.qin.lang.ir.QinIrReturnStatement;
 import com.qin.lang.ir.QinIrSequenceExpression;
+import com.qin.lang.ir.QinIrStatement;
+import com.qin.lang.ir.QinIrStatementExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
+import com.qin.lang.ir.QinIrThrowStatement;
+import com.qin.lang.ir.QinIrTryStatement;
+import com.qin.lang.ir.QinIrCatchClause;
 import com.qin.lang.ir.QinIrTypeRef;
 import com.slime.ast.AstNode;
 import com.slime.ast.Expression;
@@ -39,9 +46,11 @@ import com.slime.ast.nodes.expressions.Identifier;
 import com.slime.ast.nodes.expressions.Literal;
 import com.slime.ast.nodes.expressions.LogicalExpression;
 import com.slime.ast.nodes.expressions.MemberExpression;
+import com.slime.ast.nodes.expressions.NewExpression;
 import com.slime.ast.nodes.expressions.ObjectExpression;
 import com.slime.ast.nodes.expressions.ParenthesizedExpression;
 import com.slime.ast.nodes.expressions.ThisExpression;
+import com.slime.ast.nodes.misc.CatchClause;
 import com.slime.ast.nodes.misc.Decorator;
 import com.slime.ast.nodes.misc.FunctionParameter;
 import com.slime.ast.nodes.misc.MethodDefinition;
@@ -55,6 +64,8 @@ import com.slime.ast.nodes.statements.BlockStatement;
 import com.slime.ast.nodes.statements.ExpressionStatement;
 import com.slime.ast.nodes.statements.IfStatement;
 import com.slime.ast.nodes.statements.ReturnStatement;
+import com.slime.ast.nodes.statements.ThrowStatement;
+import com.slime.ast.nodes.statements.TryStatement;
 import com.slime.ast.nodes.typescript.TSKeywordType;
 import com.slime.ast.nodes.typescript.TSTypeAnnotation;
 import com.slime.ast.nodes.typescript.TSTypeReference;
@@ -676,9 +687,18 @@ final class QinDeclarationIrLowerer {
             if (statement instanceof ReturnStatement || statement instanceof ExpressionStatement) {
                 continue;
             }
+            if (statement instanceof ThrowStatement) {
+                continue;
+            }
             if (statement instanceof IfStatement ifStatement) {
                 if (!isDeclarationCompatibleBranch(ifStatement.consequent())
                         || !isDeclarationCompatibleBranch(ifStatement.alternate())) {
+                    return false;
+                }
+                continue;
+            }
+            if (statement instanceof TryStatement tryStatement) {
+                if (!isDeclarationCompatibleTryStatement(tryStatement)) {
                     return false;
                 }
                 continue;
@@ -698,11 +718,31 @@ final class QinDeclarationIrLowerer {
         if (statement instanceof ReturnStatement || statement instanceof ExpressionStatement) {
             return true;
         }
+        if (statement instanceof ThrowStatement) {
+            return true;
+        }
         if (statement instanceof IfStatement ifStatement) {
             return isDeclarationCompatibleBranch(ifStatement.consequent())
                     && isDeclarationCompatibleBranch(ifStatement.alternate());
         }
+        if (statement instanceof TryStatement tryStatement) {
+            return isDeclarationCompatibleTryStatement(tryStatement);
+        }
         return false;
+    }
+
+    private boolean isDeclarationCompatibleTryStatement(TryStatement tryStatement) {
+        if (tryStatement == null || tryStatement.block() == null) {
+            return false;
+        }
+        if (!isDeclarationCompatibleBranch(tryStatement.block())) {
+            return false;
+        }
+        CatchClause handler = tryStatement.handler();
+        if (handler != null && !isDeclarationCompatibleBranch(handler.body())) {
+            return false;
+        }
+        return tryStatement.finalizer() == null || isDeclarationCompatibleBranch(tryStatement.finalizer());
     }
 
     private boolean hasIdentifierOnlyVariableDeclarators(VariableDeclaration variableDeclaration) {
@@ -795,15 +835,27 @@ final class QinDeclarationIrLowerer {
 
         FunctionExpression function = methodDefinition.value();
         List<QinIrParameter> parameters = lowerParameters(function, javaImportLookup, localDeclarationNames);
-        QinIrExpression returnExpression = lowerMethodReturnExpression(function, javaImportLookup, classContext);
-        QinIrTypeRef returnType = inferDeclarationReturnType(returnExpression, parameters, classContext);
+        List<QinIrStatement> bodyStatements = lowerMethodBodyStatementsOrEmpty(
+                function,
+                javaImportLookup,
+                classContext);
+        QinIrExpression returnExpression = bodyStatements.isEmpty()
+                ? lowerMethodReturnExpression(function, javaImportLookup, classContext)
+                : null;
+        QinIrTypeRef returnType = function != null && function.returnType() != null
+                ? lowerParameterType(function.returnType(), javaImportLookup, localDeclarationNames)
+                : inferDeclarationReturnType(returnExpression, parameters, classContext);
 
         return new QinIrMethodDeclaration(
                 identifier.name(),
                 returnType,
                 parameters,
                 lowerAnnotations(methodDefinition.decorators(), javaImportLookup),
-                returnExpression);
+                returnExpression,
+                bodyStatements,
+                List.of(),
+                null,
+                false);
     }
 
     private List<QinIrParameter> lowerParameters(
@@ -877,6 +929,140 @@ final class QinDeclarationIrLowerer {
             };
         }
         return QinIrTypeRef.classType("java.lang.Object");
+    }
+
+    private List<QinIrStatement> lowerMethodBodyStatementsOrEmpty(
+            FunctionExpression function,
+            Map<String, String> javaImportLookup,
+            DeclarationClassContext classContext) {
+        if (function == null || function.body() == null || function.body().body() == null) {
+            return List.of();
+        }
+        if (!containsStatementBodySignal(function.body().body())) {
+            return List.of();
+        }
+        return lowerDeclarationStatements(function.body().body(), javaImportLookup, classContext, Map.of());
+    }
+
+    private boolean containsStatementBodySignal(List<? extends Statement> statements) {
+        if (statements == null || statements.isEmpty()) {
+            return false;
+        }
+        for (Statement statement : statements) {
+            if (statement instanceof ThrowStatement || statement instanceof TryStatement) {
+                return true;
+            }
+            if (statement instanceof IfStatement ifStatement
+                    && (containsStatementBodySignal(statementList(ifStatement.consequent()))
+                    || containsStatementBodySignal(statementList(ifStatement.alternate())))) {
+                return true;
+            }
+            if (statement instanceof BlockStatement blockStatement
+                    && containsStatementBodySignal(blockStatement.body())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<QinIrStatement> lowerDeclarationStatements(
+            List<? extends Statement> statements,
+            Map<String, String> javaImportLookup,
+            DeclarationClassContext classContext,
+            Map<String, QinIrExpression> locals) {
+        if (statements == null || statements.isEmpty()) {
+            return List.of();
+        }
+        Map<String, QinIrExpression> scopedLocals = new LinkedHashMap<>(locals);
+        List<QinIrStatement> lowered = new ArrayList<>();
+        for (Statement statement : statements) {
+            if (statement instanceof VariableDeclaration variableDeclaration) {
+                if (!lowerDeclarationLocalVariableDeclarations(variableDeclaration, javaImportLookup, classContext, scopedLocals)) {
+                    throw qjsError("QJS2023", "Unsupported declaration statement-body local variable");
+                }
+                continue;
+            }
+            if (statement instanceof ReturnStatement returnStatement) {
+                lowered.add(new QinIrReturnStatement(returnStatement.argument() == null
+                        ? new QinIrNullLiteral()
+                        : lowerDeclarationExpression(returnStatement.argument(), javaImportLookup, classContext, scopedLocals)));
+                continue;
+            }
+            if (statement instanceof ExpressionStatement expressionStatement) {
+                lowered.add(new QinIrStatementExpression(lowerDeclarationStatementExpression(
+                        expressionStatement.expression(),
+                        javaImportLookup,
+                        classContext,
+                        scopedLocals)));
+                continue;
+            }
+            if (statement instanceof ThrowStatement throwStatement) {
+                lowered.add(new QinIrThrowStatement(lowerDeclarationExpression(
+                        throwStatement.argument(),
+                        javaImportLookup,
+                        classContext,
+                        scopedLocals)));
+                continue;
+            }
+            if (statement instanceof IfStatement ifStatement) {
+                lowered.add(new QinIrIfStatement(
+                        lowerDeclarationExpression(ifStatement.test(), javaImportLookup, classContext, scopedLocals),
+                        lowerDeclarationStatements(
+                                statementList(ifStatement.consequent()),
+                                javaImportLookup,
+                                classContext,
+                                new LinkedHashMap<>(scopedLocals)),
+                        lowerDeclarationStatements(
+                                statementList(ifStatement.alternate()),
+                                javaImportLookup,
+                                classContext,
+                                new LinkedHashMap<>(scopedLocals))));
+                continue;
+            }
+            if (statement instanceof TryStatement tryStatement) {
+                List<QinIrCatchClause> catchClauses = new ArrayList<>();
+                CatchClause handler = tryStatement.handler();
+                if (handler != null) {
+                    String parameterName = handler.param() instanceof Identifier identifier
+                            ? identifier.name()
+                            : "__qin_error";
+                    catchClauses.add(new QinIrCatchClause(
+                            parameterName,
+                            QinIrTypeRef.classType("java.lang.Throwable"),
+                            lowerDeclarationStatements(
+                                    statementList(handler.body()),
+                                    javaImportLookup,
+                                    classContext,
+                                    new LinkedHashMap<>(scopedLocals))));
+                }
+                lowered.add(new QinIrTryStatement(
+                        lowerDeclarationStatements(
+                                statementList(tryStatement.block()),
+                                javaImportLookup,
+                                classContext,
+                                new LinkedHashMap<>(scopedLocals)),
+                        catchClauses,
+                        lowerDeclarationStatements(
+                                statementList(tryStatement.finalizer()),
+                                javaImportLookup,
+                                classContext,
+                                new LinkedHashMap<>(scopedLocals))));
+                continue;
+            }
+            throw qjsError("QJS2024", "Unsupported declaration statement body node: "
+                    + QinSlimeFrontendAdapter.simpleName(statement));
+        }
+        return List.copyOf(lowered);
+    }
+
+    private List<? extends Statement> statementList(Statement statement) {
+        if (statement == null) {
+            return List.of();
+        }
+        if (statement instanceof BlockStatement blockStatement) {
+            return blockStatement.body() == null ? List.of() : blockStatement.body();
+        }
+        return List.of(statement);
     }
 
     private QinIrExpression lowerMethodReturnExpression(
@@ -1466,6 +1652,9 @@ final class QinDeclarationIrLowerer {
         if (expressionAst instanceof ConditionalExpression conditionalExpression) {
             return lowerDeclarationConditionalExpression(conditionalExpression, javaImportLookup, classContext, locals);
         }
+        if (expressionAst instanceof NewExpression) {
+            return adapter.lowerRuntimeExpression(expressionAst, javaImportLookup, Map.of());
+        }
 
         String nodeType = QinSlimeFrontendAdapter.simpleName(expressionAst);
         if ("ParenthesizedExpression".equals(nodeType)) {
@@ -1503,6 +1692,9 @@ final class QinDeclarationIrLowerer {
         }
         if ("ConditionalExpression".equals(nodeType)) {
             return lowerDeclarationConditionalExpression(expressionAst, javaImportLookup, classContext, locals);
+        }
+        if ("NewExpression".equals(nodeType)) {
+            return adapter.lowerRuntimeExpression(expressionAst, javaImportLookup, Map.of());
         }
         throw qjsError("QJS2014", "Unsupported declaration return expression: " + nodeType);
     }

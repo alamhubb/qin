@@ -24,7 +24,8 @@ public final class QinJvmClassDeclarationCorpusSmokeTestMain {
         QinJvmParsedLocalInheritanceSmokeTestMain.main(args);
         QinJvmParsedFieldsConstructorSmokeTestMain.main(args);
         QinJvmParsedSelfMethodCallSmokeTestMain.main(args);
+        QinJvmParsedTryCatchMethodBodySmokeTestMain.main(args);
 
-        System.out.println("Qin JVM class declaration corpus smoke passed: 16 cases");
+        System.out.println("Qin JVM class declaration corpus smoke passed: 17 cases");
     }
 }

@@ -19,10 +19,17 @@ import com.qin.lang.ir.QinIrObjectLiteral;
 import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrProgram;
+import com.qin.lang.ir.QinIrReturnStatement;
 import com.qin.lang.ir.QinIrSequenceExpression;
+import com.qin.lang.ir.QinIrStatement;
+import com.qin.lang.ir.QinIrStatementExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
 import com.qin.lang.ir.QinIrThisExpression;
+import com.qin.lang.ir.QinIrThrowStatement;
+import com.qin.lang.ir.QinIrTryStatement;
+import com.qin.lang.ir.QinIrIfStatement;
+import com.qin.lang.ir.QinIrCatchClause;
 import com.qin.lang.ir.QinIrTypeKind;
 import com.qin.lang.ir.QinIrTypeRef;
 import com.qin.lang.ir.QinBuiltinRegistry;
@@ -635,19 +642,160 @@ public final class QinJvmDeclarationClassEmitter {
             emitRuntimeFunctionMethodBody(code, ownerDeclaration, method, declarationIndex);
             return;
         }
+        if (!method.bodyStatements().isEmpty()) {
+            emitStatements(code, ownerDeclaration, method, declarationIndex, method.bodyStatements());
+            emitDefaultReturn(code, method.returnType());
+            return;
+        }
         QinIrExpression returnExpression = method.returnExpression();
         if (returnExpression == null || returnExpression instanceof QinIrNullLiteral) {
-            if (method.returnType().kind() == QinIrTypeKind.VOID) {
-                code.return_();
-            } else {
-                code.aconst_null();
-                code.areturn();
-            }
+            emitDefaultReturn(code, method.returnType());
             return;
         }
 
         QinIrTypeRef actualType = emitDeclarationExpression(code, ownerDeclaration, method, declarationIndex, returnExpression);
         emitReturnForType(code, actualType, method.returnType());
+    }
+
+    private void emitStatements(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            List<QinIrStatement> statements) {
+        for (QinIrStatement statement : statements) {
+            emitStatement(code, ownerDeclaration, method, declarationIndex, statement);
+        }
+    }
+
+    private void emitStatement(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            QinIrStatement statement) {
+        if (statement instanceof QinIrReturnStatement returnStatement) {
+            QinIrExpression value = returnStatement.value();
+            if (value == null || value instanceof QinIrNullLiteral) {
+                emitDefaultReturn(code, method.returnType());
+                return;
+            }
+            QinIrTypeRef actualType = emitDeclarationExpression(code, ownerDeclaration, method, declarationIndex, value);
+            emitReturnForType(code, actualType, method.returnType());
+            return;
+        }
+        if (statement instanceof QinIrStatementExpression statementExpression) {
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    statementExpression.expression());
+            discardExpressionResult(code, actualType);
+            return;
+        }
+        if (statement instanceof QinIrIfStatement ifStatement) {
+            java.lang.classfile.Label alternateLabel = code.newLabel();
+            java.lang.classfile.Label doneLabel = code.newLabel();
+            QinIrTypeRef testType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    ifStatement.test());
+            if (testType.kind() != QinIrTypeKind.BOOLEAN) {
+                throw new IllegalArgumentException("Declaration if statement test must be boolean");
+            }
+            code.ifeq(alternateLabel);
+            emitStatements(code, ownerDeclaration, method, declarationIndex, ifStatement.consequent());
+            code.goto_(doneLabel);
+            code.labelBinding(alternateLabel);
+            emitStatements(code, ownerDeclaration, method, declarationIndex, ifStatement.alternate());
+            code.labelBinding(doneLabel);
+            return;
+        }
+        if (statement instanceof QinIrThrowStatement throwStatement) {
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    throwStatement.value());
+            if (actualType.kind() != QinIrTypeKind.CLASS
+                    || actualType.binaryName() == null
+                    || !Throwable.class.isAssignableFrom(resolveClass(actualType.binaryName()))) {
+                throw new IllegalArgumentException("Declaration throw statement requires a java.lang.Throwable value");
+            }
+            code.athrow();
+            return;
+        }
+        if (statement instanceof QinIrTryStatement tryStatement) {
+            emitTryStatement(code, ownerDeclaration, method, declarationIndex, tryStatement);
+            return;
+        }
+        throw new IllegalArgumentException(
+                "Unsupported declaration method statement: " + statement.getClass().getSimpleName());
+    }
+
+    private void emitTryStatement(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            QinIrTryStatement tryStatement) {
+        if (!tryStatement.finallyBody().isEmpty()) {
+            throw new IllegalArgumentException("Declaration try statement with non-empty finally is not supported yet");
+        }
+        if (tryStatement.catchClauses().size() > 1) {
+            throw new IllegalArgumentException("Declaration try statement supports one catch clause");
+        }
+
+        java.lang.classfile.Label tryStart = code.newLabel();
+        java.lang.classfile.Label tryEnd = code.newLabel();
+        java.lang.classfile.Label done = code.newLabel();
+        code.labelBinding(tryStart);
+        emitStatements(code, ownerDeclaration, method, declarationIndex, tryStatement.tryBody());
+        code.labelBinding(tryEnd);
+        code.goto_(done);
+
+        if (!tryStatement.catchClauses().isEmpty()) {
+            QinIrCatchClause catchClause = tryStatement.catchClauses().get(0);
+            java.lang.classfile.Label handler = code.newLabel();
+            code.labelBinding(handler);
+            code.pop();
+            emitStatements(code, ownerDeclaration, method, declarationIndex, catchClause.body());
+            code.exceptionCatch(tryStart, tryEnd, handler, toCatchClassDesc(catchClause.parameterType()));
+        }
+        code.labelBinding(done);
+    }
+
+    private ClassDesc toCatchClassDesc(QinIrTypeRef type) {
+        if (type == null || type.kind() != QinIrTypeKind.CLASS || type.binaryName() == null) {
+            return ClassDesc.of("java.lang.Throwable");
+        }
+        Class<?> catchClass = resolveClass(type.binaryName());
+        if (!Throwable.class.isAssignableFrom(catchClass)) {
+            throw new IllegalArgumentException("Catch type must extend java.lang.Throwable: " + type.binaryName());
+        }
+        return ClassDesc.of(type.binaryName());
+    }
+
+    private void emitDefaultReturn(java.lang.classfile.CodeBuilder code, QinIrTypeRef returnType) {
+        switch (returnType.kind()) {
+            case VOID -> code.return_();
+            case BOOLEAN, INT -> {
+                code.iconst_0();
+                code.ireturn();
+            }
+            case DOUBLE -> {
+                code.dconst_0();
+                code.dreturn();
+            }
+            case STRING, CLASS -> {
+                code.aconst_null();
+                code.areturn();
+            }
+        }
     }
 
     private void emitRuntimeFunctionMethodBody(
@@ -944,9 +1092,13 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrMethodDeclaration method,
             Map<String, QinIrClassDeclaration> declarationIndex,
             QinIrJavaNewExpression javaNewExpression) {
+        List<QinIrTypeRef> argumentTypes = new ArrayList<>();
+        for (QinIrExpression argument : javaNewExpression.arguments()) {
+            argumentTypes.add(inferDeclarationExpressionType(ownerDeclaration, method, declarationIndex, argument));
+        }
         ResolvedConstructorCall resolvedConstructor = resolveConstructorCall(
                 javaNewExpression.ownerBinaryName(),
-                javaNewExpression.arguments().size());
+                argumentTypes);
 
         ClassDesc ownerDesc = ClassDesc.of(javaNewExpression.ownerBinaryName());
         code.new_(ownerDesc);
@@ -1289,6 +1441,9 @@ public final class QinJvmDeclarationClassEmitter {
                                 + "." + staticMethodCallExpression.methodName());
             }
             return resolvedMethod.returnType();
+        }
+        if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
+            return QinIrTypeRef.classType(javaNewExpression.ownerBinaryName());
         }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
             return inferBuiltinCallResultType(ownerDeclaration, method, declarationIndex, builtinCallExpression);
@@ -1647,23 +1802,29 @@ public final class QinJvmDeclarationClassEmitter {
         }
     }
 
-    private ResolvedConstructorCall resolveConstructorCall(String ownerBinaryName, int argumentCount) {
+    private ResolvedConstructorCall resolveConstructorCall(String ownerBinaryName, List<QinIrTypeRef> argumentTypes) {
         try {
             Class<?> ownerClass = Class.forName(ownerBinaryName);
             Constructor<?> matched = null;
+            int matchedScore = Integer.MIN_VALUE;
             for (Constructor<?> candidate : ownerClass.getConstructors()) {
-                if (candidate.getParameterCount() != argumentCount) {
+                if (candidate.getParameterCount() != argumentTypes.size()
+                        || !isExecutableApplicable(candidate.getParameterTypes(), argumentTypes)) {
                     continue;
                 }
-                if (matched != null) {
+                int score = executableMatchScore(candidate.getParameterTypes(), argumentTypes);
+                if (matched != null && score == matchedScore) {
                     throw new IllegalArgumentException(
-                            "Ambiguous reflected constructor overload: " + ownerBinaryName + "/" + argumentCount);
+                            "Ambiguous reflected constructor overload: " + ownerBinaryName + "/" + argumentTypes.size());
                 }
-                matched = candidate;
+                if (matched == null || score > matchedScore) {
+                    matched = candidate;
+                    matchedScore = score;
+                }
             }
             if (matched == null) {
                 throw new IllegalArgumentException(
-                        "Unknown Java constructor: " + ownerBinaryName + "/" + argumentCount);
+                        "Unknown Java constructor: " + ownerBinaryName + "/" + argumentTypes.size());
             }
             List<QinIrTypeRef> parameterTypes = new ArrayList<>();
             for (Class<?> parameterType : matched.getParameterTypes()) {
@@ -1675,6 +1836,66 @@ public final class QinJvmDeclarationClassEmitter {
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unknown Java constructor owner: " + ownerBinaryName, e);
         }
+    }
+
+    private boolean isExecutableApplicable(Class<?>[] parameterTypes, List<QinIrTypeRef> argumentTypes) {
+        for (int i = 0; i < parameterTypes.length; i++) {
+            if (!isArgumentApplicable(parameterTypes[i], argumentTypes.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int executableMatchScore(Class<?>[] parameterTypes, List<QinIrTypeRef> argumentTypes) {
+        int score = 0;
+        for (int i = 0; i < parameterTypes.length; i++) {
+            score += argumentMatchScore(parameterTypes[i], argumentTypes.get(i));
+        }
+        return score;
+    }
+
+    private boolean isArgumentApplicable(Class<?> parameterType, QinIrTypeRef argumentType) {
+        return argumentMatchScore(parameterType, argumentType) >= 0;
+    }
+
+    private int argumentMatchScore(Class<?> parameterType, QinIrTypeRef argumentType) {
+        if (argumentType == null || argumentType.kind() == QinIrTypeKind.VOID) {
+            return -1;
+        }
+        if (argumentType.kind() == QinIrTypeKind.STRING) {
+            return parameterType == String.class
+                    ? 4
+                    : parameterType.isAssignableFrom(String.class) ? 1 : -1;
+        }
+        if (argumentType.kind() == QinIrTypeKind.BOOLEAN) {
+            return parameterType == boolean.class || parameterType == Boolean.class
+                    ? 4
+                    : parameterType.isAssignableFrom(Boolean.class) ? 1 : -1;
+        }
+        if (argumentType.kind() == QinIrTypeKind.INT) {
+            return parameterType == int.class || parameterType == Integer.class
+                    ? 4
+                    : parameterType == double.class || parameterType == Double.class || parameterType == Number.class
+                    ? 2
+                    : parameterType.isAssignableFrom(Integer.class) ? 1 : -1;
+        }
+        if (argumentType.kind() == QinIrTypeKind.DOUBLE) {
+            return parameterType == double.class || parameterType == Double.class
+                    ? 4
+                    : parameterType == Number.class || parameterType.isAssignableFrom(Double.class) ? 1 : -1;
+        }
+        if (argumentType.kind() == QinIrTypeKind.CLASS) {
+            if ("java.lang.Object".equals(argumentType.binaryName())) {
+                return parameterType.isPrimitive() ? -1 : 0;
+            }
+            Class<?> argumentClass = resolveClass(argumentType.binaryName());
+            if (parameterType.equals(argumentClass)) {
+                return 4;
+            }
+            return parameterType.isAssignableFrom(argumentClass) ? 1 : -1;
+        }
+        return -1;
     }
 
     private QinIrTypeRef toQinTypeRef(Class<?> type) {
@@ -1694,6 +1915,14 @@ public final class QinJvmDeclarationClassEmitter {
             return QinIrTypeRef.stringType();
         }
         return QinIrTypeRef.classType(type.getName());
+    }
+
+    private Class<?> resolveClass(String binaryName) {
+        try {
+            return Class.forName(binaryName);
+        } catch (ClassNotFoundException error) {
+            throw new IllegalArgumentException("Cannot resolve JVM class: " + binaryName, error);
+        }
     }
 
     private QinIrFieldDeclaration resolveField(QinIrClassDeclaration declaration, String fieldName) {
