@@ -865,7 +865,17 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin generated parser parity corpus must include object method branch return");
         require(paritySource.contains("return \"bye \" + name"),
                 "Qin generated parser parity corpus must include object method fallthrough return");
+        require(paritySource.contains("qin object nested method body control flow"),
+                "Qin generated parser parity corpus must include object nested method-body control flow");
+        require(paritySource.contains("export object NestedLabeler"),
+                "Qin generated parser parity corpus must include a nested-control Qin object declaration");
+        require(paritySource.contains("if (active)") && paritySource.contains("if (premium)"),
+                "Qin generated parser parity corpus must include nested object method if branches");
+        require(paritySource.contains("const label = \"vip \"")
+                        && paritySource.contains("const standard = \"std \""),
+                "Qin generated parser parity corpus must include nested object method branch-local bindings");
         for (String caseName : List.of(
+                "qin object nested method body control flow",
                 "decorated qin object",
                 "default export qin object",
                 "object keyword in type alias",

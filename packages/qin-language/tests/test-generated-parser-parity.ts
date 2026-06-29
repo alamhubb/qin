@@ -52,6 +52,27 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'qin object nested method body control flow',
+    source: [
+      'export object NestedLabeler {',
+      '  label(name: string, premium: boolean, active: boolean): string {',
+      '    const base = "hello "',
+      '    if (active) {',
+      '      if (premium) {',
+      '        const label = "vip "',
+      '        return label + name',
+      '      }',
+      '      const standard = "std "',
+      '      return standard + name',
+      '    }',
+      '    return base + name',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'decorated qin object',
     source: [
       "import { GetMapping } from './http.qin'",
