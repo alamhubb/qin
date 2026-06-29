@@ -32,6 +32,7 @@ import com.qin.lang.ir.QinIrThrowStatement;
 import com.qin.lang.ir.QinIrTryStatement;
 import com.qin.lang.ir.QinIrCatchClause;
 import com.qin.lang.ir.QinIrTypeRef;
+import com.qin.lang.ir.QinIrWhileStatementNode;
 import com.slime.ast.AstNode;
 import com.slime.ast.Expression;
 import com.slime.ast.Statement;
@@ -66,6 +67,7 @@ import com.slime.ast.nodes.statements.IfStatement;
 import com.slime.ast.nodes.statements.ReturnStatement;
 import com.slime.ast.nodes.statements.ThrowStatement;
 import com.slime.ast.nodes.statements.TryStatement;
+import com.slime.ast.nodes.statements.WhileStatement;
 import com.slime.ast.nodes.typescript.TSKeywordType;
 import com.slime.ast.nodes.typescript.TSTypeAnnotation;
 import com.slime.ast.nodes.typescript.TSTypeReference;
@@ -703,6 +705,12 @@ final class QinDeclarationIrLowerer {
                 }
                 continue;
             }
+            if (statement instanceof WhileStatement whileStatement) {
+                if (!isDeclarationCompatibleBranch(whileStatement.body())) {
+                    return false;
+                }
+                continue;
+            }
             return false;
         }
         return true;
@@ -727,6 +735,9 @@ final class QinDeclarationIrLowerer {
         }
         if (statement instanceof TryStatement tryStatement) {
             return isDeclarationCompatibleTryStatement(tryStatement);
+        }
+        if (statement instanceof WhileStatement whileStatement) {
+            return isDeclarationCompatibleBranch(whileStatement.body());
         }
         return false;
     }
@@ -949,7 +960,9 @@ final class QinDeclarationIrLowerer {
             return false;
         }
         for (Statement statement : statements) {
-            if (statement instanceof ThrowStatement || statement instanceof TryStatement) {
+            if (statement instanceof ThrowStatement
+                    || statement instanceof TryStatement
+                    || statement instanceof WhileStatement) {
                 return true;
             }
             if (statement instanceof IfStatement ifStatement
@@ -1044,6 +1057,16 @@ final class QinDeclarationIrLowerer {
                         catchClauses,
                         lowerDeclarationStatements(
                                 statementList(tryStatement.finalizer()),
+                                javaImportLookup,
+                                classContext,
+                                new LinkedHashMap<>(scopedLocals))));
+                continue;
+            }
+            if (statement instanceof WhileStatement whileStatement) {
+                lowered.add(new QinIrWhileStatementNode(
+                        lowerDeclarationExpression(whileStatement.test(), javaImportLookup, classContext, scopedLocals),
+                        lowerDeclarationStatements(
+                                statementList(whileStatement.body()),
                                 javaImportLookup,
                                 classContext,
                                 new LinkedHashMap<>(scopedLocals))));

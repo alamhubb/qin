@@ -1366,6 +1366,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         Path nestedBranchPath = corpusPath.resolveSibling("QinJvmParsedNestedBranchMethodBodySmokeTestMain.java");
         Path selfMethodCallPath = corpusPath.resolveSibling("QinJvmParsedSelfMethodCallSmokeTestMain.java");
         Path tryCatchPath = corpusPath.resolveSibling("QinJvmParsedTryCatchMethodBodySmokeTestMain.java");
+        Path whilePath = corpusPath.resolveSibling("QinJvmParsedWhileMethodBodySmokeTestMain.java");
         Path slimeParserExtendsPath = corpusPath.resolveSibling("QinJvmJavaSlimeParserExtendsSmokeTestMain.java");
         require(Files.isRegularFile(corpusPath),
                 "Qin JVM class declaration corpus smoke must exist: " + corpusPath);
@@ -1377,6 +1378,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM parsed self-method-call smoke must exist: " + selfMethodCallPath);
         require(Files.isRegularFile(tryCatchPath),
                 "Qin JVM parsed try/catch method-body smoke must exist: " + tryCatchPath);
+        require(Files.isRegularFile(whilePath),
+                "Qin JVM parsed while method-body smoke must exist: " + whilePath);
         require(Files.isRegularFile(slimeParserExtendsPath),
                 "Qin JVM Java SlimeParser inheritance smoke must exist: " + slimeParserExtendsPath);
 
@@ -1385,6 +1388,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String nestedBranchSource = Files.readString(nestedBranchPath);
         String selfMethodCallSource = Files.readString(selfMethodCallPath);
         String tryCatchSource = Files.readString(tryCatchPath);
+        String whileSource = Files.readString(whilePath);
         String slimeParserExtendsSource = Files.readString(slimeParserExtendsPath);
         require(corpusSource.contains("QinJvmParsedEarlyReturnMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed early-return method-body smoke");
@@ -1394,8 +1398,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin JVM class declaration corpus must include parsed self-method-call smoke");
         require(corpusSource.contains("QinJvmParsedTryCatchMethodBodySmokeTestMain.main(args)"),
                 "Qin JVM class declaration corpus must include parsed try/catch method-body smoke");
-        require(corpusSource.contains("17 cases"),
-                "Qin JVM class declaration corpus count must cover the current 17-case set");
+        require(corpusSource.contains("QinJvmParsedWhileMethodBodySmokeTestMain.main(args)"),
+                "Qin JVM class declaration corpus must include parsed while method-body smoke");
+        require(corpusSource.contains("18 cases"),
+                "Qin JVM class declaration corpus count must cover the current 18-case set");
         require(earlyReturnSource.contains("const prefix = \"hello \""),
                 "Parsed early-return smoke must cover Qin local binding in a method body");
         require(earlyReturnSource.contains("if (flag)"),
@@ -1420,6 +1426,11 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Parsed try/catch smoke must cover parsed Qin throw statement lowering");
         require(tryCatchSource.contains("catch (e)") && tryCatchSource.contains("return \"caught\""),
                 "Parsed try/catch smoke must cover catch branch JVM execution");
+        require(whileSource.contains("while (active)")
+                        && whileSource.contains("QinIrWhileStatementNode")
+                        && whileSource.contains("return \"loop\"")
+                        && whileSource.contains("return \"done\""),
+                "Parsed while smoke must cover Qin while statement lowering and both execution paths");
         require(slimeParserExtendsSource.contains("classfile inheritance proof, not a production parser entry")
                         && slimeParserExtendsSource.contains("QinParserFacade uses SubhutiParser.create"),
                 "Direct SlimeParser construction in the JVM inheritance smoke must stay documented as non-production");
@@ -1456,7 +1467,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(audit.contains(hardeningNeedle),
                     "LSP completion audit must keep next hardening step " + hardeningNeedle);
         }
-        require(audit.contains("17-case class-declaration corpus"),
+        require(audit.contains("18-case class-declaration corpus"),
                 "LSP completion audit must record the current JVM class declaration corpus size");
         require(audit.contains("local binding plus early-return `if`"),
                 "LSP completion audit must record parsed method-body early-return coverage");
@@ -1464,6 +1475,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record parsed method-body nested-branch coverage");
         require(audit.contains("parsed Qin try/catch/throw exception flow"),
                 "LSP completion audit must record parsed method-body exception-flow coverage");
+        require(audit.contains("parsed Qin `while` statement execution through JVM loop control flow"),
+                "LSP completion audit must record parsed while method-body coverage");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
                 "LSP completion audit must record object method-body parser parity coverage");
         require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),

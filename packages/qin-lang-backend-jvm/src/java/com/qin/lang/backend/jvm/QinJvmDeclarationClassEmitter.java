@@ -32,6 +32,7 @@ import com.qin.lang.ir.QinIrIfStatement;
 import com.qin.lang.ir.QinIrCatchClause;
 import com.qin.lang.ir.QinIrTypeKind;
 import com.qin.lang.ir.QinIrTypeRef;
+import com.qin.lang.ir.QinIrWhileStatementNode;
 import com.qin.lang.ir.QinBuiltinRegistry;
 
 import java.lang.classfile.Annotation;
@@ -733,8 +734,36 @@ public final class QinJvmDeclarationClassEmitter {
             emitTryStatement(code, ownerDeclaration, method, declarationIndex, tryStatement);
             return;
         }
+        if (statement instanceof QinIrWhileStatementNode whileStatement) {
+            emitWhileStatement(code, ownerDeclaration, method, declarationIndex, whileStatement);
+            return;
+        }
         throw new IllegalArgumentException(
                 "Unsupported declaration method statement: " + statement.getClass().getSimpleName());
+    }
+
+    private void emitWhileStatement(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            QinIrWhileStatementNode whileStatement) {
+        java.lang.classfile.Label startLabel = code.newLabel();
+        java.lang.classfile.Label doneLabel = code.newLabel();
+        code.labelBinding(startLabel);
+        QinIrTypeRef testType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                whileStatement.test());
+        if (testType.kind() != QinIrTypeKind.BOOLEAN) {
+            throw new IllegalArgumentException("Declaration while statement test must be boolean");
+        }
+        code.ifeq(doneLabel);
+        emitStatements(code, ownerDeclaration, method, declarationIndex, whileStatement.body());
+        code.goto_(startLabel);
+        code.labelBinding(doneLabel);
     }
 
     private void emitTryStatement(
