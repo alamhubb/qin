@@ -921,8 +921,17 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         require(paritySource.contains("const label = \"vip \"")
                         && paritySource.contains("const standard = \"std \""),
                 "Qin generated parser parity corpus must include nested object method branch-local bindings");
+        require(paritySource.contains("qin object method body exception flow"),
+                "Qin generated parser parity corpus must include object method exception flow");
+        require(paritySource.contains("export object ResilientLabeler"),
+                "Qin generated parser parity corpus must include exception-flow Qin object declaration");
+        require(paritySource.contains("try {")
+                        && paritySource.contains("throw new Error(\"boom\")")
+                        && paritySource.contains("} catch (error) {"),
+                "Qin generated parser parity corpus must include try/catch/throw syntax");
         for (String caseName : List.of(
                 "qin object nested method body control flow",
+                "qin object method body exception flow",
                 "decorated qin object",
                 "default export qin object",
                 "object keyword in type alias",

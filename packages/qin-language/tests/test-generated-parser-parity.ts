@@ -73,6 +73,25 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'qin object method body exception flow',
+    source: [
+      'export object ResilientLabeler {',
+      '  label(flag: boolean): string {',
+      '    try {',
+      '      if (flag) {',
+      '        throw new Error("boom")',
+      '      }',
+      '      return "ok"',
+      '    } catch (error) {',
+      '      return "caught"',
+      '    }',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'decorated qin object',
     source: [
       "import { GetMapping } from './http.qin'",
