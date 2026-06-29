@@ -369,11 +369,33 @@ async function main() {
     },
   }))
 
+  const forOfUri = toFileUri(path.join(__dirname, 'for-of.qin'))
+  const forOfSource = [
+    'export function sumItems(items: number[]): number {',
+    '  let totalValue = 0',
+    '  for (const itemValue of items) {',
+    '    totalValue = totalValue + itemValue',
+    '  }',
+    '  tot',
+    '  return totalValue',
+    '}',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: forOfUri,
+      languageId: 'qin',
+      version: 1,
+      text: forOfSource,
+    },
+  }))
+
   await waitFor(
-    'Qin publishDiagnostics for valid and invalid documents',
+    'Qin publishDiagnostics for valid, for-of, and invalid documents',
     () => {
       const diagnosticsMessages = messages.filter(message => message.method === 'textDocument/publishDiagnostics')
       return diagnosticsMessages.some(message => sameUri(message.params?.uri, validUri))
+        && diagnosticsMessages.some(message => sameUri(message.params?.uri, forOfUri))
         && diagnosticsMessages.some(message => sameUri(message.params?.uri, invalidUri))
     },
     15000,
@@ -388,9 +410,16 @@ async function main() {
   const invalidDiagnostics = diagnosticsMessages
     .filter(message => sameUri(message.params?.uri, invalidUri))
     .at(-1)?.params?.diagnostics ?? []
+  const forOfDiagnostics = diagnosticsMessages
+    .filter(message => sameUri(message.params?.uri, forOfUri))
+    .at(-1)?.params?.diagnostics ?? []
 
   if (validDiagnostics.length) {
     throw new Error(`Valid Qin source produced diagnostics: ${JSON.stringify(validDiagnostics)}`)
+  }
+
+  if (forOfDiagnostics.length) {
+    throw new Error(`Qin for...of source produced diagnostics: ${JSON.stringify(forOfDiagnostics)}`)
   }
 
   if (!invalidDiagnostics.length) {
@@ -453,6 +482,25 @@ async function main() {
     throw new Error(`Qin object completion did not include generated singleton symbol: ${JSON.stringify(objectCompletionLabels.slice(0, 30))}`)
   }
 
+  const forOfCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: forOfUri },
+    position: { line: 5, character: 5 },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(forOfCompletionRequest.packet)
+  const forOfCompletionResponse = await waitForResponse(
+    forOfCompletionRequest.id,
+    messages,
+    `Qin for...of completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const forOfCompletionItems = Array.isArray(forOfCompletionResponse.result)
+    ? forOfCompletionResponse.result
+    : forOfCompletionResponse.result?.items ?? []
+  const forOfCompletionLabels = forOfCompletionItems.map((item: any) => item.label)
+  if (!forOfCompletionLabels.includes('totalValue')) {
+    throw new Error(`Qin for...of completion did not include loop-scope symbol: ${JSON.stringify(forOfCompletionLabels.slice(0, 30))}`)
+  }
+
   const definitionRequest = createRequest('textDocument/definition', {
     textDocument: { uri: tsSubsetUri },
     position: { line: 1, character: 20 },
@@ -468,6 +516,23 @@ async function main() {
     : definitionResponse.result ? [definitionResponse.result] : []
   if (!definitionLocations.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeContains(item, 0, 6))) {
     throw new Error(`Qin definition did not resolve alphaNumber declaration: ${JSON.stringify(definitionResponse.result)}`)
+  }
+
+  const forOfDefinitionRequest = createRequest('textDocument/definition', {
+    textDocument: { uri: forOfUri },
+    position: { line: 3, character: 32 },
+  })
+  server.stdin.write(forOfDefinitionRequest.packet)
+  const forOfDefinitionResponse = await waitForResponse(
+    forOfDefinitionRequest.id,
+    messages,
+    `Qin for...of definition response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const forOfDefinitionLocations = Array.isArray(forOfDefinitionResponse.result)
+    ? forOfDefinitionResponse.result
+    : forOfDefinitionResponse.result ? [forOfDefinitionResponse.result] : []
+  if (!forOfDefinitionLocations.some(item => sameUri(locationUri(item), forOfUri) && rangeContains(item, 2, 13))) {
+    throw new Error(`Qin for...of definition did not resolve itemValue declaration: ${JSON.stringify(forOfDefinitionResponse.result)}`)
   }
 
   const objectDefinitionRequest = createRequest('textDocument/definition', {
@@ -504,6 +569,25 @@ async function main() {
     || !objectReferences.some(item => sameUri(locationUri(item), objectUri) && rangeStartsAt(item, 0, 14))
   ) {
     throw new Error(`Qin object references did not include generated object usage mappings: ${JSON.stringify(objectReferencesResponse.result)}`)
+  }
+
+  const forOfReferencesRequest = createRequest('textDocument/references', {
+    textDocument: { uri: forOfUri },
+    position: { line: 3, character: 32 },
+    context: { includeDeclaration: true },
+  })
+  server.stdin.write(forOfReferencesRequest.packet)
+  const forOfReferencesResponse = await waitForResponse(
+    forOfReferencesRequest.id,
+    messages,
+    `Qin for...of references response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const forOfReferences = Array.isArray(forOfReferencesResponse.result) ? forOfReferencesResponse.result : []
+  if (
+    !forOfReferences.some(item => sameUri(locationUri(item), forOfUri) && rangeStartsAt(item, 2, 13))
+    || !forOfReferences.some(item => sameUri(locationUri(item), forOfUri) && rangeStartsAt(item, 3, 30))
+  ) {
+    throw new Error(`Qin for...of references did not include itemValue declaration and usage: ${JSON.stringify(forOfReferencesResponse.result)}`)
   }
 
   const referencesRequest = createRequest('textDocument/references', {
@@ -553,6 +637,20 @@ async function main() {
     throw new Error(`Qin object documentSymbol did not include generated object symbols: ${JSON.stringify(objectDocumentSymbolResponse.result)}`)
   }
 
+  const forOfDocumentSymbolRequest = createRequest('textDocument/documentSymbol', {
+    textDocument: { uri: forOfUri },
+  })
+  server.stdin.write(forOfDocumentSymbolRequest.packet)
+  const forOfDocumentSymbolResponse = await waitForResponse(
+    forOfDocumentSymbolRequest.id,
+    messages,
+    `Qin for...of documentSymbol response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const forOfSymbolNames = collectSymbolNames(Array.isArray(forOfDocumentSymbolResponse.result) ? forOfDocumentSymbolResponse.result : [])
+  if (!forOfSymbolNames.includes('sumItems')) {
+    throw new Error(`Qin for...of documentSymbol did not include function symbol: ${JSON.stringify(forOfDocumentSymbolResponse.result)}`)
+  }
+
   const objectSemanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
     textDocument: { uri: objectUri },
   })
@@ -582,6 +680,22 @@ async function main() {
   if (!Array.isArray(semanticTokenData) || semanticTokenData.length === 0) {
     throw new Error(`Qin semanticTokens did not return token data: ${JSON.stringify(semanticTokensResponse.result)}`)
   }
+
+  const forOfSemanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
+    textDocument: { uri: forOfUri },
+  })
+  server.stdin.write(forOfSemanticTokensRequest.packet)
+  const forOfSemanticTokensResponse = await waitForResponse(
+    forOfSemanticTokensRequest.id,
+    messages,
+    `Qin for...of semanticTokens response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const forOfSemanticTokenData = forOfSemanticTokensResponse.result?.data ?? []
+  if (!Array.isArray(forOfSemanticTokenData) || forOfSemanticTokenData.length === 0) {
+    throw new Error(`Qin for...of semanticTokens did not return token data: ${JSON.stringify(forOfSemanticTokensResponse.result)}`)
+  }
+  requireSemanticTokenAt(forOfSemanticTokensResponse.result, 2, 13, 'Qin for...of declaration itemValue')
+  requireSemanticTokenAt(forOfSemanticTokensResponse.result, 3, 30, 'Qin for...of usage itemValue')
 
   server.stdin.write(createRequest('shutdown', null).packet)
   await sleep(200)
