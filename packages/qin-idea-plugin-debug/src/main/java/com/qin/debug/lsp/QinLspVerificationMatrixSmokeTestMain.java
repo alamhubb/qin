@@ -1788,6 +1788,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record IDEA fixture references coverage");
         require(audit.contains("parsed same-class method invocation through `this.method()`"),
                 "LSP completion audit must record parsed self-method-call JVM coverage");
+        require(audit.contains("`lspLanguageCliSmoke` now runs `qin language generate-parser --dry-run`"),
+                "LSP completion audit must record CLI generate-parser dry-run coverage");
+        require(audit.contains("`com.qin.parser.QinParser` entry"),
+                "LSP completion audit must record generated Qin parser entry coverage");
+        require(audit.contains("`@qin/generated-qin-parser-ts` package metadata"),
+                "LSP completion audit must record generated Qin parser package metadata coverage");
+        require(audit.contains("additional Slime CST/AST entry metadata"),
+                "LSP completion audit must record additional Slime parser metadata coverage");
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
