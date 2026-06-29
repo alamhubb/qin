@@ -341,7 +341,6 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         return Map.of(
                 "cssts/language-plugin-pug", PackageOnlyProjectKind.EXTERNAL_LANGUAGE_PLUGIN_COPY,
                 "cssts/language-plugin-testts", PackageOnlyProjectKind.LEGACY_LANGUAGE_EXPERIMENT,
-                "ovsjs/guidebot", PackageOnlyProjectKind.DEMO_APP,
                 "ovsjs/my-uni-ovs-test", PackageOnlyProjectKind.DEMO_APP,
                 "ovsjs/os-language", PackageOnlyProjectKind.LEGACY_EDITOR_EXTENSION,
                 "ovsjs/ovs-test-2026", PackageOnlyProjectKind.DEMO_APP);
@@ -521,10 +520,17 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                             + " must run directly through Qin script metadata, not npm run forwarding: "
                             + script.getValue());
         }
-        require(config.hasDependency("cssts-ts"),
-                project.id() + " app must declare CSSTS runtime as a Qin-managed dependency");
-        require(config.hasDependency("vite-plugin-cssts"),
-                project.id() + " app must declare CSSTS Vite plugin as a Qin-managed dependency");
+        if ("cssts".equals(project.languageId())) {
+            require(config.hasDependency("cssts-ts"),
+                    project.id() + " app must declare CSSTS runtime as a Qin-managed dependency");
+            require(config.hasDependency("vite-plugin-cssts"),
+                    project.id() + " app must declare CSSTS Vite plugin as a Qin-managed dependency");
+        } else if ("ovs".equals(project.languageId())) {
+            require(config.hasDependency("ovsjs"),
+                    project.id() + " app must declare OVS runtime as a Qin-managed dependency");
+            require(config.hasDependency("vite-plugin-ovs"),
+                    project.id() + " app must declare OVS Vite plugin as a Qin-managed dependency");
+        }
         verifyPackageJsonIsNotScriptEntrypoint(project.id(), projectRoot, "app");
     }
 
@@ -658,7 +664,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                                 "ovs/ovs-compiler",
                                 "create-ovs",
                                 "vite-plugin-ovs",
-                                "ovs-language")),
+                                "ovs-language",
+                                "guidebot")),
                 InventoryProject.workspace("cssts-workspace", Path.of("cssts"),
                         "cssts-workspace", "cssts", List.of(
                                 "cssts/cssts-runtime",
@@ -685,6 +692,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "vite-plugin-ovs", "ovs", ".ovs"),
                 InventoryProject.tooling("create-ovs", Path.of("ovsjs", "create-ovs"),
                         "create-ovs", "ovs", null),
+                InventoryProject.app("ovs-guidebot", Path.of("ovsjs", "guidebot"),
+                        "guidebot-web", "ovs", ".ovs"),
                 InventoryProject.tooling("cssts-runtime", Path.of("cssts", "cssts", "cssts-runtime"),
                         "cssts-ts", "cssts", null),
                 InventoryProject.tooling("vite-plugin-cssts", Path.of("cssts", "vite-plugin-cssts"),
