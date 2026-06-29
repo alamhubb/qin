@@ -148,6 +148,15 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "qinJavaRunnerNoCompilerFallbackSmoke must run from the Qin project root");
         require(noCompilerFallbackBlock.contains("JavaRunnerNoCompilerFallbackSmokeTestMain"),
                 "qinJavaRunnerNoCompilerFallbackSmoke must verify JavaRunner has no compiler fallback");
+        require(buildSource.contains("register<Exec>(\"qinCsstsCompilerNoFallbackSmoke\")"),
+                "Gradle must declare qinCsstsCompilerNoFallbackSmoke");
+        String csstsNoFallbackBlock = taskBlock(
+                buildSource,
+                "register<Exec>(\"qinCsstsCompilerNoFallbackSmoke\")");
+        require(csstsNoFallbackBlock.contains("qin/packages/qin-runtime-core"),
+                "qinCsstsCompilerNoFallbackSmoke must run from qin/packages/qin-runtime-core");
+        require(csstsNoFallbackBlock.contains("QinCsstsCompilerNoFallbackSmokeTestMain"),
+                "qinCsstsCompilerNoFallbackSmoke must verify Qin CSSTS compiler fallback removal");
         require(buildSource.contains("register(\"languageProjectsTest\")"),
                 "Gradle must declare languageProjectsTest");
         require(buildSource.contains("register(\"compilerProjectsTest\")"),
@@ -173,6 +182,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "lspUnifiedMatrix must include Qin local file dependency build smoke");
         require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinJavaRunnerNoCompilerFallbackSmoke\")"),
                 "lspUnifiedMatrix must include Qin JavaRunner no compiler fallback smoke");
+        require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinCsstsCompilerNoFallbackSmoke\")"),
+                "lspUnifiedMatrix must include Qin CSSTS compiler no fallback smoke");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
                 "Gradle must declare qinJvmClassTargetSmoke");
         require(buildSource.contains("qin/packages/qin-lang-cli"),

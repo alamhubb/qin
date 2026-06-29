@@ -58,34 +58,13 @@ public final class QinCsstsCompiler {
         String sourceLiteral = QinJsPackageRunner.renderJsLiteral(source);
         return """
                 import { CsstsInit, RuntimeStore, transformCssTs, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
-                const __qin_context_styles__ = new Set();
-                const __qin_context__ = { styles: __qin_context_styles__ };
                 CsstsInit.init({ dts: false });
-                const __qin_result__ = transformCssTs(%s, __qin_context__);
-                const __qin_extract_atoms__ = (code) => {
-                  const atoms = new Set();
-                  const mergePattern = /cssts\\.merge\\(([^)]*)\\)/g;
-                  let match;
-                  while ((match = mergePattern.exec(code)) !== null) {
-                    for (const raw of match[1].split(",")) {
-                      const name = raw.trim();
-                      if (/^[A-Za-z_$][\\w$]*$/.test(name)) {
-                        atoms.add(name);
-                      }
-                    }
-                  }
-                  return atoms;
-                };
-                const __qin_fallback_atoms__ = __qin_extract_atoms__(__qin_result__.code);
-                for (const atom of __qin_fallback_atoms__) __qin_context_styles__.add(atom);
-                if (RuntimeStore && RuntimeStore.addUsedStyles) {
-                  RuntimeStore.addUsedStyles(__qin_context_styles__);
-                }
+                const __qin_result__ = transformCssTs(%s);
                 const __qin_css__ = generateStylesCss.length > 0
-                  ? generateStylesCss(__qin_context_styles__)
+                  ? generateStylesCss(RuntimeStore.getUsedStyles())
                   : generateStylesCss();
                 const __qin_atom__ = generateCsstsAtomModule.length > 0
-                  ? generateCsstsAtomModule(__qin_context_styles__)
+                  ? generateCsstsAtomModule(RuntimeStore.getUsedStyles())
                   : generateCsstsAtomModule();
                 ({
                   code: __qin_result__.code,

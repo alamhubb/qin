@@ -153,6 +153,13 @@ tasks {
         commandLine(qinCommand.canonicalPath, "run", "com.qin.core.JavaRunnerNoCompilerFallbackSmokeTestMain")
     }
 
+    register<Exec>("qinCsstsCompilerNoFallbackSmoke") {
+        group = "verification"
+        description = "Verifies Qin CSSTS compiler uses RuntimeStore used styles instead of atom extraction fallback."
+        workingDir = workspaceRoot.resolve("qin/packages/qin-runtime-core")
+        commandLine(qinCommand.canonicalPath, "run", "com.qin.runtime.core.QinCsstsCompilerNoFallbackSmokeTestMain")
+    }
+
     register<JavaExec>("lspPluginDescriptorSmoke") {
         dependsOn("classes")
         classpath = sourceSets["main"].runtimeClasspath
@@ -253,6 +260,7 @@ tasks {
         dependsOn("lspLanguageCliSmoke")
         dependsOn("qinLanguageLocalDependencyBuildSmoke")
         dependsOn("qinJavaRunnerNoCompilerFallbackSmoke")
+        dependsOn("qinCsstsCompilerNoFallbackSmoke")
         dependsOn("lspVerificationMatrixSmoke")
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspNoLocalParserSmoke")
