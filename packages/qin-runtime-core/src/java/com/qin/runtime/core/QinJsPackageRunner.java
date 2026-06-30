@@ -94,7 +94,7 @@ final class QinJsPackageRunner {
                 String dependencyFingerprint = moduleDependencyFingerprint(wrapperDir.resolve("node_modules"));
 
                 String token = sanitizeToken(nameHint == null || nameHint.isBlank() ? "module" : nameHint);
-                String identity = shortSha256(token + "\n" + root + "\n" + wrapperSource);
+                String identity = shortSha256(token + "\n" + dependencyFingerprint + "\n" + wrapperSource);
                 Path wrapperFile = wrapperDir.resolve(
                         "invoke-" + token + "-" + identity + ".js");
                 Files.writeString(wrapperFile, wrapperSource, StandardCharsets.UTF_8);
@@ -104,7 +104,13 @@ final class QinJsPackageRunner {
                         + capitalize(token)
                         + "_"
                         + identity;
-                Object result = runner.compileAndRunModuleClasses(wrapperFile, root, className, dependencyFingerprint);
+                Object result = runner.compileAndRunModuleClasses(
+                        wrapperFile,
+                        root,
+                        className,
+                        dependencyFingerprint,
+                        moduleClassCacheRoot(root),
+                        stableModuleClassCacheIdentity(wrapperSource, token, dependencyFingerprint));
                 logPhase("compile and run wrapper", startNanos, className);
                 return result;
             }
@@ -154,6 +160,48 @@ final class QinJsPackageRunner {
             }
         }
         return false;
+    }
+
+    private String stableModuleClassCacheIdentity(String wrapperSource, String token, String dependencyFingerprint) {
+        if (containsLocalModuleSpecifier(wrapperSource)) {
+            return "";
+        }
+        return "qin-js-package-runner"
+                + "\n"
+                + token
+                + "\n"
+                + (dependencyFingerprint == null ? "" : dependencyFingerprint)
+                + "\n"
+                + shortSha256(wrapperSource);
+    }
+
+    private boolean containsLocalModuleSpecifier(String source) {
+        for (String specifier : extractModuleSpecifiers(source)) {
+            if (specifier.startsWith(".") || specifier.startsWith("/") || specifier.matches("^[A-Za-z]:[\\\\/].*")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Set<String> extractModuleSpecifiers(String source) {
+        Set<String> specifiers = new LinkedHashSet<>();
+        boolean[] code = codeMask(source);
+        collectModuleSpecifiers(specifiers, code, FROM_IMPORT_PATTERN.matcher(source));
+        collectModuleSpecifiers(specifiers, code, SIDE_EFFECT_IMPORT_PATTERN.matcher(source));
+        return specifiers;
+    }
+
+    private void collectModuleSpecifiers(Set<String> specifiers, boolean[] code, Matcher matcher) {
+        while (matcher.find()) {
+            if (!isCodePosition(code, matcher.start())) {
+                continue;
+            }
+            String specifier = matcher.group(1);
+            if (specifier != null && !specifier.isBlank()) {
+                specifiers.add(specifier);
+            }
+        }
     }
 
     private NpmHostLock acquireNpmHostLock(Path wrapperDir) throws IOException {
@@ -1780,6 +1828,14 @@ final class QinJsPackageRunner {
             current = current.getParent();
         }
         return null;
+    }
+
+    private Path moduleClassCacheRoot(Path projectRoot) {
+        Path workspaceRoot = locateWorkspaceRoot();
+        if (workspaceRoot != null) {
+            return workspaceRoot.resolve("qin").toAbsolutePath().normalize();
+        }
+        return projectRoot.toAbsolutePath().normalize();
     }
 
     private Map<String, Path> indexWorkspacePackages(Path workspaceRoot) throws IOException {

@@ -232,73 +232,60 @@ public class LocalProjectResolverEnhanced {
 
     private boolean needsRecompilation(ProjectInfo project) {
         try {
-            Path srcDir = project.projectDir.resolve("src");
             Path classesDir = project.buildClassesPath;
 
             if (!Files.exists(classesDir)) {
                 return true;
             }
 
-            long latestSrcTime = getLatestModificationTime(srcDir, ".java");
-            if (latestSrcTime == 0) {
-                return false;
-            }
-
-            long oldestClassTime = getOldestModificationTime(classesDir, ".class");
-            if (oldestClassTime == 0) {
+            if (!hasAnyCompiledClass(classesDir)) {
                 return true;
             }
 
-            return latestSrcTime > oldestClassTime;
+            QinConfig config = loadConfig(project.projectDir.resolve(QinConstants.CONFIG_FILE));
+            List<String> sourceDirs = javaSourceDirs(config);
+            if (sourceDirs.isEmpty()) {
+                return false;
+            }
+
+            IncrementalCompilationChecker checker =
+                    new IncrementalCompilationChecker(project.projectDir.toString());
+            for (String sourceDir : sourceDirs) {
+                if (checker.hasDeletedFiles(sourceDir) || checker.needsCompilationByHash(sourceDir)) {
+                    return true;
+                }
+            }
+
+            return false;
         } catch (IOException e) {
             return true;
         }
     }
 
-    private long getLatestModificationTime(Path dir, String extension) throws IOException {
-        if (!Files.exists(dir)) {
-            return 0;
+    private List<String> javaSourceDirs(QinConfig config) {
+        if (config == null || config.java() == null) {
+            return List.of(QinConstants.JAVA_SOURCE_DIR);
         }
-
-        final long[] latestTime = {0};
-        Files.walkFileTree(dir, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                if (file.toString().endsWith(extension)) {
-                    long mtime = attrs.lastModifiedTime().toMillis();
-                    if (mtime > latestTime[0]) {
-                        latestTime[0] = mtime;
-                    }
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        return latestTime[0];
+        List<String> sourceDirs = new ArrayList<>();
+        String sourceDir = config.java().sourceDir();
+        if (sourceDir != null && !sourceDir.isBlank()) {
+            sourceDirs.add(sourceDir);
+        }
+        String testDir = config.java().testDir();
+        if (testDir != null && !testDir.isBlank() && !sourceDirs.contains(testDir)) {
+            sourceDirs.add(testDir);
+        }
+        return List.copyOf(sourceDirs);
     }
 
-    private long getOldestModificationTime(Path dir, String extension) throws IOException {
-        if (!Files.exists(dir)) {
-            return 0;
+    private boolean hasAnyCompiledClass(Path classesDir) throws IOException {
+        if (!Files.exists(classesDir)) {
+            return false;
         }
-
-        final long[] oldestTime = {Long.MAX_VALUE};
-        final boolean[] found = {false};
-
-        Files.walkFileTree(dir, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                if (file.toString().endsWith(extension)) {
-                    found[0] = true;
-                    long mtime = attrs.lastModifiedTime().toMillis();
-                    if (mtime < oldestTime[0]) {
-                        oldestTime[0] = mtime;
-                    }
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
-
-        return found[0] ? oldestTime[0] : 0;
+        try (var stream = Files.walk(classesDir)) {
+            return stream.anyMatch(path -> Files.isRegularFile(path)
+                    && path.getFileName().toString().endsWith(".class"));
+        }
     }
 
     private Map<String, ProjectInfo> discoverLocalProjects() {
