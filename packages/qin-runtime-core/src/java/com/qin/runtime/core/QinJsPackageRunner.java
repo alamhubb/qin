@@ -148,6 +148,10 @@ final class QinJsPackageRunner {
 
     private boolean isIgnoredDependencyFingerprintPath(Path nodeModules, Path path) {
         Path relative = nodeModules.relativize(path.toAbsolutePath().normalize());
+        if (relative.getFileName() != null
+                && ".qin-package-sync.json".equals(relative.getFileName().toString())) {
+            return true;
+        }
         for (Path part : relative) {
             String name = part.toString();
             if (".git".equals(name)
@@ -2111,7 +2115,6 @@ final class QinJsPackageRunner {
             boolean includeNodeModules) throws IOException {
         PackageTreeFingerprint fingerprint = fingerprintPackageTree(sourceDir, workspacePackage, includeNodeModules);
         return "{"
-                + "\"source\":\"" + escapeJson(sourceDir.toAbsolutePath().normalize().toString()) + "\","
                 + "\"files\":" + fingerprint.files + ","
                 + "\"bytes\":" + fingerprint.bytes + ","
                 + "\"modifiedMillis\":" + fingerprint.modifiedMillis
