@@ -1853,6 +1853,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record demo apps are Qin-managed");
         require(audit.contains("unmanaged package projects cannot appear silently"),
                 "LSP completion audit must record unmanaged package project gate");
+        require(audit.contains("must not claim `.qin`/`.ovs`/`.cssts` or `@qin/generated-qin-parser-ts`"),
+                "LSP completion audit must record package-only exceptions cannot claim the active generated-parser chain");
+        require(audit.contains("legacy `language-plugin-testts` identity fallback visibly isolated"),
+                "LSP completion audit must record the legacy TestTS identity fallback is isolated from the active path");
+        require(audit.contains("identity-fallback behavior") && audit.contains("into the mainline by accident"),
+                "LSP completion audit must record identity fallback cannot be promoted into mainline inventory");
         require(audit.contains("Qin object method bodies with local binding plus early-return `if`"),
                 "LSP completion audit must record object method-body parser parity coverage");
         require(audit.contains("Qin object method bodies with nested `if` branches and branch-local bindings"),

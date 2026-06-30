@@ -348,26 +348,74 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             Path workspaceRoot,
             String relativePath,
             PackageOnlyProjectKind kind) throws Exception {
-        Path packageJson = workspaceRoot.resolve(relativePath).resolve("package.json").normalize();
+        Path projectRoot = workspaceRoot.resolve(relativePath).normalize();
+        require(projectRoot.startsWith(workspaceRoot),
+                "Approved package-only project must stay inside workspace: " + relativePath);
+        require(!Files.isRegularFile(projectRoot.resolve("qin.config.js")),
+                relativePath + " package-only exception must not become active Qin-managed mainline silently; "
+                        + "remove the exception and register it in inventory when it is rewritten");
+        Path packageJson = projectRoot.resolve("package.json").normalize();
         require(Files.isRegularFile(packageJson),
                 "Approved package-only project must keep package.json: " + relativePath);
         String source = Files.readString(packageJson);
         switch (kind) {
             case LEGACY_LANGUAGE_EXPERIMENT -> {
+                require(source.contains("\"name\": \"language-plugin-testts\""),
+                        relativePath + " legacy language experiment must stay identifiable by package name");
                 require(source.contains("\"slime-parser\""),
                         relativePath + " legacy language experiment must stay explicit about legacy parser usage");
+                require(source.contains("\"slime-generator\""),
+                        relativePath + " legacy language experiment must stay explicit about legacy generator usage");
                 require(!source.contains("\"activationEvents\"") && !source.contains("\"contributes\""),
                         relativePath + " legacy language experiment must not become an editor extension");
+                verifyPackageOnlyProjectDoesNotClaimMainlineLanguage(relativePath, source);
+                verifyLegacyExperimentFallbackIsIsolated(projectRoot, relativePath);
             }
             case LEGACY_EDITOR_EXTENSION -> {
                 require(source.contains("\"activationEvents\"") && source.contains("\"contributes\""),
                         relativePath + " legacy editor extension must stay explicitly classified");
                 require(source.contains("\"vscode\""),
                         relativePath + " legacy editor extension must stay VSCode-specific, not IDEA/LSP mainline");
+                verifyPackageOnlyProjectDoesNotClaimMainlineLanguage(relativePath, source);
             }
-            case EXTERNAL_LANGUAGE_PLUGIN_COPY -> require(source.contains("\"@vue/language-plugin-pug\""),
-                    relativePath + " external plugin copy must stay identifiable by package name");
+            case EXTERNAL_LANGUAGE_PLUGIN_COPY -> {
+                require(source.contains("\"@vue/language-plugin-pug\""),
+                        relativePath + " external plugin copy must stay identifiable by package name");
+                require(source.contains("\"repository\"") && source.contains("vuejs/language-tools"),
+                        relativePath + " external plugin copy must stay identifiable as an upstream Vue language-tools copy");
+                verifyPackageOnlyProjectDoesNotClaimMainlineLanguage(relativePath, source);
+            }
         }
+    }
+
+    private static void verifyPackageOnlyProjectDoesNotClaimMainlineLanguage(
+            String relativePath,
+            String packageJsonSource) {
+        for (String forbidden : List.of(
+                "@qin/generated-qin-parser-ts",
+                "qin-language",
+                "ovs-language",
+                "cssts-language",
+                "ovs-compiler",
+                "cssts-compiler",
+                "\".qin\"",
+                "\".ovs\"",
+                "\".cssts\"")) {
+            require(!packageJsonSource.contains(forbidden),
+                    relativePath + " package-only exception must not claim the active Qin/OVS/CSSTS LSP chain: "
+                            + forbidden);
+        }
+    }
+
+    private static void verifyLegacyExperimentFallbackIsIsolated(Path projectRoot, String relativePath)
+            throws Exception {
+        Path index = projectRoot.resolve("index.ts").normalize();
+        require(Files.isRegularFile(index),
+                relativePath + " legacy language experiment must keep the source that identifies its isolation risk");
+        String source = Files.readString(index);
+        require(source.contains("fallback to identity"),
+                relativePath + " legacy language experiment must stay visibly isolated until rewritten without "
+                        + "identity fallback; when fixed, remove this package-only exception and manage it with Qin");
     }
 
     private static boolean startsWith(Path path, String firstSegment) {
