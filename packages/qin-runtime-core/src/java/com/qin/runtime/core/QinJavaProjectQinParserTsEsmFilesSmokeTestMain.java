@@ -73,12 +73,16 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated package subpath-exports SlimeCstToAstUtils");
         require(packageJsonText.contains("\"./SlimeAstCreateUtils\""),
                 "generated package subpath-exports SlimeAstCreateUtils");
+        require(packageJsonText.contains("\"./SlimeCstToAstBridge\""),
+                "generated package subpath-exports SlimeCstToAstBridge");
         require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
                         .resolve("cstToAst").resolve("SlimeCstToAstUtils.ts")),
                 "generated SlimeCstToAstUtils TS output");
         require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
                         .resolve("cstToAst").resolve("SlimeAstCreateUtils.ts")),
                 "generated SlimeAstCreateUtils TS output");
+        require(Files.isRegularFile(outputRoot.resolve("SlimeCstToAstBridge.ts")),
+                "generated SlimeCstToAstBridge TS output");
 
         Path smokeRoot = Files.createTempDirectory("qin-generated-qin-parser-ts-smoke-");
         Files.writeString(smokeRoot.resolve("qin.config.js"), """
@@ -103,6 +107,11 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 } from "@qin/generated-qin-parser-ts";
                 import { com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "@qin/generated-qin-parser-ts/SlimeCstToAstUtils";
                 import { com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "@qin/generated-qin-parser-ts/SlimeAstCreateUtils";
+                import {
+                  SlimeCstToAst,
+                  SlimeCstToAstUtils as SlimeCstToAstBridgeUtils,
+                  registerSlimeCstToAstUtil
+                } from "@qin/generated-qin-parser-ts/SlimeCstToAstBridge";
 
                 const parser = new QinParser("export object Counter { value = 1; next() { return this.value + 1; } }");
                 const cst = parser.Program(SourceType.__qin_field_MODULE);
@@ -115,6 +124,16 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                   }
                   return names;
                 }
+                class CustomCstToAst extends SlimeCstToAst {
+                  createPrimaryExpressionAst(cst) {
+                    return { type: "CustomPrimaryExpression", name: cst.getName() };
+                  }
+                }
+                const custom = new CustomCstToAst();
+                registerSlimeCstToAstUtil(custom);
+                const bridgeAst = SlimeCstToAstBridgeUtils.createPrimaryExpressionAst({
+                  getName() { return "BridgeSmokePrimaryExpression"; }
+                });
                 const names = collectNames(cst, []);
                 ({
                   cstName: cst ? cst.getName() : null,
@@ -122,6 +141,10 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                   hasQinObjectBody: names.includes("QinObjectDeclarationBody"),
                   hasSlimeCstToAstUtilsExport: typeof SlimeCstToAstUtils === "function",
                   hasSlimeAstCreateUtilsExport: typeof SlimeAstCreateUtils === "function",
+                  hasSlimeCstToAstBridgeExport: typeof SlimeCstToAst === "function"
+                    && typeof registerSlimeCstToAstUtil === "function",
+                  bridgeDispatchType: bridgeAst.type,
+                  bridgeDispatchName: bridgeAst.name,
                   names: names.slice(0, 40).join(",")
                 });
                 """, "generated_qin_parser_object");
@@ -137,6 +160,12 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated Qin parser package exports SlimeCstToAstUtils");
         require(Boolean.TRUE.equals(map.get("hasSlimeAstCreateUtilsExport")),
                 "generated Qin parser package exports SlimeAstCreateUtils");
+        require(Boolean.TRUE.equals(map.get("hasSlimeCstToAstBridgeExport")),
+                "generated Qin parser package exports SlimeCstToAstBridge");
+        require("CustomPrimaryExpression".equals(map.get("bridgeDispatchType")),
+                "generated SlimeCstToAstBridge facade dispatches to registered subclass");
+        require("BridgeSmokePrimaryExpression".equals(map.get("bridgeDispatchName")),
+                "generated SlimeCstToAstBridge forwards arguments to registered subclass");
 
         System.out.println("Generated ESM TS files: " + outputRoot);
         System.out.println("Generated ESM TS npm package: @qin/generated-qin-parser-ts");

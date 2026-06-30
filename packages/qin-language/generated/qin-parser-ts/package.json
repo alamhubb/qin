@@ -24,6 +24,12 @@
       "default": "./com/slime/parser/cstToAst/SlimeAstCreateUtils.ts"
     },
 
+    "./SlimeCstToAstBridge": {
+      "types": "./SlimeCstToAstBridge.ts",
+      "import": "./SlimeCstToAstBridge.ts",
+      "default": "./SlimeCstToAstBridge.ts"
+    },
+
     "./entry": {
       "types": "./com/qin/parser/QinParser.ts",
       "import": "./com/qin/parser/QinParser.ts",
@@ -41,6 +47,8 @@
   },
   "files": [
     "com",
+
+    "SlimeCstToAstBridge.ts",
 
     "index.ts",
     "qin.config.js",

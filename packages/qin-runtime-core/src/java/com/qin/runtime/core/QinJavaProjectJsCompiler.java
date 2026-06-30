@@ -4,6 +4,8 @@ import com.qin.lang.backend.js.QinJsBackend;
 import com.qin.lang.backend.js.QinIrCodeBackend;
 import com.qin.lang.backend.js.QinTsBackend;
 import com.qin.lang.frontend.adapter.QinJavaAstIrLowerer;
+import com.qin.lang.ir.QinIrClassDeclaration;
+import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
 import com.slime.java.ast.JavaAstArrayAccessExpression;
 import com.slime.java.ast.JavaAstArrayLiteralExpression;
@@ -417,6 +419,12 @@ public final class QinJavaProjectJsCompiler {
                         program,
                         backend.options().emitTypeAnnotations()),
                 StandardCharsets.UTF_8);
+        if (shouldGenerateSlimeCstToAstBridge(additionalEntryBinaryNames)) {
+            Files.writeString(
+                    outputRoot.resolve("SlimeCstToAstBridge." + extension),
+                    generatedSlimeCstToAstBridge(program, extension, backend.options().emitTypeAnnotations()),
+                    StandardCharsets.UTF_8);
+        }
         if (isGeneratedSlimeParserEntry(entryBinaryName)) {
             writeGeneratedSlimeParserCompatibilityEntries(outputRoot, extension);
         }
@@ -497,6 +505,12 @@ public final class QinJavaProjectJsCompiler {
         String compatibilityFiles = isGeneratedSlimeParserEntry(entryBinaryName)
                 ? "    \"src\",\n"
                 : "";
+        String cstToAstBridgeExports = shouldGenerateSlimeCstToAstBridge(additionalEntryBinaryNames)
+                ? generatedSlimeCstToAstBridgePackageExports(extension)
+                : "";
+        String cstToAstBridgeFiles = shouldGenerateSlimeCstToAstBridge(additionalEntryBinaryNames)
+                ? "    \"SlimeCstToAstBridge.%s\",\n".formatted(extension)
+                : "";
         String additionalEntryExports = generatedAdditionalEntryPackageExports(additionalEntryBinaryNames, extension);
         return """
                 {
@@ -513,6 +527,7 @@ public final class QinJavaProjectJsCompiler {
                       "import": "%s",
                       "default": "%s"
                     },
+                %s
                 %s
                 %s
                     "./entry": {
@@ -533,6 +548,7 @@ public final class QinJavaProjectJsCompiler {
                   "files": [
                     "com",
                 %s
+                %s
                     "index.%s",
                     "qin.config.js",
                     "node_modules/%s"
@@ -549,6 +565,7 @@ public final class QinJavaProjectJsCompiler {
                 indexFile,
                 compatibilityExports,
                 additionalEntryExports,
+                cstToAstBridgeExports,
                 entryFile,
                 entryFile,
                 entryFile,
@@ -557,6 +574,7 @@ public final class QinJavaProjectJsCompiler {
                 QinJsBackend.javaSdkJsPackageName(),
                 QinJsBackend.javaSdkJsPackageName(),
                 compatibilityFiles,
+                cstToAstBridgeFiles,
                 extension,
                 QinJsBackend.javaSdkJsPackageName());
     }
@@ -588,6 +606,108 @@ public final class QinJavaProjectJsCompiler {
                     .append("    },\n");
         }
         return exports.toString();
+    }
+
+    private boolean shouldGenerateSlimeCstToAstBridge(List<String> additionalEntryBinaryNames) {
+        return additionalEntryBinaryNames != null
+                && additionalEntryBinaryNames.contains("com.slime.parser.cstToAst.SlimeCstToAstUtils");
+    }
+
+    private String generatedSlimeCstToAstBridgePackageExports(String extension) {
+        return """
+                    "./SlimeCstToAstBridge": {
+                      "types": "./SlimeCstToAstBridge.%1$s",
+                      "import": "./SlimeCstToAstBridge.%1$s",
+                      "default": "./SlimeCstToAstBridge.%1$s"
+                    },
+                """.formatted(extension);
+    }
+
+    private String generatedSlimeCstToAstBridge(
+            QinIrProgram program,
+            String extension,
+            boolean typeScript) {
+        QinIrClassDeclaration utilityClass = program.classDeclarations().stream()
+                .filter(classDeclaration -> "com.slime.parser.cstToAst.SlimeCstToAstUtils"
+                        .equals(classDeclaration.binaryName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Cannot generate SlimeCstToAstBridge without com.slime.parser.cstToAst.SlimeCstToAstUtils"));
+        String generatedIdentifier =
+                QinJsBackend.generatedJavaClassIdentifier("com.slime.parser.cstToAst.SlimeCstToAstUtils");
+        String typeArgs = typeScript ? "...args: any[]" : "...args";
+        String returnAny = typeScript ? ": any" : "";
+        String instanceType = typeScript ? ": SlimeCstToAst" : "";
+        String instanceParamType = typeScript ? "instance: SlimeCstToAst" : "instance";
+        String nullReturnType = typeScript ? ": void" : "";
+
+        StringBuilder js = new StringBuilder();
+        js.append("// Generated Slime CST-to-AST bridge by Qin. Source Java: ")
+                .append(utilityClass.binaryName())
+                .append('\n');
+        js.append("import { ")
+                .append(generatedIdentifier)
+                .append(" as __QinGeneratedSlimeCstToAstUtils } from \"./com/slime/parser/cstToAst/SlimeCstToAstUtils.")
+                .append(extension)
+                .append("\";\n\n");
+        js.append("export class SlimeCstToAst {\n");
+        js.append("  constructor(...args")
+                .append(typeScript ? ": any[]" : "")
+                .append(") {\n");
+        js.append("    if (args.length !== 0) {\n");
+        js.append("      throw new Error(\"Unsupported SlimeCstToAst constructor arity: \" + args.length);\n");
+        js.append("    }\n");
+        js.append("    registerSlimeCstToAstUtil(this);\n");
+        js.append("  }\n");
+        LinkedHashSet<String> methodNames = new LinkedHashSet<>();
+        for (QinIrMethodDeclaration method : utilityClass.methods()) {
+            if (!method.staticMethod() || "constructor".equals(method.name()) || !methodNames.add(method.name())) {
+                continue;
+            }
+            js.append("  ")
+                    .append(method.name())
+                    .append("(")
+                    .append(typeArgs)
+                    .append(")")
+                    .append(returnAny)
+                    .append(" {\n");
+            js.append("    return __QinGeneratedSlimeCstToAstUtils.")
+                    .append(method.name())
+                    .append("(...args);\n");
+            js.append("  }\n");
+        }
+        js.append("}\n\n");
+        js.append("let __qinSlimeCstToAstUtils")
+                .append(instanceType)
+                .append(";\n");
+        js.append("export function registerSlimeCstToAstUtil(")
+                .append(instanceParamType)
+                .append(")")
+                .append(nullReturnType)
+                .append(" {\n");
+        js.append("  __qinSlimeCstToAstUtils = instance;\n");
+        js.append("}\n\n");
+        js.append("export const SlimeCstToAstUtils = {}")
+                .append(typeScript ? " as SlimeCstToAst" : "")
+                .append(";\n");
+        js.append("const __qinSlimeCstToAstFacade")
+                .append(typeScript ? ": any" : "")
+                .append(" = SlimeCstToAstUtils;\n");
+        for (String methodName : methodNames) {
+            js.append("__qinSlimeCstToAstFacade.")
+                    .append(methodName)
+                    .append(" = function (")
+                    .append(typeArgs)
+                    .append(")")
+                    .append(returnAny)
+                    .append(" {\n");
+            js.append("  return __qinSlimeCstToAstUtils.")
+                    .append(methodName)
+                    .append("(...args);\n");
+            js.append("};\n");
+        }
+        js.append("\n__qinSlimeCstToAstUtils = new SlimeCstToAst();\n");
+        return js.toString();
     }
 
     private boolean isGeneratedSlimeParserEntry(String entryBinaryName) {
@@ -993,7 +1113,6 @@ public final class QinJavaProjectJsCompiler {
             Map<String, Set<String>> programClassBinaryNames) {
         StringBuilder js = new StringBuilder();
         Set<String> importedClassBinaryNames = new LinkedHashSet<>();
-        List<String> simpleAliases = new ArrayList<>();
         for (String dependencyBinaryName : dependencyBinaryNames) {
             Path dependencyOutputFile = outputFilesByBinaryName.get(dependencyBinaryName);
             if (dependencyOutputFile == null || outputFile.equals(dependencyOutputFile)) {
@@ -1006,12 +1125,15 @@ public final class QinJavaProjectJsCompiler {
             List<String> identifiers = new ArrayList<>();
             for (String classBinaryName : dependencyClassBinaryNames) {
                 if (importedClassBinaryNames.add(classBinaryName)) {
-                    identifiers.add(QinJsBackend.generatedJavaClassIdentifier(classBinaryName));
+                    String generatedIdentifier = QinJsBackend.generatedJavaClassIdentifier(classBinaryName);
                     String simpleName = nestedSimpleClassName(classBinaryName);
                     if (isJsIdentifier(simpleName)
-                            && uniqueSimpleClassName(simpleName, sourceBinaryName, programClassBinaryNames)) {
-                        simpleAliases.add("const " + simpleName + " = "
-                                + QinJsBackend.generatedJavaClassIdentifier(classBinaryName) + ";");
+                            && uniqueSimpleClassName(simpleName, sourceBinaryName, programClassBinaryNames)
+                            && !simpleName.equals(generatedIdentifier)) {
+                        identifiers.add(generatedIdentifier);
+                        identifiers.add(generatedIdentifier + " as " + simpleName);
+                    } else {
+                        identifiers.add(generatedIdentifier);
                     }
                 }
             }
@@ -1025,9 +1147,6 @@ public final class QinJavaProjectJsCompiler {
                     .append("\";\n");
         }
         if (js.length() > 0) {
-            for (String simpleAlias : simpleAliases) {
-                js.append(simpleAlias).append('\n');
-            }
             js.append('\n');
         }
         return js.toString();
