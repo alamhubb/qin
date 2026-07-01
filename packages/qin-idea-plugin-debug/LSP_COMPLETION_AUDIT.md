@@ -101,12 +101,14 @@ These items are not proven complete yet:
   `switch`/`case`/`default`, `import.meta.url`, dynamic `import()`,
   destructuring, async/await, top-level samples, and invalid import/decorator/class samples, plus
   parser-chain inheritance smoke fixtures.
-- OVS/CSSTS parser classes and language servers are on the generated parser
-  chain, but compiler AST lowering still uses the legacy TS `slime-parser`,
-  `slime-ast` packages inside the explicit CST-to-AST bridge.
-  `lspVerificationMatrixSmoke` now confines those imports to bridge files; full
-  cleanup still requires exporting the needed Slime CST-to-AST base, registry,
-  AST constants, and token factories from the Java-generated TypeScript package.
+- OVS/CSSTS parser classes, language servers, and CST-to-AST extension base now
+  use the generated parser chain and `@qin/generated-qin-parser-ts`
+  `SlimeCstToAstBridge`; direct legacy TS `slime-parser` imports are rejected by
+  `lspVerificationMatrixSmoke`. Compiler AST lowering still uses legacy
+  `slime-ast` plus `subhuti` TypeScript packages for AST constants, token
+  factories, and CST/token types inside explicit AST construction boundaries.
+  Full cleanup still requires exporting those remaining AST/token APIs from the
+  Java-generated TypeScript package.
 - IDEA has smoke coverage for LSP startup, capabilities, diagnostics, packaging,
   and fixture registration, but manual IDE behavior still relies on
   `runIdeLspFixture` for visual confirmation.
@@ -149,8 +151,8 @@ These items are not proven complete yet:
    forms.
 2. Keep expanding generated parser parity from the current focused corpus toward
    broader Slime/Qin syntax coverage.
-3. Move the remaining OVS/CSSTS CST-to-AST bridge off legacy TS
-   `slime-parser`/`slime-ast`/`subhuti` once the Java-generated TS package
-   exposes equivalent AST bridge APIs.
+3. Move the remaining OVS/CSSTS AST/token construction boundary off legacy TS
+   `slime-ast`/`subhuti` once the Java-generated TS package exposes equivalent
+   AST and token APIs.
 4. Keep this audit updated whenever a requirement moves from "partly proven" to
    "proven" or when a new gap is found.

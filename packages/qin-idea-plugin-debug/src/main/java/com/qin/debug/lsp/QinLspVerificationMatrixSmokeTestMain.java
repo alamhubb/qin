@@ -557,12 +557,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
     }
 
     private static void verifyCompilerLegacyDependencyBoundary(MatrixCase matrixCase, QinConfig compilerConfig) {
-        for (String requiredDependency : List.of("subhuti", "slime-ast", "slime-parser")) {
+        for (String requiredDependency : List.of("subhuti", "slime-ast")) {
             require(compilerConfig.hasDependency(requiredDependency),
                     matrixCase.id() + " compiler must keep required PEG/CST/AST dependency "
                             + requiredDependency);
         }
-        for (String unusedDependency : List.of("slime-generator", "slime-token")) {
+        for (String unusedDependency : List.of("slime-generator", "slime-parser", "slime-token")) {
             require(!compilerConfig.hasDependency(unusedDependency),
                     matrixCase.id() + " compiler must not declare unused legacy parser dependency "
                             + unusedDependency);
@@ -681,12 +681,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "CSSTS generated runtime adapter must bridge generated Java list values");
         require(csstsTransform.contains("normalizeGeneratedCst(parser.Program())"),
                 "CSSTS transform must normalize CST from the generated parser chain");
-        require(csstsTransform.contains("import { registerSlimeCstToAstUtil } from 'slime-parser'"),
-                "CSSTS transform may use legacy slime-parser only to register the CST-to-AST extension");
-        require(csstsCstToAst.contains("import { SlimeCstToAst, SlimeCstToAstUtils, registerSlimeCstToAstUtil } from \"slime-parser\""),
-                "CSSTS CST-to-AST extension must keep its legacy slime-parser boundary explicit");
+        require(csstsTransform.contains("from '@qin/generated-qin-parser-ts/SlimeCstToAstBridge'"),
+                "CSSTS transform must register the CST-to-AST extension through the generated bridge");
+        require(csstsCstToAst.contains("import { SlimeCstToAst, SlimeCstToAstUtils, registerSlimeCstToAstUtil } from \"@qin/generated-qin-parser-ts/SlimeCstToAstBridge\""),
+                "CSSTS CST-to-AST extension must inherit the generated SlimeCstToAst bridge");
         require(csstsCstToAst.contains("extends SlimeCstToAst"),
-                "CSSTS CST-to-AST extension must stay on the explicit SlimeCstToAst extension boundary");
+                "CSSTS CST-to-AST extension must stay on the generated SlimeCstToAst extension boundary");
 
         require(ovsParser.contains("from \"@qin/generated-qin-parser-ts\""),
                 "OVS parser must import the shared generated Qin parser package");
@@ -710,17 +710,19 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "OVS parser source must not carry fallback parser concepts");
         require(ovsIndex.contains("normalizeGeneratedCst"),
                 "OVS compiler transform must normalize CST from the generated parser chain");
-        require(ovsIndex.contains("import { registerSlimeCstToAstUtil } from \"slime-parser\""),
-                "OVS transform may use legacy slime-parser only to register the CST-to-AST extension");
-        require(ovsCstToAst.contains("import { SlimeCstToAst, SlimeParser, registerSlimeCstToAstUtil } from \"slime-parser\""),
-                "OVS CST-to-AST extension must keep its legacy slime-parser boundary explicit");
+        require(ovsIndex.contains("from \"@qin/generated-qin-parser-ts/SlimeCstToAstBridge\""),
+                "OVS transform must register the CST-to-AST extension through the generated bridge");
+        require(ovsCstToAst.contains("import { QinParser as SlimeParser } from \"@qin/generated-qin-parser-ts\""),
+                "OVS CST-to-AST extension must use the generated QinParser for inherited rule names");
+        require(ovsCstToAst.contains("import { SlimeCstToAst, registerSlimeCstToAstUtil } from \"@qin/generated-qin-parser-ts/SlimeCstToAstBridge\""),
+                "OVS CST-to-AST extension must inherit the generated SlimeCstToAst bridge");
         require(ovsCstToAst.contains("Object.getPrototypeOf(SlimeCstToAst.prototype)"),
-                "OVS CST-to-AST extension must keep the SlimeCstToAst extension boundary visible");
-        require(ovsStatementCstToAst.contains("import { SlimeParser } from \"slime-parser\""),
-                "OVS statement CST-to-AST helper may use SlimeParser rule names only inside the CST-to-AST boundary");
+                "OVS CST-to-AST extension must keep the generated SlimeCstToAst extension boundary visible");
+        require(ovsStatementCstToAst.contains("import { QinParser as SlimeParser } from \"@qin/generated-qin-parser-ts\""),
+                "OVS statement CST-to-AST helper must use generated QinParser rule names");
         require(!Files.exists(forbiddenOvsAdapterPath),
                 "OVS must inherit the generated runtime adapter from cssts-compiler, not keep a local copy");
-        verifyLegacyParserImportsStayInCstToAstBoundary(workspaceRoot, csstsCompilerRoot, ovsCompilerRoot);
+        verifyLegacyAstImportsStayInCstToAstBoundary(workspaceRoot, csstsCompilerRoot, ovsCompilerRoot);
         verifyGeneratedParserChainRuntimeSmoke(
                 "cssts-language",
                 workspaceRoot,
@@ -1000,7 +1002,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "parsedTokens.some((token: any) => token.tokenValue === 'css')"));
     }
 
-    private static void verifyLegacyParserImportsStayInCstToAstBoundary(
+    private static void verifyLegacyAstImportsStayInCstToAstBoundary(
             Path workspaceRoot,
             Path csstsCompilerRoot,
             Path ovsCompilerRoot) throws Exception {
@@ -1010,7 +1012,6 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         Set<String> allowed = Set.of(
                 "cssts/cssts/cssts-compiler/src/factory/CssTsCstToAstUtils.ts",
-                "cssts/cssts/cssts-compiler/src/transform/index.ts",
                 "ovsjs/ovs/ovs-compiler/src/factory/OvsCstToSlimeAst/OvsCstToSlimeAst.ts",
                 "ovsjs/ovs/ovs-compiler/src/factory/OvsCstToSlimeAst/OvsCstToSlimeAst.Statement.ts",
                 "ovsjs/ovs/ovs-compiler/src/factory/OvsCstToSlimeAst/OvsCstToSlimeAst.View.ts",
@@ -1021,7 +1022,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "ovsjs/ovs/ovs-compiler/src/factory/OvsCstToSlimeAst/OvsCstToSlimeAst.Helpers.ts",
                 "ovsjs/ovs/ovs-compiler/src/factory/helpers/html-tags.ts",
                 "ovsjs/ovs/ovs-compiler/src/index.ts");
-        Set<String> legacyImports = new LinkedHashSet<>();
+        Set<String> legacyAstImports = new LinkedHashSet<>();
+        Set<String> legacyParserImports = new LinkedHashSet<>();
         for (Path root : List.of(csstsCompilerRoot, ovsCompilerRoot)) {
             try (var paths = Files.find(
                     root.resolve("src"),
@@ -1030,28 +1032,29 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                             && path.getFileName().toString().endsWith(".ts"))) {
                 for (Path sourcePath : paths.toList()) {
                     String source = Files.readString(sourcePath);
-                    if (containsLegacyParserPackageImport(source)) {
-                        String relative = workspaceRoot.relativize(sourcePath.normalize()).toString().replace('\\', '/');
-                        legacyImports.add(relative);
+                    String relative = workspaceRoot.relativize(sourcePath.normalize()).toString().replace('\\', '/');
+                    if (containsPackageImport(source, "slime-ast")) {
+                        legacyAstImports.add(relative);
+                    }
+                    if (containsPackageImport(source, "slime-parser")) {
+                        legacyParserImports.add(relative);
                     }
                 }
             }
         }
-        require(legacyImports.equals(allowed),
-                "Legacy TS slime-parser/slime-ast imports must stay confined to the explicit CST-to-AST bridge. expected="
-                        + allowed + " actual=" + legacyImports);
+        require(legacyParserImports.isEmpty(),
+                "Legacy TS slime-parser imports must be removed; generated SlimeCstToAstBridge owns CST-to-AST base. actual="
+                        + legacyParserImports);
+        require(legacyAstImports.equals(allowed),
+                "Legacy TS slime-ast imports must stay confined to explicit AST construction boundaries. expected="
+                        + allowed + " actual=" + legacyAstImports);
     }
 
-    private static boolean containsLegacyParserPackageImport(String source) {
-        for (String legacyPackage : List.of("slime-parser", "slime-ast")) {
-            if (source.contains("from \"" + legacyPackage + "\"")
-                    || source.contains("from '" + legacyPackage + "'")
-                    || source.contains("import(\"" + legacyPackage + "\")")
-                    || source.contains("import('" + legacyPackage + "')")) {
-                return true;
-            }
-        }
-        return false;
+    private static boolean containsPackageImport(String source, String packageName) {
+        return source.contains("from \"" + packageName + "\"")
+                || source.contains("from '" + packageName + "'")
+                || source.contains("import(\"" + packageName + "\")")
+                || source.contains("import('" + packageName + "')");
     }
 
     private static void verifyGeneratedParserChainRuntimeSmoke(
@@ -2007,12 +2010,13 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record generated Qin parser package metadata coverage");
         require(audit.contains("additional Slime CST/AST entry metadata"),
                 "LSP completion audit must record additional Slime parser metadata coverage");
-        require(audit.contains("confines legacy TS `slime-parser`/`slime-ast` imports to the explicit CST-to-AST bridge files"),
-                "LSP completion audit must record OVS/CSSTS legacy TS slime-parser/slime-ast imports are bridge-confined");
-        require(audit.contains("compiler AST lowering still uses the legacy TS `slime-parser`"),
-                "LSP completion audit must record remaining OVS/CSSTS CST-to-AST bridge legacy dependency");
-        require(audit.contains("Move the remaining OVS/CSSTS CST-to-AST bridge off legacy TS"),
-                "LSP completion audit must keep the remaining CST-to-AST bridge migration hardening step");
+        require(audit.contains("direct legacy TS `slime-parser` imports are rejected"),
+                "LSP completion audit must record OVS/CSSTS legacy slime-parser removal");
+        require(audit.contains("Compiler AST lowering still uses legacy")
+                        && audit.contains("`slime-ast` plus `subhuti`"),
+                "LSP completion audit must record remaining OVS/CSSTS AST/token legacy dependency");
+        require(audit.contains("Move the remaining OVS/CSSTS AST/token construction boundary off legacy TS"),
+                "LSP completion audit must keep the remaining AST/token migration hardening step");
     }
 
     private static void verifyGeneratedQinParserPackage(Path qinLanguageRoot, QinConfig config) throws Exception {
