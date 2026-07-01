@@ -333,6 +333,21 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 require(hasDocumentLinkTarget(documentLinks.get("result"), importedUri, 0, 25),
                         language.id() + " documentLink missing local import target: " + documentLinks);
 
+                String sharedJavaImportUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("shared")
+                        .resolve("policy.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", sharedJavaImportUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", "import { ArrayList } from 'java:java.util'\nexport const sharedValue = ArrayList\n")));
+                session.awaitDiagnostic(sharedJavaImportUri, "QIN1002");
+
                 Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
                         "query", testCase.expectedDocumentSymbol())));
                 require(hasWorkspaceSymbol(workspaceSymbols.get("result"), testCase.expectedDocumentSymbol(), uri, 0, 14),

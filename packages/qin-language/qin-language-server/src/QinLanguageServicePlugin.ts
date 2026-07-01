@@ -73,7 +73,11 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
         }
         updateWorkspaceSymbolsFromDocument(document, workspaceSymbols)
         const result = probeGeneratedQinParser(document.getText())
-        return createQinParserDiagnostics(result)
+        const sourceUri = readSourceDocumentUri(context, document.uri)
+        return [
+          ...createQinParserDiagnostics(result),
+          ...createQinImportPolicyDiagnostics(document, sourceUri),
+        ]
       },
       provideWorkspaceSymbols(query: string) {
         const matched: WorkspaceSymbol[] = []
@@ -175,29 +179,31 @@ function matchesWorkspaceSymbolQuery(name: string, query: string): boolean {
 
 function readSourceDocumentUri(context: Parameters<LanguageServicePlugin['create']>[0], documentUri: string): string {
   const uri = URI.parse(documentUri)
-  return context.decodeEmbeddedDocumentUri(uri)?.[0].toString() ?? documentUri
+  return context.decodeEmbeddedDocumentUri?.(uri)?.[0].toString() ?? documentUri
 }
 
 function provideSourceDocumentLinks(document: TextDocument, sourceUri: string): DocumentLink[] {
   const source = document.getText()
-  return collectLocalModuleSpecifierLinks(source).map(item => ({
-    range: createRange(document, item.start, item.end),
-    target: resolveLocalModuleTarget(sourceUri, item.text),
-  }))
+  return collectModuleSpecifierLinks(source)
+    .filter(item => isLocalModuleSpecifier(item.text))
+    .map(item => ({
+      range: createRange(document, item.start, item.end),
+      target: resolveLocalModuleTarget(sourceUri, item.text),
+    }))
 }
 
-interface SourceModuleSpecifierLink {
+interface SourceModuleSpecifierInfo {
   text: string
   start: number
   end: number
 }
 
-function collectLocalModuleSpecifierLinks(source: string): SourceModuleSpecifierLink[] {
+function collectModuleSpecifierLinks(source: string): SourceModuleSpecifierInfo[] {
   const sourceFile = ts.createSourceFile('source.qin', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
-  const links: SourceModuleSpecifierLink[] = []
+  const links: SourceModuleSpecifierInfo[] = []
   const visit = (node: ts.Node): void => {
     const moduleSpecifier = readModuleSpecifier(node)
-    if (moduleSpecifier && isLocalModuleSpecifier(moduleSpecifier.text)) {
+    if (moduleSpecifier) {
       links.push({
         text: moduleSpecifier.text,
         start: moduleSpecifier.getStart(sourceFile) + 1,
@@ -223,6 +229,37 @@ function isStringLiteralLike(node: ts.Node): node is ts.StringLiteralLike {
 
 function isLocalModuleSpecifier(specifier: string): boolean {
   return specifier.startsWith('./') || specifier.startsWith('../')
+}
+
+function createQinImportPolicyDiagnostics(document: TextDocument, sourceUri: string) {
+  if (readQinSourceZone(sourceUri) !== 'shared') {
+    return []
+  }
+  return collectModuleSpecifierLinks(document.getText())
+    .filter(item => isJavaModuleSpecifier(item.text))
+    .map(item => ({
+      range: createRange(document, item.start, item.end),
+      severity: DiagnosticSeverity.Error,
+      source: 'qin-import-policy',
+      message: `QIN1002 shared code cannot import java modules: ${item.text}`,
+    }))
+}
+
+type QinSourceZone = 'app' | 'main' | 'shared'
+
+function readQinSourceZone(sourceUri: string): QinSourceZone | undefined {
+  const segments = URI.parse(sourceUri).path.split('/').filter(Boolean)
+  for (let index = segments.length - 1; index >= 0; index--) {
+    const segment = segments[index]
+    if (segment === 'app' || segment === 'main' || segment === 'shared') {
+      return segment
+    }
+  }
+  return undefined
+}
+
+function isJavaModuleSpecifier(specifier: string): boolean {
+  return specifier.startsWith('java:')
 }
 
 function resolveLocalModuleTarget(documentUri: string, specifier: string): string {
