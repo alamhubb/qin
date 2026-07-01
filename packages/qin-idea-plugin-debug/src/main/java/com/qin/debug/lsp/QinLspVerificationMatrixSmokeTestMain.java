@@ -1275,6 +1275,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         if ("qin".equals(matrixCase.id())) {
             require(testSource.contains("textDocument/codeAction"),
                     "Qin language server test must request textDocument/codeAction");
+            require(testSource.contains("completionItem/resolve"),
+                    "Qin language server test must request completionItem/resolve");
+            require(testSource.contains("completionItem resolve did not preserve label and detail"),
+                    "Qin language server test must assert completionItem resolve detail coverage");
             require(testSource.contains("Remove forbidden java import"),
                     "Qin language server test must assert import-policy codeAction coverage");
             require(testSource.contains("Remove forbidden shared import"),
@@ -1400,6 +1404,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         return switch (languageId) {
             case "qin" -> List.of(
                     "Qin object completion response",
+                    "Qin completionItem resolve response",
                     "Qin object extends completion response",
                     "Qin object extends definition response",
                     "Qin cross-file import completion response",

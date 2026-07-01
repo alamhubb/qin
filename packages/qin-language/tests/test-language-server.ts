@@ -945,6 +945,23 @@ async function main() {
     throw new Error(`Qin completion did not include TS service symbols: ${JSON.stringify(completionLabels.slice(0, 30))}`)
   }
 
+  const alphaNumberCompletion = completionItems.find((item: any) => item.label === 'alphaNumber')
+  if (!alphaNumberCompletion) {
+    throw new Error(`Qin completion did not return alphaNumber item for resolve: ${JSON.stringify(completionLabels.slice(0, 30))}`)
+  }
+  const completionResolveRequest = createRequest('completionItem/resolve', alphaNumberCompletion)
+  server.stdin.write(completionResolveRequest.packet)
+  const completionResolveResponse = await waitForResponse(
+    completionResolveRequest.id,
+    messages,
+    `Qin completionItem resolve response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  if (completionResolveResponse.result?.label !== 'alphaNumber'
+    || typeof completionResolveResponse.result?.detail !== 'string'
+    || !completionResolveResponse.result.detail.includes('alphaNumber')) {
+    throw new Error(`Qin completionItem resolve did not preserve label and detail: ${JSON.stringify(completionResolveResponse.result)}`)
+  }
+
   const signatureHelpRequest = createRequest('textDocument/signatureHelp', {
     textDocument: { uri: tsSubsetUri },
     position: { line: 3, character: 42 },

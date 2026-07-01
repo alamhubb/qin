@@ -243,6 +243,18 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "context", Map.of("triggerKind", 1))));
             require(completionLabels(completion).contains(testCase.expectedCompletionLabel()),
                     language.id() + " completion missing " + testCase.expectedCompletionLabel() + ": " + completion);
+            Object completionItem = completionItem(completion, testCase.expectedCompletionLabel());
+            require(completionItem != null,
+                    language.id() + " completion missing item for resolve " + testCase.expectedCompletionLabel() + ": "
+                            + completion);
+            Map<String, Object> completionResolve = session.awaitResponse(session.request(
+                    "completionItem/resolve",
+                    completionItem));
+            require(hasCompletionDetail(
+                            completionResolve.get("result"),
+                            testCase.expectedCompletionLabel()),
+                    language.id() + " completionItem resolve did not preserve label and detail: "
+                            + completionResolve);
 
             Map<String, Object> hover = session.awaitResponse(session.request("textDocument/hover", Map.of(
                     "textDocument", Map.of("uri", uri),
@@ -690,6 +702,10 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Map<?, ?> capabilitiesMap = (Map<?, ?>) capabilities;
 
         require(capabilitiesMap.containsKey("completionProvider"), language.id() + " LSP missing completionProvider");
+        Object completionProvider = capabilitiesMap.get("completionProvider");
+        require(completionProvider instanceof Map<?, ?> completionProviderMap
+                        && Boolean.TRUE.equals(completionProviderMap.get("resolveProvider")),
+                language.id() + " completionProvider missing resolveProvider");
         require(capabilitiesMap.containsKey("callHierarchyProvider"), language.id() + " LSP missing callHierarchyProvider");
         require(capabilitiesMap.containsKey("codeActionProvider"), language.id() + " LSP missing codeActionProvider");
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
@@ -739,6 +755,31 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             }
         }
         return labels;
+    }
+
+    private static Object completionItem(Map<String, Object> response, String label) {
+        Object result = response.get("result");
+        Object items = result instanceof Map<?, ?> map ? map.get("items") : result;
+        if (!(items instanceof List<?> list)) {
+            return null;
+        }
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> map && label.equals(String.valueOf(map.get("label")))) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private static boolean hasCompletionDetail(Object result, String label) {
+        if (!(result instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object actualLabel = map.get("label");
+        Object detail = map.get("detail");
+        return label.equals(String.valueOf(actualLabel))
+                && detail instanceof String detailText
+                && detailText.contains(label);
     }
 
     private static List<String> signatureLabels(Map<String, Object> response) {
