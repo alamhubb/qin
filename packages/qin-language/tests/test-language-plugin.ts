@@ -24,6 +24,14 @@ if (lowerQinToTypeScript(tsSubset) !== tsSubset) {
   throw new Error('Qin TS-subset source must remain unchanged when generated CST has no Qin-only syntax')
 }
 
+const tsSubsetEditingSource = 'console.\ndocument.\n'
+const tsSubsetEditingGenerated = lowerQinToTypeScript(tsSubsetEditingSource)
+if (!tsSubsetEditingGenerated.includes('console.__qin_member_completion__')
+  || !tsSubsetEditingGenerated.includes('document.__qin_member_completion__')
+  || tsSubsetEditingGenerated.includes('Qin transform failed')) {
+  throw new Error(`Qin TS-subset editing state must preserve member completion service code, got: ${tsSubsetEditingGenerated}`)
+}
+
 const objectExtendsSource = `
 class BaseCounter {
   baseValue = 1

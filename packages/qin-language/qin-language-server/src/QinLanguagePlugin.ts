@@ -5,7 +5,7 @@ import {
   type VirtualCode,
 } from '@volar/language-core'
 import type { TypeScriptExtraServiceScript } from '@volar/typescript'
-import type { IScriptSnapshot } from 'typescript'
+import ts, { type IScriptSnapshot } from 'typescript'
 import { URI } from 'vscode-uri'
 import type { LanguageServerMetadata } from './LanguageServerMetadata'
 import { extensionWithoutDot } from './LanguageServerMetadata'
@@ -19,6 +19,7 @@ const ScriptKind = {
 } as const
 
 const QIN_LANGUAGE_ID = 'qin'
+const QIN_MEMBER_COMPLETION_PLACEHOLDER = '__qin_member_completion__'
 
 interface QinLoweringResult {
   code: string
@@ -153,6 +154,10 @@ export function lowerQinToTypeScriptWithMappings(source: string): QinLoweringRes
     return createTransformErrorResult(sourceCode, 'Generated Qin parser package is not available')
   }
   if (!parsed.ok || !parsed.cst) {
+    const typeScriptSubsetResult = createTypeScriptSubsetEditingResult(sourceCode)
+    if (typeScriptSubsetResult) {
+      return typeScriptSubsetResult
+    }
     return createTransformErrorResult(sourceCode, parsed.error ?? 'Generated Qin parser rejected source')
   }
   return lowerProgramCstToTypeScript(sourceCode, parsed.cst)
@@ -436,6 +441,98 @@ function createTransformErrorResult(source: string, message: string): QinLowerin
       generatedLength: code.length,
     }]),
   }
+}
+
+function createTypeScriptSubsetEditingResult(source: string): QinLoweringResult | undefined {
+  if (hasQinObjectDeclarationCandidate(source)) {
+    return undefined
+  }
+  const memberCompletionOffsets = collectDanglingMemberAccessOffsets(source)
+  if (memberCompletionOffsets.length) {
+    return createTypeScriptSubsetEditingMemberAccessResult(source, memberCompletionOffsets)
+  }
+  return {
+    code: source,
+    mappings: createCodeMappings([{
+      sourceOffset: 0,
+      generatedOffset: 0,
+      length: source.length,
+      generatedLength: source.length,
+    }]),
+  }
+}
+
+function createTypeScriptSubsetEditingMemberAccessResult(source: string, insertionOffsets: number[]): QinLoweringResult {
+  let generated = ''
+  let sourceCursor = 0
+  let generatedCursor = 0
+  const mappings: QinTextMapping[] = []
+
+  const appendMappedSource = (sourceStart: number, sourceEnd: number): void => {
+    if (sourceEnd <= sourceStart) {
+      return
+    }
+    const text = source.slice(sourceStart, sourceEnd)
+    generated += text
+    mappings.push({
+      sourceOffset: sourceStart,
+      generatedOffset: generatedCursor,
+      length: sourceEnd - sourceStart,
+      generatedLength: sourceEnd - sourceStart,
+    })
+    generatedCursor = generated.length
+  }
+
+  for (const insertionOffset of insertionOffsets) {
+    appendMappedSource(sourceCursor, insertionOffset)
+    generated += QIN_MEMBER_COMPLETION_PLACEHOLDER
+    generatedCursor = generated.length
+    sourceCursor = insertionOffset
+  }
+  appendMappedSource(sourceCursor, source.length)
+
+  return {
+    code: generated,
+    mappings: createCodeMappings(mappings),
+  }
+}
+
+function collectDanglingMemberAccessOffsets(source: string): number[] {
+  const offsets: number[] = []
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, source)
+  let token = scanner.scan()
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
+    const tokenEnd = scanner.getTextPos()
+    if (token !== ts.SyntaxKind.DotToken) {
+      token = scanner.scan()
+      continue
+    }
+    const nextToken = scanner.scan()
+    const nextTokenStart = nextToken === ts.SyntaxKind.EndOfFileToken ? source.length : scanner.getTokenPos()
+    const gap = source.slice(tokenEnd, nextTokenStart)
+    if (nextToken === ts.SyntaxKind.EndOfFileToken || containsLineTerminator(gap)) {
+      offsets.push(tokenEnd)
+    }
+    token = nextToken
+  }
+  return offsets
+}
+
+function containsLineTerminator(text: string): boolean {
+  return text.includes('\n') || text.includes('\r')
+}
+
+function hasQinObjectDeclarationCandidate(source: string): boolean {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, source)
+  let token = scanner.scan()
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
+    if (scanner.getTokenText() === 'object') {
+      const nextToken = scanner.scan()
+      return nextToken === ts.SyntaxKind.Identifier
+    }
+    token = scanner.scan()
+  }
+  return false
 }
 
 function createCodeMappings(mappings: QinTextMapping[]): CodeMapping[] {

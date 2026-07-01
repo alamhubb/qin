@@ -454,6 +454,21 @@ async function main() {
     },
   }))
 
+  const browserGlobalUri = toFileUri(path.join(__dirname, 'browser-globals.qin'))
+  const browserGlobalSource = [
+    'console.',
+    'document.',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: browserGlobalUri,
+      languageId: 'qin',
+      version: 1,
+      text: browserGlobalSource,
+    },
+  }))
+
   const typeDefinitionUri = toFileUri(path.join(__dirname, 'type-definition.qin'))
   server.stdin.write(createNotification('textDocument/didOpen', {
     textDocument: {
@@ -967,6 +982,44 @@ async function main() {
   const completionLabels = completionItems.map((item: any) => item.label)
   if (!completionLabels.includes('alphaNumber') || !completionLabels.includes('alphaText')) {
     throw new Error(`Qin completion did not include TS service symbols: ${JSON.stringify(completionLabels.slice(0, 30))}`)
+  }
+
+  const consoleCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: browserGlobalUri },
+    position: { line: 0, character: 8 },
+    context: { triggerKind: 2, triggerCharacter: '.' },
+  })
+  server.stdin.write(consoleCompletionRequest.packet)
+  const consoleCompletionResponse = await waitForResponse(
+    consoleCompletionRequest.id,
+    messages,
+    `Qin console completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const consoleCompletionItems = Array.isArray(consoleCompletionResponse.result)
+    ? consoleCompletionResponse.result
+    : consoleCompletionResponse.result?.items ?? []
+  const consoleCompletionLabels = consoleCompletionItems.map((item: any) => item.label)
+  if (!consoleCompletionLabels.includes('log')) {
+    throw new Error(`Qin console completion did not include log: ${JSON.stringify(consoleCompletionLabels.slice(0, 30))}`)
+  }
+
+  const documentCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: browserGlobalUri },
+    position: { line: 1, character: 9 },
+    context: { triggerKind: 2, triggerCharacter: '.' },
+  })
+  server.stdin.write(documentCompletionRequest.packet)
+  const documentCompletionResponse = await waitForResponse(
+    documentCompletionRequest.id,
+    messages,
+    `Qin document completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const documentCompletionItems = Array.isArray(documentCompletionResponse.result)
+    ? documentCompletionResponse.result
+    : documentCompletionResponse.result?.items ?? []
+  const documentCompletionLabels = documentCompletionItems.map((item: any) => item.label)
+  if (!documentCompletionLabels.includes('getElementById') || !documentCompletionLabels.includes('body')) {
+    throw new Error(`Qin document completion did not include DOM members: ${JSON.stringify(documentCompletionLabels.slice(0, 30))}`)
   }
 
   const alphaNumberCompletion = completionItems.find((item: any) => item.label === 'alphaNumber')
