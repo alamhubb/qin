@@ -166,6 +166,36 @@ function collectSymbolNames(symbols: any[]): string[] {
   return names
 }
 
+function collectWorkspaceEditTexts(edit: any): string[] {
+  const texts: string[] = []
+  const changes = edit?.changes
+  if (changes && typeof changes === 'object') {
+    for (const uriChanges of Object.values(changes)) {
+      if (Array.isArray(uriChanges)) {
+        for (const change of uriChanges) {
+          if (typeof change?.newText === 'string') {
+            texts.push(change.newText)
+          }
+        }
+      }
+    }
+  }
+  const documentChanges = edit?.documentChanges
+  if (Array.isArray(documentChanges)) {
+    for (const documentChange of documentChanges) {
+      const edits = documentChange?.edits
+      if (Array.isArray(edits)) {
+        for (const change of edits) {
+          if (typeof change?.newText === 'string') {
+            texts.push(change.newText)
+          }
+        }
+      }
+    }
+  }
+  return texts
+}
+
 function semanticTokenCovers(result: any, line: number, character: number): boolean {
   const data = result?.data
   if (!Array.isArray(data) || data.length % 5 !== 0) {
@@ -752,6 +782,22 @@ async function main() {
     || !references.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeStartsAt(item, 1, 18))
   ) {
     throw new Error(`Qin references did not include alphaNumber declaration and usage: ${JSON.stringify(referencesResponse.result)}`)
+  }
+
+  const renameRequest = createRequest('textDocument/rename', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 0, character: 8 },
+    newName: 'renamedNumber',
+  })
+  server.stdin.write(renameRequest.packet)
+  const renameResponse = await waitForResponse(
+    renameRequest.id,
+    messages,
+    `Qin TS-subset rename response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const renameTexts = collectWorkspaceEditTexts(renameResponse.result)
+  if (renameTexts.filter(text => text === 'renamedNumber').length < 2) {
+    throw new Error(`Qin rename did not return declaration and usage edits: ${JSON.stringify(renameResponse.result)}`)
   }
 
   const documentSymbolRequest = createRequest('textDocument/documentSymbol', {

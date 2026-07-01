@@ -135,6 +135,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                             "textDocument", Map.of(
                                     "completion", Map.of(),
                                     "hover", Map.of(),
+                                    "rename", Map.of(),
                                     "publishDiagnostics", Map.of())),
                     "rootUri", workspaceRoot.toUri().toString(),
                     "initializationOptions", Map.of(
@@ -232,6 +233,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "textDocument", Map.of("uri", uri))));
             require(symbolNames(symbols.get("result")).contains(testCase.expectedDocumentSymbol()),
                     language.id() + " documentSymbol missing " + testCase.expectedDocumentSymbol() + ": " + symbols);
+
+            Map<String, Object> rename = session.awaitResponse(session.request("textDocument/rename", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.referencesLine(), "character", testCase.referencesCharacter()),
+                    "newName", "renamedSymbol")));
+            require(workspaceEditTexts(rename.get("result")).contains("renamedSymbol"),
+                    language.id() + " rename did not return workspace edits: " + rename);
         }
 
         if (testCase.expectSemanticTokens()) {
@@ -261,6 +269,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
+        require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         require(capabilitiesMap.containsKey("semanticTokensProvider"), language.id() + " LSP missing semanticTokensProvider");
 
@@ -354,6 +363,39 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         List<String> names = new ArrayList<>();
         collectSymbolNames(list, names);
         return names;
+    }
+
+    private static List<String> workspaceEditTexts(Object result) {
+        if (!(result instanceof Map<?, ?> edit)) {
+            return List.of();
+        }
+        List<String> texts = new ArrayList<>();
+        Object changes = edit.get("changes");
+        if (changes instanceof Map<?, ?> changesMap) {
+            for (Object value : changesMap.values()) {
+                collectTextEditTexts(value, texts);
+            }
+        }
+        Object documentChanges = edit.get("documentChanges");
+        if (documentChanges instanceof List<?> documentChangeList) {
+            for (Object documentChange : documentChangeList) {
+                if (documentChange instanceof Map<?, ?> documentChangeMap) {
+                    collectTextEditTexts(documentChangeMap.get("edits"), texts);
+                }
+            }
+        }
+        return texts;
+    }
+
+    private static void collectTextEditTexts(Object edits, List<String> texts) {
+        if (!(edits instanceof List<?> editList)) {
+            return;
+        }
+        for (Object edit : editList) {
+            if (edit instanceof Map<?, ?> editMap && editMap.get("newText") != null) {
+                texts.add(String.valueOf(editMap.get("newText")));
+            }
+        }
     }
 
     private static void collectSymbolNames(List<?> symbols, List<String> names) {
