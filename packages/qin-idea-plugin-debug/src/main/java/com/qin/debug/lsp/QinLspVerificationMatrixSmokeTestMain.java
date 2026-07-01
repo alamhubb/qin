@@ -487,6 +487,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "foldingRange missing source object block",
                 "selectionRange missing object name and declaration chain",
                 "workspaceSymbol missing source object symbol",
+                "QIN1001",
                 "QIN1002",
                 "semanticTokens returned no token data")) {
             require(smokeSource.contains(assertionNeedle),
@@ -1277,7 +1278,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(testSource.contains("documentLink did not include local import target"),
                     "Qin language server test must assert documentLink local import coverage");
             require(testSource.contains("qin-import-policy"),
-                    "Qin language server test must assert shared import-policy diagnostics");
+                    "Qin language server test must assert app/shared import-policy diagnostics");
+            require(testSource.contains("app code cannot import java modules"),
+                    "Qin language server test must assert app java: import rejection");
             require(testSource.contains("shared code cannot import java modules"),
                     "Qin language server test must assert shared java: import rejection");
             require(testSource.contains("workspace/symbol"),

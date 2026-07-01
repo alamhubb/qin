@@ -232,7 +232,8 @@ function isLocalModuleSpecifier(specifier: string): boolean {
 }
 
 function createQinImportPolicyDiagnostics(document: TextDocument, sourceUri: string) {
-  if (readQinSourceZone(sourceUri) !== 'shared') {
+  const zone = readQinSourceZone(sourceUri)
+  if (zone !== 'app' && zone !== 'shared') {
     return []
   }
   return collectModuleSpecifierLinks(document.getText())
@@ -241,7 +242,7 @@ function createQinImportPolicyDiagnostics(document: TextDocument, sourceUri: str
       range: createRange(document, item.start, item.end),
       severity: DiagnosticSeverity.Error,
       source: 'qin-import-policy',
-      message: `QIN1002 shared code cannot import java modules: ${item.text}`,
+      message: `${zone === 'app' ? 'QIN1001 app code' : 'QIN1002 shared code'} cannot import java modules: ${item.text}`,
     }))
 }
 

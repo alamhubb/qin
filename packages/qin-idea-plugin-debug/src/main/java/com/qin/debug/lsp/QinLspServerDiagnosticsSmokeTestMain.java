@@ -348,6 +348,21 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 "text", "import { ArrayList } from 'java:java.util'\nexport const sharedValue = ArrayList\n")));
                 session.awaitDiagnostic(sharedJavaImportUri, "QIN1002");
 
+                String appJavaImportUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("app")
+                        .resolve("policy.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", appJavaImportUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", "import { ArrayList } from 'java:java.util'\nexport const appValue = ArrayList\n")));
+                session.awaitDiagnostic(appJavaImportUri, "QIN1001");
+
                 Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
                         "query", testCase.expectedDocumentSymbol())));
                 require(hasWorkspaceSymbol(workspaceSymbols.get("result"), testCase.expectedDocumentSymbol(), uri, 0, 14),

@@ -512,6 +512,21 @@ async function main() {
     },
   }))
 
+  const appJavaImportUri = toFileUri(path.join(__dirname, 'app', 'app-policy.qin'))
+  const appJavaImportSource = [
+    "import { ArrayList } from 'java:java.util'",
+    'export const appValue = ArrayList',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: appJavaImportUri,
+      languageId: 'qin',
+      version: 1,
+      text: appJavaImportSource,
+    },
+  }))
+
   const mainJavaImportUri = toFileUri(path.join(__dirname, 'main', 'main-policy.qin'))
   const mainJavaImportSource = [
     "import { ArrayList } from 'java:java.util'",
@@ -534,10 +549,14 @@ async function main() {
       const sharedDiagnostics = diagnosticsMessages
         .filter(message => sameUri(message.params?.uri, sharedJavaImportUri))
         .at(-1)?.params?.diagnostics ?? []
+      const appDiagnostics = diagnosticsMessages
+        .filter(message => sameUri(message.params?.uri, appJavaImportUri))
+        .at(-1)?.params?.diagnostics ?? []
       return diagnosticsMessages.some(message => sameUri(message.params?.uri, validUri))
         && diagnosticsMessages.some(message => sameUri(message.params?.uri, forOfUri))
         && diagnosticsMessages.some(message => sameUri(message.params?.uri, invalidUri))
         && sharedDiagnostics.some((item: any) => item.source === 'qin-import-policy')
+        && appDiagnostics.some((item: any) => item.source === 'qin-import-policy')
         && diagnosticsMessages.some(message => sameUri(message.params?.uri, mainJavaImportUri))
     },
     15000,
@@ -557,6 +576,9 @@ async function main() {
     .at(-1)?.params?.diagnostics ?? []
   const sharedJavaImportDiagnostics = diagnosticsMessages
     .filter(message => sameUri(message.params?.uri, sharedJavaImportUri))
+    .at(-1)?.params?.diagnostics ?? []
+  const appJavaImportDiagnostics = diagnosticsMessages
+    .filter(message => sameUri(message.params?.uri, appJavaImportUri))
     .at(-1)?.params?.diagnostics ?? []
   const mainJavaImportDiagnostics = diagnosticsMessages
     .filter(message => sameUri(message.params?.uri, mainJavaImportUri))
@@ -578,8 +600,12 @@ async function main() {
     throw new Error(`Shared Qin java: import did not produce import-policy diagnostic: ${JSON.stringify(sharedJavaImportDiagnostics)}`)
   }
 
+  if (!appJavaImportDiagnostics.some((item: any) => item.source === 'qin-import-policy' && String(item.message).includes('app code cannot import java modules'))) {
+    throw new Error(`App Qin java: import did not produce import-policy diagnostic: ${JSON.stringify(appJavaImportDiagnostics)}`)
+  }
+
   if (mainJavaImportDiagnostics.some((item: any) => item.source === 'qin-import-policy')) {
-    throw new Error(`Main Qin java: import must not produce shared import-policy diagnostic: ${JSON.stringify(mainJavaImportDiagnostics)}`)
+    throw new Error(`Main Qin java: import must not produce app/shared import-policy diagnostic: ${JSON.stringify(mainJavaImportDiagnostics)}`)
   }
 
   if (invalidDiagnostics[0].source !== 'qin-parser') {
