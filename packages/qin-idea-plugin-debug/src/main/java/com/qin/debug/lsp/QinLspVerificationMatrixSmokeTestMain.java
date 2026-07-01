@@ -457,6 +457,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/completion",
                 "textDocument/definition",
                 "textDocument/references",
+                "textDocument/documentHighlight",
                 "textDocument/rename",
                 "textDocument/documentSymbol",
                 "textDocument/semanticTokens/full")) {
@@ -467,6 +468,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "completion missing",
                 "definition did not resolve",
                 "references did not include declaration and usage",
+                "documentHighlight did not include declaration and usage",
                 "rename did not return workspace edits",
                 "documentSymbol missing",
                 "semanticTokens returned no token data")) {
@@ -1275,6 +1277,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin cross-file import completion response",
                     "Qin cross-file import symbol definition response",
                     "Qin cross-file import member definition response",
+                    "Qin TS-subset documentHighlight response",
                     "Qin TS-subset rename response",
                     "Qin object definition response",
                     "Qin object references response",

@@ -134,6 +134,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "capabilities", Map.of(
                             "textDocument", Map.of(
                                     "completion", Map.of(),
+                                    "documentHighlight", Map.of(),
                                     "hover", Map.of(),
                                     "rename", Map.of(),
                                     "publishDiagnostics", Map.of())),
@@ -229,6 +230,19 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         language.id() + " references did not include declaration and usage: " + references);
             }
 
+            Map<String, Object> highlights = session.awaitResponse(session.request("textDocument/documentHighlight", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.referencesLine(), "character", testCase.referencesCharacter()))));
+            require(hasRangeStartingAt(
+                            highlights.get("result"),
+                            testCase.expectedReferenceDeclarationLine(),
+                            testCase.expectedReferenceDeclarationCharacter())
+                            && hasRangeStartingAt(
+                            highlights.get("result"),
+                            testCase.expectedReferenceUsageLine(),
+                            testCase.expectedReferenceUsageCharacter()),
+                    language.id() + " documentHighlight did not include declaration and usage: " + highlights);
+
             Map<String, Object> symbols = session.awaitResponse(session.request("textDocument/documentSymbol", Map.of(
                     "textDocument", Map.of("uri", uri))));
             require(symbolNames(symbols.get("result")).contains(testCase.expectedDocumentSymbol()),
@@ -269,6 +283,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
+        require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
         require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         require(capabilitiesMap.containsKey("semanticTokensProvider"), language.id() + " LSP missing semanticTokensProvider");
@@ -341,6 +356,34 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         if (range == null) {
             range = map.get("targetRange");
         }
+        if (!(range instanceof Map<?, ?> rangeMap)) {
+            return false;
+        }
+        Object start = rangeMap.get("start");
+        if (!(start instanceof Map<?, ?> startMap)) {
+            return false;
+        }
+        Object actualLine = startMap.get("line");
+        Object actualCharacter = startMap.get("character");
+        return actualLine instanceof Number lineNumber
+                && actualCharacter instanceof Number characterNumber
+                && lineNumber.intValue() == line
+                && characterNumber.intValue() == character;
+    }
+
+    private static boolean hasRangeStartingAt(Object result, int line, int character) {
+        if (result instanceof List<?> list) {
+            for (Object item : list) {
+                if (hasRangeStartingAt(item, line, character)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (!(result instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object range = map.get("range");
         if (!(range instanceof Map<?, ?> rangeMap)) {
             return false;
         }

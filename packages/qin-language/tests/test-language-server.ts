@@ -784,6 +784,24 @@ async function main() {
     throw new Error(`Qin references did not include alphaNumber declaration and usage: ${JSON.stringify(referencesResponse.result)}`)
   }
 
+  const documentHighlightRequest = createRequest('textDocument/documentHighlight', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 0, character: 8 },
+  })
+  server.stdin.write(documentHighlightRequest.packet)
+  const documentHighlightResponse = await waitForResponse(
+    documentHighlightRequest.id,
+    messages,
+    `Qin TS-subset documentHighlight response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const documentHighlights = Array.isArray(documentHighlightResponse.result) ? documentHighlightResponse.result : []
+  if (
+    !documentHighlights.some(item => rangeStartsAt(item, 0, 6))
+    || !documentHighlights.some(item => rangeStartsAt(item, 1, 18))
+  ) {
+    throw new Error(`Qin documentHighlight did not include alphaNumber declaration and usage: ${JSON.stringify(documentHighlightResponse.result)}`)
+  }
+
   const renameRequest = createRequest('textDocument/rename', {
     textDocument: { uri: tsSubsetUri },
     position: { line: 0, character: 8 },
