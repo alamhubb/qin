@@ -379,6 +379,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 require(hasQuickFixRemovingImport(codeActions.get("result")),
                         language.id() + " codeAction missing remove forbidden java import quickfix: " + codeActions);
 
+                Map<String, Object> importPolicyHover = session.awaitResponse(session.request("textDocument/hover", Map.of(
+                        "textDocument", Map.of("uri", appJavaImportUri),
+                        "position", Map.of("line", 0, "character", 30))));
+                String importPolicyHoverText = hoverText(importPolicyHover);
+                require(importPolicyHoverText.contains("QIN1001") && importPolicyHoverText.contains("main/"),
+                        language.id() + " hover missing import-policy app java boundary: " + importPolicyHover);
+
                 Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
                         "query", testCase.expectedDocumentSymbol())));
                 require(hasWorkspaceSymbol(workspaceSymbols.get("result"), testCase.expectedDocumentSymbol(), uri, 0, 14),

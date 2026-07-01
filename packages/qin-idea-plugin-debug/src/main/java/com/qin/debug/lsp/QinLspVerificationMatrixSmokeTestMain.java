@@ -1267,6 +1267,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/codeAction");
             require(testSource.contains("Remove forbidden java import"),
                     "Qin language server test must assert import-policy codeAction coverage");
+            require(testSource.contains("import-policy hover did not explain app java: boundary"),
+                    "Qin language server test must assert import-policy hover explanation coverage");
             require(testSource.contains("textDocument/foldingRange"),
                     "Qin language server test must request textDocument/foldingRange");
             require(testSource.contains("foldingRange did not include"),

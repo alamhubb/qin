@@ -9,7 +9,9 @@ import {
   type DocumentLink,
   type DocumentSymbol,
   type FoldingRange,
+  type Hover,
   type LinkedEditingRanges,
+  MarkupKind,
   type Position,
   type Range,
   type SelectionRange,
@@ -33,6 +35,7 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
     documentLinkProvider: {},
     documentSymbolProvider: true,
     foldingRangeProvider: true,
+    hoverProvider: true,
     linkedEditingRangeProvider: true,
     selectionRangeProvider: true,
     workspaceSymbolProvider: {},
@@ -61,6 +64,13 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
           return []
         }
         return provideImportPolicyCodeActions(document, sourceUri, range, codeActionContext)
+      },
+      provideHover(document: TextDocument, position: Position) {
+        const sourceUri = readSourceDocumentUri(context, document.uri)
+        if (!isQinDocument(document) && sourceUri === document.uri) {
+          return
+        }
+        return provideImportPolicyHover(document, sourceUri, position)
       },
       provideFoldingRanges(document: TextDocument) {
         if (!isQinDocument(document)) {
@@ -287,6 +297,33 @@ function provideImportPolicyCodeActions(document: TextDocument, sourceUri: strin
     })
   }
   return actions
+}
+
+function provideImportPolicyHover(document: TextDocument, sourceUri: string, position: Position): Hover | undefined {
+  const zone = readQinSourceZone(sourceUri)
+  if (zone !== 'app' && zone !== 'shared') {
+    return
+  }
+  for (const specifier of collectModuleSpecifierLinks(document.getText()).filter(item => isJavaModuleSpecifier(item.text))) {
+    const specifierRange = createRange(document, specifier.start, specifier.end)
+    if (!positionInRange(position, specifierRange)) {
+      continue
+    }
+    const code = zone === 'app' ? 'QIN1001' : 'QIN1002'
+    const zoneName = zone === 'app' ? 'app' : 'shared'
+    return {
+      range: specifierRange,
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: `**${code} Qin import policy**\n\n\`${zoneName}/\` code cannot import \`java:\` modules. Keep Java interop in \`main/\`; expose frontend-safe or shared contracts through local Qin modules.`,
+      },
+    }
+  }
+  return
+}
+
+function positionInRange(position: Position, range: Range): boolean {
+  return comparePositions(range.start, position) <= 0 && comparePositions(position, range.end) <= 0
 }
 
 function rangesOverlap(left: Range, right: Range): boolean {

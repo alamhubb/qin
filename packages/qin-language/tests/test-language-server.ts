@@ -637,6 +637,21 @@ async function main() {
     throw new Error(`Qin import-policy codeAction did not remove forbidden java import: ${JSON.stringify(codeActionResponse.result)}`)
   }
 
+  const importPolicyHoverRequest = createRequest('textDocument/hover', {
+    textDocument: { uri: appJavaImportUri },
+    position: { line: 0, character: 30 },
+  })
+  server.stdin.write(importPolicyHoverRequest.packet)
+  const importPolicyHoverResponse = await waitForResponse(
+    importPolicyHoverRequest.id,
+    messages,
+    `Qin import-policy hover response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const importPolicyHoverText = JSON.stringify(importPolicyHoverResponse.result ?? '')
+  if (!importPolicyHoverText.includes('QIN1001') || !importPolicyHoverText.includes('main/')) {
+    throw new Error(`Qin import-policy hover did not explain app java: boundary: ${JSON.stringify(importPolicyHoverResponse.result)}`)
+  }
+
   if (invalidDiagnostics[0].source !== 'qin-parser') {
     throw new Error(`Expected qin-parser diagnostic source, got ${JSON.stringify(invalidDiagnostics[0])}`)
   }
