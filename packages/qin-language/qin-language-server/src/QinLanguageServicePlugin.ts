@@ -1,5 +1,5 @@
 import type { LanguageServicePlugin } from '@volar/language-service'
-import { DiagnosticSeverity, type FoldingRange } from 'vscode-languageserver-protocol'
+import { DiagnosticSeverity, type FoldingRange, type Position, type Range, type SelectionRange } from 'vscode-languageserver-protocol'
 import type { TextDocument } from 'vscode-languageserver-textdocument'
 import { parseGeneratedQinSource, probeGeneratedQinParser, type QinGeneratedParserProbeResult } from './QinGeneratedParserProbe'
 import { provideSourceDocumentSymbols } from './SourceDocumentSymbols'
@@ -13,6 +13,7 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
     },
     documentSymbolProvider: true,
     foldingRangeProvider: true,
+    selectionRangeProvider: true,
   },
   create() {
     return {
@@ -27,6 +28,12 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
           return []
         }
         return provideSourceFoldingRanges(document)
+      },
+      provideSelectionRanges(document: TextDocument, positions: Position[]) {
+        if (!isQinDocument(document)) {
+          return positions.map(position => createPointSelectionRange(position))
+        }
+        return provideSourceSelectionRanges(document, positions)
       },
       provideDiagnostics(document: TextDocument) {
         if (!isQinDocument(document)) {
@@ -114,6 +121,103 @@ function provideSourceFoldingRanges(document: TextDocument): FoldingRange[] {
   return ranges
 }
 
+function provideSourceSelectionRanges(document: TextDocument, positions: Position[]): SelectionRange[] {
+  const source = document.getText()
+  const parsed = parseGeneratedQinSource(source)
+  if (!parsed.ok || !parsed.cst) {
+    return positions.map(position => createPointSelectionRange(position))
+  }
+  const objectRanges = collectQinObjectSelectionRanges(source, parsed.cst)
+  const sourceRange = createRange(document, 0, source.length)
+  return positions.map(position => {
+    const offset = document.offsetAt(position)
+    const objectRange = objectRanges.find(item => offset >= item.nameStart && offset <= item.nameEnd)
+    if (!objectRange) {
+      return {
+        range: createZeroWidthRange(position),
+        parent: { range: sourceRange },
+      }
+    }
+    return {
+      range: createRange(document, objectRange.nameStart, objectRange.nameEnd),
+      parent: {
+        range: createRange(document, objectRange.declarationStart, objectRange.declarationEnd),
+        parent: { range: sourceRange },
+      },
+    }
+  })
+}
+
+interface QinObjectSelectionInfo {
+  nameStart: number
+  nameEnd: number
+  declarationStart: number
+  declarationEnd: number
+}
+
+function collectQinObjectSelectionRanges(source: string, cst: unknown): QinObjectSelectionInfo[] {
+  const ranges: QinObjectSelectionInfo[] = []
+  walkCst(cst, node => {
+    if (readCstName(node) !== 'QinObjectDeclarationBody') {
+      return
+    }
+    const objectKeyword = findToken(node, item => readCstName(item) === 'IdentifierName' && readCstValue(item) === 'object')
+    const nameToken = findBindingIdentifierName(node)
+    const closeBrace = findLastToken(node, item => readCstName(item) === 'RBrace')
+    if (!objectKeyword || !nameToken || !closeBrace) {
+      return
+    }
+    const declarationStart = readTokenStart(objectKeyword)
+    const declarationEnd = readTokenEnd(closeBrace)
+    const nameStart = readTokenStart(nameToken)
+    const nameEnd = readTokenEnd(nameToken)
+    if (!isValidRange(declarationStart, declarationEnd, source.length) || !isValidRange(nameStart, nameEnd, source.length)) {
+      return
+    }
+    ranges.push({
+      nameStart,
+      nameEnd,
+      declarationStart,
+      declarationEnd,
+    })
+  })
+  return ranges
+}
+
+function createRange(document: TextDocument, startOffset: number, endOffset: number): Range {
+  return {
+    start: document.positionAt(startOffset),
+    end: document.positionAt(endOffset),
+  }
+}
+
+function createPointSelectionRange(position: Position): SelectionRange {
+  return { range: createZeroWidthRange(position) }
+}
+
+function createZeroWidthRange(position: Position): Range {
+  return {
+    start: position,
+    end: position,
+  }
+}
+
+function findBindingIdentifierName(cst: unknown): unknown | undefined {
+  let found: unknown | undefined
+  walkCst(cst, node => {
+    if (found) {
+      return
+    }
+    if (readCstName(node) === 'BindingIdentifier') {
+      const token = findToken(node, item => readCstName(item) === 'IdentifierName' && readCstValue(item) !== undefined)
+      if (token) {
+        found = token
+      }
+    }
+  })
+  return found
+}
+
 function findToken(cst: unknown, predicate: (node: unknown) => boolean): unknown | undefined {
   let found: unknown | undefined
   walkCst(cst, node => {
@@ -163,6 +267,11 @@ function readCstName(cst: unknown): string | undefined {
   return value == null ? undefined : String(value)
 }
 
+function readCstValue(cst: unknown): string | undefined {
+  const value = callMethod(cst, 'getValue') ?? (cst as { __qin_field_value?: unknown }).__qin_field_value
+  return value == null ? undefined : String(value)
+}
+
 function readTokenStart(cst: unknown): number {
   return readTokenPosition(cst, 'getStart', '__qin_field_start')
 }
@@ -185,4 +294,8 @@ function callMethod(value: unknown, methodName: string): unknown {
   }
   const method = (value as Record<string, unknown>)[methodName]
   return typeof method === 'function' ? method.call(value) : undefined
+}
+
+function isValidRange(start: number, end: number, sourceLength: number): boolean {
+  return start >= 0 && end >= start && end <= sourceLength
 }

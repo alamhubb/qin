@@ -162,6 +162,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     "foldingRange", Map.of(),
                                     "hover", Map.of(),
                                     "rename", Map.of(),
+                                    "selectionRange", Map.of(),
                                     "signatureHelp", Map.of(),
                                     "publishDiagnostics", Map.of())),
                     "rootUri", workspaceRoot.toUri().toString(),
@@ -292,6 +293,12 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         "textDocument", Map.of("uri", uri))));
                 require(hasFoldingRange(foldingRanges.get("result"), 0, 2),
                         language.id() + " foldingRange missing source object block: " + foldingRanges);
+
+                Map<String, Object> selectionRanges = session.awaitResponse(session.request("textDocument/selectionRange", Map.of(
+                        "textDocument", Map.of("uri", uri),
+                        "positions", List.of(Map.of("line", 0, "character", 16)))));
+                require(hasSelectionRangeChain(selectionRanges.get("result"), 0, 14, 0, 7),
+                        language.id() + " selectionRange missing object name and declaration chain: " + selectionRanges);
             }
 
             Map<String, Object> rename = session.awaitResponse(session.request("textDocument/rename", Map.of(
@@ -349,6 +356,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         if ("qin".equals(language.id())) {
             require(capabilitiesMap.containsKey("foldingRangeProvider"), language.id() + " LSP missing foldingRangeProvider");
+            require(capabilitiesMap.containsKey("selectionRangeProvider"), language.id() + " LSP missing selectionRangeProvider");
         }
         require(capabilitiesMap.containsKey("semanticTokensProvider"), language.id() + " LSP missing semanticTokensProvider");
 
@@ -516,6 +524,34 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     && endLineNumber.intValue() >= minimumEndLine) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    private static boolean hasSelectionRangeChain(
+            Object result,
+            int childLine,
+            int childCharacter,
+            int parentLine,
+            int parentCharacter) {
+        if (!(result instanceof List<?> list) || list.isEmpty()) {
+            return false;
+        }
+        Object first = list.getFirst();
+        if (!(first instanceof Map<?, ?> selectionRange)) {
+            return false;
+        }
+        return selectionRangeChainContains(selectionRange, childLine, childCharacter)
+                && selectionRangeChainContains(selectionRange, parentLine, parentCharacter);
+    }
+
+    private static boolean selectionRangeChainContains(Object selectionRange, int line, int character) {
+        Object current = selectionRange;
+        while (current instanceof Map<?, ?> currentMap) {
+            if (hasRangeStartingAt(currentMap, line, character)) {
+                return true;
+            }
+            current = currentMap.get("parent");
         }
         return false;
     }

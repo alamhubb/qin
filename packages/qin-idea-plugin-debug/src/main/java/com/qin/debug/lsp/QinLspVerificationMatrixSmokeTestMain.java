@@ -464,6 +464,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/prepareRename",
                 "textDocument/documentSymbol",
                 "textDocument/foldingRange",
+                "textDocument/selectionRange",
                 "textDocument/semanticTokens/full")) {
             require(smokeSource.contains(method),
                     "IDEA diagnostics smoke must request " + method);
@@ -479,6 +480,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "prepareRename did not return symbol range",
                 "documentSymbol missing",
                 "foldingRange missing source object block",
+                "selectionRange missing object name and declaration chain",
                 "semanticTokens returned no token data")) {
             require(smokeSource.contains(assertionNeedle),
                     "IDEA diagnostics smoke must assert " + assertionNeedle);
@@ -1255,6 +1257,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/foldingRange");
             require(testSource.contains("foldingRange did not include"),
                     "Qin language server test must assert foldingRange source coverage");
+            require(testSource.contains("textDocument/selectionRange"),
+                    "Qin language server test must request textDocument/selectionRange");
+            require(testSource.contains("selectionRange did not include"),
+                    "Qin language server test must assert selectionRange source coverage");
         }
         for (String metadataNeedle : List.of(
                 "initializationOptions",

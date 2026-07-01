@@ -149,6 +149,21 @@ function rangeContains(item: any, line: number, character: number): boolean {
   return true
 }
 
+function selectionRangeContains(item: any, line: number, character: number): boolean {
+  return rangeContains({ range: item?.range }, line, character)
+}
+
+function selectionRangeChainContains(item: any, line: number, character: number): boolean {
+  let current = item
+  while (current) {
+    if (selectionRangeContains(current, line, character)) {
+      return true
+    }
+    current = current.parent
+  }
+  return false
+}
+
 function locationUri(item: any): string | undefined {
   return item?.uri ?? item?.targetUri
 }
@@ -314,6 +329,7 @@ async function main() {
         definition: {},
         references: {},
         documentSymbol: {},
+        selectionRange: {},
         semanticTokens: {
           requests: {
             full: true,
@@ -894,6 +910,24 @@ async function main() {
   const foldingRanges = Array.isArray(foldingRangeResponse.result) ? foldingRangeResponse.result : []
   if (!foldingRanges.some((item: any) => item.startLine === 0 && item.endLine >= 2)) {
     throw new Error(`Qin foldingRange did not include object block range: ${JSON.stringify(foldingRangeResponse.result)}`)
+  }
+
+  const selectionRangeRequest = createRequest('textDocument/selectionRange', {
+    textDocument: { uri: objectUri },
+    positions: [{ line: 0, character: 16 }],
+  })
+  server.stdin.write(selectionRangeRequest.packet)
+  const selectionRangeResponse = await waitForResponse(
+    selectionRangeRequest.id,
+    messages,
+    `Qin object selectionRange response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const selectionRanges = Array.isArray(selectionRangeResponse.result) ? selectionRangeResponse.result : []
+  const objectSelectionRange = selectionRanges[0]
+  if (!selectionRangeChainContains(objectSelectionRange, 0, 14)
+    || !selectionRangeChainContains(objectSelectionRange, 0, 7)
+    || !selectionRangeChainContains(objectSelectionRange, 3, 0)) {
+    throw new Error(`Qin selectionRange did not include object name, declaration, and source ranges: ${JSON.stringify(selectionRangeResponse.result)}`)
   }
 
   const forOfDocumentSymbolRequest = createRequest('textDocument/documentSymbol', {
