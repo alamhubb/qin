@@ -19,12 +19,14 @@ public final class QinLspLanguageRegistrySmokeTestMain {
         Path workspaceRoot = args.length > 0
                 ? Path.of(args[0]).toAbsolutePath().normalize()
                 : QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of("."));
+        String languageFilter = args.length > 1 ? args[1] : null;
 
         Map<String, String> expectedIds = Map.of(
                 "qin", "qin",
                 "ovs", "ovs",
                 "cssts", "cssts");
 
+        boolean checkedAnyLanguage = false;
         for (Path projectRelativePath : QinLspLanguageRegistry.LANGUAGE_PROJECTS) {
             Path projectRoot = workspaceRoot.resolve(projectRelativePath).normalize();
             QinConfig config = loadConfig(projectRoot);
@@ -34,6 +36,10 @@ public final class QinLspLanguageRegistrySmokeTestMain {
             require(serverMetadata != null, projectRelativePath + " must declare languageServer metadata");
 
             String extension = normalizedExtension(metadata.extension());
+            if (!matchesLanguageFilter(extension, languageFilter)) {
+                continue;
+            }
+            checkedAnyLanguage = true;
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, extension);
             require(language != null, "Missing language for ." + extension);
             require(expectedIds.get(extension).equals(language.id()), "Unexpected language id for ." + extension);
@@ -60,10 +66,17 @@ public final class QinLspLanguageRegistrySmokeTestMain {
             require(serverPath.startsWith(workspaceRoot), "Server bundle must stay inside workspace: " + serverPath);
         }
 
+        require(checkedAnyLanguage, "No LSP language matched filter: " + languageFilter);
         require(QinLspLanguageRegistry.fromExtension(workspaceRoot, "txt") == null, "Unexpected language for .txt");
         assertWorkspaceRootUsesQinConfigInventory();
         assertNoHardcodedServerBundles(Path.of("src", "main", "java", "com", "qin", "debug", "lsp"));
         System.out.println("Qin LSP language registry smoke passed");
+    }
+
+    private static boolean matchesLanguageFilter(String extension, String languageFilter) {
+        return languageFilter == null
+                || languageFilter.isBlank()
+                || extension.equals(normalizedExtension(languageFilter));
     }
 
     private static QinConfig loadConfig(Path projectRoot) {

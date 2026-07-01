@@ -95,7 +95,7 @@ class com_slime_ast_nodes_modules_ExportAllDeclaration {
     return "ExportAllDeclaration[" + "source=" + this.__qin_field_source + ", " + "exported=" + this.__qin_field_exported + ", " + "attributesCode=" + this.__qin_field_attributesCode + ", " + "location=" + this.__qin_field_location + "]";
   }
 }
-com_slime_ast_nodes_modules_ExportAllDeclaration.__qin_java_interfaces = ["com.slime.ast.ModuleItem"];
+com_slime_ast_nodes_modules_ExportAllDeclaration.__qin_java_interfaces = ["com.slime.ast.ModuleItem", "com.slime.ast.AstNode"];
 const ExportAllDeclaration = com_slime_ast_nodes_modules_ExportAllDeclaration;
 
 function run() {

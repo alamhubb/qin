@@ -25,6 +25,20 @@ come from generated QinParser TypeScript, which is generated from the Java parse
 
 ## Verification Matrix
 
+For the current Qin-first milestone, run the Qin-only LSP gate from this
+directory:
+
+```powershell
+.\gradlew.bat lspQinMatrix
+```
+
+That task verifies the Java `com.qin.parser.QinParser` generation metadata,
+the `.qin` Volar language server smoke, IDEA command construction, IDEA-backed
+Qin diagnostics and editor features, plugin descriptor registration, and the
+no-local-parser policy. It intentionally does not run the OVS/CSSTS language
+servers, so Qin LSP progress can be validated independently before the unified
+three-language matrix is hardened.
+
 The non-interactive verification path is intentionally cross-project:
 
 - `qinGeneratedParserDryRun` verifies the Java `com.qin.parser.QinParser`

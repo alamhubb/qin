@@ -186,6 +186,20 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "ovsLanguageTest must run after csstsLanguageTest so local CSSTS language artifacts are refreshed");
         require(buildSource.contains("register(\"lspUnifiedMatrix\")"),
                 "Gradle must declare lspUnifiedMatrix");
+        require(buildSource.contains("register(\"lspQinMatrix\")"),
+                "Gradle must declare lspQinMatrix");
+        String lspQinMatrixBlock = taskBlock(buildSource, "register(\"lspQinMatrix\")");
+        for (String qinMatrixTask : List.of(
+                "qinGeneratedParserDryRun",
+                "qinLanguageTest",
+                "lspQinRegistrySmoke",
+                "lspQinServerCommandLineSmoke",
+                "lspQinServerDiagnosticsSmoke",
+                "lspPluginDescriptorSmoke",
+                "lspNoLocalParserSmoke")) {
+            require(lspQinMatrixBlock.contains("dependsOn(\"" + qinMatrixTask + "\")"),
+                    "lspQinMatrix must depend on " + qinMatrixTask);
+        }
         String lspUnifiedMatrixBlock = taskBlock(buildSource, "register(\"lspUnifiedMatrix\")");
         require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinLanguageLocalDependencyBuildSmoke\")"),
                 "lspUnifiedMatrix must include Qin local file dependency build smoke");

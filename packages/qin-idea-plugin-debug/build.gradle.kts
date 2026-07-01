@@ -115,6 +115,22 @@ tasks {
         jvmArgs(stableSmokeJvmArgs)
     }
 
+    register<JavaExec>("lspQinRegistrySmoke") {
+        dependsOn("classes")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinLspLanguageRegistrySmokeTestMain")
+        args(file("../../..").canonicalPath, "qin")
+        jvmArgs(stableSmokeJvmArgs)
+    }
+
+    register<JavaExec>("lspQinServerDiagnosticsSmoke") {
+        dependsOn("classes")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinLspServerDiagnosticsSmokeTestMain")
+        args(file("../../..").canonicalPath, "qin")
+        jvmArgs(stableSmokeJvmArgs)
+    }
+
     register<JavaExec>("lspVerificationMatrixSmoke") {
         dependsOn("classes")
         classpath = sourceSets["main"].runtimeClasspath
@@ -128,6 +144,14 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("com.qin.debug.lsp.QinLspServerCommandLineSmokeTestMain")
         args(file("../../..").canonicalPath)
+        jvmArgs(stableSmokeJvmArgs)
+    }
+
+    register<JavaExec>("lspQinServerCommandLineSmoke") {
+        dependsOn("classes")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinLspServerCommandLineSmokeTestMain")
+        args(file("../../..").canonicalPath, "qin")
         jvmArgs(stableSmokeJvmArgs)
     }
 
@@ -246,6 +270,18 @@ tasks {
         description = "Runs qin language test for OVS and CSSTS compiler projects."
         dependsOn("ovsCompilerTest")
         dependsOn("csstsCompilerTest")
+    }
+
+    register("lspQinMatrix") {
+        group = "verification"
+        description = "Runs the Qin-only generated-parser, Volar LSP, and IDEA-client gate."
+        dependsOn("qinGeneratedParserDryRun")
+        dependsOn("qinLanguageTest")
+        dependsOn("lspQinRegistrySmoke")
+        dependsOn("lspQinServerCommandLineSmoke")
+        dependsOn("lspQinServerDiagnosticsSmoke")
+        dependsOn("lspPluginDescriptorSmoke")
+        dependsOn("lspNoLocalParserSmoke")
     }
 
     register("lspUnifiedMatrix") {

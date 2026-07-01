@@ -24,6 +24,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Path workspaceRoot = args.length > 0
                 ? Path.of(args[0]).toAbsolutePath().normalize()
                 : QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of("."));
+        String languageFilter = args.length > 1 ? args[1] : null;
         List<LanguageCase> cases = List.of(
                 new LanguageCase(
                         "qin",
@@ -129,13 +130,29 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         true,
                         "alphaNumber"));
 
+        boolean checkedAnyLanguage = false;
         for (LanguageCase testCase : cases) {
+            if (!matchesLanguageFilter(testCase.extension(), languageFilter)) {
+                continue;
+            }
+            checkedAnyLanguage = true;
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, testCase.extension());
             require(language != null, "Missing language for ." + testCase.extension());
             runLanguageCase(workspaceRoot, language, testCase);
         }
 
+        require(checkedAnyLanguage, "No LSP language matched filter: " + languageFilter);
         System.out.println("Qin IDEA LSP server diagnostics smoke passed");
+    }
+
+    private static boolean matchesLanguageFilter(String extension, String languageFilter) {
+        return languageFilter == null
+                || languageFilter.isBlank()
+                || extension.equals(normalizedExtension(languageFilter));
+    }
+
+    private static String normalizedExtension(String extension) {
+        return extension.startsWith(".") ? extension.substring(1) : extension;
     }
 
     private static void runLanguageCase(

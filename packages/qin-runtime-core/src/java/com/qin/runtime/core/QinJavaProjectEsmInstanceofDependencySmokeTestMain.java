@@ -51,6 +51,15 @@ public final class QinJavaProjectEsmInstanceofDependencySmokeTestMain {
         }
         require(byBinaryName.containsKey("com.slime.ast.nodes.declarations.VariableDeclaration"),
                 "instanceof pattern target source file included in generated ESM outputs");
+        QinJavaProjectJsCompiler.EsmFileOutput importDeclaration = byBinaryName.get(
+                "com.slime.ast.nodes.modules.ImportDeclaration");
+        if (importDeclaration == null) {
+            throw new IllegalStateException("Expected ImportDeclaration generated output, got: "
+                    + byBinaryName.keySet());
+        }
+        require(importDeclaration.code().contains(
+                        "__qin_java_interfaces = [\"com.slime.ast.ModuleItem\", \"com.slime.ast.AstNode\"]"),
+                "generated record interface metadata expands parent interfaces for ModuleItem");
         require(utils.code().contains(
                         "import { com_slime_ast_nodes_declarations_VariableDeclaration"),
                 "SlimeCstToAstUtils imports wildcard instanceof pattern target module");

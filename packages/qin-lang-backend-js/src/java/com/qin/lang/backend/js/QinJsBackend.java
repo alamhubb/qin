@@ -1230,9 +1230,10 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private void collectJavaInterfaceName(Class<?> interfaceClass, Set<String> interfaceNames) {
-        if (interfaceClass == null || !interfaceNames.add(interfaceClass.getName())) {
+        if (interfaceClass == null) {
             return;
         }
+        interfaceNames.add(interfaceClass.getName());
         for (Class<?> parentInterface : interfaceClass.getInterfaces()) {
             collectJavaInterfaceName(parentInterface, interfaceNames);
         }

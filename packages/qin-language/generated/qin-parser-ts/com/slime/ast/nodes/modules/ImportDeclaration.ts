@@ -171,7 +171,7 @@ class com_slime_ast_nodes_modules_ImportDeclaration {
     return "ImportDeclaration[" + "source=" + this.__qin_field_source + ", " + "specifiers=" + this.__qin_field_specifiers + ", " + "importToken=" + this.__qin_field_importToken + ", " + "fromToken=" + this.__qin_field_fromToken + ", " + "lBraceToken=" + this.__qin_field_lBraceToken + ", " + "rBraceToken=" + this.__qin_field_rBraceToken + ", " + "semicolonToken=" + this.__qin_field_semicolonToken + ", " + "attributesCode=" + this.__qin_field_attributesCode + ", " + "typeOnly=" + this.__qin_field_typeOnly + ", " + "location=" + this.__qin_field_location + "]";
   }
 }
-com_slime_ast_nodes_modules_ImportDeclaration.__qin_java_interfaces = ["com.slime.ast.ModuleItem"];
+com_slime_ast_nodes_modules_ImportDeclaration.__qin_java_interfaces = ["com.slime.ast.ModuleItem", "com.slime.ast.AstNode"];
 const ImportDeclaration = com_slime_ast_nodes_modules_ImportDeclaration;
 
 function run() {

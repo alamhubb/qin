@@ -13,6 +13,7 @@ public final class QinLspServerCommandLineSmokeTestMain {
         Path workspaceRoot = args.length > 0
                 ? Path.of(args[0]).toAbsolutePath().normalize()
                 : QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of("."));
+        String languageFilter = args.length > 1 ? args[1] : null;
         Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
         String node = QinLspLanguageRegistry.resolveNodeExecutable();
 
@@ -21,7 +22,12 @@ public final class QinLspServerCommandLineSmokeTestMain {
                 "ovs", "language-server.js",
                 "cssts", "language-server.cjs");
 
+        boolean checkedAnyLanguage = false;
         for (Map.Entry<String, String> expected : expectedBundleNames.entrySet()) {
+            if (!matchesLanguageFilter(expected.getKey(), languageFilter)) {
+                continue;
+            }
+            checkedAnyLanguage = true;
             QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, expected.getKey());
             require(language != null, "Missing language for ." + expected.getKey());
 
@@ -60,7 +66,18 @@ public final class QinLspServerCommandLineSmokeTestMain {
             }
         }
 
+        require(checkedAnyLanguage, "No LSP language matched filter: " + languageFilter);
         System.out.println("Qin IDEA LSP server command line smoke passed");
+    }
+
+    private static boolean matchesLanguageFilter(String extension, String languageFilter) {
+        return languageFilter == null
+                || languageFilter.isBlank()
+                || extension.equals(normalizedExtension(languageFilter));
+    }
+
+    private static String normalizedExtension(String extension) {
+        return extension.startsWith(".") ? extension.substring(1) : extension;
     }
 
     private static void require(boolean condition, String message) {
