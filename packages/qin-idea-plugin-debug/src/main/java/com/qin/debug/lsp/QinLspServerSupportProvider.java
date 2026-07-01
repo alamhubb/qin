@@ -18,11 +18,19 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
             @NotNull VirtualFile file,
             @NotNull LspServerStarter serverStarter) {
         Path workspaceRoot = resolveWorkspaceRoot(project);
+        QinLogger.ensureInitialized(project, workspaceRoot.toString());
+        QinLogger.info("[LSP] fileOpened path=" + file.getPath()
+                + " extension=" + file.getExtension()
+                + " workspaceRoot=" + workspaceRoot);
         QinLspLanguage language = QinLspLanguageRegistry.fromExtension(workspaceRoot, file.getExtension());
         if (language == null) {
+            QinLogger.info("[LSP] No registered language for extension=" + file.getExtension());
             return;
         }
 
+        QinLogger.info("[LSP] Matched language id=" + language.id()
+                + " displayName=" + language.displayName()
+                + " serverBundle=" + language.serverBundlePath());
         serverStarter.ensureServerStarted(new QinLspServerDescriptor(project, language));
     }
 
@@ -38,7 +46,12 @@ public final class QinLspServerSupportProvider implements LspServerSupportProvid
 
         @Override
         public boolean isSupportedFile(@NotNull VirtualFile file) {
-            return language.matchesExtension(file.getExtension());
+            boolean supported = language.matchesExtension(file.getExtension());
+            QinLogger.debug("[LSP] isSupportedFile path=" + file.getPath()
+                    + " extension=" + file.getExtension()
+                    + " language=" + language.id()
+                    + " supported=" + supported);
+            return supported;
         }
 
         @Override

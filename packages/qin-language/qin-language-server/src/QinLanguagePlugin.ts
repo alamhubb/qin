@@ -118,6 +118,12 @@ export class QinVirtualCode implements VirtualCode {
     if (parserProbe.available && !parserProbe.ok) {
       logToFile('Generated Qin parser did not accept source:', JSON.stringify(parserProbe))
     }
+    logToFile('[QinVirtualCode] create', JSON.stringify({
+      length: sourceCode.length,
+      preview: sourceCode.slice(0, 120),
+      parserAvailable: parserProbe.available,
+      parserOk: parserProbe.ok,
+    }))
     let lowering: QinLoweringResult = createTransformErrorResult(sourceCode, 'Qin transform did not run')
 
     try {
@@ -128,6 +134,13 @@ export class QinVirtualCode implements VirtualCode {
     }
 
     this.mappings = createSourceRootMappings(sourceCode.length)
+
+    logToFile('[QinVirtualCode] embedded script ready', JSON.stringify({
+      sourceLength: sourceCode.length,
+      generatedLength: lowering.code.length,
+      generatedPreview: lowering.code.slice(0, 160),
+      mappingCount: lowering.mappings.length,
+    }))
 
     this.embeddedCodes = [{
       id: 'qin-script',
@@ -445,12 +458,21 @@ function createTransformErrorResult(source: string, message: string): QinLowerin
 
 function createTypeScriptSubsetEditingResult(source: string): QinLoweringResult | undefined {
   if (hasQinObjectDeclarationCandidate(source)) {
+    logToFile('[QinLowering] parser rejected Qin object candidate; keeping transform error')
     return undefined
   }
   const memberCompletionOffsets = collectDanglingMemberAccessOffsets(source)
   if (memberCompletionOffsets.length) {
+    logToFile('[QinLowering] TS subset editing member access recovery', JSON.stringify({
+      offsets: memberCompletionOffsets,
+      preview: source.slice(0, 120),
+    }))
     return createTypeScriptSubsetEditingMemberAccessResult(source, memberCompletionOffsets)
   }
+  logToFile('[QinLowering] TS subset editing identity service script', JSON.stringify({
+    length: source.length,
+    preview: source.slice(0, 120),
+  }))
   return {
     code: source,
     mappings: createCodeMappings([{

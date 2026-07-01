@@ -15,6 +15,7 @@ export default {
     "@volar/language-server": "^2.4.14",
     "@volar/language-service": "^2.4.14",
     "@volar/typescript": "^2.4.14",
+    "glogjs": "file:../../../glogjs",
     "volar-service-typescript": "^0.0.62",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12",

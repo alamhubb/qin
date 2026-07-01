@@ -56,6 +56,9 @@ public final class QinLspServerCommandLineSmokeTestMain {
             require(language.generatedParserTarget()
                     .equals(commandSpec.environment().get("QIN_LSP_GENERATED_PARSER_TARGET")),
                     language.id() + " command must pass languageServer.generatedParserTarget environment");
+            require(workspaceRoot.resolve(".qin").resolve("lsp-glog").normalize().toString()
+                            .equals(commandSpec.environment().get("QIN_LSP_GLOG_ROOT")),
+                    language.id() + " command must pass shared LSP glog root environment");
             if (language.parserPackage() != null && !language.parserPackage().isBlank()) {
                 require(language.parserPackage().equals(commandSpec.environment().get("QIN_LSP_PARSER_PACKAGE")),
                         language.id() + " command must pass languageServer.parserPackage environment");

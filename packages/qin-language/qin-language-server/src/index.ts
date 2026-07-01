@@ -45,7 +45,7 @@ connection.onInitialize((params) => {
       isValidationEnabled(document) {
         return document.languageId !== 'qin' && !isQinDocumentUri(document.uri, sourceExtension)
       },
-    }))),
+    }))).map(plugin => withCompletionLogging(plugin)),
   ]
   const tsProject = createTypeScriptProject(
     tsdk.typescript,
@@ -127,4 +127,41 @@ function withTypeScriptDeclarationProvider(plugins: LanguageServicePlugin[]): La
       },
     }
   })
+}
+
+function withCompletionLogging(plugin: LanguageServicePlugin): LanguageServicePlugin {
+  return {
+    ...plugin,
+    create(context) {
+      const service = plugin.create(context)
+      if (!service.provideCompletionItems) {
+        return service
+      }
+      return {
+        ...service,
+        async provideCompletionItems(document, position, completionContext, token) {
+          logToFile('[Completion] request', JSON.stringify({
+            plugin: plugin.name,
+            uri: document.uri,
+            languageId: document.languageId,
+            position,
+            triggerKind: completionContext?.triggerKind,
+            triggerCharacter: completionContext?.triggerCharacter,
+          }))
+          const result = await service.provideCompletionItems!(document, position, completionContext, token)
+          const labels = Array.isArray(result?.items)
+            ? result.items.slice(0, 20).map(item => item.label)
+            : []
+          logToFile('[Completion] response', JSON.stringify({
+            plugin: plugin.name,
+            uri: document.uri,
+            position,
+            itemCount: result?.items?.length ?? 0,
+            labels,
+          }))
+          return result
+        },
+      }
+    },
+  }
 }

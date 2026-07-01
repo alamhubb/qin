@@ -1,6 +1,7 @@
 package com.qin.debug.lsp;
 
 import com.intellij.execution.configurations.GeneralCommandLine;
+import com.qin.debug.QinLogger;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -17,14 +18,27 @@ final class QinLspServerCommandLineFactory {
         Path serverPath = language.resolveServerPath(workspaceRoot);
         Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
         String node = QinLspLanguageRegistry.resolveNodeExecutable(workspaceRoot);
+        Path glogRoot = workspaceRoot.resolve(".qin").resolve("lsp-glog").normalize();
         Map<String, String> environment = new LinkedHashMap<>();
         environment.put("QIN_LSP_TYPESCRIPT_TSDK", tsdkPath.toString());
         environment.put("QIN_LSP_SOURCE_EXTENSION", "." + language.extension());
         environment.put("QIN_LSP_SERVICE_EXTENSION", language.serviceExtension());
         environment.put("QIN_LSP_GENERATED_PARSER_TARGET", language.generatedParserTarget());
+        environment.put("QIN_LSP_GLOG_ROOT", glogRoot.toString());
         environment.put("NODE_OPTIONS", mergeNodeOptions(System.getenv("NODE_OPTIONS"), "--max-old-space-size=256"));
         putIfPresent(environment, "QIN_LSP_PARSER_PACKAGE", language.parserPackage());
         putIfPresent(environment, "QIN_LSP_COMPILER_PACKAGE", language.compilerPackage());
+
+        QinLogger.info("[LSP] Command spec "
+                + "language=" + language.id()
+                + " node=" + node
+                + " server=" + serverPath
+                + " cwd=" + language.resolveServerRoot(workspaceRoot)
+                + " tsdk=" + tsdkPath
+                + " glogRoot=" + glogRoot
+                + " sourceExtension=." + language.extension()
+                + " serviceExtension=" + language.serviceExtension()
+                + " generatedParserTarget=" + language.generatedParserTarget());
 
         return new QinLspServerCommandSpec(
                 node,
