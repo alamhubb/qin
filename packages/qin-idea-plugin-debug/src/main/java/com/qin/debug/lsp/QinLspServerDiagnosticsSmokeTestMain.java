@@ -292,6 +292,20 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "newName", "renamedSymbol")));
             require(workspaceEditTexts(rename.get("result")).contains("renamedSymbol"),
                     language.id() + " rename did not return workspace edits: " + rename);
+
+            Map<String, Object> prepareRename = session.awaitResponse(session.request("textDocument/prepareRename", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.referencesLine(), "character", testCase.referencesCharacter()))));
+            require(
+                    hasRangeStartingAt(
+                            prepareRename.get("result"),
+                            testCase.expectedReferenceDeclarationLine(),
+                            testCase.expectedReferenceDeclarationCharacter())
+                            || hasRangeStartingAt(
+                            prepareRename.get("result"),
+                            testCase.expectedReferenceUsageLine(),
+                            testCase.expectedReferenceUsageCharacter()),
+                    language.id() + " prepareRename did not return symbol range: " + prepareRename);
         }
 
         if (testCase.expectSemanticTokens()) {
@@ -457,6 +471,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             return false;
         }
         Object range = map.get("range");
+        if (range == null && map.get("start") != null && map.get("end") != null) {
+            range = map;
+        }
         if (!(range instanceof Map<?, ?> rangeMap)) {
             return false;
         }

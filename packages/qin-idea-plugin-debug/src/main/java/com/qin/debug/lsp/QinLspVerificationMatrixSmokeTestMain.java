@@ -461,6 +461,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/references",
                 "textDocument/documentHighlight",
                 "textDocument/rename",
+                "textDocument/prepareRename",
                 "textDocument/documentSymbol",
                 "textDocument/semanticTokens/full")) {
             require(smokeSource.contains(method),
@@ -474,6 +475,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "references did not include declaration and usage",
                 "documentHighlight did not include declaration and usage",
                 "rename did not return workspace edits",
+                "prepareRename did not return symbol range",
                 "documentSymbol missing",
                 "semanticTokens returned no token data")) {
             require(smokeSource.contains(assertionNeedle),
@@ -1284,6 +1286,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin TS-subset signatureHelp response",
                     "Qin TS-subset documentHighlight response",
                     "Qin TS-subset rename response",
+                    "Qin TS-subset prepareRename response",
                     "Qin object definition response",
                     "Qin object references response",
                     "Qin object documentSymbol response",

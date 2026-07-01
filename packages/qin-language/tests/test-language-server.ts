@@ -839,6 +839,21 @@ async function main() {
     throw new Error(`Qin rename did not return declaration and usage edits: ${JSON.stringify(renameResponse.result)}`)
   }
 
+  const prepareRenameRequest = createRequest('textDocument/prepareRename', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 0, character: 8 },
+  })
+  server.stdin.write(prepareRenameRequest.packet)
+  const prepareRenameResponse = await waitForResponse(
+    prepareRenameRequest.id,
+    messages,
+    `Qin TS-subset prepareRename response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const prepareRenameRange = prepareRenameResponse.result?.range ?? prepareRenameResponse.result
+  if (!rangeStartsAt({ range: prepareRenameRange }, 0, 6)) {
+    throw new Error(`Qin prepareRename did not return alphaNumber declaration range: ${JSON.stringify(prepareRenameResponse.result)}`)
+  }
+
   const documentSymbolRequest = createRequest('textDocument/documentSymbol', {
     textDocument: { uri: tsSubsetUri },
   })
