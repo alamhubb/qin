@@ -8,17 +8,18 @@ public final class QinLspNoLocalParserSmokeTestMain {
     private static final List<String> FORBIDDEN_SOURCE_MARKERS = List.of(
             "ParserDefinition",
             "PsiParser",
-            "SyntaxHighlighter",
             "CompletionContributor",
             "Lexer");
     private static final List<String> FORBIDDEN_PLUGIN_XML_MARKERS = List.of(
             "lang.parserDefinition",
-            "lang.syntaxHighlighterFactory",
             "lang.psiStructureViewFactory",
             "lang.completion.contributor");
     private static final List<String> ALLOWED_SOURCE_FILES = List.of(
             "QinLspNoLocalParserSmokeTestMain.java",
-            "QinLspPluginDescriptorSmokeTestMain.java");
+            "QinLspPluginDescriptorSmokeTestMain.java",
+            "QinSyntaxHighlighter.java",
+            "QinSyntaxHighlighterFactory.java",
+            "QinLexer.java");
 
     private QinLspNoLocalParserSmokeTestMain() {
     }

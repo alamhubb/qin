@@ -3,6 +3,7 @@ package com.qin.debug.lsp;
 import com.intellij.execution.configurations.GeneralCommandLine;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,7 +16,7 @@ final class QinLspServerCommandLineFactory {
     static QinLspServerCommandSpec createSpec(Path workspaceRoot, QinLspLanguage language) {
         Path serverPath = language.resolveServerPath(workspaceRoot);
         Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
-        String node = QinLspLanguageRegistry.resolveNodeExecutable();
+        String node = QinLspLanguageRegistry.resolveNodeExecutable(workspaceRoot);
         Map<String, String> environment = new LinkedHashMap<>();
         environment.put("QIN_LSP_TYPESCRIPT_TSDK", tsdkPath.toString());
         environment.put("QIN_LSP_SOURCE_EXTENSION", "." + language.extension());
@@ -59,5 +60,9 @@ final class QinLspServerCommandLineFactory {
             return currentValue;
         }
         return currentValue + " " + requiredOption;
+    }
+
+    static String resolveNodeExecutable(Path workspaceRoot) {
+        return QinLspLanguageRegistry.resolveNodeExecutable(workspaceRoot);
     }
 }

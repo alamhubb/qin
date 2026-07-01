@@ -1,9 +1,12 @@
 # Qin IDEA LSP Integration
 
-The IDEA plugin registers `.qin`, `.ovs`, and `.cssts` as pure LSP-backed file
-types. IDEA does not implement Qin, OVS, or CSSTS syntax locally. It starts the
-existing Volar language servers and shows diagnostics, completion, and semantic
-tokens returned by those servers, including definition and references support.
+The IDEA plugin registers `.qin`, `.ovs`, and `.cssts` as LSP-backed file
+types. IDEA does not implement Qin, OVS, or CSSTS parsing, PSI, completion, or
+navigation locally. It starts the existing Volar language servers and shows
+diagnostics, completion, semantic tokens, definition, and references returned by
+those servers. `.qin` also has a small lexical syntax highlighter so Qin files
+are visibly recognized before semantic LSP tokens arrive; this highlighter does
+not parse Qin syntax and does not provide completion fallback.
 
 Language server bundles are resolved from each language project's
 `qin.config.js` `language.serverBundle` field in the current `qinall`
@@ -16,7 +19,8 @@ workspace:
 Runtime environment:
 
 - `QIN_LSP_NODE`: optional Node executable path. Defaults to `node.exe` on
-  Windows and `node` elsewhere.
+  Windows and `node` elsewhere after checking `PATH` plus common local Node
+  install paths such as `D:\devlang\nodejs\node.exe`.
 - `QIN_LSP_TYPESCRIPT_TSDK`: optional TypeScript SDK path. If it is not set, the
   plugin resolves TypeScript from the workspace `node_modules`.
 
@@ -88,9 +92,10 @@ target and class-declaration smokes.
 
 ## No Fallback Policy
 
-The IDEA plugin must not provide local parser, lexer, or completion fallback for
+The IDEA plugin must not provide local parser, PSI, or completion fallback for
 Qin, OVS, or CSSTS. It registers file types, starts the configured Volar
-language server, and displays LSP results.
+language server, and displays LSP results. Qin's local lexer is limited to
+editor colorization and is not a parser or fallback language service.
 
 Language servers must keep parser and transform failures visible:
 

@@ -15,7 +15,7 @@ public final class QinLspServerCommandLineSmokeTestMain {
                 : QinLspLanguageRegistry.resolveWorkspaceRoot(Path.of("."));
         String languageFilter = args.length > 1 ? args[1] : null;
         Path tsdkPath = QinLspLanguageRegistry.resolveTypescriptSdk(workspaceRoot);
-        String node = QinLspLanguageRegistry.resolveNodeExecutable();
+        String node = QinLspLanguageRegistry.resolveNodeExecutable(workspaceRoot);
 
         Map<String, String> expectedBundleNames = Map.of(
                 "qin", "language-server.cjs",

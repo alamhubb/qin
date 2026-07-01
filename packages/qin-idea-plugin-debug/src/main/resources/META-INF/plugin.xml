@@ -35,6 +35,9 @@
                 fieldName="INSTANCE"
                 extensions="cssts"/>
         <platform.lsp.serverSupportProvider implementation="com.qin.debug.lsp.QinLspServerSupportProvider"/>
+        <lang.syntaxHighlighterFactory
+                language="Qin"
+                implementationClass="com.qin.debug.lsp.QinSyntaxHighlighterFactory"/>
 
         <!-- Keep IDEA native Java Run/Debug; do not inject Qin run configuration. -->
     </extensions>

@@ -131,14 +131,62 @@ final class QinLspLanguageRegistry {
     }
 
     static String resolveNodeExecutable() {
+        return resolveNodeExecutable(resolveWorkspaceRoot(Path.of(".")));
+    }
+
+    static String resolveNodeExecutable(Path workspaceRoot) {
         String configured = System.getenv("QIN_LSP_NODE");
         if (configured != null && !configured.isBlank()) {
             return configured;
         }
 
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
-                ? "node.exe"
-                : "node";
+        boolean windows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
+        String commandName = windows ? "node.exe" : "node";
+        Path pathNode = findExecutableOnPath(commandName);
+        if (pathNode != null) {
+            return pathNode.toString();
+        }
+
+        for (Path candidate : windowsNodeCandidates(workspaceRoot)) {
+            if (Files.isRegularFile(candidate)) {
+                return candidate.toString();
+            }
+        }
+
+        return commandName;
+    }
+
+    private static Path findExecutableOnPath(String executableName) {
+        String path = System.getenv("PATH");
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+        for (String entry : path.split(java.io.File.pathSeparator)) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+            Path candidate = Path.of(entry).resolve(executableName).toAbsolutePath().normalize();
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static List<Path> windowsNodeCandidates(Path workspaceRoot) {
+        String userProfile = System.getenv("USERPROFILE");
+        String localAppData = System.getenv("LOCALAPPDATA");
+        return List.of(
+                workspaceRoot.resolve("node").resolve("node.exe"),
+                Path.of("D:", "devlang", "nodejs", "node.exe"),
+                Path.of("C:", "Program Files", "nodejs", "node.exe"),
+                Path.of("C:", "Program Files (x86)", "nodejs", "node.exe"),
+                userProfile == null || userProfile.isBlank()
+                        ? Path.of("__missing_userprofile_node__")
+                        : Path.of(userProfile).resolve("scoop").resolve("apps").resolve("nodejs").resolve("current").resolve("node.exe"),
+                localAppData == null || localAppData.isBlank()
+                        ? Path.of("__missing_localappdata_node__")
+                        : Path.of(localAppData).resolve("Programs").resolve("nodejs").resolve("node.exe"));
     }
 
     private static String normalizeExtension(String extension) {

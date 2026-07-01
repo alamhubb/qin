@@ -32,6 +32,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     static void assertPureLspDescriptor(Document document) {
         assertDepends(document, "com.intellij.modules.lsp");
         assertFileTypes(document);
+        assertQinSyntaxHighlighter(document);
         assertLspProvider(document);
         assertNoLocalParser(document);
     }
@@ -71,10 +72,20 @@ public final class QinLspPluginDescriptorSmokeTestMain {
                 "Unexpected LSP provider: " + provider.getAttribute("implementation"));
     }
 
+    private static void assertQinSyntaxHighlighter(Document document) {
+        NodeList highlighters = document.getElementsByTagName("lang.syntaxHighlighterFactory");
+        require(highlighters.getLength() == 1, "Expected exactly one Qin syntaxHighlighterFactory");
+        Element highlighter = (Element) highlighters.item(0);
+        require("Qin".equals(highlighter.getAttribute("language")),
+                "Unexpected syntax highlighter language: " + highlighter.getAttribute("language"));
+        require("com.qin.debug.lsp.QinSyntaxHighlighterFactory".equals(
+                        highlighter.getAttribute("implementationClass")),
+                "Unexpected Qin syntax highlighter: " + highlighter.getAttribute("implementationClass"));
+    }
+
     private static void assertNoLocalParser(Document document) {
         Set<String> forbiddenTags = Set.of(
                 "lang.parserDefinition",
-                "lang.syntaxHighlighterFactory",
                 "lang.psiStructureViewFactory",
                 "lang.completion.contributor");
         for (String tag : forbiddenTags) {

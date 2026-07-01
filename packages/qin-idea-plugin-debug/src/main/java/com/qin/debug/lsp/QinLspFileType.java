@@ -1,14 +1,15 @@
 package com.qin.debug.lsp;
 
-import com.intellij.openapi.fileTypes.FileType;
+import com.intellij.openapi.fileTypes.LanguageFileType;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.Icon;
 
-public final class QinLspFileType implements FileType {
+public final class QinLspFileType extends LanguageFileType {
     public static final QinLspFileType INSTANCE = new QinLspFileType();
 
     private QinLspFileType() {
+        super(QinLanguage.INSTANCE);
     }
 
     @Override
@@ -29,10 +30,5 @@ public final class QinLspFileType implements FileType {
     @Override
     public Icon getIcon() {
         return null;
-    }
-
-    @Override
-    public boolean isBinary() {
-        return false;
     }
 }
