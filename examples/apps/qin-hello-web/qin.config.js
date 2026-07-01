@@ -4,7 +4,7 @@ export default {
   description: "Minimal QinWeb project that returns hello.",
   port: 19131,
   scripts: {
-    dev: "..\\..\\..\\qin.bat run",
+    dev: "qin dev",
     start: "..\\..\\..\\qin.bat run",
     check: "..\\..\\..\\qin.bat build --build-only"
   },

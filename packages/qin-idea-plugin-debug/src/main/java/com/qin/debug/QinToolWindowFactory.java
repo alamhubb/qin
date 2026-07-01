@@ -211,7 +211,11 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 if ("sync".equals(task.command)) {
                     pb = QinCommandResolver.createProcessBuilder(task.projectPath, "sync", "--force");
                 } else if ("script".equals(task.command)) {
-                    pb = QinCommandResolver.createProcessBuilder(task.projectPath, "script", task.scriptName);
+                    if ("dev".equals(task.scriptName)) {
+                        pb = QinCommandResolver.createProcessBuilder(task.projectPath, "dev");
+                    } else {
+                        pb = QinCommandResolver.createProcessBuilder(task.projectPath, "script", task.scriptName);
+                    }
                 } else {
                     pb = QinCommandResolver.createProcessBuilder(task.projectPath, task.command);
                 }

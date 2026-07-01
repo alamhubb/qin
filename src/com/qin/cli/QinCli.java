@@ -2081,6 +2081,13 @@ public class QinCli {
             return;
         }
 
+        if (config.scripts() != null
+                && config.scripts().containsKey("dev")
+                && !isSelfReferentialQinDevScript(config.scripts().get("dev"))) {
+            runProjectScript("dev", args);
+            return;
+        }
+
         String qinDevEntry = null;
         boolean frontendOnlyOverride = hasArg(args, "--frontend-file");
         boolean hasPositionalTarget = args.length > 0 && !args[0].startsWith("-");
@@ -2144,6 +2151,19 @@ public class QinCli {
 
         System.out.println(green("[OK] Development server started"));
         System.out.println(gray("  Press Ctrl+C to stop"));
+    }
+
+    private static boolean isSelfReferentialQinDevScript(String script) {
+        if (script == null || script.isBlank()) {
+            return false;
+        }
+        String normalized = script.trim().replace('\\', '/').toLowerCase(Locale.ROOT);
+        return normalized.equals("qin dev")
+                || normalized.equals("qin.bat dev")
+                || normalized.endsWith("/qin dev")
+                || normalized.endsWith("/qin.bat dev")
+                || normalized.contains(" qin dev")
+                || normalized.contains(" qin.bat dev");
     }
 
     private static boolean hasConfiguredFrontend(QinConfig config) {
