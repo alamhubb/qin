@@ -1291,6 +1291,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/typeDefinition");
             require(testSource.contains("typeDefinition did not resolve currentUser to source interface"),
                     "Qin language server test must assert typeDefinition source-map coverage");
+            require(testSource.contains("textDocument/implementation"),
+                    "Qin language server test must request textDocument/implementation");
+            require(testSource.contains("implementation did not resolve interface to source class"),
+                    "Qin language server test must assert implementation source-map coverage");
             require(testSource.contains("textDocument/inlayHint"),
                     "Qin language server test must request textDocument/inlayHint");
             require(testSource.contains("inlayHint did not include parameter or variable type hints through source mappings"),
@@ -1381,6 +1385,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin cross-file import member definition response",
                     "Qin TS-subset signatureHelp response",
                     "Qin typeDefinition response",
+                    "Qin implementation response",
                     "Qin TS-subset documentHighlight response",
                     "Qin formatting response",
                     "Qin TS-subset rename response",

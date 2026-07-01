@@ -167,6 +167,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     Map.entry("formatting", Map.of()),
                                     Map.entry("foldingRange", Map.of()),
                                     Map.entry("hover", Map.of()),
+                                    Map.entry("implementation", Map.of()),
                                     Map.entry("inlayHint", Map.of()),
                                     Map.entry("linkedEditingRange", Map.of()),
                                     Map.entry("rename", Map.of()),
@@ -320,6 +321,32 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 require(hasLocationStartingAt(typeDefinition.get("result"), typeDefinitionUri, 0, 0),
                         language.id() + " typeDefinition did not resolve currentUser to source interface: "
                                 + typeDefinition);
+
+                String implementationUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("implementation.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", implementationUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", """
+                                        interface Printable { print(): string }
+                                        class Label implements Printable {
+                                          print(): string { return "qin" }
+                                        }
+                                        const printable: Printable = new Label()
+                                        printable.print()
+                                        """)));
+                Map<String, Object> implementation = session.awaitResponse(session.request("textDocument/implementation", Map.of(
+                        "textDocument", Map.of("uri", implementationUri),
+                        "position", Map.of("line", 0, "character", 11))));
+                require(hasLocationContaining(implementation.get("result"), implementationUri, 1, 6),
+                        language.id() + " implementation did not resolve interface to source class: "
+                                + implementation);
 
                 String formattingUri = workspaceRoot
                         .resolve("tmp")
@@ -540,6 +567,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("signatureHelpProvider"), language.id() + " LSP missing signatureHelpProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
         require(capabilitiesMap.containsKey("typeDefinitionProvider"), language.id() + " LSP missing typeDefinitionProvider");
+        require(capabilitiesMap.containsKey("implementationProvider"), language.id() + " LSP missing implementationProvider");
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
         require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
         require(capabilitiesMap.containsKey("documentFormattingProvider"), language.id() + " LSP missing documentFormattingProvider");
@@ -670,6 +698,55 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 && actualCharacter instanceof Number characterNumber
                 && lineNumber.intValue() == line
                 && characterNumber.intValue() == character;
+    }
+
+    private static boolean hasLocationContaining(Object result, String uri, int line, int character) {
+        if (result instanceof List<?> list) {
+            for (Object item : list) {
+                if (hasLocationContaining(item, uri, line, character)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (!(result instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object locationUri = map.get("uri");
+        if (locationUri == null) {
+            locationUri = map.get("targetUri");
+        }
+        if (locationUri == null || !sameUri(uri, String.valueOf(locationUri))) {
+            return false;
+        }
+        Object range = map.get("range");
+        if (range == null) {
+            range = map.get("targetRange");
+        }
+        return rangeContains(range, line, character);
+    }
+
+    private static boolean rangeContains(Object range, int line, int character) {
+        if (!(range instanceof Map<?, ?> rangeMap)
+                || !(rangeMap.get("start") instanceof Map<?, ?> startMap)
+                || !(rangeMap.get("end") instanceof Map<?, ?> endMap)
+                || !(startMap.get("line") instanceof Number startLine)
+                || !(startMap.get("character") instanceof Number startCharacter)
+                || !(endMap.get("line") instanceof Number endLine)
+                || !(endMap.get("character") instanceof Number endCharacter)) {
+            return false;
+        }
+        int startLineValue = startLine.intValue();
+        int startCharacterValue = startCharacter.intValue();
+        int endLineValue = endLine.intValue();
+        int endCharacterValue = endCharacter.intValue();
+        if (line < startLineValue || line > endLineValue) {
+            return false;
+        }
+        if (line == startLineValue && character < startCharacterValue) {
+            return false;
+        }
+        return line != endLineValue || character <= endCharacterValue;
     }
 
     private static boolean hasRangeStartingAt(Object result, int line, int character) {

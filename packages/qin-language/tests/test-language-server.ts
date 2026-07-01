@@ -338,6 +338,7 @@ async function main() {
         },
         hover: {},
         definition: {},
+        implementation: {},
         typeDefinition: {},
         references: {},
         formatting: {},
@@ -382,6 +383,9 @@ async function main() {
   }
   if (!initResponse.result.capabilities.typeDefinitionProvider) {
     throw new Error(`Qin language server initialize did not expose typeDefinitionProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.implementationProvider) {
+    throw new Error(`Qin language server initialize did not expose implementationProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
   if (!initResponse.result.capabilities.inlayHintProvider) {
     throw new Error(`Qin language server initialize did not expose inlayHintProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
@@ -437,6 +441,24 @@ async function main() {
         'interface User { name: string }',
         'const currentUser: User = { name: "qin" }',
         'const label = currentUser.name',
+        '',
+      ].join('\n'),
+    },
+  }))
+
+  const implementationUri = toFileUri(path.join(__dirname, 'implementation.qin'))
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: implementationUri,
+      languageId: 'qin',
+      version: 1,
+      text: [
+        'interface Printable { print(): string }',
+        'class Label implements Printable {',
+        '  print(): string { return "qin" }',
+        '}',
+        'const printable: Printable = new Label()',
+        'printable.print()',
         '',
       ].join('\n'),
     },
@@ -966,6 +988,23 @@ async function main() {
     : typeDefinitionResponse.result ? [typeDefinitionResponse.result] : []
   if (!typeDefinitionLocations.some(item => sameUri(locationUri(item), typeDefinitionUri) && rangeStartsAt(item, 0, 0))) {
     throw new Error(`Qin typeDefinition did not resolve currentUser to source interface: ${JSON.stringify(typeDefinitionResponse.result)}`)
+  }
+
+  const implementationRequest = createRequest('textDocument/implementation', {
+    textDocument: { uri: implementationUri },
+    position: { line: 0, character: 11 },
+  })
+  server.stdin.write(implementationRequest.packet)
+  const implementationResponse = await waitForResponse(
+    implementationRequest.id,
+    messages,
+    `Qin implementation response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const implementationLocations = Array.isArray(implementationResponse.result)
+    ? implementationResponse.result
+    : implementationResponse.result ? [implementationResponse.result] : []
+  if (!implementationLocations.some(item => sameUri(locationUri(item), implementationUri) && rangeContains(item, 1, 6))) {
+    throw new Error(`Qin implementation did not resolve interface to source class: ${JSON.stringify(implementationResponse.result)}`)
   }
 
   const forOfDefinitionRequest = createRequest('textDocument/definition', {
