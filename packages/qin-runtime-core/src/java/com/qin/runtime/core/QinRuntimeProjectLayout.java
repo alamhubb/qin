@@ -15,6 +15,7 @@ public record QinRuntimeProjectLayout(
         Path backendEntry) {
 
     private static final List<String> BACKEND_ENTRY_CANDIDATES = List.of(
+            "src/app.qin",
             "main/main.qin",
             "main/Main.qin",
             "main/main.js",
@@ -35,6 +36,7 @@ public record QinRuntimeProjectLayout(
             "shared/shared.ovs",
             "shared/shared.mjs",
             "shared/shared.ts",
+            "src/app.qin",
             "main/main.qin",
             "main/main.js",
             "main/main.vue",
@@ -50,9 +52,10 @@ public record QinRuntimeProjectLayout(
 
     public static QinRuntimeProjectLayout discover(Path rootDir) {
         Path root = rootDir.toAbsolutePath().normalize();
-        Path shared = root.resolve("shared");
-        Path app = root.resolve("app");
-        Path main = root.resolve("main");
+        Path src = root.resolve("src");
+        Path shared = directoryOrConventional(src.resolve("shared"), root.resolve("shared"));
+        Path app = directoryOrConventional(src.resolve("app"), root.resolve("app"));
+        Path main = directoryOrConventional(src.resolve("main"), root.resolve("main"));
 
         Path backendEntry = null;
         for (String candidate : BACKEND_ENTRY_CANDIDATES) {
@@ -67,6 +70,10 @@ public record QinRuntimeProjectLayout(
         }
 
         return new QinRuntimeProjectLayout(root, shared, app, main, backendEntry);
+    }
+
+    private static Path directoryOrConventional(Path preferred, Path conventional) {
+        return Files.isDirectory(preferred) ? preferred : conventional;
     }
 
     public Path resolveDefaultSource() {

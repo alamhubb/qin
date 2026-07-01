@@ -2218,6 +2218,12 @@ public final class QinLinkedModuleSourceEmitter {
             module = module.substring("node:".length());
         }
         return switch (module) {
+            case "qin" -> switch (name) {
+                case "WebRoot", "Frontend", "Backend",
+                        "Controller", "RestController", "RequestMapping",
+                        "GetMapping", "PostMapping", "DeleteMapping" -> "qin." + name;
+                default -> name;
+            };
             case "fs" -> switch (name) {
                 case "existsSync", "writeFileSync", "appendFileSync", "mkdirSync", "createWriteStream" -> "node:fs." + name;
                 default -> name;

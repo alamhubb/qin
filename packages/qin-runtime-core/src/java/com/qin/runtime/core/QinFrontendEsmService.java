@@ -40,10 +40,13 @@ public final class QinFrontendEsmService {
             "\\bcontrollerName\\s*=\\s*[\"']([^\"']+)[\"']");
     private static final Pattern CONTROLLER_ROUTE_PATTERN = Pattern.compile(
             "@(?:Get|Post|Delete)Mapping\\s*\\([^)]*\\)\\s*(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\(");
+    private static final Pattern QIN_APP_OBJECT_START_PATTERN = Pattern.compile(
+            "(?s)@WebRoot\\s*\\([^)]*\\)\\s*export\\s+object\\s+App\\s*\\{");
     private static final Pattern CSSTS_MERGE_PATTERN = Pattern.compile("cssts\\.merge\\(([^)]*)\\)");
     private static final String CSSTS_STYLE_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts.css.js";
     private static final String CSSTS_ATOM_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/csstsAtom.js";
     private static final String CSSTS_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts-runtime.js";
+    private static final String QIN_FRONTEND_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/qin.js";
 
     private final Path projectRoot;
     private final Path entryFile;
@@ -253,6 +256,9 @@ public final class QinFrontendEsmService {
         } else if (isAssetModuleFile(moduleFile)) {
             transpiled = renderAssetUrlModule(moduleFile);
         } else {
+            if (isUnifiedAppEntry(moduleFile, source)) {
+                source = frontendSourceFromUnifiedAppEntry(source);
+            }
             source = rewriteSpecifiers(module, source, IMPORT_FROM_PATTERN);
             source = rewriteSpecifiers(module, source, EXPORT_FROM_PATTERN);
             source = rewriteSpecifiers(module, source, IMPORT_SIDE_EFFECT_PATTERN);
@@ -273,8 +279,8 @@ public final class QinFrontendEsmService {
         Path root = projectRoot.toAbsolutePath().normalize();
         Path importerFile = importer.toAbsolutePath().normalize();
         Path resolvedFile = resolvedModule.toAbsolutePath().normalize();
-        if (!importerFile.startsWith(root.resolve("app").normalize())
-                || !resolvedFile.startsWith(root.resolve("main").resolve("controllers").normalize())
+        if (!isFrontendSourceFile(root, importerFile)
+                || !isControllerSourceFile(root, resolvedFile)
                 || !isServerControllerSource(resolvedSource)) {
             return null;
         }
@@ -293,9 +299,20 @@ public final class QinFrontendEsmService {
         return normalized.contains("/main/controllers/") && isServerControllerSource(source);
     }
 
+    private static boolean isFrontendSourceFile(Path root, Path file) {
+        return file.startsWith(root.resolve("app").normalize())
+                || file.startsWith(root.resolve("src/app").normalize())
+                || file.equals(root.resolve("src/app.qin").normalize());
+    }
+
+    private static boolean isControllerSourceFile(Path root, Path file) {
+        return file.startsWith(root.resolve("main").resolve("controllers").normalize())
+                || file.startsWith(root.resolve("src").resolve("main").resolve("controllers").normalize());
+    }
+
     private static boolean isServerControllerSource(String source) {
         return source != null
-                && source.contains("@RestController")
+                && (source.contains("@RestController") || source.contains("@Controller"))
                 && CONTROLLER_EXPORT_NAME_PATTERN.matcher(source).find();
     }
 
@@ -665,6 +682,10 @@ public final class QinFrontendEsmService {
         if ("cssts-ts".equals(specifier)) {
             return CSSTS_RUNTIME_VIRTUAL_MODULE_URL;
         }
+        if ("qin".equals(specifier)) {
+            virtualModuleContentMap.putIfAbsent(QIN_FRONTEND_RUNTIME_VIRTUAL_MODULE_URL, qinFrontendRuntimeModule());
+            return QIN_FRONTEND_RUNTIME_VIRTUAL_MODULE_URL;
+        }
         if ("\0plugin-vue:export-helper".equals(specifier)
                 || "plugin-vue:export-helper".equals(specifier)
                 || specifier.contains("plugin-vue:export-helper")) {
@@ -694,6 +715,130 @@ public final class QinFrontendEsmService {
             }
         }
         return specifier;
+    }
+
+    private boolean isUnifiedAppEntry(Path moduleFile, String source) {
+        Path normalized = moduleFile.toAbsolutePath().normalize();
+        return normalized.equals(projectRoot.resolve("src/app.qin").toAbsolutePath().normalize())
+                && source != null
+                && source.contains("export object App")
+                && source.contains("@WebRoot");
+    }
+
+    private String frontendSourceFromUnifiedAppEntry(String source) {
+        Matcher matcher = QIN_APP_OBJECT_START_PATTERN.matcher(source);
+        if (!matcher.find()) {
+            return source;
+        }
+        int objectStart = matcher.start();
+        int bodyOpen = matcher.end() - 1;
+        int objectEnd = findMatchingBrace(source, bodyOpen);
+        if (objectEnd < 0) {
+            throw new IllegalArgumentException("Unclosed Qin App object in src/app.qin");
+        }
+        return source.substring(0, objectStart) + source.substring(objectEnd + 1);
+    }
+
+    private int findMatchingBrace(String source, int openBrace) {
+        int depth = 0;
+        boolean single = false;
+        boolean dbl = false;
+        boolean template = false;
+        boolean lineComment = false;
+        boolean blockComment = false;
+        for (int i = openBrace; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+            char previous = i > 0 ? source.charAt(i - 1) : '\0';
+            if (lineComment) {
+                if (ch == '\n') {
+                    lineComment = false;
+                }
+                continue;
+            }
+            if (blockComment) {
+                if (ch == '*' && next == '/') {
+                    blockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (single) {
+                if (ch == '\'' && previous != '\\') {
+                    single = false;
+                }
+                continue;
+            }
+            if (dbl) {
+                if (ch == '"' && previous != '\\') {
+                    dbl = false;
+                }
+                continue;
+            }
+            if (template) {
+                if (ch == '`' && previous != '\\') {
+                    template = false;
+                }
+                continue;
+            }
+            if (ch == '/' && next == '/') {
+                lineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                blockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                single = true;
+                continue;
+            }
+            if (ch == '"') {
+                dbl = true;
+                continue;
+            }
+            if (ch == '`') {
+                template = true;
+                continue;
+            }
+            if (ch == '{') {
+                depth++;
+            } else if (ch == '}') {
+                depth--;
+                if (depth == 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private String qinFrontendRuntimeModule() {
+        return """
+                export function WebRoot() {
+                  return () => undefined;
+                }
+                export function Frontend(target) {
+                  return target;
+                }
+                export function Backend(target) {
+                  return target;
+                }
+                export function Controller(target) {
+                  return target;
+                }
+                export const RestController = Controller;
+                export function RequestMapping() {
+                  return target => target;
+                }
+                export function GetMapping() {
+                  return (_target, _propertyKey, descriptor) => descriptor;
+                }
+                export const PostMapping = GetMapping;
+                export const DeleteMapping = GetMapping;
+                """;
     }
 
     private String rewriteVuePluginQuerySpecifier(String specifier) {

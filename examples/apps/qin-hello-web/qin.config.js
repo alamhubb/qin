@@ -3,10 +3,6 @@ export default {
   version: "1.0.0",
   description: "Minimal QinWeb project that returns hello.",
   port: 19131,
-  backend: {
-    sourceDir: "main",
-    entry: "main/main.ts"
-  },
   scripts: {
     dev: "..\\..\\..\\qin.bat run",
     start: "..\\..\\..\\qin.bat run",

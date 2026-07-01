@@ -1264,6 +1264,9 @@ public class QinCli {
         addScriptCandidates(candidates, Paths.get(QinConstants.MAIN_SOURCE_DIR), normalizedTarget);
         addScriptCandidates(candidates, Paths.get(QinConstants.APP_DIR), normalizedTarget);
         addScriptCandidates(candidates, Paths.get(QinConstants.SHARED_DIR), normalizedTarget);
+        addScriptCandidates(candidates, Paths.get(QinConstants.DEFAULT_SOURCE_DIR).resolve(QinConstants.MAIN_SOURCE_DIR), normalizedTarget);
+        addScriptCandidates(candidates, Paths.get(QinConstants.DEFAULT_SOURCE_DIR).resolve(QinConstants.APP_DIR), normalizedTarget);
+        addScriptCandidates(candidates, Paths.get(QinConstants.DEFAULT_SOURCE_DIR).resolve(QinConstants.SHARED_DIR), normalizedTarget);
         addScriptCandidates(candidates, Paths.get("src"), normalizedTarget);
         addScriptCandidates(candidates, Paths.get(""), normalizedTarget);
 
@@ -1946,6 +1949,11 @@ public class QinCli {
             }
         }
 
+        Path srcAppDir = projectRoot.resolve(QinConstants.DEFAULT_SOURCE_DIR).resolve(QinConstants.APP_DIR).normalize();
+        if (Files.isDirectory(srcAppDir)) {
+            return srcAppDir;
+        }
+
         Path appDir = projectRoot.resolve(QinConstants.APP_DIR).normalize();
         if (Files.isDirectory(appDir)) {
             return appDir;
@@ -2019,7 +2027,7 @@ public class QinCli {
     }
 
     private static Path resolveQinFrontendEntry(QinConfig config, Path projectRoot, Path frontendRoot) {
-        if (frontendRoot == null) {
+        if (frontendRoot == null && !Files.isRegularFile(projectRoot.resolve("src/app.qin"))) {
             return null;
         }
 
@@ -2035,9 +2043,10 @@ public class QinCli {
                 candidates.add(frontendRoot.resolve(configured).normalize());
             }
         }
+        candidates.add(projectRoot.resolve("src/app.qin").normalize());
         addExistingFrontendEntryCandidates(candidates, frontendRoot);
 
-        if (frontendRoot.equals(projectRoot.resolve(QinConstants.APP_DIR).normalize())) {
+        if (frontendRoot != null && frontendRoot.equals(projectRoot.resolve(QinConstants.APP_DIR).normalize())) {
             addExistingFrontendEntryCandidates(candidates, projectRoot.resolve(QinConstants.SHARED_DIR).normalize());
         }
 

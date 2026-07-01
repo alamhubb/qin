@@ -53,6 +53,7 @@ public final class QinEsmSpecifierResolver {
                 || "child_process".equals(normalized)
                 || "crypto".equals(normalized)
                 || "events".equals(normalized)
+                || "qin".equals(normalized)
                 || "vue".equals(normalized)
                 || "fs".equals(normalized)
                 || "path".equals(normalized)

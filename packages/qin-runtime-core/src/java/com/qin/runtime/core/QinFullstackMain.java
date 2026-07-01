@@ -38,6 +38,10 @@ public final class QinFullstackMain {
     private static final Pattern JAVA_PACKAGE_PATTERN = Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s*;");
     private static final Pattern JAVA_PUBLIC_TYPE_PATTERN = Pattern.compile("(?m)^\\s*public\\s+(?:final\\s+|abstract\\s+|sealed\\s+|non-sealed\\s+)*"
             + "(?:class|interface|record|enum)\\s+([A-Za-z_$][\\w$]*)\\b");
+    private static final Pattern IMPORT_LINE_PATTERN = Pattern.compile("(?m)^\\s*import\\s+[^\\n;]+(?:;)?\\s*$");
+    private static final Pattern APP_OBJECT_START_PATTERN = Pattern.compile(
+            "(?s)@WebRoot\\s*\\([^)]*\\)\\s*export\\s+object\\s+App\\s*\\{");
+    private static final Pattern IMPORT_SPECIFIER_PATTERN = Pattern.compile("([\"'])([^\"']+)([\"'])");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
             ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
 
@@ -191,6 +195,7 @@ public final class QinFullstackMain {
             return compileJavaBackend(root, backendSource, classOutputDir);
         }
 
+        backendSource = prepareUnifiedAppBackendSource(root, backendSource);
         compileProjectJavaHelpers(root, classOutputDir);
         QinBuildRequest backendRequest = new QinBuildRequest(
                 root,
@@ -212,6 +217,160 @@ public final class QinFullstackMain {
         return new BackendBuild(adapterBuild.classFile(), adapterBuild.runMethod(), adapterBuild.httpAppMethod());
     }
 
+    private static Path prepareUnifiedAppBackendSource(Path root, Path backendSource) throws IOException {
+        Path normalized = backendSource.toAbsolutePath().normalize();
+        Path unifiedEntry = root.resolve("src/app.qin").toAbsolutePath().normalize();
+        if (!normalized.equals(unifiedEntry)) {
+            return backendSource;
+        }
+        String source = Files.readString(normalized, StandardCharsets.UTF_8);
+        Matcher matcher = APP_OBJECT_START_PATTERN.matcher(source);
+        if (!matcher.find()) {
+            return backendSource;
+        }
+        int objectStart = matcher.start();
+        int bodyOpen = matcher.end() - 1;
+        int objectEnd = findMatchingBrace(source, bodyOpen);
+        if (objectEnd < 0) {
+            throw new IllegalArgumentException("Unclosed Qin App object in src/app.qin");
+        }
+        String appObjectSource = source.substring(objectStart, objectEnd + 1);
+        StringBuilder backendSourceText = new StringBuilder();
+        Matcher importMatcher = IMPORT_LINE_PATTERN.matcher(source);
+        while (importMatcher.find()) {
+            String line = importMatcher.group();
+            String backendImport = rewriteBackendUnifiedImport(root, normalized, line);
+            if (backendImport != null) {
+                backendSourceText.append(backendImport).append(System.lineSeparator());
+            }
+        }
+        backendSourceText.append(System.lineSeparator()).append(appObjectSource).append(System.lineSeparator());
+        Path generated = root.resolve("build/fullstack/generated-backend/app.qin").toAbsolutePath().normalize();
+        Files.createDirectories(generated.getParent());
+        Files.writeString(generated, backendSourceText.toString(), StandardCharsets.UTF_8);
+        return generated;
+    }
+
+    private static String rewriteBackendUnifiedImport(Path root, Path originalFile, String importLine) {
+        Matcher specifierMatcher = IMPORT_SPECIFIER_PATTERN.matcher(importLine);
+        if (!specifierMatcher.find()) {
+            return importLine;
+        }
+        String specifier = specifierMatcher.group(2);
+        if ("qin".equals(specifier) || specifier.startsWith("java:")) {
+            return importLine;
+        }
+        if (!specifier.startsWith("./") && !specifier.startsWith("../")) {
+            return null;
+        }
+        Path target = resolveExistingScriptImport(originalFile.getParent(), specifier);
+        if (target == null || !isBackendUnifiedImportTarget(root, target)) {
+            return null;
+        }
+        Path generatedParent = root.resolve("build/fullstack/generated-backend").toAbsolutePath().normalize();
+        String rewritten = generatedParent.relativize(target.toAbsolutePath().normalize()).toString().replace('\\', '/');
+        if (!rewritten.startsWith(".")) {
+            rewritten = "./" + rewritten;
+        }
+        return specifierMatcher.replaceFirst(Matcher.quoteReplacement(specifierMatcher.group(1) + rewritten + specifierMatcher.group(3)));
+    }
+
+    private static Path resolveExistingScriptImport(Path importerDir, String specifier) {
+        Path target = importerDir.resolve(specifier).toAbsolutePath().normalize();
+        if (Files.isRegularFile(target)) {
+            return target;
+        }
+        for (String extension : List.of(".qin", ".ts", ".js", ".mjs")) {
+            Path candidate = importerDir.resolve(specifier + extension).toAbsolutePath().normalize();
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isBackendUnifiedImportTarget(Path root, Path target) {
+        Path normalized = target.toAbsolutePath().normalize();
+        return normalized.startsWith(root.resolve("src/main").toAbsolutePath().normalize())
+                || normalized.startsWith(root.resolve("main").toAbsolutePath().normalize());
+    }
+
+    private static int findMatchingBrace(String source, int openBrace) {
+        int depth = 0;
+        boolean single = false;
+        boolean dbl = false;
+        boolean template = false;
+        boolean lineComment = false;
+        boolean blockComment = false;
+        for (int i = openBrace; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+            char previous = i > 0 ? source.charAt(i - 1) : '\0';
+            if (lineComment) {
+                if (ch == '\n') {
+                    lineComment = false;
+                }
+                continue;
+            }
+            if (blockComment) {
+                if (ch == '*' && next == '/') {
+                    blockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (single) {
+                if (ch == '\'' && previous != '\\') {
+                    single = false;
+                }
+                continue;
+            }
+            if (dbl) {
+                if (ch == '"' && previous != '\\') {
+                    dbl = false;
+                }
+                continue;
+            }
+            if (template) {
+                if (ch == '`' && previous != '\\') {
+                    template = false;
+                }
+                continue;
+            }
+            if (ch == '/' && next == '/') {
+                lineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                blockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                single = true;
+                continue;
+            }
+            if (ch == '"') {
+                dbl = true;
+                continue;
+            }
+            if (ch == '`') {
+                template = true;
+                continue;
+            }
+            if (ch == '{') {
+                depth++;
+            } else if (ch == '}') {
+                depth--;
+                if (depth == 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
     private static <T> T withProjectClassLoader(Path classOutputDir, ThrowingSupplier<T> supplier) throws Exception {
         Files.createDirectories(classOutputDir);
         Thread thread = Thread.currentThread();
@@ -227,18 +386,20 @@ public final class QinFullstackMain {
     }
 
     private static void compileProjectJavaHelpers(Path root, Path classOutputDir) throws Exception {
-        Path mainDir = root.resolve("main").normalize();
-        if (!Files.isDirectory(mainDir)) {
-            return;
-        }
+        List<Path> mainDirs = List.of(root.resolve("src/main").normalize(), root.resolve("main").normalize());
         List<Path> sources;
-        try (var stream = Files.walk(mainDir)) {
-            sources = stream
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".java"))
-                    .sorted()
-                    .toList();
+        List<Path> collected = new ArrayList<>();
+        for (Path mainDir : mainDirs) {
+            if (!Files.isDirectory(mainDir)) {
+                continue;
+            }
+            try (var stream = Files.walk(mainDir)) {
+                stream.filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .forEach(collected::add);
+            }
         }
+        sources = collected.stream().distinct().sorted().toList();
         if (sources.isEmpty()) {
             return;
         }
@@ -256,10 +417,16 @@ public final class QinFullstackMain {
 
     private static List<Path> collectJavaBackendSources(Path root, Path sourceFile) throws IOException {
         Path normalizedSource = sourceFile.toAbsolutePath().normalize();
+        Path srcMainDir = root.resolve("src/main").toAbsolutePath().normalize();
         Path conventionalMainDir = root.resolve("main").toAbsolutePath().normalize();
-        Path sourceRoot = normalizedSource.startsWith(conventionalMainDir)
-                ? conventionalMainDir
-                : normalizedSource.getParent();
+        Path sourceRoot;
+        if (normalizedSource.startsWith(srcMainDir)) {
+            sourceRoot = srcMainDir;
+        } else if (normalizedSource.startsWith(conventionalMainDir)) {
+            sourceRoot = conventionalMainDir;
+        } else {
+            sourceRoot = normalizedSource.getParent();
+        }
         if (sourceRoot == null || !Files.isDirectory(sourceRoot)) {
             return List.of(sourceFile);
         }
@@ -341,14 +508,20 @@ public final class QinFullstackMain {
 
                     public static com.qin.runtime.core.QinHttpApp app() throws Exception {
                         ensureInitialized();
-                        Object app = com.qin.lang.runtime.JavaEsmGlobal.__qin_module_ref_get__("app");
-                        if (!(app instanceof com.qin.runtime.core.QinHttpApp)) {
+                        Object app = null;
+                        try {
+                            app = com.qin.lang.runtime.JavaEsmGlobal.__qin_module_ref_get__("app");
+                        } catch (IllegalStateException ignored) {
+                            app = null;
+                        }
+                        if (app != null && !(app instanceof com.qin.runtime.core.QinHttpApp)) {
                             app = com.qin.lang.runtime.JavaEsmGlobal.__qin_call__(app);
                         }
                         if (app instanceof com.qin.runtime.core.QinHttpApp qinHttpApp) {
                             return qinHttpApp;
                         }
-                        throw new IllegalStateException("Qin backend export `app` must be QinHttpApp or a function returning QinHttpApp");
+                        Object appObject = com.qin.lang.runtime.JavaEsmGlobal.__qin_module_ref_get__("App");
+                        return new com.qin.web.QinWebApplicationAssembler().assemble(appObject);
                     }
 
                     private static synchronized Object ensureInitialized() throws Exception {
@@ -397,6 +570,7 @@ public final class QinFullstackMain {
         }
 
         List<Path> candidates = List.of(
+                layout.root().resolve("src/app.qin"),
                 layout.root().resolve("main/main.qin"),
                 layout.root().resolve("main/Main.qin"),
                 layout.root().resolve("main/main.js"),
@@ -447,6 +621,7 @@ public final class QinFullstackMain {
         }
 
         List<Path> candidates = List.of(
+                layout.root().resolve("src/app.qin"),
                 layout.root().resolve("app/main.vue"),
                 layout.root().resolve("app/Main.vue"),
                 layout.root().resolve("app/main.ovs"),

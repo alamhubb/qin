@@ -302,6 +302,7 @@ public class QinConstants {
             "src/server/Main.java",
             "src/main/java/Main.java");
     public static final java.util.List<String> DEFAULT_QIN_ENTRY_CANDIDATES = java.util.List.of(
+            "src/app.qin",
             "main/main.qin",
             "main/main.js",
             "main/main.mjs",

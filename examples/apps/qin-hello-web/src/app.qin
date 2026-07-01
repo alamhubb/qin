@@ -1,0 +1,14 @@
+import { WebRoot } from "qin"
+import { HelloController } from "./main/controllers/HelloController.qin"
+
+@WebRoot("/api")
+export object App {
+  controllers = [
+    HelloController
+  ]
+}
+
+const root = document.getElementById("app") || document.body
+const message = document.createElement("main")
+message.innerHTML = "<h1>hello</h1><p>Qin app.qin frontend is running.</p>"
+root.appendChild(message)

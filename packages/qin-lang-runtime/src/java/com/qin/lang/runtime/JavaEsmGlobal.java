@@ -233,6 +233,15 @@ public final class JavaEsmGlobal {
             case "node:process.cwd" -> methodHandle(NodeHostRuntime.class, "cwd");
             case "node:diagnostics_channel.channel" -> methodHandle(NodeHostRuntime.class, "channel", Object.class);
             case "node:diagnostics_channel.tracingChannel" -> methodHandle(NodeHostRuntime.class, "tracingChannel", Object.class);
+            case "qin.WebRoot", "WebRoot" -> new NativeFunction("qin.WebRoot", args -> qinWebRootDecorator(args));
+            case "qin.Frontend", "Frontend" -> new NativeFunction("qin.Frontend", args -> qinMarkerDecorator("frontend", args));
+            case "qin.Backend", "Backend" -> new NativeFunction("qin.Backend", args -> qinMarkerDecorator("backend", args));
+            case "qin.Controller", "Controller",
+                    "qin.RestController", "RestController" -> new NativeFunction("qin.Controller", args -> qinControllerDecorator(args));
+            case "qin.RequestMapping", "RequestMapping" -> new NativeFunction("qin.RequestMapping", args -> qinRequestMappingDecorator(args));
+            case "qin.GetMapping", "GetMapping" -> new NativeFunction("qin.GetMapping", args -> qinRouteDecorator("GET", args));
+            case "qin.PostMapping", "PostMapping" -> new NativeFunction("qin.PostMapping", args -> qinRouteDecorator("POST", args));
+            case "qin.DeleteMapping", "DeleteMapping" -> new NativeFunction("qin.DeleteMapping", args -> qinRouteDecorator("DELETE", args));
             // The current linked-source emitter lowers host named imports to bare global lookups.
             // Keep these aliases until host import lowering preserves module-qualified names.
             case "createRequire" -> methodHandle(NodeHostRuntime.class, "createRequire", Object.class);
@@ -264,6 +273,72 @@ public final class JavaEsmGlobal {
             case "undefined" -> null;
             default -> null;
         };
+    }
+
+    private static Object qinWebRootDecorator(Object[] args) {
+        String path = args.length == 0 || args[0] == null ? "" : String.valueOf(args[0]);
+        return new NativeFunction("qin.WebRoot.decorator", decoratorArgs -> {
+            if (decoratorArgs.length > 0) {
+                __qin_member_set__(decoratorArgs[0], "__qinWebRoot", path);
+            }
+            return null;
+        });
+    }
+
+    private static Object qinMarkerDecorator(String marker, Object[] args) {
+        return new NativeFunction("qin." + marker + ".decorator", decoratorArgs -> {
+            if (decoratorArgs.length > 0) {
+                __qin_member_set__(decoratorArgs[0], "__qinTarget", marker);
+            }
+            return null;
+        });
+    }
+
+    private static Object qinControllerDecorator(Object[] args) {
+        if (args.length > 0 && args[0] != null) {
+            __qin_member_set__(args[0], "__qinWebController", true);
+            return args[0];
+        }
+        return new NativeFunction("qin.Controller.decorator", decoratorArgs -> {
+            if (decoratorArgs.length > 0) {
+                __qin_member_set__(decoratorArgs[0], "__qinWebController", true);
+            }
+            return null;
+        });
+    }
+
+    private static Object qinRequestMappingDecorator(Object[] args) {
+        String path = args.length == 0 || args[0] == null ? "" : String.valueOf(args[0]);
+        return new NativeFunction("qin.RequestMapping.decorator", decoratorArgs -> {
+            if (decoratorArgs.length > 0) {
+                __qin_member_set__(decoratorArgs[0], "basePath", path);
+            }
+            return null;
+        });
+    }
+
+    private static Object qinRouteDecorator(String method, Object[] args) {
+        String path = args.length == 0 || args[0] == null ? "" : String.valueOf(args[0]);
+        return new NativeFunction("qin." + method + "Mapping.decorator", decoratorArgs -> {
+            if (decoratorArgs.length > 1) {
+                Object target = decoratorArgs[0];
+                Object propertyKey = decoratorArgs[1];
+                Object routesValue = __qin_member_get__(target, "__qinWebRoutes");
+                List<Object> routes;
+                if (routesValue instanceof List<?> existing) {
+                    routes = new ArrayList<>(existing);
+                } else {
+                    routes = new ArrayList<>();
+                }
+                Map<String, Object> route = new LinkedHashMap<>();
+                route.put("method", method);
+                route.put("path", path);
+                route.put("handler", String.valueOf(propertyKey));
+                routes.add(route);
+                __qin_member_set__(target, "__qinWebRoutes", routes);
+            }
+            return decoratorArgs.length > 2 ? decoratorArgs[2] : null;
+        });
     }
 
     public static Object __qin_register_js_import__(Object localName, Object moduleName, Object importedName) {
@@ -4346,8 +4421,9 @@ public final class JavaEsmGlobal {
             initializing = true;
             try {
                 ast();
-            bindSelfName();
-            installClassStaticMembers();
+                bindSelfName();
+                installClassStaticMembers();
+                applyLegacyClassDecorators();
                 initialized = true;
             } finally {
                 initializing = false;
@@ -4646,6 +4722,25 @@ public final class JavaEsmGlobal {
 
         private boolean isStaticClassMember(Map<String, Object> member) {
             return Boolean.TRUE.equals(member.get("static")) || Boolean.TRUE.equals(member.get("isStatic"));
+        }
+
+        private void applyLegacyClassDecorators() {
+            if (!isClassFunction()) {
+                return;
+            }
+            List<?> decorators = asList(ast().get("decorators"));
+            if (decorators.isEmpty()) {
+                return;
+            }
+            List<?> reversed = new ArrayList<>(decorators);
+            Collections.reverse(reversed);
+            for (Object decoratorNode : reversed) {
+                Object decorator = evalDecoratorExpression(decoratorNode);
+                Object result = callAny(decorator, this);
+                if (result instanceof InterpretedFunction replacement) {
+                    ownProperties.putAll(replacement.ownProperties);
+                }
+            }
         }
 
         private void installClassStaticMembers() {

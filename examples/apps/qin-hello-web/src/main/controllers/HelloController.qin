@@ -1,0 +1,13 @@
+import { Controller, RequestMapping, GetMapping } from "qin"
+import { QinWeb } from "java:com.qin.web"
+
+@Controller
+@RequestMapping("/hello")
+export object HelloController {
+  controllerName = "HelloController"
+
+  @GetMapping("")
+  hello(request) {
+    return QinWeb.text("hello")
+  }
+}
