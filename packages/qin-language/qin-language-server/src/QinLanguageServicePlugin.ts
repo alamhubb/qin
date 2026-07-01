@@ -255,35 +255,26 @@ function isLocalModuleSpecifier(specifier: string): boolean {
 }
 
 function createQinImportPolicyDiagnostics(document: TextDocument, sourceUri: string) {
-  const zone = readQinSourceZone(sourceUri)
-  if (zone !== 'app' && zone !== 'shared') {
-    return []
-  }
-  return collectModuleSpecifierLinks(document.getText())
-    .filter(item => isJavaModuleSpecifier(item.text))
+  return collectImportPolicyIssues(document, sourceUri)
     .map(item => ({
       range: createRange(document, item.start, item.end),
       severity: DiagnosticSeverity.Error,
       source: 'qin-import-policy',
-      message: `${zone === 'app' ? 'QIN1001 app code' : 'QIN1002 shared code'} cannot import java modules: ${item.text}`,
+      message: item.message,
     }))
 }
 
 function provideImportPolicyCodeActions(document: TextDocument, sourceUri: string, range: Range, context: CodeActionContext): CodeAction[] {
-  const zone = readQinSourceZone(sourceUri)
-  if (zone !== 'app' && zone !== 'shared') {
-    return []
-  }
   const actions: CodeAction[] = []
   const diagnostics = context.diagnostics.filter(diagnostic => diagnostic.source === 'qin-import-policy')
-  for (const specifier of collectModuleSpecifierLinks(document.getText()).filter(item => isJavaModuleSpecifier(item.text))) {
-    const specifierRange = createRange(document, specifier.start, specifier.end)
+  for (const issue of collectImportPolicyIssues(document, sourceUri)) {
+    const specifierRange = createRange(document, issue.start, issue.end)
     if (!rangesOverlap(range, specifierRange)) {
       continue
     }
     const matchingDiagnostic = diagnostics.find(diagnostic => rangesOverlap(diagnostic.range, specifierRange))
     actions.push({
-      title: 'Remove forbidden java import',
+      title: issue.quickFixTitle,
       kind: CodeActionKind.QuickFix,
       diagnostics: matchingDiagnostic ? [matchingDiagnostic] : [],
       edit: {
@@ -300,26 +291,54 @@ function provideImportPolicyCodeActions(document: TextDocument, sourceUri: strin
 }
 
 function provideImportPolicyHover(document: TextDocument, sourceUri: string, position: Position): Hover | undefined {
-  const zone = readQinSourceZone(sourceUri)
-  if (zone !== 'app' && zone !== 'shared') {
-    return
-  }
-  for (const specifier of collectModuleSpecifierLinks(document.getText()).filter(item => isJavaModuleSpecifier(item.text))) {
-    const specifierRange = createRange(document, specifier.start, specifier.end)
+  for (const issue of collectImportPolicyIssues(document, sourceUri)) {
+    const specifierRange = createRange(document, issue.start, issue.end)
     if (!positionInRange(position, specifierRange)) {
       continue
     }
-    const code = zone === 'app' ? 'QIN1001' : 'QIN1002'
-    const zoneName = zone === 'app' ? 'app' : 'shared'
     return {
       range: specifierRange,
       contents: {
         kind: MarkupKind.Markdown,
-        value: `**${code} Qin import policy**\n\n\`${zoneName}/\` code cannot import \`java:\` modules. Keep Java interop in \`main/\`; expose frontend-safe or shared contracts through local Qin modules.`,
+        value: issue.hoverMarkdown,
       },
     }
   }
   return
+}
+
+interface ImportPolicyIssue extends SourceModuleSpecifierInfo {
+  message: string
+  hoverMarkdown: string
+  quickFixTitle: string
+}
+
+function collectImportPolicyIssues(document: TextDocument, sourceUri: string): ImportPolicyIssue[] {
+  const zone = readQinSourceZone(sourceUri)
+  if (zone !== 'app' && zone !== 'shared') {
+    return []
+  }
+  const issues: ImportPolicyIssue[] = []
+  for (const specifier of collectModuleSpecifierLinks(document.getText())) {
+    if (isJavaModuleSpecifier(specifier.text)) {
+      const code = zone === 'app' ? 'QIN1001' : 'QIN1002'
+      const zoneName = zone === 'app' ? 'app' : 'shared'
+      issues.push({
+        ...specifier,
+        message: `${code} ${zoneName} code cannot import java modules: ${specifier.text}`,
+        hoverMarkdown: `**${code} Qin import policy**\n\n\`${zoneName}/\` code cannot import \`java:\` modules. Keep Java interop in \`main/\`; expose frontend-safe or shared contracts through local Qin modules.`,
+        quickFixTitle: 'Remove forbidden java import',
+      })
+    } else if (zone === 'shared' && !isLocalModuleSpecifier(specifier.text)) {
+      issues.push({
+        ...specifier,
+        message: `QIN1003 shared code cannot import bare/non-local modules: ${specifier.text}`,
+        hoverMarkdown: '**QIN1003 Qin import policy**\n\n`shared/` code can only import local relative modules such as `./types.qin`. Move package or runtime imports to `app/` or `main/`, then expose shared contracts through local Qin modules.',
+        quickFixTitle: 'Remove forbidden shared import',
+      })
+    }
+  }
+  return issues
 }
 
 function positionInRange(position: Position, range: Range): boolean {

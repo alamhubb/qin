@@ -89,4 +89,29 @@ if (unavailableDiagnostics[0].source !== 'qin-parser'
   throw new Error(`Missing generated Qin parser diagnostic is not explicit: ${JSON.stringify(unavailableDiagnostics)}`)
 }
 
+const sharedBareImportDocument = TextDocument.create('file:///workspace/shared/shared-bare.qin', 'qin', 1, "import lodash from 'lodash'\n")
+const sharedBareImportDiagnostics = await diagnosticsProvider(sharedBareImportDocument, {} as never)
+if (!sharedBareImportDiagnostics?.some(item => item.source === 'qin-import-policy'
+  && item.message.includes('QIN1003 shared code cannot import bare/non-local modules'))) {
+  throw new Error(`Shared Qin bare import must produce QIN1003 diagnostic: ${JSON.stringify(sharedBareImportDiagnostics)}`)
+}
+
+const sharedLocalImportDocument = TextDocument.create('file:///workspace/shared/shared-local.qin', 'qin', 1, "import { Contract } from './contract.qin'\n")
+const sharedLocalImportDiagnostics = await diagnosticsProvider(sharedLocalImportDocument, {} as never)
+if (sharedLocalImportDiagnostics?.some(item => item.source === 'qin-import-policy')) {
+  throw new Error(`Shared Qin local import must not produce import-policy diagnostic: ${JSON.stringify(sharedLocalImportDiagnostics)}`)
+}
+
+const appBareImportDocument = TextDocument.create('file:///workspace/app/app-bare.qin', 'qin', 1, "import lodash from 'lodash'\n")
+const appBareImportDiagnostics = await diagnosticsProvider(appBareImportDocument, {} as never)
+if (appBareImportDiagnostics?.some(item => item.source === 'qin-import-policy')) {
+  throw new Error(`App Qin bare import must not produce shared import-policy diagnostic: ${JSON.stringify(appBareImportDiagnostics)}`)
+}
+
+const mainBareImportDocument = TextDocument.create('file:///workspace/main/main-bare.qin', 'qin', 1, "import lodash from 'lodash'\n")
+const mainBareImportDiagnostics = await diagnosticsProvider(mainBareImportDocument, {} as never)
+if (mainBareImportDiagnostics?.some(item => item.source === 'qin-import-policy')) {
+  throw new Error(`Main Qin bare import must not produce shared import-policy diagnostic: ${JSON.stringify(mainBareImportDiagnostics)}`)
+}
+
 console.log('Qin language plugin smoke passed')

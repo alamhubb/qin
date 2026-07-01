@@ -1267,8 +1267,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/codeAction");
             require(testSource.contains("Remove forbidden java import"),
                     "Qin language server test must assert import-policy codeAction coverage");
+            require(testSource.contains("Remove forbidden shared import"),
+                    "Qin language server test must assert shared import-policy codeAction coverage");
             require(testSource.contains("import-policy hover did not explain app java: boundary"),
                     "Qin language server test must assert import-policy hover explanation coverage");
+            require(testSource.contains("shared import-policy hover did not explain bare import boundary"),
+                    "Qin language server test must assert shared bare import-policy hover explanation coverage");
             require(testSource.contains("textDocument/foldingRange"),
                     "Qin language server test must request textDocument/foldingRange");
             require(testSource.contains("foldingRange did not include"),
@@ -1291,6 +1295,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must assert app java: import rejection");
             require(testSource.contains("shared code cannot import java modules"),
                     "Qin language server test must assert shared java: import rejection");
+            require(testSource.contains("shared code cannot import bare/non-local modules"),
+                    "Qin language server test must assert shared bare import rejection");
             require(testSource.contains("workspace/symbol"),
                     "Qin language server test must request workspace/symbol");
             require(testSource.contains("workspaceSymbol did not include"),

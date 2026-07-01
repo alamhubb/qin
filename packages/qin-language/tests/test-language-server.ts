@@ -516,6 +516,21 @@ async function main() {
     },
   }))
 
+  const sharedBareImportUri = toFileUri(path.join(__dirname, 'shared', 'shared-bare-policy.qin'))
+  const sharedBareImportSource = [
+    "import lodash from 'lodash'",
+    'export const sharedValue = lodash',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: sharedBareImportUri,
+      languageId: 'qin',
+      version: 1,
+      text: sharedBareImportSource,
+    },
+  }))
+
   const appJavaImportUri = toFileUri(path.join(__dirname, 'app', 'app-policy.qin'))
   const appJavaImportSource = [
     "import { ArrayList } from 'java:java.util'",
@@ -553,6 +568,9 @@ async function main() {
       const sharedDiagnostics = diagnosticsMessages
         .filter(message => sameUri(message.params?.uri, sharedJavaImportUri))
         .at(-1)?.params?.diagnostics ?? []
+      const sharedBareDiagnostics = diagnosticsMessages
+        .filter(message => sameUri(message.params?.uri, sharedBareImportUri))
+        .at(-1)?.params?.diagnostics ?? []
       const appDiagnostics = diagnosticsMessages
         .filter(message => sameUri(message.params?.uri, appJavaImportUri))
         .at(-1)?.params?.diagnostics ?? []
@@ -560,6 +578,7 @@ async function main() {
         && diagnosticsMessages.some(message => sameUri(message.params?.uri, forOfUri))
         && diagnosticsMessages.some(message => sameUri(message.params?.uri, invalidUri))
         && sharedDiagnostics.some((item: any) => item.source === 'qin-import-policy')
+        && sharedBareDiagnostics.some((item: any) => item.source === 'qin-import-policy')
         && appDiagnostics.some((item: any) => item.source === 'qin-import-policy')
         && diagnosticsMessages.some(message => sameUri(message.params?.uri, mainJavaImportUri))
     },
@@ -580,6 +599,9 @@ async function main() {
     .at(-1)?.params?.diagnostics ?? []
   const sharedJavaImportDiagnostics = diagnosticsMessages
     .filter(message => sameUri(message.params?.uri, sharedJavaImportUri))
+    .at(-1)?.params?.diagnostics ?? []
+  const sharedBareImportDiagnostics = diagnosticsMessages
+    .filter(message => sameUri(message.params?.uri, sharedBareImportUri))
     .at(-1)?.params?.diagnostics ?? []
   const appJavaImportDiagnostics = diagnosticsMessages
     .filter(message => sameUri(message.params?.uri, appJavaImportUri))
@@ -602,6 +624,10 @@ async function main() {
 
   if (!sharedJavaImportDiagnostics.some((item: any) => item.source === 'qin-import-policy' && String(item.message).includes('shared code cannot import java modules'))) {
     throw new Error(`Shared Qin java: import did not produce import-policy diagnostic: ${JSON.stringify(sharedJavaImportDiagnostics)}`)
+  }
+
+  if (!sharedBareImportDiagnostics.some((item: any) => item.source === 'qin-import-policy' && String(item.message).includes('shared code cannot import bare/non-local modules'))) {
+    throw new Error(`Shared Qin bare import did not produce import-policy diagnostic: ${JSON.stringify(sharedBareImportDiagnostics)}`)
   }
 
   if (!appJavaImportDiagnostics.some((item: any) => item.source === 'qin-import-policy' && String(item.message).includes('app code cannot import java modules'))) {
@@ -637,6 +663,31 @@ async function main() {
     throw new Error(`Qin import-policy codeAction did not remove forbidden java import: ${JSON.stringify(codeActionResponse.result)}`)
   }
 
+  const sharedBareImportPolicyDiagnostic = sharedBareImportDiagnostics.find((item: any) => item.source === 'qin-import-policy')
+  const sharedBareCodeActionRequest = createRequest('textDocument/codeAction', {
+    textDocument: { uri: sharedBareImportUri },
+    range: sharedBareImportPolicyDiagnostic?.range ?? {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 27 },
+    },
+    context: {
+      diagnostics: sharedBareImportPolicyDiagnostic ? [sharedBareImportPolicyDiagnostic] : [],
+      only: ['quickfix'],
+    },
+  })
+  server.stdin.write(sharedBareCodeActionRequest.packet)
+  const sharedBareCodeActionResponse = await waitForResponse(
+    sharedBareCodeActionRequest.id,
+    messages,
+    `Qin shared import-policy codeAction response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const sharedBareCodeActions = Array.isArray(sharedBareCodeActionResponse.result) ? sharedBareCodeActionResponse.result : []
+  const removeSharedBareImportAction = sharedBareCodeActions.find((item: any) => item.title === 'Remove forbidden shared import' && item.kind === 'quickfix')
+  const sharedBareCodeActionTexts = collectWorkspaceEditTexts(removeSharedBareImportAction?.edit)
+  if (!removeSharedBareImportAction || !sharedBareCodeActionTexts.includes('')) {
+    throw new Error(`Qin shared import-policy codeAction did not remove forbidden bare import: ${JSON.stringify(sharedBareCodeActionResponse.result)}`)
+  }
+
   const importPolicyHoverRequest = createRequest('textDocument/hover', {
     textDocument: { uri: appJavaImportUri },
     position: { line: 0, character: 30 },
@@ -650,6 +701,21 @@ async function main() {
   const importPolicyHoverText = JSON.stringify(importPolicyHoverResponse.result ?? '')
   if (!importPolicyHoverText.includes('QIN1001') || !importPolicyHoverText.includes('main/')) {
     throw new Error(`Qin import-policy hover did not explain app java: boundary: ${JSON.stringify(importPolicyHoverResponse.result)}`)
+  }
+
+  const sharedBareImportPolicyHoverRequest = createRequest('textDocument/hover', {
+    textDocument: { uri: sharedBareImportUri },
+    position: { line: 0, character: 21 },
+  })
+  server.stdin.write(sharedBareImportPolicyHoverRequest.packet)
+  const sharedBareImportPolicyHoverResponse = await waitForResponse(
+    sharedBareImportPolicyHoverRequest.id,
+    messages,
+    `Qin shared import-policy hover response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const sharedBareImportPolicyHoverText = JSON.stringify(sharedBareImportPolicyHoverResponse.result ?? '')
+  if (!sharedBareImportPolicyHoverText.includes('QIN1003') || !sharedBareImportPolicyHoverText.includes('local relative modules')) {
+    throw new Error(`Qin shared import-policy hover did not explain bare import boundary: ${JSON.stringify(sharedBareImportPolicyHoverResponse.result)}`)
   }
 
   if (invalidDiagnostics[0].source !== 'qin-parser') {

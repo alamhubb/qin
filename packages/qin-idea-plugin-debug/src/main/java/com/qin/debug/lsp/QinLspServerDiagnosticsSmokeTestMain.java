@@ -349,6 +349,21 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 "text", "import { ArrayList } from 'java:java.util'\nexport const sharedValue = ArrayList\n")));
                 session.awaitDiagnostic(sharedJavaImportUri, "QIN1002");
 
+                String sharedBareImportUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("shared")
+                        .resolve("bare-policy.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", sharedBareImportUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", "import lodash from 'lodash'\nexport const sharedValue = lodash\n")));
+                session.awaitDiagnostic(sharedBareImportUri, "QIN1003");
+
                 String appJavaImportUri = workspaceRoot
                         .resolve("tmp")
                         .resolve("idea-lsp-smoke")
@@ -385,6 +400,31 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 String importPolicyHoverText = hoverText(importPolicyHover);
                 require(importPolicyHoverText.contains("QIN1001") && importPolicyHoverText.contains("main/"),
                         language.id() + " hover missing import-policy app java boundary: " + importPolicyHover);
+
+                Map<String, Object> sharedBareCodeActions = session.awaitResponse(session.request("textDocument/codeAction", Map.of(
+                        "textDocument", Map.of("uri", sharedBareImportUri),
+                        "range", Map.of(
+                                "start", Map.of("line", 0, "character", 20),
+                                "end", Map.of("line", 0, "character", 26)),
+                        "context", Map.of(
+                                "diagnostics", List.of(Map.of(
+                                        "range", Map.of(
+                                                "start", Map.of("line", 0, "character", 20),
+                                                "end", Map.of("line", 0, "character", 26)),
+                                        "source", "qin-import-policy",
+                                        "message", "QIN1003 shared code cannot import bare/non-local modules: lodash")),
+                                "only", List.of("quickfix")))));
+                require(hasQuickFixRemovingImport(sharedBareCodeActions.get("result"), "Remove forbidden shared import"),
+                        language.id() + " codeAction missing remove forbidden shared import quickfix: " + sharedBareCodeActions);
+
+                Map<String, Object> sharedBareImportPolicyHover = session.awaitResponse(session.request("textDocument/hover", Map.of(
+                        "textDocument", Map.of("uri", sharedBareImportUri),
+                        "position", Map.of("line", 0, "character", 21))));
+                String sharedBareImportPolicyHoverText = hoverText(sharedBareImportPolicyHover);
+                require(sharedBareImportPolicyHoverText.contains("QIN1003")
+                                && sharedBareImportPolicyHoverText.contains("local relative modules"),
+                        language.id() + " shared import-policy hover did not explain bare import boundary: "
+                                + sharedBareImportPolicyHover);
 
                 Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
                         "query", testCase.expectedDocumentSymbol())));
@@ -703,6 +743,10 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
     }
 
     private static boolean hasQuickFixRemovingImport(Object result) {
+        return hasQuickFixRemovingImport(result, "Remove forbidden java import");
+    }
+
+    private static boolean hasQuickFixRemovingImport(Object result, String expectedTitle) {
         if (!(result instanceof List<?> list)) {
             return false;
         }
@@ -712,7 +756,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             }
             Object title = action.get("title");
             Object kind = action.get("kind");
-            if ("Remove forbidden java import".equals(String.valueOf(title))
+            if (expectedTitle.equals(String.valueOf(title))
                     && "quickfix".equals(String.valueOf(kind))
                     && workspaceEditTexts(action.get("edit")).contains("")) {
                 return true;
