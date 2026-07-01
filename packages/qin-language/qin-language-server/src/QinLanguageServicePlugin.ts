@@ -65,6 +65,11 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
         }
         return provideImportPolicyCodeActions(document, sourceUri, range, codeActionContext)
       },
+      resolveCodeAction(codeAction: CodeAction) {
+        return isQinImportPolicyCodeAction(codeAction)
+          ? codeAction
+          : undefined
+      },
       provideHover(document: TextDocument, position: Position) {
         const sourceUri = readSourceDocumentUri(context, document.uri)
         if (!isQinDocument(document) && sourceUri === document.uri) {
@@ -285,9 +290,16 @@ function provideImportPolicyCodeActions(document: TextDocument, sourceUri: strin
           }],
         },
       },
+      data: {
+        source: 'qin-import-policy',
+      },
     })
   }
   return actions
+}
+
+function isQinImportPolicyCodeAction(codeAction: CodeAction): boolean {
+  return (codeAction as { data?: { source?: unknown } }).data?.source === 'qin-import-policy'
 }
 
 function provideImportPolicyHover(document: TextDocument, sourceUri: string, position: Position): Hover | undefined {

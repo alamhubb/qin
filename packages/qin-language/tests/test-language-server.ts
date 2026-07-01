@@ -778,6 +778,20 @@ async function main() {
     throw new Error(`Qin import-policy codeAction did not remove forbidden java import: ${JSON.stringify(codeActionResponse.result)}`)
   }
 
+  const codeActionResolveRequest = createRequest('codeAction/resolve', removeImportAction)
+  server.stdin.write(codeActionResolveRequest.packet)
+  const codeActionResolveResponse = await waitForResponse(
+    codeActionResolveRequest.id,
+    messages,
+    `Qin import-policy codeAction resolve response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const resolvedCodeActionTexts = collectWorkspaceEditTexts(codeActionResolveResponse.result?.edit)
+  if (codeActionResolveResponse.result?.title !== 'Remove forbidden java import'
+    || codeActionResolveResponse.result?.kind !== 'quickfix'
+    || !resolvedCodeActionTexts.includes('')) {
+    throw new Error(`Qin codeAction resolve did not preserve import-policy quickfix edit: ${JSON.stringify(codeActionResolveResponse.result)}`)
+  }
+
   const sharedBareImportPolicyDiagnostic = sharedBareImportDiagnostics.find((item: any) => item.source === 'qin-import-policy')
   const sharedBareCodeActionRequest = createRequest('textDocument/codeAction', {
     textDocument: { uri: sharedBareImportUri },

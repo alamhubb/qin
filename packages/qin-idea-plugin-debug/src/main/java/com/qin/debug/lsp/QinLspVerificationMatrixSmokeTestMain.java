@@ -98,6 +98,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
             if ("qin".equals(matrixCase.id())) {
                 verifyQinLanguagePluginFeatureMappings(projectRoot);
+                verifyQinLanguageServicePluginFeatureMappings(projectRoot);
                 verifyGeneratedQinParserPackage(projectRoot, config);
                 verifyGeneratedParserParityCorpus(projectRoot);
             } else {
@@ -1275,12 +1276,18 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         if ("qin".equals(matrixCase.id())) {
             require(testSource.contains("textDocument/codeAction"),
                     "Qin language server test must request textDocument/codeAction");
+            require(testSource.contains("codeAction/resolve"),
+                    "Qin language server test must request codeAction/resolve");
+            require(testSource.contains("codeAction resolve did not preserve import-policy quickfix edit"),
+                    "Qin language server test must assert codeAction resolve quickfix coverage");
             require(testSource.contains("completionItem/resolve"),
                     "Qin language server test must request completionItem/resolve");
             require(testSource.contains("completionItem resolve did not preserve label and detail"),
                     "Qin language server test must assert completionItem resolve detail coverage");
             require(testSource.contains("Remove forbidden java import"),
                     "Qin language server test must assert import-policy codeAction coverage");
+            require(testSource.contains("Qin import-policy codeAction resolve response"),
+                    "Qin language server test must assert import-policy codeAction resolve response");
             require(testSource.contains("Remove forbidden shared import"),
                     "Qin language server test must assert shared import-policy codeAction coverage");
             require(testSource.contains("import-policy hover did not explain app java: boundary"),
@@ -1397,6 +1404,24 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "verification: true")) {
             require(source.contains(mappingNeedle),
                     "Qin virtual code mappings must enable " + mappingNeedle);
+        }
+    }
+
+    private static void verifyQinLanguageServicePluginFeatureMappings(Path qinLanguageRoot) throws Exception {
+        Path pluginPath = qinLanguageRoot.resolve("qin-language-server")
+                .resolve("src")
+                .resolve("QinLanguageServicePlugin.ts")
+                .normalize();
+        require(Files.isRegularFile(pluginPath),
+                "QinLanguageServicePlugin source must exist: " + pluginPath);
+        String source = Files.readString(pluginPath);
+        for (String requiredNeedle : List.of(
+                "resolveCodeAction",
+                "isQinImportPolicyCodeAction",
+                "source: 'qin-import-policy'")) {
+            require(source.contains(requiredNeedle),
+                    "Qin language service plugin must keep import-policy codeAction resolve support: "
+                            + requiredNeedle);
         }
     }
 

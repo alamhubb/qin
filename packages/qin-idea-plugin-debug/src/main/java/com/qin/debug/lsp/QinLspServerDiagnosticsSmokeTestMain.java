@@ -608,6 +608,15 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 "only", List.of("quickfix")))));
                 require(hasQuickFixRemovingImport(codeActions.get("result")),
                         language.id() + " codeAction missing remove forbidden java import quickfix: " + codeActions);
+                Object removeJavaImportAction = quickFixAction(codeActions.get("result"), "Remove forbidden java import");
+                require(removeJavaImportAction != null,
+                        language.id() + " codeAction missing quickfix item for resolve: " + codeActions);
+                Map<String, Object> resolvedCodeAction = session.awaitResponse(session.request(
+                        "codeAction/resolve",
+                        removeJavaImportAction));
+                require(hasQuickFixEdit(resolvedCodeAction.get("result"), "Remove forbidden java import"),
+                        language.id() + " codeAction resolve did not preserve import-policy quickfix edit: "
+                                + resolvedCodeAction);
 
                 Map<String, Object> importPolicyHover = session.awaitResponse(session.request("textDocument/hover", Map.of(
                         "textDocument", Map.of("uri", appJavaImportUri),
@@ -708,6 +717,10 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 language.id() + " completionProvider missing resolveProvider");
         require(capabilitiesMap.containsKey("callHierarchyProvider"), language.id() + " LSP missing callHierarchyProvider");
         require(capabilitiesMap.containsKey("codeActionProvider"), language.id() + " LSP missing codeActionProvider");
+        Object codeActionProvider = capabilitiesMap.get("codeActionProvider");
+        require(codeActionProvider instanceof Map<?, ?> codeActionProviderMap
+                        && Boolean.TRUE.equals(codeActionProviderMap.get("resolveProvider")),
+                language.id() + " codeActionProvider missing resolveProvider");
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
         require(capabilitiesMap.containsKey("signatureHelpProvider"), language.id() + " LSP missing signatureHelpProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
@@ -1145,18 +1158,34 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             return false;
         }
         for (Object item : list) {
-            if (!(item instanceof Map<?, ?> action)) {
-                continue;
-            }
-            Object title = action.get("title");
-            Object kind = action.get("kind");
-            if (expectedTitle.equals(String.valueOf(title))
-                    && "quickfix".equals(String.valueOf(kind))
-                    && workspaceEditTexts(action.get("edit")).contains("")) {
+            if (hasQuickFixEdit(item, expectedTitle)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static Object quickFixAction(Object result, String expectedTitle) {
+        if (!(result instanceof List<?> list)) {
+            return null;
+        }
+        for (Object item : list) {
+            if (hasQuickFixEdit(item, expectedTitle)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private static boolean hasQuickFixEdit(Object action, String expectedTitle) {
+        if (!(action instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object title = map.get("title");
+        Object kind = map.get("kind");
+        return expectedTitle.equals(String.valueOf(title))
+                && "quickfix".equals(String.valueOf(kind))
+                && workspaceEditTexts(map.get("edit")).contains("");
     }
 
     private static List<String> symbolNames(Object result) {
