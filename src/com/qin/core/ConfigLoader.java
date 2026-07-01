@@ -351,7 +351,7 @@ public class ConfigLoader {
             errors.add("'language.extension' must start with '.'");
         }
         requireExistingRelativePath(language.server(), "language.server", errors);
-        requireExistingRelativePath(language.serverBundle(), "language.serverBundle", errors);
+        requireRelativePathShape(language.serverBundle(), "language.serverBundle", errors);
         requireExistingPathLikeReference(language.parser(), "language.parser", errors);
         requireExistingRelativePath(language.compiler(), "language.compiler", errors);
         requireExistingRelativePath(language.ideaLspClient(), "language.ideaLspClient", errors);
@@ -441,12 +441,26 @@ public class ConfigLoader {
         if (isBlank(rawPath)) {
             return;
         }
+        requireRelativePathShape(rawPath, field, errors);
+        if (errors.stream().anyMatch(error -> error.contains("'" + field + "'"))) {
+            return;
+        }
         Path path = Paths.get(rawPath);
         if (!path.isAbsolute()) {
             path = Paths.get(cwd).resolve(path);
         }
         if (!Files.exists(path.normalize())) {
             errors.add("'" + field + "' path does not exist: " + rawPath);
+        }
+    }
+
+    private void requireRelativePathShape(String rawPath, String field, List<String> errors) {
+        if (isBlank(rawPath)) {
+            return;
+        }
+        Path path = Paths.get(rawPath);
+        if (path.isAbsolute()) {
+            errors.add("'" + field + "' must be a relative path: " + rawPath);
         }
     }
 

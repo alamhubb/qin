@@ -9,6 +9,7 @@ export { com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams, com_s
 export { com_slime_parser_base_SlimeJavascriptParserBase$StatementParams, com_slime_parser_base_SlimeJavascriptParserBase$StatementParams as StatementParams } from "./com/slime/parser/base/SlimeJavascriptParserBase.ts";
 export { com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams, com_slime_parser_base_SlimeJavascriptParserBase$DeclarationParams as DeclarationParams } from "./com/slime/parser/base/SlimeJavascriptParserBase.ts";
 export { com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams, com_slime_parser_base_SlimeJavascriptParserBase$TemplateLiteralParams as TemplateLiteralParams } from "./com/slime/parser/base/SlimeJavascriptParserBase.ts";
+export { com_subhuti_parser_Alternative, com_subhuti_parser_Alternative as Alternative } from "./com/subhuti/parser/Alternative.ts";
 import { com_slime_token_JavaScriptTokens } from "./com/slime/token/JavaScriptTokens.ts";
 export { com_slime_token_JavaScriptTokens as JavaScriptTokens };
 const __qinSlimeTokens = com_slime_token_JavaScriptTokens.getTokens();

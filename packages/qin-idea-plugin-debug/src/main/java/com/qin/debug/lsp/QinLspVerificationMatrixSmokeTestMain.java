@@ -1998,6 +1998,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Generated Qin parser index.ts must named-export QinParser");
         require(indexSource.contains("SlimeJavascriptParser"),
                 "Generated Qin parser index.ts must expose SlimeJavascriptParser for parser inheritance");
+        require(indexSource.contains("com_subhuti_parser_Alternative as Alternative"),
+                "Generated Qin parser index.ts must expose Subhuti Alternative for parser combinators");
 
         require(config.generated() != null, "qin-language must declare generated metadata");
         require("com.qin.parser.QinParser".equals(config.generated().entryBinaryName()),

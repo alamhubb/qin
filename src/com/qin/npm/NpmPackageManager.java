@@ -17,14 +17,15 @@ import java.util.zip.*;
  */
 public class NpmPackageManager {
     // npm 镜像源
-    private static final String[] NPM_REGISTRIES = {
+    private static final List<String> DEFAULT_NPM_REGISTRIES = List.of(
             "https://registry.npmmirror.com", // 淘宝镜像（国内快）
             "https://registry.npmjs.org" // 官方源
-    };
+    );
 
     private final String projectRoot;
     private final String cacheDir;
     private final String nodeModulesDir;
+    private final List<String> registries;
     private final Gson gson;
     private String activeRegistry;
 
@@ -33,11 +34,16 @@ public class NpmPackageManager {
     }
 
     public NpmPackageManager(String projectRoot) {
+        this(projectRoot, DEFAULT_NPM_REGISTRIES);
+    }
+
+    NpmPackageManager(String projectRoot, List<String> registries) {
         this.projectRoot = projectRoot;
         this.cacheDir = QinConstants.getGlobalNpmCacheDir().toString();
         this.nodeModulesDir = Paths.get(projectRoot, QinConstants.NODE_MODULES).toString();
+        this.registries = List.copyOf(registries);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
-        this.activeRegistry = NPM_REGISTRIES[0];
+        this.activeRegistry = this.registries.get(0);
     }
 
     /**
@@ -45,55 +51,327 @@ public class NpmPackageManager {
      */
     public boolean install(String packageName, String version) {
         try {
-            System.out.println("📦 Installing " + packageName + "@" + version + "...");
-
-            // 1. 获取包信息
-            JsonObject pkgInfo = fetchPackageInfo(packageName, version);
-            if (pkgInfo == null) {
-                System.err.println("✗ Package not found: " + packageName);
-                return false;
-            }
-
-            String resolvedVersion = pkgInfo.get("version").getAsString();
-            String tarballUrl = pkgInfo.getAsJsonObject("dist").get("tarball").getAsString();
-
-            System.out.println("  → Resolved version: " + resolvedVersion);
-
-            // 2. 下载并解压
-            Path targetDir = Paths.get(nodeModulesDir, packageName);
-            if (Files.exists(targetDir)) {
-                // 检查版本
-                Path pkgJsonPath = targetDir.resolve(QinConstants.PACKAGE_JSON);
-                if (Files.exists(pkgJsonPath)) {
-                    JsonObject existing = JsonParser.parseString(Files.readString(pkgJsonPath)).getAsJsonObject();
-                    if (existing.has("version") && existing.get("version").getAsString().equals(resolvedVersion)) {
-                        System.out.println("  ✓ Already installed");
-                        return true;
-                    }
-                }
-                QinUtils.deleteDir(targetDir);
-            }
-
-            downloadAndExtract(tarballUrl, targetDir);
-            System.out.println("  ✓ Installed " + packageName + "@" + resolvedVersion);
-
-            // 3. 安装依赖
-            JsonObject deps = pkgInfo.has("dependencies")
-                    ? pkgInfo.getAsJsonObject("dependencies")
-                    : null;
-            if (deps != null && deps.size() > 0) {
-                System.out.println("  → Installing dependencies...");
-                for (String depName : deps.keySet()) {
-                    String depVersion = deps.get(depName).getAsString();
-                    install(depName, depVersion);
-                }
-            }
-
+            installPackage(packageName, version, Paths.get(projectRoot), new LinkedHashSet<>());
             return true;
         } catch (Exception e) {
             System.err.println("✗ Failed to install " + packageName + ": " + e.getMessage());
             return false;
         }
+    }
+
+    private void installPackage(String packageName, String version, Path baseDir, Set<String> installed)
+            throws Exception {
+        System.out.println("📦 Installing " + packageName + "@" + version + "...");
+
+        if (version != null && version.trim().startsWith("file:")) {
+            Path sourceDir = resolveFileDependency(version, baseDir);
+            String installKey = installKey(baseDir, packageName, "file:" + sourceDir.toAbsolutePath().normalize());
+            if (!installed.add(installKey)) {
+                return;
+            }
+            Path targetDir = packageInstallDir(baseDir, packageName);
+            if (Files.exists(targetDir)) {
+                QinUtils.deleteDir(targetDir);
+            }
+            linkPackageDirectory(sourceDir, targetDir);
+            createBinLinks(targetDir, baseDir);
+            installLocalPackageDependencies(sourceDir, installed);
+            System.out.println("  ✓ Installed " + packageName + " from " + sourceDir);
+            return;
+        }
+
+        if (!installed.add(installKey(baseDir, packageName, version))) {
+            return;
+        }
+
+        // 1. 获取包信息
+        JsonObject pkgInfo = fetchPackageInfo(packageName, version);
+        if (pkgInfo == null) {
+            throw new IOException("Package not found: " + packageName);
+        }
+
+        String resolvedVersion = pkgInfo.get("version").getAsString();
+        String tarballUrl = pkgInfo.getAsJsonObject("dist").get("tarball").getAsString();
+
+        System.out.println("  → Resolved version: " + resolvedVersion);
+
+        // 2. 下载并解压
+        Path targetDir = packageInstallDir(baseDir, packageName);
+        if (Files.exists(targetDir)) {
+            // 检查版本
+            Path pkgJsonPath = targetDir.resolve(QinConstants.PACKAGE_JSON);
+            if (Files.exists(pkgJsonPath)) {
+                JsonObject existing = JsonParser.parseString(Files.readString(pkgJsonPath)).getAsJsonObject();
+                if (existing.has("version") && existing.get("version").getAsString().equals(resolvedVersion)) {
+                    createBinLinks(targetDir, baseDir);
+                    installDependenciesObject(existing, "dependencies", targetDir, installed, false);
+                    installDependenciesObject(existing, "optionalDependencies", targetDir, installed, true);
+                    System.out.println("  ✓ Already installed");
+                    return;
+                }
+            }
+            QinUtils.deleteDir(targetDir);
+        }
+
+        downloadAndExtract(tarballUrl, targetDir);
+        createBinLinks(targetDir, baseDir);
+        System.out.println("  ✓ Installed " + packageName + "@" + resolvedVersion);
+
+        installDependenciesObject(pkgInfo, "dependencies", targetDir, installed, false);
+        installDependenciesObject(pkgInfo, "optionalDependencies", targetDir, installed, true);
+    }
+
+    private String installKey(Path baseDir, String packageName, String version) {
+        return baseDir.toAbsolutePath().normalize() + "::" + packageName + "@" + version;
+    }
+
+    private Path packageInstallDir(Path baseDir, String packageName) {
+        return baseDir.resolve(QinConstants.NODE_MODULES).resolve(packageName.replace('/', File.separatorChar));
+    }
+
+    private Path resolveFileDependency(String version, Path baseDir) throws IOException {
+        String rawPath = version.substring("file:".length()).trim();
+        if (rawPath.isBlank()) {
+            throw new IOException("file: npm dependency path must not be empty");
+        }
+        Path path = Paths.get(rawPath);
+        if (!path.isAbsolute()) {
+            path = baseDir.resolve(path);
+        }
+        path = path.toAbsolutePath().normalize();
+        if (!Files.isRegularFile(path.resolve(QinConstants.PACKAGE_JSON))) {
+            throw new IOException("Local npm dependency does not contain package.json: " + path);
+        }
+        return path;
+    }
+
+    private void installLocalPackageDependencies(Path sourceDir, Set<String> installed) throws Exception {
+        JsonObject pkgJson = JsonParser.parseString(Files.readString(sourceDir.resolve(QinConstants.PACKAGE_JSON)))
+                .getAsJsonObject();
+        installDependenciesObject(pkgJson, "dependencies", sourceDir, installed, false);
+        installDependenciesObject(pkgJson, "optionalDependencies", sourceDir, installed, true);
+    }
+
+    private void installDependenciesObject(
+            JsonObject pkgJson,
+            String fieldName,
+            Path baseDir,
+            Set<String> installed,
+            boolean optional) throws Exception {
+        JsonObject deps = pkgJson.has(fieldName)
+                ? pkgJson.getAsJsonObject(fieldName)
+                : null;
+        if (deps == null || deps.size() == 0) {
+            return;
+        }
+        System.out.println("  → Installing " + fieldName + "...");
+        for (String depName : deps.keySet()) {
+            if (optional && !supportsCurrentPlatform(depName, deps.get(depName).getAsString(), baseDir)) {
+                continue;
+            }
+            try {
+                installPackage(depName, deps.get(depName).getAsString(), baseDir, installed);
+            } catch (Exception error) {
+                if (!optional) {
+                    throw error;
+                }
+                System.out.println("  → Skipping optional dependency " + depName + ": " + error.getMessage());
+            }
+        }
+    }
+
+    private boolean supportsCurrentPlatform(String packageName, String version, Path baseDir) throws Exception {
+        if (version != null && version.trim().startsWith("file:")) {
+            Path sourceDir = resolveFileDependency(version, baseDir);
+            JsonObject pkgJson = JsonParser.parseString(Files.readString(sourceDir.resolve(QinConstants.PACKAGE_JSON)))
+                    .getAsJsonObject();
+            return packageSupportsCurrentPlatform(pkgJson);
+        }
+        JsonObject pkgInfo = fetchPackageInfo(packageName, version);
+        return pkgInfo == null || packageSupportsCurrentPlatform(pkgInfo);
+    }
+
+    private boolean packageSupportsCurrentPlatform(JsonObject pkgJson) {
+        return fieldAllowsValue(pkgJson, "os", currentNpmOs())
+                && fieldAllowsValue(pkgJson, "cpu", currentNpmCpu())
+                && fieldAllowsValue(pkgJson, "libc", currentNpmLibc());
+    }
+
+    private boolean fieldAllowsValue(JsonObject pkgJson, String fieldName, String currentValue) {
+        if (!pkgJson.has(fieldName)) {
+            return true;
+        }
+        JsonElement raw = pkgJson.get(fieldName);
+        if (!raw.isJsonArray()) {
+            return true;
+        }
+        JsonArray values = raw.getAsJsonArray();
+        boolean hasPositive = false;
+        for (JsonElement element : values) {
+            if (!element.isJsonPrimitive()) {
+                continue;
+            }
+            String value = element.getAsString();
+            if (value.startsWith("!")) {
+                if (value.substring(1).equals(currentValue)) {
+                    return false;
+                }
+            } else {
+                hasPositive = true;
+                if (value.equals(currentValue)) {
+                    return true;
+                }
+            }
+        }
+        return !hasPositive;
+    }
+
+    private String currentNpmOs() {
+        String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        if (os.contains("win")) {
+            return "win32";
+        }
+        if (os.contains("mac") || os.contains("darwin")) {
+            return "darwin";
+        }
+        if (os.contains("linux")) {
+            return "linux";
+        }
+        if (os.contains("freebsd")) {
+            return "freebsd";
+        }
+        return os.replaceAll("[^a-z0-9]+", "");
+    }
+
+    private String currentNpmCpu() {
+        String arch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
+        return switch (arch) {
+            case "amd64", "x86_64" -> "x64";
+            case "aarch64", "arm64" -> "arm64";
+            case "x86", "i386", "i686" -> "ia32";
+            default -> arch;
+        };
+    }
+
+    private String currentNpmLibc() {
+        if (!"linux".equals(currentNpmOs())) {
+            return "";
+        }
+        return "glibc";
+    }
+
+    private void linkPackageDirectory(Path sourceDir, Path targetDir) throws IOException {
+        Files.createDirectories(targetDir.getParent());
+        try {
+            Files.createSymbolicLink(targetDir, sourceDir);
+        } catch (UnsupportedOperationException | IOException error) {
+            if (QinConstants.isWindows()) {
+                createWindowsJunction(sourceDir, targetDir);
+            } else {
+                throw error;
+            }
+        }
+    }
+
+    private void createWindowsJunction(Path sourceDir, Path targetDir) throws IOException {
+        List<String> command = List.of(
+                "cmd",
+                "/c",
+                "mklink",
+                "/J",
+                targetDir.toString(),
+                sourceDir.toString());
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+        String output;
+        try (InputStream input = process.getInputStream()) {
+            output = new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        try {
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new IOException("Failed to create junction " + targetDir + " -> " + sourceDir + ": " + output);
+            }
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while creating junction " + targetDir + " -> " + sourceDir, error);
+        }
+    }
+
+    private void createBinLinks(Path packageDir, Path baseDir) throws IOException {
+        Path pkgJsonPath = packageDir.resolve(QinConstants.PACKAGE_JSON);
+        if (!Files.isRegularFile(pkgJsonPath)) {
+            return;
+        }
+        JsonObject pkgJson = JsonParser.parseString(Files.readString(pkgJsonPath)).getAsJsonObject();
+        if (!pkgJson.has("bin")) {
+            return;
+        }
+        String packageName = pkgJson.has("name")
+                ? pkgJson.get("name").getAsString()
+                : packageDir.getFileName().toString();
+        JsonElement bin = pkgJson.get("bin");
+        if (bin.isJsonPrimitive()) {
+            createBinLink(commandNameFromPackage(packageName), packageDir, baseDir, bin.getAsString());
+            return;
+        }
+        if (!bin.isJsonObject()) {
+            return;
+        }
+        JsonObject binObject = bin.getAsJsonObject();
+        for (String commandName : binObject.keySet()) {
+            createBinLink(commandName, packageDir, baseDir, binObject.get(commandName).getAsString());
+        }
+    }
+
+    private String commandNameFromPackage(String packageName) {
+        int slash = packageName.lastIndexOf('/');
+        return slash >= 0 ? packageName.substring(slash + 1) : packageName;
+    }
+
+    private void createBinLink(String commandName, Path packageDir, Path baseDir, String binPath) throws IOException {
+        if (commandName == null || commandName.isBlank() || binPath == null || binPath.isBlank()) {
+            return;
+        }
+        Path binDir = baseDir.resolve(QinConstants.NODE_MODULES).resolve(".bin");
+        Files.createDirectories(binDir);
+        Path target = packageDir.resolve(binPath).normalize();
+        if (!target.startsWith(packageDir) || !Files.isRegularFile(target)) {
+            throw new IOException("Invalid npm bin target for " + commandName + ": " + binPath);
+        }
+        if (QinConstants.isWindows()) {
+            Path cmd = binDir.resolve(commandName + ".cmd");
+            Files.writeString(cmd, windowsBinWrapper(binDir, target), java.nio.charset.StandardCharsets.UTF_8);
+            return;
+        }
+        Path command = binDir.resolve(commandName);
+        Files.deleteIfExists(command);
+        try {
+            Files.createSymbolicLink(command, binDir.relativize(target));
+        } catch (UnsupportedOperationException | IOException error) {
+            Files.writeString(command, unixBinWrapper(binDir, target), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        command.toFile().setExecutable(true);
+    }
+
+    private String windowsBinWrapper(Path binDir, Path target) {
+        String relativeTarget = binDir.relativize(target).toString();
+        String normalized = relativeTarget.replace('/', '\\');
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".cmd") || lower.endsWith(".bat") || lower.endsWith(".exe")) {
+            return "@echo off\n\"%~dp0" + normalized + "\" %*\n";
+        }
+        return "@echo off\nnode \"%~dp0" + normalized + "\" %*\n";
+    }
+
+    private String unixBinWrapper(Path binDir, Path target) {
+        String relativeTarget = binDir.relativize(target).toString().replace('\\', '/');
+        return """
+                #!/bin/sh
+                DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+                exec "$DIR/%s" "$@"
+                """.formatted(relativeTarget);
     }
 
     /**
@@ -143,11 +421,40 @@ public class NpmPackageManager {
      * 获取包信息
      */
     private JsonObject fetchPackageInfo(String packageName, String version) throws Exception {
+        Exception lastError = null;
+        for (String registry : registryCandidates()) {
+            try {
+                JsonObject pkgInfo = fetchPackageInfoFromRegistry(registry, packageName, version);
+                if (pkgInfo != null) {
+                    activeRegistry = registry;
+                    return pkgInfo;
+                }
+            } catch (Exception error) {
+                lastError = error;
+                System.out.println("  → Registry failed " + registry + ": " + error.getMessage());
+            }
+        }
+        if (lastError != null) {
+            throw lastError;
+        }
+        return null;
+    }
+
+    private List<String> registryCandidates() {
+        LinkedHashSet<String> candidates = new LinkedHashSet<>();
+        if (activeRegistry != null && !activeRegistry.isBlank()) {
+            candidates.add(activeRegistry);
+        }
+        candidates.addAll(registries);
+        return List.copyOf(candidates);
+    }
+
+    private JsonObject fetchPackageInfoFromRegistry(String registry, String packageName, String version) throws Exception {
         // 处理版本范围
         String resolvedVersion = version;
         if (version.startsWith("^") || version.startsWith("~") || version.equals("latest") || version.equals("*")) {
             // 获取所有版本，选择匹配的最新版
-            JsonObject allVersions = fetchJson(activeRegistry + "/" + encodePackageName(packageName));
+            JsonObject allVersions = fetchJson(registry + "/" + encodePackageName(packageName));
             if (allVersions == null || !allVersions.has("versions")) {
                 return null;
             }
@@ -160,37 +467,35 @@ public class NpmPackageManager {
         }
 
         // 获取特定版本信息
-        String url = activeRegistry + "/" + encodePackageName(packageName) + "/" + resolvedVersion;
+        String url = registry + "/" + encodePackageName(packageName) + "/" + resolvedVersion;
         return fetchJson(url);
     }
 
     /**
      * 查找匹配的版本
      */
-    private String findMatchingVersion(Set<String> versions, String range) {
+    String findMatchingVersion(Set<String> versions, String range) {
         if (range.equals("latest") || range.equals("*")) {
             // 返回最新版本
             return versions.stream()
-                    .filter(v -> !v.contains("-")) // 排除预发布版本
+                    .filter(this::isStableVersion)
                     .max(this::compareVersions)
                     .orElse(null);
         }
 
         String prefix = range.substring(1); // 去掉 ^ 或 ~
-        String[] parts = prefix.split("\\.");
+        Version base = parseVersion(prefix);
 
         if (range.startsWith("^")) {
-            // ^1.2.3 匹配 >=1.2.3 <2.0.0
-            String major = parts[0];
             return versions.stream()
-                    .filter(v -> v.startsWith(major + ".") && !v.contains("-"))
+                    .filter(this::isStableVersion)
+                    .filter(version -> versionInCaretRange(parseVersion(version), base))
                     .max(this::compareVersions)
                     .orElse(null);
         } else if (range.startsWith("~")) {
-            // ~1.2.3 匹配 >=1.2.3 <1.3.0
-            String majorMinor = parts[0] + "." + (parts.length > 1 ? parts[1] : "0");
             return versions.stream()
-                    .filter(v -> v.startsWith(majorMinor + ".") && !v.contains("-"))
+                    .filter(this::isStableVersion)
+                    .filter(version -> versionInTildeRange(parseVersion(version), base))
                     .max(this::compareVersions)
                     .orElse(null);
         }
@@ -199,20 +504,56 @@ public class NpmPackageManager {
         return versions.contains(range) ? range : null;
     }
 
+    private boolean isStableVersion(String version) {
+        return version != null && !version.contains("-");
+    }
+
+    private boolean versionInCaretRange(Version version, Version base) {
+        if (compareVersions(version, base) < 0) {
+            return false;
+        }
+        Version upper;
+        if (base.major > 0) {
+            upper = new Version(base.major + 1, 0, 0);
+        } else if (base.minor > 0) {
+            upper = new Version(0, base.minor + 1, 0);
+        } else {
+            upper = new Version(0, 0, base.patch + 1);
+        }
+        return compareVersions(version, upper) < 0;
+    }
+
+    private boolean versionInTildeRange(Version version, Version base) {
+        if (compareVersions(version, base) < 0) {
+            return false;
+        }
+        Version upper = new Version(base.major, base.minor + 1, 0);
+        return compareVersions(version, upper) < 0;
+    }
+
     /**
      * 比较版本号
      */
     private int compareVersions(String v1, String v2) {
-        String[] p1 = v1.split("\\.");
-        String[] p2 = v2.split("\\.");
+        return compareVersions(parseVersion(v1), parseVersion(v2));
+    }
 
-        for (int i = 0; i < Math.max(p1.length, p2.length); i++) {
-            int n1 = i < p1.length ? parseVersionPart(p1[i]) : 0;
-            int n2 = i < p2.length ? parseVersionPart(p2[i]) : 0;
-            if (n1 != n2)
-                return n1 - n2;
+    private int compareVersions(Version left, Version right) {
+        if (left.major != right.major) {
+            return left.major - right.major;
         }
-        return 0;
+        if (left.minor != right.minor) {
+            return left.minor - right.minor;
+        }
+        return left.patch - right.patch;
+    }
+
+    private Version parseVersion(String version) {
+        String[] parts = version.split("\\.");
+        int major = parts.length > 0 ? parseVersionPart(parts[0]) : 0;
+        int minor = parts.length > 1 ? parseVersionPart(parts[1]) : 0;
+        int patch = parts.length > 2 ? parseVersionPart(parts[2]) : 0;
+        return new Version(major, minor, patch);
     }
 
     private int parseVersionPart(String part) {
@@ -221,6 +562,9 @@ public class NpmPackageManager {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    private record Version(int major, int minor, int patch) {
     }
 
     /**

@@ -20,6 +20,10 @@ public class QinUtils {
         if (dir == null || !Files.exists(dir)) {
             return;
         }
+        if (Files.isSymbolicLink(dir) || isWindowsReparsePoint(dir)) {
+            Files.deleteIfExists(dir);
+            return;
+        }
         try (Stream<Path> walk = Files.walk(dir)) {
             walk.sorted(Comparator.reverseOrder())
                     .forEach(p -> {
@@ -30,6 +34,11 @@ public class QinUtils {
                         }
                     });
         }
+    }
+
+    private static boolean isWindowsReparsePoint(Path path) throws IOException {
+        Object attributes = Files.getAttribute(path, "dos:attributes", LinkOption.NOFOLLOW_LINKS);
+        return attributes instanceof Number number && (number.longValue() & 0x400L) != 0;
     }
 
     /**

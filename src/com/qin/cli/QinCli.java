@@ -77,6 +77,9 @@ public class QinCli {
             }
         } catch (Exception e) {
             System.err.println(red("Error: ") + e.getMessage());
+            if ("true".equalsIgnoreCase(System.getenv("QIN_DEBUG"))) {
+                e.printStackTrace(System.err);
+            }
             System.exit(1);
         }
     }
@@ -553,6 +556,9 @@ public class QinCli {
         requireSourceContains(indexSource,
                 "SlimeJavascriptParser",
                 "Generated parser index.ts must export SlimeJavascriptParser for OVS/CSSTS inheritance");
+        requireSourceContains(indexSource,
+                "com_subhuti_parser_Alternative as Alternative",
+                "Generated parser index.ts must export Subhuti Alternative for OVS/CSSTS parser combinators");
         for (String additionalEntryBinaryName : config.generated().additionalEntryBinaryNames()) {
             requireSourceContains(generatedConfigSource,
                     "\"" + additionalEntryBinaryName + "\"",
@@ -723,6 +729,7 @@ public class QinCli {
 
         String buildScript = dependencyConfig.scripts().get("build");
         if (buildScript != null && !buildScript.isBlank()) {
+            ensureLanguageScriptToolDependenciesInstalled(dependencyConfig, root, dryRun);
             runWithLanguageBuildAndDependencyLocks(root, nestedDependencyRoots, () -> runLanguageShellCommandAt(
                             root,
                             buildScript,
@@ -880,6 +887,48 @@ public class QinCli {
         return dependencies;
     }
 
+    private static void ensureLanguageScriptToolDependenciesInstalled(
+            QinConfig config,
+            Path projectRoot,
+            boolean dryRun) throws IOException {
+        LinkedHashMap<String, String> dependencies = new LinkedHashMap<>();
+        dependencies.putAll(config.dependencies());
+        dependencies.putAll(config.devDependencies());
+        if (dependencies.isEmpty()) {
+            return;
+        }
+        if (dryRun) {
+            for (Map.Entry<String, String> dependency : dependencies.entrySet()) {
+                String name = dependency.getKey();
+                String version = dependency.getValue();
+                if (isNpmDependency(name) && !isLocalFileDependency(version)
+                        && !isNpmDependencyInstalled(projectRoot, name)) {
+                    System.out.println("qin npm install " + name + "@" + version);
+                }
+            }
+            return;
+        }
+        NpmPackageManager npm = new NpmPackageManager(projectRoot.toString());
+        int installed = 0;
+        for (Map.Entry<String, String> dependency : dependencies.entrySet()) {
+            String name = dependency.getKey();
+            String version = dependency.getValue();
+            if (!isNpmDependency(name) || (isLocalFileDependency(version)
+                    && !isLocalNpmPackageDependency(projectRoot, version))) {
+                continue;
+            }
+            boolean ok = npm.install(name, version);
+            if (!ok) {
+                throw new IOException("Failed to install npm dependency: " + name);
+            }
+            installed++;
+        }
+        if (installed > 0) {
+            System.out.println(green("[OK] Installed " + installed
+                    + " language script npm dependency package(s)"));
+        }
+    }
+
     private static Path resolveLocalFileDependencyRoot(Path projectRoot, String version) {
         if (version == null || !version.startsWith("file:")) {
             return null;
@@ -893,6 +942,11 @@ public class QinCli {
             path = projectRoot.resolve(path);
         }
         return path.toAbsolutePath().normalize();
+    }
+
+    private static boolean isLocalNpmPackageDependency(Path projectRoot, String version) {
+        Path root = resolveLocalFileDependencyRoot(projectRoot, version);
+        return root != null && Files.isRegularFile(root.resolve(QinConstants.PACKAGE_JSON));
     }
 
     private static void addNodeBinPaths(Map<String, String> environment, Path cwd) {
@@ -2475,7 +2529,11 @@ public class QinCli {
     }
 
     private static boolean isNpmDependencyInstalled(String name) {
-        Path packageJson = Path.of(QinConstants.getCwd(), QinConstants.NODE_MODULES)
+        return isNpmDependencyInstalled(Paths.get(QinConstants.getCwd()), name);
+    }
+
+    private static boolean isNpmDependencyInstalled(Path projectRoot, String name) {
+        Path packageJson = projectRoot.resolve(QinConstants.NODE_MODULES)
                 .resolve(name.replace('/', java.io.File.separatorChar))
                 .resolve(QinConstants.PACKAGE_JSON);
         return Files.isRegularFile(packageJson);

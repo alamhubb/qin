@@ -94,6 +94,20 @@ public final class QinLanguageConfigSmokeTestMain {
 
         Files.writeString(root.resolve("qin.config.js"), """
                 export default {
+                  name: 'com.qin.demo:build-output-server-bundle',
+                  language: {
+                    id: 'bundle-output',
+                    extension: '.bundle',
+                    server: 'src/language-server.ts',
+                    serverBundle: 'dist/language-server.cjs'
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        ValidationResult buildOutputBundle = loader.validate(loader.load());
+        require(buildOutputBundle.isValid(), "language.serverBundle build output may be created by scripts.build/test");
+
+        Files.writeString(root.resolve("qin.config.js"), """
+                export default {
                   name: 'com.qin.demo:runtime-language-metadata',
                   language: {
                     id: 'runtime-only',

@@ -53,7 +53,11 @@ import com.slime.java.ast.JavaCstToAst;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.FileVisitResult;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -287,15 +291,39 @@ public final class QinJavaProjectJsCompiler {
 
     private void cleanEmbeddedJavaSdkPackage(Path outputRoot) throws IOException {
         Path embeddedNodeModules = outputRoot.resolve("node_modules").toAbsolutePath().normalize();
-        if (!Files.exists(embeddedNodeModules)) {
+        if (!Files.exists(embeddedNodeModules, LinkOption.NOFOLLOW_LINKS)) {
             return;
         }
-        try (Stream<Path> stream = Files.walk(embeddedNodeModules)) {
-            List<Path> paths = stream.sorted((left, right) -> right.compareTo(left)).toList();
-            for (Path path : paths) {
-                Files.delete(path);
-            }
+        if (Files.isSymbolicLink(embeddedNodeModules)
+                || !Files.isDirectory(embeddedNodeModules, LinkOption.NOFOLLOW_LINKS)) {
+            Files.delete(embeddedNodeModules);
+            return;
         }
+        Files.walkFileTree(embeddedNodeModules, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+                throw exc;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                if (exc != null) {
+                    throw exc;
+                }
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     private void copyJavaSdkSourceTree(JavaSdkSource javaSdkSource, Path packageRoot) throws IOException {
@@ -879,6 +907,7 @@ public final class QinJavaProjectJsCompiler {
         appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$StatementParams", "StatementParams", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$DeclarationParams", "DeclarationParams", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$TemplateLiteralParams", "TemplateLiteralParams", extension, binaryNames);
+        appendExportAlias(js, "com.subhuti.parser.Alternative", "Alternative", extension, binaryNames);
 
         if (binaryNames.contains("com.slime.token.JavaScriptTokens")) {
             String tokenIdentifier = QinJsBackend.generatedJavaClassIdentifier("com.slime.token.JavaScriptTokens");

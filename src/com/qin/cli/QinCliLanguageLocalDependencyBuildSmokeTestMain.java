@@ -254,6 +254,9 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         require(!Files.exists(scriptLockUpstream.resolve(".qin").resolve("language-build.lock")),
                 "script dependency read lock cleanup after serialized language scripts");
 
+        Path scriptToolRoot = root.resolve("script-tool");
+        verifyLocalDependencyBuildInstallsScriptTool(method, scriptToolRoot);
+
         Path cycleA = root.resolve("cycle-a");
         Path cycleB = root.resolve("cycle-b");
         Files.createDirectories(cycleA);
@@ -326,6 +329,86 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                 "qin language run dev:mp-weixin --dry-run must execute named qin.config.js script");
     }
 
+    private static void verifyLocalDependencyBuildInstallsScriptTool(Method method, Path root) throws Exception {
+        Path toolPackage = root.resolve("tool-package");
+        Path upstream = root.resolve("upstream");
+        Path downstream = root.resolve("downstream");
+        Files.createDirectories(toolPackage.resolve("bin"));
+        Files.createDirectories(upstream.resolve("src"));
+        Files.createDirectories(downstream);
+        Files.writeString(toolPackage.resolve("package.json"), """
+                {
+                  "name": "local-qin-script-tool",
+                  "version": "1.0.0",
+                  "bin": {
+                    "local-qin-script-tool": "bin/build%s"
+                  }
+                }
+                """.formatted(isWindows() ? ".cmd" : ".sh"), StandardCharsets.UTF_8);
+        if (isWindows()) {
+            Files.writeString(toolPackage.resolve("bin").resolve("build.cmd"), """
+                    @echo off
+                    if not exist dist mkdir dist
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "$src = Get-Content -Raw -Encoding UTF8 'src/source.ts'; Set-Content -Encoding UTF8 'dist/tool-marker.txt' ('tool-built:' + $src)"
+                    """, StandardCharsets.UTF_8);
+        } else {
+            Path tool = toolPackage.resolve("bin").resolve("build.sh");
+            Files.writeString(tool, """
+                    #!/bin/sh
+                    set -eu
+                    mkdir -p dist
+                    printf 'tool-built:' > dist/tool-marker.txt
+                    cat src/source.ts >> dist/tool-marker.txt
+                    """, StandardCharsets.UTF_8);
+            if (!tool.toFile().setExecutable(true)) {
+                throw new IllegalStateException("Unable to make local-qin-script-tool executable: " + tool);
+            }
+        }
+        Files.writeString(upstream.resolve("src").resolve("source.ts"), "export const tool = true\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(upstream.resolve("qin.config.js"), """
+                export default {
+                  name: "script-tool-upstream",
+                  version: "1.0.0",
+                  scripts: {
+                    build: "local-qin-script-tool"
+                  },
+                  devDependencies: {
+                    "local-qin-script-tool": "file:../tool-package"
+                  },
+                  language: {
+                    id: "script-tool-upstream",
+                    extension: ".stup",
+                    parser: "src/source.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(downstream.resolve("qin.config.js"), """
+                export default {
+                  name: "script-tool-downstream",
+                  version: "1.0.0",
+                  dependencies: {
+                    upstream: "file:../upstream"
+                  },
+                  language: {
+                    id: "script-tool-downstream",
+                    extension: ".stdown",
+                    parser: "index.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+
+        method.invoke(null, new ConfigLoader(downstream.toString()).load(), downstream, false);
+        Path marker = upstream.resolve("dist").resolve("tool-marker.txt");
+        require(Files.isRegularFile(marker), "language local dependency script tool marker");
+        String markerText = Files.readString(marker, StandardCharsets.UTF_8);
+        require(markerText.contains("tool-built:") && markerText.contains("tool = true"),
+                "language local dependency script tool installed from devDependencies");
+        require(Files.isRegularFile(upstream.resolve("node_modules").resolve(".bin")
+                        .resolve(isWindows() ? "local-qin-script-tool.cmd" : "local-qin-script-tool")),
+                "language local dependency script tool bin link");
+    }
+
     private static void verifyLanguageScriptDryRunGeneratesParserFirst(Path languageRoot) throws Exception {
         Path generatedRoot = languageRoot.resolve("generated").resolve("qin-parser-ts");
         Files.createDirectories(generatedRoot);
@@ -356,6 +439,9 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                   "qin": {
                     "entryBinaryName": "com.qin.parser.QinParser"
                   },
+                  "dependencies": {
+                    "@qin/java-sdk-js": "file:../java-sdk-js"
+                  },
                   "exports": {
                     ".": "./index.ts",
                     "./SlimeCstToAstUtils": "./com/slime/parser/cstToAst/SlimeCstToAstUtils.ts",
@@ -367,6 +453,7 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                 export default com_qin_parser_QinParser
                 export { com_qin_parser_QinParser as QinParser }
                 export { SlimeJavascriptParser }
+                export { com_subhuti_parser_Alternative as Alternative }
                 """, StandardCharsets.UTF_8);
         Files.writeString(languageRoot.resolve("qin.config.js"), """
                 export default {
