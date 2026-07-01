@@ -454,6 +454,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "Qin IDEA LSP diagnostics smoke source must exist: " + smokePath);
         String smokeSource = Files.readString(smokePath);
         for (String method : List.of(
+                "textDocument/codeAction",
                 "textDocument/completion",
                 "textDocument/hover",
                 "textDocument/signatureHelp",
@@ -473,6 +474,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "IDEA diagnostics smoke must request " + method);
         }
         for (String assertionNeedle : List.of(
+                "codeAction missing remove forbidden java import quickfix",
                 "completion missing",
                 "hover missing",
                 "signatureHelp missing",
@@ -1261,6 +1263,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     matrixCase.id() + " language server test must assert " + assertionNeedle);
         }
         if ("qin".equals(matrixCase.id())) {
+            require(testSource.contains("textDocument/codeAction"),
+                    "Qin language server test must request textDocument/codeAction");
+            require(testSource.contains("Remove forbidden java import"),
+                    "Qin language server test must assert import-policy codeAction coverage");
             require(testSource.contains("textDocument/foldingRange"),
                     "Qin language server test must request textDocument/foldingRange");
             require(testSource.contains("foldingRange did not include"),

@@ -2,6 +2,9 @@ import type { LanguageServicePlugin } from '@volar/language-service'
 import path from 'node:path'
 import ts from 'typescript'
 import {
+  type CodeAction,
+  CodeActionKind,
+  type CodeActionContext,
   DiagnosticSeverity,
   type DocumentLink,
   type DocumentSymbol,
@@ -23,6 +26,9 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
     diagnosticProvider: {
       interFileDependencies: false,
       workspaceDiagnostics: false,
+    },
+    codeActionProvider: {
+      codeActionKinds: [CodeActionKind.QuickFix],
     },
     documentLinkProvider: {},
     documentSymbolProvider: true,
@@ -48,6 +54,13 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
         }
         const sourceUri = readSourceDocumentUri(context, document.uri)
         return provideSourceDocumentLinks(document, sourceUri)
+      },
+      provideCodeActions(document: TextDocument, range: Range, codeActionContext: CodeActionContext) {
+        const sourceUri = readSourceDocumentUri(context, document.uri)
+        if (!isQinDocument(document) && sourceUri === document.uri) {
+          return []
+        }
+        return provideImportPolicyCodeActions(document, sourceUri, range, codeActionContext)
       },
       provideFoldingRanges(document: TextDocument) {
         if (!isQinDocument(document)) {
@@ -244,6 +257,55 @@ function createQinImportPolicyDiagnostics(document: TextDocument, sourceUri: str
       source: 'qin-import-policy',
       message: `${zone === 'app' ? 'QIN1001 app code' : 'QIN1002 shared code'} cannot import java modules: ${item.text}`,
     }))
+}
+
+function provideImportPolicyCodeActions(document: TextDocument, sourceUri: string, range: Range, context: CodeActionContext): CodeAction[] {
+  const zone = readQinSourceZone(sourceUri)
+  if (zone !== 'app' && zone !== 'shared') {
+    return []
+  }
+  const actions: CodeAction[] = []
+  const diagnostics = context.diagnostics.filter(diagnostic => diagnostic.source === 'qin-import-policy')
+  for (const specifier of collectModuleSpecifierLinks(document.getText()).filter(item => isJavaModuleSpecifier(item.text))) {
+    const specifierRange = createRange(document, specifier.start, specifier.end)
+    if (!rangesOverlap(range, specifierRange)) {
+      continue
+    }
+    const matchingDiagnostic = diagnostics.find(diagnostic => rangesOverlap(diagnostic.range, specifierRange))
+    actions.push({
+      title: 'Remove forbidden java import',
+      kind: CodeActionKind.QuickFix,
+      diagnostics: matchingDiagnostic ? [matchingDiagnostic] : [],
+      edit: {
+        changes: {
+          [document.uri]: [{
+            range: expandRangeToWholeLine(document, specifierRange),
+            newText: '',
+          }],
+        },
+      },
+    })
+  }
+  return actions
+}
+
+function rangesOverlap(left: Range, right: Range): boolean {
+  return comparePositions(left.start, right.end) <= 0 && comparePositions(right.start, left.end) <= 0
+}
+
+function comparePositions(left: Position, right: Position): number {
+  if (left.line !== right.line) {
+    return left.line - right.line
+  }
+  return left.character - right.character
+}
+
+function expandRangeToWholeLine(document: TextDocument, range: Range): Range {
+  const lineStart = document.offsetAt({ line: range.start.line, character: 0 })
+  const nextLineStart = range.start.line + 1 < document.lineCount
+    ? document.offsetAt({ line: range.start.line + 1, character: 0 })
+    : document.getText().length
+  return createRange(document, lineStart, nextLineStart)
 }
 
 type QinSourceZone = 'app' | 'main' | 'shared'

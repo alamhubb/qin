@@ -158,17 +158,18 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "capabilities", Map.of(
                             "workspace", Map.of(
                                     "symbol", Map.of()),
-                            "textDocument", Map.of(
-                                    "completion", Map.of(),
-                                    "documentLink", Map.of(),
-                                    "documentHighlight", Map.of(),
-                                    "foldingRange", Map.of(),
-                                    "hover", Map.of(),
-                                    "linkedEditingRange", Map.of(),
-                                    "rename", Map.of(),
-                                    "selectionRange", Map.of(),
-                                    "signatureHelp", Map.of(),
-                                    "publishDiagnostics", Map.of())),
+                            "textDocument", Map.ofEntries(
+                                    Map.entry("codeAction", Map.of()),
+                                    Map.entry("completion", Map.of()),
+                                    Map.entry("documentLink", Map.of()),
+                                    Map.entry("documentHighlight", Map.of()),
+                                    Map.entry("foldingRange", Map.of()),
+                                    Map.entry("hover", Map.of()),
+                                    Map.entry("linkedEditingRange", Map.of()),
+                                    Map.entry("rename", Map.of()),
+                                    Map.entry("selectionRange", Map.of()),
+                                    Map.entry("signatureHelp", Map.of()),
+                                    Map.entry("publishDiagnostics", Map.of()))),
                     "rootUri", workspaceRoot.toUri().toString(),
                     "initializationOptions", Map.of(
                             "typescript", Map.of("tsdk", commandSpec.environment().get("QIN_LSP_TYPESCRIPT_TSDK")))));
@@ -362,6 +363,21 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 "version", 1,
                                 "text", "import { ArrayList } from 'java:java.util'\nexport const appValue = ArrayList\n")));
                 session.awaitDiagnostic(appJavaImportUri, "QIN1001");
+                Map<String, Object> codeActions = session.awaitResponse(session.request("textDocument/codeAction", Map.of(
+                        "textDocument", Map.of("uri", appJavaImportUri),
+                        "range", Map.of(
+                                "start", Map.of("line", 0, "character", 27),
+                                "end", Map.of("line", 0, "character", 41)),
+                        "context", Map.of(
+                                "diagnostics", List.of(Map.of(
+                                        "range", Map.of(
+                                                "start", Map.of("line", 0, "character", 27),
+                                                "end", Map.of("line", 0, "character", 41)),
+                                        "source", "qin-import-policy",
+                                        "message", "QIN1001 app code cannot import java modules: java:java.util")),
+                                "only", List.of("quickfix")))));
+                require(hasQuickFixRemovingImport(codeActions.get("result")),
+                        language.id() + " codeAction missing remove forbidden java import quickfix: " + codeActions);
 
                 Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
                         "query", testCase.expectedDocumentSymbol())));
@@ -415,6 +431,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Map<?, ?> capabilitiesMap = (Map<?, ?>) capabilities;
 
         require(capabilitiesMap.containsKey("completionProvider"), language.id() + " LSP missing completionProvider");
+        require(capabilitiesMap.containsKey("codeActionProvider"), language.id() + " LSP missing codeActionProvider");
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
         require(capabilitiesMap.containsKey("signatureHelpProvider"), language.id() + " LSP missing signatureHelpProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
@@ -672,6 +689,25 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             if (target != null
                     && sameUri(uri, String.valueOf(target))
                     && hasRangeStartingAt(link, line, character)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasQuickFixRemovingImport(Object result) {
+        if (!(result instanceof List<?> list)) {
+            return false;
+        }
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> action)) {
+                continue;
+            }
+            Object title = action.get("title");
+            Object kind = action.get("kind");
+            if ("Remove forbidden java import".equals(String.valueOf(title))
+                    && "quickfix".equals(String.valueOf(kind))
+                    && workspaceEditTexts(action.get("edit")).contains("")) {
                 return true;
             }
         }

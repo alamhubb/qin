@@ -320,6 +320,7 @@ async function main() {
         symbol: {},
       },
       textDocument: {
+        codeAction: {},
         completion: {
           completionItem: {
             snippetSupport: true,
@@ -360,6 +361,9 @@ async function main() {
   const initResponse = messages.find(message => message.id === initializeRequest.id)
   if (!initResponse?.result?.capabilities) {
     throw new Error(`Qin language server initialize failed. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`)
+  }
+  if (!initResponse.result.capabilities.codeActionProvider) {
+    throw new Error(`Qin language server initialize did not expose codeActionProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
 
   server.stdin.write(createNotification('initialized', {}))
@@ -606,6 +610,31 @@ async function main() {
 
   if (mainJavaImportDiagnostics.some((item: any) => item.source === 'qin-import-policy')) {
     throw new Error(`Main Qin java: import must not produce app/shared import-policy diagnostic: ${JSON.stringify(mainJavaImportDiagnostics)}`)
+  }
+
+  const appImportPolicyDiagnostic = appJavaImportDiagnostics.find((item: any) => item.source === 'qin-import-policy')
+  const codeActionRequest = createRequest('textDocument/codeAction', {
+    textDocument: { uri: appJavaImportUri },
+    range: appImportPolicyDiagnostic?.range ?? {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 41 },
+    },
+    context: {
+      diagnostics: appImportPolicyDiagnostic ? [appImportPolicyDiagnostic] : [],
+      only: ['quickfix'],
+    },
+  })
+  server.stdin.write(codeActionRequest.packet)
+  const codeActionResponse = await waitForResponse(
+    codeActionRequest.id,
+    messages,
+    `Qin import-policy codeAction response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const codeActions = Array.isArray(codeActionResponse.result) ? codeActionResponse.result : []
+  const removeImportAction = codeActions.find((item: any) => item.title === 'Remove forbidden java import' && item.kind === 'quickfix')
+  const codeActionTexts = collectWorkspaceEditTexts(removeImportAction?.edit)
+  if (!removeImportAction || !codeActionTexts.includes('')) {
+    throw new Error(`Qin import-policy codeAction did not remove forbidden java import: ${JSON.stringify(codeActionResponse.result)}`)
   }
 
   if (invalidDiagnostics[0].source !== 'qin-parser') {
