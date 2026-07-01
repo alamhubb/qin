@@ -547,6 +547,16 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         .toString();
                 session.notification("textDocument/didOpen", Map.of(
                         "textDocument", Map.of(
+                                "uri", importedUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", """
+                                        export object Counter {
+                                          value = 1
+                                        }
+                                        """)));
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
                                 "uri", importConsumerUri,
                                 "languageId", language.id(),
                                 "version", 1,
@@ -555,6 +565,25 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         "textDocument", Map.of("uri", importConsumerUri))));
                 require(hasDocumentLinkTarget(documentLinks.get("result"), importedUri, 0, 25),
                         language.id() + " documentLink missing local import target: " + documentLinks);
+
+                Map<String, Object> fileReferences = session.awaitResponse(session.request("volar/client/findFileReference", Map.of(
+                        "textDocument", Map.of("uri", importedUri))));
+                require(hasLocationContaining(fileReferences.get("result"), importConsumerUri, 0, 26),
+                        language.id() + " fileReferences missing local import usage: " + fileReferences);
+
+                String renamedImportedUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("renamed-imported.qin")
+                        .toUri()
+                        .toString();
+                Map<String, Object> fileRenameEdits = session.awaitResponse(session.request("workspace/willRenameFiles", Map.of(
+                        "files", List.of(Map.of(
+                                "oldUri", importedUri,
+                                "newUri", renamedImportedUri)))));
+                require(workspaceEditTexts(fileRenameEdits.get("result")).stream()
+                                .anyMatch(text -> text.contains("renamed-imported")),
+                        language.id() + " fileRenameEdits did not update local import specifier: " + fileRenameEdits);
 
                 String sharedJavaImportUri = workspaceRoot
                         .resolve("tmp")
@@ -743,6 +772,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         if ("qin".equals(language.id())) {
+            Object experimental = capabilitiesMap.get("experimental");
+            require(experimental instanceof Map<?, ?> experimentalMap
+                            && Boolean.TRUE.equals(experimentalMap.get("fileReferencesProvider")),
+                    language.id() + " LSP missing experimental.fileReferencesProvider");
+            require(experimental instanceof Map<?, ?> experimentalMap
+                            && Boolean.TRUE.equals(experimentalMap.get("fileRenameEditsProvider")),
+                    language.id() + " LSP missing experimental.fileRenameEditsProvider");
             require(capabilitiesMap.containsKey("documentLinkProvider"), language.id() + " LSP missing documentLinkProvider");
             require(capabilitiesMap.containsKey("foldingRangeProvider"), language.id() + " LSP missing foldingRangeProvider");
             require(capabilitiesMap.containsKey("linkedEditingRangeProvider"), language.id() + " LSP missing linkedEditingRangeProvider");

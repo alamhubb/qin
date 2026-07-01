@@ -468,6 +468,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/formatting",
                 "textDocument/inlayHint",
                 "textDocument/documentLink",
+                "volar/client/findFileReference",
+                "workspace/willRenameFiles",
                 "textDocument/linkedEditingRange",
                 "textDocument/rename",
                 "textDocument/prepareRename",
@@ -492,6 +494,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "formatting did not return TypeScript formatter edits through source mappings",
                 "inlayHint did not include parameter or variable type hints through source mappings",
                 "documentLink missing local import target",
+                "fileReferences missing local import usage",
+                "fileRenameEdits did not update local import specifier",
                 "linkedEditingRange missing object declaration and usage",
                 "rename did not return workspace edits",
                 "prepareRename did not return symbol range",
@@ -1356,6 +1360,14 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/documentLink");
             require(testSource.contains("documentLink did not include local import target"),
                     "Qin language server test must assert documentLink local import coverage");
+            require(testSource.contains("volar/client/findFileReference"),
+                    "Qin language server test must request volar/client/findFileReference");
+            require(testSource.contains("fileReferences did not include provider import usage"),
+                    "Qin language server test must assert fileReferences local import coverage");
+            require(testSource.contains("workspace/willRenameFiles"),
+                    "Qin language server test must request workspace/willRenameFiles");
+            require(testSource.contains("fileRenameEdits did not update local import specifier"),
+                    "Qin language server test must assert fileRenameEdits local import coverage");
             require(testSource.contains("qin-import-policy"),
                     "Qin language server test must assert app/shared import-policy diagnostics");
             require(testSource.contains("app code cannot import java modules"),

@@ -407,6 +407,12 @@ async function main() {
   if (!initResponse.result.capabilities.inlayHintProvider) {
     throw new Error(`Qin language server initialize did not expose inlayHintProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
+  if (!initResponse.result.capabilities.experimental?.fileReferencesProvider) {
+    throw new Error(`Qin language server initialize did not expose experimental.fileReferencesProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.experimental?.fileRenameEditsProvider) {
+    throw new Error(`Qin language server initialize did not expose experimental.fileRenameEditsProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
 
   server.stdin.write(createNotification('initialized', {}))
 
@@ -1502,6 +1508,36 @@ async function main() {
   const documentLinks = Array.isArray(documentLinkResponse.result) ? documentLinkResponse.result : []
   if (!documentLinks.some((item: any) => sameUri(item.target, importProviderUri) && rangeStartsAt(item, 0, 25))) {
     throw new Error(`Qin documentLink did not include local import target: ${JSON.stringify(documentLinkResponse.result)}`)
+  }
+
+  const fileReferencesRequest = createRequest('volar/client/findFileReference', {
+    textDocument: { uri: importProviderUri },
+  })
+  server.stdin.write(fileReferencesRequest.packet)
+  const fileReferencesResponse = await waitForResponse(
+    fileReferencesRequest.id,
+    messages,
+    `Qin fileReferences response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const fileReferences = Array.isArray(fileReferencesResponse.result) ? fileReferencesResponse.result : []
+  if (!fileReferences.some((item: any) => sameUri(locationUri(item), importConsumerUri) && rangeContains(item, 0, 26))) {
+    throw new Error(`Qin fileReferences did not include provider import usage: ${JSON.stringify(fileReferencesResponse.result)}`)
+  }
+
+  const fileRenameRequest = createRequest('workspace/willRenameFiles', {
+    files: [{
+      oldUri: importProviderUri,
+      newUri: toFileUri(path.join(__dirname, 'renamed-provider.qin')),
+    }],
+  })
+  server.stdin.write(fileRenameRequest.packet)
+  const fileRenameResponse = await waitForResponse(
+    fileRenameRequest.id,
+    messages,
+    `Qin fileRenameEdits response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  if (!collectWorkspaceEditTexts(fileRenameResponse.result).some(text => text.includes('renamed-provider'))) {
+    throw new Error(`Qin fileRenameEdits did not update local import specifier: ${JSON.stringify(fileRenameResponse.result)}`)
   }
 
   const workspaceSymbolRequest = createRequest('workspace/symbol', {
