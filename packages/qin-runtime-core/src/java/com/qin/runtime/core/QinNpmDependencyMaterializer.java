@@ -9,8 +9,12 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -30,6 +34,7 @@ import java.util.zip.GZIPInputStream;
  * Vite.
  */
 final class QinNpmDependencyMaterializer {
+    private static final String LOCAL_PACKAGE_SOURCE_MARKER = ".qin-source-root";
     private static final List<String> REGISTRIES = List.of(
             "https://registry.npmmirror.com",
             "https://registry.npmjs.org");
@@ -59,7 +64,7 @@ final class QinNpmDependencyMaterializer {
             if (isMavenCoordinate(dependency.getKey())) {
                 continue;
             }
-            installPackage(dependency.getKey(), dependency.getValue(), nodeModulesRoot, installed);
+            installPackage(dependency.getKey(), dependency.getValue(), manifest.getParent(), nodeModulesRoot, installed);
         }
     }
 
@@ -68,22 +73,47 @@ final class QinNpmDependencyMaterializer {
             return;
         }
         Files.createDirectories(nodeModulesRoot);
-        installPackage(packageName, versionRange, nodeModulesRoot, new LinkedHashSet<>());
+        installPackage(packageName, versionRange, null, nodeModulesRoot, new LinkedHashSet<>());
     }
 
     private void installPackage(
             String packageName,
             String versionRange,
+            Path dependencyBaseDir,
             Path nodeModulesRoot,
             Set<String> installed) throws IOException {
-        if (packageName == null || packageName.isBlank() || !installed.add(packageName)) {
+        if (packageName == null || packageName.isBlank()) {
             return;
         }
         Path packageDir = nodeModulesRoot.resolve(packageName.replace('/', java.io.File.separatorChar)).normalize();
+        if (isFileDependency(versionRange)) {
+            Path sourceDir = resolveFileDependency(dependencyBaseDir, versionRange);
+            String installKey = packageName + "@file:" + sourceDir.toAbsolutePath().normalize();
+            if (!installed.add(installKey)) {
+                return;
+            }
+            if (!isCurrentLocalPackage(packageName, sourceDir, packageDir)) {
+                materializeLocalPackage(packageName, sourceDir, packageDir);
+            }
+            for (Map.Entry<String, String> child : readDependencyVersions(packageDir.resolve("package.json")).entrySet()) {
+                installPackage(child.getKey(), child.getValue(), sourceDir, nodeModulesRoot, installed);
+            }
+            return;
+        }
+
+        if (!installed.add(packageName)) {
+            return;
+        }
         if (Files.isRegularFile(packageDir.resolve("package.json"))
                 && packageName.equals(readPackageName(packageDir.resolve("package.json")))) {
+            Path childBaseDir = localPackageSourceRoot(packageDir);
             for (String dependencyName : readDependencyVersions(packageDir.resolve("package.json")).keySet()) {
-                installPackage(dependencyName, readDependencyVersions(packageDir.resolve("package.json")).get(dependencyName), nodeModulesRoot, installed);
+                installPackage(
+                        dependencyName,
+                        readDependencyVersions(packageDir.resolve("package.json")).get(dependencyName),
+                        childBaseDir,
+                        nodeModulesRoot,
+                        installed);
             }
             return;
         }
@@ -99,8 +129,175 @@ final class QinNpmDependencyMaterializer {
 
         Map<String, String> childDependencies = readDependencyVersions(packageDir.resolve("package.json"));
         for (Map.Entry<String, String> child : childDependencies.entrySet()) {
-            installPackage(child.getKey(), child.getValue(), nodeModulesRoot, installed);
+            installPackage(child.getKey(), child.getValue(), packageDir, nodeModulesRoot, installed);
         }
+    }
+
+    private boolean isFileDependency(String versionRange) {
+        return versionRange != null && versionRange.trim().startsWith("file:");
+    }
+
+    private Path resolveFileDependency(Path dependencyBaseDir, String versionRange) throws IOException {
+        if (dependencyBaseDir == null) {
+            throw new IOException("Cannot resolve file dependency without a base directory: " + versionRange);
+        }
+        String rawPath = versionRange.trim().substring("file:".length()).trim();
+        if (rawPath.isBlank()) {
+            throw new IOException("file dependency path must not be blank");
+        }
+        Path path = Path.of(rawPath);
+        if (!path.isAbsolute()) {
+            path = dependencyBaseDir.resolve(path);
+        }
+        Path resolved = path.toAbsolutePath().normalize();
+        if (!Files.isDirectory(resolved)) {
+            throw new IOException("file dependency does not point at a directory: " + resolved);
+        }
+        if (!Files.isRegularFile(resolved.resolve("package.json"))) {
+            throw new IOException("file dependency is missing package.json: " + resolved);
+        }
+        return resolved;
+    }
+
+    private void materializeLocalPackage(String packageName, Path sourceDir, Path packageDir) throws IOException {
+        String actualName = readPackageName(sourceDir.resolve("package.json"));
+        if (!packageName.equals(actualName)) {
+            throw new IOException("file dependency package name mismatch: expected "
+                    + packageName + " but found " + actualName + " in " + sourceDir);
+        }
+        Files.createDirectories(packageDir.getParent());
+        Path replacementDir = packageDir.resolveSibling(packageDir.getFileName() + ".qin-replacement-" + System.nanoTime());
+        Path oldDir = null;
+        copyRecursively(sourceDir, replacementDir);
+        Files.writeString(
+                replacementDir.resolve(LOCAL_PACKAGE_SOURCE_MARKER),
+                sourceDir.toAbsolutePath().normalize().toString(),
+                StandardCharsets.UTF_8);
+        if (Files.exists(packageDir)) {
+            oldDir = packageDir.resolveSibling(packageDir.getFileName() + ".qin-old-" + System.nanoTime());
+            Files.move(packageDir, oldDir, StandardCopyOption.REPLACE_EXISTING);
+        }
+        Files.move(replacementDir, packageDir, StandardCopyOption.REPLACE_EXISTING);
+        if (oldDir != null) {
+            try {
+                deleteRecursively(oldDir);
+            } catch (IOException error) {
+                System.err.println("Warning: failed to clean old local npm package cache "
+                        + oldDir + ": " + error.getMessage());
+            }
+        }
+    }
+
+    private boolean isCurrentLocalPackage(String packageName, Path sourceDir, Path packageDir) throws IOException {
+        Path packageJson = packageDir.resolve("package.json");
+        if (!Files.isRegularFile(packageJson) || !packageName.equals(readPackageName(packageJson))) {
+            return false;
+        }
+        Path marker = packageDir.resolve(LOCAL_PACKAGE_SOURCE_MARKER);
+        if (!Files.isRegularFile(marker)) {
+            return false;
+        }
+        Path markerSource = Path.of(Files.readString(marker, StandardCharsets.UTF_8).trim()).toAbsolutePath().normalize();
+        Path normalizedSource = sourceDir.toAbsolutePath().normalize();
+        if (!markerSource.equals(normalizedSource)) {
+            return false;
+        }
+        long markerModified = Files.getLastModifiedTime(marker).toMillis();
+        return !isTreeNewerThan(sourceDir, markerModified);
+    }
+
+    private boolean isTreeNewerThan(Path sourceDir, long timestampMillis) throws IOException {
+        final boolean[] newer = { false };
+        Path sourceRoot = sourceDir.toAbsolutePath().normalize();
+        Files.walkFileTree(sourceRoot, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (newer[0]) {
+                    return FileVisitResult.TERMINATE;
+                }
+                Path relative = sourceRoot.relativize(dir);
+                if (!relative.toString().isBlank()) {
+                    String name = dir.getFileName().toString();
+                    if ("node_modules".equals(name)
+                            || ".git".equals(name)
+                            || ".qin".equals(name)
+                            || "build".equals(name)
+                            || "target".equals(name)
+                            || "out".equals(name)
+                            || "libs".equals(name)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                }
+                if (Files.getLastModifiedTime(dir).toMillis() > timestampMillis) {
+                    newer[0] = true;
+                    return FileVisitResult.TERMINATE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (Files.getLastModifiedTime(file).toMillis() > timestampMillis) {
+                    newer[0] = true;
+                    return FileVisitResult.TERMINATE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        return newer[0];
+    }
+
+    private Path localPackageSourceRoot(Path packageDir) throws IOException {
+        Path marker = packageDir.resolve(LOCAL_PACKAGE_SOURCE_MARKER);
+        if (!Files.isRegularFile(marker)) {
+            return packageDir;
+        }
+        String sourceRoot = Files.readString(marker, StandardCharsets.UTF_8).trim();
+        if (sourceRoot.isBlank()) {
+            throw new IOException("Local package source marker is blank: " + marker);
+        }
+        Path path = Path.of(sourceRoot).toAbsolutePath().normalize();
+        if (!Files.isDirectory(path)) {
+            throw new IOException("Local package source marker points at a missing directory: " + path);
+        }
+        return path;
+    }
+
+    private void copyRecursively(Path sourceDir, Path targetDir) throws IOException {
+        Path sourceRoot = sourceDir.toAbsolutePath().normalize();
+        Path targetRoot = targetDir.toAbsolutePath().normalize();
+        Files.walkFileTree(sourceRoot, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                Path relative = sourceRoot.relativize(dir);
+                if (!relative.toString().isBlank()) {
+                    String name = dir.getFileName().toString();
+                    if ("node_modules".equals(name)
+                            || ".git".equals(name)
+                            || ".qin".equals(name)
+                            || "build".equals(name)
+                            || "target".equals(name)
+                            || "out".equals(name)
+                            || "libs".equals(name)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                }
+                Files.createDirectories(targetRoot.resolve(relative));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Path relative = sourceRoot.relativize(file);
+                Path target = targetRoot.resolve(relative).normalize();
+                if (!target.startsWith(targetRoot)) {
+                    throw new IOException("Refusing to copy file dependency outside target: " + file);
+                }
+                Files.createDirectories(target.getParent());
+                Files.copy(file, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     private PackageMetadata resolvePackage(String packageName, String versionRange) throws IOException {
@@ -334,24 +531,63 @@ final class QinNpmDependencyMaterializer {
     }
 
     private void deleteRecursively(Path path) throws IOException {
-        if (path == null || !Files.exists(path)) {
+        if (path == null || !Files.exists(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
             return;
         }
-        Files.walkFileTree(path, new java.nio.file.SimpleFileVisitor<>() {
+        Files.walkFileTree(path, Set.of(java.nio.file.FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                new java.nio.file.SimpleFileVisitor<>() {
+            @Override
+            public java.nio.file.FileVisitResult preVisitDirectory(
+                    Path dir,
+                    java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                if (isLinkedDirectory(dir)) {
+                    dir.toFile().setWritable(true);
+                    Files.deleteIfExists(dir);
+                    return java.nio.file.FileVisitResult.SKIP_SUBTREE;
+                }
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+
             @Override
             public java.nio.file.FileVisitResult visitFile(
                     Path file,
                     java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                file.toFile().setWritable(true);
                 Files.deleteIfExists(file);
                 return java.nio.file.FileVisitResult.CONTINUE;
             }
 
             @Override
             public java.nio.file.FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                if (exc != null && !Files.exists(dir, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+                if (exc != null) {
+                    throw exc;
+                }
+                dir.toFile().setWritable(true);
                 Files.deleteIfExists(dir);
                 return java.nio.file.FileVisitResult.CONTINUE;
             }
+
+            @Override
+            public java.nio.file.FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                if (!Files.exists(file, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+                file.toFile().setWritable(true);
+                Files.deleteIfExists(file);
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
         });
+    }
+
+    private boolean isLinkedDirectory(Path dir) throws IOException {
+        java.nio.file.attribute.BasicFileAttributes attrs = Files.readAttributes(
+                dir,
+                java.nio.file.attribute.BasicFileAttributes.class,
+                java.nio.file.LinkOption.NOFOLLOW_LINKS);
+        return attrs.isDirectory() && (attrs.isOther() || Files.isSymbolicLink(dir));
     }
 
     private record PackageMetadata(String name, String version, String tarballUrl) {

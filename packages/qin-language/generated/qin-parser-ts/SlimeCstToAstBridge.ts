@@ -85,6 +85,15 @@ __qinSlimeCstToAstFacade.createExpressionAst = function (...args: any[]): any {
 __qinSlimeCstToAstFacade.createExpressionAstUncached = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createExpressionAstUncached(...args);
 };
+__qinSlimeCstToAstFacade.createTemplateLiteralAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createTemplateLiteralAst(...args);
+};
+__qinSlimeCstToAstFacade.createAwaitExpressionAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createAwaitExpressionAst(...args);
+};
+__qinSlimeCstToAstFacade.createYieldExpressionAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createYieldExpressionAst(...args);
+};
 __qinSlimeCstToAstFacade.createExpressionStatementAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createExpressionStatementAst(...args);
 };
@@ -108,6 +117,18 @@ __qinSlimeCstToAstFacade.createInitializerExpressionAst = function (...args: any
 };
 __qinSlimeCstToAstFacade.createLexicalBindingAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createLexicalBindingAst(...args);
+};
+__qinSlimeCstToAstFacade.createBindingTargetAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createBindingTargetAst(...args);
+};
+__qinSlimeCstToAstFacade.createBindingPatternAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createBindingPatternAst(...args);
+};
+__qinSlimeCstToAstFacade.createArrayBindingPatternAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createArrayBindingPatternAst(...args);
+};
+__qinSlimeCstToAstFacade.createObjectBindingPatternAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createObjectBindingPatternAst(...args);
 };
 __qinSlimeCstToAstFacade.createIfStatementAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createIfStatementAst(...args);
@@ -141,6 +162,24 @@ __qinSlimeCstToAstFacade.createContinueStatementAst = function (...args: any[]):
 };
 __qinSlimeCstToAstFacade.createThrowStatementAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createThrowStatementAst(...args);
+};
+__qinSlimeCstToAstFacade.createSwitchStatementAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createSwitchStatementAst(...args);
+};
+__qinSlimeCstToAstFacade.createTryStatementAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createTryStatementAst(...args);
+};
+__qinSlimeCstToAstFacade.createWithStatementAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createWithStatementAst(...args);
+};
+__qinSlimeCstToAstFacade.createDebuggerStatementAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createDebuggerStatementAst(...args);
+};
+__qinSlimeCstToAstFacade.createLabeledStatementAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createLabeledStatementAst(...args);
+};
+__qinSlimeCstToAstFacade.createEmptyStatementAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createEmptyStatementAst(...args);
 };
 __qinSlimeCstToAstFacade.createFunctionDeclarationAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createFunctionDeclarationAst(...args);
@@ -193,11 +232,23 @@ __qinSlimeCstToAstFacade.createMethodDefinitionAst = function (...args: any[]): 
 __qinSlimeCstToAstFacade.createClassExpressionAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createClassExpressionAst(...args);
 };
+__qinSlimeCstToAstFacade.createClassHeritageAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createClassHeritageAst(...args);
+};
+__qinSlimeCstToAstFacade.createClassBodyAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createClassBodyAst(...args);
+};
 __qinSlimeCstToAstFacade.createImportDeclarationAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createImportDeclarationAst(...args);
 };
 __qinSlimeCstToAstFacade.createExportDeclarationAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createExportDeclarationAst(...args);
+};
+__qinSlimeCstToAstFacade.createDecoratorsAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createDecoratorsAst(...args);
+};
+__qinSlimeCstToAstFacade.createDecoratorAst = function (...args: any[]): any {
+  return __qinSlimeCstToAstUtils.createDecoratorAst(...args);
 };
 __qinSlimeCstToAstFacade.createTSTypeAnnotationAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createTSTypeAnnotationAst(...args);

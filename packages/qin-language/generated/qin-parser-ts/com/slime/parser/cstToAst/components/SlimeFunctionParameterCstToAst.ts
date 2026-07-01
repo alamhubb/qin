@@ -1,36 +1,34 @@
+import { com_slime_ast_AstNode, com_slime_ast_AstNode as AstNode } from "../../../ast/AstNode.ts";
+import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
+import { com_slime_ast_Pattern, com_slime_ast_Pattern as Pattern } from "../../../ast/Pattern.ts";
+import { com_slime_ast_nodes_expressions_ArrayExpression, com_slime_ast_nodes_expressions_ArrayExpression as ArrayExpression } from "../../../ast/nodes/expressions/ArrayExpression.ts";
+import { com_slime_ast_nodes_expressions_Identifier, com_slime_ast_nodes_expressions_Identifier as Identifier } from "../../../ast/nodes/expressions/Identifier.ts";
+import { com_slime_ast_nodes_expressions_ObjectExpression, com_slime_ast_nodes_expressions_ObjectExpression as ObjectExpression } from "../../../ast/nodes/expressions/ObjectExpression.ts";
+import { com_slime_ast_nodes_misc_Decorator, com_slime_ast_nodes_misc_Decorator as Decorator } from "../../../ast/nodes/misc/Decorator.ts";
+import { com_slime_ast_nodes_misc_FunctionParameter, com_slime_ast_nodes_misc_FunctionParameter as FunctionParameter } from "../../../ast/nodes/misc/FunctionParameter.ts";
+import { com_slime_ast_nodes_misc_Property, com_slime_ast_nodes_misc_Property as Property } from "../../../ast/nodes/misc/Property.ts";
+import { com_slime_ast_nodes_misc_SpreadElement, com_slime_ast_nodes_misc_SpreadElement as SpreadElement } from "../../../ast/nodes/misc/SpreadElement.ts";
+import { com_slime_ast_nodes_patterns_ArrayPattern, com_slime_ast_nodes_patterns_ArrayPattern as ArrayPattern } from "../../../ast/nodes/patterns/ArrayPattern.ts";
+import { com_slime_ast_nodes_patterns_AssignmentPattern, com_slime_ast_nodes_patterns_AssignmentPattern as AssignmentPattern } from "../../../ast/nodes/patterns/AssignmentPattern.ts";
+import { com_slime_ast_nodes_patterns_ObjectPattern, com_slime_ast_nodes_patterns_ObjectPattern as ObjectPattern } from "../../../ast/nodes/patterns/ObjectPattern.ts";
+import { com_slime_ast_nodes_patterns_RestElement, com_slime_ast_nodes_patterns_RestElement as RestElement } from "../../../ast/nodes/patterns/RestElement.ts";
 import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "../SlimeAstCreateUtils.ts";
 import { com_slime_parser_cstToAst_SlimeCstToAstUtils, com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "../SlimeCstToAstUtils.ts";
-import { com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst as SlimeExpressionCstToAst } from "../expressions/SlimeExpressionCstToAst.ts";
 import { com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst, com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst as SlimeIdentifierCstToAst } from "../identifier/SlimeIdentifierCstToAst.ts";
-import { com_slime_parser_cstToAst_literal_SlimeCompoundLiteralCstToAst, com_slime_parser_cstToAst_literal_SlimeCompoundLiteralCstToAst as SlimeCompoundLiteralCstToAst } from "../literal/SlimeCompoundLiteralCstToAst.ts";
-import { com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst, com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst as SlimeTSDecoratorCstToAst } from "../typescript/SlimeTSDecoratorCstToAst.ts";
 import { com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst, com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst as SlimeTSTypeCstToAst } from "../typescript/SlimeTSTypeCstToAst.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../../subhuti/struct/SubhutiCst.ts";
-import { com_slime_ast_Pattern, com_slime_ast_Pattern as Pattern } from "../../../ast/Pattern.ts";
-import { com_slime_ast_nodes_misc_FunctionParameter, com_slime_ast_nodes_misc_FunctionParameter as FunctionParameter } from "../../../ast/nodes/misc/FunctionParameter.ts";
-import { com_slime_ast_AstNode, com_slime_ast_AstNode as AstNode } from "../../../ast/AstNode.ts";
-import { com_slime_ast_nodes_patterns_RestElement, com_slime_ast_nodes_patterns_RestElement as RestElement } from "../../../ast/nodes/patterns/RestElement.ts";
-import { com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst, com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst as SlimeBindingPatternCstToAst } from "./SlimeBindingPatternCstToAst.ts";
 import { com_subhuti_struct_SubhutiSourceLocation, com_subhuti_struct_SubhutiSourceLocation as SubhutiSourceLocation, com_subhuti_struct_SubhutiSourceLocation$Builder } from "../../../../subhuti/struct/SubhutiSourceLocation.ts";
-import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
-import { com_slime_ast_nodes_expressions_Identifier, com_slime_ast_nodes_expressions_Identifier as Identifier } from "../../../ast/nodes/expressions/Identifier.ts";
-import { com_slime_ast_nodes_misc_SpreadElement, com_slime_ast_nodes_misc_SpreadElement as SpreadElement } from "../../../ast/nodes/misc/SpreadElement.ts";
-import { com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst, com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst as SlimeSpreadElementCstToAst } from "./SlimeSpreadElementCstToAst.ts";
-import { com_slime_ast_nodes_patterns_ArrayPattern, com_slime_ast_nodes_patterns_ArrayPattern as ArrayPattern } from "../../../ast/nodes/patterns/ArrayPattern.ts";
-import { com_slime_ast_nodes_expressions_ArrayExpression, com_slime_ast_nodes_expressions_ArrayExpression as ArrayExpression } from "../../../ast/nodes/expressions/ArrayExpression.ts";
-import { com_slime_ast_nodes_patterns_ObjectPattern, com_slime_ast_nodes_patterns_ObjectPattern as ObjectPattern } from "../../../ast/nodes/patterns/ObjectPattern.ts";
-import { com_slime_ast_nodes_expressions_ObjectExpression, com_slime_ast_nodes_expressions_ObjectExpression as ObjectExpression } from "../../../ast/nodes/expressions/ObjectExpression.ts";
-import { com_slime_ast_nodes_misc_Property, com_slime_ast_nodes_misc_Property as Property } from "../../../ast/nodes/misc/Property.ts";
 
 // Generated by Qin TypeScript backend
-import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_functional, __qin_java_class_info__, __qin_binary__, __qin_logical__, __QinJavaLangThrowable, __QinJavaLangException, __QinJavaLangRuntimeException, __QinJavaLangReflectiveOperationException, __QinJavaLangClassNotFoundException, __QinJavaLangNoSuchMethodException, __QinJavaLangError, __QinJavaLangStackOverflowError, __QinJavaLangIllegalArgumentException, __QinJavaLangNumberFormatException, __QinJavaLangIllegalStateException, __QinJavaLangUnsupportedOperationException, __QinJavaIoIOException, __qin_java_implements, __QinJavaUtilList, __QinJavaUtilUnmodifiableList, __QinJavaUtilArrayList, __QinJavaUtilArrays } from "@qin/java-sdk-js";
+import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_functional, __qin_java_class_info__, __qin_binary__, __qin_logical__, __qin_java_implements, __QinJavaUtilObjects, __QinJavaUtilArrayList, __QinJavaUtilUnmodifiableList, __QinJavaUtilArrays, __QinJavaUtilList } from "@qin/java-sdk-js";
 
 function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
-const RuntimeException = __QinJavaLangRuntimeException;
-const IllegalStateException = __QinJavaLangIllegalStateException;
+const Objects = __QinJavaUtilObjects;
+const ArrayList = __QinJavaUtilArrayList;
+const Arrays = __QinJavaUtilArrays;
 class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
   __qin_field_transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils | null = null as any;
   constructor(...__qin_args: any[]) {
@@ -45,29 +43,96 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
   }
   __qin_constructor_com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst_1(transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): void {
     this.__qin_field_transformer = null;
-    this.__qin_field_transformer = transformer;
+    this.__qin_field_transformer = __QinJavaUtilObjects.requireNonNull(transformer, "transformer");
   }
   createFormalParameters(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParametersAst(cst, this.__qin_field_transformer);
+    if (__qin_binary__("==", cst, null)) {
+      return [];
+    }
+    let nodeName: any = cst.getName();
+    if ((() => {
+      if (__QinJavaLangString.equals("BindingIdentifier", nodeName)) {
+        return true;
+      }
+      return __QinJavaLangString.equals("Identifier", nodeName);
+    })()) {
+      return [this.createIdentifierAst(cst)];
+    }
+    if (__QinJavaLangString.equals("SingleNameBinding", nodeName)) {
+      return [this.createSingleNameBindingAst(cst)];
+    }
+    if (__QinJavaLangString.equals("BindingElement", nodeName)) {
+      return [this.createBindingElementAst(cst)];
+    }
+    if (__QinJavaLangString.equals("FormalParameter", nodeName)) {
+      return [this.createFormalParameterAst(cst)];
+    }
+    if (__QinJavaLangString.equals("CoverParenthesizedExpressionAndArrowParameterList", nodeName)) {
+      return this.createCoverArrowParametersAst(cst);
+    }
+    let params: any = new __QinJavaUtilArrayList();
+    for (const child of this.safeChildren(cst)) {
+      if (__qin_binary__("==", child, null)) {
+        continue;
+      }
+      let name: any = child.getName();
+      if (__QinJavaLangString.equals("FormalParameter", name)) {
+        params.add(this.createFormalParameterAst(child));
+      } else {
+        if ((() => {
+      if ((() => {
+      if ((() => {
+      if ((() => {
+      if (__QinJavaLangString.equals("FormalParameterList", name)) {
+        return true;
+      }
+      return __QinJavaLangString.equals("ArrowParameters", name);
+    })()) {
+        return true;
+      }
+      return __QinJavaLangString.equals("ArrowFormalParameters", name);
+    })()) {
+        return true;
+      }
+      return __QinJavaLangString.equals("UniqueFormalParameters", name);
+    })()) {
+        return true;
+      }
+      return __QinJavaLangString.equals("FormalParameters", name);
+    })()) {
+          params.addAll(__QinJavaUtilArrays.asList(this.createFormalParameters(child)));
+        } else {
+          if (__QinJavaLangString.equals("CoverParenthesizedExpressionAndArrowParameterList", name)) {
+            params.addAll(__QinJavaUtilArrays.asList(this.createCoverArrowParametersAst(child)));
+          } else {
+            if (__QinJavaLangString.equals("FunctionRestParameter", name)) {
+              params.add(this.createRestParameterAst(child));
+            } else {
+              if (__QinJavaLangString.equals("BindingIdentifier", name)) {
+                params.add(this.createIdentifierAst(child));
+              } else {
+                if (__QinJavaLangString.equals("BindingElement", name)) {
+                  params.add(this.createBindingElementAst(child));
+                } else {
+                  if (__QinJavaLangString.equals("SingleNameBinding", name)) {
+                    params.add(this.createSingleNameBindingAst(child));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return params.toArray([]);
   }
   createFormalParameterMetadata(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParameterMetadataAst(cst, this.__qin_field_transformer);
-  }
-  static createFormalParameterMetadataAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createFormalParameterMetadataAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createFormalParameterMetadataAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createFormalParameterMetadataAst/" + __qin_args.length);
-  }
-  static __qin_overload_createFormalParameterMetadataAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParameterMetadataAst(cst, null);
-  }
-  static __qin_overload_createFormalParameterMetadataAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
     if (__qin_binary__("==", cst, null)) {
       return __QinJavaUtilList.of();
     }
     let nodeName: any = cst.getName();
     if (__QinJavaLangString.equals("FormalParameter", nodeName)) {
-      return __QinJavaUtilList.of(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFunctionParameterAst(cst, transformer));
+      return __QinJavaUtilList.of(this.createFunctionParameterAst(cst));
     }
     if ((() => {
       if ((() => {
@@ -85,125 +150,21 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("BindingElement", nodeName);
     })()) {
-      return __QinJavaUtilList.of(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSyntheticFunctionParameterAst(cst, transformer));
+      return __QinJavaUtilList.of(this.createSyntheticFunctionParameterAst(cst));
     }
     let params: any = new __QinJavaUtilArrayList();
-    com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.collectFormalParameterMetadata(cst, params, transformer);
+    this.collectFormalParameterMetadata(cst, params);
     return __QinJavaUtilList.copyOf(params);
   }
-  static createFormalParametersAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createFormalParametersAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createFormalParametersAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createFormalParametersAst/" + __qin_args.length);
+  createFormalParameterAst(cst: com_subhuti_struct_SubhutiCst): any {
+    return this.createFunctionParameterAst(cst).pattern();
   }
-  static __qin_overload_createFormalParametersAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParametersAst(cst, null);
-  }
-  static __qin_overload_createFormalParametersAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
-    if (__qin_binary__("==", cst, null)) {
-      return [];
-    }
-    let nodeName: any = cst.getName();
-    if ((() => {
-      if (__QinJavaLangString.equals("BindingIdentifier", nodeName)) {
-        return true;
-      }
-      return __QinJavaLangString.equals("Identifier", nodeName);
-    })()) {
-      return [com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(cst)];
-    }
-    if (__QinJavaLangString.equals("SingleNameBinding", nodeName)) {
-      return [com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(cst, transformer)];
-    }
-    if (__QinJavaLangString.equals("BindingElement", nodeName)) {
-      return [com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(cst, transformer)];
-    }
-    if (__QinJavaLangString.equals("FormalParameter", nodeName)) {
-      return [com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParameterAst(cst, transformer)];
-    }
-    if (__QinJavaLangString.equals("CoverParenthesizedExpressionAndArrowParameterList", nodeName)) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createCoverArrowParametersAst(cst, transformer);
-    }
-    let children: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst);
-    let params: any = new __QinJavaUtilArrayList();
-    for (const child of children) {
-      if (__qin_binary__("==", child, null)) {
-        continue;
-      }
-      let name: any = child.getName();
-      if (__QinJavaLangString.equals("FormalParameter", name)) {
-        params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParameterAst(child, transformer));
-      } else {
-        if (__QinJavaLangString.equals("FormalParameterList", name)) {
-          params.addAll(__QinJavaUtilArrays.asList(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParametersAst(child, transformer)));
-        } else {
-          if ((() => {
-      if ((() => {
-      if (__QinJavaLangString.equals("ArrowParameters", name)) {
-        return true;
-      }
-      return __QinJavaLangString.equals("ArrowFormalParameters", name);
-    })()) {
-        return true;
-      }
-      return __QinJavaLangString.equals("UniqueFormalParameters", name);
-    })()) {
-            params.addAll(__QinJavaUtilArrays.asList(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParametersAst(child, transformer)));
-          } else {
-            if (__QinJavaLangString.equals("FormalParameters", name)) {
-              params.addAll(__QinJavaUtilArrays.asList(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParametersAst(child, transformer)));
-            } else {
-              if (__QinJavaLangString.equals("CoverParenthesizedExpressionAndArrowParameterList", name)) {
-                params.addAll(__QinJavaUtilArrays.asList(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createCoverArrowParametersAst(child, transformer)));
-              } else {
-                if (__QinJavaLangString.equals("FunctionRestParameter", name)) {
-                  params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createRestParameterAst(child));
-                } else {
-                  if (__QinJavaLangString.equals("BindingIdentifier", name)) {
-                    params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(child));
-                  } else {
-                    if (__QinJavaLangString.equals("BindingElement", name)) {
-                      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(child, transformer));
-                    } else {
-                      if (__QinJavaLangString.equals("SingleNameBinding", name)) {
-                        params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(child, transformer));
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    return params.toArray([]);
-  }
-  static createFormalParameterAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createFormalParameterAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createFormalParameterAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createFormalParameterAst/" + __qin_args.length);
-  }
-  static __qin_overload_createFormalParameterAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFormalParameterAst(cst, null);
-  }
-  static __qin_overload_createFormalParameterAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFunctionParameterAst(cst, transformer).pattern();
-  }
-  static createFunctionParameterAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createFunctionParameterAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createFunctionParameterAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createFunctionParameterAst/" + __qin_args.length);
-  }
-  static __qin_overload_createFunctionParameterAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFunctionParameterAst(cst, null);
-  }
-  static __qin_overload_createFunctionParameterAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
-    let children: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst);
+  createFunctionParameterAst(cst: com_subhuti_struct_SubhutiCst): any {
+    let children: any = this.safeChildren(cst);
     let pattern: any = null;
     let decorators: any = __QinJavaUtilList.of();
-    let typeAnnotation: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.findTypeAnnotationAst(cst);
-    let optional: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.containsOptionalMarker(cst);
+    let typeAnnotation: any = this.findTypeAnnotationAst(cst);
+    let optional: any = this.containsOptionalMarker(cst);
     for (const child of children) {
       if (__qin_binary__("==", child, null)) {
         continue;
@@ -215,16 +176,16 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("TSDecorator", name);
     })()) {
-        decorators = com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst.createDecoratorsAst(child);
+        decorators = this.__qin_field_transformer.createDecoratorsAst(child);
       } else {
         if (__QinJavaLangString.equals("BindingElement", name)) {
-          pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(child, transformer);
+          pattern = this.createBindingElementAst(child);
         } else {
           if (__QinJavaLangString.equals("SingleNameBinding", name)) {
-            pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(child, transformer);
+            pattern = this.createSingleNameBindingAst(child);
           } else {
             if (__QinJavaLangString.equals("BindingIdentifier", name)) {
-              pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(child);
+              pattern = this.createIdentifierAst(child);
             }
           }
         }
@@ -235,15 +196,15 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createFunctionParameter(pattern, decorators, typeAnnotation, optional, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  static createRestParameterAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createRestParameterAst(cst: com_subhuti_struct_SubhutiCst): any {
     let argument: any = com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("rest", cst.getLocation());
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
       let name: any = child.getName();
       if (__QinJavaLangString.equals("BindingRestElement", name)) {
-        argument = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createRestParameterArgumentAst(child);
+        argument = this.createRestParameterArgumentAst(child);
         break;
       }
       if ((() => {
@@ -257,30 +218,30 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("IdentifierReference", name);
     })()) {
-        argument = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(child);
+        argument = this.createIdentifierAst(child);
         break;
       }
       if (__QinJavaLangString.equals("BindingElement", name)) {
-        argument = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(child);
+        argument = this.createBindingElementAst(child);
         break;
       }
       if (__QinJavaLangString.equals("BindingPattern", name)) {
-        argument = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingPatternAst(child);
+        argument = this.__qin_field_transformer.createBindingPatternAst(child);
         break;
       }
       if (__QinJavaLangString.equals("ArrayBindingPattern", name)) {
-        argument = com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createArrayBindingPatternAst(child);
+        argument = this.__qin_field_transformer.createArrayBindingPatternAst(child);
         break;
       }
       if (__QinJavaLangString.equals("ObjectBindingPattern", name)) {
-        argument = com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createObjectBindingPatternAst(child);
+        argument = this.__qin_field_transformer.createObjectBindingPatternAst(child);
         break;
       }
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createRestElement(argument, cst.getLocation());
   }
-  static createRestParameterArgumentAst(cst: com_subhuti_struct_SubhutiCst): any {
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+  createRestParameterArgumentAst(cst: com_subhuti_struct_SubhutiCst): any {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
@@ -296,45 +257,37 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("IdentifierReference", name);
     })()) {
-        return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(child);
+        return this.createIdentifierAst(child);
       }
       if (__QinJavaLangString.equals("BindingElement", name)) {
-        return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(child);
+        return this.createBindingElementAst(child);
       }
       if (__QinJavaLangString.equals("BindingPattern", name)) {
-        return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingPatternAst(child);
+        return this.__qin_field_transformer.createBindingPatternAst(child);
       }
       if (__QinJavaLangString.equals("ArrayBindingPattern", name)) {
-        return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createArrayBindingPatternAst(child);
+        return this.__qin_field_transformer.createArrayBindingPatternAst(child);
       }
       if (__QinJavaLangString.equals("ObjectBindingPattern", name)) {
-        return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createObjectBindingPatternAst(child);
+        return this.__qin_field_transformer.createObjectBindingPatternAst(child);
       }
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("rest", cst.getLocation());
   }
-  static createBindingElementAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createBindingElementAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createBindingElementAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createBindingElementAst/" + __qin_args.length);
-  }
-  static __qin_overload_createBindingElementAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(cst, null);
-  }
-  static __qin_overload_createBindingElementAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
+  createBindingElementAst(cst: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", cst, null)) {
       return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("param", (null));
     }
     if (__QinJavaLangString.equals("FormalParameter", cst.getName())) {
-      for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+      for (const child of this.safeChildren(cst)) {
         if (__qin_binary__("!=", child, null)) {
-          return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(child, transformer);
+          return this.createBindingElementAst(child);
         }
       }
     }
     let pattern: any = null;
     let initializer: any = null;
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
@@ -345,19 +298,19 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("Identifier", name);
     })()) {
-        pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(child);
+        pattern = this.createIdentifierAst(child);
       } else {
         if (__QinJavaLangString.equals("SingleNameBinding", name)) {
-          return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(child, transformer);
+          return this.createSingleNameBindingAst(child);
         } else {
           if (__QinJavaLangString.equals("BindingPattern", name)) {
-            pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingPatternAst(child);
+            pattern = this.__qin_field_transformer.createBindingPatternAst(child);
           } else {
             if (__QinJavaLangString.equals("ArrayBindingPattern", name)) {
-              pattern = com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createArrayBindingPatternAst(child);
+              pattern = this.__qin_field_transformer.createArrayBindingPatternAst(child);
             } else {
               if (__QinJavaLangString.equals("ObjectBindingPattern", name)) {
-                pattern = com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createObjectBindingPatternAst(child);
+                pattern = this.__qin_field_transformer.createObjectBindingPatternAst(child);
               } else {
                 if (__QinJavaLangString.equals("Initializer", name)) {
                   initializer = child;
@@ -368,32 +321,24 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
         }
       }
       if (__QinJavaLangString.equals("BindingElement", name)) {
-        pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(child, transformer);
+        pattern = this.createBindingElementAst(child);
       }
     }
     if (__qin_binary__("==", pattern, null)) {
-      pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(cst);
+      pattern = this.createIdentifierAst(cst);
     }
     if (__qin_binary__("!=", initializer, null)) {
-      let init: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createInitializerExpressionAst(initializer, transformer);
+      let init: any = this.createInitializerExpressionAst(initializer);
       if (__qin_binary__("!=", init, null)) {
         return com_slime_parser_cstToAst_SlimeAstCreateUtils.createAssignmentPattern(pattern, init, cst.getLocation());
       }
     }
     return pattern;
   }
-  static createSingleNameBindingAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createSingleNameBindingAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createSingleNameBindingAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createSingleNameBindingAst/" + __qin_args.length);
-  }
-  static __qin_overload_createSingleNameBindingAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(cst, null);
-  }
-  static __qin_overload_createSingleNameBindingAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
+  createSingleNameBindingAst(cst: com_subhuti_struct_SubhutiCst): any {
     let identifier: any = null;
     let initializer: any = null;
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
@@ -404,7 +349,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("Identifier", name);
     })()) {
-        identifier = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(child);
+        identifier = this.createIdentifierAst(child);
       } else {
         if (__QinJavaLangString.equals("Initializer", name)) {
           initializer = child;
@@ -412,48 +357,29 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
     }
     if (__qin_binary__("==", identifier, null)) {
-      identifier = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(cst);
+      identifier = this.createIdentifierAst(cst);
     }
     if (__qin_binary__("==", initializer, null)) {
       return identifier;
     }
-    let init: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createInitializerExpressionAst(initializer, transformer);
+    let init: any = this.createInitializerExpressionAst(initializer);
     if (__qin_binary__("==", init, null)) {
       return identifier;
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createAssignmentPattern(identifier, init, cst.getLocation());
   }
-  static createBindingPatternAst(cst: com_subhuti_struct_SubhutiCst): any {
-    try {
-      return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createBindingPatternAst(cst);
-    } catch (ignored) {
-      if (!(ignored instanceof __QinJavaLangRuntimeException)) {
-        throw ignored;
-      }
-      return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("param", cst.getLocation());
-    }
-    return null;
-  }
-  static createCoverArrowParametersAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createCoverArrowParametersAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createCoverArrowParametersAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createCoverArrowParametersAst/" + __qin_args.length);
-  }
-  static __qin_overload_createCoverArrowParametersAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createCoverArrowParametersAst(cst, null);
-  }
-  static __qin_overload_createCoverArrowParametersAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
+  createCoverArrowParametersAst(cst: com_subhuti_struct_SubhutiCst): any {
     let params: any = new __QinJavaUtilArrayList();
-    com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.collectCoverArrowParameters(cst, params, transformer);
+    this.collectCoverArrowParameters(cst, params);
     return params.toArray([]);
   }
-  static collectCoverArrowParameters(cst: com_subhuti_struct_SubhutiCst, params: any, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
+  collectCoverArrowParameters(cst: com_subhuti_struct_SubhutiCst, params: any): any {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
     let name: any = cst.getName();
     if (__QinJavaLangString.equals("AssignmentExpression", name)) {
-      let param: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createCoverArrowParameterAst(cst, transformer);
+      let param: any = this.createCoverArrowParameterAst(cst);
       if (__qin_binary__("!=", param, null)) {
         params.add(param);
       }
@@ -465,43 +391,43 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("Identifier", name);
     })()) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(cst));
+      params.add(this.createIdentifierAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("SingleNameBinding", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(cst, transformer));
+      params.add(this.createSingleNameBindingAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("BindingElement", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(cst, transformer));
+      params.add(this.createBindingElementAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("BindingPattern", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingPatternAst(cst));
+      params.add(this.__qin_field_transformer.createBindingPatternAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("ArrayLiteral", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createArrayPatternFromCoverLiteralAst(cst));
+      params.add(this.createArrayPatternFromCoverLiteralAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("ObjectLiteral", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createObjectPatternFromCoverLiteralAst(cst));
+      params.add(this.createObjectPatternFromCoverLiteralAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("ArrayBindingPattern", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createArrayBindingPatternAst(cst));
+      params.add(this.__qin_field_transformer.createArrayBindingPatternAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("ObjectBindingPattern", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createObjectBindingPatternAst(cst));
+      params.add(this.__qin_field_transformer.createObjectBindingPatternAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("FunctionRestParameter", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createRestParameterAst(cst));
+      params.add(this.createRestParameterAst(cst));
       return null;
     }
     let pendingRest: any = false;
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
@@ -529,23 +455,23 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
         continue;
       }
       if (pendingRest) {
-        let param: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.extractPatternFromParameterNode(child);
+        let param: any = this.extractPatternFromParameterNode(child);
         if (__qin_binary__("!=", param, null)) {
           params.add(com_slime_parser_cstToAst_SlimeAstCreateUtils.createRestElement(param, cst.getLocation()));
         }
         pendingRest = false;
         continue;
       }
-      com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.collectCoverArrowParameters(child, params, transformer);
+      this.collectCoverArrowParameters(child, params);
     }
     return null;
   }
-  static createCoverArrowParameterAst(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
-    if (com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.containsAssignToken(cst)) {
+  createCoverArrowParameterAst(cst: com_subhuti_struct_SubhutiCst): any {
+    if (this.containsAssignToken(cst)) {
       let left: any = null;
       let right: any = null;
       let afterAssign: any = false;
-      for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+      for (const child of this.safeChildren(cst)) {
         if (__qin_binary__("==", child, null)) {
           continue;
         }
@@ -564,7 +490,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return false;
     })()) {
-          left = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.extractPatternFromParameterNode(child);
+          left = this.extractPatternFromParameterNode(child);
           continue;
         }
         if ((() => {
@@ -573,7 +499,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return false;
     })()) {
-          right = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.expressionAst(child, transformer);
+          right = this.__qin_field_transformer.createExpressionAst(child);
         }
       }
       if ((() => {
@@ -585,10 +511,9 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
         return com_slime_parser_cstToAst_SlimeAstCreateUtils.createAssignmentPattern(left, right, cst.getLocation());
       }
     }
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.extractPatternFromParameterNode(cst);
+    return this.extractPatternFromParameterNode(cst);
   }
-  static extractPatternFromParameterNode(cst: com_subhuti_struct_SubhutiCst): any {
-    let pattern: any = null;
+  extractPatternFromParameterNode(cst: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
@@ -604,74 +529,73 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("IdentifierReference", name);
     })()) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(cst);
+      return this.createIdentifierAst(cst);
     }
     if (__QinJavaLangString.equals("SingleNameBinding", name)) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(cst);
+      return this.createSingleNameBindingAst(cst);
     }
     if (__QinJavaLangString.equals("BindingElement", name)) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(cst);
+      return this.createBindingElementAst(cst);
     }
     if (__QinJavaLangString.equals("BindingPattern", name)) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingPatternAst(cst);
+      return this.__qin_field_transformer.createBindingPatternAst(cst);
     }
     if (__QinJavaLangString.equals("ArrayLiteral", name)) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createArrayPatternFromCoverLiteralAst(cst);
+      return this.createArrayPatternFromCoverLiteralAst(cst);
     }
     if (__QinJavaLangString.equals("ObjectLiteral", name)) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createObjectPatternFromCoverLiteralAst(cst);
+      return this.createObjectPatternFromCoverLiteralAst(cst);
     }
     if (__QinJavaLangString.equals("ArrayBindingPattern", name)) {
-      return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createArrayBindingPatternAst(cst);
+      return this.__qin_field_transformer.createArrayBindingPatternAst(cst);
     }
     if (__QinJavaLangString.equals("ObjectBindingPattern", name)) {
-      return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createObjectBindingPatternAst(cst);
+      return this.__qin_field_transformer.createObjectBindingPatternAst(cst);
     }
     if (__QinJavaLangString.equals("FunctionRestParameter", name)) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createRestParameterAst(cst);
+      return this.createRestParameterAst(cst);
     }
-    if (__QinJavaLangString.equals("BindingRestElement", name)) {
-      return com_slime_parser_cstToAst_SlimeAstCreateUtils.createRestElement(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createRestParameterArgumentAst(cst), cst.getLocation());
-    }
-    if (__QinJavaLangString.equals("SpreadElement", name)) {
-      let spread: any = com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(cst);
-      if ((() => { const __qin_pattern_value = spread.argument(); return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Pattern") && (pattern = __qin_pattern_value, true); })()) {
-        return com_slime_parser_cstToAst_SlimeAstCreateUtils.createRestElement(pattern, cst.getLocation());
+    if ((() => {
+      if (__QinJavaLangString.equals("BindingRestElement", name)) {
+        return true;
       }
+      return __QinJavaLangString.equals("SpreadElement", name);
+    })()) {
+      return com_slime_parser_cstToAst_SlimeAstCreateUtils.createRestElement(this.createRestParameterArgumentAst(cst), cst.getLocation());
     }
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
-      let nested: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.extractPatternFromParameterNode(child);
+    for (const child of this.safeChildren(cst)) {
+      let nested: any = this.extractPatternFromParameterNode(child);
       if (__qin_binary__("!=", nested, null)) {
         return nested;
       }
     }
     return null;
   }
-  static createArrayPatternFromCoverLiteralAst(cst: com_subhuti_struct_SubhutiCst): any {
-    let arrayExpression: any = com_slime_parser_cstToAst_literal_SlimeCompoundLiteralCstToAst.createArrayLiteralAst(cst);
+  createArrayPatternFromCoverLiteralAst(cst: com_subhuti_struct_SubhutiCst): any {
+    let arrayExpression: any = this.__qin_field_transformer.createArrayLiteralAst(cst);
     let elements: any = new __QinJavaUtilArrayList();
     for (const element of arrayExpression.elements()) {
       if (__qin_binary__("==", element, null)) {
         elements.add(null);
         continue;
       }
-      let pattern: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.expressionToPattern(element);
+      let pattern: any = this.expressionToPattern(element);
       if (__qin_binary__("!=", pattern, null)) {
         elements.add(pattern);
       }
     }
     return new com_slime_ast_nodes_patterns_ArrayPattern(elements, arrayExpression.location());
   }
-  static createObjectPatternFromCoverLiteralAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createObjectPatternFromCoverLiteralAst(cst: com_subhuti_struct_SubhutiCst): any {
     let property: any = null;
     let spreadElement: any = null;
     let pattern: any = null;
-    let objectExpression: any = com_slime_parser_cstToAst_literal_SlimeCompoundLiteralCstToAst.createObjectLiteralAst(cst);
+    let objectExpression: any = this.__qin_field_transformer.createObjectLiteralAst(cst);
     let properties: any = new __QinJavaUtilArrayList();
     for (const propertyNode of objectExpression.properties()) {
       if ((() => {
       if ((() => { const __qin_pattern_value = propertyNode; return __qin_pattern_value instanceof com_slime_ast_nodes_misc_Property && (property = __qin_pattern_value, true); })()) {
-        return (() => { const __qin_instanceof_value = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.propertyValueToPattern(property.value()); return __qin_java_implements(__qin_instanceof_value, "com.slime.ast.AstNode"); })();
+        return (() => { const __qin_instanceof_value = this.propertyValueToPattern(property.value()); return __qin_java_implements(__qin_instanceof_value, "com.slime.ast.AstNode"); })();
       }
       return false;
     })()) {
@@ -679,7 +603,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       } else {
         if ((() => {
       if ((() => { const __qin_pattern_value = propertyNode; return __qin_pattern_value instanceof com_slime_ast_nodes_misc_SpreadElement && (spreadElement = __qin_pattern_value, true); })()) {
-        return (() => { const __qin_pattern_value = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.expressionToPattern(spreadElement.argument()); return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Pattern") && (pattern = __qin_pattern_value, true); })();
+        return (() => { const __qin_pattern_value = this.expressionToPattern(spreadElement.argument()); return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Pattern") && (pattern = __qin_pattern_value, true); })();
       }
       return false;
     })()) {
@@ -689,7 +613,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     }
     return new com_slime_ast_nodes_patterns_ObjectPattern(properties, objectExpression.location());
   }
-  static expressionToPattern(expression: com_slime_ast_Expression): any {
+  expressionToPattern(expression: com_slime_ast_Expression): any {
     let pattern: any = null;
     let spreadElement: any = null;
     let arrayExpression: any = null;
@@ -713,7 +637,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
           elements.add(null);
           continue;
         }
-        let pattern: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.expressionToPattern(element);
+        let pattern: any = this.expressionToPattern(element);
         if (__qin_binary__("!=", pattern, null)) {
           elements.add(pattern);
         }
@@ -725,7 +649,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       for (const propertyNode of objectExpression.properties()) {
         if ((() => {
       if ((() => { const __qin_pattern_value = propertyNode; return __qin_pattern_value instanceof com_slime_ast_nodes_misc_Property && (property = __qin_pattern_value, true); })()) {
-        return (() => { const __qin_instanceof_value = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.propertyValueToPattern(property.value()); return __qin_java_implements(__qin_instanceof_value, "com.slime.ast.AstNode"); })();
+        return (() => { const __qin_instanceof_value = this.propertyValueToPattern(property.value()); return __qin_java_implements(__qin_instanceof_value, "com.slime.ast.AstNode"); })();
       }
       return false;
     })()) {
@@ -733,7 +657,7 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
         } else {
           if ((() => {
       if ((() => { const __qin_pattern_value = propertyNode; return __qin_pattern_value instanceof com_slime_ast_nodes_misc_SpreadElement && (spreadElement = __qin_pattern_value, true); })()) {
-        return (() => { const __qin_pattern_value = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.expressionToPattern(spreadElement.argument()); return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Pattern") && (pattern = __qin_pattern_value, true); })();
+        return (() => { const __qin_pattern_value = this.expressionToPattern(spreadElement.argument()); return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Pattern") && (pattern = __qin_pattern_value, true); })();
       }
       return false;
     })()) {
@@ -745,27 +669,19 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     }
     return null;
   }
-  static propertyValueToPattern(value: com_slime_ast_AstNode): any {
+  propertyValueToPattern(value: com_slime_ast_AstNode): any {
     let pattern: any = null;
     let expression: any = null;
     if ((() => { const __qin_pattern_value = value; return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Pattern") && (pattern = __qin_pattern_value, true); })()) {
       return pattern;
     }
     if ((() => { const __qin_pattern_value = value; return __qin_java_implements(__qin_pattern_value, "com.slime.ast.Expression") && (expression = __qin_pattern_value, true); })()) {
-      return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.expressionToPattern(expression);
+      return this.expressionToPattern(expression);
     }
     return null;
   }
-  static createInitializerExpressionAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createInitializerExpressionAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createInitializerExpressionAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createInitializerExpressionAst/" + __qin_args.length);
-  }
-  static __qin_overload_createInitializerExpressionAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createInitializerExpressionAst(cst, null);
-  }
-  static __qin_overload_createInitializerExpressionAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+  createInitializerExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
@@ -781,25 +697,20 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("Expression", name);
     })()) {
-        return (() => {
-      if (__qin_binary__("==", transformer, null)) {
-        return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.expressionAst(child, null);
-      }
-      return transformer.createExpressionAst(child);
-    })();
+        return this.__qin_field_transformer.createExpressionAst(child);
       }
     }
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
       if ((() => {
-      if (__QinJavaLangString.isEmpty(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(child))) {
+      if (__QinJavaLangString.isEmpty(this.safeChildren(child))) {
         return false;
       }
       return true;
     })()) {
-        let nested: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createInitializerExpressionAst(child, transformer);
+        let nested: any = this.createInitializerExpressionAst(child);
         if (__qin_binary__("!=", nested, null)) {
           return nested;
         }
@@ -807,56 +718,33 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     }
     return null;
   }
-  static createIdentifierAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createIdentifierAst(cst: com_subhuti_struct_SubhutiCst): any {
     return com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst.createIdentifierAst(cst);
   }
-  static expressionAst(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
-    if (__qin_binary__("==", transformer, null)) {
-      throw new __QinJavaLangIllegalStateException("Slime function parameter expression parsing requires a transformer instance");
-    }
-    return transformer.createExpressionAst(cst);
-  }
-  static createSyntheticFunctionParameterAst(...__qin_args: any[]): any {
-    if (__qin_args.length === 1 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst)) return this.__qin_overload_createSyntheticFunctionParameterAst_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || __qin_args[1] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_createSyntheticFunctionParameterAst_2_1(__qin_args[0], __qin_args[1]);
-    throw new Error("Unsupported Java overload: createSyntheticFunctionParameterAst/" + __qin_args.length);
-  }
-  static __qin_overload_createSyntheticFunctionParameterAst_1_0(cst: com_subhuti_struct_SubhutiCst): any {
-    return com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSyntheticFunctionParameterAst(cst, null);
-  }
-  static __qin_overload_createSyntheticFunctionParameterAst_2_1(cst: com_subhuti_struct_SubhutiCst, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
+  createSyntheticFunctionParameterAst(cst: com_subhuti_struct_SubhutiCst): any {
     let pattern: any = null;
     if (__QinJavaLangString.equals("SingleNameBinding", cst.getName())) {
-      pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSingleNameBindingAst(cst, transformer);
+      pattern = this.createSingleNameBindingAst(cst);
     } else {
       if (__QinJavaLangString.equals("BindingElement", cst.getName())) {
-        pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createBindingElementAst(cst, transformer);
+        pattern = this.createBindingElementAst(cst);
       } else {
-        pattern = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createIdentifierAst(cst);
+        pattern = this.createIdentifierAst(cst);
       }
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createFunctionParameter(pattern, __QinJavaUtilList.of(), null, false, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
-  static collectFormalParameterMetadata(...__qin_args: any[]): any {
-    if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList)) return this.__qin_overload_collectFormalParameterMetadata_2_0(__qin_args[0], (Array.isArray(__qin_args[1]) ? new __QinJavaUtilArrayList(__qin_args[1]) : __qin_args[1]));
-    if (__qin_args.length === 3 && (__qin_args[0] === null || __qin_args[0] instanceof com_subhuti_struct_SubhutiCst) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList) && (__qin_args[2] === null || __qin_args[2] instanceof com_slime_parser_cstToAst_SlimeCstToAstUtils)) return this.__qin_overload_collectFormalParameterMetadata_3_1(__qin_args[0], (Array.isArray(__qin_args[1]) ? new __QinJavaUtilArrayList(__qin_args[1]) : __qin_args[1]), __qin_args[2]);
-    throw new Error("Unsupported Java overload: collectFormalParameterMetadata/" + __qin_args.length);
-  }
-  static __qin_overload_collectFormalParameterMetadata_2_0(cst: com_subhuti_struct_SubhutiCst, params: any): any {
-    com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.collectFormalParameterMetadata(cst, params, null);
-    return null;
-  }
-  static __qin_overload_collectFormalParameterMetadata_3_1(cst: com_subhuti_struct_SubhutiCst, params: any, transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): any {
+  collectFormalParameterMetadata(cst: com_subhuti_struct_SubhutiCst, params: any): any {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
     let name: any = cst.getName();
     if (__QinJavaLangString.equals("FormalParameter", name)) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createFunctionParameterAst(cst, transformer));
+      params.add(this.createFunctionParameterAst(cst));
       return null;
     }
     if (__QinJavaLangString.equals("FunctionRestParameter", name)) {
-      params.add(com_slime_parser_cstToAst_SlimeAstCreateUtils.createFunctionParameter(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createRestParameterAst(cst), __QinJavaUtilList.of(), null, false, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst)));
+      params.add(com_slime_parser_cstToAst_SlimeAstCreateUtils.createFunctionParameter(this.createRestParameterAst(cst), __QinJavaUtilList.of(), null, false, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst)));
       return null;
     }
     if ((() => {
@@ -875,10 +763,10 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
       }
       return __QinJavaLangString.equals("BindingElement", name);
     })()) {
-      params.add(com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.createSyntheticFunctionParameterAst(cst, transformer));
+      params.add(this.createSyntheticFunctionParameterAst(cst));
       return null;
     }
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
+    for (const child of this.safeChildren(cst)) {
       if (__qin_binary__("==", child, null)) {
         continue;
       }
@@ -896,11 +784,11 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     })()) {
         continue;
       }
-      com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.collectFormalParameterMetadata(child, params, transformer);
+      this.collectFormalParameterMetadata(child, params);
     }
     return null;
   }
-  static safeChildren(cst: com_subhuti_struct_SubhutiCst): any {
+  safeChildren(cst: com_subhuti_struct_SubhutiCst): any {
     return (() => {
       if (__qin_binary__("==", (() => {
       if (__qin_binary__("==", cst, null)) {
@@ -918,22 +806,22 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     })();
     })();
   }
-  static findTypeAnnotationAst(cst: com_subhuti_struct_SubhutiCst): any {
+  findTypeAnnotationAst(cst: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", cst, null)) {
       return null;
     }
     if (__QinJavaLangString.equals("TSTypeAnnotation", cst.getName())) {
       return com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeAnnotationAst(cst);
     }
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
-      let nested: any = com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.findTypeAnnotationAst(child);
+    for (const child of this.safeChildren(cst)) {
+      let nested: any = this.findTypeAnnotationAst(child);
       if (__qin_binary__("!=", nested, null)) {
         return nested;
       }
     }
     return null;
   }
-  static containsOptionalMarker(cst: com_subhuti_struct_SubhutiCst): any {
+  containsOptionalMarker(cst: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", cst, null)) {
       return false;
     }
@@ -945,14 +833,14 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     })()) {
       return true;
     }
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
-      if (com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.containsOptionalMarker(child)) {
+    for (const child of this.safeChildren(cst)) {
+      if (this.containsOptionalMarker(child)) {
         return true;
       }
     }
     return false;
   }
-  static containsAssignToken(cst: com_subhuti_struct_SubhutiCst): any {
+  containsAssignToken(cst: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", cst, null)) {
       return false;
     }
@@ -964,8 +852,8 @@ class com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst {
     })()) {
       return true;
     }
-    for (const child of com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.safeChildren(cst)) {
-      if (com_slime_parser_cstToAst_components_SlimeFunctionParameterCstToAst.containsAssignToken(child)) {
+    for (const child of this.safeChildren(cst)) {
+      if (this.containsAssignToken(child)) {
         return true;
       }
     }

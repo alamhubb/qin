@@ -7,10 +7,8 @@ import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from
 import { com_subhuti_struct_SubhutiSourceLocation, com_subhuti_struct_SubhutiSourceLocation as SubhutiSourceLocation, com_subhuti_struct_SubhutiSourceLocation$Builder } from "../../../../subhuti/struct/SubhutiSourceLocation.ts";
 import { com_slime_parser_cstToAst_literal_SlimeLiteralCstToAst, com_slime_parser_cstToAst_literal_SlimeLiteralCstToAst as SlimeLiteralCstToAst } from "../literal/SlimeLiteralCstToAst.ts";
 import { com_slime_parser_cstToAst_expressions_SlimeConditionalExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeConditionalExpressionCstToAst as SlimeConditionalExpressionCstToAst } from "./SlimeConditionalExpressionCstToAst.ts";
-import { com_slime_parser_cstToAst_expressions_SlimeYieldAwaitCstToAst, com_slime_parser_cstToAst_expressions_SlimeYieldAwaitCstToAst as SlimeYieldAwaitCstToAst } from "./SlimeYieldAwaitCstToAst.ts";
 import { com_slime_parser_cstToAst_expressions_SlimePrimaryExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimePrimaryExpressionCstToAst as SlimePrimaryExpressionCstToAst } from "./SlimePrimaryExpressionCstToAst.ts";
 import { com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst, com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst as SlimeMetaPropertyCstToAst } from "./SlimeMetaPropertyCstToAst.ts";
-import { com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst, com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst as SlimeTemplateLiteralCstToAst } from "../literal/SlimeTemplateLiteralCstToAst.ts";
 import { com_slime_ast_SourceLocation, com_slime_ast_SourceLocation as SourceLocation } from "../../../ast/SourceLocation.ts";
 import { com_slime_parser_cstToAst_expressions_SlimeBinaryExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeBinaryExpressionCstToAst as SlimeBinaryExpressionCstToAst } from "./SlimeBinaryExpressionCstToAst.ts";
 
@@ -163,9 +161,9 @@ class com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst {
       case "UnaryExpression":
         return this.__qin_field_transformer.createUnaryExpressionAst(cst);
       case "AwaitExpression":
-        return com_slime_parser_cstToAst_expressions_SlimeYieldAwaitCstToAst.createAwaitExpressionAst(cst);
+        return this.__qin_field_transformer.createAwaitExpressionAst(cst);
       case "YieldExpression":
-        return com_slime_parser_cstToAst_expressions_SlimeYieldAwaitCstToAst.createYieldExpressionAst(cst);
+        return this.__qin_field_transformer.createYieldExpressionAst(cst);
       case "UpdateExpression":
         return this.__qin_field_transformer.createUpdateExpressionAst(cst);
       case "PrimaryExpression":
@@ -184,7 +182,7 @@ class com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst {
       case "AsyncArrowFunction":
         return this.__qin_field_transformer.createArrowFunctionAst(cst);
       case "ClassExpression":
-        return com_slime_parser_cstToAst_class__SlimeClassExpressionCstToAst.createClassExpressionAst(cst);
+        return this.__qin_field_transformer.createClassExpressionAst(cst);
       case "MemberExpression":
         return this.__qin_field_transformer.createMemberExpressionAst(cst);
       case "OptionalExpression":
@@ -205,7 +203,7 @@ class com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst {
       case "ArrayLiteral":
         return this.__qin_field_transformer.createArrayLiteralAst(cst);
       case "TemplateLiteral":
-        return com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst.createTemplateLiteralAst(cst);
+        return this.__qin_field_transformer.createTemplateLiteralAst(cst);
       case "NumericLiteral":
         return com_slime_parser_cstToAst_literal_SlimeLiteralCstToAst.createNumericLiteralAst(cst);
       case "StringLiteral":

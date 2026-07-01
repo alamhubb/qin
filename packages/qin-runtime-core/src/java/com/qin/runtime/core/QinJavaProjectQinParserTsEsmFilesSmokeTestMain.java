@@ -61,6 +61,10 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated package has stable Qin parser npm name");
         require(packageJsonText.contains("\"entryBinaryName\": \"com.qin.parser.QinParser\""),
                 "generated package records QinParser entry binary name");
+        require(packageJsonText.contains("\"@qin/java-sdk-js\": \"file:../java-sdk-js\""),
+                "generated package depends on sibling java-sdk-js package");
+        require(!packageJsonText.contains("node_modules/@qin/java-sdk-js"),
+                "generated package must not depend on embedded node_modules java-sdk-js");
         require(qinConfigText.contains("entry: \"./index.ts\""),
                 "generated qin.config.js points to TS package entry");
         require(indexText.contains("export default com_qin_parser_QinParser"),
@@ -101,7 +105,7 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 }
                 """.formatted(
                 jsPath(outputRoot),
-                jsPath(outputRoot.resolve("node_modules").resolve("@qin").resolve("java-sdk-js"))),
+                jsPath(outputRoot.getParent().resolve("java-sdk-js"))),
                 StandardCharsets.UTF_8);
 
         Object result = new QinJsPackageRunner().runModuleSource(smokeRoot, """

@@ -63,6 +63,9 @@ public class LocalProjectResolverEnhanced {
             }
 
             ProjectInfo project = findProject(localProjects, fullName);
+            if (project == null) {
+                project = findFileDependencyProject(fullName, version);
+            }
             if (project != null) {
                 if (!requiredLocalProjects.containsKey(project.fullName)) {
                     requiredLocalProjects.put(project.fullName, project);
@@ -81,7 +84,7 @@ public class LocalProjectResolverEnhanced {
                     System.err.println("  [WARN] Failed to load transitives from "
                             + project.projectDir + ": " + e.getMessage());
                 }
-            } else {
+            } else if (!isFileDependency(version)) {
                 remoteDependencies.putIfAbsent(fullName, version);
             }
         }
@@ -397,6 +400,39 @@ public class LocalProjectResolverEnhanced {
         }
 
         return null;
+    }
+
+    private ProjectInfo findFileDependencyProject(String dependencyName, String version) {
+        if (!isFileDependency(version)) {
+            return null;
+        }
+        String rawPath = version.trim().substring("file:".length()).trim();
+        if (rawPath.isBlank()) {
+            return null;
+        }
+        Path projectPath = Path.of(rawPath);
+        if (!projectPath.isAbsolute()) {
+            projectPath = startDir.resolve(projectPath);
+        }
+        projectPath = projectPath.toAbsolutePath().normalize();
+        Path configPath = projectPath.resolve(QinConstants.CONFIG_FILE);
+        if (!Files.isRegularFile(configPath)) {
+            return null;
+        }
+        try {
+            QinConfig config = loadConfig(configPath);
+            String fullName = config.name();
+            if (fullName == null || fullName.isBlank()) {
+                fullName = dependencyName;
+            }
+            return new ProjectInfo(fullName, projectPath, projectPath.resolve(outputDir(config)), config);
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    private boolean isFileDependency(String version) {
+        return version != null && version.trim().startsWith("file:");
     }
 
     private String extractArtifactId(String fullName) {

@@ -1,7 +1,6 @@
 import { com_slime_ast_nodes_declarations_VariableDeclaration, com_slime_ast_nodes_declarations_VariableDeclaration as VariableDeclaration } from "../../ast/nodes/declarations/VariableDeclaration.ts";
 import { com_slime_ast_nodes_misc_Program, com_slime_ast_nodes_misc_Program as Program } from "../../ast/nodes/misc/Program.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../subhuti/struct/SubhutiCst.ts";
-import { com_slime_parser_cstToAst_module_SlimeExportCstToAst, com_slime_parser_cstToAst_module_SlimeExportCstToAst as SlimeExportCstToAst } from "./module/SlimeExportCstToAst.ts";
 import { com_slime_parser_cstToAst_module_SlimeImportCstToAst, com_slime_parser_cstToAst_module_SlimeImportCstToAst as SlimeImportCstToAst } from "./module/SlimeImportCstToAst.ts";
 import { com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst, com_slime_parser_cstToAst_statements_SlimeControlFlowCstToAst as SlimeControlFlowCstToAst } from "./statements/SlimeControlFlowCstToAst.ts";
 import { com_slime_parser_cstToAst_statements_SlimeOtherStatementCstToAst, com_slime_parser_cstToAst_statements_SlimeOtherStatementCstToAst as SlimeOtherStatementCstToAst } from "./statements/SlimeOtherStatementCstToAst.ts";
@@ -83,7 +82,22 @@ class com_slime_parser_cstToAst_SlimeProgramCstToAst {
       return null;
     }
     let name: any = cst.getName();
-    if (__QinJavaLangString.equals("StatementListItem", name)) {
+    if ((() => {
+      if ((() => {
+      if ((() => {
+      if (__QinJavaLangString.equals("StatementListItem", name)) {
+        return true;
+      }
+      return __QinJavaLangString.equals("ModuleItem", name);
+    })()) {
+        return true;
+      }
+      return __QinJavaLangString.equals("ImportDeclaration", name);
+    })()) {
+        return true;
+      }
+      return __QinJavaLangString.equals("ExportDeclaration", name);
+    })()) {
       this.appendAstNodes(this.__qin_field_transformer.createStatementListItemAst(cst), body);
       return null;
     }
@@ -217,10 +231,10 @@ class com_slime_parser_cstToAst_SlimeProgramCstToAst {
       return this.asAstNode(this.__qin_field_transformer.createClassDeclarationAst(cst));
     }
     if (__QinJavaLangString.equals("ImportDeclaration", name)) {
-      return this.asAstNode(com_slime_parser_cstToAst_module_SlimeImportCstToAst.createImportDeclarationAst(cst));
+      return this.asAstNode(this.__qin_field_transformer.createImportDeclarationAst(cst));
     }
     if (__QinJavaLangString.equals("ExportDeclaration", name)) {
-      return this.asAstNode(com_slime_parser_cstToAst_module_SlimeExportCstToAst.createExportDeclarationAst(cst));
+      return this.asAstNode(this.__qin_field_transformer.createExportDeclarationAst(cst));
     }
     if (__QinJavaLangString.equals("ExpressionStatement", name)) {
       return this.__qin_field_transformer.createExpressionStatementAst(cst);
@@ -332,7 +346,7 @@ class com_slime_parser_cstToAst_SlimeProgramCstToAst {
       }
       return __QinJavaLangString.equals("LabeledStatement", name);
     })()) {
-      return com_slime_parser_cstToAst_statements_SlimeOtherStatementCstToAst.createLabeledStatementAst(cst);
+      return this.__qin_field_transformer.createLabeledStatementAst(cst);
     }
     if ((() => {
       if (__qin_binary__("==", children, null)) {

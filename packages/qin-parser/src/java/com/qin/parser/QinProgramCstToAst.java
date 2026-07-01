@@ -147,7 +147,7 @@ final class QinProgramCstToAst {
         var decorators = classDeclaration.decorators();
         SubhutiCst decoratorNode = findFirstByName(wrapper, "TSDecorators");
         if (decoratorNode != null) {
-            decorators = SlimeTSDecoratorCstToAst.createDecoratorsAst(decoratorNode);
+            decorators = slimeTransformer.createDecoratorsAst(decoratorNode);
         }
         return SlimeAstCreateUtils.createClassDeclaration(
                 internalId,

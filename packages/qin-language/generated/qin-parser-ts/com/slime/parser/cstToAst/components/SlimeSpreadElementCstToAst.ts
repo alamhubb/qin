@@ -1,6 +1,5 @@
 import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "../SlimeAstCreateUtils.ts";
-import { com_slime_parser_cstToAst_expressions_SlimeAssignmentExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeAssignmentExpressionCstToAst as SlimeAssignmentExpressionCstToAst } from "../expressions/SlimeAssignmentExpressionCstToAst.ts";
-import { com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst as SlimeExpressionCstToAst } from "../expressions/SlimeExpressionCstToAst.ts";
+import { com_slime_parser_cstToAst_SlimeCstToAstUtils, com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "../SlimeCstToAstUtils.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../../subhuti/struct/SubhutiCst.ts";
 import { com_slime_ast_nodes_misc_SpreadElement, com_slime_ast_nodes_misc_SpreadElement as SpreadElement } from "../../../ast/nodes/misc/SpreadElement.ts";
 import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
@@ -15,12 +14,22 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 class com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst {
+  __qin_field_transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length !== 0) {
-      throw new Error("Unsupported Java constructor arity: SlimeSpreadElementCstToAst/" + __qin_args.length);
+    switch (__qin_args.length) {
+      case 1: {
+        const transformer: any = __qin_args[0];
+        this.__qin_constructor_com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst_1(transformer);
+        return;
+      }
+      default: throw new Error("Unsupported Java constructor arity: SlimeSpreadElementCstToAst/" + __qin_args.length);
     }
   }
-  static createSpreadElementAst(cst: com_subhuti_struct_SubhutiCst): any {
+  __qin_constructor_com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst_1(transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): void {
+    this.__qin_field_transformer = null;
+    this.__qin_field_transformer = transformer;
+  }
+  createSpreadElementAst(cst: com_subhuti_struct_SubhutiCst): any {
     let children: any = cst.getChildren();
     let argument: any = null;
     for (const child of children) {
@@ -31,7 +40,7 @@ class com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst {
       }
       return __QinJavaLangString.equals("Expression", name);
     })()) {
-        argument = com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createArgumentAst(child);
+        argument = this.createArgumentAst(child);
       }
     }
     if (__qin_binary__("==", argument, null)) {
@@ -39,7 +48,7 @@ class com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createSpreadElement(argument, cst.getLocation());
   }
-  static createRestElementAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createRestElementAst(cst: com_subhuti_struct_SubhutiCst): any {
     let children: any = cst.getChildren();
     let argument: any = null;
     for (const child of children) {
@@ -58,11 +67,11 @@ class com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst {
     }
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createRestElement(argument, cst.getLocation());
   }
-  static createArgumentAst(cst: com_subhuti_struct_SubhutiCst): any {
+  createArgumentAst(cst: com_subhuti_struct_SubhutiCst): any {
     if (__QinJavaLangString.equals("AssignmentExpression", cst.getName())) {
-      return com_slime_parser_cstToAst_expressions_SlimeAssignmentExpressionCstToAst.createAssignmentExpressionAst(cst);
+      return this.__qin_field_transformer.createAssignmentExpressionAst(cst);
     }
-    return com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst.createExpressionAst(cst);
+    return this.__qin_field_transformer.createExpressionAst(cst);
   }
   static createPatternAst(cst: com_subhuti_struct_SubhutiCst): any {
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("pattern", cst.getLocation());

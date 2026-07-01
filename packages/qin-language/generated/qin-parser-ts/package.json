@@ -54,7 +54,7 @@
     "format": "ts-esm-files"
   },
   "dependencies": {
-    "@qin/java-sdk-js": "file:./node_modules/@qin/java-sdk-js"
+    "@qin/java-sdk-js": "file:../java-sdk-js"
   },
   "files": [
     "com",
@@ -62,7 +62,6 @@
     "SlimeCstToAstBridge.ts",
 
     "index.ts",
-    "qin.config.js",
-    "node_modules/@qin/java-sdk-js"
+    "qin.config.js"
   ]
 }

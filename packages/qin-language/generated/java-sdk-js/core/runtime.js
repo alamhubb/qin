@@ -125,8 +125,8 @@ export function __qin_java_functional(fn) {
   fn.compare = (...args) => fn(...args);
   return fn;
 }
-export function __qin_java_class_info__(ctor) {
-  const className = ctor && ctor.name ? ctor.name : "Object";
+export function __qin_java_class_info__(ctor, meta = null) {
+  const className = meta && meta.name ? meta.name : (ctor && ctor.name ? ctor.name : "Object");
   const simpleName = className.split(".").pop().split("_").pop() || className;
   let hash = 0;
   for (let index = 0; index < className.length; index++) {
@@ -153,6 +153,23 @@ export function __qin_java_class_info__(ctor) {
   return {
     getName() { return className; },
     getSimpleName() { return simpleName; },
+    isInstance(value) {
+      if (value == null) return false;
+      if (meta && meta.interfaceName) return __qin_java_implements(value, meta.interfaceName);
+      if (ctor == null || ctor === Object) return typeof value === "object" || typeof value === "function";
+      if (value instanceof ctor) return true;
+      const targetRecord = ctor.__qinJavaRecordClass;
+      if (targetRecord != null && value.__qinJavaRecordClass === targetRecord) return true;
+      const interfaces = ctor.__qin_java_interfaces || [];
+      for (const interfaceName of interfaces) {
+        if (__qin_java_implements(value, interfaceName)) return true;
+      }
+      return false;
+    },
+    cast(value) {
+      if (value == null || this.isInstance(value)) return value;
+      throw new Error("ClassCastException: cannot cast to " + className);
+    },
     getDeclaredConstructor(...__qin_types) {
       const __qin_ctor = ctor == null ? Object : ctor;
       return {

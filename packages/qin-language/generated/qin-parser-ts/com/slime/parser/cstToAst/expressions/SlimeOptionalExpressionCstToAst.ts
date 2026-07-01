@@ -232,7 +232,7 @@ class com_slime_parser_cstToAst_expressions_SlimeOptionalExpressionCstToAst {
         this.collectArgumentList(child, args);
       } else {
         if (__QinJavaLangString.equals("SpreadElement", name)) {
-          args.add(com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(child));
+          args.add(this.createSpreadElementAst(child));
           spreadNext = false;
         } else {
           if (com_slime_parser_cstToAst_expressions_SlimeOptionalExpressionCstToAst.isExpressionLike(name)) {
@@ -281,7 +281,7 @@ class com_slime_parser_cstToAst_expressions_SlimeOptionalExpressionCstToAst {
         this.collectArgumentList(child, args);
       } else {
         if (__QinJavaLangString.equals("SpreadElement", name)) {
-          args.add(com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(child));
+          args.add(this.createSpreadElementAst(child));
           spreadNext = false;
         } else {
           if (com_slime_parser_cstToAst_expressions_SlimeOptionalExpressionCstToAst.isExpressionLike(name)) {
@@ -383,6 +383,9 @@ class com_slime_parser_cstToAst_expressions_SlimeOptionalExpressionCstToAst {
       }
       return __QinJavaLangString.equals("OptionalExpression", name);
     })();
+  }
+  createSpreadElementAst(cst: com_subhuti_struct_SubhutiCst): any {
+    return new com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst(this.__qin_field_transformer).createSpreadElementAst(cst);
   }
 }
 const SlimeOptionalExpressionCstToAst = com_slime_parser_cstToAst_expressions_SlimeOptionalExpressionCstToAst;

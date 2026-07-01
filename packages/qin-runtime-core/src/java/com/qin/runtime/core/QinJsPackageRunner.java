@@ -1844,17 +1844,35 @@ final class QinJsPackageRunner {
 
     private Map<String, Path> indexWorkspacePackages(Path workspaceRoot) throws IOException {
         Map<String, Path> packages = new LinkedHashMap<>();
-        try (var paths = Files.walk(workspaceRoot, 6)) {
-            paths.filter(path -> path.getFileName() != null && "package.json".equals(path.getFileName().toString()))
-                    .filter(path -> !isIgnoredPath(path))
-                    .forEach(path -> {
-                        String packageName = readPackageName(path);
-                        if (packageName != null && !packageName.isBlank()) {
-                            packages.putIfAbsent(packageName, path.getParent().toAbsolutePath().normalize());
-                        }
-                    });
-        }
+        Files.walkFileTree(workspaceRoot, Set.of(), 6, new java.nio.file.SimpleFileVisitor<>() {
+            @Override
+            public java.nio.file.FileVisitResult preVisitDirectory(
+                    Path dir,
+                    java.nio.file.attribute.BasicFileAttributes attrs) {
+                if (!dir.equals(workspaceRoot) && isIgnoredDirectoryName(dir.getFileName())) {
+                    return java.nio.file.FileVisitResult.SKIP_SUBTREE;
+                }
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public java.nio.file.FileVisitResult visitFile(
+                    Path file,
+                    java.nio.file.attribute.BasicFileAttributes attrs) {
+                if (file.getFileName() != null && "package.json".equals(file.getFileName().toString())) {
+                    String packageName = readPackageName(file);
+                    if (packageName != null && !packageName.isBlank()) {
+                        packages.putIfAbsent(packageName, file.getParent().toAbsolutePath().normalize());
+                    }
+                }
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+        });
         return packages;
+    }
+
+    private boolean isIgnoredDirectoryName(Path fileName) {
+        return fileName != null && IGNORED_COPY_DIRS.contains(fileName.toString());
     }
 
     private boolean isIgnoredPath(Path path) {

@@ -2,7 +2,6 @@ import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAs
 import { com_slime_parser_cstToAst_SlimeCstToAstUtils, com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "../SlimeCstToAstUtils.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../../subhuti/struct/SubhutiCst.ts";
 import { com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst, com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst as SlimeSpreadElementCstToAst } from "../components/SlimeSpreadElementCstToAst.ts";
-import { com_slime_parser_cstToAst_expressions_SlimeAssignmentExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeAssignmentExpressionCstToAst as SlimeAssignmentExpressionCstToAst } from "../expressions/SlimeAssignmentExpressionCstToAst.ts";
 import { com_slime_ast_nodes_expressions_ArrayExpression, com_slime_ast_nodes_expressions_ArrayExpression as ArrayExpression } from "../../../ast/nodes/expressions/ArrayExpression.ts";
 import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
 import { com_slime_ast_nodes_expressions_ObjectExpression, com_slime_ast_nodes_expressions_ObjectExpression as ObjectExpression } from "../../../ast/nodes/expressions/ObjectExpression.ts";
@@ -100,7 +99,7 @@ class com_slime_parser_cstToAst_literal_SlimeCompoundLiteralCstToAst {
         elements.add(this.createAssignmentExpressionAst(child));
       } else {
         if (__QinJavaLangString.equals("SpreadElement", name)) {
-          elements.add(com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(child));
+          elements.add(new com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst(this.__qin_field_transformer).createSpreadElementAst(child));
         } else {
           if (__QinJavaLangString.equals("Elision", name)) {
             com_slime_parser_cstToAst_literal_SlimeCompoundLiteralCstToAst.appendElisionHoles(elements, child);

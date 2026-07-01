@@ -537,6 +537,13 @@ public class QinCli {
         requireSourceContains(packageJsonSource,
                 "\"entryBinaryName\": \"" + config.generated().entryBinaryName() + "\"",
                 "Generated parser package.json entryBinaryName mismatch");
+        requireSourceContains(packageJsonSource,
+                "\"@qin/java-sdk-js\": \"file:../java-sdk-js\"",
+                "Generated parser package.json must depend on sibling @qin/java-sdk-js");
+        if (packageJsonSource.contains("node_modules/@qin/java-sdk-js")) {
+            throw new IllegalStateException(
+                    "Generated parser package.json must not depend on embedded node_modules @qin/java-sdk-js");
+        }
         requireSourceContains(indexSource,
                 "export default com_qin_parser_QinParser",
                 "Generated parser index.ts must default-export QinParser");
@@ -2334,7 +2341,6 @@ public class QinCli {
     static String syncDependenciesCore(QinConfig config) throws Exception {
         Map<String, String> deps = new HashMap<>();
         if (config.dependencies() != null) deps.putAll(config.dependencies());
-        if (config.devDependencies() != null) deps.putAll(config.devDependencies());
 
         System.out.println(blue("-> Syncing dependencies..."));
         String sep = QinConstants.getClasspathSeparator();
@@ -2429,7 +2435,9 @@ public class QinCli {
     }
 
     private static void ensureNpmDependenciesInstalled(QinConfig config) throws IOException {
-        Map<String, String> deps = collectAllDependencies(config);
+        Map<String, String> deps = config.dependencies() != null
+                ? new LinkedHashMap<>(config.dependencies())
+                : new LinkedHashMap<>();
         if (deps.isEmpty()) {
             return;
         }
@@ -2438,7 +2446,7 @@ public class QinCli {
         int installed = 0;
         for (Map.Entry<String, String> dep : deps.entrySet()) {
             String name = dep.getKey();
-            if (!isNpmDependency(name) || isNpmDependencyInstalled(name)) {
+            if (!isNpmDependency(name) || isLocalFileDependency(dep.getValue()) || isNpmDependencyInstalled(name)) {
                 continue;
             }
             boolean ok = npm.install(name, dep.getValue());
@@ -2450,6 +2458,10 @@ public class QinCli {
         if (installed > 0) {
             System.out.println(green("[OK] Installed " + installed + " npm dependency package(s)"));
         }
+    }
+
+    private static boolean isLocalFileDependency(String version) {
+        return version != null && version.trim().startsWith("file:");
     }
 
     private static boolean isNpmDependency(String name) {

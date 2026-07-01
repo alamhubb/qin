@@ -105,7 +105,7 @@ class com_slime_parser_cstToAst_expressions_SlimeCallExpressionCstToAst {
         continue;
       }
       if (__QinJavaLangString.equals("TemplateLiteral", name)) {
-        let quasi: any = com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst.createTemplateLiteralAst(child);
+        let quasi: any = this.__qin_field_transformer.createTemplateLiteralAst(child);
         current = com_slime_parser_cstToAst_SlimeAstCreateUtils.createTaggedTemplateExpression(current, quasi, location);
         continue;
       }
@@ -259,7 +259,7 @@ class com_slime_parser_cstToAst_expressions_SlimeCallExpressionCstToAst {
         this.collectArgumentList(child, args);
       } else {
         if (__QinJavaLangString.equals("SpreadElement", name)) {
-          args.add(com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(child));
+          args.add(this.createSpreadElementAst(child));
         } else {
           if (com_slime_parser_cstToAst_expressions_SlimeCallExpressionCstToAst.isExpressionLike(name)) {
             let argument: any = this.__qin_field_transformer.createExpressionAst(child);
@@ -307,7 +307,7 @@ class com_slime_parser_cstToAst_expressions_SlimeCallExpressionCstToAst {
         this.collectArgumentList(child, args);
       } else {
         if (__QinJavaLangString.equals("SpreadElement", name)) {
-          args.add(com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(child));
+          args.add(this.createSpreadElementAst(child));
           spreadNext = false;
         } else {
           if (com_slime_parser_cstToAst_expressions_SlimeCallExpressionCstToAst.isExpressionLike(name)) {
@@ -510,6 +510,9 @@ class com_slime_parser_cstToAst_expressions_SlimeCallExpressionCstToAst {
       }
       return __QinJavaLangString.equals("Literal", name);
     })();
+  }
+  createSpreadElementAst(cst: com_subhuti_struct_SubhutiCst): any {
+    return new com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst(this.__qin_field_transformer).createSpreadElementAst(cst);
   }
 }
 const SlimeCallExpressionCstToAst = com_slime_parser_cstToAst_expressions_SlimeCallExpressionCstToAst;

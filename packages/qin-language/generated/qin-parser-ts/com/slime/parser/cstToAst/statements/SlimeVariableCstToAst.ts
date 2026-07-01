@@ -4,7 +4,6 @@ import { com_slime_ast_nodes_declarations_VariableDeclaration, com_slime_ast_nod
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../../subhuti/struct/SubhutiCst.ts";
 import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "../SlimeAstCreateUtils.ts";
 import { com_slime_parser_cstToAst_SlimeCstToAstUtils, com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "../SlimeCstToAstUtils.ts";
-import { com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst, com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst as SlimeBindingPatternCstToAst } from "../components/SlimeBindingPatternCstToAst.ts";
 import { com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst, com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst as SlimeIdentifierCstToAst } from "../identifier/SlimeIdentifierCstToAst.ts";
 import { com_subhuti_struct_SubhutiSourceLocation, com_subhuti_struct_SubhutiSourceLocation as SubhutiSourceLocation, com_subhuti_struct_SubhutiSourceLocation$Builder } from "../../../../subhuti/struct/SubhutiSourceLocation.ts";
 import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
@@ -386,13 +385,13 @@ class com_slime_parser_cstToAst_statements_SlimeVariableCstToAst {
       return this.createBindingIdentifierAst(cst);
     }
     if (__QinJavaLangString.equals("BindingPattern", name)) {
-      return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createBindingPatternAst(cst);
+      return this.__qin_field_transformer.createBindingPatternAst(cst);
     }
     if (__QinJavaLangString.equals("ArrayBindingPattern", name)) {
-      return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createArrayBindingPatternAst(cst);
+      return this.__qin_field_transformer.createArrayBindingPatternAst(cst);
     }
     if (__QinJavaLangString.equals("ObjectBindingPattern", name)) {
-      return com_slime_parser_cstToAst_components_SlimeBindingPatternCstToAst.createObjectBindingPatternAst(cst);
+      return this.__qin_field_transformer.createObjectBindingPatternAst(cst);
     }
     if (__qin_binary__("!=", cst.getChildren(), null)) {
       for (const child of cst.getChildren()) {

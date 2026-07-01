@@ -1,5 +1,5 @@
 import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "../SlimeAstCreateUtils.ts";
-import { com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst as SlimeExpressionCstToAst } from "../expressions/SlimeExpressionCstToAst.ts";
+import { com_slime_parser_cstToAst_SlimeCstToAstUtils, com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "../SlimeCstToAstUtils.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../../subhuti/struct/SubhutiCst.ts";
 import { com_slime_ast_nodes_expressions_TemplateLiteral, com_slime_ast_nodes_expressions_TemplateLiteral as TemplateLiteral } from "../../../ast/nodes/expressions/TemplateLiteral.ts";
 import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
@@ -13,15 +13,25 @@ function __qin_structural_object__(value) {
 }
 const ArrayList = __QinJavaUtilArrayList;
 class com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst {
+  __qin_field_transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils | null = null as any;
   constructor(...__qin_args: any[]) {
-    if (__qin_args.length !== 0) {
-      throw new Error("Unsupported Java constructor arity: SlimeTemplateLiteralCstToAst/" + __qin_args.length);
+    switch (__qin_args.length) {
+      case 1: {
+        const transformer: any = __qin_args[0];
+        this.__qin_constructor_com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst_1(transformer);
+        return;
+      }
+      default: throw new Error("Unsupported Java constructor arity: SlimeTemplateLiteralCstToAst/" + __qin_args.length);
     }
   }
-  static createTemplateLiteralAst(cst: com_subhuti_struct_SubhutiCst): any {
+  __qin_constructor_com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst_1(transformer: com_slime_parser_cstToAst_SlimeCstToAstUtils): void {
+    this.__qin_field_transformer = null;
+    this.__qin_field_transformer = transformer;
+  }
+  createTemplateLiteralAst(cst: com_subhuti_struct_SubhutiCst): any {
     let quasis: any = new __QinJavaUtilArrayList();
     let expressions: any = new __QinJavaUtilArrayList();
-    com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst.collectTemplateParts(cst, quasis, expressions);
+    this.collectTemplateParts(cst, quasis, expressions);
     return com_slime_parser_cstToAst_SlimeAstCreateUtils.createTemplateLiteral(quasis.toArray(), expressions.toArray([]), com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSubhutiLocation(cst));
   }
   static createTemplateElement(cst: com_subhuti_struct_SubhutiCst, tail: boolean): any {
@@ -109,7 +119,7 @@ class com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst {
     }
     return __QinJavaLangString.substring(value, prefixLength, __qin_binary__("-", __QinJavaLangString.length(value), suffixLength));
   }
-  static collectTemplateParts(cst: com_subhuti_struct_SubhutiCst, quasis: any, expressions: any): any {
+  collectTemplateParts(cst: com_subhuti_struct_SubhutiCst, quasis: any, expressions: any): any {
     if ((() => {
       if ((() => {
       if (__qin_binary__("==", cst, null)) {
@@ -146,10 +156,10 @@ class com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst {
         continue;
       }
       if (__QinJavaLangString.equals("Expression", name)) {
-        expressions.add(com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst.createExpressionAst(child));
+        expressions.add(this.__qin_field_transformer.createExpressionAst(child));
         continue;
       }
-      com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst.collectTemplateParts(child, quasis, expressions);
+      this.collectTemplateParts(child, quasis, expressions);
     }
     return null;
   }

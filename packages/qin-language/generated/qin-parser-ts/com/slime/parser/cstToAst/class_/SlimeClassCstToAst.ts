@@ -67,7 +67,7 @@ class com_slime_parser_cstToAst_class__SlimeClassCstToAst {
       }
       return __QinJavaLangString.equals("TSDecorator", name);
     })()) {
-          decorators = com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst.createDecoratorsAst(child);
+          decorators = this.__qin_field_transformer.createDecoratorsAst(child);
         } else {
           if (__QinJavaLangString.equals("TSTypeParameterDeclaration", name)) {
             typeParameters = com_slime_parser_cstToAst_typescript_SlimeTSTypeCstToAst.createTSTypeParameterDeclarationAst(child);
@@ -179,7 +179,7 @@ class com_slime_parser_cstToAst_class__SlimeClassCstToAst {
       }
       return __QinJavaLangString.equals("TSDecorator", name);
     })()) {
-        decorators = com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst.createDecoratorsAst(child);
+        decorators = this.__qin_field_transformer.createDecoratorsAst(child);
         continue;
       }
       if (__QinJavaLangString.equals("TSAccessibilityModifier", name)) {

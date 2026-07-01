@@ -250,11 +250,11 @@ public final class QinJavaProjectJsCompiler {
     }
 
     private void writeJavaSdkJsPackage(Path outputRoot) throws IOException {
-        Path packageRoot = outputRoot
-                .resolve("node_modules")
-                .resolve(QinJsBackend.javaSdkJsPackageName())
+        Path packageRoot = outputRoot.getParent()
+                .resolve("java-sdk-js")
                 .normalize();
         cleanGeneratedJavaSdkPackage(outputRoot, packageRoot);
+        cleanEmbeddedJavaSdkPackage(outputRoot);
         Files.createDirectories(packageRoot);
         JavaSdkSource javaSdkSource = findSiblingJavaSdkSource(outputRoot);
         Files.writeString(
@@ -269,15 +269,28 @@ public final class QinJavaProjectJsCompiler {
     }
 
     private void cleanGeneratedJavaSdkPackage(Path outputRoot, Path packageRoot) throws IOException {
-        Path nodeModulesRoot = outputRoot.resolve("node_modules").toAbsolutePath().normalize();
+        Path expectedPackageRoot = outputRoot.getParent().resolve("java-sdk-js").toAbsolutePath().normalize();
         Path absolutePackageRoot = packageRoot.toAbsolutePath().normalize();
-        if (!absolutePackageRoot.startsWith(nodeModulesRoot.resolve("@qin").normalize())) {
+        if (!absolutePackageRoot.equals(expectedPackageRoot)) {
             throw new IllegalStateException("Refusing to clean unexpected Java SDK package path: " + absolutePackageRoot);
         }
         if (!Files.exists(absolutePackageRoot)) {
             return;
         }
         try (Stream<Path> stream = Files.walk(absolutePackageRoot)) {
+            List<Path> paths = stream.sorted((left, right) -> right.compareTo(left)).toList();
+            for (Path path : paths) {
+                Files.delete(path);
+            }
+        }
+    }
+
+    private void cleanEmbeddedJavaSdkPackage(Path outputRoot) throws IOException {
+        Path embeddedNodeModules = outputRoot.resolve("node_modules").toAbsolutePath().normalize();
+        if (!Files.exists(embeddedNodeModules)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.walk(embeddedNodeModules)) {
             List<Path> paths = stream.sorted((left, right) -> right.compareTo(left)).toList();
             for (Path path : paths) {
                 Files.delete(path);
@@ -556,15 +569,14 @@ public final class QinJavaProjectJsCompiler {
                     "format": "%s-esm-files"
                   },
                   "dependencies": {
-                    "%s": "file:./node_modules/%s"
+                    "%s": "file:../java-sdk-js"
                   },
                   "files": [
                     "com",
                 %s
                 %s
                     "index.%s",
-                    "qin.config.js",
-                    "node_modules/%s"
+                    "qin.config.js"
                   ]
                 }
                 """.formatted(
@@ -586,11 +598,9 @@ public final class QinJavaProjectJsCompiler {
                 escapeJs(entryBinaryName),
                 typeScript ? "ts" : "js",
                 QinJsBackend.javaSdkJsPackageName(),
-                QinJsBackend.javaSdkJsPackageName(),
                 compatibilityFiles,
                 cstToAstBridgeFiles,
-                extension,
-                QinJsBackend.javaSdkJsPackageName());
+                extension);
     }
 
     private String generatedAdditionalEntryPackageExports(

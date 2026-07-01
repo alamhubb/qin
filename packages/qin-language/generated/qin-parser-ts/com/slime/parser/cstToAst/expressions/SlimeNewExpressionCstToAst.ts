@@ -180,7 +180,7 @@ class com_slime_parser_cstToAst_expressions_SlimeNewExpressionCstToAst {
         this.collectArgumentList(child, args);
       } else {
         if (__QinJavaLangString.equals("SpreadElement", name)) {
-          args.add(com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(child));
+          args.add(this.createSpreadElementAst(child));
           spreadNext = false;
         } else {
           if ((() => {
@@ -246,7 +246,7 @@ class com_slime_parser_cstToAst_expressions_SlimeNewExpressionCstToAst {
         spreadNext = false;
       } else {
         if (__QinJavaLangString.equals("SpreadElement", name)) {
-          args.add(com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst.createSpreadElementAst(child));
+          args.add(this.createSpreadElementAst(child));
           spreadNext = false;
         } else {
           if (__QinJavaLangString.equals("ArgumentList", name)) {
@@ -311,7 +311,7 @@ class com_slime_parser_cstToAst_expressions_SlimeNewExpressionCstToAst {
             current = com_slime_parser_cstToAst_SlimeAstCreateUtils.createMemberExpression(current, property, true, false, location);
           } else {
             if (__QinJavaLangString.equals("TemplateLiteral", name)) {
-              let quasi: any = com_slime_parser_cstToAst_literal_SlimeTemplateLiteralCstToAst.createTemplateLiteralAst(child);
+              let quasi: any = this.__qin_field_transformer.createTemplateLiteralAst(child);
               current = com_slime_parser_cstToAst_SlimeAstCreateUtils.createTaggedTemplateExpression(current, quasi, location);
             }
           }
@@ -390,6 +390,9 @@ class com_slime_parser_cstToAst_expressions_SlimeNewExpressionCstToAst {
       }
     }
     return false;
+  }
+  createSpreadElementAst(cst: com_subhuti_struct_SubhutiCst): any {
+    return new com_slime_parser_cstToAst_components_SlimeSpreadElementCstToAst(this.__qin_field_transformer).createSpreadElementAst(cst);
   }
 }
 const SlimeNewExpressionCstToAst = com_slime_parser_cstToAst_expressions_SlimeNewExpressionCstToAst;

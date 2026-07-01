@@ -322,6 +322,11 @@ public final class QinEsmSpecifierResolver {
             return resolveAsFile(target);
         }
 
+        Path qinLocalEntry = resolveQinLocalPackageEntry(packageDir);
+        if (qinLocalEntry != null) {
+            return qinLocalEntry;
+        }
+
         if (Files.isRegularFile(packageJson)) {
             try {
                 String json = Files.readString(packageJson);
@@ -380,6 +385,31 @@ public final class QinEsmSpecifierResolver {
         }
 
         return resolveAsFile(packageDir.resolve("index.js"));
+    }
+
+    private Path resolveQinLocalPackageEntry(Path packageDir) {
+        Path sourceMarker = packageDir.resolve(".qin-source-root");
+        Path qinConfig = packageDir.resolve("qin.config.js");
+        if (!Files.isRegularFile(qinConfig)) {
+            return null;
+        }
+        try {
+            String config = Files.readString(qinConfig);
+            String entry = readQinConfigString(config, "entry");
+            if (entry == null || entry.isBlank()) {
+                return null;
+            }
+            return resolveAsFile(packageDir.resolve(entry));
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Failed to resolve Qin local package entry: "
+                    + qinConfig.toAbsolutePath(), error);
+        }
+    }
+
+    private String readQinConfigString(String config, String field) {
+        Matcher matcher = Pattern.compile("\\b" + Pattern.quote(field) + "\\s*:\\s*['\"]([^'\"]+)['\"]")
+                .matcher(config);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     private String readField(String json, String field) {
