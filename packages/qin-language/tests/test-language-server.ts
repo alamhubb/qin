@@ -369,6 +369,8 @@ async function main() {
   const tsSubsetSource = [
     'const alphaNumber = 41',
     'const alphaText = alphaNumber.toString()',
+    'function formatLabel(name: string, count: number): string { return name + count }',
+    'const formattedLabel = formatLabel("qin", alphaNumber)',
     'al',
     '',
   ].join('\n')
@@ -532,7 +534,7 @@ async function main() {
 
   const completionRequest = createRequest('textDocument/completion', {
     textDocument: { uri: tsSubsetUri },
-    position: { line: 2, character: 2 },
+    position: { line: 4, character: 2 },
     context: { triggerKind: 1 },
   })
   server.stdin.write(completionRequest.packet)
@@ -547,6 +549,25 @@ async function main() {
   const completionLabels = completionItems.map((item: any) => item.label)
   if (!completionLabels.includes('alphaNumber') || !completionLabels.includes('alphaText')) {
     throw new Error(`Qin completion did not include TS service symbols: ${JSON.stringify(completionLabels.slice(0, 30))}`)
+  }
+
+  const signatureHelpRequest = createRequest('textDocument/signatureHelp', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 3, character: 42 },
+    context: {
+      triggerKind: 1,
+      isRetrigger: false,
+    },
+  })
+  server.stdin.write(signatureHelpRequest.packet)
+  const signatureHelpResponse = await waitForResponse(
+    signatureHelpRequest.id,
+    messages,
+    `Qin TS-subset signatureHelp response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const signatures = signatureHelpResponse.result?.signatures ?? []
+  if (!signatures.some((item: any) => JSON.stringify(item).includes('formatLabel'))) {
+    throw new Error(`Qin signatureHelp did not include formatLabel signature: ${JSON.stringify(signatureHelpResponse.result)}`)
   }
 
   const objectCompletionRequest = createRequest('textDocument/completion', {

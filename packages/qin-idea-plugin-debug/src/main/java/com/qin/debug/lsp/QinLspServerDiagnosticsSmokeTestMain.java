@@ -33,19 +33,24 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 export object Counter {
                                   value = 1
                                 }
+                                function formatLabel(name: string, count: number): string { return name + count }
+                                const formattedLabel = formatLabel("qin", Counter.value)
                                 const currentValue = Counter.value
                                 Coun
                                 """,
                         "Counter",
+                        6,
                         4,
+                        "formatLabel",
                         4,
-                        3,
+                        42,
+                        5,
                         23,
-                        3,
+                        5,
                         23,
                         0,
                         14,
-                        3,
+                        5,
                         21,
                         true,
                         true,
@@ -60,11 +65,16 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 const alphaNumber = 41
                                 const alphaText = alphaNumber.toString()
                                 const finalValue = alphaText
+                                function formatLabel(name: string, count: number): string { return name + count }
+                                const formattedLabel = formatLabel("qin", alphaNumber)
                                 al
                                 """,
                         "alphaNumber",
-                        3,
+                        5,
                         2,
+                        "formatLabel",
+                        4,
+                        42,
                         1,
                         20,
                         0,
@@ -86,11 +96,16 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 const alphaNumber = 41
                                 const alphaText = alphaNumber.toString()
                                 const finalValue = alphaText
+                                function formatLabel(name: string, count: number): string { return name + count }
+                                const formattedLabel = formatLabel("qin", alphaNumber)
                                 al
                                 """,
                         "alphaNumber",
-                        3,
+                        5,
                         2,
+                        "formatLabel",
+                        4,
+                        42,
                         1,
                         20,
                         0,
@@ -137,6 +152,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     "documentHighlight", Map.of(),
                                     "hover", Map.of(),
                                     "rename", Map.of(),
+                                    "signatureHelp", Map.of(),
                                     "publishDiagnostics", Map.of())),
                     "rootUri", workspaceRoot.toUri().toString(),
                     "initializationOptions", Map.of(
@@ -203,6 +219,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "context", Map.of("triggerKind", 1))));
             require(completionLabels(completion).contains(testCase.expectedCompletionLabel()),
                     language.id() + " completion missing " + testCase.expectedCompletionLabel() + ": " + completion);
+
+            Map<String, Object> signatureHelp = session.awaitResponse(session.request("textDocument/signatureHelp", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.signatureHelpLine(), "character", testCase.signatureHelpCharacter()),
+                    "context", Map.of("triggerKind", 1, "isRetrigger", false))));
+            require(signatureLabels(signatureHelp).stream().anyMatch(label -> label.contains(testCase.expectedSignatureLabel())),
+                    language.id() + " signatureHelp missing " + testCase.expectedSignatureLabel() + ": " + signatureHelp);
         }
 
         if (testCase.expectDefinitionAndSymbols()) {
@@ -281,6 +304,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
 
         require(capabilitiesMap.containsKey("completionProvider"), language.id() + " LSP missing completionProvider");
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
+        require(capabilitiesMap.containsKey("signatureHelpProvider"), language.id() + " LSP missing signatureHelpProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
         require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
@@ -303,6 +327,21 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Object result = response.get("result");
         Object items = result instanceof Map<?, ?> map ? map.get("items") : result;
         if (!(items instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> labels = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> map && map.get("label") != null) {
+                labels.add(String.valueOf(map.get("label")));
+            }
+        }
+        return labels;
+    }
+
+    private static List<String> signatureLabels(Map<String, Object> response) {
+        Object result = response.get("result");
+        Object signatures = result instanceof Map<?, ?> map ? map.get("signatures") : null;
+        if (!(signatures instanceof List<?> list)) {
             return List.of();
         }
         List<String> labels = new ArrayList<>();
@@ -475,6 +514,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             String expectedCompletionLabel,
             int completionLine,
             int completionCharacter,
+            String expectedSignatureLabel,
+            int signatureHelpLine,
+            int signatureHelpCharacter,
             int definitionLine,
             int definitionCharacter,
             int referencesLine,

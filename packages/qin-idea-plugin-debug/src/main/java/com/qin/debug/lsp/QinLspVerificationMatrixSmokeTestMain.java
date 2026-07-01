@@ -455,6 +455,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String smokeSource = Files.readString(smokePath);
         for (String method : List.of(
                 "textDocument/completion",
+                "textDocument/signatureHelp",
                 "textDocument/definition",
                 "textDocument/references",
                 "textDocument/documentHighlight",
@@ -466,6 +467,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         for (String assertionNeedle : List.of(
                 "completion missing",
+                "signatureHelp missing",
                 "definition did not resolve",
                 "references did not include declaration and usage",
                 "documentHighlight did not include declaration and usage",
@@ -1277,6 +1279,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin cross-file import completion response",
                     "Qin cross-file import symbol definition response",
                     "Qin cross-file import member definition response",
+                    "Qin TS-subset signatureHelp response",
                     "Qin TS-subset documentHighlight response",
                     "Qin TS-subset rename response",
                     "Qin object definition response",
