@@ -1,5 +1,13 @@
 import type { LanguageServicePlugin } from '@volar/language-service'
-import { DiagnosticSeverity, type FoldingRange, type Position, type Range, type SelectionRange } from 'vscode-languageserver-protocol'
+import {
+  DiagnosticSeverity,
+  type DocumentSymbol,
+  type FoldingRange,
+  type Position,
+  type Range,
+  type SelectionRange,
+  type WorkspaceSymbol,
+} from 'vscode-languageserver-protocol'
 import type { TextDocument } from 'vscode-languageserver-textdocument'
 import { parseGeneratedQinSource, probeGeneratedQinParser, type QinGeneratedParserProbeResult } from './QinGeneratedParserProbe'
 import { provideSourceDocumentSymbols } from './SourceDocumentSymbols'
@@ -14,14 +22,18 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
     documentSymbolProvider: true,
     foldingRangeProvider: true,
     selectionRangeProvider: true,
+    workspaceSymbolProvider: {},
   },
   create() {
+    const workspaceSymbols = new Map<string, WorkspaceSymbol[]>()
     return {
       provideDocumentSymbols(document: TextDocument) {
         if (!isQinDocument(document)) {
           return
         }
-        return provideSourceDocumentSymbols(document)
+        const symbols = provideSourceDocumentSymbols(document)
+        workspaceSymbols.set(document.uri, createWorkspaceSymbolsFromDocumentSymbols(document, symbols))
+        return symbols
       },
       provideFoldingRanges(document: TextDocument) {
         if (!isQinDocument(document)) {
@@ -39,8 +51,20 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
         if (!isQinDocument(document)) {
           return []
         }
+        updateWorkspaceSymbolsFromDocument(document, workspaceSymbols)
         const result = probeGeneratedQinParser(document.getText())
         return createQinParserDiagnostics(result)
+      },
+      provideWorkspaceSymbols(query: string) {
+        const matched: WorkspaceSymbol[] = []
+        for (const symbols of workspaceSymbols.values()) {
+          for (const symbol of symbols) {
+            if (matchesWorkspaceSymbolQuery(symbol.name, query)) {
+              matched.push(symbol)
+            }
+          }
+        }
+        return matched
       },
     }
   },
@@ -83,6 +107,50 @@ export function createQinParserDiagnostics(result: QinGeneratedParserProbeResult
       message: diagnostic.message,
     }
   })
+}
+
+function updateWorkspaceSymbolsFromDocument(document: TextDocument, workspaceSymbols: Map<string, WorkspaceSymbol[]>): void {
+  const symbols = provideSourceDocumentSymbols(document)
+  workspaceSymbols.set(document.uri, createWorkspaceSymbolsFromDocumentSymbols(document, symbols))
+}
+
+function createWorkspaceSymbolsFromDocumentSymbols(document: TextDocument, symbols: DocumentSymbol[]): WorkspaceSymbol[] {
+  const workspaceSymbols: WorkspaceSymbol[] = []
+  collectWorkspaceSymbols(document, symbols, workspaceSymbols)
+  return workspaceSymbols
+}
+
+function collectWorkspaceSymbols(document: TextDocument, symbols: DocumentSymbol[], workspaceSymbols: WorkspaceSymbol[]): void {
+  for (const symbol of symbols) {
+    workspaceSymbols.push({
+      name: symbol.name,
+      kind: symbol.kind,
+      location: {
+        uri: document.uri,
+        range: symbol.selectionRange,
+      },
+    })
+    if (symbol.children?.length) {
+      collectWorkspaceSymbols(document, symbol.children, workspaceSymbols)
+    }
+  }
+}
+
+function matchesWorkspaceSymbolQuery(name: string, query: string): boolean {
+  const normalizedName = name.toLowerCase()
+  const normalizedQuery = query.trim().toLowerCase()
+  if (!normalizedQuery) {
+    return true
+  }
+  let nameIndex = 0
+  for (const char of normalizedQuery) {
+    nameIndex = normalizedName.indexOf(char, nameIndex)
+    if (nameIndex < 0) {
+      return false
+    }
+    nameIndex++
+  }
+  return true
 }
 
 function provideSourceFoldingRanges(document: TextDocument): FoldingRange[] {

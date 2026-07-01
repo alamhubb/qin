@@ -317,6 +317,7 @@ async function main() {
     capabilities: {
       workspace: {
         configuration: true,
+        symbol: {},
       },
       textDocument: {
         completion: {
@@ -928,6 +929,20 @@ async function main() {
     || !selectionRangeChainContains(objectSelectionRange, 0, 7)
     || !selectionRangeChainContains(objectSelectionRange, 3, 0)) {
     throw new Error(`Qin selectionRange did not include object name, declaration, and source ranges: ${JSON.stringify(selectionRangeResponse.result)}`)
+  }
+
+  const workspaceSymbolRequest = createRequest('workspace/symbol', {
+    query: 'Counter',
+  })
+  server.stdin.write(workspaceSymbolRequest.packet)
+  const workspaceSymbolResponse = await waitForResponse(
+    workspaceSymbolRequest.id,
+    messages,
+    `Qin workspaceSymbol response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const workspaceSymbols = Array.isArray(workspaceSymbolResponse.result) ? workspaceSymbolResponse.result : []
+  if (!workspaceSymbols.some((item: any) => item.name === 'Counter' && sameUri(item.location?.uri, objectUri) && rangeContains(item.location, 0, 14))) {
+    throw new Error(`Qin workspaceSymbol did not include source Counter object: ${JSON.stringify(workspaceSymbolResponse.result)}`)
   }
 
   const forOfDocumentSymbolRequest = createRequest('textDocument/documentSymbol', {

@@ -156,6 +156,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             int initializeId = session.request("initialize", Map.of(
                     "processId", ProcessHandle.current().pid(),
                     "capabilities", Map.of(
+                            "workspace", Map.of(
+                                    "symbol", Map.of()),
                             "textDocument", Map.of(
                                     "completion", Map.of(),
                                     "documentHighlight", Map.of(),
@@ -299,6 +301,11 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         "positions", List.of(Map.of("line", 0, "character", 16)))));
                 require(hasSelectionRangeChain(selectionRanges.get("result"), 0, 14, 0, 7),
                         language.id() + " selectionRange missing object name and declaration chain: " + selectionRanges);
+
+                Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
+                        "query", testCase.expectedDocumentSymbol())));
+                require(hasWorkspaceSymbol(workspaceSymbols.get("result"), testCase.expectedDocumentSymbol(), uri, 0, 14),
+                        language.id() + " workspaceSymbol missing source object symbol: " + workspaceSymbols);
             }
 
             Map<String, Object> rename = session.awaitResponse(session.request("textDocument/rename", Map.of(
@@ -357,6 +364,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         if ("qin".equals(language.id())) {
             require(capabilitiesMap.containsKey("foldingRangeProvider"), language.id() + " LSP missing foldingRangeProvider");
             require(capabilitiesMap.containsKey("selectionRangeProvider"), language.id() + " LSP missing selectionRangeProvider");
+            require(capabilitiesMap.containsKey("workspaceSymbolProvider"), language.id() + " LSP missing workspaceSymbolProvider");
         }
         require(capabilitiesMap.containsKey("semanticTokensProvider"), language.id() + " LSP missing semanticTokensProvider");
 
@@ -552,6 +560,25 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 return true;
             }
             current = currentMap.get("parent");
+        }
+        return false;
+    }
+
+    private static boolean hasWorkspaceSymbol(Object result, String name, String uri, int line, int character) {
+        if (!(result instanceof List<?> list)) {
+            return false;
+        }
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> symbol)) {
+                continue;
+            }
+            Object symbolName = symbol.get("name");
+            Object location = symbol.get("location");
+            if (symbolName != null
+                    && name.equals(String.valueOf(symbolName))
+                    && hasLocationStartingAt(location, uri, line, character)) {
+                return true;
+            }
         }
         return false;
     }
