@@ -455,6 +455,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String smokeSource = Files.readString(smokePath);
         for (String method : List.of(
                 "textDocument/completion",
+                "textDocument/hover",
                 "textDocument/signatureHelp",
                 "textDocument/definition",
                 "textDocument/references",
@@ -467,6 +468,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         }
         for (String assertionNeedle : List.of(
                 "completion missing",
+                "hover missing",
                 "signatureHelp missing",
                 "definition did not resolve",
                 "references did not include declaration and usage",

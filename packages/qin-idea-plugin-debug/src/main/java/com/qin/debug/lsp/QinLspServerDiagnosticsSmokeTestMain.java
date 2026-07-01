@@ -41,6 +41,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         "Counter",
                         6,
                         4,
+                        "Counter",
+                        5,
+                        23,
                         "formatLabel",
                         4,
                         42,
@@ -72,6 +75,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         "alphaNumber",
                         5,
                         2,
+                        "alphaNumber",
+                        0,
+                        8,
                         "formatLabel",
                         4,
                         42,
@@ -103,6 +109,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         "alphaNumber",
                         5,
                         2,
+                        "alphaNumber",
+                        0,
+                        8,
                         "formatLabel",
                         4,
                         42,
@@ -219,6 +228,12 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "context", Map.of("triggerKind", 1))));
             require(completionLabels(completion).contains(testCase.expectedCompletionLabel()),
                     language.id() + " completion missing " + testCase.expectedCompletionLabel() + ": " + completion);
+
+            Map<String, Object> hover = session.awaitResponse(session.request("textDocument/hover", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.hoverLine(), "character", testCase.hoverCharacter()))));
+            require(hoverText(hover).contains(testCase.expectedHoverText()),
+                    language.id() + " hover missing " + testCase.expectedHoverText() + ": " + hover);
 
             Map<String, Object> signatureHelp = session.awaitResponse(session.request("textDocument/signatureHelp", Map.of(
                     "textDocument", Map.of("uri", uri),
@@ -351,6 +366,25 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             }
         }
         return labels;
+    }
+
+    private static String hoverText(Map<String, Object> response) {
+        Object result = response.get("result");
+        if (!(result instanceof Map<?, ?> map)) {
+            return "";
+        }
+        Object contents = map.get("contents");
+        if (contents instanceof String text) {
+            return text;
+        }
+        if (contents instanceof Map<?, ?> contentsMap) {
+            Object value = contentsMap.get("value");
+            return value == null ? contentsMap.toString() : String.valueOf(value);
+        }
+        if (contents instanceof List<?> list) {
+            return list.toString();
+        }
+        return contents == null ? "" : String.valueOf(contents);
     }
 
     private static boolean hasLocationInUri(Object result, String uri) {
@@ -514,6 +548,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             String expectedCompletionLabel,
             int completionLine,
             int completionCharacter,
+            String expectedHoverText,
+            int hoverLine,
+            int hoverCharacter,
             String expectedSignatureLabel,
             int signatureHelpLine,
             int signatureHelpCharacter,
