@@ -343,6 +343,8 @@ async function main() {
         typeDefinition: {},
         references: {},
         formatting: {},
+        rangeFormatting: {},
+        onTypeFormatting: {},
         inlayHint: {},
         linkedEditingRange: {},
         documentLink: {},
@@ -381,6 +383,12 @@ async function main() {
   }
   if (!initResponse.result.capabilities.documentFormattingProvider) {
     throw new Error(`Qin language server initialize did not expose documentFormattingProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.documentRangeFormattingProvider) {
+    throw new Error(`Qin language server initialize did not expose documentRangeFormattingProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.documentOnTypeFormattingProvider) {
+    throw new Error(`Qin language server initialize did not expose documentOnTypeFormattingProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
   if (!initResponse.result.capabilities.typeDefinitionProvider) {
     throw new Error(`Qin language server initialize did not expose typeDefinitionProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
@@ -494,6 +502,21 @@ async function main() {
       languageId: 'qin',
       version: 1,
       text: 'const messy={value:1}\n',
+    },
+  }))
+
+  const onTypeFormattingUri = toFileUri(path.join(__dirname, 'on-type-formatting.qin'))
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: onTypeFormattingUri,
+      languageId: 'qin',
+      version: 1,
+      text: [
+        'function wrap(){',
+        'const value=1',
+        '}',
+        '',
+      ].join('\n'),
     },
   }))
 
@@ -843,6 +866,43 @@ async function main() {
   const formattingTexts = collectTextEditTexts(formattingResponse.result)
   if (!formattingTexts.some(text => text.includes('const messy = { value: 1 }'))) {
     throw new Error(`Qin formatting did not return TypeScript formatter edits through source mappings: ${JSON.stringify(formattingResponse.result)}`)
+  }
+
+  const rangeFormattingRequest = createRequest('textDocument/rangeFormatting', {
+    textDocument: { uri: formattingUri },
+    range: {
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 22 },
+    },
+    options: { tabSize: 2, insertSpaces: true },
+  })
+  server.stdin.write(rangeFormattingRequest.packet)
+  const rangeFormattingResponse = await waitForResponse(
+    rangeFormattingRequest.id,
+    messages,
+    `Qin rangeFormatting response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const rangeFormattingTexts = collectTextEditTexts(rangeFormattingResponse.result)
+  if (!rangeFormattingTexts.some(text => text.includes('const messy = { value: 1 }'))) {
+    throw new Error(`Qin rangeFormatting did not return TypeScript formatter edits through source mappings: ${JSON.stringify(rangeFormattingResponse.result)}`)
+  }
+
+  const onTypeFormattingRequest = createRequest('textDocument/onTypeFormatting', {
+    textDocument: { uri: onTypeFormattingUri },
+    position: { line: 2, character: 1 },
+    ch: '}',
+    options: { tabSize: 2, insertSpaces: true },
+  })
+  server.stdin.write(onTypeFormattingRequest.packet)
+  const onTypeFormattingResponse = await waitForResponse(
+    onTypeFormattingRequest.id,
+    messages,
+    `Qin onTypeFormatting response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const onTypeFormattingTexts = collectTextEditTexts(onTypeFormattingResponse.result)
+  if (!onTypeFormattingTexts.some(text => text.includes('function wrap()'))
+    || !onTypeFormattingTexts.some(text => text.includes('  const value = 1'))) {
+    throw new Error(`Qin onTypeFormatting did not return TypeScript formatter edits through source mappings: ${JSON.stringify(onTypeFormattingResponse.result)}`)
   }
 
   const inlayHintRequest = createRequest('textDocument/inlayHint', {

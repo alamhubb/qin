@@ -166,6 +166,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     Map.entry("documentLink", Map.of()),
                                     Map.entry("documentHighlight", Map.of()),
                                     Map.entry("formatting", Map.of()),
+                                    Map.entry("rangeFormatting", Map.of()),
+                                    Map.entry("onTypeFormatting", Map.of()),
                                     Map.entry("foldingRange", Map.of()),
                                     Map.entry("hover", Map.of()),
                                     Map.entry("implementation", Map.of()),
@@ -446,6 +448,44 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                 .anyMatch(text -> text.contains("const messy = { value: 1 }")),
                         language.id() + " formatting did not return TypeScript formatter edits through source mappings: " + formatting);
 
+                Map<String, Object> rangeFormatting = session.awaitResponse(session.request("textDocument/rangeFormatting", Map.of(
+                        "textDocument", Map.of("uri", formattingUri),
+                        "range", Map.of(
+                                "start", Map.of("line", 0, "character", 0),
+                                "end", Map.of("line", 0, "character", 22)),
+                        "options", Map.of("tabSize", 2, "insertSpaces", true))));
+                require(textEditTexts(rangeFormatting.get("result")).stream()
+                                .anyMatch(text -> text.contains("const messy = { value: 1 }")),
+                        language.id() + " rangeFormatting did not return TypeScript formatter edits through source mappings: "
+                                + rangeFormatting);
+
+                String onTypeFormattingUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("on-type-formatting.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", onTypeFormattingUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", """
+                                        function wrap(){
+                                        const value=1
+                                        }
+                                        """)));
+                Map<String, Object> onTypeFormatting = session.awaitResponse(session.request("textDocument/onTypeFormatting", Map.of(
+                        "textDocument", Map.of("uri", onTypeFormattingUri),
+                        "position", Map.of("line", 2, "character", 1),
+                        "ch", "}",
+                        "options", Map.of("tabSize", 2, "insertSpaces", true))));
+                List<String> onTypeFormattingTexts = textEditTexts(onTypeFormatting.get("result"));
+                require(onTypeFormattingTexts.stream().anyMatch(text -> text.contains("function wrap()"))
+                                && onTypeFormattingTexts.stream().anyMatch(text -> text.contains("  const value = 1")),
+                        language.id() + " onTypeFormatting did not return TypeScript formatter edits through source mappings: "
+                                + onTypeFormatting);
+
                 Map<String, Object> inlayHints = session.awaitResponse(session.request("textDocument/inlayHint", Map.of(
                         "textDocument", Map.of("uri", uri),
                         "range", Map.of(
@@ -651,6 +691,8 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
         require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
         require(capabilitiesMap.containsKey("documentFormattingProvider"), language.id() + " LSP missing documentFormattingProvider");
+        require(capabilitiesMap.containsKey("documentRangeFormattingProvider"), language.id() + " LSP missing documentRangeFormattingProvider");
+        require(capabilitiesMap.containsKey("documentOnTypeFormattingProvider"), language.id() + " LSP missing documentOnTypeFormattingProvider");
         require(capabilitiesMap.containsKey("inlayHintProvider"), language.id() + " LSP missing inlayHintProvider");
         require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
