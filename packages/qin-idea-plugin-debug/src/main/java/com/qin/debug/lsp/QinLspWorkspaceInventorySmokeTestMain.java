@@ -62,6 +62,8 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
             verifyWorkspaceProject(workspaceRoot, project, projectRoot, config);
         } else if (project.kind() == ProjectKind.TOOLING) {
             verifyToolingProject(project, projectRoot, config);
+        } else if (project.kind() == ProjectKind.IDEA_PLUGIN) {
+            verifyIdeaPluginProject(project, projectRoot, config);
         } else if (project.kind() == ProjectKind.APP) {
             verifyAppProject(project, projectRoot, config);
         }
@@ -526,6 +528,35 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         }
     }
 
+    private static void verifyIdeaPluginProject(InventoryProject project, Path projectRoot, QinConfig config) {
+        require("tooling".equals(config.type()),
+                project.id() + " IDEA plugin must be classified as Qin tooling");
+        require(Files.isRegularFile(projectRoot.resolve("build.gradle.kts")),
+                project.id() + " IDEA plugin keeps IntelliJ Platform packaging in Gradle");
+        require(Files.isRegularFile(projectRoot.resolve("src/main/resources/META-INF/plugin.xml")),
+                project.id() + " IDEA plugin descriptor must exist");
+        for (String scriptName : List.of(
+                "check",
+                "lspQinMatrix",
+                "lspUnifiedMatrix",
+                "lspVerificationMatrixSmoke",
+                "runIdeLspFixture",
+                "buildPlugin")) {
+            String script = config.scripts().get(scriptName);
+            require(script != null && !script.isBlank(),
+                    project.id() + " qin.config.js must expose script " + scriptName);
+            require(script.contains("gradlew.bat") && script.contains("-Dfile.encoding=UTF-8"),
+                    project.id() + " script " + scriptName
+                            + " must invoke the IntelliJ Gradle boundary with UTF-8 settings: " + script);
+        }
+        for (var script : config.scripts().entrySet()) {
+            require(!script.getValue().contains("npm run"),
+                    project.id() + " IDEA plugin script " + script.getKey()
+                            + " must run from Qin script metadata, not npm run forwarding: "
+                            + script.getValue());
+        }
+    }
+
     private static void verifyToolingPackageJsonIsNotScriptEntrypoint(
             InventoryProject project,
             Path projectRoot) {
@@ -721,6 +752,9 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                         "ovs-language", "ovs", ".ovs", "ovs-compiler"),
                 InventoryProject.language("cssts-language", Path.of("cssts", "cssts-language"),
                         "cssts-language", "cssts", ".cssts", "cssts-compiler"),
+                InventoryProject.ideaPlugin("qin-idea-plugin-debug",
+                        Path.of("qin", "packages", "qin-idea-plugin-debug"),
+                        "com.qin:qin-idea-plugin-debug"),
                 InventoryProject.compiler("ovs-compiler", Path.of("ovsjs", "ovs", "ovs-compiler"),
                         "ovs-compiler", "ovs", ".ovs"),
                 InventoryProject.compiler("cssts-compiler", Path.of("cssts", "cssts", "cssts-compiler"),
@@ -820,6 +854,7 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
         GENERATED_TS,
         WORKSPACE,
         TOOLING,
+        IDEA_PLUGIN,
         APP
     }
 
@@ -913,6 +948,11 @@ public final class QinLspWorkspaceInventorySmokeTestMain {
                 String extension) {
             return new InventoryProject(
                     id, path, expectedName, ProjectKind.TOOLING, languageId, extension, null, List.of(), List.of());
+        }
+
+        static InventoryProject ideaPlugin(String id, Path path, String expectedName) {
+            return new InventoryProject(
+                    id, path, expectedName, ProjectKind.IDEA_PLUGIN, null, null, null, List.of(), List.of());
         }
 
         static InventoryProject app(

@@ -276,6 +276,7 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
 
         verifyLanguageScriptDryRunGeneratesParserFirst(root.resolve("generated-language"));
         verifyNamedLanguageScriptRunDryRun(root.resolve("named-language"));
+        verifyNamedProjectScriptRunDryRun(root.resolve("named-project"));
 
         System.out.println("QinCliLanguageLocalDependencyBuildSmokeTestMain OK");
     }
@@ -327,6 +328,49 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         String captured = output.toString(StandardCharsets.UTF_8);
         require(captured.contains("cmd /c uni -p mp-weixin") || captured.contains("sh -c uni -p mp-weixin"),
                 "qin language run dev:mp-weixin --dry-run must execute named qin.config.js script");
+    }
+
+    private static void verifyNamedProjectScriptRunDryRun(Path projectRoot) throws Exception {
+        Files.createDirectories(projectRoot);
+        Files.writeString(projectRoot.resolve("qin.config.js"), """
+                export default {
+                  name: "named-project",
+                  version: "1.0.0",
+                  type: "tooling",
+                  scripts: {
+                    check: "gradle-check-marker"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+
+        PrintStream originalOut = System.out;
+        PrintStream originalErr = System.err;
+        String originalUserDir = System.getProperty("user.dir");
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (PrintStream capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            System.setErr(capture);
+            System.setProperty("user.dir", projectRoot.toString());
+            Method scriptCommand = QinCli.class.getDeclaredMethod("runNamedProjectScript", String[].class);
+            scriptCommand.setAccessible(true);
+            try {
+                scriptCommand.invoke(null, (Object) new String[]{"check", "--dry-run"});
+            } catch (InvocationTargetException error) {
+                Throwable cause = error.getCause();
+                if (cause instanceof Exception exception) {
+                    throw exception;
+                }
+                throw error;
+            }
+        } finally {
+            System.setProperty("user.dir", originalUserDir);
+            System.setOut(originalOut);
+            System.setErr(originalErr);
+        }
+
+        String captured = output.toString(StandardCharsets.UTF_8);
+        require(captured.contains("cmd /c gradle-check-marker") || captured.contains("sh -lc gradle-check-marker"),
+                "qin script check --dry-run must execute non-language qin.config.js scripts");
     }
 
     private static void verifyLocalDependencyBuildInstallsScriptTool(Method method, Path root) throws Exception {

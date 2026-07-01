@@ -59,6 +59,7 @@ public class QinCli {
                 case "clean" -> cleanProject();
                 case "install" -> QinInstallCommand.execute(cmdArgs);
                 case "sync" -> syncDependencies(cmdArgs);
+                case "script", "run-script" -> runNamedProjectScript(cmdArgs);
                 case "language" -> languageCommand(cmdArgs);
                 case "language-check" -> languageCommand(new String[]{"check"});
                 case "deps" -> showDependencies(cmdArgs);    // 濡絽鍟弲?闂佸搫鍊瑰姗€路?
@@ -374,6 +375,13 @@ public class QinCli {
             throw new IllegalStateException("Missing scripts." + scriptName + " in " + QinConstants.CONFIG_FILE);
         }
         runLanguageShellCommandAt(root, script, "project script '" + scriptName + "'", hasArg(args, "--dry-run"));
+    }
+
+    private static void runNamedProjectScript(String[] args) throws Exception {
+        if (args.length == 0 || args[0].startsWith("-")) {
+            throw new IllegalArgumentException("Missing script name for qin script <name>");
+        }
+        runProjectScript(args[0], Arrays.copyOfRange(args, 1, args.length));
     }
 
     private static boolean usesScriptBuild(QinConfig config) {
@@ -2888,6 +2896,8 @@ public class QinCli {
                   qin install org.jsoup:jsoup # Install Maven dependency
                   qin install                 # Install deps declared in qin.config.js
                   qin sync                    # Sync deps (auto-compiles local projects)
+                  qin script check            # Run scripts.check from qin.config.js
+                  qin run-script lspQinMatrix # Alias for qin script lspQinMatrix
                   qin language check          # Validate language.server/parser/ideaLspClient metadata
                   qin language generate-parser # Generate Java parser TS ESM package
                   qin language build          # Run scripts.build for a language project

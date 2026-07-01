@@ -116,6 +116,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
 
         Path buildFile = ideaClientPath.resolve("build.gradle.kts");
         String buildSource = Files.readString(buildFile);
+        QinConfig ideaClientConfig = new ConfigLoader(ideaClientPath.toString()).load();
+        verifyIdeaClientQinScripts(ideaClientPath, ideaClientConfig);
         Map<String, String> languageTestTasks = Map.of(
                 "qinLanguageTest", "qin/packages/qin-language",
                 "ovsLanguageTest", "ovsjs/ovs-language",
@@ -277,6 +279,34 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         verifyIdeaDiagnosticsSmokeFeatureAssertions(ideaClientPath);
 
         System.out.println("Qin LSP verification matrix smoke passed");
+    }
+
+    private static void verifyIdeaClientQinScripts(Path ideaClientPath, QinConfig config) {
+        require(Files.isRegularFile(ideaClientPath.resolve("qin.config.js")),
+                "IDEA LSP client must be Qin-managed through qin.config.js");
+        require("com.qin:qin-idea-plugin-debug".equals(config.name()),
+                "IDEA LSP client qin.config.js must use com.qin:qin-idea-plugin-debug name");
+        require("tooling".equals(config.type()),
+                "IDEA LSP client qin.config.js must classify the plugin as tooling");
+        for (String scriptName : List.of(
+                "check",
+                "lspQinMatrix",
+                "lspUnifiedMatrix",
+                "lspVerificationMatrixSmoke",
+                "runIdeLspFixture",
+                "buildPlugin")) {
+            String script = config.scripts().get(scriptName);
+            require(script != null && !script.isBlank(),
+                    "IDEA LSP client qin.config.js must expose scripts." + scriptName);
+            require(script.contains("gradlew.bat"),
+                    "IDEA LSP client scripts." + scriptName
+                            + " must call the IntelliJ Platform Gradle boundary");
+            require(script.contains("-Dfile.encoding=UTF-8"),
+                    "IDEA LSP client scripts." + scriptName + " must force UTF-8");
+            require(!script.contains("npm run"),
+                    "IDEA LSP client scripts." + scriptName
+                            + " must not forward through package scripts");
+        }
     }
 
     private static void verifyLanguageCliSmokeCoverage(Path ideaClientPath) throws Exception {
