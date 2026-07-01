@@ -460,6 +460,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/definition",
                 "textDocument/references",
                 "textDocument/documentHighlight",
+                "textDocument/linkedEditingRange",
                 "textDocument/rename",
                 "textDocument/prepareRename",
                 "textDocument/documentSymbol",
@@ -477,6 +478,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "definition did not resolve",
                 "references did not include declaration and usage",
                 "documentHighlight did not include declaration and usage",
+                "linkedEditingRange missing object declaration and usage",
                 "rename did not return workspace edits",
                 "prepareRename did not return symbol range",
                 "documentSymbol missing",
@@ -1263,6 +1265,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/selectionRange");
             require(testSource.contains("selectionRange did not include"),
                     "Qin language server test must assert selectionRange source coverage");
+            require(testSource.contains("textDocument/linkedEditingRange"),
+                    "Qin language server test must request textDocument/linkedEditingRange");
+            require(testSource.contains("linkedEditingRange did not include"),
+                    "Qin language server test must assert linkedEditingRange source coverage");
             require(testSource.contains("workspace/symbol"),
                     "Qin language server test must request workspace/symbol");
             require(testSource.contains("workspaceSymbol did not include"),

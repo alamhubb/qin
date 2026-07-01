@@ -329,6 +329,7 @@ async function main() {
         hover: {},
         definition: {},
         references: {},
+        linkedEditingRange: {},
         documentSymbol: {},
         selectionRange: {},
         semanticTokens: {
@@ -929,6 +930,22 @@ async function main() {
     || !selectionRangeChainContains(objectSelectionRange, 0, 7)
     || !selectionRangeChainContains(objectSelectionRange, 3, 0)) {
     throw new Error(`Qin selectionRange did not include object name, declaration, and source ranges: ${JSON.stringify(selectionRangeResponse.result)}`)
+  }
+
+  const linkedEditingRequest = createRequest('textDocument/linkedEditingRange', {
+    textDocument: { uri: objectUri },
+    position: { line: 0, character: 16 },
+  })
+  server.stdin.write(linkedEditingRequest.packet)
+  const linkedEditingResponse = await waitForResponse(
+    linkedEditingRequest.id,
+    messages,
+    `Qin object linkedEditingRange response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const linkedRanges = Array.isArray(linkedEditingResponse.result?.ranges) ? linkedEditingResponse.result.ranges : []
+  if (!linkedRanges.some((range: any) => rangeStartsAt({ range }, 0, 14))
+    || !linkedRanges.some((range: any) => rangeStartsAt({ range }, 3, 21))) {
+    throw new Error(`Qin linkedEditingRange did not include object declaration and usage ranges: ${JSON.stringify(linkedEditingResponse.result)}`)
   }
 
   const workspaceSymbolRequest = createRequest('workspace/symbol', {

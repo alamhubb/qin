@@ -163,6 +163,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     "documentHighlight", Map.of(),
                                     "foldingRange", Map.of(),
                                     "hover", Map.of(),
+                                    "linkedEditingRange", Map.of(),
                                     "rename", Map.of(),
                                     "selectionRange", Map.of(),
                                     "signatureHelp", Map.of(),
@@ -302,6 +303,12 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 require(hasSelectionRangeChain(selectionRanges.get("result"), 0, 14, 0, 7),
                         language.id() + " selectionRange missing object name and declaration chain: " + selectionRanges);
 
+                Map<String, Object> linkedEditingRanges = session.awaitResponse(session.request("textDocument/linkedEditingRange", Map.of(
+                        "textDocument", Map.of("uri", uri),
+                        "position", Map.of("line", 0, "character", 16))));
+                require(hasLinkedEditingRanges(linkedEditingRanges.get("result"), 0, 14, 5, 21),
+                        language.id() + " linkedEditingRange missing object declaration and usage: " + linkedEditingRanges);
+
                 Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
                         "query", testCase.expectedDocumentSymbol())));
                 require(hasWorkspaceSymbol(workspaceSymbols.get("result"), testCase.expectedDocumentSymbol(), uri, 0, 14),
@@ -363,6 +370,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         if ("qin".equals(language.id())) {
             require(capabilitiesMap.containsKey("foldingRangeProvider"), language.id() + " LSP missing foldingRangeProvider");
+            require(capabilitiesMap.containsKey("linkedEditingRangeProvider"), language.id() + " LSP missing linkedEditingRangeProvider");
             require(capabilitiesMap.containsKey("selectionRangeProvider"), language.id() + " LSP missing selectionRangeProvider");
             require(capabilitiesMap.containsKey("workspaceSymbolProvider"), language.id() + " LSP missing workspaceSymbolProvider");
         }
@@ -581,6 +589,20 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             }
         }
         return false;
+    }
+
+    private static boolean hasLinkedEditingRanges(
+            Object result,
+            int declarationLine,
+            int declarationCharacter,
+            int usageLine,
+            int usageCharacter) {
+        if (!(result instanceof Map<?, ?> map)) {
+            return false;
+        }
+        Object ranges = map.get("ranges");
+        return hasRangeStartingAt(ranges, declarationLine, declarationCharacter)
+                && hasRangeStartingAt(ranges, usageLine, usageCharacter);
     }
 
     private static List<String> symbolNames(Object result) {

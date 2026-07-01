@@ -1,8 +1,10 @@
 import type { LanguageServicePlugin } from '@volar/language-service'
+import ts from 'typescript'
 import {
   DiagnosticSeverity,
   type DocumentSymbol,
   type FoldingRange,
+  type LinkedEditingRanges,
   type Position,
   type Range,
   type SelectionRange,
@@ -21,6 +23,7 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
     },
     documentSymbolProvider: true,
     foldingRangeProvider: true,
+    linkedEditingRangeProvider: true,
     selectionRangeProvider: true,
     workspaceSymbolProvider: {},
   },
@@ -40,6 +43,12 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
           return []
         }
         return provideSourceFoldingRanges(document)
+      },
+      provideLinkedEditingRanges(document: TextDocument, position: Position) {
+        if (!isQinDocument(document)) {
+          return
+        }
+        return provideSourceLinkedEditingRanges(document, position)
       },
       provideSelectionRanges(document: TextDocument, positions: Position[]) {
         if (!isQinDocument(document)) {
@@ -151,6 +160,63 @@ function matchesWorkspaceSymbolQuery(name: string, query: string): boolean {
     nameIndex++
   }
   return true
+}
+
+function provideSourceLinkedEditingRanges(document: TextDocument, position: Position): LinkedEditingRanges | undefined {
+  const source = document.getText()
+  const parsed = parseGeneratedQinSource(source)
+  if (!parsed.ok || !parsed.cst) {
+    return
+  }
+  const objectRanges = collectQinObjectSelectionRanges(source, parsed.cst)
+  const identifier = identifierAtOffset(source, document.offsetAt(position))
+  if (!identifier || !objectRanges.some(item => source.slice(item.nameStart, item.nameEnd) === identifier.text)) {
+    return
+  }
+  const ranges = collectIdentifierRanges(source, identifier.text)
+    .map(item => createRange(document, item.start, item.end))
+  return ranges.length > 1
+    ? {
+      ranges,
+      wordPattern: '[A-Za-z_$][A-Za-z0-9_$]*',
+    }
+    : undefined
+}
+
+interface SourceIdentifierRange {
+  text: string
+  start: number
+  end: number
+}
+
+function identifierAtOffset(source: string, offset: number): SourceIdentifierRange | undefined {
+  for (const item of collectAllIdentifierRanges(source)) {
+    if (offset >= item.start && offset <= item.end) {
+      return item
+    }
+  }
+  return undefined
+}
+
+function collectIdentifierRanges(source: string, name: string): SourceIdentifierRange[] {
+  return collectAllIdentifierRanges(source).filter(item => item.text === name)
+}
+
+function collectAllIdentifierRanges(source: string): SourceIdentifierRange[] {
+  const identifiers: SourceIdentifierRange[] = []
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, source)
+  let token = scanner.scan()
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
+    if (token === ts.SyntaxKind.Identifier) {
+      identifiers.push({
+        text: scanner.getTokenText(),
+        start: scanner.getTokenPos(),
+        end: scanner.getTextPos(),
+      })
+    }
+    token = scanner.scan()
+  }
+  return identifiers
 }
 
 function provideSourceFoldingRanges(document: TextDocument): FoldingRange[] {
