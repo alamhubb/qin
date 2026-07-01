@@ -100,6 +100,20 @@ public final class QinConfigSupport {
         return config.dependencies();
     }
 
+    public static Map<String, String> devDependencies(QinConfig config) {
+        if (config == null || config.devDependencies() == null) {
+            return Map.of();
+        }
+        return config.devDependencies();
+    }
+
+    public static Map<String, String> scripts(QinConfig config) {
+        if (config == null || config.scripts() == null) {
+            return Map.of();
+        }
+        return config.scripts();
+    }
+
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
     }

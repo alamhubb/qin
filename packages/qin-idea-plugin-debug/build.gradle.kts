@@ -200,6 +200,13 @@ tasks {
         jvmArgs(stableSmokeJvmArgs)
     }
 
+    register<JavaExec>("qinToolWindowConfigTreeSmoke") {
+        dependsOn("classes")
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass.set("com.qin.debug.lsp.QinToolWindowConfigTreeSmokeTestMain")
+        jvmArgs(stableSmokeJvmArgs)
+    }
+
     register<JavaExec>("lspWorkspaceInventorySmoke") {
         dependsOn("classes")
         classpath = sourceSets["main"].runtimeClasspath
@@ -282,6 +289,7 @@ tasks {
         dependsOn("lspQinServerDiagnosticsSmoke")
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspNoLocalParserSmoke")
+        dependsOn("qinToolWindowConfigTreeSmoke")
     }
 
     register("lspUnifiedMatrix") {
@@ -300,6 +308,7 @@ tasks {
         dependsOn("lspVerificationMatrixSmoke")
         dependsOn("lspPluginDescriptorSmoke")
         dependsOn("lspNoLocalParserSmoke")
+        dependsOn("qinToolWindowConfigTreeSmoke")
         dependsOn("lspWorkspaceInventorySmoke")
         dependsOn("lspPluginPackageSmoke")
         dependsOn("lspUiFixtureSmoke")

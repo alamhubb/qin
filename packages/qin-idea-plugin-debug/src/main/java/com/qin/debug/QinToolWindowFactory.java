@@ -142,39 +142,59 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         ProjectNode projectNode = new ProjectNode(projectName, projectPath.toString());
         DefaultMutableTreeNode projectTreeNode = new DefaultMutableTreeNode(projectNode);
 
-        // Tasks 鑺傜偣
         DefaultMutableTreeNode tasksNode = new DefaultMutableTreeNode(NODE_TASKS);
-        tasksNode.add(new DefaultMutableTreeNode(
+        Map<String, String> scripts = QinConfigSupport.scripts(config);
+        if (!scripts.isEmpty()) {
+            DefaultMutableTreeNode scriptsNode = new DefaultMutableTreeNode("Configured scripts");
+            scripts.forEach((name, command) -> scriptsNode.add(new DefaultMutableTreeNode(
+                    new TaskNode("script", name, "scripts." + name + " = " + command, projectPath.toString()))));
+            tasksNode.add(scriptsNode);
+        }
+
+        DefaultMutableTreeNode builtinTasksNode = new DefaultMutableTreeNode("Built-in commands");
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("sync", "Sync dependencies", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("compile", "Compile project", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("run", "Run project", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("test", "Run tests", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("jar", "Build JAR (no deps)", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("fatjar", "Build Fat JAR", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("deps", "Show dependencies", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("build", "Build (full)", projectPath.toString())));
-        tasksNode.add(new DefaultMutableTreeNode(
+        builtinTasksNode.add(new DefaultMutableTreeNode(
                 new TaskNode("clean", "Clean output", projectPath.toString())));
+        tasksNode.add(builtinTasksNode);
         projectTreeNode.add(tasksNode);
 
-        // Dependencies 鑺傜偣
         Map<String, String> dependencies = QinConfigSupport.dependencies(config);
-        if (!dependencies.isEmpty()) {
+        Map<String, String> devDependencies = QinConfigSupport.devDependencies(config);
+        if (!dependencies.isEmpty() || !devDependencies.isEmpty()) {
             DefaultMutableTreeNode depsNode = new DefaultMutableTreeNode(NODE_DEPENDENCIES);
-            dependencies.forEach((name, version) -> {
-                depsNode.add(new DefaultMutableTreeNode(name + ":" + version));
-            });
+            addDependencyGroup(depsNode, "dependencies", dependencies);
+            addDependencyGroup(depsNode, "devDependencies", devDependencies);
             projectTreeNode.add(depsNode);
         }
 
         rootNode.add(projectTreeNode);
+    }
+
+    private void addDependencyGroup(
+            DefaultMutableTreeNode parent,
+            String label,
+            Map<String, String> dependencies) {
+        if (dependencies.isEmpty()) {
+            return;
+        }
+        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(label);
+        dependencies.forEach((name, version) -> groupNode.add(new DefaultMutableTreeNode(name + ":" + version)));
+        parent.add(groupNode);
     }
 
     /**
@@ -190,6 +210,8 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 ProcessBuilder pb;
                 if ("sync".equals(task.command)) {
                     pb = QinCommandResolver.createProcessBuilder(task.projectPath, "sync", "--force");
+                } else if ("script".equals(task.command)) {
+                    pb = QinCommandResolver.createProcessBuilder(task.projectPath, "script", task.scriptName);
                 } else {
                     pb = QinCommandResolver.createProcessBuilder(task.projectPath, task.command);
                 }
@@ -356,18 +378,24 @@ public class QinToolWindowFactory implements ToolWindowFactory {
      */
     static class TaskNode {
         String command;
+        String scriptName;
         String description;
         String projectPath;
 
         TaskNode(String command, String description, String projectPath) {
+            this(command, null, description, projectPath);
+        }
+
+        TaskNode(String command, String scriptName, String description, String projectPath) {
             this.command = command;
+            this.scriptName = scriptName;
             this.description = description;
             this.projectPath = projectPath;
         }
 
         @Override
         public String toString() {
-            return command;
+            return scriptName != null ? scriptName : command;
         }
     }
 

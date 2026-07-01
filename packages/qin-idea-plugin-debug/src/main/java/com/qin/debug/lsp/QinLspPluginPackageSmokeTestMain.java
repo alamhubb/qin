@@ -20,7 +20,8 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinLspLanguageRegistry.class",
             "com/qin/debug/lsp/QinLspServerCommandLineFactory.class",
             "com/qin/debug/lsp/QinLspServerCommandSpec.class",
-            "com/qin/debug/lsp/QinLspServerSupportProvider.class");
+            "com/qin/debug/lsp/QinLspServerSupportProvider.class",
+            "com/qin/debug/QinToolWindowFactory.class");
 
     private QinLspPluginPackageSmokeTestMain() {
     }

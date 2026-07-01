@@ -141,6 +141,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         verifyStableLspSmokeJvmArgs(buildSource);
         require(buildSource.contains("register<Exec>(\"qinLanguageLocalDependencyBuildSmoke\")"),
                 "Gradle must declare qinLanguageLocalDependencyBuildSmoke");
+        require(buildSource.contains("register<JavaExec>(\"qinToolWindowConfigTreeSmoke\")"),
+                "Gradle must declare qinToolWindowConfigTreeSmoke");
+        require(buildSource.contains("QinToolWindowConfigTreeSmokeTestMain"),
+                "qinToolWindowConfigTreeSmoke must verify Qin tool window config tree metadata");
         String localDependencyBuildBlock = taskBlock(
                 buildSource,
                 "register<Exec>(\"qinLanguageLocalDependencyBuildSmoke\")");
@@ -198,7 +202,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "lspQinServerCommandLineSmoke",
                 "lspQinServerDiagnosticsSmoke",
                 "lspPluginDescriptorSmoke",
-                "lspNoLocalParserSmoke")) {
+                "lspNoLocalParserSmoke",
+                "qinToolWindowConfigTreeSmoke")) {
             require(lspQinMatrixBlock.contains("dependsOn(\"" + qinMatrixTask + "\")"),
                     "lspQinMatrix must depend on " + qinMatrixTask);
         }
@@ -209,6 +214,8 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "lspUnifiedMatrix must include Qin JavaRunner no compiler fallback smoke");
         require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinCsstsCompilerNoFallbackSmoke\")"),
                 "lspUnifiedMatrix must include Qin CSSTS compiler no fallback smoke");
+        require(lspUnifiedMatrixBlock.contains("dependsOn(\"qinToolWindowConfigTreeSmoke\")"),
+                "lspUnifiedMatrix must include Qin tool window config tree smoke");
         require(buildSource.contains("register<Exec>(\"qinJvmClassTargetSmoke\")"),
                 "Gradle must declare qinJvmClassTargetSmoke");
         require(buildSource.contains("qin/packages/qin-lang-cli"),

@@ -32,6 +32,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     static void assertPureLspDescriptor(Document document) {
         assertDepends(document, "com.intellij.modules.lsp");
         assertFileTypes(document);
+        assertQinToolWindow(document);
         assertQinSyntaxHighlighter(document);
         assertLspProvider(document);
         assertNoLocalParser(document);
@@ -70,6 +71,21 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         Element provider = (Element) providers.item(0);
         require("com.qin.debug.lsp.QinLspServerSupportProvider".equals(provider.getAttribute("implementation")),
                 "Unexpected LSP provider: " + provider.getAttribute("implementation"));
+    }
+
+    private static void assertQinToolWindow(Document document) {
+        NodeList toolWindows = document.getElementsByTagName("toolWindow");
+        for (int i = 0; i < toolWindows.getLength(); i++) {
+            Element toolWindow = (Element) toolWindows.item(i);
+            if ("Qin".equals(toolWindow.getAttribute("id"))) {
+                require("right".equals(toolWindow.getAttribute("anchor")),
+                        "Qin toolWindow must be anchored on the right");
+                require("com.qin.debug.QinToolWindowFactory".equals(toolWindow.getAttribute("factoryClass")),
+                        "Unexpected Qin toolWindow factory: " + toolWindow.getAttribute("factoryClass"));
+                return;
+            }
+        }
+        throw new IllegalStateException("Missing Qin toolWindow registration");
     }
 
     private static void assertQinSyntaxHighlighter(Document document) {
