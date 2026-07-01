@@ -1295,6 +1295,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/onTypeFormatting");
             require(testSource.contains("onTypeFormatting did not return TypeScript formatter edits through source mappings"),
                     "Qin language server test must assert onTypeFormatting source-map coverage");
+            require(testSource.contains("textDocument/semanticTokens/range"),
+                    "Qin language server test must request textDocument/semanticTokens/range");
+            require(testSource.contains("semanticTokens range did not return token data"),
+                    "Qin language server test must assert semanticTokens range coverage");
             require(testSource.contains("textDocument/typeDefinition"),
                     "Qin language server test must request textDocument/typeDefinition");
             require(testSource.contains("typeDefinition did not resolve currentUser to source interface"),
@@ -1411,6 +1415,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin formatting response",
                     "Qin rangeFormatting response",
                     "Qin onTypeFormatting response",
+                    "Qin object semanticTokens range response",
                     "Qin TS-subset rename response",
                     "Qin TS-subset prepareRename response",
                     "Qin object definition response",

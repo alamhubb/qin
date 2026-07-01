@@ -663,6 +663,15 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             Object data = resultMap(semanticTokens).get("data");
             require(data instanceof List<?> list && !list.isEmpty(),
                     language.id() + " semanticTokens returned no token data: " + semanticTokens);
+
+            Map<String, Object> semanticTokenRange = session.awaitResponse(session.request("textDocument/semanticTokens/range", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "range", Map.of(
+                            "start", Map.of("line", testCase.expectedReferenceDeclarationLine(), "character", 0),
+                            "end", Map.of("line", testCase.expectedReferenceUsageLine() + 1, "character", 0)))));
+            Object rangeData = resultMap(semanticTokenRange).get("data");
+            require(rangeData instanceof List<?> rangeList && !rangeList.isEmpty(),
+                    language.id() + " semanticTokens range returned no token data: " + semanticTokenRange);
         }
     }
 
@@ -709,6 +718,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(semanticTokensProvider instanceof Map<?, ?>, language.id() + " semanticTokensProvider must be an object");
         Map<?, ?> semanticMap = (Map<?, ?>) semanticTokensProvider;
         require(semanticMap.containsKey("legend"), language.id() + " semanticTokensProvider missing legend");
+        require(Boolean.TRUE.equals(semanticMap.get("range")), language.id() + " semanticTokensProvider missing range support");
     }
 
     private static Map<?, ?> resultMap(Map<String, Object> response) {

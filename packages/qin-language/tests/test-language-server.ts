@@ -353,6 +353,7 @@ async function main() {
         semanticTokens: {
           requests: {
             full: true,
+            range: true,
           },
         },
         publishDiagnostics: {},
@@ -1494,6 +1495,26 @@ async function main() {
   }
   requireSemanticTokenAt(objectSemanticTokensResponse.result, 0, 14, 'Qin object declaration Counter')
   requireSemanticTokenAt(objectSemanticTokensResponse.result, 3, 21, 'Qin object usage Counter')
+
+  const objectSemanticTokensRangeRequest = createRequest('textDocument/semanticTokens/range', {
+    textDocument: { uri: objectUri },
+    range: {
+      start: { line: 0, character: 0 },
+      end: { line: 4, character: 0 },
+    },
+  })
+  server.stdin.write(objectSemanticTokensRangeRequest.packet)
+  const objectSemanticTokensRangeResponse = await waitForResponse(
+    objectSemanticTokensRangeRequest.id,
+    messages,
+    `Qin object semanticTokens range response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectSemanticTokenRangeData = objectSemanticTokensRangeResponse.result?.data ?? []
+  if (!Array.isArray(objectSemanticTokenRangeData) || objectSemanticTokenRangeData.length === 0) {
+    throw new Error(`Qin object semanticTokens range did not return token data: ${JSON.stringify(objectSemanticTokensRangeResponse.result)}`)
+  }
+  requireSemanticTokenAt(objectSemanticTokensRangeResponse.result, 0, 14, 'Qin object declaration Counter range')
+  requireSemanticTokenAt(objectSemanticTokensRangeResponse.result, 3, 21, 'Qin object usage Counter range')
 
   const semanticTokensRequest = createRequest('textDocument/semanticTokens/full', {
     textDocument: { uri: tsSubsetUri },
