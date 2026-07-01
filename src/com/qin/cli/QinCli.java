@@ -686,11 +686,12 @@ public class QinCli {
             throw new IllegalStateException("Circular local Qin dependency while building language project: " + root);
         }
         QinConfig dependencyConfig = new ConfigLoader(root.toString()).load();
-        ensureLocalLanguageDependenciesBuilt(dependencyConfig, root, dryRun, visiting, built, dependencyRoots);
+        LinkedHashSet<Path> nestedDependencyRoots = new LinkedHashSet<>();
+        ensureLocalLanguageDependenciesBuilt(dependencyConfig, root, dryRun, visiting, built, nestedDependencyRoots);
 
         String buildScript = dependencyConfig.scripts().get("build");
         if (buildScript != null && !buildScript.isBlank()) {
-            runWithLanguageBuildLock(root, () -> runLanguageShellCommandAt(
+            runWithLanguageBuildAndDependencyLocks(root, nestedDependencyRoots, () -> runLanguageShellCommandAt(
                             root,
                             buildScript,
                             "local file dependency '" + dependencyName + "' build",
@@ -699,7 +700,42 @@ public class QinCli {
         }
         visiting.remove(root);
         built.add(root);
+        dependencyRoots.addAll(nestedDependencyRoots);
         dependencyRoots.add(root);
+    }
+
+    private static void runWithLanguageBuildAndDependencyLocks(
+            Path buildRoot,
+            Set<Path> dependencyRoots,
+            ThrowingRunnable buildAction,
+            boolean dryRun) throws Exception {
+        if (dryRun) {
+            buildAction.run();
+            return;
+        }
+        LinkedHashSet<Path> lockRoots = dependencyRoots.stream()
+                .map(path -> path.toAbsolutePath().normalize())
+                .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
+        lockRoots.add(buildRoot.toAbsolutePath().normalize());
+        List<Path> orderedRoots = lockRoots.stream()
+                .distinct()
+                .sorted(Comparator.comparing(Path::toString))
+                .toList();
+        runWithLanguageBuildLocks(orderedRoots, 0, buildAction);
+    }
+
+    private static void runWithLanguageBuildLocks(
+            List<Path> orderedRoots,
+            int index,
+            ThrowingRunnable action) throws Exception {
+        if (index >= orderedRoots.size()) {
+            action.run();
+            return;
+        }
+        Path root = orderedRoots.get(index);
+        runWithLanguageBuildLock(root,
+                () -> runWithLanguageBuildLocks(orderedRoots, index + 1, action),
+                false);
     }
 
     private static void runWithLanguageBuildLock(Path projectRoot, ThrowingRunnable buildAction, boolean dryRun)

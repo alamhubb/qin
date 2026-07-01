@@ -132,6 +132,80 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         require(!Files.exists(concurrentUpstream.resolve(".qin").resolve("language-build.lock")),
                 "concurrent local dependency build lock cleanup after serialized builds");
 
+        Path nestedRoot = root.resolve("nested-concurrent");
+        Path nestedBase = nestedRoot.resolve("base");
+        Path nestedMiddle = nestedRoot.resolve("middle");
+        Path nestedDownstreamA = nestedRoot.resolve("downstream-a");
+        Path nestedDownstreamB = nestedRoot.resolve("downstream-b");
+        Files.createDirectories(nestedBase.resolve("src"));
+        Files.createDirectories(nestedMiddle.resolve("src"));
+        Files.createDirectories(nestedDownstreamA);
+        Files.createDirectories(nestedDownstreamB);
+        createNestedBaseBuildTool(nestedBase);
+        createNestedMiddleBuildTool(nestedMiddle);
+        Files.writeString(nestedBase.resolve("src").resolve("source.ts"), "export const base = true\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(nestedBase.resolve("qin.config.js"), """
+                export default {
+                  name: "nested-base",
+                  version: "1.0.0",
+                  scripts: {
+                    build: "nested-base-qin-build"
+                  },
+                  language: {
+                    id: "nested-base",
+                    extension: ".nbase",
+                    parser: "src/source.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(nestedMiddle.resolve("src").resolve("source.ts"), "export const middle = true\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(nestedMiddle.resolve("qin.config.js"), """
+                export default {
+                  name: "nested-middle",
+                  version: "1.0.0",
+                  dependencies: {
+                    base: "file:../base"
+                  },
+                  scripts: {
+                    build: "nested-middle-qin-build"
+                  },
+                  language: {
+                    id: "nested-middle",
+                    extension: ".nmid",
+                    parser: "src/source.ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        writeNestedDownstreamConfig(nestedDownstreamA, "../middle");
+        writeNestedDownstreamConfig(nestedDownstreamB, "../middle");
+
+        CountDownLatch nestedStart = new CountDownLatch(1);
+        AtomicReference<Throwable> nestedFailure = new AtomicReference<>();
+        List<Thread> nestedThreads = List.of(
+                dependencyBuildThread(method, nestedDownstreamA, nestedStart, nestedFailure),
+                dependencyBuildThread(method, nestedDownstreamB, nestedStart, nestedFailure));
+        for (Thread thread : nestedThreads) {
+            thread.start();
+        }
+        nestedStart.countDown();
+        for (Thread thread : nestedThreads) {
+            thread.join();
+        }
+        if (nestedFailure.get() != null) {
+            throw new IllegalStateException("Nested local Qin dependency read-lock smoke failed",
+                    nestedFailure.get());
+        }
+        require(!Files.exists(nestedBase.resolve("dist").resolve("nested-violation.txt")),
+                "nested local dependency build keeps transitive dependency dist stable");
+        require(Files.isRegularFile(nestedMiddle.resolve("dist").resolve("marker.txt")),
+                "nested local dependency middle build marker");
+        require(!Files.exists(nestedBase.resolve(".qin").resolve("language-build.lock")),
+                "nested base build lock cleanup after serialized builds");
+        require(!Files.exists(nestedMiddle.resolve(".qin").resolve("language-build.lock")),
+                "nested middle build lock cleanup after serialized builds");
+
         Path scriptLockRoot = root.resolve("script-lock");
         Path scriptLockUpstream = scriptLockRoot.resolve("upstream");
         Path scriptDownstreamA = scriptLockRoot.resolve("downstream-a");
@@ -443,6 +517,57 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
         }
     }
 
+    private static void createNestedBaseBuildTool(Path root) throws Exception {
+        Path bin = root.resolve("node_modules").resolve(".bin");
+        Files.createDirectories(bin);
+        if (isWindows()) {
+            Files.writeString(bin.resolve("nested-base-qin-build.cmd"), """
+                    @echo off
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; if (Test-Path dist) { Remove-Item -Recurse -Force dist }; New-Item -ItemType Directory -Force dist | Out-Null; Start-Sleep -Milliseconds 700; Set-Content -Encoding UTF8 dist/marker.txt 'base-built'"
+                    """, StandardCharsets.UTF_8);
+            return;
+        }
+        Path tool = bin.resolve("nested-base-qin-build");
+        Files.writeString(tool, """
+                #!/bin/sh
+                set -eu
+                rm -rf dist
+                mkdir -p dist
+                sleep 1
+                printf base-built > dist/marker.txt
+                """, StandardCharsets.UTF_8);
+        if (!tool.toFile().setExecutable(true)) {
+            throw new IllegalStateException("Unable to make nested-base-qin-build executable: " + tool);
+        }
+    }
+
+    private static void createNestedMiddleBuildTool(Path root) throws Exception {
+        Path bin = root.resolve("node_modules").resolve(".bin");
+        Files.createDirectories(bin);
+        if (isWindows()) {
+            Files.writeString(bin.resolve("nested-middle-qin-build.cmd"), """
+                    @echo off
+                    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force dist | Out-Null; Start-Sleep -Milliseconds 350; if (-not (Test-Path '../base/dist/marker.txt')) { Set-Content -Encoding UTF8 '../base/dist/nested-violation.txt' 'missing base marker'; exit 24 }; Set-Content -Encoding UTF8 dist/marker.txt 'middle-built'"
+                    """, StandardCharsets.UTF_8);
+            return;
+        }
+        Path tool = bin.resolve("nested-middle-qin-build");
+        Files.writeString(tool, """
+                #!/bin/sh
+                set -eu
+                mkdir -p dist
+                sleep 1
+                if [ ! -f ../base/dist/marker.txt ]; then
+                  printf 'missing base marker' > ../base/dist/nested-violation.txt
+                  exit 24
+                fi
+                printf middle-built > dist/marker.txt
+                """, StandardCharsets.UTF_8);
+        if (!tool.toFile().setExecutable(true)) {
+            throw new IllegalStateException("Unable to make nested-middle-qin-build executable: " + tool);
+        }
+    }
+
     private static void writeDownstreamConfig(Path root, String dependencyPath) throws Exception {
         Files.writeString(root.resolve("qin.config.js"), """
                 export default {
@@ -482,6 +607,27 @@ public final class QinCliLanguageLocalDependencyBuildSmokeTestMain {
                   }
                 }
                 """.formatted(root.getFileName(), dependencyPath, jsString(scriptLockTestScript()),
+                root.getFileName()), StandardCharsets.UTF_8);
+    }
+
+    private static void writeNestedDownstreamConfig(Path root, String dependencyPath) throws Exception {
+        Files.writeString(root.resolve("qin.config.js"), """
+                export default {
+                  name: "%s",
+                  version: "1.0.0",
+                  dependencies: {
+                    middle: "file:%s"
+                  },
+                  scripts: {
+                    test: %s
+                  },
+                  language: {
+                    id: "%s",
+                    extension: ".ndown",
+                    parser: "index.ts"
+                  }
+                }
+                """.formatted(root.getFileName(), dependencyPath, jsString(testScript("../middle/dist/marker.txt")),
                 root.getFileName()), StandardCharsets.UTF_8);
     }
 
