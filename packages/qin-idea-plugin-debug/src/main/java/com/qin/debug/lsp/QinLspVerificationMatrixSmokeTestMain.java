@@ -2010,6 +2010,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "LSP completion audit must record generated Qin parser package metadata coverage");
         require(audit.contains("additional Slime CST/AST entry metadata"),
                 "LSP completion audit must record additional Slime parser metadata coverage");
+        require(audit.contains("Handwritten TS `slime-parser` is deprecated for mainline parser paths"),
+                "LSP completion audit must record TS slime-parser deprecation for mainline parser paths");
+        require(audit.contains("Remaining `slime-parser` references are treated as legacy tests, migration comparisons, or old demos"),
+                "LSP completion audit must classify remaining TS slime-parser references as legacy-only");
         require(audit.contains("direct legacy TS `slime-parser` imports are rejected"),
                 "LSP completion audit must record OVS/CSSTS legacy slime-parser removal");
         require(audit.contains("Compiler AST lowering still uses legacy")
