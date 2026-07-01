@@ -5,6 +5,21 @@ function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
+class com_subhuti_debug_LogWriter {
+  constructor(...__qin_args: any[]) {
+    if (__qin_args.length !== 0) {
+      throw new Error("Unsupported Java constructor arity: LogWriter/" + __qin_args.length);
+    }
+  }
+  write(message: string): any {
+    throw new Error("Abstract Java method is not implemented: write");
+  }
+  close(): any {
+    throw new Error("Abstract Java method is not implemented: close");
+  }
+}
+const LogWriter = com_subhuti_debug_LogWriter;
+
 function run() {
   return null;
 }
@@ -14,3 +29,5 @@ if (typeof globalThis !== 'undefined') {
   const __qinGlobal = globalThis as any;
   __qinGlobal.__qinResult = __qinResult;
 }
+
+export { com_subhuti_debug_LogWriter };

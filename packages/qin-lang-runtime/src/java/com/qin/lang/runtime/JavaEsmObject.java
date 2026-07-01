@@ -70,6 +70,10 @@ public final class JavaEsmObject {
     }
 
     public static Object hasOwn(Object value, Object key) {
+        Boolean runtimeHasOwn = JavaEsmGlobal.__qin_has_own_property__(value, key);
+        if (runtimeHasOwn != null) {
+            return runtimeHasOwn;
+        }
         return enumerableEntries(value).containsKey(String.valueOf(key));
     }
 

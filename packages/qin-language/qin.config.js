@@ -44,6 +44,7 @@ export default {
     sourceRoots: [
       "../qin-parser/src/java",
       "../../../slime/java-slime/slime-parser/src/main/java",
+      "../../../slime/java-slime/slime-ast/src/main/java",
       "../../../slime/java-slime/slime-token/src/main/java",
       "../../../slime/java-slime/subhuti-java/src/main/java"
     ],

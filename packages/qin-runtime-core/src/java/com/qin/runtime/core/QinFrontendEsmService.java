@@ -821,7 +821,7 @@ public final class QinFrontendEsmService {
         String atomRequestPath = base + "?qin-vue-cssts=atom";
         String runtimeRequestPath = base + "?qin-vue-cssts=runtime";
         String ovsRuntimeRequestPath = base + "?qin-ovs=runtime";
-        String vueRuntimeRequestPath = base + "?qin-ovs=vue";
+        String vueRuntimeRequestPath = "/@qin-mod/qin-vue-runtime.js?qin-vue=runtime";
 
         if (result.css() != null && !result.css().isBlank()) {
             virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(result.css()));
@@ -831,7 +831,7 @@ public final class QinFrontendEsmService {
         }
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
         virtualModuleContentMap.put(ovsRuntimeRequestPath, readOvsRuntimeModule(vueRuntimeRequestPath));
-        virtualModuleContentMap.put(vueRuntimeRequestPath, readVueBrowserRuntimeModule());
+        registerVueRuntimeVirtualModules(vueRuntimeRequestPath);
         registerCsstsGlobalVirtualModules(moduleFile, result.css(), result.atomModule());
     }
 
@@ -1032,7 +1032,8 @@ public final class QinFrontendEsmService {
     }
 
     private String mountOvsModule(Path moduleFile, String source) {
-        String vueRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-ovs=vue";
+        String vueRuntime = "/@qin-mod/qin-vue-runtime.js?qin-vue=runtime";
+        String vueCreateAppRuntime = "/@qin-mod/qin-vue-runtime.js?qin-vue=browser-runtime";
         String csstsStyle = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=style";
         String csstsRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=runtime";
         String csstsAtom = toModuleUrl(projectRoot, moduleFile) + "?qin-vue-cssts=atom";
@@ -1040,16 +1041,30 @@ public final class QinFrontendEsmService {
         String atomPrelude = atomNames.isEmpty()
                 ? ""
                 : "const { " + String.join(", ", atomNames) + " } = __qinOvsCsstsAtom;\n";
+        String ovsRuntimePrelude = missingOvsRuntimeImportPrelude(moduleFile, source);
         String marker = "export default ";
         int exportIndex = source.indexOf(marker);
         if (exportIndex < 0) {
+            String implicitModule = mountImplicitDefaultOvsModule(
+                    moduleFile,
+                    source,
+                    vueRuntime,
+                    csstsStyle,
+                    csstsRuntime,
+                    csstsAtom,
+                    atomPrelude,
+                    ovsRuntimePrelude);
+            if (implicitModule != null) {
+                return implicitModule;
+            }
             return """
                     import "%s";
                     import * as cssts from "%s";
                     import { csstsAtom as __qinOvsCsstsAtom } from "%s";
                     %s
                     %s
-                    """.formatted(csstsStyle, csstsRuntime, csstsAtom, atomPrelude, source);
+                    %s
+                    """.formatted(csstsStyle, csstsRuntime, csstsAtom, atomPrelude, ovsRuntimePrelude, source);
         }
         String transformed = source.substring(0, exportIndex)
                 + "const __qinOvsComponent = "
@@ -1059,6 +1074,7 @@ public final class QinFrontendEsmService {
                 import "%s";
                 import * as cssts from "%s";
                 import { csstsAtom as __qinOvsCsstsAtom } from "%s";
+                %s
                 %s
                 %s
                 const __qinVueComponent = __qinOvsComponent && __qinOvsComponent.__vueComponent
@@ -1079,12 +1095,245 @@ public final class QinFrontendEsmService {
                 __qinVueComponent.component = __qinOvsComponent;
                 __qinVueComponent.__qinMountVue = __qinMountVue;
                 __qinVueComponent.__qinMountOvs = __qinMountOvs;
-                if (typeof document !== 'undefined') {
+                if (typeof document !== 'undefined'
+                    && (document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo'))) {
                   setTimeout(__qinMountOvs, 0);
                 }
                 export { __qinMountOvs, __qinMountVue };
                 export default __qinVueComponent;
-                """.formatted(vueRuntime, csstsStyle, csstsRuntime, csstsAtom, atomPrelude, transformed);
+                """.formatted(vueCreateAppRuntime, csstsStyle, csstsRuntime, csstsAtom, atomPrelude, ovsRuntimePrelude, transformed);
+    }
+
+    private String mountImplicitDefaultOvsModule(
+            Path moduleFile,
+            String source,
+            String vueRuntime,
+            String csstsStyle,
+            String csstsRuntime,
+            String csstsAtom,
+            String atomPrelude,
+            String ovsRuntimePrelude) {
+        if (containsTopLevelExport(source)) {
+            return null;
+        }
+        StatementRange expression = findLastTopLevelExpressionStatement(source);
+        if (expression == null) {
+            return null;
+        }
+        String before = source.substring(0, expression.start());
+        String after = source.substring(expression.end());
+        String expressionSource = trimTrailingSemicolon(source.substring(expression.start(), expression.end()).trim());
+        String ovsRuntime = toModuleUrl(projectRoot, moduleFile) + "?qin-ovs=runtime";
+        String vueCreateAppRuntime = "/@qin-mod/qin-vue-runtime.js?qin-vue=browser-runtime";
+        return """
+                import { createApp as __qinCreateApp } from "%s";
+                import "%s";
+                import * as cssts from "%s";
+                import { csstsAtom as __qinOvsCsstsAtom } from "%s";
+                import { defineOvsComponent as __qinDefineOvsComponent } from "%s";
+                %s
+                %s
+                %s%s
+                const __qinOvsComponent = __qinDefineOvsComponent(() => {
+                  return (%s);
+                });
+                const __qinVueComponent = __qinOvsComponent && __qinOvsComponent.__vueComponent
+                  ? __qinOvsComponent.__vueComponent
+                  : __qinOvsComponent;
+                function __qinMountOvs(target = null) {
+                  if (typeof document === 'undefined') return null;
+                  const __qinOvsTarget = typeof target === 'string'
+                    ? document.querySelector(target)
+                    : (target || document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo'));
+                  if (!__qinOvsTarget) return null;
+                  __qinOvsTarget.innerHTML = '';
+                  return __qinCreateApp(__qinVueComponent).mount(__qinOvsTarget);
+                }
+                function __qinMountVue(target) {
+                  return __qinMountOvs(target);
+                }
+                __qinVueComponent.component = __qinOvsComponent;
+                __qinVueComponent.__qinMountVue = __qinMountVue;
+                __qinVueComponent.__qinMountOvs = __qinMountOvs;
+                if (typeof document !== 'undefined'
+                    && (document.querySelector('[data-qin-component]') || document.querySelector('#ovs-demo'))) {
+                  setTimeout(__qinMountOvs, 0);
+                }
+                export { __qinMountOvs, __qinMountVue };
+                export default __qinVueComponent;
+                """.formatted(
+                vueCreateAppRuntime,
+                csstsStyle,
+                csstsRuntime,
+                csstsAtom,
+                ovsRuntime,
+                atomPrelude,
+                ovsRuntimePrelude,
+                before,
+                after,
+                expressionSource);
+    }
+
+    private String missingOvsRuntimeImportPrelude(Path moduleFile, String source) {
+        String runtimeUrl = toModuleUrl(projectRoot, moduleFile) + "?qin-ovs=runtime";
+        List<String> names = new ArrayList<>();
+        for (String name : List.of("$OvsHtmlTag", "defineOvsComponent", "defineReactiveExpression")) {
+            if (source.contains(name) && !hasImportedBinding(source, name)) {
+                names.add(name);
+            }
+        }
+        return names.isEmpty()
+                ? ""
+                : "import { " + String.join(", ", names) + " } from \""
+                        + runtimeUrl
+                        + "\";\n";
+    }
+
+    private boolean hasImportedBinding(String source, String name) {
+        Pattern pattern = Pattern.compile("\\bimport\\s*\\{[^}]*"
+                + Pattern.quote(name)
+                + "(?:\\s+as\\s+[A-Za-z_$][\\w$]*)?[^}]*}\\s*from\\s*[\"'][^\"']+[\"']");
+        return pattern.matcher(source).find();
+    }
+
+    private boolean containsTopLevelExport(String source) {
+        Matcher matcher = Pattern.compile("(?m)^\\s*export\\s+").matcher(source);
+        return matcher.find();
+    }
+
+    private StatementRange findLastTopLevelExpressionStatement(String source) {
+        List<Integer> semicolons = topLevelSemicolonPositions(source);
+        for (int i = semicolons.size() - 1; i >= 0; i--) {
+            int end = semicolons.get(i) + 1;
+            int start = i == 0 ? findFirstNonImportStatementStart(source) : semicolons.get(i - 1) + 1;
+            while (start < end && Character.isWhitespace(source.charAt(start))) {
+                start++;
+            }
+            if (start >= end) {
+                continue;
+            }
+            String candidate = source.substring(start, end).trim();
+            if (looksLikeExpressionStatement(candidate)) {
+                return new StatementRange(start, end);
+            }
+        }
+        return null;
+    }
+
+    private List<Integer> topLevelSemicolonPositions(String source) {
+        List<Integer> positions = new ArrayList<>();
+        int parenDepth = 0;
+        int bracketDepth = 0;
+        int braceDepth = 0;
+        char quote = 0;
+        boolean escaping = false;
+        boolean lineComment = false;
+        boolean blockComment = false;
+        for (int i = 0; i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : 0;
+            if (lineComment) {
+                if (ch == '\n' || ch == '\r') {
+                    lineComment = false;
+                }
+                continue;
+            }
+            if (blockComment) {
+                if (ch == '*' && next == '/') {
+                    blockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (quote != 0) {
+                if (escaping) {
+                    escaping = false;
+                } else if (ch == '\\') {
+                    escaping = true;
+                } else if (ch == quote) {
+                    quote = 0;
+                }
+                continue;
+            }
+            if (ch == '/' && next == '/') {
+                lineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                blockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '"' || ch == '\'' || ch == '`') {
+                quote = ch;
+                continue;
+            }
+            if (ch == '(') {
+                parenDepth++;
+            } else if (ch == ')' && parenDepth > 0) {
+                parenDepth--;
+            } else if (ch == '[') {
+                bracketDepth++;
+            } else if (ch == ']' && bracketDepth > 0) {
+                bracketDepth--;
+            } else if (ch == '{') {
+                braceDepth++;
+            } else if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+            } else if (ch == ';' && parenDepth == 0 && bracketDepth == 0 && braceDepth == 0) {
+                positions.add(i);
+            }
+        }
+        return positions;
+    }
+
+    private int findFirstNonImportStatementStart(String source) {
+        int index = 0;
+        while (index < source.length()) {
+            while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
+                index++;
+            }
+            if (!source.startsWith("import ", index)
+                    && !source.startsWith("import{", index)
+                    && !source.startsWith("import*", index)
+                    && !source.startsWith("import\"", index)
+                    && !source.startsWith("import'", index)) {
+                return index;
+            }
+            int nextLine = source.indexOf('\n', index);
+            if (nextLine < 0) {
+                return source.length();
+            }
+            index = nextLine + 1;
+        }
+        return index;
+    }
+
+    private boolean looksLikeExpressionStatement(String statement) {
+        String text = trimTrailingSemicolon(statement).trim();
+        if (text.isEmpty()) {
+            return false;
+        }
+        for (String keyword : List.of(
+                "import ", "export ", "const ", "let ", "var ", "function ", "class ",
+                "if ", "for ", "while ", "switch ", "try ", "return ", "throw ")) {
+            if (text.startsWith(keyword)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String trimTrailingSemicolon(String text) {
+        String result = text.stripTrailing();
+        if (result.endsWith(";")) {
+            return result.substring(0, result.length() - 1).stripTrailing();
+        }
+        return result;
+    }
+
+    private record StatementRange(int start, int end) {
     }
 
     private String readOvsRuntimeModule(String vueRuntimeRequestPath) {

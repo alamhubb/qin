@@ -32,9 +32,23 @@ public final class QinIrValidator {
                 throw new IllegalArgumentException("Unsupported import module scheme: " + module);
             }
             String javaModule = module.substring("java:".length());
-            if (!jdkInteropPolicy.isModuleAllowed(javaModule)) {
+            if (!jdkInteropPolicy.isModuleAllowed(javaModule) && !isResolvableJavaImport(javaImport)) {
                 throw new IllegalArgumentException("java import module is not allowed: " + module);
             }
+        }
+    }
+
+    private boolean isResolvableJavaImport(QinIrJavaImport javaImport) {
+        try {
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            if (classLoader != null) {
+                Class.forName(javaImport.ownerBinaryName(), false, classLoader);
+            } else {
+                Class.forName(javaImport.ownerBinaryName());
+            }
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
         }
     }
 }

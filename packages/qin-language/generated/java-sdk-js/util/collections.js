@@ -133,6 +133,11 @@ export class __QinJavaUtilUnmodifiableList {
 export const __QinJavaUtilList = {
   of(...values) {
     return new __QinJavaUtilUnmodifiableList(values);
+  },
+  copyOf(values) {
+    return new __QinJavaUtilUnmodifiableList(
+      values instanceof __QinJavaUtilArrayList ? values.__items.slice() : Array.from(values ?? [])
+    );
   }
 };
 export class __QinJavaUtilHashSet {

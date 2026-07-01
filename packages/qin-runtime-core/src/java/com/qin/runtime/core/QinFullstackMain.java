@@ -191,6 +191,7 @@ public final class QinFullstackMain {
             return compileJavaBackend(root, backendSource, classOutputDir);
         }
 
+        compileProjectJavaHelpers(root, classOutputDir);
         QinBuildRequest backendRequest = new QinBuildRequest(
                 root,
                 backendSource,
@@ -199,8 +200,9 @@ public final class QinFullstackMain {
                 classOutputDir,
                 jsOutputFile,
                 options.printIr);
-        QinBuildResult backendResult = coordinator.build(backendRequest);
-        compileProjectJavaHelpers(root, classOutputDir);
+        QinBuildResult backendResult = withProjectClassLoader(
+                classOutputDir,
+                () -> coordinator.build(backendRequest));
         Path adapterSource = writeQinBackendAdapterSource(
                 root,
                 classOutputDir,
@@ -208,6 +210,20 @@ public final class QinFullstackMain {
                 options.className);
         BackendBuild adapterBuild = compileJavaBackend(root, adapterSource, classOutputDir);
         return new BackendBuild(adapterBuild.classFile(), adapterBuild.runMethod(), adapterBuild.httpAppMethod());
+    }
+
+    private static <T> T withProjectClassLoader(Path classOutputDir, ThrowingSupplier<T> supplier) throws Exception {
+        Files.createDirectories(classOutputDir);
+        Thread thread = Thread.currentThread();
+        ClassLoader previous = thread.getContextClassLoader();
+        try (URLClassLoader classLoader = newProjectClassFirstLoader(
+                classOutputDir,
+                new URL[] { classOutputDir.toUri().toURL() })) {
+            thread.setContextClassLoader(classLoader);
+            return supplier.get();
+        } finally {
+            thread.setContextClassLoader(previous);
+        }
     }
 
     private static void compileProjectJavaHelpers(Path root, Path classOutputDir) throws Exception {
@@ -719,6 +735,11 @@ public final class QinFullstackMain {
     }
 
     private record BackendMethods(Method runMethod, Method httpAppMethod) {
+    }
+
+    @FunctionalInterface
+    private interface ThrowingSupplier<T> {
+        T get() throws Exception;
     }
 
     private record BackendBuild(Path classFile, Method runMethod, Method httpAppMethod) {

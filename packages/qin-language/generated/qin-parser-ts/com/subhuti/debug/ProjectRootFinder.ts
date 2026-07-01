@@ -37,7 +37,7 @@ class com_subhuti_debug_ProjectRootFinder {
     return __QinJavaLangSystem.getProperty("user.dir");
   }
   static getDefaultLogPath(): any {
-    return __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", com_subhuti_debug_ProjectRootFinder.findProjectRoot(), File.separator), ".subhuti"), File.separator), "logs"), File.separator), com_subhuti_debug_ProjectRootFinder.getTimestamp()), ".log");
+    return __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", com_subhuti_debug_ProjectRootFinder.findProjectRoot(), __QinJavaIoFile.separator), ".subhuti"), __QinJavaIoFile.separator), "logs"), __QinJavaIoFile.separator), com_subhuti_debug_ProjectRootFinder.getTimestamp()), ".log");
   }
   static getTimestamp(): any {
     return __QinJavaTimeLocalDateTime.now().format(__QinJavaTimeFormatDateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm"));

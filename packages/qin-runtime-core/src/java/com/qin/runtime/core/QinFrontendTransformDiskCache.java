@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 final class QinFrontendTransformDiskCache {
-    private static final String CACHE_VERSION = "v1";
+    private static final String CACHE_VERSION = "v2";
 
     private QinFrontendTransformDiskCache() {
     }

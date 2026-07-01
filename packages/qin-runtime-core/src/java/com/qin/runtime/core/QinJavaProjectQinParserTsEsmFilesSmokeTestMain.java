@@ -75,6 +75,10 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated package subpath-exports SlimeAstCreateUtils");
         require(packageJsonText.contains("\"./SlimeCstToAstBridge\""),
                 "generated package subpath-exports SlimeCstToAstBridge");
+        require(packageJsonText.contains("\"./SubhutiSourceLocation\""),
+                "generated package subpath-exports SubhutiSourceLocation");
+        require(packageJsonText.contains("\"./SubhutiPosition\""),
+                "generated package subpath-exports SubhutiPosition");
         require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
                         .resolve("cstToAst").resolve("SlimeCstToAstUtils.ts")),
                 "generated SlimeCstToAstUtils TS output");
@@ -107,6 +111,7 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 } from "@qin/generated-qin-parser-ts";
                 import { com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "@qin/generated-qin-parser-ts/SlimeCstToAstUtils";
                 import { com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "@qin/generated-qin-parser-ts/SlimeAstCreateUtils";
+                import { com_subhuti_struct_SubhutiSourceLocation as SubhutiSourceLocation } from "@qin/generated-qin-parser-ts/SubhutiSourceLocation";
                 import {
                   SlimeCstToAst,
                   SlimeCstToAstUtils as SlimeCstToAstBridgeUtils,
@@ -141,6 +146,7 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                   hasQinObjectBody: names.includes("QinObjectDeclarationBody"),
                   hasSlimeCstToAstUtilsExport: typeof SlimeCstToAstUtils === "function",
                   hasSlimeAstCreateUtilsExport: typeof SlimeAstCreateUtils === "function",
+                  hasSubhutiSourceLocationExport: typeof SubhutiSourceLocation === "function",
                   hasSlimeCstToAstBridgeExport: typeof SlimeCstToAst === "function"
                     && typeof registerSlimeCstToAstUtil === "function",
                   bridgeDispatchType: bridgeAst.type,
@@ -160,6 +166,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated Qin parser package exports SlimeCstToAstUtils");
         require(Boolean.TRUE.equals(map.get("hasSlimeAstCreateUtilsExport")),
                 "generated Qin parser package exports SlimeAstCreateUtils");
+        require(Boolean.TRUE.equals(map.get("hasSubhutiSourceLocationExport")),
+                "generated Qin parser package exports SubhutiSourceLocation");
         require(Boolean.TRUE.equals(map.get("hasSlimeCstToAstBridgeExport")),
                 "generated Qin parser package exports SlimeCstToAstBridge");
         require("CustomPrimaryExpression".equals(map.get("bridgeDispatchType")),

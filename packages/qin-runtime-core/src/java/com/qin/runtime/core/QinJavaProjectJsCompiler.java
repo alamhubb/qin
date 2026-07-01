@@ -26,6 +26,8 @@ import com.slime.java.ast.JavaAstForStatement;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstIfStatement;
 import com.slime.java.ast.JavaAstImportDeclaration;
+import com.slime.java.ast.JavaAstInstanceofExpression;
+import com.slime.java.ast.JavaAstInstanceofPatternExpression;
 import com.slime.java.ast.JavaAstLambdaExpression;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
 import com.slime.java.ast.JavaAstMemberAccessExpression;
@@ -37,6 +39,9 @@ import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
 import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
+import com.slime.java.ast.JavaAstSwitchCase;
+import com.slime.java.ast.JavaAstSwitchExpression;
+import com.slime.java.ast.JavaAstSwitchStatement;
 import com.slime.java.ast.JavaAstThrowStatement;
 import com.slime.java.ast.JavaAstTryStatement;
 import com.slime.java.ast.JavaAstUnaryExpression;
@@ -315,6 +320,14 @@ public final class QinJavaProjectJsCompiler {
     private JavaSdkSource findSiblingJavaSdkSource(Path outputRoot) throws IOException {
         Path current = outputRoot.toAbsolutePath().normalize();
         while (current != null) {
+            Path candidate = current.resolve("java-sdk").resolve("qin.config.js");
+            if (Files.isRegularFile(candidate)) {
+                return readJavaSdkSource(candidate);
+            }
+            current = current.getParent();
+        }
+        current = outputRoot.toAbsolutePath().normalize();
+        while (current != null) {
             Path generatedPackage = current.resolve("java-sdk-js").resolve("package.json");
             if (Files.isRegularFile(generatedPackage)) {
                 return readJavaSdkPackageSource(generatedPackage);
@@ -322,10 +335,6 @@ public final class QinJavaProjectJsCompiler {
             Path generatedSiblingPackage = current.resolve("generated").resolve("java-sdk-js").resolve("package.json");
             if (Files.isRegularFile(generatedSiblingPackage)) {
                 return readJavaSdkPackageSource(generatedSiblingPackage);
-            }
-            Path candidate = current.resolve("java-sdk").resolve("qin.config.js");
-            if (Files.isRegularFile(candidate)) {
-                return readJavaSdkSource(candidate);
             }
             current = current.getParent();
         }
@@ -508,6 +517,9 @@ public final class QinJavaProjectJsCompiler {
         String cstToAstBridgeExports = shouldGenerateSlimeCstToAstBridge(additionalEntryBinaryNames)
                 ? generatedSlimeCstToAstBridgePackageExports(extension)
                 : "";
+        String subhutiStructExports = shouldGenerateSlimeCstToAstBridge(additionalEntryBinaryNames)
+                ? generatedSubhutiStructPackageExports(extension)
+                : "";
         String cstToAstBridgeFiles = shouldGenerateSlimeCstToAstBridge(additionalEntryBinaryNames)
                 ? "    \"SlimeCstToAstBridge.%s\",\n".formatted(extension)
                 : "";
@@ -527,6 +539,7 @@ public final class QinJavaProjectJsCompiler {
                       "import": "%s",
                       "default": "%s"
                     },
+                %s
                 %s
                 %s
                 %s
@@ -566,6 +579,7 @@ public final class QinJavaProjectJsCompiler {
                 compatibilityExports,
                 additionalEntryExports,
                 cstToAstBridgeExports,
+                subhutiStructExports,
                 entryFile,
                 entryFile,
                 entryFile,
@@ -623,6 +637,21 @@ public final class QinJavaProjectJsCompiler {
                 """.formatted(extension);
     }
 
+    private String generatedSubhutiStructPackageExports(String extension) {
+        return """
+                    "./SubhutiSourceLocation": {
+                      "types": "./com/subhuti/struct/SubhutiSourceLocation.%1$s",
+                      "import": "./com/subhuti/struct/SubhutiSourceLocation.%1$s",
+                      "default": "./com/subhuti/struct/SubhutiSourceLocation.%1$s"
+                    },
+                    "./SubhutiPosition": {
+                      "types": "./com/subhuti/struct/SubhutiPosition.%1$s",
+                      "import": "./com/subhuti/struct/SubhutiPosition.%1$s",
+                      "default": "./com/subhuti/struct/SubhutiPosition.%1$s"
+                    },
+                """.formatted(extension);
+    }
+
     private String generatedSlimeCstToAstBridge(
             QinIrProgram program,
             String extension,
@@ -650,32 +679,35 @@ public final class QinJavaProjectJsCompiler {
                 .append(" as __QinGeneratedSlimeCstToAstUtils } from \"./com/slime/parser/cstToAst/SlimeCstToAstUtils.")
                 .append(extension)
                 .append("\";\n\n");
-        js.append("export class SlimeCstToAst {\n");
+        js.append("export class SlimeCstToAst extends __QinGeneratedSlimeCstToAstUtils {\n");
         js.append("  constructor(...args")
                 .append(typeScript ? ": any[]" : "")
                 .append(") {\n");
         js.append("    if (args.length !== 0) {\n");
         js.append("      throw new Error(\"Unsupported SlimeCstToAst constructor arity: \" + args.length);\n");
         js.append("    }\n");
+        js.append("    super();\n");
+        js.append("    __qinBindSlimeCstToAstTransformer(this);\n");
         js.append("    registerSlimeCstToAstUtil(this);\n");
         js.append("  }\n");
         LinkedHashSet<String> methodNames = new LinkedHashSet<>();
         for (QinIrMethodDeclaration method : utilityClass.methods()) {
-            if (!method.staticMethod() || "constructor".equals(method.name()) || !methodNames.add(method.name())) {
+            if ("constructor".equals(method.name()) || !methodNames.add(method.name())) {
                 continue;
             }
-            js.append("  ")
-                    .append(method.name())
-                    .append("(")
-                    .append(typeArgs)
-                    .append(")")
-                    .append(returnAny)
-                    .append(" {\n");
-            js.append("    return __QinGeneratedSlimeCstToAstUtils.")
-                    .append(method.name())
-                    .append("(...args);\n");
-            js.append("  }\n");
         }
+        js.append("}\n\n");
+        js.append("function __qinBindSlimeCstToAstTransformer(instance")
+                .append(typeScript ? ": any" : "")
+                .append(")")
+                .append(nullReturnType)
+                .append(" {\n");
+        js.append("  for (const key of Object.keys(instance)) {\n");
+        js.append("    const helper = instance[key];\n");
+        js.append("    if (helper && typeof helper === \"object\" && \"__qin_field_transformer\" in helper) {\n");
+        js.append("      helper.__qin_field_transformer = instance;\n");
+        js.append("    }\n");
+        js.append("  }\n");
         js.append("}\n\n");
         js.append("let __qinSlimeCstToAstUtils")
                 .append(instanceType)
@@ -833,6 +865,10 @@ public final class QinJavaProjectJsCompiler {
         appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser", "SlimeJavascriptParser", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.consumer.SlimeTokenConsumer", "SlimeTokenConsumer", extension, binaryNames);
         appendExportAlias(js, "com.slime.parser.SlimeJavascriptParser$SourceType", "SlimeJavascriptParserSourceType", extension, binaryNames);
+        appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$ExpressionParams", "ExpressionParams", extension, binaryNames);
+        appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$StatementParams", "StatementParams", extension, binaryNames);
+        appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$DeclarationParams", "DeclarationParams", extension, binaryNames);
+        appendExportAlias(js, "com.slime.parser.base.SlimeJavascriptParserBase$TemplateLiteralParams", "TemplateLiteralParams", extension, binaryNames);
 
         if (binaryNames.contains("com.slime.token.JavaScriptTokens")) {
             String tokenIdentifier = QinJsBackend.generatedJavaClassIdentifier("com.slime.token.JavaScriptTokens");
@@ -903,10 +939,18 @@ public final class QinJavaProjectJsCompiler {
             }
         }
         if (typeScript) {
-            js.append("export type ExpressionParams = any;\n");
-            js.append("export type StatementParams = any;\n");
-            js.append("export type DeclarationParams = any;\n");
-            js.append("export type TemplateLiteralParams = any;\n");
+            if (!binaryNames.contains("com.slime.parser.base.SlimeJavascriptParserBase$ExpressionParams")) {
+                js.append("export type ExpressionParams = any;\n");
+            }
+            if (!binaryNames.contains("com.slime.parser.base.SlimeJavascriptParserBase$StatementParams")) {
+                js.append("export type StatementParams = any;\n");
+            }
+            if (!binaryNames.contains("com.slime.parser.base.SlimeJavascriptParserBase$DeclarationParams")) {
+                js.append("export type DeclarationParams = any;\n");
+            }
+            if (!binaryNames.contains("com.slime.parser.base.SlimeJavascriptParserBase$TemplateLiteralParams")) {
+                js.append("export type TemplateLiteralParams = any;\n");
+            }
         }
         return js.toString();
     }
@@ -1496,6 +1540,15 @@ public final class QinJavaProjectJsCompiler {
                     collectStatementReferences(finallyBodyStatement, resolver, sourceBinaryNames, referenced);
                 }
             }
+            case JavaAstSwitchStatement switchStatement -> {
+                collectExpressionReferences(switchStatement.discriminant(), resolver, sourceBinaryNames, referenced);
+                for (JavaAstSwitchCase switchCase : switchStatement.cases()) {
+                    collectExpressionReferences(switchCase.test(), resolver, sourceBinaryNames, referenced);
+                    for (JavaAstStatement caseStatement : switchCase.statements()) {
+                        collectStatementReferences(caseStatement, resolver, sourceBinaryNames, referenced);
+                    }
+                }
+            }
             case JavaAstWhileStatement whileStatement -> {
                 collectExpressionReferences(whileStatement.test(), resolver, sourceBinaryNames, referenced);
                 for (JavaAstStatement bodyStatement : whileStatement.bodyStatements()) {
@@ -1540,10 +1593,27 @@ public final class QinJavaProjectJsCompiler {
                     collectTypeReference(classLiteralExpression.typeName(), resolver, sourceBinaryNames, referenced);
             case JavaAstIdentifierExpression identifierExpression ->
                     collectTypeReference(identifierExpression.name(), resolver, sourceBinaryNames, referenced);
+            case JavaAstInstanceofPatternExpression instanceofPatternExpression -> {
+                collectExpressionReferences(instanceofPatternExpression.value(), resolver, sourceBinaryNames, referenced);
+                collectTypeReference(instanceofPatternExpression.typeName(), resolver, sourceBinaryNames, referenced);
+            }
+            case JavaAstInstanceofExpression instanceofExpression -> {
+                collectExpressionReferences(instanceofExpression.value(), resolver, sourceBinaryNames, referenced);
+                collectTypeReference(instanceofExpression.typeName(), resolver, sourceBinaryNames, referenced);
+            }
             case JavaAstLambdaExpression lambdaExpression -> {
                 collectExpressionReferences(lambdaExpression.bodyExpression(), resolver, sourceBinaryNames, referenced);
                 for (JavaAstStatement bodyStatement : lambdaExpression.bodyStatements()) {
                     collectStatementReferences(bodyStatement, resolver, sourceBinaryNames, referenced);
+                }
+            }
+            case JavaAstSwitchExpression switchExpression -> {
+                collectExpressionReferences(switchExpression.discriminant(), resolver, sourceBinaryNames, referenced);
+                for (JavaAstSwitchCase switchCase : switchExpression.cases()) {
+                    collectExpressionReferences(switchCase.test(), resolver, sourceBinaryNames, referenced);
+                    for (JavaAstStatement caseStatement : switchCase.statements()) {
+                        collectStatementReferences(caseStatement, resolver, sourceBinaryNames, referenced);
+                    }
                 }
             }
             case JavaAstMemberAccessExpression memberAccessExpression ->
@@ -1653,7 +1723,7 @@ public final class QinJavaProjectJsCompiler {
                 return null;
             }
             if (typeName.contains(".")) {
-                return sourceBinaryNames.contains(typeName) ? typeName : null;
+                return resolveQualifiedTypeName(typeName);
             }
             String imported = explicitImports.get(typeName);
             if (imported != null) {
@@ -1667,6 +1737,38 @@ public final class QinJavaProjectJsCompiler {
                 String candidate = wildcardImport + "." + typeName;
                 if (sourceBinaryNames.contains(candidate)) {
                     return candidate;
+                }
+            }
+            return null;
+        }
+
+        private String resolveQualifiedTypeName(String typeName) {
+            String candidate = typeName;
+            while (!candidate.isBlank()) {
+                if (sourceBinaryNames.contains(candidate)) {
+                    return candidate;
+                }
+                int dot = candidate.lastIndexOf('.');
+                if (dot < 0) {
+                    break;
+                }
+                candidate = candidate.substring(0, dot);
+            }
+
+            int dot = typeName.indexOf('.');
+            String rootName = dot < 0 ? typeName : typeName.substring(0, dot);
+            String imported = explicitImports.get(rootName);
+            if (imported != null) {
+                String importedCandidate = imported + typeName.substring(rootName.length());
+                while (!importedCandidate.isBlank()) {
+                    if (sourceBinaryNames.contains(importedCandidate)) {
+                        return importedCandidate;
+                    }
+                    int importedDot = importedCandidate.lastIndexOf('.');
+                    if (importedDot < imported.length()) {
+                        break;
+                    }
+                    importedCandidate = importedCandidate.substring(0, importedDot);
                 }
             }
             return null;

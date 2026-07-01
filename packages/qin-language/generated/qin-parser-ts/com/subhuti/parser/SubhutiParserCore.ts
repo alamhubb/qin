@@ -301,7 +301,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
           }
           if ((() => {
       if (this.isErrorRecoveryMode()) {
-        return __qin_binary__("instanceof", cached.get(), SubhutiPackratCacheResult);
+        return (() => { const __qin_instanceof_value = cached.get(); return __qin_instanceof_value instanceof com_subhuti_cache_SubhutiPackratCacheResult; })();
       }
       return false;
     })()) {
@@ -501,7 +501,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
   }
   applyCachedResult(cached: any): any {
     if ((() => {
-      if (__qin_binary__("instanceof", cached, SubhutiPackratCacheResult)) {
+      if ((() => { const __qin_instanceof_value = cached; return __qin_instanceof_value instanceof com_subhuti_cache_SubhutiPackratCacheResult; })()) {
         return false;
       }
       return true;
@@ -547,7 +547,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     this.__qin_field_parseSuccess = cacheResult.__qin_field_parseSuccess;
     if ((() => {
       if (cacheResult.__qin_field_parseSuccess) {
-        return __qin_binary__("instanceof", cacheResult.__qin_field_cst, SubhutiCst);
+        return (() => { const __qin_instanceof_value = cacheResult.__qin_field_cst; return __qin_instanceof_value instanceof com_subhuti_struct_SubhutiCst; })();
       }
       return false;
     })()) {

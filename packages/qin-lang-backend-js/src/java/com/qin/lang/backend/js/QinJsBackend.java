@@ -31,6 +31,7 @@ import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrIfStatement;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaClassLiteralExpression;
+import com.qin.lang.ir.QinIrJavaInstanceofExpression;
 import com.qin.lang.ir.QinIrJavaInstanceofPatternExpression;
 import com.qin.lang.ir.QinIrJavaMethodReferenceExpression;
 import com.qin.lang.ir.QinIrJavaImport;
@@ -52,6 +53,9 @@ import com.qin.lang.ir.QinIrSequenceExpression;
 import com.qin.lang.ir.QinIrSpreadArgumentExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinIrSwitchCase;
+import com.qin.lang.ir.QinIrSwitchExpression;
+import com.qin.lang.ir.QinIrSwitchStatement;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrReturnStatement;
@@ -337,9 +341,12 @@ public class QinJsBackend implements QinIrCodeBackend {
             List<QinIrJavaImport> javaImports,
             Map<String, String> javaAliases) {
         for (QinIrJavaImport javaImport : javaImports) {
+            if (!javaImport.moduleName().startsWith("java:")) {
+                continue;
+            }
             emitJavaRuntimeAlias(js, javaImport.localName(), javaImport.ownerBinaryName(), javaAliases);
         }
-        if (!javaImports.isEmpty()) {
+        if (javaImports.stream().anyMatch(javaImport -> javaImport.moduleName().startsWith("java:"))) {
             js.append("\n");
         }
     }
@@ -468,6 +475,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                 emitJavaRuntimeAliasesForStatements(js, catchClause.body(), javaAliases);
             }
             emitJavaRuntimeAliasesForStatements(js, tryStatement.finallyBody(), javaAliases);
+            return;
+        }
+        if (statement instanceof QinIrSwitchStatement switchStatement) {
+            emitJavaRuntimeAliasesForExpression(js, switchStatement.discriminant(), javaAliases);
+            for (QinIrSwitchCase switchCase : switchStatement.cases()) {
+                emitJavaRuntimeAliasesForExpression(js, switchCase.test(), javaAliases);
+                emitJavaRuntimeAliasesForStatements(js, switchCase.consequent(), javaAliases);
+            }
         }
     }
 
@@ -475,7 +490,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             StringBuilder js,
             QinIrTypeRef type,
             Map<String, String> javaAliases) {
-        if (type == null || type.binaryName() == null || isGeneratedClassOwner(type.binaryName())) {
+        if (type == null
+                || type.binaryName() == null
+                || isArrayBinaryName(type.binaryName())
+                || isGeneratedClassOwner(type.binaryName())) {
             return;
         }
         emitJavaRuntimeAlias(js, simpleClassName(type.binaryName()), type.binaryName(), javaAliases);
@@ -567,6 +585,24 @@ public class QinJsBackend implements QinIrCodeBackend {
             }
             return;
         }
+        if (expression instanceof QinIrSwitchExpression switchExpression) {
+            emitJavaRuntimeAliasesForExpression(js, switchExpression.discriminant(), javaAliases);
+            for (QinIrSwitchCase switchCase : switchExpression.cases()) {
+                emitJavaRuntimeAliasesForExpression(js, switchCase.test(), javaAliases);
+                emitJavaRuntimeAliasesForStatements(js, switchCase.consequent(), javaAliases);
+            }
+            return;
+        }
+        if (expression instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
+            if (classLiteralExpression.binaryName() != null) {
+                emitJavaRuntimeAlias(
+                        js,
+                        simpleClassName(classLiteralExpression.binaryName()),
+                        classLiteralExpression.binaryName(),
+                        javaAliases);
+            }
+            return;
+        }
         if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
             emitJavaRuntimeAlias(
                     js,
@@ -587,7 +623,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrJavaInstanceofPatternExpression instanceofPatternExpression) {
-            if (isJavaInterfaceOwner(instanceofPatternExpression.ownerBinaryName())) {
+            if (isJavaInterfaceInstanceofOwner(instanceofPatternExpression.ownerBinaryName())) {
                 requireExternalJavaSdkRuntime("__qin_java_implements");
             }
             emitJavaRuntimeAlias(
@@ -596,6 +632,18 @@ public class QinJsBackend implements QinIrCodeBackend {
                     instanceofPatternExpression.ownerBinaryName(),
                     javaAliases);
             emitJavaRuntimeAliasesForExpression(js, instanceofPatternExpression.value(), javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrJavaInstanceofExpression instanceofExpression) {
+            if (isJavaInterfaceInstanceofOwner(instanceofExpression.ownerBinaryName())) {
+                requireExternalJavaSdkRuntime("__qin_java_implements");
+            }
+            emitJavaRuntimeAlias(
+                    js,
+                    instanceofExpression.classLocalName(),
+                    instanceofExpression.ownerBinaryName(),
+                    javaAliases);
+            emitJavaRuntimeAliasesForExpression(js, instanceofExpression.value(), javaAliases);
             return;
         }
         if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
@@ -671,13 +719,16 @@ public class QinJsBackend implements QinIrCodeBackend {
             String localName,
             String ownerBinaryName,
             Map<String, String> javaAliases) {
+        if (isArrayBinaryName(ownerBinaryName)) {
+            return;
+        }
         if (isGeneratedClassOwner(ownerBinaryName)) {
             return;
         }
         if (externallyBoundJavaBinaryNames.contains(ownerBinaryName)) {
             return;
         }
-        if (isJavaInterfaceOwner(ownerBinaryName)) {
+        if (isExternalJavaInterfaceOwner(ownerBinaryName)) {
             return;
         }
         String aliasKey = localName + "\u0000" + ownerBinaryName;
@@ -1126,7 +1177,65 @@ public class QinJsBackend implements QinIrCodeBackend {
                     .append("; }\n");
         }
         js.append("}\n");
+        js.append(localName)
+                .append(".__qinJavaRecordClass = \"")
+                .append(escapeJs(ownerClass.getName()))
+                .append("\";\n");
+        js.append(localName).append(".prototype.__qinJavaRecordClass = ")
+                .append(localName)
+                .append(".__qinJavaRecordClass;\n");
+        emitJavaRecordInterfaceMetadata(js, localName, ownerClass);
         emitJavaRecordStaticFields(js, localName, ownerClass, components);
+    }
+
+    private boolean ensureJavaRecordRuntime(StringBuilder js, String ownerBinaryName) {
+        if (ownerBinaryName == null
+                || isGeneratedClassOwner(ownerBinaryName)
+                || externallyBoundJavaBinaryNames.contains(ownerBinaryName)) {
+            return false;
+        }
+        Class<?> ownerClass = loadJavaOwnerIfAvailable(ownerBinaryName);
+        if (ownerClass == null || !ownerClass.isRecord()) {
+            return false;
+        }
+        emitJavaRecordRuntime(js, jsClassReference(ownerBinaryName), ownerClass);
+        return true;
+    }
+
+    private void emitJavaRecordInterfaceMetadata(StringBuilder js, String localName, Class<?> ownerClass) {
+        Set<String> interfaceNames = new LinkedHashSet<>();
+        collectJavaInterfaceNames(ownerClass, interfaceNames);
+        if (interfaceNames.isEmpty()) {
+            return;
+        }
+        js.append(localName).append(".__qin_java_interfaces = [");
+        int index = 0;
+        for (String interfaceName : interfaceNames) {
+            if (index++ > 0) {
+                js.append(", ");
+            }
+            js.append("\"").append(escapeJs(interfaceName)).append("\"");
+        }
+        js.append("];\n");
+    }
+
+    private void collectJavaInterfaceNames(Class<?> ownerClass, Set<String> interfaceNames) {
+        if (ownerClass == null || ownerClass == Object.class) {
+            return;
+        }
+        for (Class<?> interfaceClass : ownerClass.getInterfaces()) {
+            collectJavaInterfaceName(interfaceClass, interfaceNames);
+        }
+        collectJavaInterfaceNames(ownerClass.getSuperclass(), interfaceNames);
+    }
+
+    private void collectJavaInterfaceName(Class<?> interfaceClass, Set<String> interfaceNames) {
+        if (interfaceClass == null || !interfaceNames.add(interfaceClass.getName())) {
+            return;
+        }
+        for (Class<?> parentInterface : interfaceClass.getInterfaces()) {
+            collectJavaInterfaceName(parentInterface, interfaceNames);
+        }
     }
 
     private void emitJavaRecordStaticFields(
@@ -3320,8 +3429,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                   fn.compare = (...args) => fn(...args);
                   return fn;
                 }
-                function __qin_java_class_info__(ctor) {
-                  const className = ctor && ctor.name ? ctor.name : "Object";
+                function __qin_java_class_info__(ctor, meta = null) {
+                  const className = meta && meta.name ? meta.name : (ctor && ctor.name ? ctor.name : "Object");
                   const simpleName = className.split(".").pop().split("_").pop() || className;
                   let hash = 0;
                   for (let index = 0; index < className.length; index++) {
@@ -3348,6 +3457,23 @@ public class QinJsBackend implements QinIrCodeBackend {
                   return {
                     getName() { return className; },
                     getSimpleName() { return simpleName; },
+                    isInstance(value) {
+                      if (value == null) return false;
+                      if (meta && meta.interfaceName) return __qin_java_implements(value, meta.interfaceName);
+                      if (ctor == null || ctor === Object) return typeof value === "object" || typeof value === "function";
+                      if (value instanceof ctor) return true;
+                      const targetRecord = ctor.__qinJavaRecordClass;
+                      if (targetRecord != null && value.__qinJavaRecordClass === targetRecord) return true;
+                      const interfaces = ctor.__qin_java_interfaces || [];
+                      for (const interfaceName of interfaces) {
+                        if (__qin_java_implements(value, interfaceName)) return true;
+                      }
+                      return false;
+                    },
+                    cast(value) {
+                      if (value == null || this.isInstance(value)) return value;
+                      throw new Error("ClassCastException: cannot cast to " + className);
+                    },
                     getDeclaredConstructor(...__qin_types) {
                       const __qin_ctor = ctor == null ? Object : ctor;
                       return {
@@ -3669,6 +3795,18 @@ public class QinJsBackend implements QinIrCodeBackend {
                         return true;
                     }
                 }
+                continue;
+            }
+            if (statement instanceof QinIrSwitchStatement switchStatement) {
+                if (usesBuiltin(switchStatement.discriminant(), methodName)) {
+                    return true;
+                }
+                for (QinIrSwitchCase switchCase : switchStatement.cases()) {
+                    if (usesBuiltin(switchCase.test(), methodName)
+                            || usesBuiltin(switchCase.consequent(), methodName)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
@@ -3776,6 +3914,18 @@ public class QinJsBackend implements QinIrCodeBackend {
             }
             return false;
         }
+        if (expression instanceof QinIrSwitchExpression switchExpression) {
+            if (usesBuiltin(switchExpression.discriminant(), methodName)) {
+                return true;
+            }
+            for (QinIrSwitchCase switchCase : switchExpression.cases()) {
+                if (usesBuiltin(switchCase.test(), methodName)
+                        || usesBuiltin(switchCase.consequent(), methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
             if (methodName.equals(builtinCallExpression.methodName())) {
                 return true;
@@ -3800,6 +3950,9 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         if (expression instanceof QinIrJavaInstanceofPatternExpression instanceofPatternExpression) {
             return usesBuiltin(instanceofPatternExpression.value(), methodName);
+        }
+        if (expression instanceof QinIrJavaInstanceofExpression instanceofExpression) {
+            return usesBuiltin(instanceofExpression.value(), methodName);
         }
         if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
             for (QinIrExpression argument : staticMethodCallExpression.arguments()) {
@@ -3885,43 +4038,28 @@ public class QinJsBackend implements QinIrCodeBackend {
         String displayName = classLiteralExpression.binaryName() == null
                 ? classLiteralExpression.typeName()
                 : classLiteralExpression.binaryName();
-        String constructorReference = classLiteralExpression.binaryName() != null
-                && (isGeneratedClassOwner(classLiteralExpression.binaryName())
-                        || externallyBoundJavaBinaryNames.contains(classLiteralExpression.binaryName()))
-                        ? jsClassReference(classLiteralExpression.binaryName())
-                        : null;
-        String simpleName = displayName;
-        int dot = simpleName.lastIndexOf('.');
-        if (dot >= 0) {
-            simpleName = simpleName.substring(dot + 1);
-        }
-        int nested = simpleName.lastIndexOf('$');
-        if (nested >= 0) {
-            simpleName = simpleName.substring(nested + 1);
-        }
-        js.append("({ getName() { return \"")
+        requireExternalJavaSdkRuntime("__qin_java_class_info__");
+        String constructorReference = classLiteralExpression.binaryName() == null
+                ? null
+                : javaOwnerReference(classLiteralExpression.binaryName(), simpleClassName(classLiteralExpression.binaryName()));
+        boolean interfaceOwner = classLiteralExpression.binaryName() != null
+                && isJavaInterfaceOwner(classLiteralExpression.binaryName());
+        js.append("__qin_java_class_info__(");
+        js.append(constructorReference != null && !interfaceOwner ? constructorReference : "null");
+        js.append(", { name: \"")
                 .append(escapeJs(displayName))
-                .append("\"; }, getSimpleName() { return \"")
-                .append(escapeJs(simpleName))
-                .append("\"; }, ");
-        if (constructorReference != null) {
-            js.append("getDeclaredConstructor(...__qin_types) { const __qin_ctor = ")
-                    .append(constructorReference)
-                    .append("; return { newInstance(...__qin_args) { return new __qin_ctor(...__qin_args); } }; }, ")
-                    .append("getConstructor(...__qin_types) { return this.getDeclaredConstructor(...__qin_types); }, ");
+                .append("\"");
+        if (interfaceOwner) {
+            js.append(", interfaceName: \"")
+                    .append(escapeJs(classLiteralExpression.binaryName()))
+                    .append("\"");
         }
-        js.append("equals(other) { return other != null && typeof other.getName === \"function\" && other.getName() === \"")
-                .append(escapeJs(displayName))
-                .append("\"; }, hashCode() { return ")
-                .append(displayName.hashCode())
-                .append("; }, ");
-        js.append("toString() { return \"class ")
-                .append(escapeJs(displayName))
-                .append("\"; } })");
+        js.append(" })");
     }
 
     private void emitClassDeclarations(StringBuilder js, List<QinIrClassDeclaration> classDeclarations) {
         Map<String, Integer> simpleNameCounts = javaClassSimpleNameCounts(classDeclarations);
+        emitJavaRecordRuntimesRequiredByOverloadGuards(js, classDeclarations);
         for (QinIrClassDeclaration classDeclaration : classDeclarations) {
             js.append("class ").append(jsClassReference(classDeclaration.binaryName()));
             if (classDeclaration.superType() != null) {
@@ -3954,21 +4092,74 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
     }
 
+    private void emitJavaRecordRuntimesRequiredByOverloadGuards(
+            StringBuilder js,
+            List<QinIrClassDeclaration> classDeclarations) {
+        for (QinIrClassDeclaration classDeclaration : classDeclarations) {
+            for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+                for (QinIrParameter parameter : method.parameters()) {
+                    ensureJavaRecordRuntimeForTypeGuard(js, parameter.type());
+                    if (parameter.varargs()) {
+                        ensureJavaRecordRuntimeForTypeGuard(js, varargsElementType(parameter.type()));
+                    }
+                }
+            }
+        }
+    }
+
+    private void ensureJavaRecordRuntimeForTypeGuard(StringBuilder js, QinIrTypeRef type) {
+        if (type == null || type.kind() != QinIrTypeKind.CLASS || type.binaryName() == null) {
+            return;
+        }
+        ensureJavaRecordRuntime(js, type.binaryName());
+        for (QinIrTypeRef typeArgument : type.typeArguments()) {
+            ensureJavaRecordRuntimeForTypeGuard(js, typeArgument);
+        }
+    }
+
     private void emitJavaInterfaceMetadata(StringBuilder js, QinIrClassDeclaration classDeclaration) {
-        if (classDeclaration.implementsTypes().isEmpty()) {
+        Set<String> interfaceNames = javaInterfaceNames(classDeclaration.implementsTypes());
+        if (interfaceNames.isEmpty()) {
             return;
         }
         js.append(jsClassReference(classDeclaration.binaryName()))
                 .append(".__qin_java_interfaces = [");
-        for (int i = 0; i < classDeclaration.implementsTypes().size(); i++) {
-            if (i > 0) {
+        int index = 0;
+        for (String interfaceName : interfaceNames) {
+            if (index++ > 0) {
                 js.append(", ");
             }
-            js.append("\"")
-                    .append(escapeJs(classDeclaration.implementsTypes().get(i).binaryName()))
-                    .append("\"");
+            js.append("\"").append(escapeJs(interfaceName)).append("\"");
         }
         js.append("];\n");
+    }
+
+    private Set<String> javaInterfaceNames(List<QinIrTypeRef> interfaceTypes) {
+        Set<String> interfaceNames = new LinkedHashSet<>();
+        for (QinIrTypeRef interfaceType : interfaceTypes) {
+            if (interfaceType.binaryName() == null) {
+                continue;
+            }
+            collectGeneratedInterfaceName(interfaceType.binaryName(), interfaceNames);
+            Class<?> interfaceClass = loadJavaOwnerIfAvailable(interfaceType.binaryName());
+            if (interfaceClass != null) {
+                collectJavaInterfaceName(interfaceClass, interfaceNames);
+            }
+        }
+        return interfaceNames;
+    }
+
+    private void collectGeneratedInterfaceName(String binaryName, Set<String> interfaceNames) {
+        if (binaryName == null || !interfaceNames.add(binaryName)) {
+            return;
+        }
+        QinIrClassDeclaration generatedInterface = generatedClassesByBinaryName.get(binaryName);
+        if (generatedInterface == null) {
+            return;
+        }
+        for (QinIrTypeRef parentInterface : generatedInterface.implementsTypes()) {
+            collectGeneratedInterfaceName(parentInterface.binaryName(), interfaceNames);
+        }
     }
 
     private void emitTypeScriptFieldDeclarations(StringBuilder js, QinIrClassDeclaration classDeclaration) {
@@ -4500,7 +4691,13 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private boolean isGeneratedClassOwner(String ownerBinaryName) {
-        return ownerBinaryName != null && generatedClassBinaryNames.contains(ownerBinaryName);
+        return ownerBinaryName != null
+                && (generatedClassBinaryNames.contains(ownerBinaryName)
+                || generatedClassesByBinaryName.containsKey(ownerBinaryName));
+    }
+
+    private boolean isArrayBinaryName(String ownerBinaryName) {
+        return ownerBinaryName != null && ownerBinaryName.startsWith("[");
     }
 
     private Map<String, String> javaFieldAliases(QinIrClassDeclaration classDeclaration) {
@@ -4829,6 +5026,28 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         String ownerReference = javaOwnerReference(binaryName, simpleClassName(binaryName));
         if (ownerReference != null && isJsIdentifier(ownerReference)) {
+            if (isExternalJavaInterfaceOwner(binaryName)) {
+                requireExternalJavaSdkRuntime("__qin_java_implements");
+                return "(" + argumentExpression + " === null || __qin_java_implements("
+                        + argumentExpression
+                        + ", \""
+                        + escapeJs(binaryName)
+                        + "\"))";
+            }
+            if (isGeneratedJavaInterfaceOwner(binaryName)) {
+                requireExternalJavaSdkRuntime("__qin_java_implements");
+                return "(" + argumentExpression + " === null || __qin_java_implements("
+                        + argumentExpression
+                        + ", \""
+                        + escapeJs(binaryName)
+                        + "\"))";
+            }
+            if (loadJavaOwner(binaryName).isRecord()) {
+                return "(" + argumentExpression + " === null"
+                        + " || " + argumentExpression + " instanceof " + ownerReference
+                        + " || " + argumentExpression + ".__qinJavaRecordClass === " + ownerReference
+                        + ".__qinJavaRecordClass)";
+            }
             return "(" + argumentExpression + " === null || " + argumentExpression + " instanceof " + ownerReference + ")";
         }
         return "true";
@@ -5081,6 +5300,12 @@ public class QinJsBackend implements QinIrCodeBackend {
                 collectPatternVariablesFromStatements(catchClause.body(), patternVariables);
             }
             collectPatternVariablesFromStatements(tryStatement.finallyBody(), patternVariables);
+        } else if (statement instanceof QinIrSwitchStatement switchStatement) {
+            collectPatternVariables(switchStatement.discriminant(), patternVariables);
+            for (QinIrSwitchCase switchCase : switchStatement.cases()) {
+                collectPatternVariables(switchCase.test(), patternVariables);
+                collectPatternVariablesFromStatements(switchCase.consequent(), patternVariables);
+            }
         }
     }
 
@@ -5099,6 +5324,8 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (expression instanceof QinIrJavaInstanceofPatternExpression instanceofPatternExpression) {
             patternVariables.add(instanceofPatternExpression.variableName());
             collectPatternVariables(instanceofPatternExpression.value(), patternVariables);
+        } else if (expression instanceof QinIrJavaInstanceofExpression instanceofExpression) {
+            collectPatternVariables(instanceofExpression.value(), patternVariables);
         } else if (expression instanceof QinIrAssignmentExpression assignmentExpression) {
             collectPatternVariables(assignmentExpression.target(), patternVariables);
             collectPatternVariables(assignmentExpression.value(), patternVariables);
@@ -5150,6 +5377,12 @@ public class QinJsBackend implements QinIrCodeBackend {
             collectPatternVariables(spreadArgumentExpression.expression(), patternVariables);
         } else if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
             collectPatternVariablesFromExpressions(staticMethodCallExpression.arguments(), patternVariables);
+        } else if (expression instanceof QinIrSwitchExpression switchExpression) {
+            collectPatternVariables(switchExpression.discriminant(), patternVariables);
+            for (QinIrSwitchCase switchCase : switchExpression.cases()) {
+                collectPatternVariables(switchCase.test(), patternVariables);
+                collectPatternVariablesFromStatements(switchCase.consequent(), patternVariables);
+            }
         } else if (expression instanceof QinIrThrowExpression throwExpression) {
             collectPatternVariables(throwExpression.value(), patternVariables);
         } else if (expression instanceof QinIrWhileExpression whileExpression) {
@@ -5338,7 +5571,48 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append(indent).append("}\n");
             return;
         }
+        if (statement instanceof QinIrSwitchStatement switchStatement) {
+            emitSwitchStatement(js, switchStatement, indent);
+            return;
+        }
         throw new IllegalArgumentException("Unsupported statement: " + statement.getClass().getSimpleName());
+    }
+
+    private void emitSwitchStatement(StringBuilder js, QinIrSwitchStatement switchStatement, String indent) {
+        js.append(indent).append("switch (");
+        emitExpression(js, switchStatement.discriminant());
+        js.append(") {\n");
+        for (QinIrSwitchCase switchCase : switchStatement.cases()) {
+            if (switchCase.isDefault()) {
+                js.append(indent).append("  default:\n");
+            } else {
+                js.append(indent).append("  case ");
+                emitExpression(js, switchCase.test());
+                js.append(":\n");
+            }
+            emitStatements(js, switchCase.consequent(), indent + "    ");
+        }
+        js.append(indent).append("}\n");
+    }
+
+    private void emitSwitchExpression(StringBuilder js, QinIrSwitchExpression switchExpression) {
+        js.append("(() => {\n");
+        js.append("      switch (");
+        emitExpression(js, switchExpression.discriminant());
+        js.append(") {\n");
+        for (QinIrSwitchCase switchCase : switchExpression.cases()) {
+            if (switchCase.isDefault()) {
+                js.append("        default:\n");
+            } else {
+                js.append("        case ");
+                emitExpression(js, switchCase.test());
+                js.append(":\n");
+            }
+            emitStatements(js, switchCase.consequent(), "          ");
+        }
+        js.append("      }\n");
+        js.append("      return null;\n");
+        js.append("    })()");
     }
 
     private void emitOptionalLabel(StringBuilder js, String label) {
@@ -5639,6 +5913,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             emitWhileExpression(js, whileExpression);
             return;
         }
+        if (expression instanceof QinIrSwitchExpression switchExpression) {
+            emitSwitchExpression(js, switchExpression);
+            return;
+        }
         if (expression instanceof QinIrPropertyAccessExpression propertyAccessExpression) {
             emitExpression(js, propertyAccessExpression.receiver());
             js.append(".").append(javaFieldAwarePropertyName(propertyAccessExpression));
@@ -5657,6 +5935,10 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         if (expression instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
             emitJavaClassLiteral(js, classLiteralExpression);
+            return;
+        }
+        if (expression instanceof QinIrJavaInstanceofExpression instanceofExpression) {
+            emitJavaInstanceofExpression(js, instanceofExpression);
             return;
         }
         if (expression instanceof QinIrInstanceMethodCallExpression instanceMethodCallExpression) {
@@ -5842,12 +6124,27 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("; })()");
     }
 
+    private void emitJavaInstanceofExpression(
+            StringBuilder js,
+            QinIrJavaInstanceofExpression expression) {
+        ensureSupportedJavaOwner(expression.ownerBinaryName());
+        js.append("(() => { const __qin_instanceof_value = ");
+        emitExpression(js, expression.value());
+        js.append("; return ");
+        emitJavaInstanceofTest(js, "__qin_instanceof_value", expression.ownerBinaryName(), expression.classLocalName());
+        js.append("; })()");
+    }
+
     private void emitJavaInstanceofTest(
             StringBuilder js,
             String valueExpression,
             String ownerBinaryName,
             String classLocalName) {
-        if (isJavaInterfaceOwner(ownerBinaryName)) {
+        if (isArrayBinaryName(ownerBinaryName)) {
+            js.append("Array.isArray(").append(valueExpression).append(")");
+            return;
+        }
+        if (isJavaInterfaceInstanceofOwner(ownerBinaryName)) {
             js.append("__qin_java_implements(")
                     .append(valueExpression)
                     .append(", \"")
@@ -5856,6 +6153,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         String ownerReference = javaOwnerReference(ownerBinaryName, classLocalName);
+        if (ownerReference == null) {
+            throw new IllegalArgumentException(
+                    "JS backend cannot emit Java instanceof owner reference: " + ownerBinaryName);
+        }
         js.append(valueExpression).append(" instanceof ").append(ownerReference);
     }
 
@@ -6050,6 +6351,9 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private void ensureSupportedJavaOwner(String ownerBinaryName) {
+        if (isArrayBinaryName(ownerBinaryName)) {
+            return;
+        }
         if (isGeneratedClassOwner(ownerBinaryName)) {
             return;
         }
@@ -6121,6 +6425,40 @@ public class QinJsBackend implements QinIrCodeBackend {
         return loadJavaOwner(ownerBinaryName).isInterface();
     }
 
+    private boolean isExternalJavaInterfaceOwner(String ownerBinaryName) {
+        return ownerBinaryName != null
+                && !isGeneratedClassOwner(ownerBinaryName)
+                && !generatedClassesByBinaryName.containsKey(ownerBinaryName)
+                && !externallyBoundJavaBinaryNames.contains(ownerBinaryName)
+                && isJavaInterfaceOwner(ownerBinaryName);
+    }
+
+    private boolean isJavaInterfaceInstanceofOwner(String ownerBinaryName) {
+        return isExternalJavaInterfaceOwner(ownerBinaryName)
+                || isGeneratedJavaInterfaceOwner(ownerBinaryName);
+    }
+
+    private boolean isGeneratedJavaInterfaceOwner(String ownerBinaryName) {
+        QinIrClassDeclaration classDeclaration = generatedClassesByBinaryName.get(ownerBinaryName);
+        if (classDeclaration == null) {
+            return false;
+        }
+        for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+            if (!field.staticField()) {
+                return false;
+            }
+        }
+        for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+            if ("constructor".equals(method.name())) {
+                return false;
+            }
+            if (!method.staticMethod() && !method.abstractMethod()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private String javaOwnerReference(String ownerBinaryName, String classLocalName) {
         if (isGeneratedClassOwner(ownerBinaryName)) {
             return jsClassReference(ownerBinaryName);
@@ -6184,6 +6522,9 @@ public class QinJsBackend implements QinIrCodeBackend {
             requireExternalJavaSdkRuntime(runtimeOwner);
             return runtimeOwner;
         }
+        if (isJavaRecordOwner(ownerBinaryName)) {
+            return jsClassReference(ownerBinaryName);
+        }
         if (isJsIdentifier(classLocalName)) {
             return classLocalName;
         }
@@ -6193,6 +6534,12 @@ public class QinJsBackend implements QinIrCodeBackend {
     private String memberAccessObjectReference(String objectName) {
         if (generatedClassBinaryNames.contains(objectName)) {
             return jsClassReference(objectName);
+        }
+        if (externallyBoundJavaBinaryNames.contains(objectName)) {
+            return jsClassReference(objectName);
+        }
+        if (objectName != null && objectName.contains(".") && loadJavaOwnerIfAvailable(objectName) != null) {
+            return javaOwnerReference(objectName, simpleClassName(objectName));
         }
         String generatedReference = generatedClassReferencesBySimpleName.get(objectName);
         if (generatedReference != null) {
@@ -6215,9 +6562,21 @@ public class QinJsBackend implements QinIrCodeBackend {
                 && currentJavaFieldAliases.containsKey(memberAccessExpression.propertyName())) {
             return jsCurrentJavaFieldName(memberAccessExpression.propertyName());
         }
+        if (isJavaEnumOwner(memberAccessExpression.objectName())) {
+            return jsJavaFieldName(memberAccessExpression.propertyName());
+        }
         return generatedJavaFieldAliases.getOrDefault(
                 memberAccessExpression.propertyName(),
                 memberAccessExpression.propertyName());
+    }
+
+    private boolean isJavaEnumOwner(String ownerBinaryName) {
+        Class<?> ownerClass = loadJavaOwnerIfAvailable(ownerBinaryName);
+        return ownerClass != null && ownerClass.isEnum();
+    }
+
+    private boolean isJavaRecordOwner(String ownerBinaryName) {
+        return ownerBinaryName != null && loadJavaOwner(ownerBinaryName).isRecord();
     }
 
     private Class<?> loadJavaOwner(String ownerBinaryName) {
@@ -6225,6 +6584,14 @@ public class QinJsBackend implements QinIrCodeBackend {
             return Class.forName(ownerBinaryName);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unknown Java interop owner: " + ownerBinaryName, e);
+        }
+    }
+
+    private Class<?> loadJavaOwnerIfAvailable(String ownerBinaryName) {
+        try {
+            return Class.forName(ownerBinaryName);
+        } catch (ClassNotFoundException e) {
+            return null;
         }
     }
 

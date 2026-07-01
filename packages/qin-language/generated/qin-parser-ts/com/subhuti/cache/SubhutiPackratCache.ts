@@ -61,7 +61,7 @@ class com_subhuti_cache_SubhutiPackratCache {
       }
       return false;
     })()) {
-      builder.expireAfterAccess(expireAfterMinutes, TimeUnit.MINUTES);
+      builder.expireAfterAccess(expireAfterMinutes, TimeUnit.__qin_field_MINUTES);
     }
     this.__qin_field_cache = builder.build();
   }

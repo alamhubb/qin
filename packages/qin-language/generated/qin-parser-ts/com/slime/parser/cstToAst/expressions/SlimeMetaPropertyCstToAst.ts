@@ -1,3 +1,6 @@
+import { com_slime_ast_SourceLocation, com_slime_ast_SourceLocation as SourceLocation } from "../../../ast/SourceLocation.ts";
+import { com_slime_ast_nodes_expressions_Identifier, com_slime_ast_nodes_expressions_Identifier as Identifier } from "../../../ast/nodes/expressions/Identifier.ts";
+import { com_slime_ast_nodes_expressions_MetaProperty, com_slime_ast_nodes_expressions_MetaProperty as MetaProperty } from "../../../ast/nodes/expressions/MetaProperty.ts";
 import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "../SlimeAstCreateUtils.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../../subhuti/struct/SubhutiCst.ts";
 
@@ -8,17 +11,6 @@ function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
-class com_slime_ast_nodes_expressions_MetaProperty {
-  constructor(__recordValue0, __recordValue1, __recordValue2) {
-    this.__meta = __recordValue0;
-    this.__property = __recordValue1;
-    this.__location = __recordValue2;
-  }
-  ["meta"]() { return this.__meta; }
-  ["property"]() { return this.__property; }
-  ["location"]() { return this.__location; }
-}
-const MetaProperty = com_slime_ast_nodes_expressions_MetaProperty;
 class com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst {
   constructor(...__qin_args: any[]) {
     switch (__qin_args.length) {
@@ -33,7 +25,7 @@ class com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst {
     null;
   }
   static createMetaPropertyAst(cst: com_subhuti_struct_SubhutiCst): any {
-    return new MetaProperty(com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier((() => {
+    return new com_slime_ast_nodes_expressions_MetaProperty(com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier((() => {
       if (com_slime_parser_cstToAst_expressions_SlimeMetaPropertyCstToAst.hasNameOrValue(cst, "Import", "import")) {
         return "import";
       }

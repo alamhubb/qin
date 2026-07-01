@@ -1,3 +1,5 @@
+import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
+import { com_slime_ast_nodes_misc_Decorator, com_slime_ast_nodes_misc_Decorator as Decorator } from "../../../ast/nodes/misc/Decorator.ts";
 import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "../SlimeAstCreateUtils.ts";
 import { com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst, com_slime_parser_cstToAst_expressions_SlimeExpressionCstToAst as SlimeExpressionCstToAst } from "../expressions/SlimeExpressionCstToAst.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../../subhuti/struct/SubhutiCst.ts";
@@ -10,15 +12,6 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 const ArrayList = __QinJavaUtilArrayList;
-class com_slime_ast_nodes_misc_Decorator {
-  constructor(__recordValue0, __recordValue1) {
-    this.__expression = __recordValue0;
-    this.__location = __recordValue1;
-  }
-  ["expression"]() { return this.__expression; }
-  ["location"]() { return this.__location; }
-}
-const Decorator = com_slime_ast_nodes_misc_Decorator;
 class com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst {
   constructor(...__qin_args: any[]) {
     switch (__qin_args.length) {
@@ -77,7 +70,7 @@ class com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst {
     if (__qin_binary__("==", expression, null)) {
       expression = com_slime_parser_cstToAst_SlimeAstCreateUtils.createIdentifier("decorator", cst.getLocation());
     }
-    return new Decorator(expression, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
+    return new com_slime_ast_nodes_misc_Decorator(expression, com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst));
   }
   static collectDecorators(cst: com_subhuti_struct_SubhutiCst, result: any): any {
     if (__qin_binary__("==", cst, null)) {

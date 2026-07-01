@@ -129,7 +129,7 @@ export class SlimeExpressionCstToAstSingle {
         } else if (isAstName(SlimeParser.prototype.ArrowFunction?.name, 'ArrowFunction')) {
             // 绠ご鍑芥暟
             left = SlimeCstToAstUtils.createArrowFunctionAst(cst)
-        } else if (astName === 'AsyncArrowFunction') {
+        } else if (isAstName(SlimeParser.prototype.AsyncArrowFunction?.name, 'AsyncArrowFunction')) {
             // Async 绠ご鍑芥暟
             left = SlimeCstToAstUtils.createAsyncArrowFunctionAst(cst)
         } else if (isAstName(SlimeParser.prototype.ImportCall?.name, 'ImportCall')) {
@@ -157,17 +157,13 @@ export class SlimeExpressionCstToAstSingle {
 
         if (cst.getChildren().length === 1) {
             const child = cst.getChildren()[0]
+            const childName = child.getName()
             // 妫€鏌ユ槸鍚︽槸绠ご鍑芥暟
-            if (child.getName() === SlimeParser.prototype.ArrowFunction?.name) {
-                try {
-                    return SlimeCstToAstUtils.createArrowFunctionAst(child)
-                } catch (error: any) {
-                    const recovered = child.getChildren()?.[0]
-                    if (recovered) {
-                        return SlimeCstToAstUtils.createExpressionAst(recovered)
-                    }
-                    return SlimeAstCreateUtils.createIdentifier('', child.getLoc()) as any
-                }
+            if (childName === SlimeParser.prototype.ArrowFunction?.name || childName === 'ArrowFunction') {
+                return SlimeCstToAstUtils.createArrowFunctionAst(child)
+            }
+            if (childName === SlimeParser.prototype.AsyncArrowFunction?.name || childName === 'AsyncArrowFunction') {
+                return SlimeCstToAstUtils.createAsyncArrowFunctionAst(child)
             }
             // 鍚﹀垯浣滀负琛ㄨ揪寮忓锟?
             return SlimeCstToAstUtils.createExpressionAst(child)

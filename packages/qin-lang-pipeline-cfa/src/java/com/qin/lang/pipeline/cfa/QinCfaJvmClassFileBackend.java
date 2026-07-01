@@ -1602,7 +1602,7 @@ public final class QinCfaJvmClassFileBackend {
 
     private ResolvedConstructor resolveConstructor(String ownerBinaryName, List<QinCfaProgram.Expression> arguments) {
         try {
-            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Class<?> ownerClass = resolveJavaClass(ownerBinaryName);
             Constructor<?> best = null;
             int bestScore = Integer.MAX_VALUE;
             for (Constructor<?> constructor : ownerClass.getConstructors()) {
@@ -1657,7 +1657,7 @@ public final class QinCfaJvmClassFileBackend {
             String methodName,
             List<QinCfaProgram.Expression> arguments) {
         try {
-            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Class<?> ownerClass = resolveJavaClass(ownerBinaryName);
             Method best = null;
             int bestScore = Integer.MAX_VALUE;
             for (Method method : ownerClass.getMethods()) {
@@ -1688,6 +1688,14 @@ public final class QinCfaJvmClassFileBackend {
             throw new IllegalArgumentException("Cannot resolve Java method: "
                     + ownerBinaryName + "." + methodName, e);
         }
+    }
+
+    private Class<?> resolveJavaClass(String ownerBinaryName) throws ClassNotFoundException {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null) {
+            return Class.forName(ownerBinaryName, false, contextClassLoader);
+        }
+        return Class.forName(ownerBinaryName);
     }
 
     private int compatibilityScore(List<QinCfaProgram.Expression> arguments, Class<?>[] parameterTypes) {

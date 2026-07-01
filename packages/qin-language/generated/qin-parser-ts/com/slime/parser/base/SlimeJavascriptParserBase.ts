@@ -27,7 +27,7 @@ class com_slime_parser_base_SlimeJavascriptParserBase extends com_subhuti_parser
     switch (__qin_args.length) {
       case 1: {
         const sourceCode: any = __qin_args[0];
-        super(sourceCode, ({ getName() { return "com.slime.parser.consumer.SlimeTokenConsumer"; }, getSimpleName() { return "SlimeTokenConsumer"; }, getDeclaredConstructor(...__qin_types) { const __qin_ctor = com_slime_parser_consumer_SlimeTokenConsumer; return { newInstance(...__qin_args) { return new __qin_ctor(...__qin_args); } }; }, getConstructor(...__qin_types) { return this.getDeclaredConstructor(...__qin_types); }, equals(other) { return other != null && typeof other.getName === "function" && other.getName() === "com.slime.parser.consumer.SlimeTokenConsumer"; }, hashCode() { return -652635741; }, toString() { return "class com.slime.parser.consumer.SlimeTokenConsumer"; } }), com_slime_token_JavaScriptTokens.getTokens());
+        super(sourceCode, __qin_java_class_info__(com_slime_parser_consumer_SlimeTokenConsumer, { name: "com.slime.parser.consumer.SlimeTokenConsumer" }), com_slime_token_JavaScriptTokens.getTokens());
         this.__qin_constructor_com_slime_parser_base_SlimeJavascriptParserBase_1(sourceCode);
         return;
       }

@@ -75,6 +75,13 @@ export class SlimePostfixExpressionCstToAstSingle {
             }
         }
 
+        // Optional chaining ?.prop, ?.(), ?.[expr]
+        if (name === 'OptionalChain') {
+            return {
+                expression: SlimeCstToAstUtils.createOptionalChainAst(current, child)
+            }
+        }
+
         // 鍑芥暟璋冪敤 ()
         if (name === SlimeParser.prototype.Arguments?.name || name === 'Arguments') {
             const args = this.createArgumentsAst(child)

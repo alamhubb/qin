@@ -327,6 +327,20 @@ class com_slime_parser_typescript_SlimeTSTypeParser extends com_slime_parser_Sli
       this.setParseFail();
       return null;
     }
+    switch (token.getTokenName()) {
+      case "Greater":
+        this.__qin_field_tokenConsumer.Greater();
+      case "RightShift":
+      case "GreaterEqual":
+        this.consumePartialToken("Greater", ">", 1.0);
+      case "UnsignedRightShift":
+      case "RightShiftAssign":
+        this.consumePartialToken("Greater", ">", 1.0);
+      case "UnsignedRightShiftAssign":
+        this.consumePartialToken("Greater", ">", 1.0);
+      default:
+        this.setParseFail();
+    }
     return null;
   }
   TSTypeLiteral(): any {

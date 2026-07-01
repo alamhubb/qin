@@ -19,6 +19,11 @@ import { SlimeCstToAstUtils } from "../../SlimeCstToAstUtils.ts";
 import {SlimeVariableCstToAstSingle} from "../statements/SlimeVariableCstToAst.ts";
 
 export class SlimeArrowFunctionCstToAstSingle {
+    private isCstName(node: SubhutiCst | undefined, prototypeName: string | undefined, fallbackName: string): boolean {
+        if (!node) return false
+        const name = node.getName()
+        return name === prototypeName || name === fallbackName
+    }
 
     private findAsyncTokenCst(node: SubhutiCst | undefined): SubhutiCst | undefined {
         if (!node) return undefined
@@ -35,15 +40,19 @@ export class SlimeArrowFunctionCstToAstSingle {
             return null
         }
 
-        if (node.name === SlimeParser.prototype.ArrowParameters?.name) {
+        if (this.isCstName(node, SlimeParser.prototype.ArrowParameters?.name, 'ArrowParameters')) {
             return this.recoverExpressionFromArrowParameters(node.children?.[0])
         }
 
-        if (node.name === SlimeParser.prototype.BindingIdentifier?.name || node.name === 'BindingIdentifier') {
+        if (this.isCstName(node, SlimeParser.prototype.BindingIdentifier?.name, 'BindingIdentifier')) {
             return SlimeCstToAstUtils.createBindingIdentifierAst(node)
         }
 
-        if (node.name === SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name) {
+        if (this.isCstName(
+            node,
+            SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name,
+            'CoverParenthesizedExpressionAndArrowParameterList'
+        )) {
             const expressionCst = (node.children || []).find(child =>
                 child.getName() === SlimeParser.prototype.Expression?.name
                 || child.getName() === SlimeParser.prototype.AssignmentExpression?.name
@@ -67,7 +76,9 @@ export class SlimeArrowFunctionCstToAstSingle {
      * 鍒涘缓绠ご鍑芥暟 AST
      */
     createArrowFunctionAst(cst: SubhutiCst): SlimeArrowFunctionExpression {
-        SlimeCstToAstUtils.checkCstName(cst, SlimeParser.prototype.ArrowFunction?.name);
+        if (!this.isCstName(cst, SlimeParser.prototype.ArrowFunction?.name, 'ArrowFunction')) {
+            throw new Error(`Expected ArrowFunction, got ${cst.getName()}`)
+        }
         // ArrowFunction 缁撴瀯锛堝甫async锛夛細
         // children[0]: AsyncTok (鍙拷?
         // children[1]: BindingIdentifier 锟?CoverParenthesizedExpressionAndArrowParameterList (鍙傛暟)
@@ -112,10 +123,14 @@ export class SlimeArrowFunctionCstToAstSingle {
         // 瑙ｆ瀽鍙傛暟 - 鏍规嵁鑺傜偣绫诲瀷鍒嗗埆澶勭悊
         // SlimeFunctionParam 鏄寘瑁呯被鍨嬶紝鍖呭惈 param 鍜屽彲閫夌殑 commaToken
         let params: SlimeFunctionParam[];
-        if (arrowParametersCst.name === SlimeParser.prototype.BindingIdentifier?.name) {
+        if (this.isCstName(arrowParametersCst, SlimeParser.prototype.BindingIdentifier?.name, 'BindingIdentifier')) {
             // 鍗曚釜鍙傛暟锛歺 => x * 2
             params = [{param: SlimeCstToAstUtils.createBindingIdentifierAst(arrowParametersCst)}]
-        } else if (arrowParametersCst.name === SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name) {
+        } else if (this.isCstName(
+            arrowParametersCst,
+            SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name,
+            'CoverParenthesizedExpressionAndArrowParameterList'
+        )) {
             // 鎷彿鍙傛暟锟?a, b) => a + b 锟?() => 42
             // 鎻愬彇鎷彿 tokens
             for (const child of arrowParametersCst.children || []) {
@@ -139,10 +154,14 @@ export class SlimeArrowFunctionCstToAstSingle {
                 param: p,
                 commaToken: commaTokens[i] // 涓烘瘡涓弬鏁板叧鑱旈€楀彿 token锛堟渶鍚庝竴涓弬鏁版棤閫楀彿锟?
             }))
-        } else if (arrowParametersCst.name === SlimeParser.prototype.ArrowParameters?.name) {
+        } else if (this.isCstName(arrowParametersCst, SlimeParser.prototype.ArrowParameters?.name, 'ArrowParameters')) {
             // ArrowParameters 瑙勫垯锛氬叾瀛愯妭鐐瑰彲鑳芥槸 CoverParenthesizedExpressionAndArrowParameterList 锟?BindingIdentifier
             const firstChild = arrowParametersCst.children?.[0]
-            if (firstChild?.name === SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name) {
+            if (this.isCstName(
+                firstChild,
+                SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name,
+                'CoverParenthesizedExpressionAndArrowParameterList'
+            )) {
                 // 锟?CoverParenthesizedExpressionAndArrowParameterList 鎻愬彇鎷彿 tokens
                 for (const child of firstChild.getChildren() || []) {
                     if (child.getName() === 'LParen' || child.getValue() === '(') {
@@ -330,7 +349,13 @@ export class SlimeArrowFunctionCstToAstSingle {
      * 浠嶤overParenthesizedExpressionAndArrowParameterList鎻愬彇绠ご鍑芥暟鍙傛暟
      */
     createArrowParametersFromCoverGrammar(cst: SubhutiCst): SlimePattern[] {
-        SlimeCstToAstUtils.checkCstName(cst, SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name);
+        if (!this.isCstName(
+            cst,
+            SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name,
+            'CoverParenthesizedExpressionAndArrowParameterList'
+        )) {
+            throw new Error(cst.getName())
+        }
 
         // CoverParenthesizedExpressionAndArrowParameterList 鐨刢hildren缁撴瀯锟?
         // LParen + (FormalParameterList | Expression | ...) + RParen
@@ -458,7 +483,9 @@ export class SlimeArrowFunctionCstToAstSingle {
      * 鍒涘缓绠ご鍑芥暟鍙傛暟 AST
      */
     createArrowParametersAst(cst: SubhutiCst): SlimePattern[] {
-        SlimeCstToAstUtils.checkCstName(cst, SlimeParser.prototype.ArrowParameters?.name);
+        if (!this.isCstName(cst, SlimeParser.prototype.ArrowParameters?.name, 'ArrowParameters')) {
+            throw new Error(cst.getName())
+        }
 
         // ArrowParameters 鍙互鏄绉嶅舰寮忥紝杩欓噷绠€鍖栧锟?
         if (cst.getChildren().length === 0) {
@@ -468,13 +495,17 @@ export class SlimeArrowFunctionCstToAstSingle {
         const first = cst.getChildren()[0]
 
         // 鍗曚釜鍙傛暟锛欱indingIdentifier
-        if (first.getName() === SlimeParser.prototype.BindingIdentifier?.name) {
+        if (this.isCstName(first, SlimeParser.prototype.BindingIdentifier?.name, 'BindingIdentifier')) {
             const param = SlimeCstToAstUtils.createBindingIdentifierAst(first)
             return [param]
         }
 
         // CoverParenthesizedExpressionAndArrowParameterList: 鎷彿鍙傛暟
-        if (first.getName() === SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name) {
+        if (this.isCstName(
+            first,
+            SlimeParser.prototype.CoverParenthesizedExpressionAndArrowParameterList?.name,
+            'CoverParenthesizedExpressionAndArrowParameterList'
+        )) {
             return SlimeCstToAstUtils.createArrowParametersFromCoverGrammar(first)
         }
 

@@ -53,7 +53,7 @@ class com_subhuti_debug_FileLogWriter {
       if (!(e instanceof __QinJavaIoIOException)) {
         throw e;
       }
-      System.err.println(__qin_binary__("+", "[FileLogWriter] 初始化失败: ", e.getMessage()));
+      __QinJavaLangSystem.err.println(__qin_binary__("+", "[FileLogWriter] 初始化失败: ", e.getMessage()));
       this.__qin_field_writer = null;
     }
     return null;
@@ -68,11 +68,11 @@ class com_subhuti_debug_FileLogWriter {
         if (!(e instanceof __QinJavaIoIOException)) {
           throw e;
         }
-        System.err.println(__qin_binary__("+", "[FileLogWriter] 写入失败: ", e.getMessage()));
-        System.out.println(message);
+        __QinJavaLangSystem.err.println(__qin_binary__("+", "[FileLogWriter] 写入失败: ", e.getMessage()));
+        __QinJavaLangSystem.out.println(message);
       }
     } else {
-      System.out.println(message);
+      __QinJavaLangSystem.out.println(message);
     }
     return null;
   }
@@ -84,7 +84,7 @@ class com_subhuti_debug_FileLogWriter {
         if (!(e instanceof __QinJavaIoIOException)) {
           throw e;
         }
-        System.err.println(__qin_binary__("+", "[FileLogWriter] 关闭失败: ", e.getMessage()));
+        __QinJavaLangSystem.err.println(__qin_binary__("+", "[FileLogWriter] 关闭失败: ", e.getMessage()));
       }
       this.__qin_field_writer = null;
     }

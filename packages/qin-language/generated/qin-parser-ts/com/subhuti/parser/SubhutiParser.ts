@@ -65,7 +65,7 @@ class com_subhuti_parser_SubhutiParser extends com_subhuti_parser_SubhutiParserF
   }
 }
 const SubhutiParser = com_subhuti_parser_SubhutiParser;
-com_subhuti_parser_SubhutiParser.__qin_field_log = __QinSlf4jLoggerFactory.getLogger(({ getName() { return "com.subhuti.parser.SubhutiParser"; }, getSimpleName() { return "SubhutiParser"; }, getDeclaredConstructor(...__qin_types) { const __qin_ctor = com_subhuti_parser_SubhutiParser; return { newInstance(...__qin_args) { return new __qin_ctor(...__qin_args); } }; }, getConstructor(...__qin_types) { return this.getDeclaredConstructor(...__qin_types); }, equals(other) { return other != null && typeof other.getName === "function" && other.getName() === "com.subhuti.parser.SubhutiParser"; }, hashCode() { return 1130041035; }, toString() { return "class com.subhuti.parser.SubhutiParser"; } }));
+com_subhuti_parser_SubhutiParser.__qin_field_log = __QinSlf4jLoggerFactory.getLogger(__qin_java_class_info__(com_subhuti_parser_SubhutiParser, { name: "com.subhuti.parser.SubhutiParser" }));
 com_subhuti_parser_SubhutiParser.__qin_field_cachedCreateMethod = null;
 com_subhuti_parser_SubhutiParser.__qin_field_factoryInitialized = false;
 

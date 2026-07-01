@@ -1289,6 +1289,14 @@ public final class JavaEsmGlobal {
         return null;
     }
 
+    static Boolean __qin_has_own_property__(Object value, Object property) {
+        value = unwrapExportSlotValue(value);
+        if (value instanceof InterpretedInstance instance) {
+            return instance.hasOwnProperty(propertyKey(property));
+        }
+        return null;
+    }
+
     private static Object callMethod(Object target, Object methodName, Object... args) {
         Object rawTarget = target;
         target = unwrapExportSlotValue(target);
@@ -3916,6 +3924,8 @@ public final class JavaEsmGlobal {
         private final Map<String, AccessorProperty> superAccessors;
         private final Map<String, Object> prototypeProperties;
         private final List<Object> prototypeChain;
+        private final Set<String> ownMethodNames;
+        private final Set<String> ownAccessorNames;
         private Object javaSuperInstance;
         private Object constructorFunction;
 
@@ -3938,12 +3948,34 @@ public final class JavaEsmGlobal {
                 Map<String, AccessorProperty> superAccessors,
                 Map<String, Object> prototypeProperties,
                 List<Object> prototypeChain) {
+            this(
+                    methods,
+                    accessors,
+                    superMethods,
+                    superAccessors,
+                    prototypeProperties,
+                    prototypeChain,
+                    methods.keySet(),
+                    accessors.keySet());
+        }
+
+        private InterpretedInstance(
+                Map<String, InterpretedFunction> methods,
+                Map<String, AccessorProperty> accessors,
+                Map<String, InterpretedFunction> superMethods,
+                Map<String, AccessorProperty> superAccessors,
+                Map<String, Object> prototypeProperties,
+                List<Object> prototypeChain,
+                Collection<String> ownMethodNames,
+                Collection<String> ownAccessorNames) {
             this.methods = methods;
             this.accessors = accessors;
             this.superMethods = superMethods;
             this.superAccessors = superAccessors;
             this.prototypeProperties = prototypeProperties;
             this.prototypeChain = List.copyOf(prototypeChain);
+            this.ownMethodNames = Set.copyOf(ownMethodNames);
+            this.ownAccessorNames = Set.copyOf(ownAccessorNames);
         }
 
         @Override
@@ -4145,6 +4177,13 @@ public final class JavaEsmGlobal {
 
         private boolean hasOwnField(String name) {
             return fields.containsKey(name) || fields.containsKey(javaFieldAliasName(name));
+        }
+
+        private boolean hasOwnProperty(String name) {
+            return hasOwnField(name)
+                    || ownAccessorNames.contains(name)
+                    || ownMethodNames.contains(name)
+                    || prototypeProperties.containsKey(name);
         }
 
         private String javaFieldAliasName(String name) {
@@ -4698,13 +4737,17 @@ public final class JavaEsmGlobal {
                 }
                 InterpretedFunction parent = resolveSuperClassFunction();
                 List<Object> prototypeChain = prototypeChain();
+                Map<String, InterpretedFunction> declaredMethods = collectInstanceMethods();
+                Map<String, AccessorProperty> declaredAccessors = collectInstanceAccessors();
                 InterpretedInstance instance = new InterpretedInstance(
                         collectInheritedInstanceMethods(),
                         collectInheritedInstanceAccessors(),
                         parent == null ? Map.of() : parent.collectInheritedInstanceMethods(),
                         parent == null ? Map.of() : parent.collectInheritedInstanceAccessors(),
                         functionPrototypeProperties(),
-                        prototypeChain);
+                        prototypeChain,
+                        declaredMethods.keySet(),
+                        declaredAccessors.keySet());
                 instance.setConstructorFunction(this);
                 if (parent != null) {
                     parent.installInheritedInstanceFields(instance);

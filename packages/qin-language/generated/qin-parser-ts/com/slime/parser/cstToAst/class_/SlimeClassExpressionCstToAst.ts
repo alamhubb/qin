@@ -1,3 +1,9 @@
+import { com_slime_ast_AstNode, com_slime_ast_AstNode as AstNode } from "../../../ast/AstNode.ts";
+import { com_slime_ast_Expression, com_slime_ast_Expression as Expression } from "../../../ast/Expression.ts";
+import { com_slime_ast_nodes_expressions_ClassExpression, com_slime_ast_nodes_expressions_ClassExpression as ClassExpression } from "../../../ast/nodes/expressions/ClassExpression.ts";
+import { com_slime_ast_nodes_expressions_Identifier, com_slime_ast_nodes_expressions_Identifier as Identifier } from "../../../ast/nodes/expressions/Identifier.ts";
+import { com_slime_ast_nodes_misc_ClassBody, com_slime_ast_nodes_misc_ClassBody as ClassBody } from "../../../ast/nodes/misc/ClassBody.ts";
+import { com_slime_ast_nodes_misc_Decorator, com_slime_ast_nodes_misc_Decorator as Decorator } from "../../../ast/nodes/misc/Decorator.ts";
 import { com_slime_parser_cstToAst_SlimeAstCreateUtils, com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "../SlimeAstCreateUtils.ts";
 import { com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst, com_slime_parser_cstToAst_identifier_SlimeIdentifierCstToAst as SlimeIdentifierCstToAst } from "../identifier/SlimeIdentifierCstToAst.ts";
 import { com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst, com_slime_parser_cstToAst_typescript_SlimeTSDecoratorCstToAst as SlimeTSDecoratorCstToAst } from "../typescript/SlimeTSDecoratorCstToAst.ts";
@@ -154,8 +160,8 @@ class com_slime_parser_cstToAst_class__SlimeClassExpressionCstToAst {
 }
 const SlimeClassExpressionCstToAst = com_slime_parser_cstToAst_class__SlimeClassExpressionCstToAst;
 class com_slime_parser_cstToAst_class__SlimeClassExpressionCstToAst$ClassTailParts {
-  __qin_field_superClass: any = null as any;
-  __qin_field_body: any = null as any;
+  __qin_field_superClass: com_slime_ast_Expression | null = null as any;
+  __qin_field_body: com_slime_ast_nodes_misc_ClassBody | null = null as any;
   __qin_field_implementsTypes: any = null as any;
   constructor(...__qin_args: any[]) {
     switch (__qin_args.length) {
@@ -169,7 +175,7 @@ class com_slime_parser_cstToAst_class__SlimeClassExpressionCstToAst$ClassTailPar
       default: throw new Error("Unsupported Java constructor arity: SlimeClassExpressionCstToAst$ClassTailParts/" + __qin_args.length);
     }
   }
-  __qin_constructor_com_slime_parser_cstToAst_class__SlimeClassExpressionCstToAst$ClassTailParts_3(superClass: any, body: any, implementsTypes: any): void {
+  __qin_constructor_com_slime_parser_cstToAst_class__SlimeClassExpressionCstToAst$ClassTailParts_3(superClass: com_slime_ast_Expression, body: com_slime_ast_nodes_misc_ClassBody, implementsTypes: any): void {
     this.__qin_field_superClass = null;
     this.__qin_field_body = null;
     this.__qin_field_implementsTypes = null;

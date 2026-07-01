@@ -1,5 +1,6 @@
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../struct/SubhutiCst.ts";
 import { com_subhuti_debug_SubhutiTraceDebuggerCore, com_subhuti_debug_SubhutiTraceDebuggerCore as SubhutiTraceDebuggerCore } from "./SubhutiTraceDebuggerCore.ts";
+import { com_subhuti_debug_LogWriter, com_subhuti_debug_LogWriter as LogWriter } from "./LogWriter.ts";
 import { com_subhuti_debug_ConsoleLogWriter, com_subhuti_debug_ConsoleLogWriter as ConsoleLogWriter } from "./ConsoleLogWriter.ts";
 import { com_subhuti_debug_FileLogWriter, com_subhuti_debug_FileLogWriter as FileLogWriter } from "./FileLogWriter.ts";
 import { com_subhuti_debug_ProjectRootFinder, com_subhuti_debug_ProjectRootFinder as ProjectRootFinder } from "./ProjectRootFinder.ts";
@@ -19,7 +20,7 @@ const StringBuilder = __QinJavaLangStringBuilder;
 const ArrayList = __QinJavaUtilArrayList;
 const Double = __QinJavaLangDouble;
 class com_subhuti_debug_SubhutiTraceDebugger extends com_subhuti_debug_SubhutiTraceDebuggerCore {
-  __qin_field_logWriter: any = null as any;
+  __qin_field_logWriter: com_subhuti_debug_LogWriter | null = null as any;
   static __qin_field_INDENT: string | null = null as any;
   __qin_field_realtimeOutput: boolean | null = null as any;
   constructor(...__qin_args: any[]) {

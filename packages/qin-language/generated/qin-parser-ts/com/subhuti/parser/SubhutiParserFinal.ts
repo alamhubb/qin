@@ -94,19 +94,19 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
   }
   debugLog(message: string): any {
     if (this.__qin_field_debugMode) {
-      System.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[DEBUG] ", this.__qin_field_currentPosition), ": "), message));
+      __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[DEBUG] ", this.__qin_field_currentPosition), ": "), message));
     }
     return null;
   }
   debugEnter(ruleName: string): any {
     if (this.__qin_field_debugMode) {
-      System.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[ENTER] ", ruleName), " at "), this.__qin_field_currentPosition));
+      __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[ENTER] ", ruleName), " at "), this.__qin_field_currentPosition));
     }
     return null;
   }
   debugExit(ruleName: string, success: boolean): any {
     if (this.__qin_field_debugMode) {
-      System.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[EXIT] ", ruleName), " "), (() => {
+      __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[EXIT] ", ruleName), " "), (() => {
       if (success) {
         return "SUCCESS";
       }
@@ -117,9 +117,9 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
   }
   debugCstStack(): any {
     if (this.__qin_field_debugMode) {
-      System.out.println(__qin_binary__("+", "[CST STACK] size=", this.__qin_field_cstStack.size()));
+      __QinJavaLangSystem.out.println(__qin_binary__("+", "[CST STACK] size=", this.__qin_field_cstStack.size()));
       for (let i: any = 0.0; __qin_binary__("<", i, this.__qin_field_cstStack.size()); i = __qin_binary__("+", i, 1.0)) {
-        System.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "  [", i), "] "), this.__qin_field_cstStack.get(i).getName()));
+        __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "  [", i), "] "), this.__qin_field_cstStack.get(i).getName()));
       }
     }
     return null;

@@ -53,11 +53,7 @@ public final class QinEsmRuntimeFeatureValidator {
                     "QIN_JS_UNSUPPORTED_ARGUMENTS_OBJECT",
                     "the JavaScript arguments object is not supported by the Qin JVM target"),
             new UnsupportedFeatureRule(
-                    Pattern.compile("\\bObject\\s*\\.\\s*defineProperty\\s*\\("),
-                    "QIN_JS_UNSUPPORTED_OBJECT_DEFINE_PROPERTY",
-                    "Object.defineProperty is not supported by the Qin JVM target"),
-            new UnsupportedFeatureRule(
-                    Pattern.compile("\\b(?:Array|String|Object|Number|Boolean|Promise|Set|Map|RegExp|Date)\\s*\\.\\s*prototype\\s*(?:\\.\\s*[A-Za-z_$][\\w$]*|\\[[^\\]]+\\])\\s*(?:=|\\+\\+|--)"),
+                    Pattern.compile("\\b(?:Array|String|Object|Number|Boolean|Promise|Set|Map|RegExp|Date)\\s*\\.\\s*prototype\\s*(?:\\.\\s*[A-Za-z_$][\\w$]*|\\[[^\\]]+\\])\\s*(?:(?<![=!<>])=(?!=)|\\+\\+|--)"),
                     "QIN_JS_UNSUPPORTED_BUILTIN_PROTOTYPE_MUTATION",
                     "mutating built-in prototypes is not supported by the Qin JVM target"),
             new UnsupportedFeatureRule(

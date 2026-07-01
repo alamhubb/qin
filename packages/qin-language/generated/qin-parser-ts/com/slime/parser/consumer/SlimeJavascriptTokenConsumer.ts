@@ -26,7 +26,7 @@ class com_slime_parser_consumer_SlimeJavascriptTokenConsumer extends com_subhuti
   }
   consumeIdentifierValue(value: string): any {
     try {
-      let laMethod: any = this.requireMethod(this.__qin_field_parser.getClass(), "LA", ({ getName() { return "int"; }, getSimpleName() { return "int"; }, equals(other) { return other != null && typeof other.getName === "function" && other.getName() === "int"; }, hashCode() { return 104431; }, toString() { return "class int"; } }));
+      let laMethod: any = this.requireMethod(this.__qin_field_parser.getClass(), "LA", __qin_java_class_info__(null, { name: "int" }));
       let token: any = (laMethod.invoke(this.__qin_field_parser, 1.0));
       if ((() => {
       if ((() => {

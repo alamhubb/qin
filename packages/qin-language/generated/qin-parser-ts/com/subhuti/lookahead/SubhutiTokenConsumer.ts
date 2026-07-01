@@ -52,7 +52,7 @@ class com_subhuti_lookahead_SubhutiTokenConsumer {
   static consumeTokenMatchMethod(parserClass: any): any {
     return com_subhuti_lookahead_SubhutiTokenConsumer.__qin_field_CONSUME_TOKEN_MATCH_METHODS.computeIfAbsent(parserClass, __qin_java_functional((clazz) => {
       try {
-        let method: any = clazz.getMethod("_consumeTokenMatch", ({ getName() { return "java.lang.String"; }, getSimpleName() { return "String"; }, equals(other) { return other != null && typeof other.getName === "function" && other.getName() === "java.lang.String"; }, hashCode() { return 1195259493; }, toString() { return "class java.lang.String"; } }), ({ getName() { return "com.subhuti.struct.LexerMode"; }, getSimpleName() { return "LexerMode"; }, getDeclaredConstructor(...__qin_types) { const __qin_ctor = com_subhuti_struct_LexerMode; return { newInstance(...__qin_args) { return new __qin_ctor(...__qin_args); } }; }, getConstructor(...__qin_types) { return this.getDeclaredConstructor(...__qin_types); }, equals(other) { return other != null && typeof other.getName === "function" && other.getName() === "com.subhuti.struct.LexerMode"; }, hashCode() { return -463238769; }, toString() { return "class com.subhuti.struct.LexerMode"; } }));
+        let method: any = clazz.getMethod("_consumeTokenMatch", __qin_java_class_info__(__QinJavaLangString, { name: "java.lang.String" }), __qin_java_class_info__(com_subhuti_struct_LexerMode, { name: "com.subhuti.struct.LexerMode" }));
         method.setAccessible(true);
         return method;
       } catch (e) {

@@ -26,7 +26,9 @@ import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrIfStatement;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
 import com.qin.lang.ir.QinIrJavaClassLiteralExpression;
+import com.qin.lang.ir.QinIrJavaInstanceofExpression;
 import com.qin.lang.ir.QinIrJavaInstanceofPatternExpression;
+import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaMethodReferenceExpression;
 import com.qin.lang.ir.QinIrJavaNewExpression;
 import com.qin.lang.ir.QinIrLetExpression;
@@ -47,6 +49,9 @@ import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStatement;
 import com.qin.lang.ir.QinIrStatementExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinIrSwitchCase;
+import com.qin.lang.ir.QinIrSwitchExpression;
+import com.qin.lang.ir.QinIrSwitchStatement;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrThrowStatement;
 import com.qin.lang.ir.QinIrTryStatement;
@@ -74,6 +79,8 @@ import com.slime.java.ast.JavaAstFieldDeclaration;
 import com.slime.java.ast.JavaAstForStatement;
 import com.slime.java.ast.JavaAstIdentifierExpression;
 import com.slime.java.ast.JavaAstIfStatement;
+import com.slime.java.ast.JavaAstImportDeclaration;
+import com.slime.java.ast.JavaAstInstanceofExpression;
 import com.slime.java.ast.JavaAstInstanceofPatternExpression;
 import com.slime.java.ast.JavaAstLambdaExpression;
 import com.slime.java.ast.JavaAstLocalVariableDeclaration;
@@ -89,12 +96,16 @@ import com.slime.java.ast.JavaAstProgram;
 import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaAstStringLiteral;
+import com.slime.java.ast.JavaAstSwitchCase;
+import com.slime.java.ast.JavaAstSwitchExpression;
+import com.slime.java.ast.JavaAstSwitchStatement;
 import com.slime.java.ast.JavaAstThrowStatement;
 import com.slime.java.ast.JavaAstThisExpression;
 import com.slime.java.ast.JavaAstTryStatement;
 import com.slime.java.ast.JavaAstUnaryExpression;
 import com.slime.java.ast.JavaAstUpdateExpression;
 import com.slime.java.ast.JavaAstWhileStatement;
+import com.slime.java.ast.JavaAstYieldStatement;
 import com.slime.java.ast.JavaCstToAst;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -125,8 +136,10 @@ public final class QinJavaAstIrLowerer {
         QinJavaSemanticModel semanticModel = semanticAnalyzer.analyzePrograms(programs);
         Map<String, QinJavaSemanticClass> semanticClasses = semanticClassesByBinaryName(semanticModel);
         List<QinIrClassDeclaration> classes = new ArrayList<>();
+        List<QinIrJavaImport> javaImports = new ArrayList<>();
         for (JavaAstProgram program : programs) {
             Map<String, String> importedTypes = semanticAnalyzer.importedTypes(program.imports());
+            javaImports.addAll(lowerJavaImports(program.imports(), importedTypes));
             for (JavaAstClassDeclaration classDeclaration : program.classes()) {
                 lowerClassAndNested(
                         program.packageName(),
@@ -142,7 +155,7 @@ public final class QinJavaAstIrLowerer {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(),
+                javaImports,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -154,6 +167,7 @@ public final class QinJavaAstIrLowerer {
         QinJavaSemanticModel semanticModel = semanticAnalyzer.analyzePrograms(List.of(program));
         Map<String, String> importedTypes = semanticAnalyzer.importedTypes(program.imports());
         Map<String, QinJavaSemanticClass> semanticClasses = semanticClassesByBinaryName(semanticModel);
+        List<QinIrJavaImport> javaImports = lowerJavaImports(program.imports(), importedTypes);
         List<QinIrClassDeclaration> classes = new ArrayList<>();
         for (JavaAstClassDeclaration classDeclaration : program.classes()) {
             lowerClassAndNested(
@@ -169,12 +183,41 @@ public final class QinJavaAstIrLowerer {
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(),
+                javaImports,
                 List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
                 classes);
+    }
+
+    private List<QinIrJavaImport> lowerJavaImports(
+            List<JavaAstImportDeclaration> imports,
+            Map<String, String> importedTypes) {
+        List<QinIrJavaImport> lowered = new ArrayList<>();
+        for (JavaAstImportDeclaration importDeclaration : imports) {
+            if (importDeclaration.staticImport() || importDeclaration.onDemand()) {
+                continue;
+            }
+            String ownerBinaryName = importedTypes.get(simpleClassName(importDeclaration.name()));
+            if (ownerBinaryName == null || ownerBinaryName.isBlank()) {
+                continue;
+            }
+            String localName = simpleClassName(ownerBinaryName);
+            String moduleName = "java-source:" + packageName(ownerBinaryName);
+            lowered.add(new QinIrJavaImport(moduleName, localName, localName, ownerBinaryName));
+        }
+        return lowered;
+    }
+
+    private String simpleClassName(String binaryName) {
+        int dot = binaryName.lastIndexOf('.');
+        return dot < 0 ? binaryName : binaryName.substring(dot + 1);
+    }
+
+    private String packageName(String binaryName) {
+        int dot = binaryName.lastIndexOf('.');
+        return dot < 0 ? "" : binaryName.substring(0, dot);
     }
 
     private void lowerClassAndNested(
@@ -614,6 +657,7 @@ public final class QinJavaAstIrLowerer {
                     || statement instanceof JavaAstBreakStatement
                     || statement instanceof JavaAstContinueStatement
                     || statement instanceof JavaAstThrowStatement
+                    || statement instanceof JavaAstSwitchStatement
                     || statement instanceof JavaAstTryStatement
                     || statement instanceof JavaAstWhileStatement) {
                 return true;
@@ -847,6 +891,15 @@ public final class QinJavaAstIrLowerer {
                                 new LinkedHashSet<>(scopedValueNames))));
                 continue;
             }
+            if (statement instanceof JavaAstSwitchStatement switchStatement) {
+                statements.add(lowerSwitchStatementNode(
+                        switchStatement,
+                        packageName,
+                        importedTypes,
+                        baseLocals,
+                        scopedValueNames));
+                continue;
+            }
             if (statement instanceof JavaAstForStatement forStatement) {
                 statements.add(lowerForStatementNode(forStatement, packageName, importedTypes, baseLocals, scopedValueNames));
                 continue;
@@ -889,6 +942,82 @@ public final class QinJavaAstIrLowerer {
             }
         }
         return statements;
+    }
+
+    private QinIrSwitchStatement lowerSwitchStatementNode(
+            JavaAstSwitchStatement switchStatement,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> baseLocals,
+            Set<String> valueNames) {
+        List<QinIrSwitchCase> cases = new ArrayList<>();
+        for (JavaAstSwitchCase switchCase : switchStatement.cases()) {
+            cases.add(new QinIrSwitchCase(
+                    switchCase.test() == null
+                            ? null
+                            : lowerExpression(switchCase.test(), packageName, importedTypes, baseLocals, valueNames),
+                    lowerJavaStatements(
+                            switchCase.statements(),
+                            packageName,
+                            importedTypes,
+                            baseLocals,
+                            new LinkedHashSet<>(valueNames))));
+        }
+        return new QinIrSwitchStatement(
+                lowerExpression(switchStatement.discriminant(), packageName, importedTypes, baseLocals, valueNames),
+                cases);
+    }
+
+    private QinIrSwitchExpression lowerSwitchExpressionNode(
+            JavaAstSwitchExpression switchExpression,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> baseLocals,
+            Set<String> valueNames) {
+        List<QinIrSwitchCase> cases = new ArrayList<>();
+        for (JavaAstSwitchCase switchCase : switchExpression.cases()) {
+            cases.add(new QinIrSwitchCase(
+                    switchCase.test() == null
+                            ? null
+                            : lowerExpression(switchCase.test(), packageName, importedTypes, baseLocals, valueNames),
+                    lowerSwitchExpressionCaseStatements(
+                            switchCase.statements(),
+                            packageName,
+                            importedTypes,
+                            baseLocals,
+                            new LinkedHashSet<>(valueNames))));
+        }
+        return new QinIrSwitchExpression(
+                lowerExpression(switchExpression.discriminant(), packageName, importedTypes, baseLocals, valueNames),
+                cases);
+    }
+
+    private List<QinIrStatement> lowerSwitchExpressionCaseStatements(
+            List<JavaAstStatement> sourceStatements,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrExpression> baseLocals,
+            Set<String> valueNames) {
+        List<QinIrStatement> lowered = new ArrayList<>();
+        for (JavaAstStatement statement : sourceStatements) {
+            if (statement instanceof JavaAstYieldStatement yieldStatement) {
+                lowered.add(new QinIrReturnStatement(
+                        lowerOptionalExpression(yieldStatement.expression(), packageName, importedTypes, baseLocals, valueNames)));
+                continue;
+            }
+            if (statement instanceof JavaAstExpressionStatement expressionStatement) {
+                lowered.add(new QinIrReturnStatement(
+                        lowerExpression(expressionStatement.expression(), packageName, importedTypes, baseLocals, valueNames)));
+                continue;
+            }
+            lowered.addAll(lowerJavaStatements(
+                    List.of(statement),
+                    packageName,
+                    importedTypes,
+                    baseLocals,
+                    valueNames));
+        }
+        return lowered;
     }
 
     private QinIrForStatement lowerForStatementNode(
@@ -1480,8 +1609,11 @@ public final class QinJavaAstIrLowerer {
                         packageName,
                         importedTypes,
                         locals,
-                                lambdaValueNames));
+                        lambdaValueNames));
             }
+        }
+        if (expression instanceof JavaAstSwitchExpression switchExpression) {
+            return lowerSwitchExpressionNode(switchExpression, packageName, importedTypes, locals, valueNames);
         }
         if (expression instanceof JavaAstClassLiteralExpression classLiteral) {
             return new QinIrJavaClassLiteralExpression(
@@ -1499,7 +1631,7 @@ public final class QinJavaAstIrLowerer {
             QinIrTypeRef ownerType = staticOwnerType(memberAccess.receiver(), packageName, importedTypes, valueNames);
             if (ownerType != null) {
                 return new QinIrMemberAccessExpression(
-                        semanticAnalyzer.qualifiedName(memberAccess.receiver()),
+                        ownerType.binaryName(),
                         memberAccess.propertyName());
             }
             return new QinIrPropertyAccessExpression(
@@ -1648,6 +1780,16 @@ public final class QinJavaAstIrLowerer {
                     semanticAnalyzer.rawTypeName(instanceofPattern.typeName()),
                     ownerType.binaryName(),
                     instanceofPattern.variableName());
+        }
+        if (expression instanceof JavaAstInstanceofExpression instanceofExpression) {
+            QinIrTypeRef ownerType = semanticAnalyzer.resolveType(
+                    instanceofExpression.typeName(),
+                    packageName,
+                    importedTypes);
+            return new QinIrJavaInstanceofExpression(
+                    lowerExpression(instanceofExpression.value(), packageName, importedTypes, locals, valueNames),
+                    semanticAnalyzer.rawTypeName(instanceofExpression.typeName()),
+                    ownerType.binaryName());
         }
         if (expression instanceof JavaAstBinaryExpression binary) {
             if ("&&".equals(binary.operator())) {

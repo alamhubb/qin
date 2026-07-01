@@ -30,6 +30,17 @@
       "default": "./SlimeCstToAstBridge.ts"
     },
 
+    "./SubhutiSourceLocation": {
+      "types": "./com/subhuti/struct/SubhutiSourceLocation.ts",
+      "import": "./com/subhuti/struct/SubhutiSourceLocation.ts",
+      "default": "./com/subhuti/struct/SubhutiSourceLocation.ts"
+    },
+    "./SubhutiPosition": {
+      "types": "./com/subhuti/struct/SubhutiPosition.ts",
+      "import": "./com/subhuti/struct/SubhutiPosition.ts",
+      "default": "./com/subhuti/struct/SubhutiPosition.ts"
+    },
+
     "./entry": {
       "types": "./com/qin/parser/QinParser.ts",
       "import": "./com/qin/parser/QinParser.ts",

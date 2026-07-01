@@ -13,7 +13,7 @@ class com_subhuti_debug_ConsoleLogWriter {
     }
   }
   write(message: string): any {
-    System.out.println(message);
+    __QinJavaLangSystem.out.println(message);
     return null;
   }
   close(): any {

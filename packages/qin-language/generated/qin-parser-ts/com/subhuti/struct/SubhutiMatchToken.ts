@@ -113,7 +113,7 @@ class com_subhuti_struct_SubhutiMatchToken {
     return this.__qin_field_hasLineBreakBefore;
   }
   hasLineBreakBefore(): any {
-    return __QinJavaLangString.equals(Boolean.TRUE, this.__qin_field_hasLineBreakBefore);
+    return __QinJavaLangString.equals(__QinJavaLangBoolean.TRUE, this.__qin_field_hasLineBreakBefore);
   }
   getLength(): any {
     return __QinJavaLangString.length(this.__qin_field_tokenValue);

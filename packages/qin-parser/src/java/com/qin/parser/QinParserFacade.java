@@ -70,7 +70,7 @@ public final class QinParserFacade {
     }
 
     Program createProgramAst(SubhutiCst cst) {
-        Program programAst = QinProgramCstToAst.createProgramAst(cst);
+        Program programAst = new QinProgramCstToAst().createProgramAst(cst);
         if (programAst == null) {
             throw new IllegalArgumentException("Slime CST->AST returned null Program");
         }

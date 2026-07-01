@@ -13,7 +13,6 @@ import com.slime.ast.nodes.modules.ExportDefaultDeclaration;
 import com.slime.ast.nodes.modules.ExportNamedDeclaration;
 import com.slime.parser.cstToAst.SlimeAstCreateUtils;
 import com.slime.parser.cstToAst.SlimeCstToAstUtils;
-import com.slime.parser.cstToAst.class_.SlimeClassCstToAst;
 import com.slime.parser.cstToAst.typescript.SlimeTSDecoratorCstToAst;
 import com.subhuti.struct.SubhutiCst;
 
@@ -22,11 +21,12 @@ import java.util.List;
 
 final class QinProgramCstToAst {
     private static final String OBJECT_INTERNAL_PREFIX = "__QinObject_";
+    private final SlimeCstToAstUtils slimeTransformer = new SlimeCstToAstUtils();
 
-    private QinProgramCstToAst() {
+    QinProgramCstToAst() {
     }
 
-    static Program createProgramAst(SubhutiCst cst) {
+    Program createProgramAst(SubhutiCst cst) {
         List<AstNode> body = new ArrayList<>();
         collectBody(cst, body);
         return SlimeAstCreateUtils.createProgram(
@@ -35,7 +35,7 @@ final class QinProgramCstToAst {
                 SlimeAstCreateUtils.resolveSubhutiLocation(cst));
     }
 
-    private static void collectBody(SubhutiCst cst, List<AstNode> body) {
+    private void collectBody(SubhutiCst cst, List<AstNode> body) {
         if (cst == null) {
             return;
         }
@@ -52,7 +52,7 @@ final class QinProgramCstToAst {
         }
     }
 
-    private static List<AstNode> createModuleItemAst(SubhutiCst cst) {
+    private List<AstNode> createModuleItemAst(SubhutiCst cst) {
         SubhutiCst exportDeclaration = directChildByName(cst, "ExportDeclaration");
         if (exportDeclaration != null && containsName(exportDeclaration, "QinObjectDeclarationBody")) {
             return createExportQinObjectNodes(exportDeclaration);
@@ -63,24 +63,24 @@ final class QinProgramCstToAst {
             return createQinObjectNodes(qinObject, false, false);
         }
 
-        AstNode node = SlimeCstToAstUtils.createProgramAst(cst).body().stream().findFirst().orElse(null);
+        AstNode node = slimeTransformer.toProgram(cst).body().stream().findFirst().orElse(null);
         return node == null ? List.of() : List.of(node);
     }
 
-    private static List<AstNode> createExportQinObjectNodes(SubhutiCst exportDeclaration) {
+    private List<AstNode> createExportQinObjectNodes(SubhutiCst exportDeclaration) {
         boolean defaultExport = hasDirectToken(exportDeclaration, "Default", "default");
         SubhutiCst body = findFirstByName(exportDeclaration, "QinObjectDeclarationBody");
         return createQinObjectNodes(body, true, defaultExport, exportDeclaration);
     }
 
-    private static List<AstNode> createQinObjectNodes(
+    private List<AstNode> createQinObjectNodes(
             SubhutiCst qinObject,
             boolean exported,
             boolean defaultExport) {
         return createQinObjectNodes(qinObject, exported, defaultExport, qinObject);
     }
 
-    private static List<AstNode> createQinObjectNodes(
+    private List<AstNode> createQinObjectNodes(
             SubhutiCst qinObject,
             boolean exported,
             boolean defaultExport,
@@ -114,7 +114,7 @@ final class QinProgramCstToAst {
         return List.of(parts.internalClass(), publicDeclaration);
     }
 
-    private static ObjectParts createObjectParts(SubhutiCst qinObject, SubhutiCst wrapper) {
+    private ObjectParts createObjectParts(SubhutiCst qinObject, SubhutiCst wrapper) {
         SubhutiCst body = "QinObjectDeclarationBody".equals(qinObject.getName())
                 ? qinObject
                 : findFirstByName(qinObject, "QinObjectDeclarationBody");
@@ -142,8 +142,8 @@ final class QinProgramCstToAst {
         return new ObjectParts(classDeclaration, singleton, publicId);
     }
 
-    private static ClassDeclaration createInternalClass(SubhutiCst body, SubhutiCst wrapper, Identifier internalId) {
-        ClassDeclaration classDeclaration = SlimeClassCstToAst.createClassDeclarationAst(body);
+    private ClassDeclaration createInternalClass(SubhutiCst body, SubhutiCst wrapper, Identifier internalId) {
+        ClassDeclaration classDeclaration = (ClassDeclaration) slimeTransformer.createClassDeclarationAst(body);
         var decorators = classDeclaration.decorators();
         SubhutiCst decoratorNode = findFirstByName(wrapper, "TSDecorators");
         if (decoratorNode != null) {
@@ -159,12 +159,12 @@ final class QinProgramCstToAst {
                 classDeclaration.location());
     }
 
-    private static Identifier firstIdentifierAfterObjectKeyword(SubhutiCst cst) {
+    private Identifier firstIdentifierAfterObjectKeyword(SubhutiCst cst) {
         boolean[] seenObjectKeyword = new boolean[] { false };
         return firstIdentifierAfterObjectKeyword(cst, seenObjectKeyword);
     }
 
-    private static Identifier firstIdentifierAfterObjectKeyword(SubhutiCst cst, boolean[] seenObjectKeyword) {
+    private Identifier firstIdentifierAfterObjectKeyword(SubhutiCst cst, boolean[] seenObjectKeyword) {
         if (cst == null) {
             return null;
         }
@@ -174,7 +174,7 @@ final class QinProgramCstToAst {
         }
         if (seenObjectKeyword[0] && "BindingIdentifier".equals(cst.getName())) {
             SubhutiCst identifier = findFirstByName(cst, "Identifier");
-            return SlimeCstToAstUtils.createIdentifierAst(identifier == null ? cst : identifier);
+            return slimeTransformer.createIdentifierAst(identifier == null ? cst : identifier);
         }
         for (SubhutiCst child : safeChildren(cst)) {
             Identifier found = firstIdentifierAfterObjectKeyword(child, seenObjectKeyword);
