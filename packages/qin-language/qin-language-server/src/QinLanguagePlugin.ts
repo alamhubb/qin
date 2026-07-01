@@ -174,10 +174,6 @@ export function lowerQinToTypeScriptWithMappings(
     return createTransformErrorResult(sourceCode, 'Generated Qin parser package is not available')
   }
   if (!parsed.ok || !parsed.cst) {
-    const typeScriptSubsetResult = createTypeScriptSubsetEditingResult(sourceCode)
-    if (typeScriptSubsetResult) {
-      return typeScriptSubsetResult
-    }
     return createTransformErrorResult(sourceCode, parsed.error ?? 'Generated Qin parser rejected source')
   }
   return lowerProgramCstToTypeScript(sourceCode, parsed.cst, options.mode ?? 'strict')
@@ -190,25 +186,7 @@ function stripBom(source: string): string {
 function lowerProgramCstToTypeScript(source: string, cst: unknown, mode: 'strict' | 'editor'): QinLoweringResult {
   const objectDeclarations = findQinObjectDeclarations(cst)
   if (objectDeclarations.length === 0) {
-    if (mode === 'editor') {
-      const memberCompletionOffsets = collectDanglingMemberAccessOffsets(source)
-      if (memberCompletionOffsets.length) {
-        logToFile('[QinLowering] editor member access projection', JSON.stringify({
-          offsets: memberCompletionOffsets,
-          preview: source.slice(0, 120),
-        }))
-        return createTypeScriptSubsetEditingMemberAccessResult(source, memberCompletionOffsets)
-      }
-    }
-    return {
-      code: source,
-      mappings: createCodeMappings([{
-        sourceOffset: 0,
-        generatedOffset: 0,
-        length: source.length,
-        generatedLength: source.length,
-      }]),
-    }
+    return createSourceProjectionResult(source, mode)
   }
 
   let cursor = 0
@@ -225,13 +203,17 @@ function lowerProgramCstToTypeScript(source: string, cst: unknown, mode: 'strict
     if (sourceEnd <= sourceStart) {
       return
     }
-    const generatedStart = appendGenerated(source.slice(sourceStart, sourceEnd))
-    mappings.push({
-      sourceOffset: sourceStart,
-      generatedOffset: generatedStart,
-      length: sourceEnd - sourceStart,
-      generatedLength: sourceEnd - sourceStart,
-    })
+    if (mode === 'editor') {
+      appendEditorProjectedMappedSource(source, sourceStart, sourceEnd, appendGenerated, mappings)
+    } else {
+      const generatedStart = appendGenerated(source.slice(sourceStart, sourceEnd))
+      mappings.push({
+        sourceOffset: sourceStart,
+        generatedOffset: generatedStart,
+        length: sourceEnd - sourceStart,
+        generatedLength: sourceEnd - sourceStart,
+      })
+    }
   }
   const appendMappedGenerated = (
     text: string,
@@ -305,6 +287,86 @@ function lowerProgramCstToTypeScript(source: string, cst: unknown, mode: 'strict
     code: generated,
     mappings: createCodeMappings(mappings),
   }
+}
+
+function createSourceProjectionResult(source: string, mode: 'strict' | 'editor'): QinLoweringResult {
+  if (mode !== 'editor') {
+    return {
+      code: source,
+      mappings: createCodeMappings([{
+        sourceOffset: 0,
+        generatedOffset: 0,
+        length: source.length,
+        generatedLength: source.length,
+      }]),
+    }
+  }
+
+  let generated = ''
+  const mappings: QinTextMapping[] = []
+  appendEditorProjectedMappedSource(
+    source,
+    0,
+    source.length,
+    text => {
+      const start = generated.length
+      generated += text
+      return start
+    },
+    mappings,
+  )
+  return {
+    code: generated,
+    mappings: createCodeMappings(mappings),
+  }
+}
+
+function appendEditorProjectedMappedSource(
+  source: string,
+  sourceStart: number,
+  sourceEnd: number,
+  appendGenerated: (text: string) => number,
+  mappings: QinTextMapping[],
+): void {
+  const insertionOffsets = collectDanglingMemberAccessOffsets(source.slice(sourceStart, sourceEnd))
+    .map(offset => sourceStart + offset)
+  if (insertionOffsets.length === 0) {
+    const generatedStart = appendGenerated(source.slice(sourceStart, sourceEnd))
+    mappings.push({
+      sourceOffset: sourceStart,
+      generatedOffset: generatedStart,
+      length: sourceEnd - sourceStart,
+      generatedLength: sourceEnd - sourceStart,
+    })
+    return
+  }
+
+  let cursor = sourceStart
+  for (const insertionOffset of insertionOffsets) {
+    appendMappedSourceChunk(source, cursor, insertionOffset, appendGenerated, mappings)
+    appendGenerated(QIN_MEMBER_COMPLETION_PLACEHOLDER)
+    cursor = insertionOffset
+  }
+  appendMappedSourceChunk(source, cursor, sourceEnd, appendGenerated, mappings)
+}
+
+function appendMappedSourceChunk(
+  source: string,
+  sourceStart: number,
+  sourceEnd: number,
+  appendGenerated: (text: string) => number,
+  mappings: QinTextMapping[],
+): void {
+  if (sourceEnd <= sourceStart) {
+    return
+  }
+  const generatedStart = appendGenerated(source.slice(sourceStart, sourceEnd))
+  mappings.push({
+    sourceOffset: sourceStart,
+    generatedOffset: generatedStart,
+    length: sourceEnd - sourceStart,
+    generatedLength: sourceEnd - sourceStart,
+  })
 }
 
 function findQinObjectDeclarations(cst: unknown): QinObjectDeclarationInfo[] {
@@ -473,69 +535,6 @@ function createTransformErrorResult(source: string, message: string): QinLowerin
   }
 }
 
-function createTypeScriptSubsetEditingResult(source: string): QinLoweringResult | undefined {
-  if (hasQinObjectDeclarationCandidate(source)) {
-    logToFile('[QinLowering] parser rejected Qin object candidate; keeping transform error')
-    return undefined
-  }
-  const memberCompletionOffsets = collectDanglingMemberAccessOffsets(source)
-  if (memberCompletionOffsets.length) {
-    logToFile('[QinLowering] TS subset editing member access recovery', JSON.stringify({
-      offsets: memberCompletionOffsets,
-      preview: source.slice(0, 120),
-    }))
-    return createTypeScriptSubsetEditingMemberAccessResult(source, memberCompletionOffsets)
-  }
-  logToFile('[QinLowering] TS subset editing identity service script', JSON.stringify({
-    length: source.length,
-    preview: source.slice(0, 120),
-  }))
-  return {
-    code: source,
-    mappings: createCodeMappings([{
-      sourceOffset: 0,
-      generatedOffset: 0,
-      length: source.length,
-      generatedLength: source.length,
-    }]),
-  }
-}
-
-function createTypeScriptSubsetEditingMemberAccessResult(source: string, insertionOffsets: number[]): QinLoweringResult {
-  let generated = ''
-  let sourceCursor = 0
-  let generatedCursor = 0
-  const mappings: QinTextMapping[] = []
-
-  const appendMappedSource = (sourceStart: number, sourceEnd: number): void => {
-    if (sourceEnd <= sourceStart) {
-      return
-    }
-    const text = source.slice(sourceStart, sourceEnd)
-    generated += text
-    mappings.push({
-      sourceOffset: sourceStart,
-      generatedOffset: generatedCursor,
-      length: sourceEnd - sourceStart,
-      generatedLength: sourceEnd - sourceStart,
-    })
-    generatedCursor = generated.length
-  }
-
-  for (const insertionOffset of insertionOffsets) {
-    appendMappedSource(sourceCursor, insertionOffset)
-    generated += QIN_MEMBER_COMPLETION_PLACEHOLDER
-    generatedCursor = generated.length
-    sourceCursor = insertionOffset
-  }
-  appendMappedSource(sourceCursor, source.length)
-
-  return {
-    code: generated,
-    mappings: createCodeMappings(mappings),
-  }
-}
-
 function collectDanglingMemberAccessOffsets(source: string): number[] {
   const offsets: number[] = []
   const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, source)
@@ -559,19 +558,6 @@ function collectDanglingMemberAccessOffsets(source: string): number[] {
 
 function containsLineTerminator(text: string): boolean {
   return text.includes('\n') || text.includes('\r')
-}
-
-function hasQinObjectDeclarationCandidate(source: string): boolean {
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, source)
-  let token = scanner.scan()
-  while (token !== ts.SyntaxKind.EndOfFileToken) {
-    if (scanner.getTokenText() === 'object') {
-      const nextToken = scanner.scan()
-      return nextToken === ts.SyntaxKind.Identifier
-    }
-    token = scanner.scan()
-  }
-  return false
 }
 
 function createCodeMappings(mappings: QinTextMapping[]): CodeMapping[] {

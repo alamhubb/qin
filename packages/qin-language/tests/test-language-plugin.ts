@@ -25,11 +25,19 @@ if (lowerQinToTypeScript(tsSubset) !== tsSubset) {
 }
 
 const tsSubsetEditingSource = 'console.\ndocument.\n'
-const tsSubsetEditingGenerated = lowerQinToTypeScript(tsSubsetEditingSource)
+const tsSubsetStrictEditingGenerated = lowerQinToTypeScript(tsSubsetEditingSource)
+if (!tsSubsetStrictEditingGenerated.includes('Qin transform failed')) {
+  throw new Error(`Strict Qin lowering must reject incomplete TS-subset member access, got: ${tsSubsetStrictEditingGenerated}`)
+}
+const tsSubsetEditorProbe = probeGeneratedQinParser(tsSubsetEditingSource, { mode: 'editor' })
+if (!tsSubsetEditorProbe.ok || tsSubsetEditorProbe.cstName !== 'Program') {
+  throw new Error(`Editor Qin parser recovery must accept incomplete TS-subset member access, got: ${JSON.stringify(tsSubsetEditorProbe)}`)
+}
+const tsSubsetEditingGenerated = lowerQinToTypeScript(tsSubsetEditingSource, { mode: 'editor' })
 if (!tsSubsetEditingGenerated.includes('console.__qin_member_completion__')
   || !tsSubsetEditingGenerated.includes('document.__qin_member_completion__')
   || tsSubsetEditingGenerated.includes('Qin transform failed')) {
-  throw new Error(`Qin TS-subset editing state must preserve member completion service code, got: ${tsSubsetEditingGenerated}`)
+  throw new Error(`Editor Qin lowering must normalize recovered member access for TypeScript service code, got: ${tsSubsetEditingGenerated}`)
 }
 
 const qinObjectEditingSource = `
@@ -43,6 +51,10 @@ export object Counter {
 const qinObjectStrictEditingGenerated = lowerQinToTypeScript(qinObjectEditingSource)
 if (!qinObjectStrictEditingGenerated.includes('Qin transform failed')) {
   throw new Error(`Strict Qin lowering must reject incomplete object source, got: ${qinObjectStrictEditingGenerated}`)
+}
+const qinObjectEditorProbe = probeGeneratedQinParser(qinObjectEditingSource, { mode: 'editor' })
+if (!qinObjectEditorProbe.ok || qinObjectEditorProbe.cstName !== 'Program') {
+  throw new Error(`Editor Qin parser recovery must accept incomplete object member access, got: ${JSON.stringify(qinObjectEditorProbe)}`)
 }
 const qinObjectEditorEditingGenerated = lowerQinToTypeScript(qinObjectEditingSource, { mode: 'editor' })
 if (!qinObjectEditorEditingGenerated.includes('class __QinObject_Counter')
