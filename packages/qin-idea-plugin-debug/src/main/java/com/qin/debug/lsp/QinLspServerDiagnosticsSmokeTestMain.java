@@ -172,6 +172,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     Map.entry("rename", Map.of()),
                                     Map.entry("selectionRange", Map.of()),
                                     Map.entry("signatureHelp", Map.of()),
+                                    Map.entry("typeDefinition", Map.of()),
                                     Map.entry("publishDiagnostics", Map.of()))),
                     "rootUri", workspaceRoot.toUri().toString(),
                     "initializationOptions", Map.of(
@@ -297,6 +298,29 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     language.id() + " documentSymbol missing " + testCase.expectedDocumentSymbol() + ": " + symbols);
 
             if ("qin".equals(language.id())) {
+                String typeDefinitionUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("type-definition.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", typeDefinitionUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", """
+                                        interface User { name: string }
+                                        const currentUser: User = { name: "qin" }
+                                        const label = currentUser.name
+                                        """)));
+                Map<String, Object> typeDefinition = session.awaitResponse(session.request("textDocument/typeDefinition", Map.of(
+                        "textDocument", Map.of("uri", typeDefinitionUri),
+                        "position", Map.of("line", 2, "character", 15))));
+                require(hasLocationStartingAt(typeDefinition.get("result"), typeDefinitionUri, 0, 0),
+                        language.id() + " typeDefinition did not resolve currentUser to source interface: "
+                                + typeDefinition);
+
                 String formattingUri = workspaceRoot
                         .resolve("tmp")
                         .resolve("idea-lsp-smoke")
@@ -515,6 +539,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
         require(capabilitiesMap.containsKey("signatureHelpProvider"), language.id() + " LSP missing signatureHelpProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
+        require(capabilitiesMap.containsKey("typeDefinitionProvider"), language.id() + " LSP missing typeDefinitionProvider");
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
         require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
         require(capabilitiesMap.containsKey("documentFormattingProvider"), language.id() + " LSP missing documentFormattingProvider");

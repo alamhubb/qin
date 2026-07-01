@@ -338,6 +338,7 @@ async function main() {
         },
         hover: {},
         definition: {},
+        typeDefinition: {},
         references: {},
         formatting: {},
         inlayHint: {},
@@ -378,6 +379,9 @@ async function main() {
   }
   if (!initResponse.result.capabilities.documentFormattingProvider) {
     throw new Error(`Qin language server initialize did not expose documentFormattingProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.typeDefinitionProvider) {
+    throw new Error(`Qin language server initialize did not expose typeDefinitionProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
   if (!initResponse.result.capabilities.inlayHintProvider) {
     throw new Error(`Qin language server initialize did not expose inlayHintProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
@@ -420,6 +424,21 @@ async function main() {
       languageId: 'qin',
       version: 1,
       text: tsSubsetSource,
+    },
+  }))
+
+  const typeDefinitionUri = toFileUri(path.join(__dirname, 'type-definition.qin'))
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: typeDefinitionUri,
+      languageId: 'qin',
+      version: 1,
+      text: [
+        'interface User { name: string }',
+        'const currentUser: User = { name: "qin" }',
+        'const label = currentUser.name',
+        '',
+      ].join('\n'),
     },
   }))
 
@@ -930,6 +949,23 @@ async function main() {
     : definitionResponse.result ? [definitionResponse.result] : []
   if (!definitionLocations.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeContains(item, 0, 6))) {
     throw new Error(`Qin definition did not resolve alphaNumber declaration: ${JSON.stringify(definitionResponse.result)}`)
+  }
+
+  const typeDefinitionRequest = createRequest('textDocument/typeDefinition', {
+    textDocument: { uri: typeDefinitionUri },
+    position: { line: 2, character: 15 },
+  })
+  server.stdin.write(typeDefinitionRequest.packet)
+  const typeDefinitionResponse = await waitForResponse(
+    typeDefinitionRequest.id,
+    messages,
+    `Qin typeDefinition response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const typeDefinitionLocations = Array.isArray(typeDefinitionResponse.result)
+    ? typeDefinitionResponse.result
+    : typeDefinitionResponse.result ? [typeDefinitionResponse.result] : []
+  if (!typeDefinitionLocations.some(item => sameUri(locationUri(item), typeDefinitionUri) && rangeStartsAt(item, 0, 0))) {
+    throw new Error(`Qin typeDefinition did not resolve currentUser to source interface: ${JSON.stringify(typeDefinitionResponse.result)}`)
   }
 
   const forOfDefinitionRequest = createRequest('textDocument/definition', {

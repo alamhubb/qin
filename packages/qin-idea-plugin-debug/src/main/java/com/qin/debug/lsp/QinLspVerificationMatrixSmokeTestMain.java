@@ -460,6 +460,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/hover",
                 "textDocument/signatureHelp",
                 "textDocument/definition",
+                "textDocument/typeDefinition",
                 "textDocument/references",
                 "textDocument/documentHighlight",
                 "textDocument/formatting",
@@ -482,6 +483,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "hover missing",
                 "signatureHelp missing",
                 "definition did not resolve",
+                "typeDefinition did not resolve currentUser to source interface",
                 "references did not include declaration and usage",
                 "documentHighlight did not include declaration and usage",
                 "formatting did not return TypeScript formatter edits through source mappings",
@@ -1285,6 +1287,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/formatting");
             require(testSource.contains("formatting did not return TypeScript formatter edits through source mappings"),
                     "Qin language server test must assert formatting source-map coverage");
+            require(testSource.contains("textDocument/typeDefinition"),
+                    "Qin language server test must request textDocument/typeDefinition");
+            require(testSource.contains("typeDefinition did not resolve currentUser to source interface"),
+                    "Qin language server test must assert typeDefinition source-map coverage");
             require(testSource.contains("textDocument/inlayHint"),
                     "Qin language server test must request textDocument/inlayHint");
             require(testSource.contains("inlayHint did not include parameter or variable type hints through source mappings"),
@@ -1374,6 +1380,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin cross-file import symbol definition response",
                     "Qin cross-file import member definition response",
                     "Qin TS-subset signatureHelp response",
+                    "Qin typeDefinition response",
                     "Qin TS-subset documentHighlight response",
                     "Qin formatting response",
                     "Qin TS-subset rename response",
