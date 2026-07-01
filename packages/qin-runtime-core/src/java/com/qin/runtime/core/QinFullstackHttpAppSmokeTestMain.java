@@ -57,6 +57,7 @@ public final class QinFullstackHttpAppSmokeTestMain {
 
                 public final class Main {
                     private static final QinHttpApp APP = QinHttpApp.create()
+                            .get("/", request -> QinHttpResponse.text("hello"))
                             .get("/api/users", request -> QinHttpResponse.json("{\\"users\\":[]}"))
                             .post("/api/users", request -> QinHttpResponse.json(201, "{\\"created\\":" + request.bodyText() + "}"))
                             .delete("/api/users/{id}", request -> QinHttpResponse.json("{\\"deleted\\":\\"" + request.param("id") + "\\"}"));
@@ -113,6 +114,7 @@ public final class QinFullstackHttpAppSmokeTestMain {
 
     private static void verifyApi() throws Exception {
         HttpClient client = HttpClient.newHttpClient();
+        requireResponse(client, "GET", "/", null, 200, "hello");
         requireResponse(client, "GET", "/api/users", null, 200, "\"users\"");
         requireResponse(client, "POST", "/api/users", "{\"name\":\"Ada\"}", 201, "\"Ada\"");
         requireResponse(client, "DELETE", "/api/users/7", null, 200, "\"7\"");

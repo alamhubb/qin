@@ -28,7 +28,7 @@ public final class QinUserDbFullstackFrontendSmokeTestMain {
         }
 
         if (Files.exists(root.resolve("app/controllers/UserController.js"))
-                || Files.exists(root.resolve("app/qono-rpc.js"))) {
+                || Files.exists(root.resolve("app/qin-web-rpc.js"))) {
             throw new IllegalStateException("User DB demo should not check in browser RPC proxy/helper files");
         }
 

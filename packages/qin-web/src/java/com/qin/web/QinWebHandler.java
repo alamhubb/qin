@@ -1,8 +1,8 @@
-package com.qin.qono;
+package com.qin.web;
 
 import com.qin.runtime.core.QinHttpRequest;
 
 @FunctionalInterface
-public interface QonoHandler {
+public interface QinWebHandler {
     Object handle(QinHttpRequest request) throws Exception;
 }

@@ -4,7 +4,7 @@ This demo is a single-port Qin fullstack app:
 
 - Frontend: Vue plus local OVS and CSSTS source modules.
 - Backend authoring: Qin/TS modules under `main/`.
-- HTTP runtime: `Qono` from `com.qin:qin-qono`, a Qin-owned lightweight RPC layer.
+- HTTP runtime: `QinWeb` from `com.qin:qin-web`, a Qin-owned lightweight RPC layer.
 - Database runtime: `QinDb`, a Qin-owned PostgreSQL helper with schema and query builders.
 
 ## Structure
@@ -18,16 +18,16 @@ main/
   main.ts
   controllers/UserController.qin
   db/schema.ts
-  qono-class.ts
+  qin-web-class.ts
 qin.config.js
 ```
 
-The demo depends on both the Qin HTTP runtime and Qono:
+The demo depends on both the Qin HTTP runtime and QinWeb:
 
 ```js
 dependencies: {
     "com.qin:qin-runtime-core": "0.1.0",
-    "com.qin:qin-qono": "0.1.0"
+    "com.qin:qin-web": "0.1.0"
 }
 ```
 
@@ -44,17 +44,17 @@ export object UserController {
 
     @GetMapping("")
     getAll(request) {
-        return Qono.jsonRaw(this.dbRef.selectJson("users", this.usersRef, "id", "asc"))
+        return QinWeb.jsonRaw(this.dbRef.selectJson("users", this.usersRef, "id", "asc"))
     }
 
     @PostMapping("")
     create(request) {
-        return Qono.jsonRaw(201, this.dbRef.insertJson("user", this.usersRef, request.bodyText(), "name"))
+        return QinWeb.jsonRaw(201, this.dbRef.insertJson("user", this.usersRef, request.bodyText(), "name"))
     }
 
     @DeleteMapping("/{id}")
     remove(request) {
-        return Qono.jsonRaw(this.dbRef.deleteByIdJson(this.usersRef, request.param("id")))
+        return QinWeb.jsonRaw(this.dbRef.deleteByIdJson(this.usersRef, request.param("id")))
     }
 }
 
@@ -62,17 +62,17 @@ UserController.setDbRef(db)
 UserController.setUsersRef(users)
 ```
 
-`main/main.ts` mounts the controller and exports a `QinHttpApp` through Qono:
+`main/main.ts` mounts the controller and exports a `QinHttpApp` through QinWeb:
 
 ```ts
-export const app = useQonoController(Qono.create()
+export const app = useQinWebController(QinWeb.create()
     .health()
     , UserController)
     .toHttpApp()
 ```
 
-The browser calls the mounted Qono REST routes directly from `app/main.js`.
-The browser-facing client controller calls the same backend through Qono RPC:
+The browser calls the mounted QinWeb REST routes directly from `app/main.js`.
+The browser-facing client controller calls the same backend through QinWeb RPC:
 
 ```js
 import { UserController } from "../main/controllers/UserController.qin"

@@ -18,15 +18,15 @@ public final class QinEsmQinObjectExportSmokeTestMain {
         Path root = Files.createTempDirectory("qin-esm-qin-object-export-");
         Files.createDirectories(root.resolve("controllers"));
         Files.createDirectories(root.resolve("db"));
-        Files.writeString(root.resolve("qono-class.ts"), """
-                export function RestController(target) { target.__qonoController = true }
+        Files.writeString(root.resolve("qin-web-class.ts"), """
+                export function RestController(target) { target.__qinWebController = true }
                 export function RequestMapping(path) { return target => { target.basePath = path } }
                 export function GetMapping(path) { return route("GET", path) }
                 function route(method, path) {
                     return (target, propertyKey, descriptor) => {
-                        const routes = target.__qonoRoutes || []
+                        const routes = target.__qinWebRoutes || []
                         routes.push({ method, path, handler: propertyKey })
-                        target.__qonoRoutes = routes
+                        target.__qinWebRoutes = routes
                         return descriptor
                     }
                 }
@@ -36,8 +36,8 @@ public final class QinEsmQinObjectExportSmokeTestMain {
                 export const users = {}
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("controllers/UserController.qin"), """
-                import { RestController, RequestMapping, GetMapping } from "../qono-class"
-                import { Qono } from "java:com.qin.qono"
+                import { RestController, RequestMapping, GetMapping } from "../qin-web-class"
+                import { QinWeb } from "java:com.qin.web"
                 import { db, users } from "../db/schema"
 
                 @RestController
@@ -45,7 +45,7 @@ public final class QinEsmQinObjectExportSmokeTestMain {
                 export object UserController {
                     @GetMapping("")
                     getAll(request) {
-                        return Qono.jsonRaw(db.selectJson("users", users, "id", "asc"));
+                        return QinWeb.jsonRaw(db.selectJson("users", users, "id", "asc"));
                     }
                 }
                 """, StandardCharsets.UTF_8);

@@ -241,7 +241,7 @@ public final class QinFrontendEsmService {
         String source = module.source();
         String transpiled;
         if (isServerControllerModule(moduleFile, readSource(moduleFile))) {
-            transpiled = renderQonoRpcControllerClient(readSource(moduleFile));
+            transpiled = renderQinWebRpcControllerClient(readSource(moduleFile));
         } else if (isVueModuleFile(moduleFile)) {
             transpiled = transpileVueModule(moduleFile, source);
         } else if (isOvsModuleFile(moduleFile)) {
@@ -299,10 +299,10 @@ public final class QinFrontendEsmService {
                 && CONTROLLER_EXPORT_NAME_PATTERN.matcher(source).find();
     }
 
-    private static String renderQonoRpcControllerClient(String source) {
+    private static String renderQinWebRpcControllerClient(String source) {
         String exportName = controllerExportName(source);
         if (exportName == null || exportName.isBlank()) {
-            throw new IllegalArgumentException("Qono RPC controller source must export an object or class");
+            throw new IllegalArgumentException("QinWeb RPC controller source must export an object or class");
         }
         String controllerName = controllerRpcName(source, exportName);
         List<String> methods = controllerMethodNames(source);
@@ -313,12 +313,12 @@ public final class QinFrontendEsmService {
         for (String method : methods) {
             methodEntries.append("  ")
                     .append(method)
-                    .append("(input = {}) { return __qinQonoCall(")
+                    .append("(input = {}) { return __qinWebCall(")
                     .append('"').append(escapeJsStringLiteral(controllerName)).append('.').append(method).append('"')
                     .append(", input); },\n");
         }
         return """
-                async function __qinQonoCall(methodName, input = {}) {
+                async function __qinWebCall(methodName, input = {}) {
                   const response = await fetch(`/api/rpc/${encodeURIComponent(methodName)}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

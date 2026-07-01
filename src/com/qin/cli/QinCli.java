@@ -1285,7 +1285,7 @@ public class QinCli {
         }
 
         if (config.entry() != null && !config.entry().isBlank()) {
-            if (hasQinBackendExtension(config.entry())) {
+            if (hasQinScriptExtension(config.entry())) {
                 String entry = normalizeRelativePath(config.entry());
                 Path absolute = Paths.get(QinConstants.getCwd()).resolve(entry).normalize();
                 return Files.exists(absolute) ? entry : null;

@@ -1,4 +1,4 @@
-package com.qin.qono;
+package com.qin.web;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,20 +12,20 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class QonoControllerDecoratorFullstackSmokeTestMain {
+public final class QinWebControllerDecoratorFullstackSmokeTestMain {
     private static final int PORT = 18117;
 
-    private QonoControllerDecoratorFullstackSmokeTestMain() {
+    private QinWebControllerDecoratorFullstackSmokeTestMain() {
     }
 
     public static void main(String[] args) throws Exception {
-        Path root = Files.createTempDirectory("qono-controller-decorator-");
+        Path root = Files.createTempDirectory("qin-web-controller-decorator-");
         writeProject(root);
         Process process = startServer(root);
         try {
             waitForServer();
             verifyApi();
-            System.out.println("QonoControllerDecoratorFullstackSmokeTestMain passed.");
+            System.out.println("QinWebControllerDecoratorFullstackSmokeTestMain passed.");
         } finally {
             process.destroy();
             if (process.isAlive()) {
@@ -39,20 +39,20 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
         Files.createDirectories(root.resolve("app"));
         Files.writeString(root.resolve("qin.config.js"), """
                 export default {
-                    name: "qono-controller-decorator-smoke",
+                    name: "qin-web-controller-decorator-smoke",
                     port: 18117,
                     backend: { entry: "main/main.ts" },
                     frontend: { srcDir: "app", staticDir: "app" },
                     dependencies: {
                         "com.qin:qin-runtime-core": "0.1.0",
-                        "com.qin:qin-qono": "0.1.0"
+                        "com.qin:qin-web": "0.1.0"
                     }
                 }
                 """, StandardCharsets.UTF_8);
-        Files.writeString(root.resolve("app/main.js"), "console.log('qono decorator smoke')\n", StandardCharsets.UTF_8);
-        Files.writeString(root.resolve("main/qono-class.ts"), """
+        Files.writeString(root.resolve("app/main.js"), "console.log('qin-web decorator smoke')\n", StandardCharsets.UTF_8);
+        Files.writeString(root.resolve("main/qin-web-class.ts"), """
                 export function RestController(target) {
-                    target.__qonoController = true
+                    target.__qinWebController = true
                 }
 
                 export function RequestMapping(path) {
@@ -73,11 +73,11 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                     return route("DELETE", path)
                 }
 
-                export function useQonoController(app, controller) {
+                export function useQinWebController(app, controller) {
                     const controllerType = typeof controller === "function" ? controller : controller.constructor
-                    let routeSource = controller.__qonoRoutes
-                        || controllerType.__qonoRoutes
-                        || (controllerType.prototype && controllerType.prototype.__qonoRoutes)
+                    let routeSource = controller.__qinWebRoutes
+                        || controllerType.__qinWebRoutes
+                        || (controllerType.prototype && controllerType.prototype.__qinWebRoutes)
                         || []
                     if (routeSource.length === 0) {
                         routeSource = [
@@ -109,9 +109,9 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
 
                 function route(method, path) {
                     return (target, propertyKey, descriptor) => {
-                        const routes = target.__qonoRoutes || []
+                        const routes = target.__qinWebRoutes || []
                         routes.push({ method, path, handler: propertyKey })
-                        target.__qonoRoutes = routes
+                        target.__qinWebRoutes = routes
                         return descriptor
                     }
                 }
@@ -171,8 +171,8 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("main/controllers/UserController.qin"), """
-                import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
-                import { Qono } from "java:com.qin.qono"
+                import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qin-web-class"
+                import { QinWeb } from "java:com.qin.web"
 
                 @RestController
                 @RequestMapping("/api/users")
@@ -182,28 +182,28 @@ public final class QonoControllerDecoratorFullstackSmokeTestMain {
 
                     @GetMapping("")
                     getAll(request) {
-                        return Qono.jsonRaw("{\\"users\\":[]}")
+                        return QinWeb.jsonRaw("{\\"users\\":[]}")
                     }
 
                     @PostMapping("")
                     create(request) {
-                        return Qono.jsonRaw(201, "{\\"user\\":" + request.bodyText() + "}")
+                        return QinWeb.jsonRaw(201, "{\\"user\\":" + request.bodyText() + "}")
                     }
 
                     @DeleteMapping("/{id}")
                     remove(request) {
-                        return Qono.jsonRaw("{\\"deleted\\":\\"" + request.param("id") + "\\"}")
+                        return QinWeb.jsonRaw("{\\"deleted\\":\\"" + request.param("id") + "\\"}")
                     }
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(root.resolve("main/main.ts"), """
-                import { Qono } from "java:com.qin.qono"
-                import { useQonoController } from "./qono-class"
+                import { QinWeb } from "java:com.qin.web"
+                import { useQinWebController } from "./qin-web-class"
                 import { UserController } from "./controllers/UserController"
 
-                export const app = useQonoController(Qono.create().health(), UserController).toHttpApp()
+                export const app = useQinWebController(QinWeb.create().health(), UserController).toHttpApp()
 
-                "qono-controller-decorator-smoke"
+                "qin-web-controller-decorator-smoke"
                 """, StandardCharsets.UTF_8);
     }
 

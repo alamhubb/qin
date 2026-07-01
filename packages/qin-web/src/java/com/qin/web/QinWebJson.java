@@ -1,9 +1,9 @@
-package com.qin.qono;
+package com.qin.web;
 
 import com.qin.runtime.core.QinJson;
 
-public final class QonoJson {
-    private QonoJson() {
+public final class QinWebJson {
+    private QinWebJson() {
     }
 
     public static String string(String value) {

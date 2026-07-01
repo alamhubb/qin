@@ -1,4 +1,4 @@
-package com.qin.qono;
+package com.qin.web;
 
 import com.qin.runtime.core.QinHttpApp;
 import com.qin.runtime.core.QinHttpRequest;
@@ -7,18 +7,19 @@ import com.qin.runtime.core.QinHttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-public final class QonoAppSmokeTestMain {
-    private QonoAppSmokeTestMain() {
+public final class QinWebAppSmokeTestMain {
+    private QinWebAppSmokeTestMain() {
     }
 
     public static void main(String[] args) throws Exception {
-        QinHttpApp app = Qono.create()
+        QinHttpApp app = QinWeb.create()
                 .health()
-                .route("GET", "/api/users", request -> Qono.jsonRaw("{\"restUsers\":[]}"))
-                .route("POST", "/api/users", request -> Qono.jsonRaw(201, "{\"restUser\":" + request.bodyText() + "}"))
-                .route("DELETE", "/api/users/{id}", request -> Qono.jsonRaw("{\"deleted\":\"" + request.param("id") + "\"}"))
-                .query("users.getAll", request -> Qono.jsonRaw("{\"users\":[]}"))
-                .mutation("users.create", request -> Qono.jsonRaw(201, "{\"user\":" + request.bodyText() + "}"))
+                .route("GET", "/api/users", request -> QinWeb.jsonRaw("{\"restUsers\":[]}"))
+                .get("/", request -> QinWeb.text("hello"))
+                .route("POST", "/api/users", request -> QinWeb.jsonRaw(201, "{\"restUser\":" + request.bodyText() + "}"))
+                .route("DELETE", "/api/users/{id}", request -> QinWeb.jsonRaw("{\"deleted\":\"" + request.param("id") + "\"}"))
+                .query("users.getAll", request -> QinWeb.jsonRaw("{\"users\":[]}"))
+                .mutation("users.create", request -> QinWeb.jsonRaw(201, "{\"user\":" + request.bodyText() + "}"))
                 .mutation("users.fail", request -> {
                     throw new IllegalStateException("boom");
                 })
@@ -29,6 +30,9 @@ public final class QonoAppSmokeTestMain {
 
         QinHttpResponse restList = app.handle(request("GET", "/api/users", ""));
         require(restList != null && restList.status() == 200 && text(restList).contains("\"restUsers\""), "REST query route failed");
+
+        QinHttpResponse hello = app.handle(request("GET", "/", ""));
+        require(hello != null && hello.status() == 200 && "hello".equals(text(hello)), "text route failed");
 
         QinHttpResponse restCreate = app.handle(request("POST", "/api/users", "{\"name\":\"Grace\"}"));
         require(restCreate != null && restCreate.status() == 201 && text(restCreate).contains("Grace"), "REST mutation route failed");
@@ -48,7 +52,7 @@ public final class QonoAppSmokeTestMain {
         QinHttpResponse failure = app.handle(request("POST", "/api/rpc/users.fail", "{}"));
         require(failure != null && failure.status() == 500 && text(failure).contains("internal server error"), "rpc error mapping failed");
 
-        System.out.println("QonoAppSmokeTestMain passed.");
+        System.out.println("QinWebAppSmokeTestMain passed.");
     }
 
     private static QinHttpRequest request(String method, String path, String body) {

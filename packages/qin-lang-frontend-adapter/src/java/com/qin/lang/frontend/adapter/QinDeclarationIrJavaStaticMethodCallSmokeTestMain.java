@@ -11,11 +11,11 @@ public final class QinDeclarationIrJavaStaticMethodCallSmokeTestMain {
 
     public static void main(String[] args) {
         String source = """
-                import { Qono } from "java:com.qin.qono"
+                import { QinWeb } from "java:com.qin.web"
 
                 export object UserController {
                     getAll(request) {
-                        return Qono.jsonRaw("{\\"users\\":[]}")
+                        return QinWeb.jsonRaw("{\\"users\\":[]}")
                     }
                 }
                 """;
@@ -25,7 +25,7 @@ public final class QinDeclarationIrJavaStaticMethodCallSmokeTestMain {
         if (!(method.returnExpression() instanceof QinIrStaticMethodCallExpression call)) {
             throw new AssertionError("Expected Java static method call IR, got " + method.returnExpression());
         }
-        if (!"com.qin.qono.Qono".equals(call.ownerBinaryName())) {
+        if (!"com.qin.web.QinWeb".equals(call.ownerBinaryName())) {
             throw new AssertionError("Unexpected static owner: " + call.ownerBinaryName());
         }
         if (!"jsonRaw".equals(call.methodName())) {

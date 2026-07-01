@@ -6,16 +6,19 @@
 
 ```
 examples/
-├── qin.config.ts          # Workspace 配置
+├── qin.config.js          # Workspace 配置
 ├── apps/
 │   └── hello-java/        # 主应用（Spring Boot）
-│       ├── qin.config.ts
+│       ├── qin.config.js
 │       └── src/
 │           ├── server/Main.java
 │           └── client/    # 前端
+│   └── qin-hello-web/     # 最小 Web hello 示例
+│       ├── qin.config.js
+│       └── main/main.ts
 └── packages/
     └── java-base/         # 共享库
-        ├── qin.config.ts
+        ├── qin.config.js
         └── src/Utils.java
 ```
 
@@ -62,8 +65,8 @@ qin build
 
 `hello-java` 依赖 `java-base` 包：
 
-```typescript
-// apps/hello-java/qin.config.ts
+```javascript
+// apps/hello-java/qin.config.js
 dependencies: {
   "org.springframework.boot:spring-boot-starter-web": "4.0.6",
   "java-base": "*",  // 自动从 packages/java-base 加载
@@ -71,3 +74,23 @@ dependencies: {
 ```
 
 Qin 会自动检测 `packages` 配置中的本地项目，优先使用本地编译产物。
+
+## 最小 Web Hello
+
+如果只是想验证 IDEA Qin 插件能识别项目、显示脚本并启动一个 Web 服务，可以打开：
+
+```text
+examples/apps/qin-hello-web
+```
+
+右侧 Qin 面板会显示 `dev`、`start`、`check` 脚本。点击 `dev` 后访问：
+
+```text
+http://127.0.0.1:19131/
+```
+
+响应内容是：
+
+```text
+hello
+```

@@ -1,4 +1,4 @@
-package com.qin.qono;
+package com.qin.web;
 
 import com.qin.runtime.core.QinHttpApp;
 import com.qin.runtime.core.QinHttpRequest;
@@ -10,52 +10,52 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-public final class QonoApp {
-    private final Map<String, QonoHandler> queries = new LinkedHashMap<>();
-    private final Map<String, QonoHandler> mutations = new LinkedHashMap<>();
+public final class QinWebApp {
+    private final Map<String, QinWebHandler> queries = new LinkedHashMap<>();
+    private final Map<String, QinWebHandler> mutations = new LinkedHashMap<>();
     private final QinHttpApp httpApp = QinHttpApp.create();
     private String rpcPath = "/api/rpc/{method}";
 
-    public QonoApp query(String name, QonoHandler handler) {
+    public QinWebApp query(String name, QinWebHandler handler) {
         queries.put(normalizeName(name), Objects.requireNonNull(handler, "handler"));
         return this;
     }
 
-    public QonoApp mutation(String name, QonoHandler handler) {
+    public QinWebApp mutation(String name, QinWebHandler handler) {
         mutations.put(normalizeName(name), Objects.requireNonNull(handler, "handler"));
         return this;
     }
 
-    public QonoApp health() {
+    public QinWebApp health() {
         httpApp.get("/api/health", request -> QinHttpResponse.json("{\"ok\":true}"));
         return this;
     }
 
-    public QonoApp get(String path, QonoHandler handler) {
+    public QinWebApp get(String path, QinWebHandler handler) {
         return route("GET", path, handler);
     }
 
-    public QonoApp post(String path, QonoHandler handler) {
+    public QinWebApp post(String path, QinWebHandler handler) {
         return route("POST", path, handler);
     }
 
-    public QonoApp delete(String path, QonoHandler handler) {
+    public QinWebApp delete(String path, QinWebHandler handler) {
         return route("DELETE", path, handler);
     }
 
-    public QonoApp route(String method, String path, QonoHandler handler) {
+    public QinWebApp route(String method, String path, QinWebHandler handler) {
         String verb = normalizeMethod(method);
-        QonoHandler requiredHandler = Objects.requireNonNull(handler, "handler");
+        QinWebHandler requiredHandler = Objects.requireNonNull(handler, "handler");
         switch (verb) {
             case "GET" -> httpApp.get(path, request -> safeHandle(requiredHandler, request));
             case "POST" -> httpApp.post(path, request -> safeHandle(requiredHandler, request));
             case "DELETE" -> httpApp.delete(path, request -> safeHandle(requiredHandler, request));
-            default -> throw new IllegalArgumentException("Unsupported Qono route method: " + method);
+            default -> throw new IllegalArgumentException("Unsupported QinWeb route method: " + method);
         }
         return this;
     }
 
-    public QonoApp rpcPath(String path) {
+    public QinWebApp rpcPath(String path) {
         if (path == null || path.isBlank()) {
             throw new IllegalArgumentException("RPC path cannot be blank");
         }
@@ -70,7 +70,7 @@ public final class QonoApp {
 
     private QinHttpResponse handleRpc(QinHttpRequest request) throws Exception {
         String method = normalizeName(request.param("method"));
-        QonoHandler handler = queries.get(method);
+        QinWebHandler handler = queries.get(method);
         if (handler == null) {
             handler = mutations.get(method);
         }
@@ -81,7 +81,7 @@ public final class QonoApp {
         return safeHandle(handler, request);
     }
 
-    private QinHttpResponse safeHandle(QonoHandler handler, QinHttpRequest request) {
+    private QinHttpResponse safeHandle(QinWebHandler handler, QinHttpRequest request) {
         try {
             return toResponse(handler.handle(request), 200);
         } catch (RuntimeException error) {
@@ -116,7 +116,7 @@ public final class QonoApp {
         if (value instanceof QinHttpResponse response) {
             return response;
         }
-        if (value instanceof QonoResult result) {
+        if (value instanceof QinWebResult result) {
             return QinHttpResponse.json(result.status(), result.json());
         }
         if (value instanceof CharSequence text) {
@@ -134,7 +134,7 @@ public final class QonoApp {
     private static String normalizeName(String name) {
         String value = name == null ? "" : name.trim();
         if (value.isBlank()) {
-            throw new IllegalArgumentException("Qono RPC method name cannot be blank");
+            throw new IllegalArgumentException("QinWeb RPC method name cannot be blank");
         }
         return value;
     }
@@ -142,7 +142,7 @@ public final class QonoApp {
     private static String normalizeMethod(String method) {
         String value = method == null ? "" : method.trim().toUpperCase(Locale.ROOT);
         if (value.isBlank()) {
-            throw new IllegalArgumentException("Qono route method cannot be blank");
+            throw new IllegalArgumentException("QinWeb route method cannot be blank");
         }
         return value;
     }

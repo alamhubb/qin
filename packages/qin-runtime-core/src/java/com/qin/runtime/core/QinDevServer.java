@@ -111,7 +111,12 @@ final class QinDevServer {
             server.createContext("/@qin-mod/", exchange -> serveFrontendQinModule(exchange, runtime));
         }
 
-        server.createContext("/", exchange -> serveStatic(exchange, runtime, devMode));
+        server.createContext("/", exchange -> {
+            if (tryHandleHttpAppExchange(runtime, exchange)) {
+                return;
+            }
+            serveStatic(exchange, runtime, devMode);
+        });
         server.start();
         if (devMode) {
             hmrBroadcaster.start();
@@ -787,6 +792,9 @@ final class QinDevServer {
                     sendRawText(output, 200, "OK", js, "application/javascript; charset=utf-8", noStore());
                     return;
                 }
+            }
+            if (tryHandleRawHttpApp(output, runtime, request, uri)) {
+                return;
             }
             serveRawStatic(output, runtime, uri);
         }

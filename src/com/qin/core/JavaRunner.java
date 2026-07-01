@@ -131,6 +131,7 @@ public class JavaRunner {
                 }
 
                 boolean hasCompiledClass = hasAnyCompiledClass();
+                List<String> filesMissingClasses = findFilesMissingCompiledClasses(allJavaFiles, sourceDirsForCache);
                 List<String> filesToCompile;
                 if (hasDeletedFiles || hasStaleClasses || !hasCompiledClass) {
                     filesToCompile = allJavaFiles;
@@ -139,6 +140,7 @@ public class JavaRunner {
                     for (Path changedPath : changedPaths) {
                         dedup.add(changedPath.toString());
                     }
+                    dedup.addAll(filesMissingClasses);
                     filesToCompile = new ArrayList<>(dedup);
                 }
 
@@ -577,6 +579,44 @@ public class JavaRunner {
         try (Stream<Path> walk = Files.walk(classesDir)) {
             return walk.anyMatch(path -> path.toString().endsWith(".class"));
         }
+    }
+
+    private List<String> findFilesMissingCompiledClasses(List<String> javaFiles, List<String> sourceDirsForCache) {
+        List<String> missing = new ArrayList<>();
+        Path outputPath = Paths.get(outputDir);
+        if (!Files.exists(outputPath)) {
+            return javaFiles;
+        }
+
+        for (String javaFile : javaFiles) {
+            Path sourcePath = Paths.get(javaFile).toAbsolutePath().normalize();
+            Path sourceRoot = findSourceRootForFile(sourcePath, sourceDirsForCache);
+            if (sourceRoot == null) {
+                continue;
+            }
+            Path relativeSource = sourceRoot.relativize(sourcePath);
+            String relative = relativeSource.toString().replace(File.separatorChar, '/');
+            if (!relative.endsWith(".java")) {
+                continue;
+            }
+            String filePrefix = relative.substring(0, relative.length() - ".java".length());
+            Set<String> expectedPrefixes = extractTopLevelTypePrefixes(sourcePath, filePrefix);
+            if (expectedPrefixes.isEmpty()) {
+                expectedPrefixes = Set.of(filePrefix);
+            }
+
+            boolean hasAllClasses = true;
+            for (String expectedPrefix : expectedPrefixes) {
+                if (!Files.exists(outputPath.resolve(expectedPrefix + ".class"))) {
+                    hasAllClasses = false;
+                    break;
+                }
+            }
+            if (!hasAllClasses) {
+                missing.add(sourcePath.toString());
+            }
+        }
+        return missing;
     }
 
     private boolean pruneStaleClassFiles(List<String> javaFiles, List<String> sourceDirsForCache) throws IOException {

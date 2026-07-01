@@ -1,9 +1,9 @@
-import { Qono } from "java:com.qin.qono"
-import { useQonoController } from "./qono-class"
+import { QinWeb } from "java:com.qin.web"
+import { useQinWebController } from "./qin-web-class"
 import { UserController } from "./controllers/UserController"
 
-export const app = useQonoController(
-    Qono.create().health(),
+export const app = useQinWebController(
+    QinWeb.create().health(),
     UserController
 )
     .toHttpApp()

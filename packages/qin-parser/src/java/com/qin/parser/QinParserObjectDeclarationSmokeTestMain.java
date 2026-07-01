@@ -24,8 +24,8 @@ public final class QinParserObjectDeclarationSmokeTestMain {
 
     private static void parsesDecoratedObjectDeclarationWithImports() {
         QinParsedSource parsed = new QinParserFacade().parseSource("""
-                import { RestController, RequestMapping, GetMapping } from "../qono-class"
-                import { Qono } from "java:com.qin.qono"
+                import { RestController, RequestMapping, GetMapping } from "../qin-web-class"
+                import { QinWeb } from "java:com.qin.web"
                 import { db, users } from "../db/schema"
 
                 @RestController
@@ -33,7 +33,7 @@ public final class QinParserObjectDeclarationSmokeTestMain {
                 export object UserController {
                     @GetMapping("")
                     getAll(request) {
-                        return Qono.jsonRaw(db.selectJson("users", users, "id", "asc"));
+                        return QinWeb.jsonRaw(db.selectJson("users", users, "id", "asc"));
                     }
                 }
                 """);

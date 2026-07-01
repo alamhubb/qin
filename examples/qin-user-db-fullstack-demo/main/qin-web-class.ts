@@ -1,5 +1,5 @@
 export function RestController(target) {
-    target.__qonoController = true
+    target.__qinWebController = true
 }
 
 export function RequestMapping(path) {
@@ -28,11 +28,11 @@ export function RequestBody() {
     return () => undefined
 }
 
-export function useQonoController(app, controller) {
+export function useQinWebController(app, controller) {
     const controllerType = typeof controller === "function" ? controller : controller.constructor
-    let routeSource = controller.__qonoRoutes
-        || controllerType.__qonoRoutes
-        || (controllerType.prototype && controllerType.prototype.__qonoRoutes)
+    let routeSource = controller.__qinWebRoutes
+        || controllerType.__qinWebRoutes
+        || (controllerType.prototype && controllerType.prototype.__qinWebRoutes)
         || []
     if (routeSource.length === 0) {
         routeSource = [
@@ -64,13 +64,13 @@ export function useQonoController(app, controller) {
 
 function route(method, path) {
     return (target, propertyKey, descriptor) => {
-        const routes = target.__qonoRoutes || []
+        const routes = target.__qinWebRoutes || []
         routes.push({
             method,
             path,
             handler: propertyKey
         })
-        target.__qonoRoutes = routes
+        target.__qinWebRoutes = routes
         return descriptor
     }
 }

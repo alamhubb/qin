@@ -30,7 +30,7 @@ export default {
     },
     dependencies: {
         "com.qin:qin-runtime-core": "0.1.0",
-        "com.qin:qin-qono": "0.1.0",
+        "com.qin:qin-web": "0.1.0",
         "org.postgresql:postgresql": "42.7.3",
         "@vitejs/plugin-vue": "6.0.7",
         "@vue/compiler-sfc": "latest",

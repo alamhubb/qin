@@ -1,5 +1,5 @@
-import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qono-class"
-import { Qono } from "java:com.qin.qono"
+import { RestController, RequestMapping, GetMapping, PostMapping, DeleteMapping } from "../qin-web-class"
+import { QinWeb } from "java:com.qin.web"
 import { db, users } from "../db/schema"
 
 @RestController
@@ -12,17 +12,17 @@ export object UserController {
 
     @GetMapping("")
     getAll(request) {
-        return Qono.jsonRaw(this.dbRef.selectJson("users", this.usersRef, "id", "asc"))
+        return QinWeb.jsonRaw(this.dbRef.selectJson("users", this.usersRef, "id", "asc"))
     }
 
     @PostMapping("")
     create(request) {
-        return Qono.jsonRaw(201, this.dbRef.insertJson("user", this.usersRef, request.bodyText(), "name"))
+        return QinWeb.jsonRaw(201, this.dbRef.insertJson("user", this.usersRef, request.bodyText(), "name"))
     }
 
     @DeleteMapping("/{id}")
     remove(request) {
-        return Qono.jsonRaw(this.dbRef.deleteByIdJson(this.usersRef, request.param("id")))
+        return QinWeb.jsonRaw(this.dbRef.deleteByIdJson(this.usersRef, request.param("id")))
     }
 }
 

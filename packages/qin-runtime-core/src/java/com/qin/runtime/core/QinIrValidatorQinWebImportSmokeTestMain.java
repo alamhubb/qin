@@ -6,10 +6,10 @@ import com.qin.lang.ir.QinIrProgram;
 import java.util.List;
 
 /**
- * Keeps the backend JVM java: import policy open for the standalone Qono package.
+ * Keeps the backend JVM java: import policy open for the standalone QinWeb package.
  */
-public final class QinIrValidatorQonoImportSmokeTestMain {
-    private QinIrValidatorQonoImportSmokeTestMain() {
+public final class QinIrValidatorQinWebImportSmokeTestMain {
+    private QinIrValidatorQinWebImportSmokeTestMain() {
     }
 
     public static void main(String[] args) {
@@ -19,10 +19,10 @@ public final class QinIrValidatorQonoImportSmokeTestMain {
                 List.of(),
                 List.of(),
                 List.of(new QinIrJavaImport(
-                        "java:com.qin.qono",
-                        "Qono",
-                        "Qono",
-                        "com.qin.qono.Qono")),
+                        "java:com.qin.web",
+                        "QinWeb",
+                        "QinWeb",
+                        "com.qin.web.QinWeb")),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -30,6 +30,6 @@ public final class QinIrValidatorQonoImportSmokeTestMain {
                 List.of());
 
         new QinIrValidator().validate(program, QinBuildTarget.JVM);
-        System.out.println("QinIrValidatorQonoImportSmokeTestMain passed.");
+        System.out.println("QinIrValidatorQinWebImportSmokeTestMain passed.");
     }
 }
