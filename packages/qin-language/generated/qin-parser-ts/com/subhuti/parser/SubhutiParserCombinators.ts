@@ -4,6 +4,7 @@ import { com_subhuti_struct_SubhutiCreateToken, com_subhuti_struct_SubhutiCreate
 import { com_subhuti_struct_SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken as SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken$Builder } from "../struct/SubhutiMatchToken.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../struct/SubhutiCst.ts";
 import { com_subhuti_struct_SubhutiPosition, com_subhuti_struct_SubhutiPosition as SubhutiPosition } from "../struct/SubhutiPosition.ts";
+import { com_subhuti_struct_LexerMode, com_subhuti_struct_LexerMode as LexerMode } from "../struct/LexerMode.ts";
 import { com_subhuti_parser_SubhutiParserCore, com_subhuti_parser_SubhutiParserCore as SubhutiParserCore, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult as RuleExecutionResult } from "./SubhutiParserCore.ts";
 import { com_subhuti_parser_Alternative, com_subhuti_parser_Alternative as Alternative } from "./Alternative.ts";
 import { com_subhuti_parser_SubhutiBackData, com_subhuti_parser_SubhutiBackData as SubhutiBackData } from "./SubhutiBackData.ts";
@@ -153,7 +154,7 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
   }
   ManyTolerant(...__qin_args: any[]): any {
     if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "function" || __qin_args[0].__qinJavaFunctional === true)) return this.__qin_overload_ManyTolerant_1_0(__qin_args[0]);
-    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "function" || __qin_args[0].__qinJavaFunctional === true) && true) return this.__qin_overload_ManyTolerant_2_2(__qin_args[0], __qin_args[1]);
+    if (__qin_args.length === 2 && (__qin_args[0] === null || typeof __qin_args[0] === "function" || __qin_args[0].__qinJavaFunctional === true) && (__qin_args[1] === null || Array.isArray(__qin_args[1]) || __qin_args[1] instanceof __QinJavaUtilArrayList || __qin_args[1] instanceof __QinJavaUtilUnmodifiableList || __qin_args[1] instanceof __QinJavaUtilHashSet || __qin_args[1] instanceof __QinJavaUtilUnmodifiableSet || (typeof __qin_args[1][Symbol.iterator] === "function" && typeof __qin_args[1] !== "string"))) return this.__qin_overload_ManyTolerant_2_2(__qin_args[0], __qin_args[1]);
     if (__qin_args.length >= 1 && (__qin_args[0] === null || typeof __qin_args[0] === "function" || __qin_args[0].__qinJavaFunctional === true) && __qin_args.slice(1).every((__qin_arg) => (__qin_arg === null || __qin_arg instanceof com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher))) return this.__qin_overload_ManyTolerant_2_1(__qin_args[0], ...__qin_args.slice(1).map((__qin_arg) => __qin_arg));
     throw new Error("Unsupported Java overload: ManyTolerant/" + __qin_args.length);
   }
@@ -482,6 +483,25 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
       return stopToken.matches(token);
     }));
   }
+  findNextSyncPoint(fromIndex: number): any {
+    for (let i: any = Math.max(0.0, fromIndex); __qin_binary__("<", i, __QinJavaLangString.length(this.__qin_field_sourceCode)); i = __qin_binary__("+", i, 1.0)) {
+      let entry: any = this._getOrParseTokenEntry(i, this.__qin_field_currentPosition.line(), this.__qin_field_currentPosition.column(), com_subhuti_struct_LexerMode.__qin_field_DEFAULT_MODE);
+      if ((() => {
+      if ((() => {
+      if (__qin_binary__("!=", entry, null)) {
+        return __qin_binary__("!=", entry.getToken(), null);
+      }
+      return false;
+    })()) {
+        return __QinJavaLangString.contains(this.__qin_field_syncTokens, entry.getToken().tokenName());
+      }
+      return false;
+    })()) {
+        return i;
+      }
+    }
+    return __QinJavaLangString.length(this.__qin_field_sourceCode);
+  }
   Sequence(...rules: any[]): any {
     rules = rules.map((__qin_arg) => __qin_java_functional(__qin_arg));
     let results: any = new __QinJavaUtilArrayList();
@@ -809,7 +829,7 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
         this.__qin_field_parseRecordStack.clear();
         continue;
       }
-      let maxValidIndex: any = this.__qin_field_parsedTokens.size();
+      let maxValidIndex: any = this.findNextSyncPoint(__qin_binary__("+", this.__qin_field_currentIndex, 1.0));
       let recoveredCST: any = this.recoverFromParseRecord(this.__qin_field_parseRecordRoot, maxValidIndex);
       if ((() => {
       if ((() => {

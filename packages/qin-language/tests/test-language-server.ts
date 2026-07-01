@@ -469,6 +469,25 @@ async function main() {
     },
   }))
 
+  const objectEditingUri = toFileUri(path.join(__dirname, 'object-editing.qin'))
+  const objectEditingSource = [
+    'export object Counter {',
+    '  value = 1',
+    '  show() {',
+    '    console.',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: objectEditingUri,
+      languageId: 'qin',
+      version: 1,
+      text: objectEditingSource,
+    },
+  }))
+
   const typeDefinitionUri = toFileUri(path.join(__dirname, 'type-definition.qin'))
   server.stdin.write(createNotification('textDocument/didOpen', {
     textDocument: {
@@ -1020,6 +1039,25 @@ async function main() {
   const documentCompletionLabels = documentCompletionItems.map((item: any) => item.label)
   if (!documentCompletionLabels.includes('getElementById') || !documentCompletionLabels.includes('body')) {
     throw new Error(`Qin document completion did not include DOM members: ${JSON.stringify(documentCompletionLabels.slice(0, 30))}`)
+  }
+
+  const objectEditingConsoleCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: objectEditingUri },
+    position: { line: 3, character: 12 },
+    context: { triggerKind: 2, triggerCharacter: '.' },
+  })
+  server.stdin.write(objectEditingConsoleCompletionRequest.packet)
+  const objectEditingConsoleCompletionResponse = await waitForResponse(
+    objectEditingConsoleCompletionRequest.id,
+    messages,
+    `Qin object editing console completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectEditingConsoleCompletionItems = Array.isArray(objectEditingConsoleCompletionResponse.result)
+    ? objectEditingConsoleCompletionResponse.result
+    : objectEditingConsoleCompletionResponse.result?.items ?? []
+  const objectEditingConsoleCompletionLabels = objectEditingConsoleCompletionItems.map((item: any) => item.label)
+  if (!objectEditingConsoleCompletionLabels.includes('log')) {
+    throw new Error(`Qin object editing console completion did not include log: ${JSON.stringify(objectEditingConsoleCompletionLabels.slice(0, 30))}`)
   }
 
   const alphaNumberCompletion = completionItems.find((item: any) => item.label === 'alphaNumber')

@@ -4,11 +4,18 @@ import { logToFile } from './logutil'
 const GENERATED_QIN_PARSER_PACKAGE = '@qin/generated-qin-parser-ts'
 
 type QinParserConstructor = new (source: string) => {
+  enableErrorRecovery?: () => unknown
   parse?: () => unknown
   Program?: (...args: unknown[]) => unknown
 }
 
 let parserConstructor: QinParserConstructor | null | undefined
+
+export type QinGeneratedParserMode = 'strict' | 'editor'
+
+export interface QinGeneratedParserOptions {
+  mode?: QinGeneratedParserMode
+}
 
 export interface QinGeneratedParserProbeResult {
   available: boolean
@@ -29,8 +36,11 @@ export interface QinGeneratedParserDiagnostic {
   offset?: number
 }
 
-export function probeGeneratedQinParser(source: string): QinGeneratedParserProbeResult {
-  const result = parseGeneratedQinSource(source)
+export function probeGeneratedQinParser(
+  source: string,
+  options: QinGeneratedParserOptions = {},
+): QinGeneratedParserProbeResult {
+  const result = parseGeneratedQinSource(source, options)
   return {
     available: result.available,
     ok: result.ok,
@@ -40,7 +50,10 @@ export function probeGeneratedQinParser(source: string): QinGeneratedParserProbe
   }
 }
 
-export function parseGeneratedQinSource(source: string): QinGeneratedParserParseResult {
+export function parseGeneratedQinSource(
+  source: string,
+  options: QinGeneratedParserOptions = {},
+): QinGeneratedParserParseResult {
   const Parser = loadGeneratedQinParser()
   if (!Parser) {
     return { available: false, ok: false }
@@ -48,6 +61,9 @@ export function parseGeneratedQinSource(source: string): QinGeneratedParserParse
 
   try {
     const parser = new Parser(stripBom(source ?? ''))
+    if (options.mode === 'editor') {
+      enableEditorErrorRecovery(parser)
+    }
     const cst = typeof parser.parse === 'function'
       ? parser.parse()
       : typeof parser.Program === 'function'
@@ -64,6 +80,16 @@ export function parseGeneratedQinSource(source: string): QinGeneratedParserParse
       error: message,
       diagnostics: [createGeneratedParserDiagnostic(error)],
     }
+  }
+}
+
+function enableEditorErrorRecovery(parser: unknown): void {
+  if (!parser || typeof parser !== 'object') {
+    return
+  }
+  const enableErrorRecovery = (parser as { enableErrorRecovery?: () => unknown }).enableErrorRecovery
+  if (typeof enableErrorRecovery === 'function') {
+    enableErrorRecovery.call(parser)
   }
 }
 

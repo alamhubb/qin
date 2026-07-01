@@ -119,9 +119,15 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
     }), "StatementList", "SlimeStatementParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_StatementList(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {
-    this.Many(__qin_java_functional(() => {
+    if (this.isErrorRecoveryMode()) {
+      this.ManyTolerant(__qin_java_functional(() => {
+      return this.StatementListItem(params);
+    }), new com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher("RBrace"));
+    } else {
+      this.Many(__qin_java_functional(() => {
       return this.StatementListItem(params);
     }));
+    }
     return null;
   }
   StatementListItem(params: com_slime_parser_base_SlimeJavascriptParserBase$StatementParams): any {

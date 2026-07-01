@@ -32,6 +32,25 @@ if (!tsSubsetEditingGenerated.includes('console.__qin_member_completion__')
   throw new Error(`Qin TS-subset editing state must preserve member completion service code, got: ${tsSubsetEditingGenerated}`)
 }
 
+const qinObjectEditingSource = `
+export object Counter {
+  value = 1
+  show() {
+    console.
+  }
+}
+`
+const qinObjectStrictEditingGenerated = lowerQinToTypeScript(qinObjectEditingSource)
+if (!qinObjectStrictEditingGenerated.includes('Qin transform failed')) {
+  throw new Error(`Strict Qin lowering must reject incomplete object source, got: ${qinObjectStrictEditingGenerated}`)
+}
+const qinObjectEditorEditingGenerated = lowerQinToTypeScript(qinObjectEditingSource, { mode: 'editor' })
+if (!qinObjectEditorEditingGenerated.includes('class __QinObject_Counter')
+  || !qinObjectEditorEditingGenerated.includes('console.')
+  || qinObjectEditorEditingGenerated.includes('Qin transform failed')) {
+  throw new Error(`Editor Qin lowering must preserve incomplete object member access service code, got: ${qinObjectEditorEditingGenerated}`)
+}
+
 const objectExtendsSource = `
 class BaseCounter {
   baseValue = 1

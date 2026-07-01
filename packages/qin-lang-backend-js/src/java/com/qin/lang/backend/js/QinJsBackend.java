@@ -4999,7 +4999,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                     + " || typeof " + argumentExpression + ".run === \"function\")))";
         }
         if ("java.util.Collection".equals(binaryName)) {
-            return "true";
+            return "(" + argumentExpression + " === null"
+                    + " || Array.isArray(" + argumentExpression + ")"
+                    + " || " + argumentExpression + " instanceof __QinJavaUtilArrayList"
+                    + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableList"
+                    + " || " + argumentExpression + " instanceof __QinJavaUtilHashSet"
+                    + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableSet"
+                    + " || (typeof " + argumentExpression + "[Symbol.iterator] === \"function\""
+                    + " && typeof " + argumentExpression + " !== \"string\"))";
         }
         if ("java.util.List".equals(binaryName)) {
             return "(" + argumentExpression + " === null"

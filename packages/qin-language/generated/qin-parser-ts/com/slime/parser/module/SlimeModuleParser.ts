@@ -64,11 +64,15 @@ class com_slime_parser_module_SlimeModuleParser extends com_slime_parser_class__
     }), "ModuleItemList", "SlimeModuleParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ModuleItemList(): any {
-    this.ModuleItem();
-    this.Many(__qin_java_functional(() => {
-      this.ModuleItem();
-      return null;
+    if (this.isErrorRecoveryMode()) {
+      this.ManyTolerant(__qin_java_functional(() => {
+      return this.ModuleItem();
     }));
+    } else {
+      this.Many(__qin_java_functional(() => {
+      return this.ModuleItem();
+    }));
+    }
     return null;
   }
   ModuleItem(): any {

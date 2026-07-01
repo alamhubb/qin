@@ -280,7 +280,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     })()) {
       return null;
     }
-    let tokenIndex: any = this.__qin_field_currentIndex;
+    let tokenIndex: any = this.currentTokenIndex();
     let key: any = new com_subhuti_parser_SubhutiRuleCacheKey(ruleName, cacheKeyExtra, tokenIndex, this.__qin_field_currentMode, this.__qin_field_lastTokenName);
     let loopKey: any = key;
     if (__QinJavaLangString.contains(this.__qin_field_loopDetectionSet, loopKey)) {

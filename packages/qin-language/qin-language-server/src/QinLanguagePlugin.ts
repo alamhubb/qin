@@ -26,6 +26,10 @@ interface QinLoweringResult {
   mappings: CodeMapping[]
 }
 
+interface QinLoweringOptions {
+  mode?: 'strict' | 'editor'
+}
+
 interface QinTextMapping {
   sourceOffset: number
   generatedOffset: number
@@ -114,7 +118,7 @@ export class QinVirtualCode implements VirtualCode {
 
   constructor(public snapshot: IScriptSnapshot) {
     const sourceCode = snapshot.getText(0, snapshot.getLength())
-    const parserProbe = probeGeneratedQinParser(sourceCode)
+    const parserProbe = probeGeneratedQinParser(sourceCode, { mode: 'editor' })
     if (parserProbe.available && !parserProbe.ok) {
       logToFile('Generated Qin parser did not accept source:', JSON.stringify(parserProbe))
     }
@@ -127,7 +131,7 @@ export class QinVirtualCode implements VirtualCode {
     let lowering: QinLoweringResult = createTransformErrorResult(sourceCode, 'Qin transform did not run')
 
     try {
-      lowering = lowerQinToTypeScriptWithMappings(sourceCode)
+      lowering = lowerQinToTypeScriptWithMappings(sourceCode, { mode: 'editor' })
     } catch (e) {
       logToFile('Qin transform failed:', e instanceof Error ? e.stack || e.message : String(e))
       lowering = createTransformErrorResult(sourceCode, formatTransformErrorMessage(e))
@@ -156,13 +160,16 @@ export class QinVirtualCode implements VirtualCode {
   }
 }
 
-export function lowerQinToTypeScript(source: string): string {
-  return lowerQinToTypeScriptWithMappings(source).code
+export function lowerQinToTypeScript(source: string, options: QinLoweringOptions = {}): string {
+  return lowerQinToTypeScriptWithMappings(source, options).code
 }
 
-export function lowerQinToTypeScriptWithMappings(source: string): QinLoweringResult {
+export function lowerQinToTypeScriptWithMappings(
+  source: string,
+  options: QinLoweringOptions = {},
+): QinLoweringResult {
   const sourceCode = stripBom(source ?? '')
-  const parsed = parseGeneratedQinSource(sourceCode)
+  const parsed = parseGeneratedQinSource(sourceCode, { mode: options.mode ?? 'strict' })
   if (!parsed.available) {
     return createTransformErrorResult(sourceCode, 'Generated Qin parser package is not available')
   }
@@ -173,16 +180,26 @@ export function lowerQinToTypeScriptWithMappings(source: string): QinLoweringRes
     }
     return createTransformErrorResult(sourceCode, parsed.error ?? 'Generated Qin parser rejected source')
   }
-  return lowerProgramCstToTypeScript(sourceCode, parsed.cst)
+  return lowerProgramCstToTypeScript(sourceCode, parsed.cst, options.mode ?? 'strict')
 }
 
 function stripBom(source: string): string {
   return source.charCodeAt(0) === 0xFEFF ? source.substring(1) : source
 }
 
-function lowerProgramCstToTypeScript(source: string, cst: unknown): QinLoweringResult {
+function lowerProgramCstToTypeScript(source: string, cst: unknown, mode: 'strict' | 'editor'): QinLoweringResult {
   const objectDeclarations = findQinObjectDeclarations(cst)
   if (objectDeclarations.length === 0) {
+    if (mode === 'editor') {
+      const memberCompletionOffsets = collectDanglingMemberAccessOffsets(source)
+      if (memberCompletionOffsets.length) {
+        logToFile('[QinLowering] editor member access projection', JSON.stringify({
+          offsets: memberCompletionOffsets,
+          preview: source.slice(0, 120),
+        }))
+        return createTypeScriptSubsetEditingMemberAccessResult(source, memberCompletionOffsets)
+      }
+    }
     return {
       code: source,
       mappings: createCodeMappings([{
