@@ -330,6 +330,7 @@ async function main() {
         definition: {},
         references: {},
         linkedEditingRange: {},
+        documentLink: {},
         documentSymbol: {},
         selectionRange: {},
         semanticTokens: {
@@ -946,6 +947,20 @@ async function main() {
   if (!linkedRanges.some((range: any) => rangeStartsAt({ range }, 0, 14))
     || !linkedRanges.some((range: any) => rangeStartsAt({ range }, 3, 21))) {
     throw new Error(`Qin linkedEditingRange did not include object declaration and usage ranges: ${JSON.stringify(linkedEditingResponse.result)}`)
+  }
+
+  const documentLinkRequest = createRequest('textDocument/documentLink', {
+    textDocument: { uri: importConsumerUri },
+  })
+  server.stdin.write(documentLinkRequest.packet)
+  const documentLinkResponse = await waitForResponse(
+    documentLinkRequest.id,
+    messages,
+    `Qin import documentLink response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const documentLinks = Array.isArray(documentLinkResponse.result) ? documentLinkResponse.result : []
+  if (!documentLinks.some((item: any) => sameUri(item.target, importProviderUri) && rangeStartsAt(item, 0, 25))) {
+    throw new Error(`Qin documentLink did not include local import target: ${JSON.stringify(documentLinkResponse.result)}`)
   }
 
   const workspaceSymbolRequest = createRequest('workspace/symbol', {

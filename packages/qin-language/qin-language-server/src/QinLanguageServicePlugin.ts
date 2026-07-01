@@ -1,7 +1,9 @@
 import type { LanguageServicePlugin } from '@volar/language-service'
+import path from 'node:path'
 import ts from 'typescript'
 import {
   DiagnosticSeverity,
+  type DocumentLink,
   type DocumentSymbol,
   type FoldingRange,
   type LinkedEditingRanges,
@@ -11,6 +13,7 @@ import {
   type WorkspaceSymbol,
 } from 'vscode-languageserver-protocol'
 import type { TextDocument } from 'vscode-languageserver-textdocument'
+import { URI } from 'vscode-uri'
 import { parseGeneratedQinSource, probeGeneratedQinParser, type QinGeneratedParserProbeResult } from './QinGeneratedParserProbe'
 import { provideSourceDocumentSymbols } from './SourceDocumentSymbols'
 
@@ -21,13 +24,14 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
       interFileDependencies: false,
       workspaceDiagnostics: false,
     },
+    documentLinkProvider: {},
     documentSymbolProvider: true,
     foldingRangeProvider: true,
     linkedEditingRangeProvider: true,
     selectionRangeProvider: true,
     workspaceSymbolProvider: {},
   },
-  create() {
+  create(context) {
     const workspaceSymbols = new Map<string, WorkspaceSymbol[]>()
     return {
       provideDocumentSymbols(document: TextDocument) {
@@ -37,6 +41,13 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
         const symbols = provideSourceDocumentSymbols(document)
         workspaceSymbols.set(document.uri, createWorkspaceSymbolsFromDocumentSymbols(document, symbols))
         return symbols
+      },
+      provideDocumentLinks(document: TextDocument) {
+        if (!isQinDocument(document)) {
+          return []
+        }
+        const sourceUri = readSourceDocumentUri(context, document.uri)
+        return provideSourceDocumentLinks(document, sourceUri)
       },
       provideFoldingRanges(document: TextDocument) {
         if (!isQinDocument(document)) {
@@ -160,6 +171,72 @@ function matchesWorkspaceSymbolQuery(name: string, query: string): boolean {
     nameIndex++
   }
   return true
+}
+
+function readSourceDocumentUri(context: Parameters<LanguageServicePlugin['create']>[0], documentUri: string): string {
+  const uri = URI.parse(documentUri)
+  return context.decodeEmbeddedDocumentUri(uri)?.[0].toString() ?? documentUri
+}
+
+function provideSourceDocumentLinks(document: TextDocument, sourceUri: string): DocumentLink[] {
+  const source = document.getText()
+  return collectLocalModuleSpecifierLinks(source).map(item => ({
+    range: createRange(document, item.start, item.end),
+    target: resolveLocalModuleTarget(sourceUri, item.text),
+  }))
+}
+
+interface SourceModuleSpecifierLink {
+  text: string
+  start: number
+  end: number
+}
+
+function collectLocalModuleSpecifierLinks(source: string): SourceModuleSpecifierLink[] {
+  const sourceFile = ts.createSourceFile('source.qin', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const links: SourceModuleSpecifierLink[] = []
+  const visit = (node: ts.Node): void => {
+    const moduleSpecifier = readModuleSpecifier(node)
+    if (moduleSpecifier && isLocalModuleSpecifier(moduleSpecifier.text)) {
+      links.push({
+        text: moduleSpecifier.text,
+        start: moduleSpecifier.getStart(sourceFile) + 1,
+        end: moduleSpecifier.getEnd() - 1,
+      })
+    }
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(sourceFile, visit)
+  return links
+}
+
+function readModuleSpecifier(node: ts.Node): ts.StringLiteralLike | undefined {
+  if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && isStringLiteralLike(node.moduleSpecifier)) {
+    return node.moduleSpecifier
+  }
+  return undefined
+}
+
+function isStringLiteralLike(node: ts.Node): node is ts.StringLiteralLike {
+  return node.kind === ts.SyntaxKind.StringLiteral || node.kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral
+}
+
+function isLocalModuleSpecifier(specifier: string): boolean {
+  return specifier.startsWith('./') || specifier.startsWith('../')
+}
+
+function resolveLocalModuleTarget(documentUri: string, specifier: string): string {
+  const documentPath = URI.parse(documentUri).fsPath
+  const targetPath = path.resolve(path.dirname(documentPath), specifier)
+  return toFileUriFromPath(targetPath)
+}
+
+function toFileUriFromPath(filePath: string): string {
+  const normalized = path.resolve(filePath).replace(/\\/g, '/')
+  if (/^[A-Za-z]:\//.test(normalized)) {
+    return `file:///${normalized}`
+  }
+  return URI.file(normalized).toString()
 }
 
 function provideSourceLinkedEditingRanges(document: TextDocument, position: Position): LinkedEditingRanges | undefined {

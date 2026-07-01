@@ -160,6 +160,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     "symbol", Map.of()),
                             "textDocument", Map.of(
                                     "completion", Map.of(),
+                                    "documentLink", Map.of(),
                                     "documentHighlight", Map.of(),
                                     "foldingRange", Map.of(),
                                     "hover", Map.of(),
@@ -309,6 +310,29 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 require(hasLinkedEditingRanges(linkedEditingRanges.get("result"), 0, 14, 5, 21),
                         language.id() + " linkedEditingRange missing object declaration and usage: " + linkedEditingRanges);
 
+                String importedUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("imported.qin")
+                        .toUri()
+                        .toString();
+                String importConsumerUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("consumer.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", importConsumerUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", "import { Counter } from './imported.qin'\nconst currentValue = Counter.value\n")));
+                Map<String, Object> documentLinks = session.awaitResponse(session.request("textDocument/documentLink", Map.of(
+                        "textDocument", Map.of("uri", importConsumerUri))));
+                require(hasDocumentLinkTarget(documentLinks.get("result"), importedUri, 0, 25),
+                        language.id() + " documentLink missing local import target: " + documentLinks);
+
                 Map<String, Object> workspaceSymbols = session.awaitResponse(session.request("workspace/symbol", Map.of(
                         "query", testCase.expectedDocumentSymbol())));
                 require(hasWorkspaceSymbol(workspaceSymbols.get("result"), testCase.expectedDocumentSymbol(), uri, 0, 14),
@@ -369,6 +393,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         if ("qin".equals(language.id())) {
+            require(capabilitiesMap.containsKey("documentLinkProvider"), language.id() + " LSP missing documentLinkProvider");
             require(capabilitiesMap.containsKey("foldingRangeProvider"), language.id() + " LSP missing foldingRangeProvider");
             require(capabilitiesMap.containsKey("linkedEditingRangeProvider"), language.id() + " LSP missing linkedEditingRangeProvider");
             require(capabilitiesMap.containsKey("selectionRangeProvider"), language.id() + " LSP missing selectionRangeProvider");
@@ -603,6 +628,24 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Object ranges = map.get("ranges");
         return hasRangeStartingAt(ranges, declarationLine, declarationCharacter)
                 && hasRangeStartingAt(ranges, usageLine, usageCharacter);
+    }
+
+    private static boolean hasDocumentLinkTarget(Object result, String uri, int line, int character) {
+        if (!(result instanceof List<?> list)) {
+            return false;
+        }
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> link)) {
+                continue;
+            }
+            Object target = link.get("target");
+            if (target != null
+                    && sameUri(uri, String.valueOf(target))
+                    && hasRangeStartingAt(link, line, character)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<String> symbolNames(Object result) {
