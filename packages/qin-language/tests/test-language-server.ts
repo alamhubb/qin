@@ -411,6 +411,41 @@ async function main() {
     },
   }))
 
+  const importProviderUri = toFileUri(path.join(__dirname, 'provider.qin'))
+  const importProviderSource = [
+    'export object Counter {',
+    '  value = 1',
+    '  next() {',
+    '    return this.value + 1',
+    '  }',
+    '}',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: importProviderUri,
+      languageId: 'qin',
+      version: 1,
+      text: importProviderSource,
+    },
+  }))
+
+  const importConsumerUri = toFileUri(path.join(__dirname, 'consumer.qin'))
+  const importConsumerSource = [
+    "import { Counter } from './provider.qin'",
+    'const currentValue = Counter.value',
+    'Counter.va',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: importConsumerUri,
+      languageId: 'qin',
+      version: 1,
+      text: importConsumerSource,
+    },
+  }))
+
   await waitFor(
     'Qin publishDiagnostics for valid, for-of, and invalid documents',
     () => {
@@ -541,6 +576,25 @@ async function main() {
     throw new Error(`Qin for...of completion did not include loop-scope symbol: ${JSON.stringify(forOfCompletionLabels.slice(0, 30))}`)
   }
 
+  const importCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: importConsumerUri },
+    position: { line: 2, character: 10 },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(importCompletionRequest.packet)
+  const importCompletionResponse = await waitForResponse(
+    importCompletionRequest.id,
+    messages,
+    `Qin cross-file import completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const importCompletionItems = Array.isArray(importCompletionResponse.result)
+    ? importCompletionResponse.result
+    : importCompletionResponse.result?.items ?? []
+  const importCompletionLabels = importCompletionItems.map((item: any) => item.label)
+  if (!importCompletionLabels.includes('value')) {
+    throw new Error(`Qin cross-file import completion did not include imported object field: ${JSON.stringify(importCompletionLabels.slice(0, 30))}`)
+  }
+
   const definitionRequest = createRequest('textDocument/definition', {
     textDocument: { uri: tsSubsetUri },
     position: { line: 1, character: 20 },
@@ -607,6 +661,40 @@ async function main() {
     : objectExtendsDefinitionResponse.result ? [objectExtendsDefinitionResponse.result] : []
   if (!objectExtendsDefinitionLocations.some(item => sameUri(locationUri(item), objectExtendsUri) && rangeContains(item, 1, 2))) {
     throw new Error(`Qin object extends definition did not resolve inherited class field: ${JSON.stringify(objectExtendsDefinitionResponse.result)}`)
+  }
+
+  const importSymbolDefinitionRequest = createRequest('textDocument/definition', {
+    textDocument: { uri: importConsumerUri },
+    position: { line: 0, character: 10 },
+  })
+  server.stdin.write(importSymbolDefinitionRequest.packet)
+  const importSymbolDefinitionResponse = await waitForResponse(
+    importSymbolDefinitionRequest.id,
+    messages,
+    `Qin cross-file import symbol definition response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const importSymbolDefinitionLocations = Array.isArray(importSymbolDefinitionResponse.result)
+    ? importSymbolDefinitionResponse.result
+    : importSymbolDefinitionResponse.result ? [importSymbolDefinitionResponse.result] : []
+  if (!importSymbolDefinitionLocations.some(item => sameUri(locationUri(item), importProviderUri) && rangeContains(item, 0, 14))) {
+    throw new Error(`Qin cross-file import symbol definition did not resolve provider object: ${JSON.stringify(importSymbolDefinitionResponse.result)}`)
+  }
+
+  const importMemberDefinitionRequest = createRequest('textDocument/definition', {
+    textDocument: { uri: importConsumerUri },
+    position: { line: 1, character: 29 },
+  })
+  server.stdin.write(importMemberDefinitionRequest.packet)
+  const importMemberDefinitionResponse = await waitForResponse(
+    importMemberDefinitionRequest.id,
+    messages,
+    `Qin cross-file import member definition response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const importMemberDefinitionLocations = Array.isArray(importMemberDefinitionResponse.result)
+    ? importMemberDefinitionResponse.result
+    : importMemberDefinitionResponse.result ? [importMemberDefinitionResponse.result] : []
+  if (!importMemberDefinitionLocations.some(item => sameUri(locationUri(item), importProviderUri) && rangeContains(item, 1, 2))) {
+    throw new Error(`Qin cross-file import member definition did not resolve provider field: ${JSON.stringify(importMemberDefinitionResponse.result)}`)
   }
 
   const objectReferencesRequest = createRequest('textDocument/references', {
