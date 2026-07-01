@@ -211,6 +211,15 @@ function collectWorkspaceEditTexts(edit: any): string[] {
   return texts
 }
 
+function collectTextEditTexts(result: any): string[] {
+  if (!Array.isArray(result)) {
+    return []
+  }
+  return result
+    .map(item => item?.newText)
+    .filter((text): text is string => typeof text === 'string')
+}
+
 function semanticTokenCovers(result: any, line: number, character: number): boolean {
   const data = result?.data
   if (!Array.isArray(data) || data.length % 5 !== 0) {
@@ -330,6 +339,7 @@ async function main() {
         hover: {},
         definition: {},
         references: {},
+        formatting: {},
         linkedEditingRange: {},
         documentLink: {},
         documentSymbol: {},
@@ -364,6 +374,9 @@ async function main() {
   }
   if (!initResponse.result.capabilities.codeActionProvider) {
     throw new Error(`Qin language server initialize did not expose codeActionProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.documentFormattingProvider) {
+    throw new Error(`Qin language server initialize did not expose documentFormattingProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
 
   server.stdin.write(createNotification('initialized', {}))
@@ -403,6 +416,16 @@ async function main() {
       languageId: 'qin',
       version: 1,
       text: tsSubsetSource,
+    },
+  }))
+
+  const formattingUri = toFileUri(path.join(__dirname, 'formatting.qin'))
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: formattingUri,
+      languageId: 'qin',
+      version: 1,
+      text: 'const messy={value:1}\n',
     },
   }))
 
@@ -734,6 +757,24 @@ async function main() {
   )
   if (!JSON.stringify(hoverResponse.result ?? '').includes('alphaNumber')) {
     throw new Error(`Qin hover did not return TS service content: ${JSON.stringify(hoverResponse.result)} stderr=${stderr} messages=${JSON.stringify(messages)}`)
+  }
+
+  const formattingRequest = createRequest('textDocument/formatting', {
+    textDocument: { uri: formattingUri },
+    options: {
+      tabSize: 2,
+      insertSpaces: true,
+    },
+  })
+  server.stdin.write(formattingRequest.packet)
+  const formattingResponse = await waitForResponse(
+    formattingRequest.id,
+    messages,
+    `Qin formatting response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const formattingTexts = collectTextEditTexts(formattingResponse.result)
+  if (!formattingTexts.some(text => text.includes('const messy = { value: 1 }'))) {
+    throw new Error(`Qin formatting did not return TypeScript formatter edits through source mappings: ${JSON.stringify(formattingResponse.result)}`)
   }
 
   const completionRequest = createRequest('textDocument/completion', {

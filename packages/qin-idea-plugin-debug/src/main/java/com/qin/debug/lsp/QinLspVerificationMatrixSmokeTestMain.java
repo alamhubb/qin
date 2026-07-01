@@ -461,6 +461,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/definition",
                 "textDocument/references",
                 "textDocument/documentHighlight",
+                "textDocument/formatting",
                 "textDocument/documentLink",
                 "textDocument/linkedEditingRange",
                 "textDocument/rename",
@@ -481,6 +482,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "definition did not resolve",
                 "references did not include declaration and usage",
                 "documentHighlight did not include declaration and usage",
+                "formatting did not return TypeScript formatter edits through source mappings",
                 "documentLink missing local import target",
                 "linkedEditingRange missing object declaration and usage",
                 "rename did not return workspace edits",
@@ -1276,6 +1278,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must assert import-policy hover explanation coverage");
             require(testSource.contains("shared import-policy hover did not explain bare import boundary"),
                     "Qin language server test must assert shared bare import-policy hover explanation coverage");
+            require(testSource.contains("textDocument/formatting"),
+                    "Qin language server test must request textDocument/formatting");
+            require(testSource.contains("formatting did not return TypeScript formatter edits through source mappings"),
+                    "Qin language server test must assert formatting source-map coverage");
             require(testSource.contains("textDocument/foldingRange"),
                     "Qin language server test must request textDocument/foldingRange");
             require(testSource.contains("foldingRange did not include"),
@@ -1342,6 +1348,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin cross-file import member definition response",
                     "Qin TS-subset signatureHelp response",
                     "Qin TS-subset documentHighlight response",
+                    "Qin formatting response",
                     "Qin TS-subset rename response",
                     "Qin TS-subset prepareRename response",
                     "Qin object definition response",

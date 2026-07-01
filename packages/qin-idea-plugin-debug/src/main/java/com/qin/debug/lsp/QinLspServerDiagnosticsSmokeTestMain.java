@@ -163,6 +163,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     Map.entry("completion", Map.of()),
                                     Map.entry("documentLink", Map.of()),
                                     Map.entry("documentHighlight", Map.of()),
+                                    Map.entry("formatting", Map.of()),
                                     Map.entry("foldingRange", Map.of()),
                                     Map.entry("hover", Map.of()),
                                     Map.entry("linkedEditingRange", Map.of()),
@@ -294,6 +295,25 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     language.id() + " documentSymbol missing " + testCase.expectedDocumentSymbol() + ": " + symbols);
 
             if ("qin".equals(language.id())) {
+                String formattingUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("formatting.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", formattingUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", "const messy={value:1}\n")));
+                Map<String, Object> formatting = session.awaitResponse(session.request("textDocument/formatting", Map.of(
+                        "textDocument", Map.of("uri", formattingUri),
+                        "options", Map.of("tabSize", 2, "insertSpaces", true))));
+                require(textEditTexts(formatting.get("result")).stream()
+                                .anyMatch(text -> text.contains("const messy = { value: 1 }")),
+                        language.id() + " formatting did not return TypeScript formatter edits through source mappings: " + formatting);
+
                 Map<String, Object> foldingRanges = session.awaitResponse(session.request("textDocument/foldingRange", Map.of(
                         "textDocument", Map.of("uri", uri))));
                 require(hasFoldingRange(foldingRanges.get("result"), 0, 2),
@@ -484,6 +504,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
         require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
+        require(capabilitiesMap.containsKey("documentFormattingProvider"), language.id() + " LSP missing documentFormattingProvider");
         require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         if ("qin".equals(language.id())) {
@@ -793,6 +814,12 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 }
             }
         }
+        return texts;
+    }
+
+    private static List<String> textEditTexts(Object result) {
+        List<String> texts = new ArrayList<>();
+        collectTextEditTexts(result, texts);
         return texts;
     }
 
