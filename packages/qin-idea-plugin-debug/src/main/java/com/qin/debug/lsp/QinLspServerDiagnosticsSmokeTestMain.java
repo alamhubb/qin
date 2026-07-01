@@ -160,6 +160,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     "configuration", true,
                                     "symbol", Map.of()),
                             "textDocument", Map.ofEntries(
+                                    Map.entry("callHierarchy", Map.of()),
                                     Map.entry("codeAction", Map.of()),
                                     Map.entry("completion", Map.of()),
                                     Map.entry("documentLink", Map.of()),
@@ -347,6 +348,84 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 require(hasLocationContaining(implementation.get("result"), implementationUri, 1, 6),
                         language.id() + " implementation did not resolve interface to source class: "
                                 + implementation);
+
+                String callHierarchyUri = workspaceRoot
+                        .resolve("tmp")
+                        .resolve("idea-lsp-smoke")
+                        .resolve("call-hierarchy.qin")
+                        .toUri()
+                        .toString();
+                session.notification("textDocument/didOpen", Map.of(
+                        "textDocument", Map.of(
+                                "uri", callHierarchyUri,
+                                "languageId", language.id(),
+                                "version", 1,
+                                "text", """
+                                        function targetLabel(name: string): string {
+                                          return name
+                                        }
+                                        function renderLabel(): string {
+                                          return targetLabel("qin")
+                                        }
+                                        renderLabel()
+                                        """)));
+                Map<String, Object> preparedTargetCalls = session.awaitResponse(session.request(
+                        "textDocument/prepareCallHierarchy",
+                        Map.of(
+                                "textDocument", Map.of("uri", callHierarchyUri),
+                                "position", Map.of("line", 0, "character", 11))));
+                Object targetCallItem = callHierarchyItem(
+                        preparedTargetCalls.get("result"),
+                        "targetLabel",
+                        callHierarchyUri,
+                        0,
+                        9);
+                require(targetCallItem != null,
+                        language.id() + " prepareCallHierarchy did not return source targetLabel item: "
+                                + preparedTargetCalls);
+
+                Map<String, Object> incomingCalls = session.awaitResponse(session.request(
+                        "callHierarchy/incomingCalls",
+                        Map.of("item", targetCallItem)));
+                require(hasIncomingCall(
+                                incomingCalls.get("result"),
+                                "renderLabel",
+                                callHierarchyUri,
+                                3,
+                                9,
+                                4,
+                                9),
+                        language.id() + " incomingCalls did not resolve source caller and callsite: "
+                                + incomingCalls);
+
+                Map<String, Object> preparedCallerCalls = session.awaitResponse(session.request(
+                        "textDocument/prepareCallHierarchy",
+                        Map.of(
+                                "textDocument", Map.of("uri", callHierarchyUri),
+                                "position", Map.of("line", 3, "character", 11))));
+                Object renderCallItem = callHierarchyItem(
+                        preparedCallerCalls.get("result"),
+                        "renderLabel",
+                        callHierarchyUri,
+                        3,
+                        9);
+                require(renderCallItem != null,
+                        language.id() + " prepareCallHierarchy did not return source renderLabel item: "
+                                + preparedCallerCalls);
+
+                Map<String, Object> outgoingCalls = session.awaitResponse(session.request(
+                        "callHierarchy/outgoingCalls",
+                        Map.of("item", renderCallItem)));
+                require(hasOutgoingCall(
+                                outgoingCalls.get("result"),
+                                "targetLabel",
+                                callHierarchyUri,
+                                0,
+                                9,
+                                4,
+                                9),
+                        language.id() + " outgoingCalls did not resolve source callee and callsite: "
+                                + outgoingCalls);
 
                 String formattingUri = workspaceRoot
                         .resolve("tmp")
@@ -562,6 +641,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Map<?, ?> capabilitiesMap = (Map<?, ?>) capabilities;
 
         require(capabilitiesMap.containsKey("completionProvider"), language.id() + " LSP missing completionProvider");
+        require(capabilitiesMap.containsKey("callHierarchyProvider"), language.id() + " LSP missing callHierarchyProvider");
         require(capabilitiesMap.containsKey("codeActionProvider"), language.id() + " LSP missing codeActionProvider");
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
         require(capabilitiesMap.containsKey("signatureHelpProvider"), language.id() + " LSP missing signatureHelpProvider");
@@ -841,6 +921,90 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             if (symbolName != null
                     && name.equals(String.valueOf(symbolName))
                     && hasLocationStartingAt(location, uri, line, character)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Object callHierarchyItem(Object result, String name, String uri, int line, int character) {
+        if (!(result instanceof List<?> list)) {
+            return null;
+        }
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Object itemName = map.get("name");
+            Object itemUri = map.get("uri");
+            if (name.equals(String.valueOf(itemName))
+                    && itemUri != null
+                    && sameUri(uri, String.valueOf(itemUri))
+                    && hasLocationContaining(item, uri, line, character)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private static boolean hasIncomingCall(
+            Object result,
+            String callerName,
+            String uri,
+            int callerLine,
+            int callerCharacter,
+            int callsiteLine,
+            int callsiteCharacter) {
+        if (!(result instanceof List<?> list)) {
+            return false;
+        }
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> call)) {
+                continue;
+            }
+            Object from = call.get("from");
+            if (from instanceof Map<?, ?> fromMap
+                    && callerName.equals(String.valueOf(fromMap.get("name")))
+                    && hasLocationContaining(from, uri, callerLine, callerCharacter)
+                    && hasCallHierarchyCallsite(call.get("fromRanges"), callsiteLine, callsiteCharacter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasOutgoingCall(
+            Object result,
+            String calleeName,
+            String uri,
+            int calleeLine,
+            int calleeCharacter,
+            int callsiteLine,
+            int callsiteCharacter) {
+        if (!(result instanceof List<?> list)) {
+            return false;
+        }
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> call)) {
+                continue;
+            }
+            Object to = call.get("to");
+            if (to instanceof Map<?, ?> toMap
+                    && calleeName.equals(String.valueOf(toMap.get("name")))
+                    && hasLocationContaining(to, uri, calleeLine, calleeCharacter)
+                    && hasCallHierarchyCallsite(call.get("fromRanges"), callsiteLine, callsiteCharacter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasCallHierarchyCallsite(Object ranges, int line, int character) {
+        if (!(ranges instanceof List<?> list)) {
+            return false;
+        }
+        for (Object range : list) {
+            if (rangeContains(range, line, character)) {
                 return true;
             }
         }

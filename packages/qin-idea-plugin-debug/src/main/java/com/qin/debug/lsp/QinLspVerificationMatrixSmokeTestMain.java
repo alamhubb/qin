@@ -1295,6 +1295,16 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/implementation");
             require(testSource.contains("implementation did not resolve interface to source class"),
                     "Qin language server test must assert implementation source-map coverage");
+            require(testSource.contains("textDocument/prepareCallHierarchy"),
+                    "Qin language server test must request textDocument/prepareCallHierarchy");
+            require(testSource.contains("callHierarchy/incomingCalls"),
+                    "Qin language server test must request callHierarchy/incomingCalls");
+            require(testSource.contains("callHierarchy/outgoingCalls"),
+                    "Qin language server test must request callHierarchy/outgoingCalls");
+            require(testSource.contains("incomingCalls did not resolve source caller and callsite"),
+                    "Qin language server test must assert incoming call hierarchy source-map coverage");
+            require(testSource.contains("outgoingCalls did not resolve source callee and callsite"),
+                    "Qin language server test must assert outgoing call hierarchy source-map coverage");
             require(testSource.contains("textDocument/inlayHint"),
                     "Qin language server test must request textDocument/inlayHint");
             require(testSource.contains("inlayHint did not include parameter or variable type hints through source mappings"),
@@ -1386,6 +1396,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin TS-subset signatureHelp response",
                     "Qin typeDefinition response",
                     "Qin implementation response",
+                    "Qin prepareCallHierarchy response",
+                    "Qin incomingCalls response",
+                    "Qin outgoingCalls response",
                     "Qin TS-subset documentHighlight response",
                     "Qin formatting response",
                     "Qin TS-subset rename response",

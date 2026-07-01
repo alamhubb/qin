@@ -337,6 +337,7 @@ async function main() {
           },
         },
         hover: {},
+        callHierarchy: {},
         definition: {},
         implementation: {},
         typeDefinition: {},
@@ -386,6 +387,9 @@ async function main() {
   }
   if (!initResponse.result.capabilities.implementationProvider) {
     throw new Error(`Qin language server initialize did not expose implementationProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.callHierarchyProvider) {
+    throw new Error(`Qin language server initialize did not expose callHierarchyProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
   if (!initResponse.result.capabilities.inlayHintProvider) {
     throw new Error(`Qin language server initialize did not expose inlayHintProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
@@ -459,6 +463,25 @@ async function main() {
         '}',
         'const printable: Printable = new Label()',
         'printable.print()',
+        '',
+      ].join('\n'),
+    },
+  }))
+
+  const callHierarchyUri = toFileUri(path.join(__dirname, 'call-hierarchy.qin'))
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: callHierarchyUri,
+      languageId: 'qin',
+      version: 1,
+      text: [
+        'function targetLabel(name: string): string {',
+        '  return name',
+        '}',
+        'function renderLabel(): string {',
+        '  return targetLabel("qin")',
+        '}',
+        'renderLabel()',
         '',
       ].join('\n'),
     },
@@ -1005,6 +1028,86 @@ async function main() {
     : implementationResponse.result ? [implementationResponse.result] : []
   if (!implementationLocations.some(item => sameUri(locationUri(item), implementationUri) && rangeContains(item, 1, 6))) {
     throw new Error(`Qin implementation did not resolve interface to source class: ${JSON.stringify(implementationResponse.result)}`)
+  }
+
+  const prepareCallHierarchyRequest = createRequest('textDocument/prepareCallHierarchy', {
+    textDocument: { uri: callHierarchyUri },
+    position: { line: 0, character: 11 },
+  })
+  server.stdin.write(prepareCallHierarchyRequest.packet)
+  const prepareCallHierarchyResponse = await waitForResponse(
+    prepareCallHierarchyRequest.id,
+    messages,
+    `Qin prepareCallHierarchy response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const callHierarchyItems = Array.isArray(prepareCallHierarchyResponse.result) ? prepareCallHierarchyResponse.result : []
+  const targetCallItem = callHierarchyItems.find((item: any) =>
+    item?.name === 'targetLabel'
+    && sameUri(item?.uri, callHierarchyUri)
+    && rangeContains(item, 0, 9)
+  )
+  if (!targetCallItem) {
+    throw new Error(`Qin prepareCallHierarchy did not return source targetLabel item: ${JSON.stringify(prepareCallHierarchyResponse.result)}`)
+  }
+
+  const incomingCallsRequest = createRequest('callHierarchy/incomingCalls', {
+    item: targetCallItem,
+  })
+  server.stdin.write(incomingCallsRequest.packet)
+  const incomingCallsResponse = await waitForResponse(
+    incomingCallsRequest.id,
+    messages,
+    `Qin incomingCalls response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const incomingCalls = Array.isArray(incomingCallsResponse.result) ? incomingCallsResponse.result : []
+  if (!incomingCalls.some((item: any) =>
+    item?.from?.name === 'renderLabel'
+    && sameUri(item?.from?.uri, callHierarchyUri)
+    && rangeContains(item.from, 3, 9)
+    && Array.isArray(item?.fromRanges)
+    && item.fromRanges.some((range: any) => rangeContains({ range }, 4, 9))
+  )) {
+    throw new Error(`Qin incomingCalls did not resolve source caller and callsite: ${JSON.stringify(incomingCallsResponse.result)}`)
+  }
+
+  const prepareCallerHierarchyRequest = createRequest('textDocument/prepareCallHierarchy', {
+    textDocument: { uri: callHierarchyUri },
+    position: { line: 3, character: 11 },
+  })
+  server.stdin.write(prepareCallerHierarchyRequest.packet)
+  const prepareCallerHierarchyResponse = await waitForResponse(
+    prepareCallerHierarchyRequest.id,
+    messages,
+    `Qin caller prepareCallHierarchy response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const callerItems = Array.isArray(prepareCallerHierarchyResponse.result) ? prepareCallerHierarchyResponse.result : []
+  const renderCallItem = callerItems.find((item: any) =>
+    item?.name === 'renderLabel'
+    && sameUri(item?.uri, callHierarchyUri)
+    && rangeContains(item, 3, 9)
+  )
+  if (!renderCallItem) {
+    throw new Error(`Qin prepareCallHierarchy did not return source renderLabel item: ${JSON.stringify(prepareCallerHierarchyResponse.result)}`)
+  }
+
+  const outgoingCallsRequest = createRequest('callHierarchy/outgoingCalls', {
+    item: renderCallItem,
+  })
+  server.stdin.write(outgoingCallsRequest.packet)
+  const outgoingCallsResponse = await waitForResponse(
+    outgoingCallsRequest.id,
+    messages,
+    `Qin outgoingCalls response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const outgoingCalls = Array.isArray(outgoingCallsResponse.result) ? outgoingCallsResponse.result : []
+  if (!outgoingCalls.some((item: any) =>
+    item?.to?.name === 'targetLabel'
+    && sameUri(item?.to?.uri, callHierarchyUri)
+    && rangeContains(item.to, 0, 9)
+    && Array.isArray(item?.fromRanges)
+    && item.fromRanges.some((range: any) => rangeContains({ range }, 4, 9))
+  )) {
+    throw new Error(`Qin outgoingCalls did not resolve source callee and callsite: ${JSON.stringify(outgoingCallsResponse.result)}`)
   }
 
   const forOfDefinitionRequest = createRequest('textDocument/definition', {
