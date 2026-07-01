@@ -1268,10 +1268,12 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         return switch (languageId) {
             case "qin" -> List.of(
                     "Qin object completion response",
+                    "Qin object extends completion response",
+                    "Qin object extends definition response",
                     "Qin object definition response",
                     "Qin object references response",
                     "Qin object documentSymbol response",
-                    "__QinObject_Counter",
+                    "objectSymbolNames.includes('__QinObject_Counter')",
                     "generated object");
             case "ovs" -> List.of(
                     "OVS syntax completion response",

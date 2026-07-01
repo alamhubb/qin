@@ -24,6 +24,20 @@ if (lowerQinToTypeScript(tsSubset) !== tsSubset) {
   throw new Error('Qin TS-subset source must remain unchanged when generated CST has no Qin-only syntax')
 }
 
+const objectExtendsSource = `
+class BaseCounter {
+  baseValue = 1
+}
+
+export object Counter extends BaseCounter {
+  value = this.baseValue
+}
+`
+const generatedObjectExtends = lowerQinToTypeScript(objectExtendsSource)
+if (!generatedObjectExtends.includes('class __QinObject_Counter extends BaseCounter')) {
+  throw new Error(`Qin object lowering must preserve ClassTail heritage, got: ${generatedObjectExtends}`)
+}
+
 const parserProbe = probeGeneratedQinParser(source)
 
 if (!parserProbe.available) {

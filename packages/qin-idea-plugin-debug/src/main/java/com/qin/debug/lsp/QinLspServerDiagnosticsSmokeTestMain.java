@@ -51,7 +51,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                         true,
                         true,
                         true,
-                        "__QinObject_Counter"),
+                        "Counter"),
                 new LanguageCase(
                         "ovs",
                         "div { h1 { 'Broken' }",

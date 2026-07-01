@@ -243,10 +243,10 @@ function lowerProgramCstToTypeScript(source: string, cst: unknown): QinLoweringR
     const decoratorsEnd = declaration.exported
       ? findExportTokenStart(declaration.wrapper, objectStart)
       : objectStart
-    const objectBody = source.slice(bodyStart, bodyEnd)
     appendMappedSource(cursor, decoratorsEnd)
     const classStart = generatedCursor
-    appendMappedGenerated(`class ${internalName} `, nameStart, nameEnd, 'class '.length, internalName.length)
+    appendMappedGenerated(`class ${internalName}`, nameStart, nameEnd, 'class '.length, internalName.length)
+    appendMappedSource(nameEnd, bodyStart)
     appendMappedSource(bodyStart, bodyEnd)
     appendGenerated('\n')
     mappings.push({

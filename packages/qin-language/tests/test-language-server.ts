@@ -369,6 +369,27 @@ async function main() {
     },
   }))
 
+  const objectExtendsUri = toFileUri(path.join(__dirname, 'object-extends.qin'))
+  const objectExtendsSource = [
+    'class BaseCounter {',
+    '  baseValue = 1',
+    '}',
+    'export object Counter extends BaseCounter {',
+    '  value = this.baseValue',
+    '}',
+    'const currentValue = Counter.baseValue',
+    'Counter.ba',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: objectExtendsUri,
+      languageId: 'qin',
+      version: 1,
+      text: objectExtendsSource,
+    },
+  }))
+
   const forOfUri = toFileUri(path.join(__dirname, 'for-of.qin'))
   const forOfSource = [
     'export function sumItems(items: number[]): number {',
@@ -482,6 +503,25 @@ async function main() {
     throw new Error(`Qin object completion did not include generated singleton symbol: ${JSON.stringify(objectCompletionLabels.slice(0, 30))}`)
   }
 
+  const objectExtendsCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: objectExtendsUri },
+    position: { line: 7, character: 10 },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(objectExtendsCompletionRequest.packet)
+  const objectExtendsCompletionResponse = await waitForResponse(
+    objectExtendsCompletionRequest.id,
+    messages,
+    `Qin object extends completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectExtendsCompletionItems = Array.isArray(objectExtendsCompletionResponse.result)
+    ? objectExtendsCompletionResponse.result
+    : objectExtendsCompletionResponse.result?.items ?? []
+  const objectExtendsCompletionLabels = objectExtendsCompletionItems.map((item: any) => item.label)
+  if (!objectExtendsCompletionLabels.includes('baseValue')) {
+    throw new Error(`Qin object extends completion did not include inherited class field: ${JSON.stringify(objectExtendsCompletionLabels.slice(0, 30))}`)
+  }
+
   const forOfCompletionRequest = createRequest('textDocument/completion', {
     textDocument: { uri: forOfUri },
     position: { line: 5, character: 5 },
@@ -550,6 +590,23 @@ async function main() {
     : objectDefinitionResponse.result ? [objectDefinitionResponse.result] : []
   if (!objectDefinitionLocations.some(item => sameUri(locationUri(item), objectUri))) {
     throw new Error(`Qin object definition did not resolve Counter through generated object lowering: ${JSON.stringify(objectDefinitionResponse.result)}`)
+  }
+
+  const objectExtendsDefinitionRequest = createRequest('textDocument/definition', {
+    textDocument: { uri: objectExtendsUri },
+    position: { line: 6, character: 31 },
+  })
+  server.stdin.write(objectExtendsDefinitionRequest.packet)
+  const objectExtendsDefinitionResponse = await waitForResponse(
+    objectExtendsDefinitionRequest.id,
+    messages,
+    `Qin object extends definition response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectExtendsDefinitionLocations = Array.isArray(objectExtendsDefinitionResponse.result)
+    ? objectExtendsDefinitionResponse.result
+    : objectExtendsDefinitionResponse.result ? [objectExtendsDefinitionResponse.result] : []
+  if (!objectExtendsDefinitionLocations.some(item => sameUri(locationUri(item), objectExtendsUri) && rangeContains(item, 1, 2))) {
+    throw new Error(`Qin object extends definition did not resolve inherited class field: ${JSON.stringify(objectExtendsDefinitionResponse.result)}`)
   }
 
   const objectReferencesRequest = createRequest('textDocument/references', {

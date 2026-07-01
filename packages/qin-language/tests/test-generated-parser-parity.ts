@@ -116,6 +116,20 @@ const cases: ParserCase[] = [
     ok: true,
   },
   {
+    name: 'qin object extends local class',
+    source: [
+      'class BaseCounter {',
+      '  baseValue = 1',
+      '}',
+      '',
+      'export object Counter extends BaseCounter {',
+      '  value = this.baseValue',
+      '}',
+      '',
+    ].join('\n'),
+    ok: true,
+  },
+  {
     name: 'object keyword in type alias',
     source: [
       'type Box = object;',
