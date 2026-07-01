@@ -338,6 +338,7 @@ async function main() {
         },
         hover: {},
         callHierarchy: {},
+        declaration: {},
         definition: {},
         implementation: {},
         typeDefinition: {},
@@ -393,6 +394,9 @@ async function main() {
   }
   if (!initResponse.result.capabilities.typeDefinitionProvider) {
     throw new Error(`Qin language server initialize did not expose typeDefinitionProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.declarationProvider) {
+    throw new Error(`Qin language server initialize did not expose declarationProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
   if (!initResponse.result.capabilities.implementationProvider) {
     throw new Error(`Qin language server initialize did not expose implementationProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
@@ -1086,6 +1090,23 @@ async function main() {
     : definitionResponse.result ? [definitionResponse.result] : []
   if (!definitionLocations.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeContains(item, 0, 6))) {
     throw new Error(`Qin definition did not resolve alphaNumber declaration: ${JSON.stringify(definitionResponse.result)}`)
+  }
+
+  const declarationRequest = createRequest('textDocument/declaration', {
+    textDocument: { uri: tsSubsetUri },
+    position: { line: 1, character: 20 },
+  })
+  server.stdin.write(declarationRequest.packet)
+  const declarationResponse = await waitForResponse(
+    declarationRequest.id,
+    messages,
+    `Qin TS-subset declaration response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const declarationLocations = Array.isArray(declarationResponse.result)
+    ? declarationResponse.result
+    : declarationResponse.result ? [declarationResponse.result] : []
+  if (!declarationLocations.some(item => sameUri(locationUri(item), tsSubsetUri) && rangeContains(item, 0, 6))) {
+    throw new Error(`Qin declaration did not resolve alphaNumber declaration: ${JSON.stringify(declarationResponse.result)}`)
   }
 
   const typeDefinitionRequest = createRequest('textDocument/typeDefinition', {

@@ -21,6 +21,7 @@ final class QinLspServerCommandLineFactory {
         environment.put("QIN_LSP_SOURCE_EXTENSION", "." + language.extension());
         environment.put("QIN_LSP_SERVICE_EXTENSION", language.serviceExtension());
         environment.put("QIN_LSP_GENERATED_PARSER_TARGET", language.generatedParserTarget());
+        environment.put("NODE_OPTIONS", mergeNodeOptions(System.getenv("NODE_OPTIONS"), "--max-old-space-size=512"));
         putIfPresent(environment, "QIN_LSP_PARSER_PACKAGE", language.parserPackage());
         putIfPresent(environment, "QIN_LSP_COMPILER_PACKAGE", language.compilerPackage());
 
@@ -48,5 +49,15 @@ final class QinLspServerCommandLineFactory {
         if (value != null && !value.isBlank()) {
             environment.put(key, value);
         }
+    }
+
+    private static String mergeNodeOptions(String currentValue, String requiredOption) {
+        if (currentValue == null || currentValue.isBlank()) {
+            return requiredOption;
+        }
+        if (currentValue.contains(requiredOption)) {
+            return currentValue;
+        }
+        return currentValue + " " + requiredOption;
     }
 }

@@ -163,6 +163,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     Map.entry("callHierarchy", Map.of()),
                                     Map.entry("codeAction", Map.of()),
                                     Map.entry("completion", Map.of()),
+                                    Map.entry("declaration", Map.of()),
                                     Map.entry("documentLink", Map.of()),
                                     Map.entry("documentHighlight", Map.of()),
                                     Map.entry("formatting", Map.of()),
@@ -276,6 +277,12 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "position", Map.of("line", testCase.definitionLine(), "character", testCase.definitionCharacter()))));
             require(hasLocationInUri(definition.get("result"), uri),
                     language.id() + " definition did not resolve inside current document: " + definition);
+
+            Map<String, Object> declaration = session.awaitResponse(session.request("textDocument/declaration", Map.of(
+                    "textDocument", Map.of("uri", uri),
+                    "position", Map.of("line", testCase.definitionLine(), "character", testCase.definitionCharacter()))));
+            require(hasLocationInUri(declaration.get("result"), uri),
+                    language.id() + " declaration did not resolve inside current document: " + declaration);
 
             if (testCase.expectReferences()) {
                 Map<String, Object> references = session.awaitResponse(session.request("textDocument/references", Map.of(
@@ -724,6 +731,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("hoverProvider"), language.id() + " LSP missing hoverProvider");
         require(capabilitiesMap.containsKey("signatureHelpProvider"), language.id() + " LSP missing signatureHelpProvider");
         require(capabilitiesMap.containsKey("definitionProvider"), language.id() + " LSP missing definitionProvider");
+        require(capabilitiesMap.containsKey("declarationProvider"), language.id() + " LSP missing declarationProvider");
         require(capabilitiesMap.containsKey("typeDefinitionProvider"), language.id() + " LSP missing typeDefinitionProvider");
         require(capabilitiesMap.containsKey("implementationProvider"), language.id() + " LSP missing implementationProvider");
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");

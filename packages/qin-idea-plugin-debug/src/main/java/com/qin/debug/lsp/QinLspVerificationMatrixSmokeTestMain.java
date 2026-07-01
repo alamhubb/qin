@@ -461,6 +461,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/hover",
                 "textDocument/signatureHelp",
                 "textDocument/definition",
+                "textDocument/declaration",
                 "textDocument/typeDefinition",
                 "textDocument/references",
                 "textDocument/documentHighlight",
@@ -484,6 +485,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "hover missing",
                 "signatureHelp missing",
                 "definition did not resolve",
+                "declaration did not resolve",
                 "typeDefinition did not resolve currentUser to source interface",
                 "references did not include declaration and usage",
                 "documentHighlight did not include declaration and usage",
@@ -1258,6 +1260,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String method : List.of(
                 "textDocument/completion",
                 "textDocument/definition",
+                "textDocument/declaration",
                 "textDocument/references",
                 "textDocument/documentSymbol",
                 "textDocument/semanticTokens/full")) {
@@ -1267,6 +1270,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         for (String assertionNeedle : List.of(
                 "completion did not include",
                 "definition did not resolve",
+                "declaration did not resolve",
                 "references did not include",
                 "documentSymbol did not include",
                 "semanticTokens did not return token data")) {
@@ -1314,6 +1318,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/typeDefinition");
             require(testSource.contains("typeDefinition did not resolve currentUser to source interface"),
                     "Qin language server test must assert typeDefinition source-map coverage");
+            require(testSource.contains("textDocument/declaration"),
+                    "Qin language server test must request textDocument/declaration");
+            require(testSource.contains("declaration did not resolve alphaNumber declaration"),
+                    "Qin language server test must assert declaration source-map coverage");
             require(testSource.contains("textDocument/implementation"),
                     "Qin language server test must request textDocument/implementation");
             require(testSource.contains("implementation did not resolve interface to source class"),

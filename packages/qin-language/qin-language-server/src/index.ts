@@ -40,12 +40,12 @@ connection.onInitialize((params) => {
   const languagePlugins = [QinLanguagePlugin(languageServerMetadata)]
   const languageServicePlugins = [
     QinLanguageServicePlugin,
-    ...withoutTypeScriptDocumentSymbols(createTypeScriptServices(tsdk.typescript, {
+    ...withTypeScriptDeclarationProvider(withoutTypeScriptDocumentSymbols(createTypeScriptServices(tsdk.typescript, {
       disableAutoImportCache: true,
       isValidationEnabled(document) {
         return document.languageId !== 'qin' && !isQinDocumentUri(document.uri, sourceExtension)
       },
-    })),
+    }))),
   ]
   const tsProject = createTypeScriptProject(
     tsdk.typescript,
@@ -101,6 +101,28 @@ function withoutTypeScriptDocumentSymbols(plugins: LanguageServicePlugin[]): Lan
         return {
           ...service,
           provideDocumentSymbols: undefined,
+        }
+      },
+    }
+  })
+}
+
+function withTypeScriptDeclarationProvider(plugins: LanguageServicePlugin[]): LanguageServicePlugin[] {
+  return plugins.map(plugin => {
+    if (!plugin.capabilities.definitionProvider || plugin.capabilities.declarationProvider) {
+      return plugin
+    }
+    return {
+      ...plugin,
+      capabilities: {
+        ...plugin.capabilities,
+        declarationProvider: true,
+      },
+      create(context) {
+        const service = plugin.create(context)
+        return {
+          ...service,
+          provideDeclaration: service.provideDefinition,
         }
       },
     }
