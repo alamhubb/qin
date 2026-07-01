@@ -340,6 +340,7 @@ async function main() {
         definition: {},
         references: {},
         formatting: {},
+        inlayHint: {},
         linkedEditingRange: {},
         documentLink: {},
         documentSymbol: {},
@@ -377,6 +378,9 @@ async function main() {
   }
   if (!initResponse.result.capabilities.documentFormattingProvider) {
     throw new Error(`Qin language server initialize did not expose documentFormattingProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
+  }
+  if (!initResponse.result.capabilities.inlayHintProvider) {
+    throw new Error(`Qin language server initialize did not expose inlayHintProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
 
   server.stdin.write(createNotification('initialized', {}))
@@ -775,6 +779,26 @@ async function main() {
   const formattingTexts = collectTextEditTexts(formattingResponse.result)
   if (!formattingTexts.some(text => text.includes('const messy = { value: 1 }'))) {
     throw new Error(`Qin formatting did not return TypeScript formatter edits through source mappings: ${JSON.stringify(formattingResponse.result)}`)
+  }
+
+  const inlayHintRequest = createRequest('textDocument/inlayHint', {
+    textDocument: { uri: tsSubsetUri },
+    range: {
+      start: { line: 0, character: 0 },
+      end: { line: 4, character: 0 },
+    },
+  })
+  server.stdin.write(inlayHintRequest.packet)
+  const inlayHintResponse = await waitForResponse(
+    inlayHintRequest.id,
+    messages,
+    `Qin inlayHint response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const inlayHints = Array.isArray(inlayHintResponse.result) ? inlayHintResponse.result : []
+  if (!inlayHints.some((item: any) => JSON.stringify(item.label).includes('name'))
+    || !inlayHints.some((item: any) => JSON.stringify(item.label).includes('count'))
+    || !inlayHints.some((item: any) => JSON.stringify(item.label).includes('string'))) {
+    throw new Error(`Qin inlayHint did not include parameter or variable type hints through source mappings: ${JSON.stringify(inlayHintResponse.result)}`)
   }
 
   const completionRequest = createRequest('textDocument/completion', {
@@ -1281,6 +1305,19 @@ function configurationForSection(section: string | undefined): any {
       preferences: {
         includePackageJsonAutoImports: 'off',
       },
+      inlayHints: {
+        parameterNames: {
+          enabled: 'all',
+          suppressWhenArgumentMatchesName: false,
+        },
+        variableTypes: {
+          enabled: true,
+          suppressWhenTypeMatchesName: false,
+        },
+        functionLikeReturnTypes: {
+          enabled: true,
+        },
+      },
     }
   }
   if (section === 'javascript') {
@@ -1291,6 +1328,19 @@ function configurationForSection(section: string | undefined): any {
       },
       preferences: {
         includePackageJsonAutoImports: 'off',
+      },
+      inlayHints: {
+        parameterNames: {
+          enabled: 'all',
+          suppressWhenArgumentMatchesName: false,
+        },
+        variableTypes: {
+          enabled: true,
+          suppressWhenTypeMatchesName: false,
+        },
+        functionLikeReturnTypes: {
+          enabled: true,
+        },
       },
     }
   }

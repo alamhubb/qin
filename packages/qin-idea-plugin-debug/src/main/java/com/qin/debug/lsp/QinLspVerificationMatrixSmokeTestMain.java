@@ -97,6 +97,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             verifyLanguageServerFeatureAssertions(matrixCase, projectRoot);
 
             if ("qin".equals(matrixCase.id())) {
+                verifyQinLanguagePluginFeatureMappings(projectRoot);
                 verifyGeneratedQinParserPackage(projectRoot, config);
                 verifyGeneratedParserParityCorpus(projectRoot);
             } else {
@@ -462,6 +463,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "textDocument/references",
                 "textDocument/documentHighlight",
                 "textDocument/formatting",
+                "textDocument/inlayHint",
                 "textDocument/documentLink",
                 "textDocument/linkedEditingRange",
                 "textDocument/rename",
@@ -483,6 +485,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "references did not include declaration and usage",
                 "documentHighlight did not include declaration and usage",
                 "formatting did not return TypeScript formatter edits through source mappings",
+                "inlayHint did not include parameter or variable type hints through source mappings",
                 "documentLink missing local import target",
                 "linkedEditingRange missing object declaration and usage",
                 "rename did not return workspace edits",
@@ -1282,6 +1285,10 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                     "Qin language server test must request textDocument/formatting");
             require(testSource.contains("formatting did not return TypeScript formatter edits through source mappings"),
                     "Qin language server test must assert formatting source-map coverage");
+            require(testSource.contains("textDocument/inlayHint"),
+                    "Qin language server test must request textDocument/inlayHint");
+            require(testSource.contains("inlayHint did not include parameter or variable type hints through source mappings"),
+                    "Qin language server test must assert inlayHint source-map coverage");
             require(testSource.contains("textDocument/foldingRange"),
                     "Qin language server test must request textDocument/foldingRange");
             require(testSource.contains("foldingRange did not include"),
@@ -1334,6 +1341,26 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             require(testSource.contains(semanticNeedle),
                     matrixCase.id() + " language server test must cover semantic token position: "
                             + semanticNeedle);
+        }
+    }
+
+    private static void verifyQinLanguagePluginFeatureMappings(Path qinLanguageRoot) throws Exception {
+        Path pluginPath = qinLanguageRoot.resolve("qin-language-server")
+                .resolve("src")
+                .resolve("QinLanguagePlugin.ts")
+                .normalize();
+        require(Files.isRegularFile(pluginPath),
+                "QinLanguagePlugin source must exist: " + pluginPath);
+        String source = Files.readString(pluginPath);
+        for (String mappingNeedle : List.of(
+                "completion: true",
+                "format: true",
+                "inlayHints: true",
+                "navigation: true",
+                "semantic: item.semantic ?? true",
+                "verification: true")) {
+            require(source.contains(mappingNeedle),
+                    "Qin virtual code mappings must enable " + mappingNeedle);
         }
     }
 

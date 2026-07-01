@@ -447,6 +447,7 @@ function createCodeMappings(mappings: QinTextMapping[]): CodeMapping[] {
     data: {
       completion: true,
       format: true,
+      inlayHints: true,
       navigation: true,
       semantic: item.semantic ?? true,
       structure: item.structure ?? false,

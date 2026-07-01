@@ -157,6 +157,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     "processId", ProcessHandle.current().pid(),
                     "capabilities", Map.of(
                             "workspace", Map.of(
+                                    "configuration", true,
                                     "symbol", Map.of()),
                             "textDocument", Map.ofEntries(
                                     Map.entry("codeAction", Map.of()),
@@ -166,6 +167,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                                     Map.entry("formatting", Map.of()),
                                     Map.entry("foldingRange", Map.of()),
                                     Map.entry("hover", Map.of()),
+                                    Map.entry("inlayHint", Map.of()),
                                     Map.entry("linkedEditingRange", Map.of()),
                                     Map.entry("rename", Map.of()),
                                     Map.entry("selectionRange", Map.of()),
@@ -313,6 +315,17 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 require(textEditTexts(formatting.get("result")).stream()
                                 .anyMatch(text -> text.contains("const messy = { value: 1 }")),
                         language.id() + " formatting did not return TypeScript formatter edits through source mappings: " + formatting);
+
+                Map<String, Object> inlayHints = session.awaitResponse(session.request("textDocument/inlayHint", Map.of(
+                        "textDocument", Map.of("uri", uri),
+                        "range", Map.of(
+                                "start", Map.of("line", 0, "character", 0),
+                                "end", Map.of("line", 6, "character", 0)))));
+                require(hasInlayHintLabel(inlayHints.get("result"), "name")
+                                && hasInlayHintLabel(inlayHints.get("result"), "count")
+                                && hasInlayHintLabel(inlayHints.get("result"), "string"),
+                        language.id() + " inlayHint did not include parameter or variable type hints through source mappings: "
+                                + inlayHints);
 
                 Map<String, Object> foldingRanges = session.awaitResponse(session.request("textDocument/foldingRange", Map.of(
                         "textDocument", Map.of("uri", uri))));
@@ -505,6 +518,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("referencesProvider"), language.id() + " LSP missing referencesProvider");
         require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
         require(capabilitiesMap.containsKey("documentFormattingProvider"), language.id() + " LSP missing documentFormattingProvider");
+        require(capabilitiesMap.containsKey("inlayHintProvider"), language.id() + " LSP missing inlayHintProvider");
         require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
         if ("qin".equals(language.id())) {
@@ -823,6 +837,18 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         return texts;
     }
 
+    private static boolean hasInlayHintLabel(Object result, String expectedLabelPart) {
+        if (!(result instanceof List<?> list)) {
+            return false;
+        }
+        for (Object item : list) {
+            if (item instanceof Map<?, ?> map && String.valueOf(map.get("label")).contains(expectedLabelPart)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static void collectTextEditTexts(Object edits, List<String> texts) {
         if (!(edits instanceof List<?> editList)) {
             return;
@@ -927,7 +953,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         Map<String, Object> awaitResponse(int id) {
             return await("response " + id, message -> {
                 Object value = message.get("id");
-                return value instanceof Number number && number.intValue() == id;
+                return value instanceof Number number
+                        && number.intValue() == id
+                        && !message.containsKey("method");
             });
         }
 
@@ -1016,6 +1044,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     int contentLength = parseContentLength(header);
                     byte[] body = process.getInputStream().readNBytes(contentLength);
                     Map<String, Object> message = QinLspSmokeJson.parseObject(new String(body, StandardCharsets.UTF_8));
+                    handleServerRequest(message);
                     synchronized (messages) {
                         messages.add(message);
                         messages.notifyAll();
@@ -1027,6 +1056,64 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                     messages.notifyAll();
                 }
             }
+        }
+
+        private void handleServerRequest(Map<String, Object> message) throws IOException {
+            Object id = message.get("id");
+            Object method = message.get("method");
+            if (!(id instanceof Number number) || !(method instanceof String methodName)) {
+                return;
+            }
+            if ("client/registerCapability".equals(methodName)) {
+                send(response(number.intValue(), null));
+            } else if ("workspace/configuration".equals(methodName)) {
+                send(response(number.intValue(), configurationResponse(message)));
+            }
+        }
+
+        private String response(int id, Object result) {
+            Map<String, Object> message = new LinkedHashMap<>();
+            message.put("jsonrpc", "2.0");
+            message.put("id", id);
+            message.put("result", result);
+            return QinLspSmokeJson.object(message);
+        }
+
+        private List<Object> configurationResponse(Map<String, Object> message) {
+            Object params = message.get("params");
+            if (!(params instanceof Map<?, ?> paramsMap) || !(paramsMap.get("items") instanceof List<?> items)) {
+                return List.of();
+            }
+            List<Object> response = new ArrayList<>();
+            for (Object item : items) {
+                if (item instanceof Map<?, ?> itemMap) {
+                    response.add(configurationForSection(String.valueOf(itemMap.get("section"))));
+                } else {
+                    response.add(Map.of());
+                }
+            }
+            return response;
+        }
+
+        private Map<String, Object> configurationForSection(String section) {
+            if ("typescript".equals(section) || "javascript".equals(section)) {
+                return Map.of(
+                        "suggest", Map.of(
+                                "autoImports", false,
+                                "includeCompletionsForImportStatements", false),
+                        "preferences", Map.of(
+                                "includePackageJsonAutoImports", "off"),
+                        "inlayHints", Map.of(
+                                "parameterNames", Map.of(
+                                        "enabled", "all",
+                                        "suppressWhenArgumentMatchesName", false),
+                                "variableTypes", Map.of(
+                                        "enabled", true,
+                                        "suppressWhenTypeMatchesName", false),
+                                "functionLikeReturnTypes", Map.of(
+                                        "enabled", true)));
+            }
+            return Map.of();
         }
 
         private String readHeader(byte[] separator) throws IOException {
