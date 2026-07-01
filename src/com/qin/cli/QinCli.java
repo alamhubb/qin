@@ -358,6 +358,31 @@ public class QinCli {
                 dryRun);
     }
 
+    private static void runProjectScript(String scriptName, String[] args) throws Exception {
+        Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
+        ConfigLoader configLoader = new ConfigLoader(root.toString());
+        QinConfig config = configLoader.load();
+        if (config.language() != null) {
+            runLanguageScriptAt(scriptName, args, root);
+            return;
+        }
+        String script = config.scripts().get(scriptName);
+        if (script == null || script.isBlank()) {
+            throw new IllegalStateException("Missing scripts." + scriptName + " in " + QinConstants.CONFIG_FILE);
+        }
+        runLanguageShellCommandAt(root, script, "project script '" + scriptName + "'", hasArg(args, "--dry-run"));
+    }
+
+    private static boolean usesScriptBuild(QinConfig config) {
+        if (config == null || config.scripts() == null || !config.scripts().containsKey("build")) {
+            return false;
+        }
+        if (config.language() != null) {
+            return true;
+        }
+        return "library".equals(config.type());
+    }
+
     private static QinConfig requireValidLanguageProject() throws Exception {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
@@ -1680,10 +1705,8 @@ public class QinCli {
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
 
-        if (config.language() != null
-                && config.scripts() != null
-                && config.scripts().containsKey("build")) {
-            runLanguageScript("build", args);
+        if (usesScriptBuild(config)) {
+            runProjectScript("build", args);
             return;
         }
 
@@ -2493,7 +2516,11 @@ public class QinCli {
             entries.add(Paths.get(rawEntry.trim()).toAbsolutePath().normalize().toString());
         }
 
+        LocalProjectResolverEnhanced resolver = new LocalProjectResolverEnhanced(QinConstants.getCwd());
         for (LocalProjectResolverEnhanced.ProjectInfo project : localResolution.localProjects) {
+            if (!resolver.providesJvmClasspath(project)) {
+                continue;
+            }
             String expected = project.buildClassesPath.toAbsolutePath().normalize().toString();
             if (!entries.contains(expected)) {
                 return false;

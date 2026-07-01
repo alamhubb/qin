@@ -70,6 +70,7 @@ public class ConfigLoader {
         return new QinConfig(
                 stringField(source, "name", detectProjectName()),
                 stringField(source, "version", "1.0.0"),
+                stringField(source, "type", null),
                 stringField(source, "description", null),
                 null,
                 integerField(source, "port"),
@@ -486,6 +487,7 @@ public class ConfigLoader {
         return new QinConfig(
                 config.name(),
                 config.version(),
+                config.type(),
                 config.description(),
                 config.scope(),
                 config.port(),

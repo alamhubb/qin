@@ -32,6 +32,7 @@ import java.util.Map;
 public record QinConfig(
         String name,
         String version,
+        String type,
         String description,
         DependencyScope scope,
         Integer port,
@@ -73,6 +74,7 @@ public record QinConfig(
         }
 
         // 提供默认值
+        type = type != null && !type.isBlank() ? type : null;
         scope = scope != null ? scope : DependencyScope.COMPILE;
         port = port != null && port > 0 ? port : null;
 
@@ -92,6 +94,7 @@ public record QinConfig(
         this(
                 name,
                 version,
+                null, // type
                 null, // description
                 DependencyScope.COMPILE, // scope (默认值)
                 8080, // port (默认值)

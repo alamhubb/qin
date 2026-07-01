@@ -88,6 +88,10 @@ public class LocalProjectResolverEnhanced {
 
         List<String> localClasspaths = new ArrayList<>();
         for (ProjectInfo project : orderProjectsForCompilation(requiredLocalProjects)) {
+            if (!providesJvmClasspath(project)) {
+                ensureNonJvmProjectReady(project);
+                continue;
+            }
             if (autoCompile && ensureCompiled(project)) {
                 autoCompiledCount++;
             }
@@ -138,21 +142,14 @@ public class LocalProjectResolverEnhanced {
             throw new RuntimeException("Circular dependency detected in local projects: " + project.fullName);
         }
 
-        try {
-            Path configPath = project.projectDir.resolve(QinConstants.CONFIG_FILE);
-            if (Files.exists(configPath)) {
-                QinConfig config = loadConfig(configPath);
-                if (config.dependencies() != null) {
-                    for (String depName : config.dependencies().keySet()) {
-                        ProjectInfo dependency = findProject(requiredLocalProjects, depName);
-                        if (dependency != null) {
-                            visitProjectForCompilation(dependency, requiredLocalProjects, visiting, visited, ordered);
-                        }
-                    }
+        QinConfig config = project.config;
+        if (config.dependencies() != null) {
+            for (String depName : config.dependencies().keySet()) {
+                ProjectInfo dependency = findProject(requiredLocalProjects, depName);
+                if (dependency != null) {
+                    visitProjectForCompilation(dependency, requiredLocalProjects, visiting, visited, ordered);
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load dependencies for " + project.fullName + ": " + e.getMessage(), e);
         }
 
         visiting.remove(project.fullName);
@@ -262,6 +259,57 @@ public class LocalProjectResolverEnhanced {
         }
     }
 
+    public boolean providesJvmClasspath(ProjectInfo project) {
+        if (Files.exists(project.buildClassesPath)) {
+            try {
+                return hasAnyCompiledClass(project.buildClassesPath);
+            } catch (IOException ignored) {
+                return true;
+            }
+        }
+
+        QinConfig config = project.config;
+        if (hasJvmEntry(config.entry())
+                || hasJvmEntry(config.backend() != null ? config.backend().entry() : null)) {
+            return true;
+        }
+
+        for (String sourceDir : javaSourceDirs(config)) {
+            if (containsJavaSource(project.projectDir.resolve(sourceDir))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasJvmEntry(String entry) {
+        return entry != null && entry.replace('\\', '/').endsWith(".java");
+    }
+
+    private boolean containsJavaSource(Path sourceDir) {
+        if (!Files.isDirectory(sourceDir)) {
+            return false;
+        }
+        try (var stream = Files.walk(sourceDir)) {
+            return stream.anyMatch(path -> Files.isRegularFile(path)
+                    && path.getFileName().toString().endsWith(".java"));
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    private void ensureNonJvmProjectReady(ProjectInfo project) {
+        String entry = project.config.entry();
+        if (entry == null || entry.isBlank()) {
+            return;
+        }
+        Path entryPath = project.projectDir.resolve(entry).normalize();
+        if (!Files.isRegularFile(entryPath)) {
+            throw new RuntimeException("Local non-JVM dependency entry does not exist: "
+                    + project.fullName + " -> " + entry);
+        }
+    }
+
     private List<String> javaSourceDirs(QinConfig config) {
         if (config == null || config.java() == null) {
             return List.of(QinConstants.JAVA_SOURCE_DIR);
@@ -276,6 +324,14 @@ public class LocalProjectResolverEnhanced {
             sourceDirs.add(testDir);
         }
         return List.copyOf(sourceDirs);
+    }
+
+    private String outputDir(QinConfig config) {
+        if (config != null && config.java() != null && config.java().outputDir() != null
+                && !config.java().outputDir().isBlank()) {
+            return config.java().outputDir();
+        }
+        return QinConstants.BUILD_CLASSES_DIR;
     }
 
     private boolean hasAnyCompiledClass(Path classesDir) throws IOException {
@@ -307,8 +363,8 @@ public class LocalProjectResolverEnhanced {
                 String fullName = config.name();
 
                 if (!projects.containsKey(fullName)) {
-                    Path buildPath = projectPath.resolve(QinConstants.BUILD_CLASSES_DIR);
-                    projects.put(fullName, new ProjectInfo(fullName, projectPath, buildPath));
+                    Path buildPath = projectPath.resolve(outputDir(config));
+                    projects.put(fullName, new ProjectInfo(fullName, projectPath, buildPath, config));
                 }
             } catch (Exception ignored) {
                 // Ignore malformed or unrelated projects during workspace scan.
@@ -470,11 +526,13 @@ public class LocalProjectResolverEnhanced {
         public final String fullName;
         public final Path projectDir;
         public final Path buildClassesPath;
+        public final QinConfig config;
 
-        public ProjectInfo(String fullName, Path projectDir, Path buildClassesPath) {
+        public ProjectInfo(String fullName, Path projectDir, Path buildClassesPath, QinConfig config) {
             this.fullName = fullName;
             this.projectDir = projectDir;
             this.buildClassesPath = buildClassesPath;
+            this.config = config;
         }
     }
 

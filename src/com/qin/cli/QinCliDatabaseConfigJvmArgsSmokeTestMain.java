@@ -18,6 +18,7 @@ public final class QinCliDatabaseConfigJvmArgsSmokeTestMain {
                 null,
                 null,
                 null,
+                null,
                 false,
                 null,
                 null,

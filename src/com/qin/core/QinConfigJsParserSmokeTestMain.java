@@ -18,6 +18,7 @@ public final class QinConfigJsParserSmokeTestMain {
                 export default {
                   name: 'com.qin.demo:config-parser',
                   version: '0.2.0',
+                  type: 'library',
                   description: 'bootstrap parser smoke',
                   port: 19114,
                   entry: 'src/main.js',
@@ -74,6 +75,7 @@ public final class QinConfigJsParserSmokeTestMain {
         QinConfig config = new ConfigLoader(root.toString()).load();
         require("com.qin.demo:config-parser".equals(config.name()), "name");
         require("0.2.0".equals(config.version()), "version");
+        require("library".equals(config.type()), "type");
         require(config.port() != null && config.port() == 19114, "port");
         require("src/main.js".equals(config.entry()), "entry");
         require(config.frontend() != null && config.frontend().devPort() == 19097, "frontend.devPort");
