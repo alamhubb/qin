@@ -183,7 +183,7 @@ class com_slime_parser_cstToAst_SlimeCstToAstUtils {
     return this.__qin_field_statementCstToAst.createStatementAst(cst);
   }
   createDeclarationAstBase(cst: com_subhuti_struct_SubhutiCst): any {
-    return this.createDeclarationAst(cst);
+    return this.__qin_field_statementCstToAst.createStatementAst(cst);
   }
   createVariableDeclarationAst(cst: com_subhuti_struct_SubhutiCst): any {
     return this.__qin_field_variableCstToAst.createVariableDeclarationAst(cst);
@@ -254,7 +254,7 @@ class com_slime_parser_cstToAst_SlimeCstToAstUtils {
     return this.__qin_field_functionBodyCstToAst.createFunctionBodyAst(cst);
   }
   createFunctionBodyAstBase(cst: com_subhuti_struct_SubhutiCst): any {
-    return this.createFunctionBodyAst(cst);
+    return this.__qin_field_functionBodyCstToAst.createFunctionBodyAst(cst);
   }
   createFormalParametersAst(cst: com_subhuti_struct_SubhutiCst): any {
     return this.__qin_field_functionParameterCstToAst.createFormalParameters(cst);
@@ -266,7 +266,7 @@ class com_slime_parser_cstToAst_SlimeCstToAstUtils {
     return this.__qin_field_functionBodyCstToAst.createConciseBodyAst(cst);
   }
   createConciseBodyAstBase(cst: com_subhuti_struct_SubhutiCst): any {
-    return this.createConciseBodyAst(cst);
+    return this.__qin_field_functionBodyCstToAst.createConciseBodyAst(cst);
   }
   createFunctionExpressionAst(cst: com_subhuti_struct_SubhutiCst): any {
     return this.__qin_field_functionExpressionCstToAst.createFunctionExpressionAst(cst);
