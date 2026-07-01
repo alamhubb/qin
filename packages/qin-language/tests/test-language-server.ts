@@ -882,6 +882,20 @@ async function main() {
     throw new Error(`Qin object documentSymbol did not expose source object symbols: ${JSON.stringify(objectDocumentSymbolResponse.result)}`)
   }
 
+  const foldingRangeRequest = createRequest('textDocument/foldingRange', {
+    textDocument: { uri: objectUri },
+  })
+  server.stdin.write(foldingRangeRequest.packet)
+  const foldingRangeResponse = await waitForResponse(
+    foldingRangeRequest.id,
+    messages,
+    `Qin object foldingRange response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const foldingRanges = Array.isArray(foldingRangeResponse.result) ? foldingRangeResponse.result : []
+  if (!foldingRanges.some((item: any) => item.startLine === 0 && item.endLine >= 2)) {
+    throw new Error(`Qin foldingRange did not include object block range: ${JSON.stringify(foldingRangeResponse.result)}`)
+  }
+
   const forOfDocumentSymbolRequest = createRequest('textDocument/documentSymbol', {
     textDocument: { uri: forOfUri },
   })

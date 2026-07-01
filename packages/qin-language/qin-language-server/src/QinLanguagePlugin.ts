@@ -126,7 +126,7 @@ export class QinVirtualCode implements VirtualCode {
       lowering = createTransformErrorResult(sourceCode, formatTransformErrorMessage(e))
     }
 
-    this.mappings = lowering.mappings
+    this.mappings = createSourceRootMappings(sourceCode.length)
 
     this.embeddedCodes = [{
       id: 'qin-script',
@@ -136,7 +136,7 @@ export class QinVirtualCode implements VirtualCode {
         getLength: () => lowering.code.length,
         getChangeRange: () => undefined,
       },
-      mappings: this.mappings,
+      mappings: lowering.mappings,
       embeddedCodes: [],
     }]
   }
@@ -449,8 +449,21 @@ function createCodeMappings(mappings: QinTextMapping[]): CodeMapping[] {
       format: true,
       navigation: true,
       semantic: item.semantic ?? true,
-      structure: item.structure ?? true,
+      structure: item.structure ?? false,
       verification: true,
     },
   }))
+}
+
+function createSourceRootMappings(length: number): CodeMapping[] {
+  return [{
+    sourceOffsets: [0],
+    generatedOffsets: [0],
+    lengths: [length],
+    generatedLengths: [length],
+    data: {
+      structure: true,
+      verification: true,
+    },
+  }]
 }

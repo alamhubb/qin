@@ -159,6 +159,7 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                             "textDocument", Map.of(
                                     "completion", Map.of(),
                                     "documentHighlight", Map.of(),
+                                    "foldingRange", Map.of(),
                                     "hover", Map.of(),
                                     "rename", Map.of(),
                                     "signatureHelp", Map.of(),
@@ -286,6 +287,13 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
             require(symbolNames(symbols.get("result")).contains(testCase.expectedDocumentSymbol()),
                     language.id() + " documentSymbol missing " + testCase.expectedDocumentSymbol() + ": " + symbols);
 
+            if ("qin".equals(language.id())) {
+                Map<String, Object> foldingRanges = session.awaitResponse(session.request("textDocument/foldingRange", Map.of(
+                        "textDocument", Map.of("uri", uri))));
+                require(hasFoldingRange(foldingRanges.get("result"), 0, 2),
+                        language.id() + " foldingRange missing source object block: " + foldingRanges);
+            }
+
             Map<String, Object> rename = session.awaitResponse(session.request("textDocument/rename", Map.of(
                     "textDocument", Map.of("uri", uri),
                     "position", Map.of("line", testCase.referencesLine(), "character", testCase.referencesCharacter()),
@@ -339,6 +347,9 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
         require(capabilitiesMap.containsKey("documentHighlightProvider"), language.id() + " LSP missing documentHighlightProvider");
         require(capabilitiesMap.containsKey("renameProvider"), language.id() + " LSP missing renameProvider");
         require(capabilitiesMap.containsKey("documentSymbolProvider"), language.id() + " LSP missing documentSymbolProvider");
+        if ("qin".equals(language.id())) {
+            require(capabilitiesMap.containsKey("foldingRangeProvider"), language.id() + " LSP missing foldingRangeProvider");
+        }
         require(capabilitiesMap.containsKey("semanticTokensProvider"), language.id() + " LSP missing semanticTokensProvider");
 
         Object semanticTokensProvider = capabilitiesMap.get("semanticTokensProvider");
@@ -487,6 +498,26 @@ public final class QinLspServerDiagnosticsSmokeTestMain {
                 && actualCharacter instanceof Number characterNumber
                 && lineNumber.intValue() == line
                 && characterNumber.intValue() == character;
+    }
+
+    private static boolean hasFoldingRange(Object result, int startLine, int minimumEndLine) {
+        if (!(result instanceof List<?> list)) {
+            return false;
+        }
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> map)) {
+                continue;
+            }
+            Object actualStartLine = map.get("startLine");
+            Object actualEndLine = map.get("endLine");
+            if (actualStartLine instanceof Number startLineNumber
+                    && actualEndLine instanceof Number endLineNumber
+                    && startLineNumber.intValue() == startLine
+                    && endLineNumber.intValue() >= minimumEndLine) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<String> symbolNames(Object result) {
