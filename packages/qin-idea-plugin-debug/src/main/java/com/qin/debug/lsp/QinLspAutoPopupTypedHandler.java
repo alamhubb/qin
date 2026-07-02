@@ -15,6 +15,21 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
             return Result.CONTINUE;
         }
 
+        scheduleAutoPopup(charTyped, project, editor, file);
+        return Result.STOP;
+    }
+
+    @Override
+    public @NotNull Result charTyped(char charTyped, @NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file) {
+        if (!isQinLspFile(file) || !isCompletionTrigger(charTyped) || !isAfterMemberAccess(editor)) {
+            return Result.CONTINUE;
+        }
+
+        scheduleAutoPopup(charTyped, project, editor, file);
+        return Result.CONTINUE;
+    }
+
+    private static void scheduleAutoPopup(char charTyped, Project project, Editor editor, PsiFile file) {
         QinLogger.ensureInitialized(project, project.getBasePath());
         boolean memberAccess = charTyped == '.' || isAfterMemberAccess(editor);
         QinLogger.debug("[LSP-AUTOPOPUP] char=" + printable(charTyped)
@@ -26,7 +41,6 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
         } else {
             AutoPopupController.getInstance(project).scheduleAutoPopup(editor, QinLspAutoPopupTypedHandler::isQinLspFile);
         }
-        return Result.STOP;
     }
 
     private static boolean isQinLspFile(PsiFile file) {

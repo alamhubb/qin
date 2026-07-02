@@ -124,6 +124,11 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 getProject(),
                 myFixture.getEditor(),
                 myFixture.getFile()));
+        assertSame(TypedHandlerDelegate.Result.CONTINUE, handler.charTyped(
+                'a',
+                getProject(),
+                myFixture.getEditor(),
+                myFixture.getFile()));
         assertSame(TypedHandlerDelegate.Result.CONTINUE, handler.checkAutoPopup(
                 ' ',
                 getProject(),
