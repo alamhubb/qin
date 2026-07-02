@@ -36,6 +36,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertQinSyntaxHighlighter(document);
         assertQinParserShell(document);
         assertLspProvider(document);
+        assertAutoPopupTypedHandler(document);
         assertNoLocalSemanticExtensions(document);
     }
 
@@ -130,6 +131,17 @@ public final class QinLspPluginDescriptorSmokeTestMain {
                 "Unexpected parserDefinition language: " + parser.getAttribute("language"));
         require("com.qin.debug.lsp.QinParserDefinition".equals(parser.getAttribute("implementationClass")),
                 "Unexpected Qin parserDefinition: " + parser.getAttribute("implementationClass"));
+    }
+
+    private static void assertAutoPopupTypedHandler(Document document) {
+        NodeList handlers = document.getElementsByTagName("typedHandler");
+        for (int i = 0; i < handlers.getLength(); i++) {
+            Element handler = (Element) handlers.item(i);
+            if ("com.qin.debug.lsp.QinLspAutoPopupTypedHandler".equals(handler.getAttribute("implementation"))) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Missing Qin LSP auto-popup typedHandler registration");
     }
 
     private static void assertNoLocalSemanticExtensions(Document document) {
