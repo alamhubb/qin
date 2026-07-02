@@ -45,13 +45,15 @@ Do not modify the user's Qin source to add semicolons. Add semicolons only in ge
 
 Qin backend targets JVM `.class`, but the editor-service surface is still TypeScript/Volar. Java library completion should enter TypeScript LSP as generated `.d.ts`, not by replacing Qin LSP with a Java LSP.
 
-Use multiple type-source frontends that feed one Qin LSP declaration/type model:
+Use multiple type-source frontends that feed one Qin LSP symbol model:
 
-- Java source files: use the Subhuti Java parser in `slime/java-slime/slime-java`. It follows the same broad PEG/Subhuti style as Slime/Qin parsers: parser classes extend `SubhutiParser`, grammar rules are `@SubhutiRule` methods, and AST conversion is available through `JavaCstToAst`. Reuse it for source `.java` -> Java AST -> semantic declarations -> `.d.ts`.
-- JDK, dependency jars, and compiled project `.class` files: do not run the source parser on bytecode. Read classpath metadata through a classfile reader such as ASM or the JDK compiler/model APIs, then normalize into the same declaration/type model before emitting `.d.ts`.
-- Qin and Java compilation output: use `QinIrProgram`/`QinIrClassDeclaration` as the executable backend IR, then derive declaration/type information from it when LSP declarations need project-local Qin classes.
+- Java source files: use the Subhuti Java parser in `slime/java-slime/slime-java`. It follows the same broad PEG/Subhuti style as Slime/Qin parsers: parser classes extend `SubhutiParser`, grammar rules are `@SubhutiRule` methods, and AST conversion is available through `JavaCstToAst`. Reuse it for source `.java` -> Java AST -> semantic declarations -> `QinSymbolModel` -> `.d.ts`.
+- JDK, dependency jars, and compiled project `.class` files: do not run the source parser on bytecode. Read classpath metadata through a classfile reader such as ASM or the JDK compiler/model APIs, then normalize into `QinSymbolModel` before emitting `.d.ts`.
+- Qin and Java compilation output: use `QinIrProgram`/`QinIrClassDeclaration` as the executable backend IR, then derive `QinSymbolModel` entries when LSP declarations need project-local Qin classes.
 
-Do not maintain independent Java semantic and TypeScript declaration models. `QinJavaSemanticModel` is currently the Java-source semantic slice used by `QinJavaAstIrLowerer`; `QinDeclarationIrLowerer` is a Qin AST -> executable IR lowering boundary; `QinIrProgram` is the backend IR consumed by JVM/JS emitters. These are related but not interchangeable. The durable LSP shape should be a single declaration/type model with adapters from Java source semantics, classpath metadata, and Qin IR. Name it separately, for example `QinDeclarationModel` or `QinTypeModel`, unless `QinJavaSemanticModel` is intentionally generalized beyond Java source.
+Do not maintain independent Java semantic and TypeScript declaration models. `QinJavaSemanticModel` is currently the Java-source semantic slice used by `QinJavaAstIrLowerer`; `QinDeclarationIrLowerer` is a Qin AST -> executable IR lowering boundary; `QinIrProgram` is the backend IR consumed by JVM/JS emitters. These are related but not interchangeable. The durable LSP shape is `QinSymbolModel`: one shared symbol/type model with adapters from Java source semantics, classpath metadata, and Qin IR.
+
+`QinIrProgram` and `QinSymbolModel` are peer models, not inheritance parents or children. Share reusable value objects such as `QinIrTypeRef`, annotation refs, qualified names, modifiers, and visibility only when the meaning is truly identical. Convert between models through explicit adapters such as `QinIrProgram -> QinSymbolModel` and `QinJavaSemanticModel -> QinSymbolModel`. Do not add duplicate class/method/field/type shapes with different names unless the semantics are genuinely different.
 
 The `.d.ts` generator should produce declarations that TypeScript can consume through Qin virtual service scripts, for example:
 
