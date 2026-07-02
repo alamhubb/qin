@@ -173,7 +173,7 @@ export function lowerQinToTypeScriptWithMappings(
   if (!parsed.available) {
     return createTransformErrorResult(sourceCode, 'Generated Qin parser package is not available')
   }
-  if (!parsed.ok || !parsed.cst) {
+  if ((!parsed.ok && options.mode !== 'editor') || !parsed.cst || parsed.cstName !== 'Program') {
     return createTransformErrorResult(sourceCode, parsed.error ?? 'Generated Qin parser rejected source')
   }
   return lowerProgramCstToTypeScript(sourceCode, parsed.cst, options.mode ?? 'strict')

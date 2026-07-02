@@ -194,10 +194,15 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
         }
         let startState: any = this.saveState();
         let startCodeIndex: any = startState.codeIndex();
+        let startTokenIndex: any = this.currentTokenIndex();
+        let startChildCount: any = this.currentCstChildCount();
         this.__qin_field_activeManyTolerantFrame = new com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame(effectiveStopTokens);
         rule.run();
         if (this.__qin_field_parseSuccess) {
           if (__qin_binary__(">", this.__qin_field_currentIndex, startCodeIndex)) {
+            if (__qin_binary__("==", this.currentCstChildCount(), startChildCount)) {
+              this.recordRecoveryDiagnosticForConsumedTokens("Recovered unstructured input during parser recovery", startTokenIndex);
+            }
             continue;
           }
           if (this.handleManyTolerantNoProgress(startState, effectiveStopTokens)) {
@@ -219,6 +224,9 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
       }
       return hasRawCodeProgress;
     })()) {
+          if (__qin_binary__("==", this.currentCstChildCount(), startChildCount)) {
+            this.recordRecoveryDiagnosticForConsumedTokens("Recovered unstructured input during parser recovery", startTokenIndex);
+          }
           if ((() => {
       if ((() => {
       if ((() => {
@@ -235,6 +243,7 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
       }
       return false;
     })()) {
+            this.recordRecoveryDiagnostic("Recovered from incomplete syntax", this.__qin_field_currentPosition, com_subhuti_struct_SubhutiPosition.of(allowCtx.__qin_field_bestState.codeLine(), allowCtx.__qin_field_bestState.codeColumn(), allowCtx.__qin_field_bestState.codeIndex()));
             this.applyAllowErrorContext(allowCtx);
           }
           this.setParseSuccess();
@@ -337,6 +346,31 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
       return false;
     }
     throw new __QinJavaLangRuntimeException("ManyTolerant recovery failed to advance");
+  }
+  currentCstChildCount(): any {
+    let currentCst: any = this.getCurCst();
+    if ((() => {
+      if (__qin_binary__("==", currentCst, null)) {
+        return true;
+      }
+      return __qin_binary__("==", currentCst.getChildren(), null);
+    })()) {
+      return 0.0;
+    }
+    return currentCst.getChildCount();
+  }
+  recordRecoveryDiagnosticForConsumedTokens(message: string, startTokenIndex: number): any {
+    if ((() => {
+      if (__qin_binary__("<", startTokenIndex, 0.0)) {
+        return true;
+      }
+      return __qin_binary__(">=", startTokenIndex, this.__qin_field_parsedTokens.size());
+    })()) {
+      this.recordRecoveryDiagnostic(message, this.__qin_field_currentPosition, this.__qin_field_currentPosition);
+      return null;
+    }
+    this.recordRecoveryDiagnostic(message, this.__qin_field_parsedTokens.get(startTokenIndex));
+    return null;
   }
   captureAllowErrorBranch(startTokenIndex: number): any {
     return new com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext(new __QinJavaUtilArrayList(this.__qin_field_parsedTokens.subList(Math.max(0.0, Math.min(startTokenIndex, this.__qin_field_parsedTokens.size())), this.__qin_field_parsedTokens.size())), this.copyCstChildren(this.getCurCst()), this.saveState());
@@ -463,6 +497,7 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
       return false;
     }
     let token: any = entry.getToken();
+    this.recordRecoveryDiagnostic("Skipped unexpected token during parser recovery", token);
     this.__qin_field_parsedTokens.add(token);
     this.__qin_field_currentIndex = entry.getNextCodeIndex();
     this.__qin_field_currentPosition = com_subhuti_struct_SubhutiPosition.of(entry.getNextLine(), entry.getNextColumn(), entry.getNextCodeIndex());
@@ -707,6 +742,19 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
               this.setParseSuccess();
               break;
             }
+            if ((() => {
+      if (__qin_binary__("!=", lookahead, null)) {
+        return (() => {
+      if (lookahead.isEof()) {
+        return false;
+      }
+      return true;
+    })();
+      }
+      return false;
+    })()) {
+              this.recordRecoveryDiagnostic("Skipped unexpected token during parser recovery", lookahead);
+            }
             this.__qin_field_currentIndex = __qin_binary__("+", this.__qin_field_currentIndex, 1.0);
           }
           if ((() => {
@@ -767,6 +815,19 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
               recovered = true;
               this.setParseSuccess();
               break;
+            }
+            if ((() => {
+      if (__qin_binary__("!=", lookahead, null)) {
+        return (() => {
+      if (lookahead.isEof()) {
+        return false;
+      }
+      return true;
+    })();
+      }
+      return false;
+    })()) {
+              this.recordRecoveryDiagnostic("Skipped unexpected token during parser recovery", lookahead);
             }
             this.__qin_field_currentIndex = __qin_binary__("+", this.__qin_field_currentIndex, 1.0);
           }
@@ -864,6 +925,7 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
       return false;
     })()) {
           let lastToken: any = this.__qin_field_parsedTokens.get(__qin_binary__("-", maxEndIndex, 1.0));
+          this.recordRecoveryDiagnostic("Recovered from incomplete syntax", this.__qin_field_currentPosition, lastToken.endPosition());
           this.__qin_field_currentIndex = __qin_binary__("+", (() => {
       if (__qin_binary__("!=", lastToken.index(), null)) {
         return lastToken.index();
@@ -871,9 +933,11 @@ class com_subhuti_parser_SubhutiParserCombinators extends com_subhuti_parser_Sub
       return 0.0;
     })(), __QinJavaLangString.length(lastToken.value()));
         } else {
+          this.recordRecoveryDiagnostic("Skipped unexpected character during parser recovery", this.__qin_field_currentPosition, this.__qin_field_currentPosition.advance(__QinJavaLangString.substring(this.__qin_field_sourceCode, this.__qin_field_currentIndex, Math.min(__qin_binary__("+", this.__qin_field_currentIndex, 1.0), __QinJavaLangString.length(this.__qin_field_sourceCode)))));
           this.__qin_field_currentIndex = __qin_binary__("+", this.__qin_field_currentIndex, 1.0);
         }
       } else {
+        this.recordRecoveryDiagnostic("Skipped unexpected character during parser recovery", this.__qin_field_currentPosition, this.__qin_field_currentPosition.advance(__QinJavaLangString.substring(this.__qin_field_sourceCode, this.__qin_field_currentIndex, Math.min(__qin_binary__("+", this.__qin_field_currentIndex, 1.0), __QinJavaLangString.length(this.__qin_field_sourceCode)))));
         this.__qin_field_currentIndex = __qin_binary__("+", this.__qin_field_currentIndex, 1.0);
       }
       if (__qin_binary__("==", this.__qin_field_currentIndex, startCodeIndex)) {

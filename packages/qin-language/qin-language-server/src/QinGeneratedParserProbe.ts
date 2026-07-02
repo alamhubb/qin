@@ -5,6 +5,7 @@ const GENERATED_QIN_PARSER_PACKAGE = '@qin/generated-qin-parser-ts'
 
 type QinParserConstructor = new (source: string) => {
   enableErrorRecovery?: () => unknown
+  getRecoveryDiagnostics?: () => unknown
   parse?: () => unknown
   Program?: (...args: unknown[]) => unknown
 }
@@ -34,6 +35,7 @@ export interface QinGeneratedParserDiagnostic {
   line: number
   column: number
   offset?: number
+  length?: number
 }
 
 export function probeGeneratedQinParser(
@@ -70,7 +72,14 @@ export function parseGeneratedQinSource(
         ? parser.Program()
         : null
     const cstName = readCstName(cst)
-    return { available: true, ok: cstName === 'Program', cstName, cst }
+    const diagnostics = readRecoveryDiagnostics(parser)
+    return {
+      available: true,
+      ok: cstName === 'Program' && (options.mode !== 'editor' || diagnostics.length === 0),
+      cstName,
+      cst,
+      diagnostics,
+    }
   } catch (error) {
     const message = error instanceof Error ? error.stack || error.message : String(error)
     logToFile('Generated Qin parser probe failed:', message)
@@ -80,6 +89,37 @@ export function parseGeneratedQinSource(
       error: message,
       diagnostics: [createGeneratedParserDiagnostic(error)],
     }
+  }
+}
+
+function readRecoveryDiagnostics(parser: unknown): QinGeneratedParserDiagnostic[] {
+  if (!parser || typeof parser !== 'object') {
+    return []
+  }
+  const getRecoveryDiagnostics = (parser as { getRecoveryDiagnostics?: () => unknown }).getRecoveryDiagnostics
+  if (typeof getRecoveryDiagnostics !== 'function') {
+    return []
+  }
+  return toArray(getRecoveryDiagnostics.call(parser)).map(readRecoveryDiagnostic).filter(item => item != null)
+}
+
+function readRecoveryDiagnostic(value: unknown): QinGeneratedParserDiagnostic | undefined {
+  if (!value || typeof value !== 'object') {
+    return
+  }
+  const message = callStringMethod(value, 'message')
+    ?? readObjectStringField(value, '__qin_field_message')
+    ?? 'Qin parser recovered from invalid syntax'
+  const line = Math.max(0, callNumberMethod(value, 'line', 1) - 1)
+  const column = Math.max(0, callNumberMethod(value, 'column', 1) - 1)
+  const offset = callNumberMethod(value, 'offset', -1)
+  const tokenValue = callStringMethod(value, 'tokenValue') ?? readObjectStringField(value, '__qin_field_tokenValue')
+  return {
+    message,
+    line,
+    column,
+    offset: offset >= 0 ? offset : undefined,
+    length: tokenValue ? tokenValue.length : undefined,
   }
 }
 
@@ -137,6 +177,19 @@ function readCstName(cst: unknown): string | undefined {
 
 function stripBom(source: string): string {
   return source.charCodeAt(0) === 0xFEFF ? source.substring(1) : source
+}
+
+function toArray(value: unknown): unknown[] {
+  if (!value) {
+    return []
+  }
+  if (Array.isArray(value)) {
+    return value
+  }
+  if (typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function') {
+    return Array.from(value as Iterable<unknown>)
+  }
+  return []
 }
 
 function readErrorDetails(error: unknown): unknown {
@@ -238,5 +291,25 @@ function callStringMethod(value: unknown, methodName: string): string | undefine
     return undefined
   }
   const result = method.call(value)
+  return result == null ? undefined : String(result)
+}
+
+function callNumberMethod(value: unknown, methodName: string, defaultValue: number): number {
+  if (!value || typeof value !== 'object') {
+    return defaultValue
+  }
+  const method = (value as Record<string, unknown>)[methodName]
+  if (typeof method !== 'function') {
+    return defaultValue
+  }
+  const result = Number(method.call(value))
+  return Number.isFinite(result) ? result : defaultValue
+}
+
+function readObjectStringField(value: unknown, fieldName: string): string | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+  const result = (value as Record<string, unknown>)[fieldName]
   return result == null ? undefined : String(result)
 }

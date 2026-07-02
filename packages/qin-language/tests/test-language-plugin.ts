@@ -30,7 +30,7 @@ if (!tsSubsetStrictEditingGenerated.includes('Qin transform failed')) {
   throw new Error(`Strict Qin lowering must reject incomplete TS-subset member access, got: ${tsSubsetStrictEditingGenerated}`)
 }
 const tsSubsetEditorProbe = probeGeneratedQinParser(tsSubsetEditingSource, { mode: 'editor' })
-if (!tsSubsetEditorProbe.ok || tsSubsetEditorProbe.cstName !== 'Program') {
+if (tsSubsetEditorProbe.cstName !== 'Program') {
   throw new Error(`Editor Qin parser recovery must accept incomplete TS-subset member access, got: ${JSON.stringify(tsSubsetEditorProbe)}`)
 }
 const tsSubsetEditingGenerated = lowerQinToTypeScript(tsSubsetEditingSource, { mode: 'editor' })
@@ -53,7 +53,7 @@ if (!qinObjectStrictEditingGenerated.includes('Qin transform failed')) {
   throw new Error(`Strict Qin lowering must reject incomplete object source, got: ${qinObjectStrictEditingGenerated}`)
 }
 const qinObjectEditorProbe = probeGeneratedQinParser(qinObjectEditingSource, { mode: 'editor' })
-if (!qinObjectEditorProbe.ok || qinObjectEditorProbe.cstName !== 'Program') {
+if (qinObjectEditorProbe.cstName !== 'Program') {
   throw new Error(`Editor Qin parser recovery must accept incomplete object member access, got: ${JSON.stringify(qinObjectEditorProbe)}`)
 }
 const qinObjectEditorEditingGenerated = lowerQinToTypeScript(qinObjectEditingSource, { mode: 'editor' })
@@ -92,6 +92,12 @@ if (!diagnosticsProvider) {
   throw new Error('Qin language service plugin must provide parser diagnostics')
 }
 
+const editorCompletionDocument = TextDocument.create('file:///completion.qin', 'qin', 1, tsSubsetEditingSource)
+const editorCompletionDiagnostics = await diagnosticsProvider(editorCompletionDocument, {} as never)
+if (editorCompletionDiagnostics?.some(item => item.source === 'qin-parser')) {
+  throw new Error(`Dangling member access used for editor completion must not produce parser diagnostics: ${JSON.stringify(editorCompletionDiagnostics)}`)
+}
+
 const validDocument = TextDocument.create('file:///valid.qin', 'qin', 1, source)
 const validDiagnostics = await diagnosticsProvider(validDocument, {} as never)
 if (validDiagnostics?.length) {
@@ -105,6 +111,11 @@ if (!invalidDiagnostics?.length) {
 }
 if (invalidDiagnostics[0].source !== 'qin-parser') {
   throw new Error(`Qin diagnostics must come from qin-parser, got ${JSON.stringify(invalidDiagnostics[0])}`)
+}
+
+const invalidEditorProbe = probeGeneratedQinParser(invalidDocument.getText(), { mode: 'editor' })
+if (invalidEditorProbe.cstName !== 'Program' || invalidEditorProbe.ok || !invalidEditorProbe.diagnostics?.length) {
+  throw new Error(`Editor parser must preserve CST and expose recovery diagnostics for invalid Qin, got ${JSON.stringify(invalidEditorProbe)}`)
 }
 
 const invalidSource = invalidDocument.getText()

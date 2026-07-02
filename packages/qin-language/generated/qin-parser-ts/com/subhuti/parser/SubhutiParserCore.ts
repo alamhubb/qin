@@ -442,15 +442,19 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
       return "EOF";
     })();
           let errorMessage: any = __qin_binary__("+", __qin_binary__("+", "Parser internal error: parsing succeeded but source code remains unconsumed. ", "Next token: "), tokenInfo);
-          if ((() => {
+          if (this.isErrorRecoveryMode()) {
+            this.recordRecoveryDiagnostic(errorMessage, nextToken);
+          } else {
+            if ((() => {
       if (this.__qin_field_analysisMode) {
         return __qin_binary__("!=", this.__qin_field_errorHandler, null);
       }
       return false;
     })()) {
-            this.__qin_field_errorHandler.recordError(this.__qin_field_currentPosition, errorMessage, "EOF", tokenInfo);
-          } else {
-            throw new __QinJavaLangRuntimeException(errorMessage);
+              this.__qin_field_errorHandler.recordError(this.__qin_field_currentPosition, errorMessage, "EOF", tokenInfo);
+            } else {
+              throw new __QinJavaLangRuntimeException(errorMessage);
+            }
           }
         }
       }
