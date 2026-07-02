@@ -22,6 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *     "src/Main.java": "a1b2c3d4...",
  *     "src/Utils.java": "e5f6g7h8..."
  *   },
+ *   "metadata": {
+ *     "java.release": "21",
+ *     "java.outputDir": "build/classes"
+ *   },
  *   "lastCompileTime": 1234567890
  * }
  */
@@ -35,6 +39,7 @@ public class FileHashCache {
 
     // 缓存数据
     private Map<String, String> fileHashes;
+    private Map<String, String> metadata;
     private long lastCompileTime;
 
     public FileHashCache(String projectDir) {
@@ -42,6 +47,7 @@ public class FileHashCache {
         this.cacheFile = QinConstants.getProjectCompileCache(this.projectDir);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.fileHashes = new ConcurrentHashMap<>();
+        this.metadata = new ConcurrentHashMap<>();
         this.lastCompileTime = 0;
     }
 
@@ -50,6 +56,7 @@ public class FileHashCache {
      */
     public void load() {
         fileHashes = new ConcurrentHashMap<>();
+        metadata = new ConcurrentHashMap<>();
         lastCompileTime = 0;
 
         if (!Files.exists(cacheFile)) {
@@ -63,11 +70,15 @@ public class FileHashCache {
                 if (data.files != null) {
                     fileHashes = new ConcurrentHashMap<>(data.files);
                 }
+                if (data.metadata != null) {
+                    metadata = new ConcurrentHashMap<>(data.metadata);
+                }
                 lastCompileTime = data.lastCompileTime;
             }
         } catch (Exception e) {
             // 缓存损坏，重置
             fileHashes = new ConcurrentHashMap<>();
+            metadata = new ConcurrentHashMap<>();
             lastCompileTime = 0;
         }
     }
@@ -80,6 +91,7 @@ public class FileHashCache {
 
         CacheData data = new CacheData();
         data.files = new HashMap<>(fileHashes);
+        data.metadata = new TreeMap<>(metadata);
         data.lastCompileTime = System.currentTimeMillis();
 
         String json = gson.toJson(data);
@@ -219,10 +231,29 @@ public class FileHashCache {
     }
 
     /**
+     * 检查缓存元数据是否与当前编译配置一致。
+     */
+    public boolean hasMetadata(Map<String, String> expectedMetadata) {
+        Map<String, String> expected = expectedMetadata != null ? expectedMetadata : Map.of();
+        return metadata.equals(expected);
+    }
+
+    /**
+     * 更新编译配置元数据。配置变化会让调用方触发全量重编译。
+     */
+    public void updateMetadata(Map<String, String> nextMetadata) {
+        metadata.clear();
+        if (nextMetadata != null) {
+            metadata.putAll(nextMetadata);
+        }
+    }
+
+    /**
      * 清除缓存
      */
     public void clear() throws IOException {
         fileHashes.clear();
+        metadata.clear();
         lastCompileTime = 0;
         Files.deleteIfExists(cacheFile);
     }
@@ -254,6 +285,7 @@ public class FileHashCache {
     public CacheStats getStats() {
         return new CacheStats(
             fileHashes.size(),
+            metadata.size(),
             lastCompileTime
         );
     }
@@ -265,17 +297,19 @@ public class FileHashCache {
      */
     private static class CacheData {
         Map<String, String> files;
+        Map<String, String> metadata;
         long lastCompileTime;
     }
 
     /**
      * 缓存统计信息
      */
-    public record CacheStats(int fileCount, long lastCompileTime) {
+    public record CacheStats(int fileCount, int metadataCount, long lastCompileTime) {
         @Override
         public String toString() {
-            return String.format("CacheStats{files=%d, lastCompile=%s}",
+            return String.format("CacheStats{files=%d, metadata=%d, lastCompile=%s}",
                 fileCount,
+                metadataCount,
                 lastCompileTime > 0
                     ? new java.util.Date(lastCompileTime).toString()
                     : "never");

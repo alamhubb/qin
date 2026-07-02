@@ -130,18 +130,24 @@ public class JavaRunner {
                     System.out.println("  -> Java output cleanup detected stale classes, forcing full recompile...");
                 }
 
+                Map<String, String> compileMetadata = buildCompileMetadata(sourceDirsForCache);
+                boolean hasCompileConfigChange = !incrementalChecker.hasCompileMetadata(compileMetadata);
+                if (hasCompileConfigChange) {
+                    System.out.println("  -> Java compile configuration changed, forcing full recompile...");
+                }
+
                 boolean hasCompiledClass = hasAnyCompiledClass();
                 List<String> filesMissingClasses = findFilesMissingCompiledClasses(allJavaFiles, sourceDirsForCache);
                 List<String> filesToCompile;
-                if (hasDeletedFiles || hasStaleClasses || !hasCompiledClass) {
+                if (hasCompileConfigChange
+                        || hasDeletedFiles
+                        || hasStaleClasses
+                        || !hasCompiledClass
+                        || !changedPaths.isEmpty()
+                        || !filesMissingClasses.isEmpty()) {
                     filesToCompile = allJavaFiles;
                 } else {
-                    LinkedHashSet<String> dedup = new LinkedHashSet<>();
-                    for (Path changedPath : changedPaths) {
-                        dedup.add(changedPath.toString());
-                    }
-                    dedup.addAll(filesMissingClasses);
-                    filesToCompile = new ArrayList<>(dedup);
+                    filesToCompile = new ArrayList<>();
                 }
 
                 if (filesToCompile.isEmpty() && hasCompiledClass) {
@@ -163,6 +169,7 @@ public class JavaRunner {
                 for (String sourceDir : sourceDirsForCache) {
                     incrementalChecker.updateAllHashes(sourceDir);
                 }
+                incrementalChecker.updateCompileMetadata(compileMetadata);
                 incrementalChecker.saveCache();
 
                 return compileResult;
@@ -539,6 +546,32 @@ public class JavaRunner {
 
         args.addAll(javaFiles);
         return args;
+    }
+
+    private Map<String, String> buildCompileMetadata(List<String> sourceDirsForCache) {
+        List<String> javacOptions = new ArrayList<>();
+        javaCompileConfig.appendJavacOptions(javacOptions);
+
+        Map<String, String> metadata = new TreeMap<>();
+        metadata.put("schema", "java-compile-v1");
+        metadata.put("java.version", nullToEmpty(javaCompileConfig.version()));
+        metadata.put("java.release", nullToEmpty(javaCompileConfig.release()));
+        metadata.put("java.source", nullToEmpty(javaCompileConfig.source()));
+        metadata.put("java.target", nullToEmpty(javaCompileConfig.target()));
+        metadata.put("java.encoding", nullToEmpty(javaCompileConfig.encoding()));
+        metadata.put("java.sourceDir", nullToEmpty(javaCompileConfig.sourceDir()));
+        metadata.put("java.testDir", nullToEmpty(javaCompileConfig.testDir()));
+        metadata.put("java.outputDir", nullToEmpty(javaCompileConfig.outputDir()));
+        metadata.put("java.effectiveLanguageLevel", nullToEmpty(javaCompileConfig.effectiveLanguageLevel()));
+        metadata.put("java.effectiveSourceLevel", nullToEmpty(javaCompileConfig.effectiveSourceLevel()));
+        metadata.put("javac.options", String.join("\u001f", javacOptions));
+        metadata.put("sourceDirs", String.join("\u001f", sourceDirsForCache));
+        metadata.put("compileClasspath", nullToEmpty(buildCompileClasspath()));
+        return metadata;
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     /**

@@ -83,6 +83,16 @@ public class IncrementalCompilationChecker {
     }
 
     /**
+     * 检查编译配置元数据是否与缓存一致。
+     */
+    public boolean hasCompileMetadata(Map<String, String> expectedMetadata) {
+        if (hashCache == null) {
+            return false;
+        }
+        return hashCache.hasMetadata(expectedMetadata);
+    }
+
+    /**
      * 检查是否需要编译（精确模式 - 哈希）
      */
     public boolean needsCompilationByHash(String sourceDir) throws IOException {
@@ -107,6 +117,15 @@ public class IncrementalCompilationChecker {
     public void updateAllHashes(String sourceDir) throws IOException {
         if (hashCache != null) {
             hashCache.updateAllHashes(sourceDir);
+        }
+    }
+
+    /**
+     * 更新编译配置元数据。
+     */
+    public void updateCompileMetadata(Map<String, String> metadata) {
+        if (hashCache != null) {
+            hashCache.updateMetadata(metadata);
         }
     }
 
