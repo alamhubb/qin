@@ -113,6 +113,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 """);
 
         QinLspAutoPopupTypedHandler handler = new QinLspAutoPopupTypedHandler();
+        assertTrue(QinLspAutoPopupTypedHandler.isAfterMemberAccess(myFixture.getEditor()));
         assertSame(TypedHandlerDelegate.Result.STOP, handler.checkAutoPopup(
                 'v',
                 getProject(),
