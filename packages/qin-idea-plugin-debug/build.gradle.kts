@@ -12,6 +12,8 @@ val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm
 val lspUiFixture = file("fixtures/lsp-ui").canonicalFile
 val workspaceRoot = file("../../..").canonicalFile
 val qinCommand = workspaceRoot.resolve("qin/qin.bat")
+val localIdeaHome = providers.gradleProperty("qinLocalIdeaHome")
+    .orElse(providers.environmentVariable("QIN_LOCAL_IDEA_HOME"))
 val stableSmokeJvmArgs = listOf(
     "-Xmx256m",
     "-Dfile.encoding=UTF-8",
@@ -42,7 +44,11 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     intellijPlatform {
-        intellijIdeaUltimate("2025.3.1")
+        if (localIdeaHome.isPresent) {
+            local(localIdeaHome)
+        } else {
+            intellijIdeaUltimate("2025.3.1")
+        }
         bundledPlugin("com.intellij.java")
         // The 2025.3 LSP API is packaged in product-backend.jar.
         bundledLibrary("lib/product-backend.jar")
