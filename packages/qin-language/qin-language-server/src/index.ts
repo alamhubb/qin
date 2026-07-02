@@ -11,6 +11,10 @@ import { QinLanguageServicePlugin } from './QinLanguageServicePlugin'
 import { extensionWithoutDot, resolveLanguageServerMetadata } from './LanguageServerMetadata'
 import { logToFile } from './logutil'
 
+const QIN_IDENTIFIER_COMPLETION_TRIGGER_CHARACTERS = [
+  ...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$',
+]
+
 logToFile('=== Qin Language Server Starting ===')
 logToFile('Process ID: ' + process.pid)
 logToFile('Node version: ' + process.version)
@@ -55,7 +59,7 @@ connection.onInitialize((params) => {
     })
   )
 
-  const result = server.initialize(params, tsProject, [...languageServicePlugins])
+  const result = withQinCompletionTriggerCharacters(server.initialize(params, tsProject, [...languageServicePlugins]))
   logToFile('=== Qin Language Server Initialized ===')
   return result
 })
@@ -83,6 +87,21 @@ function isQinDocumentUri(uri: string, sourceExtension: string): boolean {
     || lowerUri.includes(`.${sourceExtension}%`)
     || lowerUri.includes(`%2e${sourceExtension}`)
     || lowerUri.includes(`%252e${sourceExtension}`)
+}
+
+function withQinCompletionTriggerCharacters<T extends { capabilities?: { completionProvider?: { triggerCharacters?: string[] } } }>(result: T): T {
+  const completionProvider = result.capabilities?.completionProvider
+  if (!completionProvider) {
+    return result
+  }
+  completionProvider.triggerCharacters = [
+    ...new Set([
+      ...(completionProvider.triggerCharacters ?? []),
+      ...QIN_IDENTIFIER_COMPLETION_TRIGGER_CHARACTERS,
+    ]),
+  ]
+  logToFile('Completion trigger characters:', JSON.stringify(completionProvider.triggerCharacters))
+  return result
 }
 
 function withoutTypeScriptDocumentSymbols(plugins: LanguageServicePlugin[]): LanguageServicePlugin[] {

@@ -38,6 +38,9 @@
                 fieldName="INSTANCE"
                 extensions="cssts"/>
         <platform.lsp.serverSupportProvider implementation="com.qin.debug.lsp.QinLspServerSupportProvider"/>
+        <lang.parserDefinition
+                language="Qin"
+                implementationClass="com.qin.debug.lsp.QinParserDefinition"/>
         <lang.syntaxHighlighterFactory
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinSyntaxHighlighterFactory"/>

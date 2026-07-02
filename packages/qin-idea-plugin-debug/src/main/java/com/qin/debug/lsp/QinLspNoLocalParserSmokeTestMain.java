@@ -6,12 +6,8 @@ import java.util.List;
 
 public final class QinLspNoLocalParserSmokeTestMain {
     private static final List<String> FORBIDDEN_SOURCE_MARKERS = List.of(
-            "ParserDefinition",
-            "PsiParser",
-            "CompletionContributor",
-            "Lexer");
+            "CompletionContributor");
     private static final List<String> FORBIDDEN_PLUGIN_XML_MARKERS = List.of(
-            "lang.parserDefinition",
             "lang.psiStructureViewFactory",
             "lang.completion.contributor");
     private static final List<String> ALLOWED_SOURCE_FILES = List.of(

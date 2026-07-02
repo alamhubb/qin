@@ -34,8 +34,9 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertFileTypes(document);
         assertQinToolWindow(document);
         assertQinSyntaxHighlighter(document);
+        assertQinParserShell(document);
         assertLspProvider(document);
-        assertNoLocalParser(document);
+        assertNoLocalSemanticExtensions(document);
     }
 
     private static void assertDepends(Document document, String expected) {
@@ -121,14 +122,23 @@ public final class QinLspPluginDescriptorSmokeTestMain {
                 "Unexpected Qin syntax highlighter: " + highlighter.getAttribute("implementationClass"));
     }
 
-    private static void assertNoLocalParser(Document document) {
+    private static void assertQinParserShell(Document document) {
+        NodeList parsers = document.getElementsByTagName("lang.parserDefinition");
+        require(parsers.getLength() == 1, "Expected exactly one Qin parserDefinition for PSI file identity");
+        Element parser = (Element) parsers.item(0);
+        require("Qin".equals(parser.getAttribute("language")),
+                "Unexpected parserDefinition language: " + parser.getAttribute("language"));
+        require("com.qin.debug.lsp.QinParserDefinition".equals(parser.getAttribute("implementationClass")),
+                "Unexpected Qin parserDefinition: " + parser.getAttribute("implementationClass"));
+    }
+
+    private static void assertNoLocalSemanticExtensions(Document document) {
         Set<String> forbiddenTags = Set.of(
-                "lang.parserDefinition",
                 "lang.psiStructureViewFactory",
                 "lang.completion.contributor");
         for (String tag : forbiddenTags) {
             require(document.getElementsByTagName(tag).getLength() == 0,
-                    "Pure LSP mode must not register local IDEA language extension: " + tag);
+                    "Qin LSP mode must not register local IDEA semantic extension: " + tag);
         }
     }
 

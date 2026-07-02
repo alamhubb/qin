@@ -91,6 +91,15 @@ final class QinLspLanguageRegistry {
     }
 
     static Path resolveWorkspaceRoot(Path projectBasePath) {
+        Path configuredWorkspaceRoot = configuredWorkspaceRoot();
+        if (configuredWorkspaceRoot != null) {
+            if (!isWorkspaceRoot(configuredWorkspaceRoot)) {
+                throw new IllegalStateException("Configured Qin LSP workspace root is not a qinall workspace: "
+                        + configuredWorkspaceRoot);
+            }
+            return configuredWorkspaceRoot;
+        }
+
         Path current = projectBasePath.toAbsolutePath().normalize();
         while (current != null) {
             if (isWorkspaceRoot(current)) {
@@ -100,6 +109,20 @@ final class QinLspLanguageRegistry {
         }
 
         throw new IllegalStateException("Cannot find qinall workspace root from " + projectBasePath);
+    }
+
+    private static Path configuredWorkspaceRoot() {
+        String property = System.getProperty("qin.lsp.workspaceRoot");
+        if (property != null && !property.isBlank()) {
+            return Path.of(property).toAbsolutePath().normalize();
+        }
+
+        String environment = System.getenv("QIN_LSP_WORKSPACE_ROOT");
+        if (environment != null && !environment.isBlank()) {
+            return Path.of(environment).toAbsolutePath().normalize();
+        }
+
+        return null;
     }
 
     private static boolean isWorkspaceRoot(Path candidate) {

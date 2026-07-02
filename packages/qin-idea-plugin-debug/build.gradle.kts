@@ -1,5 +1,6 @@
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java")
@@ -38,12 +39,15 @@ dependencies {
     implementation(files(qinCliClasses))
 
     implementation("com.google.code.gson:gson:2.10.1")
+    testImplementation("junit:junit:4.13.2")
 
     intellijPlatform {
         intellijIdeaUltimate("2025.3.1")
         bundledPlugin("com.intellij.java")
         // The 2025.3 LSP API is packaged in product-backend.jar.
         bundledLibrary("lib/product-backend.jar")
+        testFramework(TestFrameworkType.Platform)
+        testFramework(TestFrameworkType.Plugin.LSP)
     }
 }
 

@@ -380,6 +380,12 @@ async function main() {
   if (!initResponse?.result?.capabilities) {
     throw new Error(`Qin language server initialize failed. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`)
   }
+  const completionTriggerCharacters = initResponse.result.capabilities.completionProvider?.triggerCharacters ?? []
+  for (const triggerCharacter of ['B', 'r', '_', '$']) {
+    if (!completionTriggerCharacters.includes(triggerCharacter)) {
+      throw new Error(`Qin language server initialize did not expose identifier completion trigger ${JSON.stringify(triggerCharacter)} for IDEA LSP: ${JSON.stringify(initResponse.result.capabilities.completionProvider)}`)
+    }
+  }
   if (!initResponse.result.capabilities.codeActionProvider) {
     throw new Error(`Qin language server initialize did not expose codeActionProvider: ${JSON.stringify(initResponse.result.capabilities)}`)
   }
