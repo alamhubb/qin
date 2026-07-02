@@ -22,7 +22,7 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
     public @NotNull Result charTyped(char charTyped, @NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file) {
         if (!isQinLspFile(file)
                 || !isCompletionTrigger(charTyped)
-                || !isAfterMemberAccess(editor)
+                || !isAfterCompletionPrefix(editor)
                 || LookupManager.getActiveLookup(editor) != null) {
             return Result.CONTINUE;
         }
@@ -35,13 +35,13 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
         QinLogger.ensureInitialized(project, project.getBasePath());
         QinLogger.debug("[LSP-AUTOPOPUP] char=" + printable(charTyped)
                 + " fileType=" + file.getFileType().getName()
-                + " memberAccess=true"
+                + " completionPrefix=true"
                 + " caretOffset=" + editor.getCaretModel().getOffset());
         ApplicationManager.getApplication().invokeLater(() -> {
             if (project.isDisposed()
                     || editor.isDisposed()
                     || LookupManager.getActiveLookup(editor) != null
-                    || !isAfterMemberAccess(editor)) {
+                    || !isAfterCompletionPrefix(editor)) {
                 return;
             }
             CodeCompletionHandlerBase
@@ -71,6 +71,19 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
             index--;
         }
         return index >= 0 && text.charAt(index) == '.';
+    }
+
+    static boolean isAfterCompletionPrefix(Editor editor) {
+        int offset = editor.getCaretModel().getOffset();
+        CharSequence text = editor.getDocument().getImmutableCharSequence();
+        int index = Math.min(offset, text.length()) - 1;
+        if (index < 0 || !isIdentifierPart(text.charAt(index))) {
+            return isAfterMemberAccess(editor);
+        }
+        while (index >= 0 && isIdentifierPart(text.charAt(index))) {
+            index--;
+        }
+        return true;
     }
 
     private static boolean isIdentifierPart(char value) {

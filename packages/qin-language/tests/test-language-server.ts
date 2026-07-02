@@ -589,6 +589,23 @@ async function main() {
     },
   }))
 
+  const objectImmediateUseUri = toFileUri(path.join(__dirname, 'object-immediate-use.qin'))
+  const objectImmediateUseSource = [
+    'export object Counter {',
+    '  value = 1',
+    '}',
+    'Co',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: objectImmediateUseUri,
+      languageId: 'qin',
+      version: 1,
+      text: objectImmediateUseSource,
+    },
+  }))
+
   const objectExtendsUri = toFileUri(path.join(__dirname, 'object-extends.qin'))
   const objectExtendsSource = [
     'class BaseCounter {',
@@ -1119,6 +1136,25 @@ async function main() {
   const objectCompletionLabels = objectCompletionItems.map((item: any) => item.label)
   if (!objectCompletionLabels.includes('Counter')) {
     throw new Error(`Qin object completion did not include generated singleton symbol: ${JSON.stringify(objectCompletionLabels.slice(0, 30))}`)
+  }
+
+  const objectImmediateUseCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: objectImmediateUseUri },
+    position: { line: 3, character: 2 },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(objectImmediateUseCompletionRequest.packet)
+  const objectImmediateUseCompletionResponse = await waitForResponse(
+    objectImmediateUseCompletionRequest.id,
+    messages,
+    `Qin immediate object completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const objectImmediateUseCompletionItems = Array.isArray(objectImmediateUseCompletionResponse.result)
+    ? objectImmediateUseCompletionResponse.result
+    : objectImmediateUseCompletionResponse.result?.items ?? []
+  const objectImmediateUseCompletionLabels = objectImmediateUseCompletionItems.map((item: any) => item.label)
+  if (!objectImmediateUseCompletionLabels.includes('Counter')) {
+    throw new Error(`Qin immediate object completion did not include generated singleton symbol: ${JSON.stringify(objectImmediateUseCompletionLabels.slice(0, 30))}`)
   }
 
   const objectExtendsCompletionRequest = createRequest('textDocument/completion', {

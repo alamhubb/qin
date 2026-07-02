@@ -183,6 +183,32 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         .toArray(String[]::new)), hasValue);
     }
 
+    public void testQinTypingObjectPrefixShowsLookup() throws Exception {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41;
+                }
+
+                <caret>
+                """);
+
+        LspTestUtilKt.waitUntilFileOpenedByLspServer(getProject(), myFixture.getFile().getVirtualFile());
+        myFixture.type("Co");
+        waitForLookup();
+        LookupElement[] elements = myFixture.getLookupElements();
+        assertNotNull("Typing Co did not open an IDEA lookup", LookupManager.getActiveLookup(myFixture.getEditor()));
+        assertNotNull("Typing Co opened no lookup elements", elements);
+        boolean hasCounter = Arrays.stream(elements)
+                .map(LookupElement::getLookupString)
+                .filter(Objects::nonNull)
+                .anyMatch("Counter"::equals);
+        assertTrue("Typing Co did not include Qin object symbol Counter: "
+                + Arrays.toString(Arrays.stream(elements)
+                        .map(LookupElement::getLookupString)
+                        .limit(40)
+                        .toArray(String[]::new)), hasCounter);
+    }
+
     public void testQinTypingMemberPrefixEnterInsertsLookupItem() throws Exception {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {

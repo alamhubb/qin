@@ -274,11 +274,11 @@ function lowerProgramCstToTypeScript(source: string, cst: unknown, mode: 'strict
       semantic: false,
       structure: true,
     })
-    appendMappedGenerated(`const ${objectName} = new ${internalName}()\n`, nameStart, nameEnd, 'const '.length)
+    appendMappedGenerated(`const ${objectName} = new ${internalName}();\n`, nameStart, nameEnd, 'const '.length)
     if (declaration.defaultExport) {
-      appendMappedGenerated(`export default ${objectName}\n`, nameStart, nameEnd, 'export default '.length)
+      appendMappedGenerated(`export default ${objectName};\n`, nameStart, nameEnd, 'export default '.length)
     } else if (declaration.exported) {
-      appendMappedGenerated(`export { ${objectName} }\n`, nameStart, nameEnd, 'export { '.length)
+      appendMappedGenerated(`export { ${objectName} };\n`, nameStart, nameEnd, 'export { '.length)
     }
     cursor = bodyEnd
   }
