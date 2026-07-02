@@ -100,10 +100,7 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
           return []
         }
         updateWorkspaceSymbolsFromDocument(document, workspaceSymbols)
-        const result = filterEditorCompletionRecoveryDiagnostics(
-          document,
-          probeGeneratedQinParser(document.getText(), { mode: 'editor' }),
-        )
+        const result = probeGeneratedQinParser(document.getText(), { mode: 'editor' })
         const sourceUri = readSourceDocumentUri(context, document.uri)
         return [
           ...createQinParserDiagnostics(result),
@@ -162,60 +159,6 @@ export function createQinParserDiagnostics(result: QinGeneratedParserProbeResult
       message: diagnostic.message,
     }
   })
-}
-
-function filterEditorCompletionRecoveryDiagnostics(document: TextDocument, result: QinGeneratedParserProbeResult): QinGeneratedParserProbeResult {
-  if (!result.diagnostics?.length) {
-    return result
-  }
-  const text = document.getText()
-  const danglingOffsets = collectDanglingMemberAccessReceiverOffsets(text)
-  const diagnostics = result.diagnostics.filter(diagnostic => {
-    if (diagnostic.offset == null) {
-      return true
-    }
-    return !danglingOffsets.has(diagnostic.offset)
-  })
-  return {
-    ...result,
-    ok: result.cstName === 'Program' && diagnostics.length === 0,
-    diagnostics,
-  }
-}
-
-function collectDanglingMemberAccessReceiverOffsets(source: string): Set<number> {
-  const offsets = new Set<number>()
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, source)
-  let previousTokenStart = -1
-  let previousToken: ts.SyntaxKind | undefined
-  let token = scanner.scan()
-  while (token !== ts.SyntaxKind.EndOfFileToken) {
-    const tokenStart = scanner.getTokenPos()
-    const tokenEnd = scanner.getTextPos()
-    if (token !== ts.SyntaxKind.DotToken) {
-      previousToken = token
-      previousTokenStart = tokenStart
-      token = scanner.scan()
-      continue
-    }
-
-    const receiverStart = previousToken === ts.SyntaxKind.Identifier ? previousTokenStart : -1
-    const nextToken = scanner.scan()
-    const nextTokenStart = nextToken === ts.SyntaxKind.EndOfFileToken ? source.length : scanner.getTokenPos()
-    const gap = source.slice(tokenEnd, nextTokenStart)
-    if (receiverStart >= 0 && (nextToken === ts.SyntaxKind.EndOfFileToken || containsLineTerminator(gap))) {
-      offsets.add(receiverStart)
-      offsets.add(tokenStart)
-    }
-    previousToken = nextToken
-    previousTokenStart = nextTokenStart
-    token = nextToken
-  }
-  return offsets
-}
-
-function containsLineTerminator(text: string): boolean {
-  return text.includes('\n') || text.includes('\r')
 }
 
 function updateWorkspaceSymbolsFromDocument(document: TextDocument, workspaceSymbols: Map<string, WorkspaceSymbol[]>): void {

@@ -256,6 +256,17 @@ public class JavaRunner {
                 StringBuilder errorMsg = new StringBuilder();
                 for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
                     if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+                        JavaFileObject source = diagnostic.getSource();
+                        if (source != null) {
+                            errorMsg.append(source.toUri());
+                            if (diagnostic.getLineNumber() >= 0) {
+                                errorMsg.append(":").append(diagnostic.getLineNumber());
+                                if (diagnostic.getColumnNumber() >= 0) {
+                                    errorMsg.append(":").append(diagnostic.getColumnNumber());
+                                }
+                            }
+                            errorMsg.append(": ");
+                        }
                         errorMsg.append(diagnostic.getMessage(null)).append("\n");
                     }
                 }

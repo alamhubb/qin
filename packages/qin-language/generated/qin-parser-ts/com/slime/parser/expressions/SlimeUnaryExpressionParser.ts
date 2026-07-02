@@ -240,6 +240,8 @@ class com_slime_parser_expressions_SlimeUnaryExpressionParser extends com_slime_
       this.IdentifierName();
       return null;
     }), __qin_java_functional(() => {
+      return this.IncompleteMemberAccessProperty();
+    }), __qin_java_functional(() => {
       if ((() => {
       if (this.canStartTemplateLiteral()) {
         return false;
@@ -347,6 +349,8 @@ class com_slime_parser_expressions_SlimeUnaryExpressionParser extends com_slime_
       this.__qin_field_tokenConsumer.Dot();
       this.IdentifierName();
       return null;
+    }), __qin_java_functional(() => {
+      return this.IncompleteMemberAccessProperty();
     }), __qin_java_functional(() => {
       if ((() => {
       if (this.canStartTemplateLiteral()) {
