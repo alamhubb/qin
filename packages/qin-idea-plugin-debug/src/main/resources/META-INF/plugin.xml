@@ -39,6 +39,7 @@
                 extensions="cssts"/>
         <platform.lsp.serverSupportProvider implementation="com.qin.debug.lsp.QinLspServerSupportProvider"/>
         <typedHandler implementation="com.qin.debug.lsp.QinLspAutoPopupTypedHandler"/>
+        <enterHandlerDelegate implementation="com.qin.debug.lsp.QinLspLookupEnterHandler"/>
         <lang.parserDefinition
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinParserDefinition"/>

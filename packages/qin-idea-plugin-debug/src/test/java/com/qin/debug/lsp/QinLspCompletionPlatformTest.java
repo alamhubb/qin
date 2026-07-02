@@ -3,6 +3,7 @@ package com.qin.debug.lsp;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
+import com.intellij.codeInsight.lookup.impl.LookupImpl;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
@@ -180,6 +181,38 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         .map(LookupElement::getLookupString)
                         .limit(40)
                         .toArray(String[]::new)), hasValue);
+    }
+
+    public void testQinTypingMemberPrefixEnterInsertsLookupItem() throws Exception {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41;
+
+                  next() {
+                    return this.<caret>
+                  }
+                }
+                """);
+
+        LspTestUtilKt.waitUntilFileOpenedByLspServer(getProject(), myFixture.getFile().getVirtualFile());
+        myFixture.type("va");
+        waitForLookup();
+        LookupImpl lookup = (LookupImpl) LookupManager.getActiveLookup(myFixture.getEditor());
+        assertNotNull("Typing this.va did not open an IDEA lookup", lookup);
+        LookupElement value = lookup.getItems().stream()
+                .filter(item -> "value".equals(item.getLookupString()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull("Typing this.va did not include Qin object member value", value);
+        lookup.setCurrentItem(value);
+        lookup.markSelectionTouched();
+        myFixture.type("\n");
+        UIUtil.dispatchAllInvocationEvents();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Pressing Enter on lookup item should insert this.value: " + text, text.contains("return this.value"));
+        assertFalse("Pressing Enter on lookup item should not insert a blank line after this.va: " + text,
+                text.contains("return this.va\n"));
     }
 
     private void waitForLookup() throws Exception {
