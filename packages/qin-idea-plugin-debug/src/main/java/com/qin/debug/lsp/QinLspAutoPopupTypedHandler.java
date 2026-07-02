@@ -1,6 +1,9 @@
 package com.qin.debug.lsp;
 
 import com.intellij.codeInsight.AutoPopupController;
+import com.intellij.codeInsight.completion.CodeCompletionHandlerBase;
+import com.intellij.codeInsight.completion.CompletionType;
+import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -21,7 +24,10 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
 
     @Override
     public @NotNull Result charTyped(char charTyped, @NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file) {
-        if (!isQinLspFile(file) || !isCompletionTrigger(charTyped) || !isAfterMemberAccess(editor)) {
+        if (!isQinLspFile(file)
+                || !isCompletionTrigger(charTyped)
+                || !isAfterMemberAccess(editor)
+                || LookupManager.getActiveLookup(editor) != null) {
             return Result.CONTINUE;
         }
 
@@ -37,7 +43,9 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
                 + " memberAccess=" + memberAccess
                 + " caretOffset=" + editor.getCaretModel().getOffset());
         if (memberAccess) {
-            AutoPopupController.getInstance(project).autoPopupMemberLookup(editor, QinLspAutoPopupTypedHandler::isQinLspFile);
+            CodeCompletionHandlerBase
+                    .createHandler(CompletionType.BASIC, false, true, true)
+                    .invokeCompletion(project, editor);
         } else {
             AutoPopupController.getInstance(project).scheduleAutoPopup(editor, QinLspAutoPopupTypedHandler::isQinLspFile);
         }

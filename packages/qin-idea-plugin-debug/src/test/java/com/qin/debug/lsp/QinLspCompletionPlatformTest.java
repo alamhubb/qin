@@ -1,6 +1,7 @@
 package com.qin.debug.lsp;
 
 import com.intellij.codeInsight.lookup.LookupElement;
+import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
@@ -134,5 +135,32 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 getProject(),
                 myFixture.getEditor(),
                 myFixture.getFile()));
+    }
+
+    public void testQinTypingMemberPrefixShowsLookup() throws Exception {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41;
+
+                  next() {
+                    return this.<caret>
+                  }
+                }
+                """);
+
+        LspTestUtilKt.waitUntilFileOpenedByLspServer(getProject(), myFixture.getFile().getVirtualFile());
+        myFixture.type("va");
+        LookupElement[] elements = myFixture.getLookupElements();
+        assertNotNull("Typing this.va did not open an IDEA lookup", LookupManager.getActiveLookup(myFixture.getEditor()));
+        assertNotNull("Typing this.va opened no lookup elements", elements);
+        boolean hasValue = Arrays.stream(elements)
+                .map(LookupElement::getLookupString)
+                .filter(Objects::nonNull)
+                .anyMatch("value"::equals);
+        assertTrue("Typing this.va did not include Qin object member value: "
+                + Arrays.toString(Arrays.stream(elements)
+                        .map(LookupElement::getLookupString)
+                        .limit(40)
+                        .toArray(String[]::new)), hasValue);
     }
 }
