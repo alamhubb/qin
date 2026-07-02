@@ -1,10 +1,11 @@
 package com.qin.debug.lsp;
 
-import com.intellij.codeInsight.AutoPopupController;
 import com.intellij.codeInsight.completion.CodeCompletionHandlerBase;
 import com.intellij.codeInsight.completion.CompletionType;
-import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
+import com.intellij.codeInsight.lookup.LookupManager;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiFile;
@@ -14,12 +15,7 @@ import org.jetbrains.annotations.NotNull;
 public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
     @Override
     public @NotNull Result checkAutoPopup(char charTyped, @NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file) {
-        if (!isQinLspFile(file) || !isCompletionTrigger(charTyped)) {
-            return Result.CONTINUE;
-        }
-
-        scheduleAutoPopup(charTyped, project, editor, file);
-        return Result.STOP;
+        return Result.CONTINUE;
     }
 
     @Override
@@ -31,24 +27,27 @@ public final class QinLspAutoPopupTypedHandler extends TypedHandlerDelegate {
             return Result.CONTINUE;
         }
 
-        scheduleAutoPopup(charTyped, project, editor, file);
+        scheduleAutoPopupAfterTyping(charTyped, project, editor, file);
         return Result.CONTINUE;
     }
 
-    private static void scheduleAutoPopup(char charTyped, Project project, Editor editor, PsiFile file) {
+    private static void scheduleAutoPopupAfterTyping(char charTyped, Project project, Editor editor, PsiFile file) {
         QinLogger.ensureInitialized(project, project.getBasePath());
-        boolean memberAccess = charTyped == '.' || isAfterMemberAccess(editor);
         QinLogger.debug("[LSP-AUTOPOPUP] char=" + printable(charTyped)
                 + " fileType=" + file.getFileType().getName()
-                + " memberAccess=" + memberAccess
+                + " memberAccess=true"
                 + " caretOffset=" + editor.getCaretModel().getOffset());
-        if (memberAccess) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            if (project.isDisposed()
+                    || editor.isDisposed()
+                    || LookupManager.getActiveLookup(editor) != null
+                    || !isAfterMemberAccess(editor)) {
+                return;
+            }
             CodeCompletionHandlerBase
                     .createHandler(CompletionType.BASIC, false, true, true)
                     .invokeCompletion(project, editor);
-        } else {
-            AutoPopupController.getInstance(project).scheduleAutoPopup(editor, QinLspAutoPopupTypedHandler::isQinLspFile);
-        }
+        }, ModalityState.current());
     }
 
     private static boolean isQinLspFile(PsiFile file) {

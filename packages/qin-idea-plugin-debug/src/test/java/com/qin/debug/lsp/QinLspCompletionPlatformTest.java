@@ -8,6 +8,7 @@ import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
 import com.intellij.platform.lsp.tests.LspTestUtilKt;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
+import com.intellij.util.ui.UIUtil;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -115,12 +116,12 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         QinLspAutoPopupTypedHandler handler = new QinLspAutoPopupTypedHandler();
         assertTrue(QinLspAutoPopupTypedHandler.isAfterMemberAccess(myFixture.getEditor()));
-        assertSame(TypedHandlerDelegate.Result.STOP, handler.checkAutoPopup(
+        assertSame(TypedHandlerDelegate.Result.CONTINUE, handler.checkAutoPopup(
                 'v',
                 getProject(),
                 myFixture.getEditor(),
                 myFixture.getFile()));
-        assertSame(TypedHandlerDelegate.Result.STOP, handler.checkAutoPopup(
+        assertSame(TypedHandlerDelegate.Result.CONTINUE, handler.checkAutoPopup(
                 '.',
                 getProject(),
                 myFixture.getEditor(),
@@ -137,6 +138,22 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 myFixture.getFile()));
     }
 
+    public void testQinTypingDotKeepsTypedText() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41;
+
+                  next() {
+                    return this<caret>
+                  }
+                }
+                """);
+
+        myFixture.type(".");
+        assertTrue("Typing . should keep this. in the document: " + myFixture.getEditor().getDocument().getText(),
+                myFixture.getEditor().getDocument().getText().contains("return this."));
+    }
+
     public void testQinTypingMemberPrefixShowsLookup() throws Exception {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -150,6 +167,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         LspTestUtilKt.waitUntilFileOpenedByLspServer(getProject(), myFixture.getFile().getVirtualFile());
         myFixture.type("va");
+        waitForLookup();
         LookupElement[] elements = myFixture.getLookupElements();
         assertNotNull("Typing this.va did not open an IDEA lookup", LookupManager.getActiveLookup(myFixture.getEditor()));
         assertNotNull("Typing this.va opened no lookup elements", elements);
@@ -162,5 +180,14 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         .map(LookupElement::getLookupString)
                         .limit(40)
                         .toArray(String[]::new)), hasValue);
+    }
+
+    private void waitForLookup() throws Exception {
+        long deadline = System.currentTimeMillis() + 5000;
+        while (LookupManager.getActiveLookup(myFixture.getEditor()) == null && System.currentTimeMillis() < deadline) {
+            UIUtil.dispatchAllInvocationEvents();
+            Thread.sleep(25);
+        }
+        UIUtil.dispatchAllInvocationEvents();
     }
 }
