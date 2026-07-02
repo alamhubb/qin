@@ -41,6 +41,29 @@ Do not modify the user's Qin source to add semicolons. Add semicolons only in ge
 - Do not synthesize broad or string-scanned completion items in the IDEA plugin to hide language-server problems.
 - When a completion result is wrong, reproduce it at the Qin language-server boundary first, then validate the IDEA editor path.
 
+## Java Types In TypeScript LSP
+
+Qin backend targets JVM `.class`, but the editor-service surface is still TypeScript/Volar. Java library completion should enter TypeScript LSP as generated `.d.ts`, not by replacing Qin LSP with a Java LSP.
+
+Use two type-source frontends that feed one Qin Java semantic model:
+
+- Java source files: use the Subhuti Java parser in `slime/java-slime/slime-java`. It follows the same broad PEG/Subhuti style as Slime/Qin parsers: parser classes extend `SubhutiParser`, grammar rules are `@SubhutiRule` methods, and AST conversion is available through `JavaCstToAst`. Reuse it for source `.java` -> Java AST -> `QinJavaSemanticModel` -> `.d.ts`.
+- JDK, dependency jars, and compiled project `.class` files: do not run the source parser on bytecode. Read classpath metadata through a classfile reader such as ASM or the JDK compiler/model APIs, then normalize into the same `QinJavaSemanticModel` shape before emitting `.d.ts`.
+
+The `.d.ts` generator should produce declarations that TypeScript can consume through Qin virtual service scripts, for example:
+
+```ts
+declare module "java:java.util" {
+  export class ArrayList<T> {
+    add(value: T): boolean;
+    get(index: number): T;
+    size(): number;
+  }
+}
+```
+
+Do not generate broad `any` declarations as a shortcut. Prefer conservative, accurate mappings and make missing Java type shapes visible in tests. Source parser recovery is for editing source Java/Qin; classpath `.class` indexing should be deterministic metadata extraction.
+
 ## Logging
 
 Use `glogjs`/`logToFile` for Qin language server diagnostics. Completion logging should include request URI, language id, position, trigger kind, trigger character, item count, and first labels. Logs are diagnostic support only; they are not a fix.
