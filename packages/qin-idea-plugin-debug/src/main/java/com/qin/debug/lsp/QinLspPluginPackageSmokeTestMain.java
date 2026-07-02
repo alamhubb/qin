@@ -14,13 +14,21 @@ import java.util.zip.ZipFile;
 public final class QinLspPluginPackageSmokeTestMain {
     private static final Set<String> REQUIRED_CLASSES = Set.of(
             "com/qin/debug/lsp/QinLspFileType.class",
+            "com/qin/debug/lsp/QinLanguage.class",
+            "com/qin/debug/lsp/QinLexer.class",
+            "com/qin/debug/lsp/QinTokenTypes.class",
+            "com/qin/debug/lsp/QinSyntaxHighlighter.class",
+            "com/qin/debug/lsp/QinSyntaxHighlighterFactory.class",
             "com/qin/debug/lsp/OvsLspFileType.class",
             "com/qin/debug/lsp/CsstsLspFileType.class",
+            "com/qin/debug/lsp/OvsLanguage.class",
+            "com/qin/debug/lsp/CsstsLanguage.class",
             "com/qin/debug/lsp/QinLspLanguage.class",
             "com/qin/debug/lsp/QinLspLanguageRegistry.class",
             "com/qin/debug/lsp/QinLspServerCommandLineFactory.class",
             "com/qin/debug/lsp/QinLspServerCommandSpec.class",
             "com/qin/debug/lsp/QinLspServerSupportProvider.class",
+            "com/qin/debug/lsp/QinLspStartupProbe.class",
             "com/qin/debug/QinToolWindowFactory.class");
 
     private QinLspPluginPackageSmokeTestMain() {

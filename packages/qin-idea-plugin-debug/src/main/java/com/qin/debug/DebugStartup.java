@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
+import com.qin.debug.lsp.QinLspStartupProbe;
 import com.qin.types.QinConfig;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
@@ -44,6 +45,7 @@ public class DebugStartup implements ProjectActivity {
         QinLogger.info("[STARTUP] Qin plugin startup: " + project.getName());
         QinLogger.info("[STARTUP] Project base path: " + basePath);
         removeLegacyQinRunConfigurations(project);
+        ApplicationManager.getApplication().invokeLater(() -> QinLspStartupProbe.log(project, Paths.get(basePath)));
 
         if (hasQinSdkContext(Paths.get(basePath))) {
             ApplicationManager.getApplication().invokeLater(() -> configureProjectSdk(project));

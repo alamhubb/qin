@@ -20,17 +20,20 @@
         <projectService serviceImplementation="com.qin.debug.annotator.QinCompileErrorService"/>
 
         <fileType
-                name="Qin Source"
+                name="Qin"
+                language="Qin"
                 implementationClass="com.qin.debug.lsp.QinLspFileType"
                 fieldName="INSTANCE"
                 extensions="qin"/>
         <fileType
-                name="OVS Source"
+                name="OVS"
+                language="OVS"
                 implementationClass="com.qin.debug.lsp.OvsLspFileType"
                 fieldName="INSTANCE"
                 extensions="ovs"/>
         <fileType
-                name="CSSTS Source"
+                name="CSSTS"
+                language="CSSTS"
                 implementationClass="com.qin.debug.lsp.CsstsLspFileType"
                 fieldName="INSTANCE"
                 extensions="cssts"/>

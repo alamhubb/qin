@@ -53,15 +53,37 @@ public final class QinLspPluginDescriptorSmokeTestMain {
                 "qin", "com.qin.debug.lsp.QinLspFileType",
                 "ovs", "com.qin.debug.lsp.OvsLspFileType",
                 "cssts", "com.qin.debug.lsp.CsstsLspFileType");
+        Map<String, String> expectedNames = Map.of(
+                "qin", "Qin",
+                "ovs", "OVS",
+                "cssts", "CSSTS");
+        Map<String, String> expectedLanguages = Map.of(
+                "qin", "Qin",
+                "ovs", "OVS",
+                "cssts", "CSSTS");
         Map<String, String> actual = new HashMap<>();
+        Map<String, String> actualNames = new HashMap<>();
+        Map<String, String> actualLanguages = new HashMap<>();
         NodeList fileTypes = document.getElementsByTagName("fileType");
         for (int i = 0; i < fileTypes.getLength(); i++) {
             Element fileType = (Element) fileTypes.item(i);
             actual.put(fileType.getAttribute("extensions"), fileType.getAttribute("implementationClass"));
+            actualNames.put(fileType.getAttribute("extensions"), fileType.getAttribute("name"));
+            actualLanguages.put(fileType.getAttribute("extensions"), fileType.getAttribute("language"));
         }
         for (Map.Entry<String, String> entry : expected.entrySet()) {
             require(entry.getValue().equals(actual.get(entry.getKey())),
                     "Missing fileType for ." + entry.getKey() + ": " + entry.getValue());
+            require(expectedNames.get(entry.getKey()).equals(actualNames.get(entry.getKey())),
+                    "fileType name for ." + entry.getKey()
+                            + " must match FileType.getName(): expected "
+                            + expectedNames.get(entry.getKey()) + ", got "
+                            + actualNames.get(entry.getKey()));
+            require(expectedLanguages.get(entry.getKey()).equals(actualLanguages.get(entry.getKey())),
+                    "fileType language for ." + entry.getKey()
+                            + " must match Language ID: expected "
+                            + expectedLanguages.get(entry.getKey()) + ", got "
+                            + actualLanguages.get(entry.getKey()));
         }
     }
 

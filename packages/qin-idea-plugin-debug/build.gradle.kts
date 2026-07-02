@@ -82,6 +82,7 @@ tasks {
         )
         if (gradle.startParameter.taskNames.any { it == "runIdeLspFixture" || it.endsWith(":runIdeLspFixture") }) {
             args(lspUiFixture.canonicalPath)
+            systemProperty("qin.lsp.fixture.openFile", lspUiFixture.resolve("good.qin").canonicalPath)
         }
     }
 

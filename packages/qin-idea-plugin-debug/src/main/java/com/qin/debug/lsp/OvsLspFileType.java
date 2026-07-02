@@ -1,14 +1,15 @@
 package com.qin.debug.lsp;
 
-import com.intellij.openapi.fileTypes.FileType;
+import com.intellij.openapi.fileTypes.LanguageFileType;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.Icon;
 
-public final class OvsLspFileType implements FileType {
+public final class OvsLspFileType extends LanguageFileType {
     public static final OvsLspFileType INSTANCE = new OvsLspFileType();
 
     private OvsLspFileType() {
+        super(OvsLanguage.INSTANCE);
     }
 
     @Override
@@ -31,8 +32,4 @@ public final class OvsLspFileType implements FileType {
         return null;
     }
 
-    @Override
-    public boolean isBinary() {
-        return false;
-    }
 }
