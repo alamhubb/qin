@@ -9,6 +9,7 @@ import ts, { type IScriptSnapshot } from 'typescript'
 import { URI } from 'vscode-uri'
 import type { LanguageServerMetadata } from './LanguageServerMetadata'
 import { extensionWithoutDot } from './LanguageServerMetadata'
+import { buildJavaSourceSymbolDts } from './QinJavaSourceSymbols'
 import { parseGeneratedQinSource, probeGeneratedQinParser } from './QinGeneratedParserProbe'
 import { logToFile } from './logutil'
 
@@ -56,9 +57,9 @@ export function QinLanguagePlugin(metadata: LanguageServerMetadata): LanguagePlu
       return undefined
     },
 
-    createVirtualCode(_uri, languageId, snapshot) {
+    createVirtualCode(uri, languageId, snapshot) {
       if (languageId === QIN_LANGUAGE_ID) {
-        return new QinVirtualCode(snapshot)
+        return new QinVirtualCode(uri, snapshot)
       }
       return undefined
     },
@@ -89,10 +90,11 @@ export function QinLanguagePlugin(metadata: LanguageServerMetadata): LanguagePlu
             continue
           }
           if (code.languageId === 'typescript') {
+            const extension = code.id === 'qin-java-symbols' ? '.d.ts' : metadata.serviceExtension
             scripts.push({
-              fileName: fileName + '.' + code.id + metadata.serviceExtension,
+              fileName: fileName + '.' + code.id + extension,
               code,
-              extension: metadata.serviceExtension,
+              extension,
               scriptKind: ScriptKind.TS,
             })
           } else if (code.languageId === 'js') {
@@ -116,7 +118,7 @@ export class QinVirtualCode implements VirtualCode {
   mappings: CodeMapping[]
   embeddedCodes: VirtualCode[] = []
 
-  constructor(public snapshot: IScriptSnapshot) {
+  constructor(public uri: URI, public snapshot: IScriptSnapshot) {
     const sourceCode = snapshot.getText(0, snapshot.getLength())
     const parserProbe = probeGeneratedQinParser(sourceCode, { mode: 'editor' })
     if (parserProbe.available && !parserProbe.ok) {
@@ -157,6 +159,26 @@ export class QinVirtualCode implements VirtualCode {
       mappings: lowering.mappings,
       embeddedCodes: [],
     }]
+
+    const javaSymbolDts = buildJavaSourceSymbolDts(uri, sourceCode)
+    if (javaSymbolDts) {
+      logToFile('[QinVirtualCode] java source symbols ready', JSON.stringify({
+        uri: uri.toString(),
+        generatedLength: javaSymbolDts.length,
+        preview: javaSymbolDts.slice(0, 160),
+      }))
+      this.embeddedCodes.push({
+        id: 'qin-java-symbols',
+        languageId: 'typescript',
+        snapshot: {
+          getText: (start, end) => javaSymbolDts.substring(start, end),
+          getLength: () => javaSymbolDts.length,
+          getChangeRange: () => undefined,
+        },
+        mappings: [],
+        embeddedCodes: [],
+      })
+    }
   }
 }
 

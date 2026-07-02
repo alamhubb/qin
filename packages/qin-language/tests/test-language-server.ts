@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -683,6 +684,47 @@ async function main() {
     },
   }))
 
+  const javaSourceProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'qin-lsp-java-source-'))
+  const javaSourceMainRoot = path.join(javaSourceProjectRoot, 'src', 'main')
+  fs.mkdirSync(javaSourceMainRoot, { recursive: true })
+  fs.writeFileSync(path.join(javaSourceProjectRoot, 'qin.config.js'), [
+    'export default {',
+    '  name: "qin-lsp-java-source-fixture",',
+    '  type: "app",',
+    '  entry: "src/main/App.qin"',
+    '}',
+    '',
+  ].join('\n'))
+  fs.writeFileSync(path.join(javaSourceMainRoot, 'Greeter.java'), [
+    'package demo;',
+    '',
+    'public class Greeter {',
+    '  public static String greet(String name) {',
+    '    return "Hello " + name;',
+    '  }',
+    '',
+    '  public static int count() {',
+    '    return 1;',
+    '  }',
+    '}',
+    '',
+  ].join('\n'))
+  const javaSourceQinUri = toFileUri(path.join(javaSourceMainRoot, 'App.qin'))
+  const javaSourceQinSource = [
+    'import { Greeter } from "java:demo"',
+    '',
+    'const message = Greeter.gr',
+    '',
+  ].join('\n')
+  server.stdin.write(createNotification('textDocument/didOpen', {
+    textDocument: {
+      uri: javaSourceQinUri,
+      languageId: 'qin',
+      version: 1,
+      text: javaSourceQinSource,
+    },
+  }))
+
   const sharedJavaImportUri = toFileUri(path.join(__dirname, 'shared', 'shared-policy.qin'))
   const sharedJavaImportSource = [
     "import { ArrayList } from 'java:java.util'",
@@ -1212,6 +1254,25 @@ async function main() {
   const importCompletionLabels = importCompletionItems.map((item: any) => item.label)
   if (!importCompletionLabels.includes('value')) {
     throw new Error(`Qin cross-file import completion did not include imported object field: ${JSON.stringify(importCompletionLabels.slice(0, 30))}`)
+  }
+
+  const javaSourceCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: javaSourceQinUri },
+    position: { line: 2, character: 'const message = Greeter.gr'.length },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(javaSourceCompletionRequest.packet)
+  const javaSourceCompletionResponse = await waitForResponse(
+    javaSourceCompletionRequest.id,
+    messages,
+    `Qin Java source completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const javaSourceCompletionItems = Array.isArray(javaSourceCompletionResponse.result)
+    ? javaSourceCompletionResponse.result
+    : javaSourceCompletionResponse.result?.items ?? []
+  const javaSourceCompletionLabels = javaSourceCompletionItems.map((item: any) => item.label)
+  if (!javaSourceCompletionLabels.includes('greet')) {
+    throw new Error(`Qin Java source completion did not include Greeter.greet: ${JSON.stringify(javaSourceCompletionLabels.slice(0, 30))}`)
   }
 
   const definitionRequest = createRequest('textDocument/definition', {
@@ -1771,6 +1832,7 @@ async function main() {
   await sleep(200)
   server.stdin.write(createNotification('exit', null))
   await sleep(200)
+  fs.rmSync(javaSourceProjectRoot, { recursive: true, force: true })
 
   console.log('Qin language server LSP smoke passed')
 }

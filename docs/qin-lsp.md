@@ -55,6 +55,8 @@ Do not maintain independent Java semantic and TypeScript declaration models. `Qi
 
 `QinIrProgram` and `QinSymbolModel` are peer models, not inheritance parents or children. Share reusable value objects such as `QinIrTypeRef`, annotation refs, qualified names, modifiers, and visibility only when the meaning is truly identical. Convert between models through explicit adapters such as `QinIrProgram -> QinSymbolModel` and `QinJavaSemanticModel -> QinSymbolModel`. Do not add duplicate class/method/field/type shapes with different names unless the semantics are genuinely different.
 
+For editor completion, `src/main/*.java` source symbols are exposed to TypeScript through a generated extra service `.d.ts`, not through IDEA-side completion items. A Qin file importing `java:demo` should see declarations derived from Java source package `demo`, for example `import { Greeter } from "java:demo"` followed by `Greeter.` should complete static methods from `src/main/Greeter.java`.
+
 The `.d.ts` generator should produce declarations that TypeScript can consume through Qin virtual service scripts, for example:
 
 ```ts
