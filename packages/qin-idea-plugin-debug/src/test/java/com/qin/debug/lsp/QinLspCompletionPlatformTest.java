@@ -286,6 +286,68 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertFalse("Qin object rename should remove old usage: " + text, text.contains("Counter.next()"));
     }
 
+    public void testQinObjectMethodReferenceResolvesToMethodName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.ne<caret>xt()
+                """);
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin object method reference was not registered", reference);
+        PsiElement methodName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.METHOD_NAME, methodName.getNode().getElementType());
+        assertEquals("next", methodName.getText());
+        assertSingleQinObjectMethodReference(reference.getElement());
+    }
+
+    public void testQinObjectMethodReferenceParticipatesInReferencesSearch() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.next()
+                """);
+
+        PsiElement methodName = findPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME);
+        assertNotNull("Qin method name PSI was not built", methodName);
+        Collection<PsiReference> references = ReferencesSearch.search(
+                methodName,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin object method reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "next".equals(item.getElement().getText())
+                        && item.getElement() != methodName));
+    }
+
+    public void testQinObjectMethodRenameProcessorUpdatesReferences() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.next()
+                """);
+
+        PsiElement methodName = findPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME);
+        assertNotNull("Qin method name PSI was not built", methodName);
+        new RenameProcessor(getProject(), methodName, "advance", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin method rename should update declaration: " + text, text.contains("advance()"));
+        assertTrue("Qin method rename should update usages: " + text, text.contains("Counter.advance()"));
+        assertFalse("Qin method rename should remove old usage: " + text, text.contains("Counter.next()"));
+    }
+
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -788,6 +850,13 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .filter(QinObjectReference.class::isInstance)
                 .count();
         assertEquals("Qin object references should be provided only through QinObjectReferenceContributor", 1L, count);
+    }
+
+    private static void assertSingleQinObjectMethodReference(PsiElement element) {
+        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
+                .filter(QinObjectMethodReference.class::isInstance)
+                .count();
+        assertEquals("Qin object method references should be provided only through QinObjectMethodReferenceContributor", 1L, count);
     }
 
     private static PsiElement findPsiElementType(PsiElement root, IElementType type) {

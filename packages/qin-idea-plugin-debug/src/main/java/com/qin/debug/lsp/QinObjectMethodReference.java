@@ -12,19 +12,19 @@ import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
-    private final String identifier;
+final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElement> {
+    private final String methodName;
 
-    QinObjectReference(@NotNull PsiElement element) {
+    QinObjectMethodReference(@NotNull PsiElement element) {
         super(element, TextRange.from(0, element.getTextLength()));
-        this.identifier = element.getText();
+        this.methodName = element.getText();
     }
 
     @Override
     public ResolveResult @NotNull [] multiResolve(boolean incompleteCode) {
         return ResolveCache.getInstance(myElement.getProject()).resolveWithCaching(
                 this,
-                QinObjectReference::resolveInner,
+                QinObjectMethodReference::resolveInner,
                 false,
                 incompleteCode);
     }
@@ -43,20 +43,27 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
             leafElement.replaceWithText(newElementName);
             return myElement;
         }
-        throw new IncorrectOperationException("Cannot rename Qin object reference without a leaf token: " + myElement);
+        throw new IncorrectOperationException("Cannot rename Qin object method reference without a leaf token: " + myElement);
     }
 
-    static boolean isObjectReferenceCandidate(@NotNull PsiElement element) {
-        return QinJavaReference.previousQualifierName(element) == null
-                && QinObjectSymbols.findObjectName(element, element.getText()) != null;
+    static boolean isObjectMethodReferenceCandidate(@NotNull PsiElement element) {
+        return resolveMethodName(element) != null;
     }
 
     private static ResolveResult @NotNull [] resolveInner(
-            @NotNull QinObjectReference reference,
+            @NotNull QinObjectMethodReference reference,
             boolean incompleteCode) {
-        PsiElement objectName = QinObjectSymbols.findObjectName(reference.getElement(), reference.identifier);
-        return objectName == null
+        PsiElement methodNameElement = resolveMethodName(reference.getElement());
+        return methodNameElement == null
                 ? ResolveResult.EMPTY_ARRAY
-                : new ResolveResult[]{new QinPsiResolveResult(objectName)};
+                : new ResolveResult[]{new QinPsiResolveResult(methodNameElement)};
+    }
+
+    private static @Nullable PsiElement resolveMethodName(@NotNull PsiElement element) {
+        String objectName = QinJavaReference.previousQualifierName(element);
+        if (objectName == null) {
+            return null;
+        }
+        return QinObjectSymbols.findMethodName(element, objectName, element.getText());
     }
 }

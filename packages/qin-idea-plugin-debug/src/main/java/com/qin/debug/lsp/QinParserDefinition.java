@@ -307,6 +307,9 @@ public final class QinParserDefinition implements ParserDefinition {
         if (node.getElementType() == QinTokenTypes.OBJECT_NAME) {
             return new QinObjectNamePsiElement(node);
         }
+        if (node.getElementType() == QinTokenTypes.METHOD_NAME) {
+            return new QinMethodNamePsiElement(node);
+        }
         return new QinPsiElement(node);
     }
 
