@@ -53,6 +53,16 @@ final class QinImportBindings {
                 && !binding.exportedName().equals(binding.localName());
     }
 
+    static @Nullable PsiElement findAliasName(@NotNull PsiElement element, @NotNull String localName) {
+        PsiFile file = element.getContainingFile();
+        if (file == null) {
+            return null;
+        }
+        AliasNameVisitor visitor = new AliasNameVisitor(localName);
+        file.accept(visitor);
+        return visitor.aliasName;
+    }
+
     private static @NotNull List<ImportBinding> collectFromDeclaration(@NotNull PsiElement importDeclaration) {
         List<QinPsiToken> tokens = QinPsiTokenStream.collect(importDeclaration);
         int fromIndex = nextKeywordIndex(tokens, 0, "from");
@@ -139,5 +149,28 @@ final class QinImportBindings {
     }
 
     private record NamedImport(@NotNull String exportedName, @NotNull String localName) {
+    }
+
+    private static final class AliasNameVisitor extends com.intellij.psi.PsiRecursiveElementWalkingVisitor {
+        private final String localName;
+        private PsiElement aliasName;
+
+        private AliasNameVisitor(@NotNull String localName) {
+            this.localName = localName;
+        }
+
+        @Override
+        public void visitElement(@NotNull PsiElement element) {
+            if (aliasName != null) {
+                return;
+            }
+            if (element.getNode() != null
+                    && element.getNode().getElementType() == QinTokenTypes.IMPORT_ALIAS_NAME
+                    && localName.equals(element.getText())) {
+                aliasName = element;
+                return;
+            }
+            super.visitElement(element);
+        }
     }
 }

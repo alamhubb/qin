@@ -34,6 +34,10 @@ public final class QinSymbolHighlightAnnotator implements Annotator {
             highlight(element, holder, DefaultLanguageHighlighterColors.INSTANCE_FIELD, "Qin field symbol");
             return;
         }
+        if (elementType == QinTokenTypes.IMPORT_ALIAS_NAME) {
+            highlight(element, holder, DefaultLanguageHighlighterColors.LOCAL_VARIABLE, "Qin import alias symbol");
+            return;
+        }
         if (elementType != QinTokenTypes.REFERENCE_IDENTIFIER) {
             return;
         }
@@ -49,6 +53,10 @@ public final class QinSymbolHighlightAnnotator implements Annotator {
             }
             if (reference instanceof QinObjectFieldReference) {
                 highlight(element, holder, DefaultLanguageHighlighterColors.INSTANCE_FIELD, "Qin field reference");
+                return;
+            }
+            if (reference instanceof QinImportAliasReference) {
+                highlight(element, holder, DefaultLanguageHighlighterColors.LOCAL_VARIABLE, "Qin import alias reference");
                 return;
             }
             if (reference instanceof QinJavaReference) {

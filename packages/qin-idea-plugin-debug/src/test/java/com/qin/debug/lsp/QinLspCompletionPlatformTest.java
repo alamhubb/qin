@@ -249,6 +249,17 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_SPECIFIER));
     }
 
+    public void testQinParserBuildsImportAliasNamePsi() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G } from "java:demo"
+                import { Counter as C } from "./Counter.qin"
+                """);
+
+        assertEquals("Qin PSI should expose local import aliases as named PSI nodes",
+                2,
+                countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_ALIAS_NAME));
+    }
+
     public void testQinParserBuildsStructuredPsiForObjectDeclaration() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -412,6 +423,54 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiReference aliasReference = myFixture.getFile().findReferenceAt(text.indexOf("C }"));
         assertNull("Aliased Qin local import name should be a local declaration, not a remote object reference",
                 aliasReference);
+    }
+
+    public void testQinImportAliasRenameProcessorUpdatesQinAliasUsages() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiElement aliasName = findPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_ALIAS_NAME);
+        assertNotNull("Qin import alias name PSI was not built", aliasName);
+        new RenameProcessor(getProject(), aliasName, "CounterAlias", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin alias rename should update import alias declaration: " + text,
+                text.contains("import { Counter as CounterAlias }"));
+        assertTrue("Qin alias rename should update local alias usages: " + text,
+                text.contains("CounterAlias.value"));
+    }
+
+    public void testQinImportAliasReferenceParticipatesInReferencesSearch() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiElement aliasName = findPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_ALIAS_NAME);
+        assertNotNull("Qin import alias name PSI was not built", aliasName);
+        Collection<PsiReference> references = ReferencesSearch.search(
+                aliasName,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include local Qin alias usage: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "C".equals(item.getElement().getText())
+                        && item.getElement() != aliasName));
     }
 
     public void testQinObjectNameStubIndexFindsObjectDeclarationFile() {
@@ -1316,6 +1375,34 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
         assertNull("Aliased Java local import name should be a local declaration, not a Java class reference",
                 reference);
+    }
+
+    public void testQinImportAliasRenameProcessorUpdatesJavaAliasUsages() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiElement aliasName = findPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_ALIAS_NAME);
+        assertNotNull("Qin import alias name PSI was not built", aliasName);
+        new RenameProcessor(getProject(), aliasName, "GreeterAlias", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Java alias rename should update import alias declaration: " + text,
+                text.contains("import { Greeter as GreeterAlias }"));
+        assertTrue("Java alias rename should update local alias usages: " + text,
+                text.contains("GreeterAlias.greet(\"Qin\")"));
     }
 
     public void testQinJavaClassRenameProcessorPreservesImportAliasUsages() {

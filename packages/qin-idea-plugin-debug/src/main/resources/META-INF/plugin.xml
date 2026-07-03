@@ -58,6 +58,9 @@
         <psi.referenceContributor
                 language="Qin"
                 implementation="com.qin.debug.lsp.QinObjectFieldReferenceContributor"/>
+        <psi.referenceContributor
+                language="Qin"
+                implementation="com.qin.debug.lsp.QinImportAliasReferenceContributor"/>
         <completion.contributor
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinObjectMemberCompletionContributor"/>

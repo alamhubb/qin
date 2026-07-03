@@ -165,7 +165,7 @@ public final class QinParserDefinition implements ParserDefinition {
         if (isKeyword(builder, "as")) {
             builder.advanceLexer();
             if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
-                wrapReferenceIdentifier(builder);
+                wrapImportAliasName(builder);
             }
         }
         specifierMarker.done(QinTokenTypes.IMPORT_SPECIFIER);
@@ -225,6 +225,12 @@ public final class QinParserDefinition implements ParserDefinition {
         PsiBuilder.Marker referenceMarker = builder.mark();
         builder.advanceLexer();
         referenceMarker.done(QinTokenTypes.REFERENCE_IDENTIFIER);
+    }
+
+    private static void wrapImportAliasName(PsiBuilder builder) {
+        PsiBuilder.Marker aliasMarker = builder.mark();
+        builder.advanceLexer();
+        aliasMarker.done(QinTokenTypes.IMPORT_ALIAS_NAME);
     }
 
     private static boolean isKeyword(PsiBuilder builder, String text) {
@@ -349,6 +355,9 @@ public final class QinParserDefinition implements ParserDefinition {
         }
         if (node.getElementType() == QinTokenTypes.FIELD_NAME) {
             return new QinFieldNamePsiElement(node);
+        }
+        if (node.getElementType() == QinTokenTypes.IMPORT_ALIAS_NAME) {
+            return new QinImportAliasNamePsiElement(node);
         }
         return new QinPsiElement(node);
     }

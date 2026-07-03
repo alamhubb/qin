@@ -13,7 +13,8 @@ record QinPsiToken(@NotNull PsiElement element, @NotNull IElementType type, @Not
         return type == QinTokenTypes.IDENTIFIER
                 || type == QinTokenTypes.CLASS_NAME
                 || type == QinTokenTypes.FUNCTION_IDENTIFIER
-                || type == QinTokenTypes.MEMBER_IDENTIFIER;
+                || type == QinTokenTypes.MEMBER_IDENTIFIER
+                || type == QinTokenTypes.IMPORT_ALIAS_NAME;
     }
 
     boolean is(IElementType expectedType, String expectedText) {
