@@ -101,6 +101,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains("greet:" + QinTokenTypes.MEMBER_IDENTIFIER));
     }
 
+    public void testQinSymbolAnnotatorHighlightsObjectDeclarationsAndReferences() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+
+                const value = Counter.next()
+                """);
+
+        List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
+        assertHighlightContains(highlights, "Qin object symbol");
+        assertHighlightContains(highlights, "Qin field symbol");
+        assertHighlightContains(highlights, "Qin method symbol");
+        assertHighlightContains(highlights, "Qin object reference");
+        assertHighlightContains(highlights, "Qin method reference");
+        assertHighlightContains(highlights, "Qin field reference");
+    }
+
     public void testQinLexerUsesSlimeTokenDefinitionsForModernSyntax() {
         String source = """
                 object Store {
