@@ -25,7 +25,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.ReferencesSearch;
 import com.intellij.refactoring.rename.RenameProcessor;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
-import com.intellij.util.indexing.FileBasedIndex;
+import com.intellij.psi.stubs.StubIndex;
 import com.intellij.util.ui.UIUtil;
 
 import java.nio.file.Path;
@@ -328,7 +328,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinObjectReference(reference.getElement());
     }
 
-    public void testQinObjectNameIndexFindsObjectDeclarationFile() {
+    public void testQinObjectNameStubIndexFindsObjectDeclarationFile() {
         var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
                   value = 41
@@ -340,13 +340,15 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 }
                 """);
 
-        Collection<com.intellij.openapi.vfs.VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(
-                QinObjectNameIndex.NAME,
+        Collection<QinPsiFile> files = StubIndex.getElements(
+                QinObjectNameStubIndex.KEY,
                 "Counter",
-                GlobalSearchScope.allScope(getProject()));
+                getProject(),
+                GlobalSearchScope.allScope(getProject()),
+                QinPsiFile.class);
 
-        assertTrue("Qin object name index should locate Counter.qin: " + files,
-                files.contains(counterFile.getVirtualFile()));
+        assertTrue("Qin object name StubIndex should locate Counter.qin: " + describePsiFiles(files),
+                files.stream().anyMatch(file -> file.getVirtualFile().equals(counterFile.getVirtualFile())));
     }
 
     public void testQinObjectReferenceAcrossRelativeImportParticipatesInReferencesSearch() {
@@ -1414,6 +1416,12 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .map(reference -> reference.getElement().getText()
                         + "@"
                         + reference.getElement().getContainingFile().getName())
+                .toList();
+    }
+
+    private static List<String> describePsiFiles(Collection<? extends PsiFile> files) {
+        return files.stream()
+                .map(PsiFile::getName)
                 .toList();
     }
 

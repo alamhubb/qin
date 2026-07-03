@@ -15,6 +15,9 @@ public final class QinLspPluginPackageSmokeTestMain {
     private static final Set<String> REQUIRED_CLASSES = Set.of(
             "com/qin/debug/lsp/QinLspFileType.class",
             "com/qin/debug/lsp/QinLanguage.class",
+            "com/qin/debug/lsp/QinFileElementType.class",
+            "com/qin/debug/lsp/QinFileStub.class",
+            "com/qin/debug/lsp/QinFileStubBuilder.class",
             "com/qin/debug/lsp/QinLexer.class",
             "com/qin/debug/lsp/QinLexicalScanner.class",
             "com/qin/debug/lsp/QinLexicalToken.class",
@@ -29,7 +32,6 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinDeclarationScanner.class",
             "com/qin/debug/lsp/QinImportBindings.class",
             "com/qin/debug/lsp/QinModuleImportTable.class",
-            "com/qin/debug/lsp/QinObjectNameIndex.class",
             "com/qin/debug/lsp/QinObjectNameStubIndex.class",
             "com/qin/debug/lsp/QinObjectReference.class",
             "com/qin/debug/lsp/QinObjectReferenceContributor.class",

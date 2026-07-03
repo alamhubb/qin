@@ -39,6 +39,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertAutoPopupTypedHandler(document);
         assertQinObjectMemberCompletion(document);
         assertQinObjectNameStubIndex(document);
+        assertNoQinObjectNameFileBasedIndex(document);
         assertNoLocalSemanticExtensions(document);
     }
 
@@ -166,6 +167,15 @@ public final class QinLspPluginDescriptorSmokeTestMain {
             }
         }
         throw new IllegalStateException("Missing Qin object-name StubIndex registration");
+    }
+
+    private static void assertNoQinObjectNameFileBasedIndex(Document document) {
+        NodeList indexes = document.getElementsByTagName("fileBasedIndex");
+        for (int i = 0; i < indexes.getLength(); i++) {
+            Element index = (Element) indexes.item(i);
+            require(!"com.qin.debug.lsp.QinObjectNameIndex".equals(index.getAttribute("implementation")),
+                    "Qin object-name indexing must use StubIndex, not the transitional FileBasedIndex");
+        }
     }
 
     private static void assertNoLocalSemanticExtensions(Document document) {

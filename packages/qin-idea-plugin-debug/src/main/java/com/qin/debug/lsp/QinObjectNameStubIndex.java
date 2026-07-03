@@ -4,12 +4,12 @@ import com.intellij.psi.stubs.StringStubIndexExtension;
 import com.intellij.psi.stubs.StubIndexKey;
 import org.jetbrains.annotations.NotNull;
 
-public final class QinObjectNameStubIndex extends StringStubIndexExtension<QinObjectNamePsiElement> {
-    static final StubIndexKey<String, QinObjectNamePsiElement> KEY =
+public final class QinObjectNameStubIndex extends StringStubIndexExtension<QinPsiFile> {
+    static final StubIndexKey<String, QinPsiFile> KEY =
             StubIndexKey.createIndexKey("com.qin.debug.lsp.stub.objectName");
 
     @Override
-    public @NotNull StubIndexKey<String, QinObjectNamePsiElement> getKey() {
+    public @NotNull StubIndexKey<String, QinPsiFile> getKey() {
         return KEY;
     }
 

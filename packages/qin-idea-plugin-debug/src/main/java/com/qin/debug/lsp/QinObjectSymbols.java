@@ -6,12 +6,13 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiRecursiveElementWalkingVisitor;
 import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.util.indexing.FileBasedIndex;
+import com.intellij.psi.stubs.StubIndex;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 final class QinObjectSymbols {
@@ -38,10 +39,13 @@ final class QinObjectSymbols {
             return null;
         }
         GlobalSearchScope importedFileScope = GlobalSearchScope.fileScope(element.getProject(), importedFile);
-        if (!FileBasedIndex.getInstance().getContainingFiles(
-                QinObjectNameIndex.NAME,
+        Collection<QinPsiFile> indexedFiles = StubIndex.getElements(
+                QinObjectNameStubIndex.KEY,
                 qinImport.exportedName(),
-                importedFileScope).contains(importedFile)) {
+                element.getProject(),
+                importedFileScope,
+                QinPsiFile.class);
+        if (indexedFiles.stream().noneMatch(indexedFile -> importedFile.equals(indexedFile.getVirtualFile()))) {
             return null;
         }
         PsiFile importedPsiFile = PsiManager.getInstance(element.getProject()).findFile(importedFile);

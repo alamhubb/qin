@@ -16,7 +16,7 @@ import com.intellij.psi.tree.TokenSet;
 import org.jetbrains.annotations.NotNull;
 
 public final class QinParserDefinition implements ParserDefinition {
-    private static final IFileElementType FILE = new IFileElementType(QinLanguage.INSTANCE);
+    private static final IFileElementType FILE = QinFileElementType.INSTANCE;
     private static final TokenSet WHITE_SPACES = TokenSet.create(TokenType.WHITE_SPACE);
     private static final TokenSet COMMENTS = TokenSet.create(
             QinTokenTypes.LINE_COMMENT,
