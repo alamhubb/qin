@@ -15,6 +15,7 @@ import com.intellij.platform.lsp.tests.LspTestUtilKt;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiNameIdentifierOwner;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import com.intellij.psi.tree.IElementType;
@@ -184,6 +185,68 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiMethod method = assertInstanceOf(reference.resolve(), PsiMethod.class);
         assertEquals("greet", method.getName());
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+    }
+
+    public void testQinObjectReferenceResolvesToObjectName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.next()
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiReference reference = myFixture.getFile().findReferenceAt(text.indexOf("Counter.next"));
+        assertNotNull("Qin object reference was not registered", reference);
+        PsiElement objectName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.OBJECT_NAME, objectName.getNode().getElementType());
+        assertEquals("Counter", objectName.getText());
+        assertSingleQinObjectReference(reference.getElement());
+    }
+
+    public void testQinObjectReferenceParticipatesInReferencesSearch() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.next()
+                """);
+
+        PsiElement objectName = findPsiElementType(myFixture.getFile(), QinTokenTypes.OBJECT_NAME);
+        assertNotNull("Qin object name PSI was not built", objectName);
+        Collection<PsiReference> references = ReferencesSearch.search(
+                objectName,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin object reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "Counter".equals(item.getElement().getText())
+                        && item.getElement() != objectName));
+    }
+
+    public void testQinObjectNameSupportsIdeaRenamePrimitive() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+                """);
+
+        PsiElement objectName = findPsiElementType(myFixture.getFile(), QinTokenTypes.OBJECT_NAME);
+        PsiNameIdentifierOwner namedObject = assertInstanceOf(objectName, PsiNameIdentifierOwner.class);
+        WriteCommandAction.runWriteCommandAction(
+                getProject(),
+                (Runnable) () -> namedObject.setName("Store"));
+
+        assertTrue("Qin object rename should update the declaration name: "
+                        + myFixture.getEditor().getDocument().getText(),
+                myFixture.getEditor().getDocument().getText().contains("object Store"));
     }
 
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
@@ -681,6 +744,26 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .filter(QinJavaReference.class::isInstance)
                 .count();
         assertEquals("Qin Java references should be provided only through QinJavaReferenceContributor", 1L, count);
+    }
+
+    private static void assertSingleQinObjectReference(PsiElement element) {
+        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
+                .filter(QinObjectReference.class::isInstance)
+                .count();
+        assertEquals("Qin object references should be provided only through QinObjectReferenceContributor", 1L, count);
+    }
+
+    private static PsiElement findPsiElementType(PsiElement root, IElementType type) {
+        if (root.getNode() != null && root.getNode().getElementType() == type) {
+            return root;
+        }
+        for (PsiElement child : root.getChildren()) {
+            PsiElement found = findPsiElementType(child, type);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
     }
 
     private static List<String> describeReferences(Collection<PsiReference> references) {

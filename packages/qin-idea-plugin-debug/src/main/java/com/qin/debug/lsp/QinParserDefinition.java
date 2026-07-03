@@ -192,6 +192,9 @@ public final class QinParserDefinition implements ParserDefinition {
 
     @Override
     public @NotNull PsiElement createElement(ASTNode node) {
+        if (node.getElementType() == QinTokenTypes.OBJECT_NAME) {
+            return new QinObjectNamePsiElement(node);
+        }
         return new QinPsiElement(node);
     }
 

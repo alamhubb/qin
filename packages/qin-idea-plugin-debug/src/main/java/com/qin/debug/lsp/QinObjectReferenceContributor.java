@@ -9,7 +9,7 @@ import com.intellij.psi.PsiReferenceRegistrar;
 import com.intellij.util.ProcessingContext;
 import org.jetbrains.annotations.NotNull;
 
-public final class QinJavaReferenceContributor extends PsiReferenceContributor {
+public final class QinObjectReferenceContributor extends PsiReferenceContributor {
     @Override
     public void registerReferenceProviders(@NotNull PsiReferenceRegistrar registrar) {
         PsiReferenceProvider provider = new PsiReferenceProvider() {
@@ -21,10 +21,12 @@ public final class QinJavaReferenceContributor extends PsiReferenceContributor {
                     return PsiReference.EMPTY_ARRAY;
                 }
                 PsiElement referenceElement = QinReferenceElements.referenceElement(element);
-                if (referenceElement == null || !QinJavaReference.isJavaReferenceCandidate(referenceElement)) {
+                if (referenceElement == null
+                        || QinJavaReference.isJavaReferenceCandidate(referenceElement)
+                        || !QinObjectReference.isObjectReferenceCandidate(referenceElement)) {
                     return PsiReference.EMPTY_ARRAY;
                 }
-                return new PsiReference[]{new QinJavaReference(referenceElement)};
+                return new PsiReference[]{new QinObjectReference(referenceElement)};
             }
         };
 

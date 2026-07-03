@@ -6,7 +6,7 @@ import com.intellij.psi.PsiReference;
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import org.jetbrains.annotations.NotNull;
 
-final class QinPsiElement extends ASTWrapperPsiElement {
+class QinPsiElement extends ASTWrapperPsiElement {
     QinPsiElement(@NotNull ASTNode node) {
         super(node);
     }
