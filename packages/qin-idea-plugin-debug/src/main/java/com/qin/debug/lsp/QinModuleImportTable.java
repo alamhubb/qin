@@ -22,7 +22,7 @@ final class QinModuleImportTable {
     static @NotNull QinModuleImportTable fromFile(@NotNull PsiFile file) {
         Map<String, QinImport> imports = new LinkedHashMap<>();
         for (QinImportBindings.ImportBinding binding : QinImportBindings.collect(file)) {
-            if (isQinModuleSpecifier(binding.moduleSpecifier())) {
+            if (QinModuleSpecifierFacts.isQinModuleSpecifier(binding.moduleSpecifier())) {
                 imports.put(binding.localName(), new QinImport(
                         binding.moduleSpecifier(),
                         binding.exportedName(),
@@ -37,7 +37,7 @@ final class QinModuleImportTable {
     }
 
     static boolean isQinModuleImportSpecifier(@NotNull QinImportBindings.ImportBinding binding) {
-        return isQinModuleSpecifier(binding.moduleSpecifier());
+        return QinModuleSpecifierFacts.isQinModuleSpecifier(binding.moduleSpecifier());
     }
 
     @Nullable VirtualFile resolveFile(@NotNull QinImport qinImport) {
@@ -46,19 +46,12 @@ final class QinModuleImportTable {
             return null;
         }
 
-        String normalized = qinImport.moduleSpecifier().replace('\\', '/');
+        String normalized = QinModuleSpecifierFacts.normalizePathSeparators(qinImport.moduleSpecifier());
         VirtualFile resolved = sourceFile.getParent().findFileByRelativePath(normalized);
         if (resolved == null && !normalized.endsWith(".qin")) {
             resolved = sourceFile.getParent().findFileByRelativePath(normalized + ".qin");
         }
         return resolved != null && resolved.getFileType() == QinLspFileType.INSTANCE ? resolved : null;
-    }
-
-    private static boolean isQinModuleSpecifier(@NotNull String moduleSpecifier) {
-        String normalized = moduleSpecifier.replace('\\', '/');
-        return !normalized.startsWith("java:")
-                && (normalized.startsWith("./") || normalized.startsWith("../"))
-                && (normalized.endsWith(".qin") || !normalized.endsWith("/"));
     }
 
     record QinImport(

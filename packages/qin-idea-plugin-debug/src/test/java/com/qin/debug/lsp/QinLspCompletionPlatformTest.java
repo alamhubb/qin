@@ -279,6 +279,16 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_ALIAS_NAME));
     }
 
+    public void testQinModuleSpecifierFactsClassifyJavaAndQinImports() {
+        assertEquals("demo", QinModuleSpecifierFacts.javaModuleName("java:demo"));
+        assertEquals("java.util", QinModuleSpecifierFacts.javaModuleName("java:java.util"));
+        assertNull(QinModuleSpecifierFacts.javaModuleName("./Counter.qin"));
+        assertTrue(QinModuleSpecifierFacts.isQinModuleSpecifier("./Counter.qin"));
+        assertTrue(QinModuleSpecifierFacts.isQinModuleSpecifier("..\\Counter"));
+        assertFalse(QinModuleSpecifierFacts.isQinModuleSpecifier("java:demo"));
+        assertFalse(QinModuleSpecifierFacts.isQinModuleSpecifier("./components/"));
+    }
+
     public void testQinParserBuildsStructuredPsiForObjectDeclaration() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {

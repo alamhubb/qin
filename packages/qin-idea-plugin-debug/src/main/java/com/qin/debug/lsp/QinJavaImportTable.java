@@ -18,7 +18,7 @@ final class QinJavaImportTable {
     static QinJavaImportTable fromFile(@NotNull PsiFile file) {
         Map<String, JavaImport> imports = new LinkedHashMap<>();
         for (QinImportBindings.ImportBinding binding : QinImportBindings.collect(file)) {
-            String moduleName = readJavaModuleName(binding.moduleSpecifier());
+            String moduleName = QinModuleSpecifierFacts.javaModuleName(binding.moduleSpecifier());
             if (moduleName != null) {
                 imports.put(binding.localName(),
                         new JavaImport(moduleName, binding.exportedName(), binding.localName()));
@@ -36,14 +36,10 @@ final class QinJavaImportTable {
         if (binding == null) {
             return null;
         }
-        String moduleName = readJavaModuleName(binding.moduleSpecifier());
+        String moduleName = QinModuleSpecifierFacts.javaModuleName(binding.moduleSpecifier());
         return moduleName == null
                 ? null
                 : new JavaImport(moduleName, binding.exportedName(), binding.localName());
-    }
-
-    private static @Nullable String readJavaModuleName(@NotNull String moduleSpecifier) {
-        return moduleSpecifier.startsWith("java:") ? moduleSpecifier.substring("java:".length()).trim() : null;
     }
 
     record JavaImport(String moduleName, String exportedName, String localName) {
