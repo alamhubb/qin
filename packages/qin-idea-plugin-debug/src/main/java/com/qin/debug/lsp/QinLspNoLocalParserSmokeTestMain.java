@@ -6,10 +6,9 @@ import java.util.List;
 
 public final class QinLspNoLocalParserSmokeTestMain {
     private static final List<String> FORBIDDEN_SOURCE_MARKERS = List.of(
-            "CompletionContributor");
+            "PsiStructureViewFactory");
     private static final List<String> FORBIDDEN_PLUGIN_XML_MARKERS = List.of(
-            "lang.psiStructureViewFactory",
-            "lang.completion.contributor");
+            "lang.psiStructureViewFactory");
     private static final List<String> ALLOWED_SOURCE_FILES = List.of(
             "QinLspNoLocalParserSmokeTestMain.java",
             "QinLspPluginDescriptorSmokeTestMain.java",

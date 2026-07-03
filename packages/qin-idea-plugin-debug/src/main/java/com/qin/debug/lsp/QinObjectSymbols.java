@@ -6,6 +6,9 @@ import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 final class QinObjectSymbols {
     private QinObjectSymbols() {
     }
@@ -43,6 +46,32 @@ final class QinObjectSymbols {
             return null;
         }
         return findMethodNameInObjectDeclaration(objectDeclaration, methodName);
+    }
+
+    static @NotNull List<String> memberNamesForObject(@NotNull PsiElement element, @NotNull String objectName) {
+        PsiElement objectNameElement = findObjectName(element, objectName);
+        if (objectNameElement == null) {
+            return List.of();
+        }
+        PsiElement objectDeclaration = parentOfType(objectNameElement, QinTokenTypes.OBJECT_DECLARATION);
+        if (objectDeclaration == null) {
+            return List.of();
+        }
+        return memberNamesInObjectDeclaration(objectDeclaration);
+    }
+
+    static @NotNull List<String> memberNamesForThis(@NotNull PsiElement element) {
+        PsiElement objectDeclaration = parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        if (objectDeclaration == null) {
+            return List.of();
+        }
+        return memberNamesInObjectDeclaration(objectDeclaration);
+    }
+
+    private static @NotNull List<String> memberNamesInObjectDeclaration(@NotNull PsiElement objectDeclaration) {
+        MemberNameVisitor visitor = new MemberNameVisitor();
+        objectDeclaration.accept(visitor);
+        return visitor.names;
     }
 
     private static @Nullable PsiElement findMethodNameInObjectDeclaration(
@@ -158,6 +187,22 @@ final class QinObjectSymbols {
                     && element.getNode().getElementType() == QinTokenTypes.FIELD_NAME
                     && name.equals(element.getText())) {
                 fieldName = element;
+                return;
+            }
+            super.visitElement(element);
+        }
+    }
+
+    private static final class MemberNameVisitor extends PsiRecursiveElementWalkingVisitor {
+        private final List<String> names = new ArrayList<>();
+
+        @Override
+        public void visitElement(@NotNull PsiElement element) {
+            if (element.getNode() != null
+                    && (element.getNode().getElementType() == QinTokenTypes.FIELD_NAME
+                    || element.getNode().getElementType() == QinTokenTypes.METHOD_NAME)
+                    && !names.contains(element.getText())) {
+                names.add(element.getText());
                 return;
             }
             super.visitElement(element);

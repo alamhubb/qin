@@ -37,6 +37,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertQinParserShell(document);
         assertLspProvider(document);
         assertAutoPopupTypedHandler(document);
+        assertQinObjectMemberCompletion(document);
         assertNoLocalSemanticExtensions(document);
     }
 
@@ -144,10 +145,20 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         throw new IllegalStateException("Missing Qin LSP auto-popup typedHandler registration");
     }
 
+    private static void assertQinObjectMemberCompletion(Document document) {
+        NodeList contributors = document.getElementsByTagName("completion.contributor");
+        require(contributors.getLength() == 1, "Expected exactly one Qin PSI completion contributor");
+        Element contributor = (Element) contributors.item(0);
+        require("Qin".equals(contributor.getAttribute("language")),
+                "Unexpected completion contributor language: " + contributor.getAttribute("language"));
+        require("com.qin.debug.lsp.QinObjectMemberCompletionContributor".equals(
+                        contributor.getAttribute("implementationClass")),
+                "Unexpected Qin completion contributor: " + contributor.getAttribute("implementationClass"));
+    }
+
     private static void assertNoLocalSemanticExtensions(Document document) {
         Set<String> forbiddenTags = Set.of(
-                "lang.psiStructureViewFactory",
-                "lang.completion.contributor");
+                "lang.psiStructureViewFactory");
         for (String tag : forbiddenTags) {
             require(document.getElementsByTagName(tag).getLength() == 0,
                     "Qin LSP mode must not register local IDEA semantic extension: " + tag);

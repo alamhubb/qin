@@ -582,6 +582,50 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         .toArray(String[]::new)), hasValue);
     }
 
+    public void testQinNativeCompletionIncludesObjectMembersAfterObjectQualifier() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+
+                const value = Counter.v<caret>
+        """);
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            assertTrue("IDEA native completion neither produced a lookup list nor inserted object member value: "
+                            + myFixture.getEditor().getDocument().getText(),
+                    myFixture.getEditor().getDocument().getText().contains("Counter.value"));
+            return;
+        }
+        assertLookupContains(elements, "value");
+    }
+
+    public void testQinNativeCompletionIncludesThisObjectMembers() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.n<caret>
+                  }
+                }
+        """);
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            assertTrue("IDEA native completion neither produced a lookup list nor inserted this member next: "
+                            + myFixture.getEditor().getDocument().getText(),
+                    myFixture.getEditor().getDocument().getText().contains("return this.next"));
+            return;
+        }
+        assertLookupContains(elements, "next");
+    }
+
     public void testQinAutoPopupTypedHandlerTriggersForQinIdentifierInput() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -1043,6 +1087,18 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .filter(QinObjectFieldReference.class::isInstance)
                 .count();
         assertEquals("Qin object field references should be provided only through QinObjectFieldReferenceContributor", 1L, count);
+    }
+
+    private static void assertLookupContains(LookupElement[] elements, String expected) {
+        boolean found = Arrays.stream(elements)
+                .map(LookupElement::getLookupString)
+                .filter(Objects::nonNull)
+                .anyMatch(expected::equals);
+        assertTrue("IDEA completion did not include " + expected + ": "
+                + Arrays.toString(Arrays.stream(elements)
+                .map(LookupElement::getLookupString)
+                .limit(40)
+                .toArray(String[]::new)), found);
     }
 
     private static PsiElement findPsiElementType(PsiElement root, IElementType type) {
