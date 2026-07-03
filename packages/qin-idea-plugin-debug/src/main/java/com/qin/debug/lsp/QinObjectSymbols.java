@@ -20,13 +20,18 @@ final class QinObjectSymbols {
     }
 
     static @Nullable PsiElement findObjectName(@NotNull PsiElement element, @NotNull String name) {
+        ResolvedObject resolvedObject = resolveObjectName(element, name);
+        return resolvedObject == null ? null : resolvedObject.objectName();
+    }
+
+    private static @Nullable ResolvedObject resolveObjectName(@NotNull PsiElement element, @NotNull String name) {
         PsiFile file = element.getContainingFile();
         if (file == null) {
             return null;
         }
         PsiElement sameFileObject = findObjectNameInFile(file, name);
         if (sameFileObject != null) {
-            return sameFileObject;
+            return new ResolvedObject(sameFileObject, name, null);
         }
 
         QinModuleImportTable importTable = QinModuleImportTable.fromFile(file);
@@ -49,7 +54,8 @@ final class QinObjectSymbols {
             return null;
         }
         PsiFile importedPsiFile = PsiManager.getInstance(element.getProject()).findFile(importedFile);
-        return importedPsiFile == null ? null : findObjectNameInFile(importedPsiFile, qinImport.exportedName());
+        PsiElement objectName = importedPsiFile == null ? null : findObjectNameInFile(importedPsiFile, qinImport.exportedName());
+        return objectName == null ? null : new ResolvedObject(objectName, qinImport.exportedName(), importedFile);
     }
 
     private static @Nullable PsiElement findObjectNameInFile(@NotNull PsiFile file, @NotNull String name) {
@@ -62,11 +68,11 @@ final class QinObjectSymbols {
             @NotNull PsiElement element,
             @NotNull String objectName,
             @NotNull String methodName) {
-        PsiElement objectNameElement = findObjectName(element, objectName);
-        if (objectNameElement == null) {
+        ResolvedObject resolvedObject = resolveObjectName(element, objectName);
+        if (resolvedObject == null || !hasIndexedMember(element, resolvedObject, methodName, MemberKind.METHOD)) {
             return null;
         }
-        PsiElement objectDeclaration = parentOfType(objectNameElement, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return null;
         }
@@ -133,11 +139,11 @@ final class QinObjectSymbols {
             @NotNull PsiElement element,
             @NotNull String objectName,
             @NotNull String fieldName) {
-        PsiElement objectNameElement = findObjectName(element, objectName);
-        if (objectNameElement == null) {
+        ResolvedObject resolvedObject = resolveObjectName(element, objectName);
+        if (resolvedObject == null || !hasIndexedMember(element, resolvedObject, fieldName, MemberKind.FIELD)) {
             return null;
         }
-        PsiElement objectDeclaration = parentOfType(objectNameElement, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return null;
         }
@@ -160,6 +166,26 @@ final class QinObjectSymbols {
         return visitor.fieldName;
     }
 
+    private static boolean hasIndexedMember(
+            @NotNull PsiElement element,
+            @NotNull ResolvedObject resolvedObject,
+            @NotNull String memberName,
+            @NotNull MemberKind kind) {
+        VirtualFile indexedFile = resolvedObject.importedFile();
+        if (indexedFile == null) {
+            return true;
+        }
+        GlobalSearchScope importedFileScope = GlobalSearchScope.fileScope(element.getProject(), indexedFile);
+        String key = QinFileElementType.memberKey(resolvedObject.indexedObjectName(), memberName);
+        Collection<QinPsiFile> indexedFiles = StubIndex.getElements(
+                kind == MemberKind.FIELD ? QinObjectFieldNameStubIndex.KEY : QinObjectMethodNameStubIndex.KEY,
+                key,
+                element.getProject(),
+                importedFileScope,
+                QinPsiFile.class);
+        return indexedFiles.stream().anyMatch(file -> indexedFile.equals(file.getVirtualFile()));
+    }
+
     private static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull IElementType type) {
         PsiElement current = element.getParent();
         while (current != null) {
@@ -169,6 +195,17 @@ final class QinObjectSymbols {
             current = current.getParent();
         }
         return null;
+    }
+
+    private record ResolvedObject(
+            @NotNull PsiElement objectName,
+            @NotNull String indexedObjectName,
+            @Nullable VirtualFile importedFile) {
+    }
+
+    private enum MemberKind {
+        FIELD,
+        METHOD
     }
 
     private static final class ObjectNameVisitor extends PsiRecursiveElementWalkingVisitor {
