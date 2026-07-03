@@ -77,7 +77,7 @@ http://127.0.0.1:19116/
 `qin.config.js` 已包含当前测试 PostgreSQL 配置：
 - `jdbc:postgresql://43.143.220.49:5432/qin_demo`
 - user: `qin_user`
-- password: `QinDemo_2026!`
+- password: set `QIN_DEMO_DB_PASSWORD` locally; do not commit real database passwords.
 
 如需覆盖，可设置：
 

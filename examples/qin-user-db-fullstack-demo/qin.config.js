@@ -18,7 +18,7 @@ export default {
     database: {
         url: "jdbc:postgresql://43.143.220.49:5432/qin_demo",
         user: "qin_user",
-        password: "QinDemo_2026!",
+        password: "",
         passwordEnv: "QIN_DEMO_DB_PASSWORD"
     },
     packageOverrides: {

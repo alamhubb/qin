@@ -19,6 +19,7 @@ classes
 # logs
 logs
 *.log
+*.err
 hs_err_pid*.log
 replay_pid*.log
 tmp-*.json
@@ -39,6 +40,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # IntelliJ based IDEs
 .idea
+.intellijPlatform
+*.iml
 
 # Finder (MacOS) folder config
 .DS_Store

@@ -24,17 +24,17 @@ public class SocialTokenFacade {
     @Getter
     private static String passwordPrivateKey;
 
-    @Value("${socialuni.user.token-secret-key:tokenSecretKey}")
+    @Value("${socialuni.user.token-secret-key:}")
     public void setTokenKey(String tokenKey) {
         SocialTokenFacade.tokenSecretKey = tokenKey;
     }
 
-    @Value("${socialuni.user.password-public-key:MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC31h8YE34Wj0VM03Qj2zDryLg3QCJyeWCKLJWd5dUcvgyetnsjDqIH44rgULD6yOeX5T/M337sv3XI7QScXmUn/mVbiAWTKufWmv6hNPQJFoclKmi0B0cHRu0GvrlkB6x2UFMO/Z+2+3UT2kYI/M3EqNUvPDSpNMHIK1/jCB0vawIDAQAB}")
+    @Value("${socialuni.user.password-public-key:}")
     public void setPasswordPublicKey(String passwordSecretKey) {
         SocialTokenFacade.passwordPublicKey = passwordSecretKey;
     }
 
-    @Value("${socialuni.user.password-private-key:MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBALfWHxgTfhaPRUzTdCPbMOvIuDdAInJ5YIoslZ3l1Ry+DJ62eyMOogfjiuBQsPrI55flP8zffuy/dcjtBJxeZSf+ZVuIBZMq59aa/qE09AkWhyUqaLQHRwdG7Qa+uWQHrHZQUw79n7b7dRPaRgj8zcSo1S88NKk0wcgrX+MIHS9rAgMBAAECgYAENMp+VwfWBU4tHVN1dJDwfCW24elH3D4Yuz9rHvSa1UBdq0gy+6U6b/rf+giqnEksQQsOKXjyesj7oWyvFTvUPf9opNcbOoGH36JaBbS4DQ1MODM7cyBVtYMrea1Y1Ddvlzz1HxnUEseWAzh/Kxu3Lls768GtH+s9i19UnYup0QJBAOCrCSRLtNNevoA7AdVt09JbNvKClcvcY2FtoVFH0KUCow9WbK0J7Rv8iAkRMTVjzgHC4moaJYv0qrECMqTyn3ECQQDReVZb6lefMfXYp9pvBNdSc+32b0TW+4b8I6Jm5rDo5GqSEoK4kHdlHsfx5fzO3DapZAeCMDdqQQrvaxfIGgabAkBFA8VXJPpzQ9N5SKcTjR1YrTR/4qVpblYJA8heU5VAW0MD3ySbM0VnJ3gScPmQ0Qvjdp5ewZFvIMWegnJUQUPBAkBS0Y1SQ+GmwEL6CMs0744OPGWN9EocUU/6KkCQPI8fVQfJfuYOAJgj87qLqil8w9YcvL63O0b9jH+9TvMVGy0XAkEAvpC84znA6HeuF8R7EFUoGoK4SQgVL0wvd1ut4XaxOzNWVE8Bs1T70kg7APAevN7JNtSjuwMz27dCVXmRbXmNfA==}")
+    @Value("${socialuni.user.password-private-key:}")
     public void setPasswordPrivateKey(String passwordVector) {
         SocialTokenFacade.passwordPrivateKey = passwordVector;
     }
