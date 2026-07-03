@@ -32,6 +32,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinLspServerSupportProvider.class",
             "com/qin/debug/lsp/QinLspStartupProbe.class",
             "com/slime/token/JavaScriptTokens.class",
+            "com/slime/token/TokenUtils.class",
             "com/subhuti/lexer/SubhutiLexer.class",
             "com/subhuti/struct/SubhutiMatchToken.class",
             "com/qin/debug/QinToolWindowFactory.class");

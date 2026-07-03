@@ -16,8 +16,12 @@ final class QinPsiTokenStream {
     }
 
     static List<QinPsiToken> collect(@NotNull PsiFile file) {
+        return collect((PsiElement) file);
+    }
+
+    static List<QinPsiToken> collect(@NotNull PsiElement root) {
         List<QinPsiToken> tokens = new ArrayList<>();
-        file.accept(new PsiRecursiveElementWalkingVisitor() {
+        root.accept(new PsiRecursiveElementWalkingVisitor() {
             @Override
             public void visitElement(@NotNull PsiElement element) {
                 if (element.getFirstChild() == null && element.getNode() != null) {
@@ -45,7 +49,11 @@ final class QinPsiTokenStream {
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
-        List<QinPsiToken> tokens = collect(element.getContainingFile());
+        return previousQualifierName(element.getContainingFile(), element);
+    }
+
+    static @Nullable String previousQualifierName(@NotNull PsiElement root, @NotNull PsiElement element) {
+        List<QinPsiToken> tokens = collect(root);
         int tokenIndex = indexOfElement(tokens, element);
         if (tokenIndex < 2) {
             return null;

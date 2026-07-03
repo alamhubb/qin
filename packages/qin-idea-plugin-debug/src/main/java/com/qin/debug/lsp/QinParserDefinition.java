@@ -33,10 +33,10 @@ public final class QinParserDefinition implements ParserDefinition {
         return (root, builder) -> {
             PsiBuilder.Marker rootMarker = builder.mark();
             while (!builder.eof()) {
-                if (isReferenceToken(builder.getTokenType())) {
-                    PsiBuilder.Marker referenceMarker = builder.mark();
-                    builder.advanceLexer();
-                    referenceMarker.done(QinTokenTypes.REFERENCE_IDENTIFIER);
+                if (isKeyword(builder, "import")) {
+                    parseImportDeclaration(builder);
+                } else if (isReferenceToken(builder.getTokenType())) {
+                    parseReferenceOrMemberAccess(builder);
                 } else {
                     builder.advanceLexer();
                 }
@@ -44,6 +44,76 @@ public final class QinParserDefinition implements ParserDefinition {
             rootMarker.done(root);
             return builder.getTreeBuilt();
         };
+    }
+
+    private static void parseImportDeclaration(PsiBuilder builder) {
+        PsiBuilder.Marker importMarker = builder.mark();
+        builder.advanceLexer();
+        while (!builder.eof()) {
+            if (isReferenceToken(builder.getTokenType())) {
+                parseJavaImportSpecifier(builder);
+                continue;
+            }
+            if (isKeyword(builder, "from")) {
+                builder.advanceLexer();
+                if (builder.getTokenType() == QinTokenTypes.STRING) {
+                    builder.advanceLexer();
+                }
+                if (builder.getTokenType() == QinTokenTypes.SEMICOLON) {
+                    builder.advanceLexer();
+                }
+                break;
+            }
+            if (builder.getTokenType() == QinTokenTypes.SEMICOLON) {
+                builder.advanceLexer();
+                break;
+            }
+            builder.advanceLexer();
+        }
+        importMarker.done(QinTokenTypes.IMPORT_DECLARATION);
+    }
+
+    private static void parseJavaImportSpecifier(PsiBuilder builder) {
+        PsiBuilder.Marker specifierMarker = builder.mark();
+        wrapReferenceIdentifier(builder);
+        if (isKeyword(builder, "as")) {
+            builder.advanceLexer();
+            if (isReferenceToken(builder.getTokenType())) {
+                wrapReferenceIdentifier(builder);
+            }
+        }
+        specifierMarker.done(QinTokenTypes.JAVA_IMPORT_SPECIFIER);
+    }
+
+    private static void parseReferenceOrMemberAccess(PsiBuilder builder) {
+        PsiBuilder.Marker memberMarker = builder.mark();
+        wrapReferenceIdentifier(builder);
+        boolean hasMemberAccess = false;
+        while (builder.getTokenType() == QinTokenTypes.DOT) {
+            hasMemberAccess = true;
+            builder.advanceLexer();
+            if (isReferenceToken(builder.getTokenType())) {
+                wrapReferenceIdentifier(builder);
+            } else {
+                break;
+            }
+        }
+        if (hasMemberAccess) {
+            memberMarker.done(QinTokenTypes.MEMBER_ACCESS);
+        } else {
+            memberMarker.drop();
+        }
+    }
+
+    private static void wrapReferenceIdentifier(PsiBuilder builder) {
+        PsiBuilder.Marker referenceMarker = builder.mark();
+        builder.advanceLexer();
+        referenceMarker.done(QinTokenTypes.REFERENCE_IDENTIFIER);
+    }
+
+    private static boolean isKeyword(PsiBuilder builder, String text) {
+        return builder.getTokenType() == QinTokenTypes.KEYWORD
+                && text.equals(builder.getTokenText());
     }
 
     private static boolean isReferenceToken(IElementType tokenType) {

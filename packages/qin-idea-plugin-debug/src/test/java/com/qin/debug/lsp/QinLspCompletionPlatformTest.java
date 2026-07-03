@@ -108,6 +108,21 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains("\"unterminated:" + QinTokenTypes.STRING));
     }
 
+    public void testQinParserBuildsStructuredPsiForJavaInterop() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+
+        assertTrue("Qin PSI should include structured import declarations",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_DECLARATION));
+        assertTrue("Qin PSI should include structured Java import specifiers",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.JAVA_IMPORT_SPECIFIER));
+        assertTrue("Qin PSI should include structured member access nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.MEMBER_ACCESS));
+    }
+
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -579,6 +594,18 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
             lexer.advance();
         }
         return tokens;
+    }
+
+    private static boolean hasPsiElementType(PsiElement root, IElementType type) {
+        if (root.getNode() != null && root.getNode().getElementType() == type) {
+            return true;
+        }
+        for (PsiElement child : root.getChildren()) {
+            if (hasPsiElementType(child, type)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<String> describeReferences(Collection<PsiReference> references) {

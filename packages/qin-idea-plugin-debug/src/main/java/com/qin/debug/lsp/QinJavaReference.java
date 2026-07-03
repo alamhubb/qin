@@ -107,6 +107,12 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
-        return QinPsiTokenStream.previousQualifierName(element);
+        PsiElement parent = element.getParent();
+        if (parent != null
+                && parent.getNode() != null
+                && parent.getNode().getElementType() == QinTokenTypes.MEMBER_ACCESS) {
+            return QinPsiTokenStream.previousQualifierName(parent, element);
+        }
+        return null;
     }
 }

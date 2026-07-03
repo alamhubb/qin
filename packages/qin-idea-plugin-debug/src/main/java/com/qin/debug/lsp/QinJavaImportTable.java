@@ -1,11 +1,10 @@
 package com.qin.debug.lsp;
 
+import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,72 +18,66 @@ final class QinJavaImportTable {
 
     static QinJavaImportTable fromFile(@NotNull PsiFile file) {
         Map<String, JavaImport> imports = new LinkedHashMap<>();
-        List<QinPsiToken> tokens = QinPsiTokenStream.collect(file);
-        for (int index = 0; index < tokens.size(); index++) {
-            QinPsiToken token = tokens.get(index);
-            if (!token.isKeyword("import")) {
-                continue;
+        file.accept(new com.intellij.psi.PsiRecursiveElementWalkingVisitor() {
+            @Override
+            public void visitElement(@NotNull PsiElement element) {
+                if (element.getNode() != null
+                        && element.getNode().getElementType() == QinTokenTypes.IMPORT_DECLARATION) {
+                    collectJavaImports(element, imports);
+                    return;
+                }
+                super.visitElement(element);
             }
-
-            int openBraceIndex = nextTokenIndex(tokens, index + 1, QinTokenTypes.BRACE, "{");
-            if (openBraceIndex < 0) {
-                continue;
-            }
-            int closeBraceIndex = nextTokenIndex(tokens, openBraceIndex + 1, QinTokenTypes.BRACE, "}");
-            if (closeBraceIndex < 0) {
-                continue;
-            }
-            int fromIndex = nextKeywordIndex(tokens, closeBraceIndex + 1, "from");
-            if (fromIndex < 0 || fromIndex + 1 >= tokens.size()) {
-                continue;
-            }
-            String moduleName = readJavaModuleName(tokens.get(fromIndex + 1));
-            if (moduleName == null) {
-                continue;
-            }
-            for (ImportBinding binding : parseBindings(tokens.subList(openBraceIndex + 1, closeBraceIndex))) {
-                imports.put(binding.localName(), new JavaImport(moduleName, binding.exportedName(), binding.localName()));
-            }
-        }
+        });
         return new QinJavaImportTable(imports);
     }
 
-    @Nullable JavaImport find(String localName) {
-        return importsByLocalName.get(localName);
+    private static void collectJavaImports(PsiElement importDeclaration, Map<String, JavaImport> imports) {
+        List<QinPsiToken> tokens = QinPsiTokenStream.collect(importDeclaration);
+        int fromIndex = nextKeywordIndex(tokens, 0, "from");
+        if (fromIndex < 0 || fromIndex + 1 >= tokens.size()) {
+            return;
+        }
+        String moduleName = readJavaModuleName(tokens.get(fromIndex + 1));
+        if (moduleName == null) {
+            return;
+        }
+        importDeclaration.accept(new com.intellij.psi.PsiRecursiveElementWalkingVisitor() {
+            @Override
+            public void visitElement(@NotNull PsiElement element) {
+                if (element.getNode() != null
+                        && element.getNode().getElementType() == QinTokenTypes.JAVA_IMPORT_SPECIFIER) {
+                    ImportBinding binding = parseBinding(element);
+                    if (binding != null) {
+                        imports.put(binding.localName(),
+                                new JavaImport(moduleName, binding.exportedName(), binding.localName()));
+                    }
+                    return;
+                }
+                super.visitElement(element);
+            }
+        });
     }
 
-    private static List<ImportBinding> parseBindings(List<QinPsiToken> tokens) {
-        List<ImportBinding> bindings = new ArrayList<>();
-        int index = 0;
-        while (index < tokens.size()) {
+    private static @Nullable ImportBinding parseBinding(PsiElement specifier) {
+        List<QinPsiToken> tokens = QinPsiTokenStream.collect(specifier);
+        for (int index = 0; index < tokens.size(); index++) {
             QinPsiToken exported = tokens.get(index);
             if (!exported.isIdentifier()) {
-                index++;
                 continue;
             }
             String exportedName = exported.text();
             String localName = exportedName;
             if (index + 2 < tokens.size() && tokens.get(index + 1).isKeyword("as") && tokens.get(index + 2).isIdentifier()) {
                 localName = tokens.get(index + 2).text();
-                index += 3;
-            } else {
-                index++;
             }
-            bindings.add(new ImportBinding(exportedName, localName));
-            if (index < tokens.size() && tokens.get(index).is(QinTokenTypes.COMMA, ",")) {
-                index++;
-            }
+            return new ImportBinding(exportedName, localName);
         }
-        return bindings;
+        return null;
     }
 
-    private static int nextTokenIndex(List<QinPsiToken> tokens, int startIndex, IElementType type, String text) {
-        for (int index = startIndex; index < tokens.size(); index++) {
-            if (tokens.get(index).is(type, text)) {
-                return index;
-            }
-        }
-        return -1;
+    @Nullable JavaImport find(String localName) {
+        return importsByLocalName.get(localName);
     }
 
     private static int nextKeywordIndex(List<QinPsiToken> tokens, int startIndex, String text) {

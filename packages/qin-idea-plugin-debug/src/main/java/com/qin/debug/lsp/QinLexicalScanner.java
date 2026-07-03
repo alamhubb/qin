@@ -3,6 +3,7 @@ package com.qin.debug.lsp;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
 import com.slime.token.JavaScriptTokens;
+import com.slime.token.TokenUtils;
 import com.subhuti.lexer.SubhutiLexer;
 import com.subhuti.lexer.TokenCacheEntry;
 import com.subhuti.struct.LexerMode;
@@ -11,14 +12,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 final class QinLexicalScanner {
-    private static final Set<String> CONTEXTUAL_KEYWORDS = Set.of(
-            "as", "async", "from", "get", "implements", "interface", "let",
-            "object", "of", "override", "private", "protected", "public",
-            "readonly", "set", "static", "type");
-
     private QinLexicalScanner() {
     }
 
@@ -71,7 +66,7 @@ final class QinLexicalScanner {
     private static IElementType mapToken(SubhutiMatchToken token, List<QinLexicalToken> previousTokens) {
         String tokenName = token.getTokenName();
         String value = token.getTokenValue();
-        if (isKeywordToken(tokenName) || CONTEXTUAL_KEYWORDS.contains(value)) {
+        if (TokenUtils.isKeyword(value)) {
             return QinTokenTypes.KEYWORD;
         }
         if ("IdentifierName".equals(tokenName) || "PrivateIdentifier".equals(tokenName)) {
@@ -95,18 +90,6 @@ final class QinLexicalScanner {
             case "Semicolon" -> QinTokenTypes.SEMICOLON;
             case "Dot" -> QinTokenTypes.DOT;
             default -> QinTokenTypes.OPERATOR;
-        };
-    }
-
-    private static boolean isKeywordToken(String tokenName) {
-        return switch (tokenName) {
-            case "Await", "Break", "Case", "Catch", "Class", "Const", "Continue",
-                    "Debugger", "Default", "Delete", "Do", "Else", "Enum", "Export",
-                    "Extends", "False", "Finally", "For", "Function", "If", "Import",
-                    "In", "Instanceof", "New", "NullLiteral", "Return", "Super",
-                    "Switch", "This", "Throw", "True", "Try", "Typeof", "Var",
-                    "Void", "While", "With", "Yield" -> true;
-            default -> false;
         };
     }
 
