@@ -15,6 +15,7 @@ import com.intellij.platform.lsp.tests.LspTestUtilKt;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
@@ -1384,6 +1385,60 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue("Find Usages should include Qin Java method reference: " + describeReferences(references),
                 references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
                         && "greet".equals(item.getElement().getText())));
+    }
+
+    public void testQinJavaFieldReferenceParticipatesInReferencesSearch() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const name = Greeter.DEFAULT_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("DEFAULT_NAME"));
+        assertNotNull("Qin Java field reference was not registered", reference);
+        PsiField javaField = assertInstanceOf(reference.resolve(), PsiField.class);
+
+        Collection<PsiReference> references = ReferencesSearch.search(
+                javaField,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin Java field reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "DEFAULT_NAME".equals(item.getElement().getText())));
+    }
+
+    public void testQinJavaFieldRenameProcessorUpdatesReferences() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const name = Greeter.DEFAULT_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("DEFAULT_NAME"));
+        assertNotNull("Qin Java field reference was not registered for rename", reference);
+        PsiField javaField = assertInstanceOf(reference.resolve(), PsiField.class);
+        new RenameProcessor(getProject(), javaField, "FALLBACK_NAME", false, false).run();
+
+        assertTrue("Java field rename should update Qin field reference: "
+                        + myFixture.getEditor().getDocument().getText(),
+                myFixture.getEditor().getDocument().getText().contains("Greeter.FALLBACK_NAME"));
     }
 
     public void testQinJavaReferenceRenameUpdatesQinToken() {
