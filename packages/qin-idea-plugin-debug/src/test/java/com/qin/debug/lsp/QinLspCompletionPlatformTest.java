@@ -12,6 +12,7 @@ import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
 import com.intellij.platform.lsp.tests.LspTestUtilKt;
+import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -1266,6 +1267,37 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiClass psiClass = assertInstanceOf(reference.resolve(), PsiClass.class);
         assertEquals("demo.Greeter", psiClass.getQualifiedName());
         assertSingleQinJavaReference(reference.getElement());
+    }
+
+    public void testQinJavaClassRenameProcessorPreservesImportAliasUsages() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiClass psiClass = JavaPsiFacade.getInstance(getProject())
+                .findClass("demo.Greeter", GlobalSearchScope.allScope(getProject()));
+        assertNotNull("Java class demo.Greeter was not available for rename", psiClass);
+        new RenameProcessor(getProject(), psiClass, "Welcomer", false, false).run();
+
+        String qinText = myFixture.getEditor().getDocument().getText();
+        assertTrue("Java class rename should update the imported exported name: " + qinText,
+                qinText.contains("import { Welcomer as G } from \"java:demo\""));
+        assertTrue("Java class rename should preserve local alias usages: " + qinText,
+                qinText.contains("G.greet(\"Qin\")"));
+        assertFalse("Java class rename should not rewrite alias usages to the exported name: " + qinText,
+                qinText.contains("Welcomer.greet"));
     }
 
     public void testQinJavaMemberReferenceResolvesAcrossWhitespaceWithPsiTokens() {
