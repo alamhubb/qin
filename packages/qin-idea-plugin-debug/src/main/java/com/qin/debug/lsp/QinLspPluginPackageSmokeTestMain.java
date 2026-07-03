@@ -40,6 +40,8 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinObjectSymbols.class",
             "com/qin/debug/lsp/QinSourceStructure.class",
             "com/qin/debug/lsp/QinSourceStructure$ObjectDeclaration.class",
+            "com/qin/debug/lsp/QinSourceStructure$MemberDeclaration.class",
+            "com/qin/debug/lsp/QinSourceStructure$SourceRange.class",
             "com/qin/debug/lsp/QinImportBindings.class",
             "com/qin/debug/lsp/QinImportAliasReference.class",
             "com/qin/debug/lsp/QinImportAliasReferenceContributor.class",

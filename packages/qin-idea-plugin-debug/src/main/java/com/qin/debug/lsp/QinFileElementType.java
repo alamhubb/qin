@@ -44,8 +44,8 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
         dataStream.writeVarInt(declarations.size());
         for (QinSourceStructure.ObjectDeclaration declaration : declarations) {
             dataStream.writeName(declaration.name());
-            writeNames(dataStream, declaration.fields());
-            writeNames(dataStream, declaration.methods());
+            writeNames(dataStream, declaration.fieldNames());
+            writeNames(dataStream, declaration.methodNames());
         }
     }
 
@@ -67,10 +67,10 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
     public void indexStub(@NotNull QinFileStub stub, @NotNull IndexSink sink) {
         for (QinSourceStructure.ObjectDeclaration declaration : stub.objectDeclarations()) {
             sink.occurrence(QinObjectNameStubIndex.KEY, declaration.name());
-            for (String field : declaration.fields()) {
+            for (String field : declaration.fieldNames()) {
                 sink.occurrence(QinObjectFieldNameStubIndex.KEY, memberKey(declaration.name(), field));
             }
-            for (String method : declaration.methods()) {
+            for (String method : declaration.methodNames()) {
                 sink.occurrence(QinObjectMethodNameStubIndex.KEY, memberKey(declaration.name(), method));
             }
         }

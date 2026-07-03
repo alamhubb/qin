@@ -219,8 +219,12 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals(1, declarations.size());
         QinSourceStructure.ObjectDeclaration counter = declarations.get(0);
         assertEquals("Counter", counter.name());
-        assertEquals(List.of("value", "total"), counter.fields());
-        assertEquals(List.of("next"), counter.methods());
+        assertEquals(List.of("value", "total"), counter.fieldNames());
+        assertEquals(List.of("next"), counter.methodNames());
+        assertTrue(counter.nameRange().isPresent());
+        assertTrue(counter.bodyRange().isPresent());
+        assertTrue(counter.fields().get(0).nameRange().isPresent());
+        assertTrue(counter.methods().get(0).nameRange().isPresent());
     }
 
     public void testQinSourceStructureRequiresMethodBodyFromSharedStructureFacts() {
@@ -238,8 +242,8 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         assertEquals(1, declarations.size());
         QinSourceStructure.ObjectDeclaration counter = declarations.get(0);
-        assertEquals(List.of("value"), counter.fields());
-        assertEquals(List.of("next"), counter.methods());
+        assertEquals(List.of("value"), counter.fieldNames());
+        assertEquals(List.of("next"), counter.methodNames());
     }
 
     public void testQinParserBuildsStructuredPsiForJavaInterop() {

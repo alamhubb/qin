@@ -22,7 +22,7 @@ final class QinSourceStructure {
                 if (nameToken != null && QinTokenFacts.isDeclarationIdentifierToken(nameToken)) {
                     String name = QinTokenFacts.slice(content, nameToken).toString();
                     if (declarations.stream().noneMatch(declaration -> declaration.name().equals(name))) {
-                        declarations.add(readObjectDeclaration(content, tokens, index, name));
+                        declarations.add(readObjectDeclaration(content, tokens, index, name, range(nameToken)));
                     }
                 }
             }
@@ -48,28 +48,30 @@ final class QinSourceStructure {
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,
             int objectKeywordIndex,
-            @NotNull String objectName) {
+            @NotNull String objectName,
+            @NotNull SourceRange objectNameRange) {
         int braceIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, objectKeywordIndex + 1);
         while (braceIndex >= 0 && braceIndex < tokens.size()) {
             QinLexicalToken token = tokens.get(braceIndex);
             if (QinTokenFacts.isOpenBrace(content, token)) {
-                return readObjectBody(content, tokens, braceIndex, objectName);
+                return readObjectBody(content, tokens, braceIndex, objectName, objectNameRange);
             }
             if (QinTokenFacts.isCloseBrace(content, token)) {
                 break;
             }
             braceIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, braceIndex + 1);
         }
-        return new ObjectDeclaration(objectName, List.of(), List.of());
+        return new ObjectDeclaration(objectName, objectNameRange, SourceRange.missing(), List.of(), List.of());
     }
 
     private static @NotNull ObjectDeclaration readObjectBody(
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,
             int openBraceIndex,
-            @NotNull String objectName) {
-        List<String> fields = new ArrayList<>();
-        List<String> methods = new ArrayList<>();
+            @NotNull String objectName,
+            @NotNull SourceRange objectNameRange) {
+        List<MemberDeclaration> fields = new ArrayList<>();
+        List<MemberDeclaration> methods = new ArrayList<>();
         int braceDepth = 0;
         for (int index = openBraceIndex; index < tokens.size(); index++) {
             QinLexicalToken token = tokens.get(index);
@@ -79,7 +81,12 @@ final class QinSourceStructure {
                 } else if (QinTokenFacts.isCloseBrace(content, token)) {
                     braceDepth--;
                     if (braceDepth <= 0) {
-                        break;
+                        return new ObjectDeclaration(
+                                objectName,
+                                objectNameRange,
+                                new SourceRange(tokens.get(openBraceIndex).startOffset(), token.endOffset()),
+                                fields,
+                                methods);
                     }
                 }
                 continue;
@@ -89,24 +96,73 @@ final class QinSourceStructure {
             }
             String memberName = QinTokenFacts.slice(content, token).toString();
             if (QinTokenFacts.isMethodDeclarationName(content, tokens, index)) {
-                addUnique(methods, memberName);
+                addUnique(methods, new MemberDeclaration(memberName, range(token)));
             } else if (QinTokenFacts.isFieldDeclarationName(content, tokens, index)) {
-                addUnique(fields, memberName);
+                addUnique(fields, new MemberDeclaration(memberName, range(token)));
             }
         }
-        return new ObjectDeclaration(objectName, fields, methods);
+        return new ObjectDeclaration(
+                objectName,
+                objectNameRange,
+                new SourceRange(tokens.get(openBraceIndex).startOffset(), content.length()),
+                fields,
+                methods);
     }
 
-    private static void addUnique(@NotNull List<String> values, @NotNull String value) {
-        if (!values.contains(value)) {
+    private static void addUnique(@NotNull List<MemberDeclaration> values, @NotNull MemberDeclaration value) {
+        if (values.stream().noneMatch(existing -> existing.name().equals(value.name()))) {
             values.add(value);
         }
     }
 
-    record ObjectDeclaration(@NotNull String name, @NotNull List<String> fields, @NotNull List<String> methods) {
+    private static @NotNull SourceRange range(@NotNull QinLexicalToken token) {
+        return new SourceRange(token.startOffset(), token.endOffset());
+    }
+
+    private static @NotNull List<MemberDeclaration> membersFromNames(@NotNull List<String> names) {
+        return names.stream()
+                .map(name -> new MemberDeclaration(name, SourceRange.missing()))
+                .toList();
+    }
+
+    record SourceRange(int startOffset, int endOffset) {
+        static @NotNull SourceRange missing() {
+            return new SourceRange(-1, -1);
+        }
+
+        boolean isPresent() {
+            return startOffset >= 0 && endOffset >= startOffset;
+        }
+    }
+
+    record MemberDeclaration(@NotNull String name, @NotNull SourceRange nameRange) {
+    }
+
+    record ObjectDeclaration(
+            @NotNull String name,
+            @NotNull SourceRange nameRange,
+            @NotNull SourceRange bodyRange,
+            @NotNull List<MemberDeclaration> fields,
+            @NotNull List<MemberDeclaration> methods) {
+        ObjectDeclaration(@NotNull String name, @NotNull List<String> fields, @NotNull List<String> methods) {
+            this(name, SourceRange.missing(), SourceRange.missing(), membersFromNames(fields), membersFromNames(methods));
+        }
+
         ObjectDeclaration {
             fields = List.copyOf(fields);
             methods = List.copyOf(methods);
+        }
+
+        @NotNull List<String> fieldNames() {
+            return fields.stream()
+                    .map(MemberDeclaration::name)
+                    .toList();
+        }
+
+        @NotNull List<String> methodNames() {
+            return methods.stream()
+                    .map(MemberDeclaration::name)
+                    .toList();
         }
     }
 }
