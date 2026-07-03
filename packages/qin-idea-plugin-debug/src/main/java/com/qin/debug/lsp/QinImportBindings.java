@@ -46,6 +46,13 @@ final class QinImportBindings {
         return null;
     }
 
+    static boolean isAliasedLocalSpecifierElement(@NotNull PsiElement element) {
+        ImportBinding binding = findForSpecifierElement(element);
+        return binding != null
+                && binding.localName().equals(element.getText())
+                && !binding.exportedName().equals(binding.localName());
+    }
+
     private static @NotNull List<ImportBinding> collectFromDeclaration(@NotNull PsiElement importDeclaration) {
         List<QinPsiToken> tokens = QinPsiTokenStream.collect(importDeclaration);
         int fromIndex = nextKeywordIndex(tokens, 0, "from");

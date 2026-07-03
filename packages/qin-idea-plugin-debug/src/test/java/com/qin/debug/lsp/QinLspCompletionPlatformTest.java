@@ -388,6 +388,32 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinObjectReference(reference.getElement());
     }
 
+    public void testQinObjectAliasedImportSpecifierReferencesOnlyExportedName() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Cou<caret>nter as C } from "./Counter.qin"
+
+                const value = C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference exportedReference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Aliased Qin exported import name should resolve to remote object", exportedReference);
+        PsiElement objectName = assertInstanceOf(exportedReference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.OBJECT_NAME, objectName.getNode().getElementType());
+        assertEquals("Counter.qin", objectName.getContainingFile().getName());
+        assertSingleQinObjectReference(exportedReference.getElement());
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiReference aliasReference = myFixture.getFile().findReferenceAt(text.indexOf("C }"));
+        assertNull("Aliased Qin local import name should be a local declaration, not a remote object reference",
+                aliasReference);
+    }
+
     public void testQinObjectNameStubIndexFindsObjectDeclarationFile() {
         var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
@@ -1268,6 +1294,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiClass psiClass = assertInstanceOf(reference.resolve(), PsiClass.class);
         assertEquals("demo.Greeter", psiClass.getQualifiedName());
         assertSingleQinJavaReference(reference.getElement());
+    }
+
+    public void testQinJavaAliasedImportSpecifierDoesNotReferenceLocalAliasName() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G<caret> } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNull("Aliased Java local import name should be a local declaration, not a Java class reference",
+                reference);
     }
 
     public void testQinJavaClassRenameProcessorPreservesImportAliasUsages() {
