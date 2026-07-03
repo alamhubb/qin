@@ -107,34 +107,6 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
-        CharSequence text = element.getContainingFile().getViewProvider().getContents();
-        int current = element.getTextRange().getStartOffset() - 1;
-        while (current >= 0 && Character.isWhitespace(text.charAt(current))) {
-            current--;
-        }
-        if (current < 0 || text.charAt(current) != '.') {
-            return null;
-        }
-        current--;
-        while (current >= 0 && Character.isWhitespace(text.charAt(current))) {
-            current--;
-        }
-        int end = current + 1;
-        while (current >= 0 && isIdentifierPart(text.charAt(current))) {
-            current--;
-        }
-        int start = current + 1;
-        if (start >= end || !isIdentifierStart(text.charAt(start))) {
-            return null;
-        }
-        return text.subSequence(start, end).toString();
-    }
-
-    private static boolean isIdentifierStart(char value) {
-        return Character.isLetter(value) || value == '_' || value == '$';
-    }
-
-    private static boolean isIdentifierPart(char value) {
-        return isIdentifierStart(value) || Character.isDigit(value);
+        return QinPsiTokenStream.previousQualifierName(element);
     }
 }
