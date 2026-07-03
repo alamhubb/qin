@@ -33,11 +33,11 @@ public final class QinParserDefinition implements ParserDefinition {
         return (root, builder) -> {
             PsiBuilder.Marker rootMarker = builder.mark();
             while (!builder.eof()) {
-                if (isKeyword(builder, "import")) {
+                if (QinTokenFacts.isKeyword(builder, "import")) {
                     parseImportDeclaration(builder);
-                } else if (isKeyword(builder, "object")) {
+                } else if (QinTokenFacts.isKeyword(builder, "object")) {
                     parseObjectDeclaration(builder);
-                } else if (isThisMemberAccessStart(builder)) {
+                } else if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                     parseThisMemberAccess(builder);
                 } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                     parseReferenceOrMemberAccess(builder);
@@ -58,7 +58,7 @@ public final class QinParserDefinition implements ParserDefinition {
                 parseImportSpecifier(builder);
                 continue;
             }
-            if (isKeyword(builder, "from")) {
+            if (QinTokenFacts.isKeyword(builder, "from")) {
                 builder.advanceLexer();
                 if (builder.getTokenType() == QinTokenTypes.STRING) {
                     builder.advanceLexer();
@@ -83,19 +83,19 @@ public final class QinParserDefinition implements ParserDefinition {
         if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
             wrapObjectName(builder);
         }
-        if (!isBrace(builder, "{")) {
+        if (!QinTokenFacts.isOpenBrace(builder)) {
             objectMarker.done(QinTokenTypes.OBJECT_DECLARATION);
             return;
         }
 
         int braceDepth = 0;
         while (!builder.eof()) {
-            if (isBrace(builder, "{")) {
+            if (QinTokenFacts.isOpenBrace(builder)) {
                 braceDepth++;
                 builder.advanceLexer();
                 continue;
             }
-            if (isBrace(builder, "}")) {
+            if (QinTokenFacts.isCloseBrace(builder)) {
                 braceDepth--;
                 builder.advanceLexer();
                 if (braceDepth <= 0) {
@@ -103,11 +103,11 @@ public final class QinParserDefinition implements ParserDefinition {
                 }
                 continue;
             }
-            if (isMethodDeclarationStart(builder)) {
+            if (QinTokenFacts.isMethodDeclarationStart(builder)) {
                 parseMethodDeclaration(builder);
-            } else if (isFieldDeclarationStart(builder)) {
+            } else if (QinTokenFacts.isFieldDeclarationStart(builder)) {
                 parseFieldDeclaration(builder);
-            } else if (isThisMemberAccessStart(builder)) {
+            } else if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
             } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 parseReferenceOrMemberAccess(builder);
@@ -122,19 +122,19 @@ public final class QinParserDefinition implements ParserDefinition {
         PsiBuilder.Marker methodMarker = builder.mark();
         wrapMethodName(builder);
         consumeParenthesizedTokens(builder);
-        if (!isBrace(builder, "{")) {
+        if (!QinTokenFacts.isOpenBrace(builder)) {
             methodMarker.done(QinTokenTypes.METHOD_DECLARATION);
             return;
         }
 
         int braceDepth = 0;
         while (!builder.eof()) {
-            if (isBrace(builder, "{")) {
+            if (QinTokenFacts.isOpenBrace(builder)) {
                 braceDepth++;
                 builder.advanceLexer();
                 continue;
             }
-            if (isBrace(builder, "}")) {
+            if (QinTokenFacts.isCloseBrace(builder)) {
                 braceDepth--;
                 builder.advanceLexer();
                 if (braceDepth <= 0) {
@@ -142,7 +142,7 @@ public final class QinParserDefinition implements ParserDefinition {
                 }
                 continue;
             }
-            if (isThisMemberAccessStart(builder)) {
+            if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
             } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 parseReferenceOrMemberAccess(builder);
@@ -162,7 +162,7 @@ public final class QinParserDefinition implements ParserDefinition {
     private static void parseImportSpecifier(PsiBuilder builder) {
         PsiBuilder.Marker specifierMarker = builder.mark();
         wrapReferenceIdentifier(builder);
-        if (isKeyword(builder, "as")) {
+        if (QinTokenFacts.isKeyword(builder, "as")) {
             builder.advanceLexer();
             if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 wrapImportAliasName(builder);
@@ -233,65 +233,15 @@ public final class QinParserDefinition implements ParserDefinition {
         aliasMarker.done(QinTokenTypes.IMPORT_ALIAS_NAME);
     }
 
-    private static boolean isKeyword(PsiBuilder builder, String text) {
-        return builder.getTokenType() == QinTokenTypes.KEYWORD
-                && text.equals(builder.getTokenText());
-    }
-
-    private static boolean isMethodDeclarationStart(PsiBuilder builder) {
-        if (builder.getTokenType() != QinTokenTypes.FUNCTION_IDENTIFIER) {
-            return false;
-        }
-        int offset = nextMeaningfulRawOffset(builder, 1);
-        if (builder.rawLookup(offset) != QinTokenTypes.PAREN || !rawTokenStartsWith(builder, offset, '(')) {
-            return false;
-        }
-
-        int parenDepth = 0;
-        while (offset != 0 && builder.rawLookup(offset) != null) {
-            if (builder.rawLookup(offset) == QinTokenTypes.PAREN) {
-                if (rawTokenStartsWith(builder, offset, '(')) {
-                    parenDepth++;
-                } else if (rawTokenStartsWith(builder, offset, ')')) {
-                    parenDepth--;
-                    if (parenDepth == 0) {
-                        int afterParams = nextMeaningfulRawOffset(builder, offset + 1);
-                        return builder.rawLookup(afterParams) == QinTokenTypes.BRACE
-                                && rawTokenStartsWith(builder, afterParams, '{');
-                    }
-                }
-            }
-            offset = nextMeaningfulRawOffset(builder, offset + 1);
-        }
-        return false;
-    }
-
-    private static boolean isFieldDeclarationStart(PsiBuilder builder) {
-        if (!QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
-            return false;
-        }
-        int offset = nextMeaningfulRawOffset(builder, 1);
-        return builder.rawLookup(offset) == QinTokenTypes.OPERATOR
-                && rawTokenStartsWith(builder, offset, '=');
-    }
-
-    private static boolean isThisMemberAccessStart(PsiBuilder builder) {
-        if (!isKeyword(builder, "this")) {
-            return false;
-        }
-        int offset = nextMeaningfulRawOffset(builder, 1);
-        return builder.rawLookup(offset) == QinTokenTypes.DOT;
-    }
-
     private static void consumeParenthesizedTokens(PsiBuilder builder) {
-        if (!isParen(builder, "(")) {
+        if (!QinTokenFacts.isOpenParen(builder)) {
             return;
         }
         int parenDepth = 0;
         while (!builder.eof()) {
-            if (isParen(builder, "(")) {
+            if (QinTokenFacts.isOpenParen(builder)) {
                 parenDepth++;
-            } else if (isParen(builder, ")")) {
+            } else if (QinTokenFacts.isCloseParen(builder)) {
                 parenDepth--;
             }
             builder.advanceLexer();
@@ -299,30 +249,6 @@ public final class QinParserDefinition implements ParserDefinition {
                 return;
             }
         }
-    }
-
-    private static boolean isBrace(PsiBuilder builder, String text) {
-        return builder.getTokenType() == QinTokenTypes.BRACE
-                && text.equals(builder.getTokenText());
-    }
-
-    private static boolean isParen(PsiBuilder builder, String text) {
-        return builder.getTokenType() == QinTokenTypes.PAREN
-                && text.equals(builder.getTokenText());
-    }
-
-    private static int nextMeaningfulRawOffset(PsiBuilder builder, int offset) {
-        int current = offset;
-        while (builder.rawLookup(current) != null && QinTokenFacts.isTrivia(builder.rawLookup(current))) {
-            current++;
-        }
-        return current;
-    }
-
-    private static boolean rawTokenStartsWith(PsiBuilder builder, int offset, char expected) {
-        int start = builder.rawTokenTypeStart(offset);
-        CharSequence text = builder.getOriginalText();
-        return start >= 0 && start < text.length() && text.charAt(start) == expected;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.qin.debug.lsp;
 
+import com.intellij.lang.PsiBuilder;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +25,10 @@ final class QinTokenFacts {
     }
 
     static boolean isDeclarationIdentifierToken(@NotNull QinLexicalToken token) {
-        IElementType tokenType = token.type();
+        return isDeclarationIdentifierToken(token.type());
+    }
+
+    static boolean isDeclarationIdentifierToken(@Nullable IElementType tokenType) {
         return isReferenceLeafToken(tokenType)
                 || tokenType == QinTokenTypes.FUNCTION_IDENTIFIER;
     }
@@ -75,24 +79,108 @@ final class QinTokenFacts {
                 && expected.contentEquals(slice(content, token));
     }
 
+    static boolean isKeyword(@NotNull PsiBuilder builder, @NotNull String expected) {
+        return builder.getTokenType() == QinTokenTypes.KEYWORD
+                && expected.equals(builder.getTokenText());
+    }
+
     static boolean isOpenBrace(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
         return token.type() == QinTokenTypes.BRACE && tokenStartsWith(content, token, '{');
+    }
+
+    static boolean isOpenBrace(@NotNull PsiBuilder builder) {
+        return builder.getTokenType() == QinTokenTypes.BRACE && expectedTokenText(builder, "{");
     }
 
     static boolean isCloseBrace(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
         return token.type() == QinTokenTypes.BRACE && tokenStartsWith(content, token, '}');
     }
 
+    static boolean isCloseBrace(@NotNull PsiBuilder builder) {
+        return builder.getTokenType() == QinTokenTypes.BRACE && expectedTokenText(builder, "}");
+    }
+
     static boolean isOpenParen(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
         return token.type() == QinTokenTypes.PAREN && tokenStartsWith(content, token, '(');
+    }
+
+    static boolean isOpenParen(@NotNull PsiBuilder builder) {
+        return builder.getTokenType() == QinTokenTypes.PAREN && expectedTokenText(builder, "(");
     }
 
     static boolean isCloseParen(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
         return token.type() == QinTokenTypes.PAREN && tokenStartsWith(content, token, ')');
     }
 
+    static boolean isCloseParen(@NotNull PsiBuilder builder) {
+        return builder.getTokenType() == QinTokenTypes.PAREN && expectedTokenText(builder, ")");
+    }
+
     static boolean isAssignmentOperator(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
         return token.type() == QinTokenTypes.OPERATOR && tokenStartsWith(content, token, '=');
+    }
+
+    static boolean isFieldDeclarationStart(@NotNull PsiBuilder builder) {
+        if (!isDeclarationIdentifierToken(builder.getTokenType())) {
+            return false;
+        }
+        int offset = nextMeaningfulRawOffset(builder, 1);
+        return builder.rawLookup(offset) == QinTokenTypes.OPERATOR
+                && rawTokenStartsWith(builder, offset, '=');
+    }
+
+    static boolean isMethodDeclarationStart(@NotNull PsiBuilder builder) {
+        if (!isDeclarationIdentifierToken(builder.getTokenType())) {
+            return false;
+        }
+        int offset = nextMeaningfulRawOffset(builder, 1);
+        if (builder.rawLookup(offset) != QinTokenTypes.PAREN || !rawTokenStartsWith(builder, offset, '(')) {
+            return false;
+        }
+
+        int parenDepth = 0;
+        while (offset != 0 && builder.rawLookup(offset) != null) {
+            if (builder.rawLookup(offset) == QinTokenTypes.PAREN) {
+                if (rawTokenStartsWith(builder, offset, '(')) {
+                    parenDepth++;
+                } else if (rawTokenStartsWith(builder, offset, ')')) {
+                    parenDepth--;
+                    if (parenDepth == 0) {
+                        int afterParams = nextMeaningfulRawOffset(builder, offset + 1);
+                        return builder.rawLookup(afterParams) == QinTokenTypes.BRACE
+                                && rawTokenStartsWith(builder, afterParams, '{');
+                    }
+                }
+            }
+            offset = nextMeaningfulRawOffset(builder, offset + 1);
+        }
+        return false;
+    }
+
+    static boolean isThisMemberAccessStart(@NotNull PsiBuilder builder) {
+        if (!isKeyword(builder, "this")) {
+            return false;
+        }
+        int offset = nextMeaningfulRawOffset(builder, 1);
+        return builder.rawLookup(offset) == QinTokenTypes.DOT;
+    }
+
+    static int nextMeaningfulRawOffset(@NotNull PsiBuilder builder, int offset) {
+        int current = offset;
+        while (builder.rawLookup(current) != null && isTrivia(builder.rawLookup(current))) {
+            current++;
+        }
+        return current;
+    }
+
+    static boolean rawTokenStartsWith(@NotNull PsiBuilder builder, int offset, char expected) {
+        int start = builder.rawTokenTypeStart(offset);
+        CharSequence text = builder.getOriginalText();
+        return start >= 0 && start < text.length() && text.charAt(start) == expected;
+    }
+
+    private static boolean expectedTokenText(@NotNull PsiBuilder builder, @NotNull String expected) {
+        return expected.equals(builder.getTokenText());
     }
 
     static boolean isObjectDeclarationKeyword(

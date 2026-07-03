@@ -311,6 +311,21 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 hasPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME));
     }
 
+    public void testQinParserUsesSharedStructureFactsForObjectMethodDeclaration() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  Next() {
+                    return 42
+                  }
+                }
+                """);
+
+        PsiElement methodName = findPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME);
+
+        assertNotNull("Qin PSI should classify method declarations through shared structure facts", methodName);
+        assertEquals("Next", methodName.getText());
+    }
+
     public void testQinParserBuildsStructuredPsiForObjectFieldDeclaration() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
