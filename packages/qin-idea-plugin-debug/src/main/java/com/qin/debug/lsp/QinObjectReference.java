@@ -38,6 +38,9 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
     @Override
     public @NotNull PsiElement handleElementRename(@NotNull @NlsSafe String newElementName)
             throws IncorrectOperationException {
+        if (isImportedAliasLocalReference(myElement)) {
+            return myElement;
+        }
         ASTNode leaf = myElement.getNode().getFirstChildNode();
         if (leaf instanceof LeafElement leafElement) {
             leafElement.replaceWithText(newElementName);
@@ -50,6 +53,12 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
         return QinJavaReference.previousQualifierName(element) == null
                 && QinJavaImportTable.fromFile(element.getContainingFile()).find(element.getText()) == null
                 && QinObjectSymbols.findObjectName(element, element.getText()) != null;
+    }
+
+    private static boolean isImportedAliasLocalReference(@NotNull PsiElement element) {
+        QinModuleImportTable.QinImport qinImport = QinModuleImportTable.fromFile(element.getContainingFile())
+                .find(element.getText());
+        return qinImport != null && !qinImport.exportedName().equals(qinImport.localName());
     }
 
     private static ResolveResult @NotNull [] resolveInner(

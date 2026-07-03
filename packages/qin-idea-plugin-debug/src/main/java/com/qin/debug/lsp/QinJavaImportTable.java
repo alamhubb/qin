@@ -1,6 +1,7 @@
 package com.qin.debug.lsp;
 
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,6 +29,17 @@ final class QinJavaImportTable {
 
     @Nullable JavaImport find(String localName) {
         return importsByLocalName.get(localName);
+    }
+
+    static @Nullable JavaImport findForSpecifierElement(@NotNull PsiElement element) {
+        QinImportBindings.ImportBinding binding = QinImportBindings.findForSpecifierElement(element);
+        if (binding == null) {
+            return null;
+        }
+        String moduleName = readJavaModuleName(binding.moduleSpecifier());
+        return moduleName == null
+                ? null
+                : new JavaImport(moduleName, binding.exportedName(), binding.localName());
     }
 
     private static @Nullable String readJavaModuleName(@NotNull String moduleSpecifier) {

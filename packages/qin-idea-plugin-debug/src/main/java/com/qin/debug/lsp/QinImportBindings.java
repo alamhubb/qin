@@ -28,6 +28,24 @@ final class QinImportBindings {
         return bindings;
     }
 
+    static @Nullable ImportBinding findForSpecifierElement(@NotNull PsiElement element) {
+        PsiElement specifier = parentOfType(element, QinTokenTypes.IMPORT_SPECIFIER);
+        if (specifier == null) {
+            return null;
+        }
+        PsiElement declaration = parentOfType(specifier, QinTokenTypes.IMPORT_DECLARATION);
+        if (declaration == null) {
+            return null;
+        }
+        for (ImportBinding binding : collectFromDeclaration(declaration)) {
+            if (binding.exportedName().equals(element.getText())
+                    || binding.localName().equals(element.getText())) {
+                return binding;
+            }
+        }
+        return null;
+    }
+
     private static @NotNull List<ImportBinding> collectFromDeclaration(@NotNull PsiElement importDeclaration) {
         List<QinPsiToken> tokens = QinPsiTokenStream.collect(importDeclaration);
         int fromIndex = nextKeywordIndex(tokens, 0, "from");
@@ -97,6 +115,17 @@ final class QinImportBindings {
             return null;
         }
         return text.substring(1, text.length() - 1).trim();
+    }
+
+    private static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull com.intellij.psi.tree.IElementType type) {
+        PsiElement current = element.getParent();
+        while (current != null) {
+            if (current.getNode() != null && current.getNode().getElementType() == type) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return null;
     }
 
     record ImportBinding(@NotNull String moduleSpecifier, @NotNull String exportedName, @NotNull String localName) {

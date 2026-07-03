@@ -74,6 +74,14 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
             return reference.resolveClassMember(psiClass);
         }
 
+        QinJavaImportTable.JavaImport specifierImport = QinJavaImportTable.findForSpecifierElement(element);
+        if (specifierImport != null) {
+            PsiClass psiClass = reference.findClass(specifierImport.qualifiedClassName());
+            return psiClass == null
+                    ? ResolveResult.EMPTY_ARRAY
+                    : new ResolveResult[]{new QinPsiResolveResult(psiClass)};
+        }
+
         QinJavaImportTable.JavaImport importedClass = importTable.find(reference.identifier);
         if (importedClass == null) {
             return ResolveResult.EMPTY_ARRAY;
@@ -121,6 +129,9 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
         String qualifier = previousQualifierName(element);
         if (qualifier != null) {
             return importTable.find(qualifier) != null;
+        }
+        if (QinJavaImportTable.findForSpecifierElement(element) != null) {
+            return true;
         }
         return importTable.find(element.getText()) != null;
     }

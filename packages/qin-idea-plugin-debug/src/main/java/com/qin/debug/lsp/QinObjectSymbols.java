@@ -35,6 +35,20 @@ final class QinObjectSymbols {
         }
 
         QinModuleImportTable importTable = QinModuleImportTable.fromFile(file);
+        QinImportBindings.ImportBinding importBinding = QinImportBindings.findForSpecifierElement(element);
+        if (importBinding != null
+                && importBinding.exportedName().equals(name)
+                && QinModuleImportTable.isQinModuleImportSpecifier(importBinding)) {
+            VirtualFile importedFile = importTable.resolveFile(new QinModuleImportTable.QinImport(
+                    importBinding.moduleSpecifier(),
+                    importBinding.exportedName(),
+                    importBinding.localName()));
+            return importedFile == null ? null : resolveImportedObjectName(
+                    element,
+                    importedFile,
+                    importBinding.exportedName());
+        }
+
         QinModuleImportTable.QinImport qinImport = importTable.find(name);
         if (qinImport == null) {
             return null;
@@ -43,10 +57,17 @@ final class QinObjectSymbols {
         if (importedFile == null) {
             return null;
         }
+        return resolveImportedObjectName(element, importedFile, qinImport.exportedName());
+    }
+
+    private static @Nullable ResolvedObject resolveImportedObjectName(
+            @NotNull PsiElement element,
+            @NotNull VirtualFile importedFile,
+            @NotNull String exportedName) {
         GlobalSearchScope importedFileScope = GlobalSearchScope.fileScope(element.getProject(), importedFile);
         Collection<QinPsiFile> indexedFiles = StubIndex.getElements(
                 QinObjectNameStubIndex.KEY,
-                qinImport.exportedName(),
+                exportedName,
                 element.getProject(),
                 importedFileScope,
                 QinPsiFile.class);
@@ -54,8 +75,8 @@ final class QinObjectSymbols {
             return null;
         }
         PsiFile importedPsiFile = PsiManager.getInstance(element.getProject()).findFile(importedFile);
-        PsiElement objectName = importedPsiFile == null ? null : findObjectNameInFile(importedPsiFile, qinImport.exportedName());
-        return objectName == null ? null : new ResolvedObject(objectName, qinImport.exportedName(), importedFile);
+        PsiElement objectName = importedPsiFile == null ? null : findObjectNameInFile(importedPsiFile, exportedName);
+        return objectName == null ? null : new ResolvedObject(objectName, exportedName, importedFile);
     }
 
     private static @Nullable PsiElement findObjectNameInFile(@NotNull PsiFile file, @NotNull String name) {

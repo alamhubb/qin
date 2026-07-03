@@ -500,6 +500,36 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 appText.contains("Counter.next()"));
     }
 
+    public void testQinObjectRenameProcessorPreservesRelativeImportAliasUsages() {
+        var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.next()
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiFile counterPsi = PsiManager.getInstance(getProject()).findFile(counterFile.getVirtualFile());
+        assertNotNull("Counter.qin PSI was not available", counterPsi);
+        PsiElement objectName = findPsiElementType(counterPsi, QinTokenTypes.OBJECT_NAME);
+        assertNotNull("Imported Qin object name PSI was not built", objectName);
+        new RenameProcessor(getProject(), objectName, "Store", false, false).run();
+
+        String appText = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin object rename should update the imported exported name: " + appText,
+                appText.contains("import { Store as C } from \"./Counter.qin\""));
+        assertTrue("Qin object rename should preserve local alias usages: " + appText,
+                appText.contains("C.next()"));
+        assertFalse("Qin object rename should not rewrite local alias usages to the exported name: " + appText,
+                appText.contains("Store.next()"));
+    }
+
     public void testQinObjectNameSupportsIdeaRenamePrimitive() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -1212,6 +1242,30 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("greet", method.getName());
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
         assertSingleQinJavaReference(methodReference.getElement());
+    }
+
+    public void testQinJavaAliasedImportSpecifierResolvesExportedNameToPsiClass() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Gre<caret>eter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin Java import specifier reference was not registered at Greeter. " + describeCaretElement(), reference);
+        PsiClass psiClass = assertInstanceOf(reference.resolve(), PsiClass.class);
+        assertEquals("demo.Greeter", psiClass.getQualifiedName());
+        assertSingleQinJavaReference(reference.getElement());
     }
 
     public void testQinJavaMemberReferenceResolvesAcrossWhitespaceWithPsiTokens() {

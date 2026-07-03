@@ -36,6 +36,10 @@ final class QinModuleImportTable {
         return importsByLocalName.get(localName);
     }
 
+    static boolean isQinModuleImportSpecifier(@NotNull QinImportBindings.ImportBinding binding) {
+        return isQinModuleSpecifier(binding.moduleSpecifier());
+    }
+
     @Nullable VirtualFile resolveFile(@NotNull QinImport qinImport) {
         VirtualFile sourceFile = importingFile.getOriginalFile().getVirtualFile();
         if (sourceFile == null || sourceFile.getParent() == null) {
