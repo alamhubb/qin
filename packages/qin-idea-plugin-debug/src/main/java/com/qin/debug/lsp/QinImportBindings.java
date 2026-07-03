@@ -44,7 +44,7 @@ final class QinImportBindings {
             @Override
             public void visitElement(@NotNull PsiElement element) {
                 if (element.getNode() != null
-                        && element.getNode().getElementType() == QinTokenTypes.JAVA_IMPORT_SPECIFIER) {
+                        && element.getNode().getElementType() == QinTokenTypes.IMPORT_SPECIFIER) {
                     NamedImport namedImport = parseNamedImport(element);
                     if (namedImport != null) {
                         bindings.add(new ImportBinding(

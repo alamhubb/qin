@@ -55,7 +55,7 @@ public final class QinParserDefinition implements ParserDefinition {
         builder.advanceLexer();
         while (!builder.eof()) {
             if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
-                parseJavaImportSpecifier(builder);
+                parseImportSpecifier(builder);
                 continue;
             }
             if (isKeyword(builder, "from")) {
@@ -159,7 +159,7 @@ public final class QinParserDefinition implements ParserDefinition {
         fieldMarker.done(QinTokenTypes.FIELD_DECLARATION);
     }
 
-    private static void parseJavaImportSpecifier(PsiBuilder builder) {
+    private static void parseImportSpecifier(PsiBuilder builder) {
         PsiBuilder.Marker specifierMarker = builder.mark();
         wrapReferenceIdentifier(builder);
         if (isKeyword(builder, "as")) {
@@ -168,7 +168,7 @@ public final class QinParserDefinition implements ParserDefinition {
                 wrapReferenceIdentifier(builder);
             }
         }
-        specifierMarker.done(QinTokenTypes.JAVA_IMPORT_SPECIFIER);
+        specifierMarker.done(QinTokenTypes.IMPORT_SPECIFIER);
     }
 
     private static void parseReferenceOrMemberAccess(PsiBuilder builder) {

@@ -230,10 +230,21 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         assertTrue("Qin PSI should include structured import declarations",
                 hasPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_DECLARATION));
-        assertTrue("Qin PSI should include structured Java import specifiers",
-                hasPsiElementType(myFixture.getFile(), QinTokenTypes.JAVA_IMPORT_SPECIFIER));
+        assertTrue("Qin PSI should include structured import specifiers",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_SPECIFIER));
         assertTrue("Qin PSI should include structured member access nodes",
                 hasPsiElementType(myFixture.getFile(), QinTokenTypes.MEMBER_ACCESS));
+    }
+
+    public void testQinParserUsesSharedImportSpecifierPsiForJavaAndQinImports() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G } from "java:demo"
+                import { Counter as C } from "./Counter.qin"
+                """);
+
+        assertEquals("Qin PSI should use one import specifier node type for Java and Qin module imports",
+                2,
+                countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_SPECIFIER));
     }
 
     public void testQinParserBuildsStructuredPsiForObjectDeclaration() {
@@ -1413,6 +1424,14 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
             }
         }
         return false;
+    }
+
+    private static int countPsiElementType(PsiElement root, IElementType type) {
+        int count = root.getNode() != null && root.getNode().getElementType() == type ? 1 : 0;
+        for (PsiElement child : root.getChildren()) {
+            count += countPsiElementType(child, type);
+        }
+        return count;
     }
 
     private static void assertSingleQinJavaReference(PsiElement element) {
