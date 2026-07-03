@@ -158,6 +158,21 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 hasPsiElementType(myFixture.getFile(), QinTokenTypes.OBJECT_NAME));
     }
 
+    public void testQinParserBuildsStructuredPsiForObjectMethodDeclaration() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+                """);
+
+        assertTrue("Qin PSI should include object method declaration nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_DECLARATION));
+        assertTrue("Qin PSI should include object method name nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME));
+    }
+
     public void testQinParserKeepsJavaMemberReferencesInsideObjectDeclaration() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
