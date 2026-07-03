@@ -348,6 +348,36 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertFalse("Qin method rename should remove old usage: " + text, text.contains("Counter.next()"));
     }
 
+    public void testQinObjectMethodAnnotatorReportsMissingMethod() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.missing()
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightContains(errors, "Unresolved Qin object method Counter.missing");
+    }
+
+    public void testQinObjectMethodAnnotatorKeepsResolvedMethodsClean() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.next()
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightMissing(errors, "Unresolved Qin object method Counter.next");
+    }
+
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {

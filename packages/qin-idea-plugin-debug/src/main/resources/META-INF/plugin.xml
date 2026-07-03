@@ -58,6 +58,9 @@
         <annotator
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinJavaInteropAnnotator"/>
+        <annotator
+                language="Qin"
+                implementationClass="com.qin.debug.lsp.QinObjectMethodAnnotator"/>
 
         <!-- Keep IDEA native Java Run/Debug; do not inject Qin run configuration. -->
     </extensions>
