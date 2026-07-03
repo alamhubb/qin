@@ -758,6 +758,60 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertLookupContains(elements, "value");
     }
 
+    public void testQinNativeCompletionIncludesImportedObjectMembersAfterObjectQualifier() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter } from "./Counter.qin"
+
+                const value = Counter.v<caret>
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            assertTrue("IDEA native completion neither produced a lookup list nor inserted imported object member value: "
+                            + myFixture.getEditor().getDocument().getText(),
+                    myFixture.getEditor().getDocument().getText().contains("Counter.value"));
+            return;
+        }
+        assertLookupContains(elements, "value");
+    }
+
+    public void testQinNativeCompletionIncludesAliasedImportedObjectMethodsAfterObjectQualifier() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.n<caret>
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            assertTrue("IDEA native completion neither produced a lookup list nor inserted imported object method next: "
+                            + myFixture.getEditor().getDocument().getText(),
+                    myFixture.getEditor().getDocument().getText().contains("C.next"));
+            return;
+        }
+        assertLookupContains(elements, "next");
+    }
+
     public void testQinNativeCompletionIncludesThisObjectMembers() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
