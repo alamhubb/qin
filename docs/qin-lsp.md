@@ -37,6 +37,8 @@ The IDEA lexer should be backed by a Qin/Slime/Subhuti token adapter rather than
 
 Do not duplicate Qin/Slime lexical rules in the IDEA plugin. Token creation should use the same Slime/Subhuti token definitions as `QinParser` (`JavaScriptTokens.getTokens()`), and shared token classification such as keyword detection should use Slime token utilities instead of IDEA-local keyword lists. IDEA-owned code may map shared token facts into platform-specific `IElementType` categories, because that mapping is an IntelliJ presentation boundary rather than a language rule.
 
+Keep IDEA token facts normalized behind one adapter surface. `QinLexer`, `QinParserDefinition`, declaration scanning, references, indexes, and completion may consume shared token facts such as trivia detection, reference-token detection, token slicing, and next meaningful token lookup. Do not copy those token facts into each consumer. Prefer composition through a shared token adapter/facts class over inheritance between platform adapter classes.
+
 The adapter may own trivia and editor-recovery details required by the IntelliJ lexer contract: whitespace/comment tokens, stable token ranges, fast advancement, and highlightable incomplete literals while the user is typing. That recovery is an editor-tokenization boundary, not a broad parser fallback and not a reason to hide real Qin parser defects.
 
 ## Parser And Virtual TypeScript Boundaries

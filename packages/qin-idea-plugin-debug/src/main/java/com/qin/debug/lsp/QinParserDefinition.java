@@ -39,7 +39,7 @@ public final class QinParserDefinition implements ParserDefinition {
                     parseObjectDeclaration(builder);
                 } else if (isThisMemberAccessStart(builder)) {
                     parseThisMemberAccess(builder);
-                } else if (isReferenceToken(builder.getTokenType())) {
+                } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                     parseReferenceOrMemberAccess(builder);
                 } else {
                     builder.advanceLexer();
@@ -54,7 +54,7 @@ public final class QinParserDefinition implements ParserDefinition {
         PsiBuilder.Marker importMarker = builder.mark();
         builder.advanceLexer();
         while (!builder.eof()) {
-            if (isReferenceToken(builder.getTokenType())) {
+            if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 parseJavaImportSpecifier(builder);
                 continue;
             }
@@ -80,7 +80,7 @@ public final class QinParserDefinition implements ParserDefinition {
     private static void parseObjectDeclaration(PsiBuilder builder) {
         PsiBuilder.Marker objectMarker = builder.mark();
         builder.advanceLexer();
-        if (isReferenceToken(builder.getTokenType())) {
+        if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
             wrapObjectName(builder);
         }
         if (!isBrace(builder, "{")) {
@@ -109,7 +109,7 @@ public final class QinParserDefinition implements ParserDefinition {
                 parseFieldDeclaration(builder);
             } else if (isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
-            } else if (isReferenceToken(builder.getTokenType())) {
+            } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 parseReferenceOrMemberAccess(builder);
             } else {
                 builder.advanceLexer();
@@ -144,7 +144,7 @@ public final class QinParserDefinition implements ParserDefinition {
             }
             if (isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
-            } else if (isReferenceToken(builder.getTokenType())) {
+            } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 parseReferenceOrMemberAccess(builder);
             } else {
                 builder.advanceLexer();
@@ -164,7 +164,7 @@ public final class QinParserDefinition implements ParserDefinition {
         wrapReferenceIdentifier(builder);
         if (isKeyword(builder, "as")) {
             builder.advanceLexer();
-            if (isReferenceToken(builder.getTokenType())) {
+            if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 wrapReferenceIdentifier(builder);
             }
         }
@@ -178,7 +178,7 @@ public final class QinParserDefinition implements ParserDefinition {
         while (builder.getTokenType() == QinTokenTypes.DOT) {
             hasMemberAccess = true;
             builder.advanceLexer();
-            if (isReferenceToken(builder.getTokenType())) {
+            if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 wrapReferenceIdentifier(builder);
             } else {
                 break;
@@ -196,7 +196,7 @@ public final class QinParserDefinition implements ParserDefinition {
         builder.advanceLexer();
         if (builder.getTokenType() == QinTokenTypes.DOT) {
             builder.advanceLexer();
-            if (isReferenceToken(builder.getTokenType())) {
+            if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 wrapReferenceIdentifier(builder);
             }
         }
@@ -261,7 +261,7 @@ public final class QinParserDefinition implements ParserDefinition {
     }
 
     private static boolean isFieldDeclarationStart(PsiBuilder builder) {
-        if (!isReferenceToken(builder.getTokenType())) {
+        if (!QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
             return false;
         }
         int offset = nextMeaningfulRawOffset(builder, 1);
@@ -305,24 +305,12 @@ public final class QinParserDefinition implements ParserDefinition {
                 && text.equals(builder.getTokenText());
     }
 
-    private static boolean isReferenceToken(IElementType tokenType) {
-        return tokenType == QinTokenTypes.IDENTIFIER
-                || tokenType == QinTokenTypes.CLASS_NAME
-                || tokenType == QinTokenTypes.MEMBER_IDENTIFIER;
-    }
-
     private static int nextMeaningfulRawOffset(PsiBuilder builder, int offset) {
         int current = offset;
-        while (builder.rawLookup(current) != null && isTrivia(builder.rawLookup(current))) {
+        while (builder.rawLookup(current) != null && QinTokenFacts.isTrivia(builder.rawLookup(current))) {
             current++;
         }
         return current;
-    }
-
-    private static boolean isTrivia(IElementType tokenType) {
-        return tokenType == TokenType.WHITE_SPACE
-                || tokenType == QinTokenTypes.LINE_COMMENT
-                || tokenType == QinTokenTypes.BLOCK_COMMENT;
     }
 
     private static boolean rawTokenStartsWith(PsiBuilder builder, int offset, char expected) {

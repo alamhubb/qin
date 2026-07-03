@@ -14,7 +14,7 @@ final class QinReferenceElements {
         if (elementType == QinTokenTypes.REFERENCE_IDENTIFIER) {
             return element;
         }
-        if (isReferenceLeafToken(elementType)) {
+        if (QinTokenFacts.isReferenceLeafToken(elementType)) {
             PsiElement parent = element.getParent();
             if (parent != null
                     && parent.getNode() != null
@@ -23,11 +23,5 @@ final class QinReferenceElements {
             }
         }
         return null;
-    }
-
-    static boolean isReferenceLeafToken(IElementType elementType) {
-        return elementType == QinTokenTypes.IDENTIFIER
-                || elementType == QinTokenTypes.CLASS_NAME
-                || elementType == QinTokenTypes.MEMBER_IDENTIFIER;
     }
 }

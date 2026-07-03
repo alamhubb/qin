@@ -94,7 +94,7 @@ final class QinLexicalScanner {
     }
 
     private static IElementType classifyIdentifier(String value, List<QinLexicalToken> previousTokens) {
-        QinLexicalToken previous = previousMeaningfulToken(previousTokens);
+        QinLexicalToken previous = QinTokenFacts.previousMeaningfulToken(previousTokens);
         if (previous != null && previous.type() == QinTokenTypes.DOT) {
             return QinTokenTypes.MEMBER_IDENTIFIER;
         }
@@ -121,35 +121,11 @@ final class QinLexicalScanner {
     }
 
     private static boolean isBeforeCallParen(String text, List<QinLexicalToken> tokens, int tokenIndex) {
-        QinLexicalToken next = nextMeaningfulToken(tokens, tokenIndex);
+        QinLexicalToken next = QinTokenFacts.nextMeaningfulToken(tokens, tokenIndex);
         return next != null
                 && next.type() == QinTokenTypes.PAREN
                 && next.startOffset() < text.length()
                 && text.charAt(next.startOffset()) == '(';
-    }
-
-    private static QinLexicalToken nextMeaningfulToken(List<QinLexicalToken> tokens, int tokenIndex) {
-        for (int index = tokenIndex + 1; index < tokens.size(); index++) {
-            QinLexicalToken token = tokens.get(index);
-            if (token.type() != TokenType.WHITE_SPACE
-                    && token.type() != QinTokenTypes.LINE_COMMENT
-                    && token.type() != QinTokenTypes.BLOCK_COMMENT) {
-                return token;
-            }
-        }
-        return null;
-    }
-
-    private static QinLexicalToken previousMeaningfulToken(List<QinLexicalToken> tokens) {
-        for (int index = tokens.size() - 1; index >= 0; index--) {
-            QinLexicalToken token = tokens.get(index);
-            if (token.type() != TokenType.WHITE_SPACE
-                    && token.type() != QinTokenTypes.LINE_COMMENT
-                    && token.type() != QinTokenTypes.BLOCK_COMMENT) {
-                return token;
-            }
-        }
-        return null;
     }
 
     private static void appendTrivia(List<QinLexicalToken> tokens, String text, int startOffset, int endOffset) {
