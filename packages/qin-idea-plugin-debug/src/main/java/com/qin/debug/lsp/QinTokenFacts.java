@@ -66,4 +66,82 @@ final class QinTokenFacts {
             char expected) {
         return token.startOffset() < content.length() && content.charAt(token.startOffset()) == expected;
     }
+
+    static boolean isKeyword(
+            @NotNull CharSequence content,
+            @NotNull QinLexicalToken token,
+            @NotNull String expected) {
+        return token.type() == QinTokenTypes.KEYWORD
+                && expected.contentEquals(slice(content, token));
+    }
+
+    static boolean isOpenBrace(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
+        return token.type() == QinTokenTypes.BRACE && tokenStartsWith(content, token, '{');
+    }
+
+    static boolean isCloseBrace(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
+        return token.type() == QinTokenTypes.BRACE && tokenStartsWith(content, token, '}');
+    }
+
+    static boolean isOpenParen(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
+        return token.type() == QinTokenTypes.PAREN && tokenStartsWith(content, token, '(');
+    }
+
+    static boolean isCloseParen(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
+        return token.type() == QinTokenTypes.PAREN && tokenStartsWith(content, token, ')');
+    }
+
+    static boolean isAssignmentOperator(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
+        return token.type() == QinTokenTypes.OPERATOR && tokenStartsWith(content, token, '=');
+    }
+
+    static boolean isObjectDeclarationKeyword(
+            @NotNull CharSequence content,
+            @NotNull QinLexicalToken token) {
+        return isKeyword(content, token, "object");
+    }
+
+    static boolean isFieldDeclarationName(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens,
+            int tokenIndex) {
+        QinLexicalToken token = tokens.get(tokenIndex);
+        if (!isDeclarationIdentifierToken(token)) {
+            return false;
+        }
+        QinLexicalToken next = nextMeaningfulToken(tokens, tokenIndex);
+        return next != null && isAssignmentOperator(content, next);
+    }
+
+    static boolean isMethodDeclarationName(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens,
+            int tokenIndex) {
+        QinLexicalToken token = tokens.get(tokenIndex);
+        if (!isDeclarationIdentifierToken(token)) {
+            return false;
+        }
+        int current = nextMeaningfulTokenIndex(tokens, tokenIndex + 1);
+        if (current < 0 || !isOpenParen(content, tokens.get(current))) {
+            return false;
+        }
+
+        int parenDepth = 0;
+        while (current >= 0 && current < tokens.size()) {
+            QinLexicalToken currentToken = tokens.get(current);
+            if (currentToken.type() == QinTokenTypes.PAREN) {
+                if (isOpenParen(content, currentToken)) {
+                    parenDepth++;
+                } else if (isCloseParen(content, currentToken)) {
+                    parenDepth--;
+                    if (parenDepth == 0) {
+                        int afterParams = nextMeaningfulTokenIndex(tokens, current + 1);
+                        return afterParams >= 0 && isOpenBrace(content, tokens.get(afterParams));
+                    }
+                }
+            }
+            current = nextMeaningfulTokenIndex(tokens, current + 1);
+        }
+        return false;
+    }
 }

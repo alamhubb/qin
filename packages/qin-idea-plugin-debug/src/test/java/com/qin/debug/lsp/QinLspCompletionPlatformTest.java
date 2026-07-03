@@ -223,6 +223,25 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals(List.of("next"), counter.methods());
     }
 
+    public void testQinDeclarationScannerRequiresMethodBodyFromSharedStructureFacts() {
+        String source = """
+                object Counter {
+                  value = helper()
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """;
+
+        List<QinDeclarationScanner.ObjectDeclaration> declarations = QinDeclarationScanner.objectDeclarations(source);
+
+        assertEquals(1, declarations.size());
+        QinDeclarationScanner.ObjectDeclaration counter = declarations.get(0);
+        assertEquals(List.of("value"), counter.fields());
+        assertEquals(List.of("next"), counter.methods());
+    }
+
     public void testQinParserBuildsStructuredPsiForJavaInterop() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { Greeter as G } from "java:demo"

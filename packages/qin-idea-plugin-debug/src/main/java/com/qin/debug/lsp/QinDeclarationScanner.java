@@ -20,8 +20,7 @@ final class QinDeclarationScanner {
         List<ObjectDeclaration> declarations = new ArrayList<>();
         for (int index = 0; index < tokens.size(); index++) {
             QinLexicalToken token = tokens.get(index);
-            if (token.type() == QinTokenTypes.KEYWORD
-                    && "object".contentEquals(QinTokenFacts.slice(content, token))) {
+            if (QinTokenFacts.isObjectDeclarationKeyword(content, token)) {
                 QinLexicalToken nameToken = QinTokenFacts.nextMeaningfulToken(tokens, index);
                 if (nameToken != null && QinTokenFacts.isDeclarationIdentifierToken(nameToken)) {
                     String name = QinTokenFacts.slice(content, nameToken).toString();
@@ -42,10 +41,10 @@ final class QinDeclarationScanner {
         int braceIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, objectKeywordIndex + 1);
         while (braceIndex >= 0 && braceIndex < tokens.size()) {
             QinLexicalToken token = tokens.get(braceIndex);
-            if (token.type() == QinTokenTypes.BRACE && QinTokenFacts.tokenStartsWith(content, token, '{')) {
+            if (QinTokenFacts.isOpenBrace(content, token)) {
                 return readObjectBody(content, tokens, braceIndex, objectName);
             }
-            if (token.type() == QinTokenTypes.BRACE && QinTokenFacts.tokenStartsWith(content, token, '}')) {
+            if (QinTokenFacts.isCloseBrace(content, token)) {
                 break;
             }
             braceIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, braceIndex + 1);
@@ -64,9 +63,9 @@ final class QinDeclarationScanner {
         for (int index = openBraceIndex; index < tokens.size(); index++) {
             QinLexicalToken token = tokens.get(index);
             if (token.type() == QinTokenTypes.BRACE) {
-                if (QinTokenFacts.tokenStartsWith(content, token, '{')) {
+                if (QinTokenFacts.isOpenBrace(content, token)) {
                     braceDepth++;
-                } else if (QinTokenFacts.tokenStartsWith(content, token, '}')) {
+                } else if (QinTokenFacts.isCloseBrace(content, token)) {
                     braceDepth--;
                     if (braceDepth <= 0) {
                         break;
@@ -78,13 +77,9 @@ final class QinDeclarationScanner {
                 continue;
             }
             String memberName = QinTokenFacts.slice(content, token).toString();
-            QinLexicalToken next = QinTokenFacts.nextMeaningfulToken(tokens, index);
-            if (next == null) {
-                continue;
-            }
-            if (next.type() == QinTokenTypes.PAREN && QinTokenFacts.tokenStartsWith(content, next, '(')) {
+            if (QinTokenFacts.isMethodDeclarationName(content, tokens, index)) {
                 addUnique(methods, memberName);
-            } else if (next.type() == QinTokenTypes.OPERATOR && QinTokenFacts.tokenStartsWith(content, next, '=')) {
+            } else if (QinTokenFacts.isFieldDeclarationName(content, tokens, index)) {
                 addUnique(fields, memberName);
             }
         }
