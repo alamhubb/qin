@@ -179,7 +179,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains("\"unterminated:" + QinTokenTypes.STRING));
     }
 
-    public void testQinDeclarationScannerFindsUniqueObjectNamesFromSharedTokenStream() {
+    public void testQinSourceStructureFindsUniqueObjectNamesFromSharedTokenStream() {
         String source = """
                 // object IgnoredComment
                 export object Counter {
@@ -197,12 +197,12 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 }
                 """;
 
-        List<String> objectNames = QinDeclarationScanner.objectNames(source);
+        List<String> objectNames = QinSourceStructure.objectNames(source);
 
         assertEquals(List.of("Counter", "Store"), objectNames);
     }
 
-    public void testQinDeclarationScannerFindsObjectMembersFromSharedTokenStream() {
+    public void testQinSourceStructureFindsObjectMembersFromSharedTokenStream() {
         String source = """
                 export object Counter {
                   value = 41
@@ -214,16 +214,16 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 }
                 """;
 
-        List<QinDeclarationScanner.ObjectDeclaration> declarations = QinDeclarationScanner.objectDeclarations(source);
+        List<QinSourceStructure.ObjectDeclaration> declarations = QinSourceStructure.parse(source).objectDeclarations();
 
         assertEquals(1, declarations.size());
-        QinDeclarationScanner.ObjectDeclaration counter = declarations.get(0);
+        QinSourceStructure.ObjectDeclaration counter = declarations.get(0);
         assertEquals("Counter", counter.name());
         assertEquals(List.of("value", "total"), counter.fields());
         assertEquals(List.of("next"), counter.methods());
     }
 
-    public void testQinDeclarationScannerRequiresMethodBodyFromSharedStructureFacts() {
+    public void testQinSourceStructureRequiresMethodBodyFromSharedStructureFacts() {
         String source = """
                 object Counter {
                   value = helper()
@@ -234,10 +234,10 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 }
                 """;
 
-        List<QinDeclarationScanner.ObjectDeclaration> declarations = QinDeclarationScanner.objectDeclarations(source);
+        List<QinSourceStructure.ObjectDeclaration> declarations = QinSourceStructure.parse(source).objectDeclarations();
 
         assertEquals(1, declarations.size());
-        QinDeclarationScanner.ObjectDeclaration counter = declarations.get(0);
+        QinSourceStructure.ObjectDeclaration counter = declarations.get(0);
         assertEquals(List.of("value"), counter.fields());
         assertEquals(List.of("next"), counter.methods());
     }

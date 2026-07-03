@@ -5,17 +5,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-final class QinDeclarationScanner {
-    private QinDeclarationScanner() {
+final class QinSourceStructure {
+    private final List<ObjectDeclaration> objectDeclarations;
+
+    private QinSourceStructure(@NotNull List<ObjectDeclaration> objectDeclarations) {
+        this.objectDeclarations = List.copyOf(objectDeclarations);
     }
 
-    static @NotNull List<String> objectNames(@NotNull CharSequence content) {
-        return objectDeclarations(content).stream()
-                .map(ObjectDeclaration::name)
-                .toList();
-    }
-
-    static @NotNull List<ObjectDeclaration> objectDeclarations(@NotNull CharSequence content) {
+    static @NotNull QinSourceStructure parse(@NotNull CharSequence content) {
         List<QinLexicalToken> tokens = QinLexicalScanner.scan(content, 0, content.length());
         List<ObjectDeclaration> declarations = new ArrayList<>();
         for (int index = 0; index < tokens.size(); index++) {
@@ -30,7 +27,21 @@ final class QinDeclarationScanner {
                 }
             }
         }
-        return declarations;
+        return new QinSourceStructure(declarations);
+    }
+
+    static @NotNull List<String> objectNames(@NotNull CharSequence content) {
+        return parse(content).objectNames();
+    }
+
+    @NotNull List<String> objectNames() {
+        return objectDeclarations.stream()
+                .map(ObjectDeclaration::name)
+                .toList();
+    }
+
+    @NotNull List<ObjectDeclaration> objectDeclarations() {
+        return objectDeclarations;
     }
 
     private static @NotNull ObjectDeclaration readObjectDeclaration(

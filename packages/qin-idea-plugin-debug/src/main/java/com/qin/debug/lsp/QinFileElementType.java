@@ -40,9 +40,9 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
 
     @Override
     public void serialize(@NotNull QinFileStub stub, @NotNull StubOutputStream dataStream) throws IOException {
-        List<QinDeclarationScanner.ObjectDeclaration> declarations = stub.objectDeclarations();
+        List<QinSourceStructure.ObjectDeclaration> declarations = stub.objectDeclarations();
         dataStream.writeVarInt(declarations.size());
-        for (QinDeclarationScanner.ObjectDeclaration declaration : declarations) {
+        for (QinSourceStructure.ObjectDeclaration declaration : declarations) {
             dataStream.writeName(declaration.name());
             writeNames(dataStream, declaration.fields());
             writeNames(dataStream, declaration.methods());
@@ -53,19 +53,19 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
     public @NotNull QinFileStub deserialize(@NotNull StubInputStream dataStream, StubElement parentStub)
             throws IOException {
         int count = dataStream.readVarInt();
-        List<QinDeclarationScanner.ObjectDeclaration> declarations = new ArrayList<>(count);
+        List<QinSourceStructure.ObjectDeclaration> declarations = new ArrayList<>(count);
         for (int index = 0; index < count; index++) {
             String objectName = dataStream.readNameString();
             List<String> fields = readNames(dataStream);
             List<String> methods = readNames(dataStream);
-            declarations.add(new QinDeclarationScanner.ObjectDeclaration(objectName, fields, methods));
+            declarations.add(new QinSourceStructure.ObjectDeclaration(objectName, fields, methods));
         }
         return new QinFileStub(null, declarations);
     }
 
     @Override
     public void indexStub(@NotNull QinFileStub stub, @NotNull IndexSink sink) {
-        for (QinDeclarationScanner.ObjectDeclaration declaration : stub.objectDeclarations()) {
+        for (QinSourceStructure.ObjectDeclaration declaration : stub.objectDeclarations()) {
             sink.occurrence(QinObjectNameStubIndex.KEY, declaration.name());
             for (String field : declaration.fields()) {
                 sink.occurrence(QinObjectFieldNameStubIndex.KEY, memberKey(declaration.name(), field));
