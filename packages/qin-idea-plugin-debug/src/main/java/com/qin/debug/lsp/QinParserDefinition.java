@@ -35,6 +35,8 @@ public final class QinParserDefinition implements ParserDefinition {
             while (!builder.eof()) {
                 if (isKeyword(builder, "import")) {
                     parseImportDeclaration(builder);
+                } else if (isKeyword(builder, "object")) {
+                    parseObjectDeclaration(builder);
                 } else if (isReferenceToken(builder.getTokenType())) {
                     parseReferenceOrMemberAccess(builder);
                 } else {
@@ -73,6 +75,41 @@ public final class QinParserDefinition implements ParserDefinition {
         importMarker.done(QinTokenTypes.IMPORT_DECLARATION);
     }
 
+    private static void parseObjectDeclaration(PsiBuilder builder) {
+        PsiBuilder.Marker objectMarker = builder.mark();
+        builder.advanceLexer();
+        if (isReferenceToken(builder.getTokenType())) {
+            wrapObjectName(builder);
+        }
+        if (!isBrace(builder, "{")) {
+            objectMarker.done(QinTokenTypes.OBJECT_DECLARATION);
+            return;
+        }
+
+        int braceDepth = 0;
+        while (!builder.eof()) {
+            if (isBrace(builder, "{")) {
+                braceDepth++;
+                builder.advanceLexer();
+                continue;
+            }
+            if (isBrace(builder, "}")) {
+                braceDepth--;
+                builder.advanceLexer();
+                if (braceDepth <= 0) {
+                    break;
+                }
+                continue;
+            }
+            if (isReferenceToken(builder.getTokenType())) {
+                parseReferenceOrMemberAccess(builder);
+            } else {
+                builder.advanceLexer();
+            }
+        }
+        objectMarker.done(QinTokenTypes.OBJECT_DECLARATION);
+    }
+
     private static void parseJavaImportSpecifier(PsiBuilder builder) {
         PsiBuilder.Marker specifierMarker = builder.mark();
         wrapReferenceIdentifier(builder);
@@ -105,6 +142,12 @@ public final class QinParserDefinition implements ParserDefinition {
         }
     }
 
+    private static void wrapObjectName(PsiBuilder builder) {
+        PsiBuilder.Marker objectNameMarker = builder.mark();
+        builder.advanceLexer();
+        objectNameMarker.done(QinTokenTypes.OBJECT_NAME);
+    }
+
     private static void wrapReferenceIdentifier(PsiBuilder builder) {
         PsiBuilder.Marker referenceMarker = builder.mark();
         builder.advanceLexer();
@@ -113,6 +156,11 @@ public final class QinParserDefinition implements ParserDefinition {
 
     private static boolean isKeyword(PsiBuilder builder, String text) {
         return builder.getTokenType() == QinTokenTypes.KEYWORD
+                && text.equals(builder.getTokenText());
+    }
+
+    private static boolean isBrace(PsiBuilder builder, String text) {
+        return builder.getTokenType() == QinTokenTypes.BRACE
                 && text.equals(builder.getTokenText());
     }
 

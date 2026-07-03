@@ -11,6 +11,8 @@ final class QinTokenTypes {
     static final IElementType REFERENCE_IDENTIFIER = new IElementType("QIN_REFERENCE_IDENTIFIER", QinLanguage.INSTANCE);
     static final IElementType IMPORT_DECLARATION = new IElementType("QIN_IMPORT_DECLARATION", QinLanguage.INSTANCE);
     static final IElementType JAVA_IMPORT_SPECIFIER = new IElementType("QIN_JAVA_IMPORT_SPECIFIER", QinLanguage.INSTANCE);
+    static final IElementType OBJECT_DECLARATION = new IElementType("QIN_OBJECT_DECLARATION", QinLanguage.INSTANCE);
+    static final IElementType OBJECT_NAME = new IElementType("QIN_OBJECT_NAME", QinLanguage.INSTANCE);
     static final IElementType MEMBER_ACCESS = new IElementType("QIN_MEMBER_ACCESS", QinLanguage.INSTANCE);
     static final IElementType NUMBER = new IElementType("QIN_NUMBER", QinLanguage.INSTANCE);
     static final IElementType STRING = new IElementType("QIN_STRING", QinLanguage.INSTANCE);

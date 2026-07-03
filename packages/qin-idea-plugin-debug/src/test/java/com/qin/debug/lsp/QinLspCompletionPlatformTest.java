@@ -139,6 +139,53 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 hasPsiElementType(myFixture.getFile(), QinTokenTypes.MEMBER_ACCESS));
     }
 
+    public void testQinParserBuildsStructuredPsiForObjectDeclaration() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return value + 1
+                  }
+                }
+                """);
+
+        assertTrue("Qin PSI should include object declaration nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.OBJECT_DECLARATION));
+        assertTrue("Qin PSI should include object name nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.OBJECT_NAME));
+    }
+
+    public void testQinParserKeepsJavaMemberReferencesInsideObjectDeclaration() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                export object Counter {
+                  message() {
+                    return Greeter.gr<caret>eet("Qin")
+                  }
+                }
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        assertTrue("Qin PSI should include object declaration nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.OBJECT_DECLARATION));
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin Java member reference inside object declaration was not registered", reference);
+        PsiMethod method = assertInstanceOf(reference.resolve(), PsiMethod.class);
+        assertEquals("greet", method.getName());
+        assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+    }
+
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
