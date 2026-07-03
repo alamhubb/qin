@@ -1,0 +1,6 @@
+import { Greeter } from "java:demo"
+
+const message = Greeter.gr
+const total = Greeter.c
+
+export { message, total }
