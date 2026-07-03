@@ -173,6 +173,19 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 hasPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME));
     }
 
+    public void testQinParserBuildsStructuredPsiForObjectFieldDeclaration() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+                """);
+
+        assertTrue("Qin PSI should include object field declaration nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.FIELD_DECLARATION));
+        assertTrue("Qin PSI should include object field name nodes",
+                hasPsiElementType(myFixture.getFile(), QinTokenTypes.FIELD_NAME));
+    }
+
     public void testQinParserKeepsJavaMemberReferencesInsideObjectDeclaration() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
@@ -376,6 +389,90 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
         assertHighlightMissing(errors, "Unresolved Qin object method Counter.next");
+    }
+
+    public void testQinObjectFieldReferenceResolvesToFieldName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+
+                const value = Counter.val<caret>ue
+                """);
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin object field reference was not registered", reference);
+        PsiElement fieldName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
+        assertEquals("value", fieldName.getText());
+        assertSingleQinObjectFieldReference(reference.getElement());
+    }
+
+    public void testQinThisFieldReferenceResolvesToCurrentObjectFieldName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.val<caret>ue
+                  }
+                }
+                """);
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin this field reference was not registered", reference);
+        PsiElement fieldName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
+        assertEquals("value", fieldName.getText());
+        assertSingleQinObjectFieldReference(reference.getElement());
+    }
+
+    public void testQinObjectFieldReferenceParticipatesInReferencesSearch() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+
+                const value = Counter.value
+                """);
+
+        PsiElement fieldName = findPsiElementType(myFixture.getFile(), QinTokenTypes.FIELD_NAME);
+        assertNotNull("Qin field name PSI was not built", fieldName);
+        Collection<PsiReference> references = ReferencesSearch.search(
+                fieldName,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin object field references: " + describeReferences(references),
+                references.stream().filter(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "value".equals(item.getElement().getText())
+                        && item.getElement() != fieldName).count() >= 2);
+    }
+
+    public void testQinObjectFieldRenameProcessorUpdatesReferences() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+
+                const value = Counter.value
+                """);
+
+        PsiElement fieldName = findPsiElementType(myFixture.getFile(), QinTokenTypes.FIELD_NAME);
+        assertNotNull("Qin field name PSI was not built", fieldName);
+        new RenameProcessor(getProject(), fieldName, "total", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin field rename should update declaration: " + text, text.contains("total = 41"));
+        assertTrue("Qin field rename should update this usage: " + text, text.contains("this.total"));
+        assertTrue("Qin field rename should update object usage: " + text, text.contains("Counter.total"));
+        assertFalse("Qin field rename should remove old object usage: " + text, text.contains("Counter.value"));
     }
 
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
@@ -887,6 +984,13 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .filter(QinObjectMethodReference.class::isInstance)
                 .count();
         assertEquals("Qin object method references should be provided only through QinObjectMethodReferenceContributor", 1L, count);
+    }
+
+    private static void assertSingleQinObjectFieldReference(PsiElement element) {
+        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
+                .filter(QinObjectFieldReference.class::isInstance)
+                .count();
+        assertEquals("Qin object field references should be provided only through QinObjectFieldReferenceContributor", 1L, count);
     }
 
     private static PsiElement findPsiElementType(PsiElement root, IElementType type) {

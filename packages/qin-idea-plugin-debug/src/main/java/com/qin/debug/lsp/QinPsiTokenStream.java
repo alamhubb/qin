@@ -60,7 +60,7 @@ final class QinPsiTokenStream {
         }
         QinPsiToken dot = tokens.get(tokenIndex - 1);
         QinPsiToken qualifier = tokens.get(tokenIndex - 2);
-        if (!dot.is(QinTokenTypes.DOT, ".") || !qualifier.isIdentifier()) {
+        if (!dot.is(QinTokenTypes.DOT, ".") || (!qualifier.isIdentifier() && !qualifier.isKeyword("this"))) {
             return null;
         }
         return qualifier.text();

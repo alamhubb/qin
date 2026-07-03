@@ -55,6 +55,9 @@
         <psi.referenceContributor
                 language="Qin"
                 implementation="com.qin.debug.lsp.QinObjectMethodReferenceContributor"/>
+        <psi.referenceContributor
+                language="Qin"
+                implementation="com.qin.debug.lsp.QinObjectFieldReferenceContributor"/>
         <annotator
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinJavaInteropAnnotator"/>

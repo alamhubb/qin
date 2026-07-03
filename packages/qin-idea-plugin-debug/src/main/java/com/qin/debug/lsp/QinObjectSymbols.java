@@ -37,6 +37,37 @@ final class QinObjectSymbols {
         return visitor.methodName;
     }
 
+    static @Nullable PsiElement findFieldName(
+            @NotNull PsiElement element,
+            @NotNull String objectName,
+            @NotNull String fieldName) {
+        PsiElement objectNameElement = findObjectName(element, objectName);
+        if (objectNameElement == null) {
+            return null;
+        }
+        PsiElement objectDeclaration = parentOfType(objectNameElement, QinTokenTypes.OBJECT_DECLARATION);
+        if (objectDeclaration == null) {
+            return null;
+        }
+        return findFieldNameInObjectDeclaration(objectDeclaration, fieldName);
+    }
+
+    static @Nullable PsiElement findFieldNameForThis(@NotNull PsiElement element, @NotNull String fieldName) {
+        PsiElement objectDeclaration = parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        if (objectDeclaration == null) {
+            return null;
+        }
+        return findFieldNameInObjectDeclaration(objectDeclaration, fieldName);
+    }
+
+    private static @Nullable PsiElement findFieldNameInObjectDeclaration(
+            @NotNull PsiElement objectDeclaration,
+            @NotNull String fieldName) {
+        FieldNameVisitor visitor = new FieldNameVisitor(fieldName);
+        objectDeclaration.accept(visitor);
+        return visitor.fieldName;
+    }
+
     private static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull IElementType type) {
         PsiElement current = element.getParent();
         while (current != null) {
@@ -88,6 +119,29 @@ final class QinObjectSymbols {
                     && element.getNode().getElementType() == QinTokenTypes.METHOD_NAME
                     && name.equals(element.getText())) {
                 methodName = element;
+                return;
+            }
+            super.visitElement(element);
+        }
+    }
+
+    private static final class FieldNameVisitor extends PsiRecursiveElementWalkingVisitor {
+        private final String name;
+        private PsiElement fieldName;
+
+        private FieldNameVisitor(@NotNull String name) {
+            this.name = name;
+        }
+
+        @Override
+        public void visitElement(@NotNull PsiElement element) {
+            if (fieldName != null) {
+                return;
+            }
+            if (element.getNode() != null
+                    && element.getNode().getElementType() == QinTokenTypes.FIELD_NAME
+                    && name.equals(element.getText())) {
+                fieldName = element;
                 return;
             }
             super.visitElement(element);
