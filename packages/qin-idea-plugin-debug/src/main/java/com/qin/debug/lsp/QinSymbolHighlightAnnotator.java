@@ -5,7 +5,10 @@ import com.intellij.lang.annotation.Annotator;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
+import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import com.intellij.psi.tree.IElementType;
@@ -48,6 +51,27 @@ public final class QinSymbolHighlightAnnotator implements Annotator {
                 highlight(element, holder, DefaultLanguageHighlighterColors.INSTANCE_FIELD, "Qin field reference");
                 return;
             }
+            if (reference instanceof QinJavaReference) {
+                highlightJavaReference(element, holder, reference.resolve());
+                return;
+            }
+        }
+    }
+
+    private static void highlightJavaReference(
+            @NotNull PsiElement element,
+            @NotNull AnnotationHolder holder,
+            PsiElement target) {
+        if (target instanceof PsiClass) {
+            highlight(element, holder, DefaultLanguageHighlighterColors.CLASS_REFERENCE, "Java class reference");
+            return;
+        }
+        if (target instanceof PsiMethod) {
+            highlight(element, holder, DefaultLanguageHighlighterColors.STATIC_METHOD, "Java static method reference");
+            return;
+        }
+        if (target instanceof PsiField) {
+            highlight(element, holder, DefaultLanguageHighlighterColors.STATIC_FIELD, "Java static field reference");
         }
     }
 

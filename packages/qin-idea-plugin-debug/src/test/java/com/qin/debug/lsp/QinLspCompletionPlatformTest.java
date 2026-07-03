@@ -126,6 +126,32 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightContains(highlights, "Qin field reference");
     }
 
+    public void testQinSymbolAnnotatorHighlightsJavaPsiReferences() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const name = Greeter.DEFAULT_NAME
+                const message = Greeter.greet(name)
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
+        assertHighlightContains(highlights, "Java class reference");
+        assertHighlightContains(highlights, "Java static field reference");
+        assertHighlightContains(highlights, "Java static method reference");
+    }
+
     public void testQinLexerUsesSlimeTokenDefinitionsForModernSyntax() {
         String source = """
                 object Store {
