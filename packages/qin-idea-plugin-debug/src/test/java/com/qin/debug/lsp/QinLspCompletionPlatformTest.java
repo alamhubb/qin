@@ -174,6 +174,27 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals(List.of("Counter", "Store"), objectNames);
     }
 
+    public void testQinDeclarationScannerFindsObjectMembersFromSharedTokenStream() {
+        String source = """
+                export object Counter {
+                  value = 41
+                  total = value + 1
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """;
+
+        List<QinDeclarationScanner.ObjectDeclaration> declarations = QinDeclarationScanner.objectDeclarations(source);
+
+        assertEquals(1, declarations.size());
+        QinDeclarationScanner.ObjectDeclaration counter = declarations.get(0);
+        assertEquals("Counter", counter.name());
+        assertEquals(List.of("value", "total"), counter.fields());
+        assertEquals(List.of("next"), counter.methods());
+    }
+
     public void testQinParserBuildsStructuredPsiForJavaInterop() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { Greeter as G } from "java:demo"
@@ -349,6 +370,36 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         assertTrue("Qin object name StubIndex should locate Counter.qin: " + describePsiFiles(files),
                 files.stream().anyMatch(file -> file.getVirtualFile().equals(counterFile.getVirtualFile())));
+    }
+
+    public void testQinObjectMemberStubIndexesFindObjectDeclarationFile() {
+        var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+
+        Collection<QinPsiFile> fieldFiles = StubIndex.getElements(
+                QinObjectFieldNameStubIndex.KEY,
+                QinFileElementType.memberKey("Counter", "value"),
+                getProject(),
+                GlobalSearchScope.allScope(getProject()),
+                QinPsiFile.class);
+        Collection<QinPsiFile> methodFiles = StubIndex.getElements(
+                QinObjectMethodNameStubIndex.KEY,
+                QinFileElementType.memberKey("Counter", "next"),
+                getProject(),
+                GlobalSearchScope.allScope(getProject()),
+                QinPsiFile.class);
+
+        assertTrue("Qin object field StubIndex should locate Counter.qin: " + describePsiFiles(fieldFiles),
+                fieldFiles.stream().anyMatch(file -> file.getVirtualFile().equals(counterFile.getVirtualFile())));
+        assertTrue("Qin object method StubIndex should locate Counter.qin: " + describePsiFiles(methodFiles),
+                methodFiles.stream().anyMatch(file -> file.getVirtualFile().equals(counterFile.getVirtualFile())));
     }
 
     public void testQinObjectReferenceAcrossRelativeImportParticipatesInReferencesSearch() {

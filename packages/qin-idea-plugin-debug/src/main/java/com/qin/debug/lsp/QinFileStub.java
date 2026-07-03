@@ -8,11 +8,13 @@ import java.util.List;
 
 @SuppressWarnings("unchecked")
 final class QinFileStub extends PsiFileStubImpl<QinPsiFile> {
-    private final List<String> objectNames;
+    private final List<QinDeclarationScanner.ObjectDeclaration> objectDeclarations;
 
-    QinFileStub(@Nullable QinPsiFile file, @NotNull List<String> objectNames) {
+    QinFileStub(
+            @Nullable QinPsiFile file,
+            @NotNull List<QinDeclarationScanner.ObjectDeclaration> objectDeclarations) {
         super(file);
-        this.objectNames = List.copyOf(objectNames);
+        this.objectDeclarations = List.copyOf(objectDeclarations);
     }
 
     @Override
@@ -21,6 +23,12 @@ final class QinFileStub extends PsiFileStubImpl<QinPsiFile> {
     }
 
     @NotNull List<String> objectNames() {
-        return objectNames;
+        return objectDeclarations.stream()
+                .map(QinDeclarationScanner.ObjectDeclaration::name)
+                .toList();
+    }
+
+    @NotNull List<QinDeclarationScanner.ObjectDeclaration> objectDeclarations() {
+        return objectDeclarations;
     }
 }

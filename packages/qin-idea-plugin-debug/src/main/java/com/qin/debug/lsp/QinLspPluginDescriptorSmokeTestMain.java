@@ -39,6 +39,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertAutoPopupTypedHandler(document);
         assertQinObjectMemberCompletion(document);
         assertQinObjectNameStubIndex(document);
+        assertQinObjectMemberStubIndexes(document);
         assertNoQinObjectNameFileBasedIndex(document);
         assertNoLocalSemanticExtensions(document);
     }
@@ -159,14 +160,23 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     }
 
     private static void assertQinObjectNameStubIndex(Document document) {
+        assertStubIndex(document, "com.qin.debug.lsp.QinObjectNameStubIndex");
+    }
+
+    private static void assertQinObjectMemberStubIndexes(Document document) {
+        assertStubIndex(document, "com.qin.debug.lsp.QinObjectFieldNameStubIndex");
+        assertStubIndex(document, "com.qin.debug.lsp.QinObjectMethodNameStubIndex");
+    }
+
+    private static void assertStubIndex(Document document, String implementation) {
         NodeList indexes = document.getElementsByTagName("stubIndex");
         for (int i = 0; i < indexes.getLength(); i++) {
             Element index = (Element) indexes.item(i);
-            if ("com.qin.debug.lsp.QinObjectNameStubIndex".equals(index.getAttribute("implementation"))) {
+            if (implementation.equals(index.getAttribute("implementation"))) {
                 return;
             }
         }
-        throw new IllegalStateException("Missing Qin object-name StubIndex registration");
+        throw new IllegalStateException("Missing StubIndex registration: " + implementation);
     }
 
     private static void assertNoQinObjectNameFileBasedIndex(Document document) {

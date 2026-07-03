@@ -40,10 +40,12 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
 
     @Override
     public void serialize(@NotNull QinFileStub stub, @NotNull StubOutputStream dataStream) throws IOException {
-        List<String> objectNames = stub.objectNames();
-        dataStream.writeVarInt(objectNames.size());
-        for (String objectName : objectNames) {
-            dataStream.writeName(objectName);
+        List<QinDeclarationScanner.ObjectDeclaration> declarations = stub.objectDeclarations();
+        dataStream.writeVarInt(declarations.size());
+        for (QinDeclarationScanner.ObjectDeclaration declaration : declarations) {
+            dataStream.writeName(declaration.name());
+            writeNames(dataStream, declaration.fields());
+            writeNames(dataStream, declaration.methods());
         }
     }
 
@@ -51,22 +53,52 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
     public @NotNull QinFileStub deserialize(@NotNull StubInputStream dataStream, StubElement parentStub)
             throws IOException {
         int count = dataStream.readVarInt();
-        List<String> objectNames = new ArrayList<>(count);
+        List<QinDeclarationScanner.ObjectDeclaration> declarations = new ArrayList<>(count);
         for (int index = 0; index < count; index++) {
-            objectNames.add(dataStream.readNameString());
+            String objectName = dataStream.readNameString();
+            List<String> fields = readNames(dataStream);
+            List<String> methods = readNames(dataStream);
+            declarations.add(new QinDeclarationScanner.ObjectDeclaration(objectName, fields, methods));
         }
-        return new QinFileStub(null, objectNames);
+        return new QinFileStub(null, declarations);
     }
 
     @Override
     public void indexStub(@NotNull QinFileStub stub, @NotNull IndexSink sink) {
-        for (String objectName : stub.objectNames()) {
-            sink.occurrence(QinObjectNameStubIndex.KEY, objectName);
+        for (QinDeclarationScanner.ObjectDeclaration declaration : stub.objectDeclarations()) {
+            sink.occurrence(QinObjectNameStubIndex.KEY, declaration.name());
+            for (String field : declaration.fields()) {
+                sink.occurrence(QinObjectFieldNameStubIndex.KEY, memberKey(declaration.name(), field));
+            }
+            for (String method : declaration.methods()) {
+                sink.occurrence(QinObjectMethodNameStubIndex.KEY, memberKey(declaration.name(), method));
+            }
         }
     }
 
     @Override
     public boolean shouldBuildStubFor(@NotNull VirtualFile file) {
         return file.getFileType() == QinLspFileType.INSTANCE;
+    }
+
+    static @NotNull String memberKey(@NotNull String objectName, @NotNull String memberName) {
+        return objectName + "." + memberName;
+    }
+
+    private static void writeNames(@NotNull StubOutputStream dataStream, @NotNull List<String> names)
+            throws IOException {
+        dataStream.writeVarInt(names.size());
+        for (String name : names) {
+            dataStream.writeName(name);
+        }
+    }
+
+    private static @NotNull List<String> readNames(@NotNull StubInputStream dataStream) throws IOException {
+        int count = dataStream.readVarInt();
+        List<String> names = new ArrayList<>(count);
+        for (int index = 0; index < count; index++) {
+            names.add(dataStream.readNameString());
+        }
+        return names;
     }
 }
