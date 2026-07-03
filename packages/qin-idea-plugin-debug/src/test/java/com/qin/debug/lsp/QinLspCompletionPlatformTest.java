@@ -812,6 +812,29 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertLookupContains(elements, "next");
     }
 
+    public void testQinNativeCompletionItemsCarryImportedMemberPsiElements() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter } from "./Counter.qin"
+
+                const value = Counter.<caret>
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        LookupElement[] elements = myFixture.completeBasic();
+        assertNotNull("IDEA native completion should produce a lookup list for imported Qin members", elements);
+        assertLookupPsiElement(elements, "value", QinTokenTypes.FIELD_NAME, "Counter.qin");
+        assertLookupPsiElement(elements, "next", QinTokenTypes.METHOD_NAME, "Counter.qin");
+    }
+
     public void testQinNativeCompletionIncludesThisObjectMembers() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -1306,6 +1329,26 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .map(LookupElement::getLookupString)
                 .limit(40)
                 .toArray(String[]::new)), found);
+    }
+
+    private static void assertLookupPsiElement(
+            LookupElement[] elements,
+            String expected,
+            IElementType expectedType,
+            String expectedFileName) {
+        LookupElement element = Arrays.stream(elements)
+                .filter(item -> expected.equals(item.getLookupString()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull("IDEA completion did not include " + expected + ": "
+                + Arrays.toString(Arrays.stream(elements)
+                .map(LookupElement::getLookupString)
+                .limit(40)
+                .toArray(String[]::new)), element);
+        PsiElement psiElement = element.getPsiElement();
+        assertNotNull("Lookup item " + expected + " should carry its Qin PSI element", psiElement);
+        assertEquals(expectedType, psiElement.getNode().getElementType());
+        assertEquals(expectedFileName, psiElement.getContainingFile().getName());
     }
 
     private static PsiElement findPsiElementType(PsiElement root, IElementType type) {

@@ -80,6 +80,12 @@ final class QinObjectSymbols {
     }
 
     static @NotNull List<String> memberNamesForObject(@NotNull PsiElement element, @NotNull String objectName) {
+        return memberElementsForObject(element, objectName).stream()
+                .map(PsiElement::getText)
+                .toList();
+    }
+
+    static @NotNull List<PsiElement> memberElementsForObject(@NotNull PsiElement element, @NotNull String objectName) {
         PsiElement objectNameElement = findObjectName(element, objectName);
         if (objectNameElement == null) {
             return List.of();
@@ -88,21 +94,27 @@ final class QinObjectSymbols {
         if (objectDeclaration == null) {
             return List.of();
         }
-        return memberNamesInObjectDeclaration(objectDeclaration);
+        return memberElementsInObjectDeclaration(objectDeclaration);
     }
 
     static @NotNull List<String> memberNamesForThis(@NotNull PsiElement element) {
+        return memberElementsForThis(element).stream()
+                .map(PsiElement::getText)
+                .toList();
+    }
+
+    static @NotNull List<PsiElement> memberElementsForThis(@NotNull PsiElement element) {
         PsiElement objectDeclaration = parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return List.of();
         }
-        return memberNamesInObjectDeclaration(objectDeclaration);
+        return memberElementsInObjectDeclaration(objectDeclaration);
     }
 
-    private static @NotNull List<String> memberNamesInObjectDeclaration(@NotNull PsiElement objectDeclaration) {
+    private static @NotNull List<PsiElement> memberElementsInObjectDeclaration(@NotNull PsiElement objectDeclaration) {
         MemberNameVisitor visitor = new MemberNameVisitor();
         objectDeclaration.accept(visitor);
-        return visitor.names;
+        return visitor.members;
     }
 
     private static @Nullable PsiElement findMethodNameInObjectDeclaration(
@@ -225,15 +237,15 @@ final class QinObjectSymbols {
     }
 
     private static final class MemberNameVisitor extends PsiRecursiveElementWalkingVisitor {
-        private final List<String> names = new ArrayList<>();
+        private final List<PsiElement> members = new ArrayList<>();
 
         @Override
         public void visitElement(@NotNull PsiElement element) {
             if (element.getNode() != null
                     && (element.getNode().getElementType() == QinTokenTypes.FIELD_NAME
                     || element.getNode().getElementType() == QinTokenTypes.METHOD_NAME)
-                    && !names.contains(element.getText())) {
-                names.add(element.getText());
+                    && members.stream().noneMatch(member -> member.getText().equals(element.getText()))) {
+                members.add(element);
                 return;
             }
             super.visitElement(element);

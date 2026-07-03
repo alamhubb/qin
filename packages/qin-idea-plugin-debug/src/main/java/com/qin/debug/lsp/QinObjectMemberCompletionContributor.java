@@ -8,6 +8,7 @@ import com.intellij.codeInsight.completion.CompletionType;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.patterns.PlatformPatterns;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiNamedElement;
 import com.intellij.util.ProcessingContext;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,11 +35,15 @@ public final class QinObjectMemberCompletionContributor extends CompletionContri
                             return;
                         }
 
-                        List<String> memberNames = "this".equals(qualifier)
-                                ? QinObjectSymbols.memberNamesForThis(referenceElement)
-                                : QinObjectSymbols.memberNamesForObject(referenceElement, qualifier);
-                        for (String memberName : memberNames) {
-                            result.addElement(LookupElementBuilder.create(memberName));
+                        List<PsiElement> members = "this".equals(qualifier)
+                                ? QinObjectSymbols.memberElementsForThis(referenceElement)
+                                : QinObjectSymbols.memberElementsForObject(referenceElement, qualifier);
+                        for (PsiElement member : members) {
+                            if (member instanceof PsiNamedElement namedMember) {
+                                result.addElement(LookupElementBuilder.create(namedMember));
+                            } else {
+                                result.addElement(LookupElementBuilder.create(member.getText()).withPsiElement(member));
+                            }
                         }
                     }
                 });
