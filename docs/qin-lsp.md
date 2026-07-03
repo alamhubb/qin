@@ -124,6 +124,8 @@ npx tsx tests/test-language-server.ts
 
 If the bug is user-visible in IDEA, do not claim full completion until the editor path is validated or clearly reported as not yet proven.
 
+IDEA platform fixtures can create lightweight files whose URI looks like `/src/...` instead of a real project directory. Do not use those virtual fixture paths to prove language-server behavior that scans the filesystem, such as Java source `.d.ts` generation from `qin.config.js` and `src/main/*.java`. Validate that behavior in `packages/qin-language/tests/test-language-server.ts` or another real-filesystem LSP smoke. Use IDEA platform tests for IDEA-owned behavior such as typed handlers, lookup handling, PSI references, highlighting, and packaging.
+
 ## Documentation Rule
 
 When a durable Qin LSP rule is discovered, update this document and the `qin-lsp` Codex skill in the same change. Also update broader Qin skills when the rule affects parser/compiler/runtime policy beyond LSP.

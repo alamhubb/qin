@@ -269,49 +269,6 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 text.contains("return this.va\n"));
     }
 
-    public void testQinMainProjectCompletesImportedJavaSourceMethods() throws Exception {
-        myFixture.addFileToProject("qin.config.js", """
-                export default {
-                  name: "qin-lsp-java-source-fixture",
-                  type: "app",
-                  entry: "src/main/App.qin"
-                }
-                """);
-        myFixture.addFileToProject("src/main/demo/Greeter.java", """
-                package demo;
-
-                public class Greeter {
-                  public static String greet(String name) {
-                    return "Hello " + name;
-                  }
-
-                  public static int count() {
-                    return 1;
-                  }
-                }
-                """);
-        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
-                import { Greeter } from "java:demo"
-
-                const message = Greeter.gr<caret>
-                """);
-        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
-
-        LspTestUtilKt.waitUntilFileOpenedByLspServer(getProject(), myFixture.getFile().getVirtualFile());
-        LookupElement[] elements = myFixture.completeBasic();
-        assertNotNull("IDEA completion produced no lookup list for imported Java source method", elements);
-
-        boolean hasGreet = Arrays.stream(elements)
-                .map(LookupElement::getLookupString)
-                .filter(Objects::nonNull)
-                .anyMatch("greet"::equals);
-        assertTrue("IDEA completion did not include Java source method Greeter.greet: "
-                + Arrays.toString(Arrays.stream(elements)
-                        .map(LookupElement::getLookupString)
-                        .limit(40)
-                        .toArray(String[]::new)), hasGreet);
-    }
-
     public void testQinJavaImportReferenceResolvesToPsiClass() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
