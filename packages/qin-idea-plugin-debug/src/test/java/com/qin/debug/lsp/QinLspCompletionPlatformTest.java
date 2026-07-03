@@ -933,7 +933,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                     myFixture.getEditor().getDocument().getText().contains("C.next"));
             return;
         }
-        assertLookupContains(elements, "next");
+        assertLookupPsiElement(elements, "next", QinTokenTypes.METHOD_NAME, "Counter.qin");
     }
 
     public void testQinNativeCompletionItemsCarryImportedMemberPsiElements() {

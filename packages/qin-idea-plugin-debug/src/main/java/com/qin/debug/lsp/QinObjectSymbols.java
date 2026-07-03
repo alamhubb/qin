@@ -96,15 +96,17 @@ final class QinObjectSymbols {
     }
 
     static @NotNull List<PsiElement> memberElementsForObject(@NotNull PsiElement element, @NotNull String objectName) {
-        PsiElement objectNameElement = findObjectName(element, objectName);
-        if (objectNameElement == null) {
+        ResolvedObject resolvedObject = resolveObjectName(element, objectName);
+        if (resolvedObject == null) {
             return List.of();
         }
-        PsiElement objectDeclaration = parentOfType(objectNameElement, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return List.of();
         }
-        return memberElementsInObjectDeclaration(objectDeclaration);
+        return memberElementsInObjectDeclaration(objectDeclaration).stream()
+                .filter(member -> hasIndexedMember(element, resolvedObject, member.getText(), memberKind(member)))
+                .toList();
     }
 
     static @NotNull List<String> memberNamesForThis(@NotNull PsiElement element) {
@@ -206,6 +208,11 @@ final class QinObjectSymbols {
     private enum MemberKind {
         FIELD,
         METHOD
+    }
+
+    private static @NotNull MemberKind memberKind(@NotNull PsiElement member) {
+        IElementType type = member.getNode() == null ? null : member.getNode().getElementType();
+        return type == QinTokenTypes.FIELD_NAME ? MemberKind.FIELD : MemberKind.METHOD;
     }
 
     private static final class ObjectNameVisitor extends PsiRecursiveElementWalkingVisitor {
