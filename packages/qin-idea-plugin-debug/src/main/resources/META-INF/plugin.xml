@@ -63,6 +63,8 @@
                 implementationClass="com.qin.debug.lsp.QinObjectMemberCompletionContributor"/>
         <fileBasedIndex
                 implementation="com.qin.debug.lsp.QinObjectNameIndex"/>
+        <stubIndex
+                implementation="com.qin.debug.lsp.QinObjectNameStubIndex"/>
         <annotator
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinJavaInteropAnnotator"/>

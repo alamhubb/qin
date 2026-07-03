@@ -38,6 +38,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertLspProvider(document);
         assertAutoPopupTypedHandler(document);
         assertQinObjectMemberCompletion(document);
+        assertQinObjectNameStubIndex(document);
         assertNoLocalSemanticExtensions(document);
     }
 
@@ -154,6 +155,17 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         require("com.qin.debug.lsp.QinObjectMemberCompletionContributor".equals(
                         contributor.getAttribute("implementationClass")),
                 "Unexpected Qin completion contributor: " + contributor.getAttribute("implementationClass"));
+    }
+
+    private static void assertQinObjectNameStubIndex(Document document) {
+        NodeList indexes = document.getElementsByTagName("stubIndex");
+        for (int i = 0; i < indexes.getLength(); i++) {
+            Element index = (Element) indexes.item(i);
+            if ("com.qin.debug.lsp.QinObjectNameStubIndex".equals(index.getAttribute("implementation"))) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Missing Qin object-name StubIndex registration");
     }
 
     private static void assertNoLocalSemanticExtensions(Document document) {
