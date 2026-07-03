@@ -30,6 +30,8 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     }
 
     static void assertPureLspDescriptor(Document document) {
+        assertDepends(document, "com.intellij.modules.platform");
+        assertDepends(document, "com.intellij.modules.java");
         assertDepends(document, "com.intellij.modules.lsp");
         assertFileTypes(document);
         assertQinToolWindow(document);
