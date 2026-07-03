@@ -1,7 +1,12 @@
 package com.qin.debug.lsp;
 
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiRecursiveElementWalkingVisitor;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.util.indexing.FileBasedIndex;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,10 +19,36 @@ final class QinObjectSymbols {
     }
 
     static @Nullable PsiElement findObjectName(@NotNull PsiElement element, @NotNull String name) {
-        PsiElement file = element.getContainingFile();
+        PsiFile file = element.getContainingFile();
         if (file == null) {
             return null;
         }
+        PsiElement sameFileObject = findObjectNameInFile(file, name);
+        if (sameFileObject != null) {
+            return sameFileObject;
+        }
+
+        QinModuleImportTable importTable = QinModuleImportTable.fromFile(file);
+        QinModuleImportTable.QinImport qinImport = importTable.find(name);
+        if (qinImport == null) {
+            return null;
+        }
+        VirtualFile importedFile = importTable.resolveFile(qinImport);
+        if (importedFile == null) {
+            return null;
+        }
+        GlobalSearchScope importedFileScope = GlobalSearchScope.fileScope(element.getProject(), importedFile);
+        if (!FileBasedIndex.getInstance().getContainingFiles(
+                QinObjectNameIndex.NAME,
+                qinImport.exportedName(),
+                importedFileScope).contains(importedFile)) {
+            return null;
+        }
+        PsiFile importedPsiFile = PsiManager.getInstance(element.getProject()).findFile(importedFile);
+        return importedPsiFile == null ? null : findObjectNameInFile(importedPsiFile, qinImport.exportedName());
+    }
+
+    private static @Nullable PsiElement findObjectNameInFile(@NotNull PsiFile file, @NotNull String name) {
         ObjectNameVisitor visitor = new ObjectNameVisitor(name);
         file.accept(visitor);
         return visitor.objectName;

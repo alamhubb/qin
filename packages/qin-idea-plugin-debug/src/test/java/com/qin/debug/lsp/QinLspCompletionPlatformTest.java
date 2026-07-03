@@ -280,6 +280,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         && item.getElement() != objectName));
     }
 
+    public void testQinObjectReferenceResolvesAcrossRelativeImport() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter } from "./Counter.qin"
+
+                const value = Cou<caret>nter.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Imported Qin object reference was not registered", reference);
+        PsiElement objectName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.OBJECT_NAME, objectName.getNode().getElementType());
+        assertEquals("Counter", objectName.getText());
+        assertEquals("Counter.qin", objectName.getContainingFile().getName());
+        assertSingleQinObjectReference(reference.getElement());
+    }
+
     public void testQinObjectNameSupportsIdeaRenamePrimitive() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -337,6 +359,30 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiElement methodName = assertInstanceOf(reference.resolve(), PsiElement.class);
         assertEquals(QinTokenTypes.METHOD_NAME, methodName.getNode().getElementType());
         assertEquals("next", methodName.getText());
+        assertSingleQinObjectMethodReference(reference.getElement());
+    }
+
+    public void testQinObjectMethodReferenceResolvesAcrossAliasedRelativeImport() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.ne<caret>xt()
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Imported Qin object method reference was not registered", reference);
+        PsiElement methodName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.METHOD_NAME, methodName.getNode().getElementType());
+        assertEquals("next", methodName.getText());
+        assertEquals("Counter.qin", methodName.getContainingFile().getName());
         assertSingleQinObjectMethodReference(reference.getElement());
     }
 
@@ -440,6 +486,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiElement fieldName = assertInstanceOf(reference.resolve(), PsiElement.class);
         assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
         assertEquals("value", fieldName.getText());
+        assertSingleQinObjectFieldReference(reference.getElement());
+    }
+
+    public void testQinObjectFieldReferenceResolvesAcrossRelativeImport() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter } from "./Counter.qin"
+
+                const value = Counter.val<caret>ue
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Imported Qin object field reference was not registered", reference);
+        PsiElement fieldName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
+        assertEquals("value", fieldName.getText());
+        assertEquals("Counter.qin", fieldName.getContainingFile().getName());
         assertSingleQinObjectFieldReference(reference.getElement());
     }
 

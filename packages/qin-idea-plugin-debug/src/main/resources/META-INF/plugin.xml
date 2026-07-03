@@ -61,6 +61,8 @@
         <completion.contributor
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinObjectMemberCompletionContributor"/>
+        <fileBasedIndex
+                implementation="com.qin.debug.lsp.QinObjectNameIndex"/>
         <annotator
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinJavaInteropAnnotator"/>
