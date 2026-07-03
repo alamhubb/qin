@@ -16,6 +16,7 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiReference;
+import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.ReferencesSearch;
@@ -336,6 +337,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertNotNull("Qin Java class reference was not registered at Greeter. " + describeCaretElement(), reference);
         assertInstanceOf(reference.resolve(), PsiClass.class);
         assertEquals("demo.Greeter", ((PsiClass) reference.resolve()).getQualifiedName());
+        assertSingleQinJavaReference(reference.getElement());
     }
 
     public void testQinJavaMemberReferenceResolvesToPsiMethod() {
@@ -365,9 +367,10 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiMethod method = (PsiMethod) reference.resolve();
         assertEquals("greet", method.getName());
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+        assertSingleQinJavaReference(reference.getElement());
     }
 
-    public void testQinJavaAliasedImportResolvesThroughPsiTokenImportTable() {
+    public void testQinJavaAliasedImportResolvesThroughStructuredPsiImportTable() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
 
@@ -389,12 +392,14 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertNotNull("Qin Java aliased class reference was not registered", classReference);
         PsiClass psiClass = assertInstanceOf(classReference.resolve(), PsiClass.class);
         assertEquals("demo.Greeter", psiClass.getQualifiedName());
+        assertSingleQinJavaReference(classReference.getElement());
 
         PsiReference methodReference = myFixture.getFile().findReferenceAt(text.indexOf("greet"));
         assertNotNull("Qin Java aliased member reference was not registered", methodReference);
         PsiMethod method = assertInstanceOf(methodReference.resolve(), PsiMethod.class);
         assertEquals("greet", method.getName());
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+        assertSingleQinJavaReference(methodReference.getElement());
     }
 
     public void testQinJavaMemberReferenceResolvesAcrossWhitespaceWithPsiTokens() {
@@ -420,6 +425,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiMethod method = assertInstanceOf(reference.resolve(), PsiMethod.class);
         assertEquals("greet", method.getName());
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+        assertSingleQinJavaReference(reference.getElement());
     }
 
     public void testQinJavaClassReferenceParticipatesInReferencesSearch() {
@@ -606,6 +612,13 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
             }
         }
         return false;
+    }
+
+    private static void assertSingleQinJavaReference(PsiElement element) {
+        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
+                .filter(QinJavaReference.class::isInstance)
+                .count();
+        assertEquals("Qin Java references should be provided only through QinJavaReferenceContributor", 1L, count);
     }
 
     private static List<String> describeReferences(Collection<PsiReference> references) {

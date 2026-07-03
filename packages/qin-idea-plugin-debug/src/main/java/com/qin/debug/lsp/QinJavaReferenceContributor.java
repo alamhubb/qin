@@ -21,16 +21,39 @@ public final class QinJavaReferenceContributor extends PsiReferenceContributor {
                 if (element.getContainingFile() == null || !(element.getContainingFile() instanceof QinPsiFile)) {
                     return PsiReference.EMPTY_ARRAY;
                 }
-                IElementType elementType = element.getNode() == null ? null : element.getNode().getElementType();
-                if (elementType != QinTokenTypes.REFERENCE_IDENTIFIER) {
+                PsiElement referenceElement = referenceElement(element);
+                if (referenceElement == null) {
                     return PsiReference.EMPTY_ARRAY;
                 }
-                return new PsiReference[]{new QinJavaReference(element)};
+                return new PsiReference[]{new QinJavaReference(referenceElement)};
             }
         };
 
-        registrar.registerReferenceProvider(
-                PlatformPatterns.psiElement(),
-                provider);
+        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.REFERENCE_IDENTIFIER), provider);
+        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.IDENTIFIER), provider);
+        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.CLASS_NAME), provider);
+        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.MEMBER_IDENTIFIER), provider);
+    }
+
+    private static PsiElement referenceElement(@NotNull PsiElement element) {
+        IElementType elementType = element.getNode() == null ? null : element.getNode().getElementType();
+        if (elementType == QinTokenTypes.REFERENCE_IDENTIFIER) {
+            return element;
+        }
+        if (isReferenceLeafToken(elementType)) {
+            PsiElement parent = element.getParent();
+            if (parent != null
+                    && parent.getNode() != null
+                    && parent.getNode().getElementType() == QinTokenTypes.REFERENCE_IDENTIFIER) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isReferenceLeafToken(IElementType elementType) {
+        return elementType == QinTokenTypes.IDENTIFIER
+                || elementType == QinTokenTypes.CLASS_NAME
+                || elementType == QinTokenTypes.MEMBER_IDENTIFIER;
     }
 }
