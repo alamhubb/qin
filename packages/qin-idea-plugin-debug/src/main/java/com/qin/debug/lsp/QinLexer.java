@@ -93,7 +93,7 @@ public final class QinLexer extends LexerBase {
         if (isIdentifierStart(first)) {
             tokenEnd = scanWhile(tokenStart, QinLexer::isIdentifierPart);
             String text = buffer.subSequence(tokenStart, tokenEnd).toString();
-            tokenType = KEYWORDS.contains(text) ? QinTokenTypes.KEYWORD : QinTokenTypes.IDENTIFIER;
+            tokenType = KEYWORDS.contains(text) ? QinTokenTypes.KEYWORD : classifyIdentifier(text, tokenStart, tokenEnd);
             return;
         }
 
@@ -194,6 +194,37 @@ public final class QinLexer extends LexerBase {
 
     private static boolean isOperator(char value) {
         return "+-*/%=!<>?:&|^~@#".indexOf(value) >= 0;
+    }
+
+    private IElementType classifyIdentifier(String text, int start, int end) {
+        int previous = previousNonWhitespace(start - 1);
+        if (previous >= startOffset && buffer.charAt(previous) == '.') {
+            return QinTokenTypes.MEMBER_IDENTIFIER;
+        }
+        int next = nextNonWhitespace(end);
+        if (next < endOffset && buffer.charAt(next) == '(') {
+            return QinTokenTypes.FUNCTION_IDENTIFIER;
+        }
+        if (!text.isEmpty() && Character.isUpperCase(text.charAt(0))) {
+            return QinTokenTypes.CLASS_NAME;
+        }
+        return QinTokenTypes.IDENTIFIER;
+    }
+
+    private int previousNonWhitespace(int offset) {
+        int current = offset;
+        while (current >= startOffset && Character.isWhitespace(buffer.charAt(current))) {
+            current--;
+        }
+        return current;
+    }
+
+    private int nextNonWhitespace(int offset) {
+        int current = offset;
+        while (current < endOffset && Character.isWhitespace(buffer.charAt(current))) {
+            current++;
+        }
+        return current;
     }
 
     private interface CharacterPredicate {

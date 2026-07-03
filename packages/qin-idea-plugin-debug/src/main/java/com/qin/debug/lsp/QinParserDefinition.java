@@ -6,12 +6,12 @@ import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.PsiParser;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.project.Project;
-import com.intellij.extapi.psi.ASTWrapperPsiElement;
 import com.intellij.psi.FileViewProvider;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IFileElementType;
+import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.tree.TokenSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,13 +31,25 @@ public final class QinParserDefinition implements ParserDefinition {
     @Override
     public @NotNull PsiParser createParser(Project project) {
         return (root, builder) -> {
-            PsiBuilder.Marker marker = builder.mark();
+            PsiBuilder.Marker rootMarker = builder.mark();
             while (!builder.eof()) {
-                builder.advanceLexer();
+                if (isReferenceToken(builder.getTokenType())) {
+                    PsiBuilder.Marker referenceMarker = builder.mark();
+                    builder.advanceLexer();
+                    referenceMarker.done(QinTokenTypes.REFERENCE_IDENTIFIER);
+                } else {
+                    builder.advanceLexer();
+                }
             }
-            marker.done(root);
+            rootMarker.done(root);
             return builder.getTreeBuilt();
         };
+    }
+
+    private static boolean isReferenceToken(IElementType tokenType) {
+        return tokenType == QinTokenTypes.IDENTIFIER
+                || tokenType == QinTokenTypes.CLASS_NAME
+                || tokenType == QinTokenTypes.MEMBER_IDENTIFIER;
     }
 
     @Override
@@ -62,7 +74,7 @@ public final class QinParserDefinition implements ParserDefinition {
 
     @Override
     public @NotNull PsiElement createElement(ASTNode node) {
-        return new ASTWrapperPsiElement(node);
+        return new QinPsiElement(node);
     }
 
     @Override

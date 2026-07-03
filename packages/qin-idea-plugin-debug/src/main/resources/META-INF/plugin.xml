@@ -1,4 +1,4 @@
-﻿<idea-plugin>
+<idea-plugin>
     <id>com.qin.idea</id>
     <name>Qin Build Tool</name>
     <version>0.1.1</version>
@@ -46,6 +46,9 @@
         <lang.syntaxHighlighterFactory
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinSyntaxHighlighterFactory"/>
+        <psi.referenceContributor
+                language="Qin"
+                implementation="com.qin.debug.lsp.QinJavaReferenceContributor"/>
 
         <!-- Keep IDEA native Java Run/Debug; do not inject Qin run configuration. -->
     </extensions>

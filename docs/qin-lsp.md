@@ -11,6 +11,15 @@ Qin LSP is a Volar language server surface for `.qin` files.
 
 The parser and AST decide Qin syntax. The virtual TypeScript exists only to ask TypeScript/Volar for editor services such as completion, hover, formatting, inlay hints, and navigation.
 
+IDEA integration should use a hybrid architecture instead of trying to make LSP replace the IntelliJ Platform:
+
+- LSP/Volar remains the TypeScript-compatible completion, hover, formatting, and diagnostics surface.
+- IDEA Lexer/ParserDefinition/PSI provide native file structure, syntax highlighting, references, and future refactoring support.
+- Java interop navigation resolves through IDEA Java PSI. A Qin expression like `Greeter.greet` imported from `java:demo` should resolve to `demo.Greeter` and its real `PsiMethod` through `JavaPsiFacade`, not to a generated `.d.ts` declaration.
+- Qin PSI is an IDEA adapter for Qin parser/AST and symbol model output. Do not grow a separate semantic model inside the IDEA plugin when the parser or shared Qin symbol model should own the language fact.
+
+The IDEA lexer may be backed by a Qin parser token adapter, but it must still satisfy IntelliJ lexer expectations: stable token ranges, fast incremental lexing, and tolerant behavior while the user is typing incomplete code. Do not call a whole-file parser directly as a token-by-token lexer hot path.
+
 ## Parser And Virtual TypeScript Boundaries
 
 Qin/Slime parser ASI rules accept user source without explicit semicolons. `SemicolonASI()` is grammar behavior: it consumes an explicit semicolon, or accepts a statement boundary when the token stream satisfies ASI conditions such as line terminator, `}`, or EOF.
@@ -56,6 +65,12 @@ Do not maintain independent Java semantic and TypeScript declaration models. `Qi
 `QinIrProgram` and `QinSymbolModel` are peer models, not inheritance parents or children. Share reusable value objects such as `QinIrTypeRef`, annotation refs, qualified names, modifiers, and visibility only when the meaning is truly identical. Convert between models through explicit adapters such as `QinIrProgram -> QinSymbolModel` and `QinJavaSemanticModel -> QinSymbolModel`. Do not add duplicate class/method/field/type shapes with different names unless the semantics are genuinely different.
 
 For editor completion, `src/main/*.java` source symbols are exposed to TypeScript through a generated extra service `.d.ts`, not through IDEA-side completion items. A Qin file importing `java:demo` should see declarations derived from Java source package `demo`, for example `import { Greeter } from "java:demo"` followed by `Greeter.` should complete static methods from `src/main/Greeter.java`.
+
+For IDEA navigation, the same Qin import should resolve through the platform PSI path:
+
+- `import { Greeter } from "java:demo"` resolves `Greeter` to the Java `PsiClass` `demo.Greeter`.
+- `Greeter.greet` resolves `greet` to the static Java `PsiMethod` on `demo.Greeter`.
+- The `.d.ts` bridge can inform LSP completion, but it must not be the only source of truth for Ctrl+Click, Go To Declaration, Find Usages, or Rename inside IDEA.
 
 The `.d.ts` generator should produce declarations that TypeScript can consume through Qin virtual service scripts, for example:
 

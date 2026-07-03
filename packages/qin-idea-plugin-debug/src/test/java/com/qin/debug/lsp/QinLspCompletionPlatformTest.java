@@ -4,15 +4,23 @@ import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.codeInsight.lookup.impl.LookupImpl;
+import com.intellij.lexer.Lexer;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
 import com.intellij.platform.lsp.tests.LspTestUtilKt;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiReference;
+import com.intellij.psi.tree.IElementType;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.ui.UIUtil;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
@@ -47,6 +55,26 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 null);
         assertNotNull(highlighter);
         assertInstanceOf(highlighter, QinSyntaxHighlighter.class);
+    }
+
+    public void testQinHighlighterClassAndMemberTokens() {
+        Lexer lexer = new QinLexer();
+        lexer.start("""
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.greet("Qin")
+                """);
+
+        List<IElementType> tokens = new ArrayList<>();
+        while (lexer.getTokenType() != null) {
+            tokens.add(lexer.getTokenType());
+            lexer.advance();
+        }
+
+        assertTrue("Qin lexer should classify imported Java-style class identifiers for IDEA highlighting",
+                tokens.contains(QinTokenTypes.CLASS_NAME));
+        assertTrue("Qin lexer should classify member access identifiers for IDEA highlighting",
+                tokens.contains(QinTokenTypes.MEMBER_IDENTIFIER));
     }
 
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
@@ -249,7 +277,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                   entry: "src/main/App.qin"
                 }
                 """);
-        myFixture.addFileToProject("src/main/Greeter.java", """
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
 
                 public class Greeter {
@@ -282,6 +310,71 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         .map(LookupElement::getLookupString)
                         .limit(40)
                         .toArray(String[]::new)), hasGreet);
+    }
+
+    public void testQinJavaImportReferenceResolvesToPsiClass() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Gre<caret>eter.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin Java class reference was not registered at Greeter. " + describeCaretElement(), reference);
+        assertInstanceOf(reference.resolve(), PsiClass.class);
+        assertEquals("demo.Greeter", ((PsiClass) reference.resolve()).getQualifiedName());
+    }
+
+    public void testQinJavaMemberReferenceResolvesToPsiMethod() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+
+                  public String instanceOnly() {
+                    return "not static";
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.gr<caret>eet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin Java member reference was not registered at Greeter.greet. " + describeCaretElement(), reference);
+        assertInstanceOf(reference.resolve(), PsiMethod.class);
+        PsiMethod method = (PsiMethod) reference.resolve();
+        assertEquals("greet", method.getName());
+        assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+    }
+
+    private String describeCaretElement() {
+        PsiElement element = myFixture.getFile().findElementAt(myFixture.getCaretOffset());
+        if (element == null) {
+            return "caretElement=null";
+        }
+        IElementType elementType = element.getNode() == null ? null : element.getNode().getElementType();
+        return "caretElementClass=" + element.getClass().getName()
+                + ", text='" + element.getText() + "'"
+                + ", elementType=" + elementType
+                + ", language=" + element.getLanguage()
+                + ", directReferences=" + element.getReferences().length;
     }
 
     private void waitForLookup() throws Exception {

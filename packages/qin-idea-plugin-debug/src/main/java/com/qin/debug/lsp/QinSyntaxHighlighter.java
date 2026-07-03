@@ -19,6 +19,18 @@ public final class QinSyntaxHighlighter extends SyntaxHighlighterBase {
         if (tokenType == QinTokenTypes.KEYWORD) {
             return pack(DefaultLanguageHighlighterColors.KEYWORD);
         }
+        if (tokenType == QinTokenTypes.IDENTIFIER) {
+            return pack(DefaultLanguageHighlighterColors.IDENTIFIER);
+        }
+        if (tokenType == QinTokenTypes.CLASS_NAME) {
+            return pack(DefaultLanguageHighlighterColors.CLASS_NAME);
+        }
+        if (tokenType == QinTokenTypes.FUNCTION_IDENTIFIER) {
+            return pack(DefaultLanguageHighlighterColors.FUNCTION_CALL);
+        }
+        if (tokenType == QinTokenTypes.MEMBER_IDENTIFIER) {
+            return pack(DefaultLanguageHighlighterColors.INSTANCE_METHOD);
+        }
         if (tokenType == QinTokenTypes.STRING) {
             return pack(DefaultLanguageHighlighterColors.STRING);
         }

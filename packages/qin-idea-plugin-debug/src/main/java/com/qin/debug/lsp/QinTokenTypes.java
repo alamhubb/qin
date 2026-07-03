@@ -5,6 +5,10 @@ import com.intellij.psi.tree.IElementType;
 final class QinTokenTypes {
     static final IElementType KEYWORD = new IElementType("QIN_KEYWORD", QinLanguage.INSTANCE);
     static final IElementType IDENTIFIER = new IElementType("QIN_IDENTIFIER", QinLanguage.INSTANCE);
+    static final IElementType CLASS_NAME = new IElementType("QIN_CLASS_NAME", QinLanguage.INSTANCE);
+    static final IElementType FUNCTION_IDENTIFIER = new IElementType("QIN_FUNCTION_IDENTIFIER", QinLanguage.INSTANCE);
+    static final IElementType MEMBER_IDENTIFIER = new IElementType("QIN_MEMBER_IDENTIFIER", QinLanguage.INSTANCE);
+    static final IElementType REFERENCE_IDENTIFIER = new IElementType("QIN_REFERENCE_IDENTIFIER", QinLanguage.INSTANCE);
     static final IElementType NUMBER = new IElementType("QIN_NUMBER", QinLanguage.INSTANCE);
     static final IElementType STRING = new IElementType("QIN_STRING", QinLanguage.INSTANCE);
     static final IElementType LINE_COMMENT = new IElementType("QIN_LINE_COMMENT", QinLanguage.INSTANCE);
