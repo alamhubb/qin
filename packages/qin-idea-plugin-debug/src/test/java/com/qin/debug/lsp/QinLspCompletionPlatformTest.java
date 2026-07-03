@@ -327,6 +327,36 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
     }
 
+    public void testQinJavaAliasedImportResolvesThroughPsiTokenImportTable() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiReference classReference = myFixture.getFile().findReferenceAt(text.indexOf("G.greet"));
+        assertNotNull("Qin Java aliased class reference was not registered", classReference);
+        PsiClass psiClass = assertInstanceOf(classReference.resolve(), PsiClass.class);
+        assertEquals("demo.Greeter", psiClass.getQualifiedName());
+
+        PsiReference methodReference = myFixture.getFile().findReferenceAt(text.indexOf("greet"));
+        assertNotNull("Qin Java aliased member reference was not registered", methodReference);
+        PsiMethod method = assertInstanceOf(methodReference.resolve(), PsiMethod.class);
+        assertEquals("greet", method.getName());
+        assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+    }
+
     public void testQinJavaClassReferenceParticipatesInReferencesSearch() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
