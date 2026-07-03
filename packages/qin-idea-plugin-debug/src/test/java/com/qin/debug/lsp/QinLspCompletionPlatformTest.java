@@ -279,6 +279,23 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_ALIAS_NAME));
     }
 
+    public void testQinImportBindingsUseCurrentImportSpecifierPsi() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as Counter, Counter as C } from "./Counter.qin"
+                """);
+
+        PsiElement exportedCounter = findFirstChildOfText(
+                findImportSpecifierStartingWith(myFixture.getFile(), "Counter"),
+                QinTokenTypes.REFERENCE_IDENTIFIER,
+                "Counter");
+        QinImportBindings.ImportBinding binding = QinImportBindings.findForSpecifierElement(exportedCounter);
+
+        assertNotNull("Qin import binding should be read from the current IMPORT_SPECIFIER PSI node", binding);
+        assertEquals("./Counter.qin", binding.moduleSpecifier());
+        assertEquals("Counter", binding.exportedName());
+        assertEquals("C", binding.localName());
+    }
+
     public void testQinModuleSpecifierFactsClassifyJavaAndQinImports() {
         assertEquals("demo", QinModuleSpecifierFacts.javaModuleName("java:demo"));
         assertEquals("java.util", QinModuleSpecifierFacts.javaModuleName("java:java.util"));
@@ -1875,6 +1892,37 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         }
         for (PsiElement child : root.getChildren()) {
             PsiElement found = findPsiElementType(child, type);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static PsiElement findImportSpecifierStartingWith(PsiElement root, String text) {
+        if (root.getNode() != null
+                && root.getNode().getElementType() == QinTokenTypes.IMPORT_SPECIFIER
+                && root.getText().startsWith(text)) {
+            return root;
+        }
+        for (PsiElement child : root.getChildren()) {
+            PsiElement found = findImportSpecifierStartingWith(child, text);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static PsiElement findFirstChildOfText(PsiElement root, IElementType type, String text) {
+        assertNotNull("Root PSI element should be available", root);
+        if (root.getNode() != null
+                && root.getNode().getElementType() == type
+                && text.equals(root.getText())) {
+            return root;
+        }
+        for (PsiElement child : root.getChildren()) {
+            PsiElement found = findFirstChildOfText(child, type, text);
             if (found != null) {
                 return found;
             }
