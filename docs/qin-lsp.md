@@ -75,6 +75,10 @@ Do not generate broad `any` declarations as a shortcut. Prefer conservative, acc
 
 Use `glogjs`/`logToFile` for Qin language server diagnostics. Completion logging should include request URI, language id, position, trigger kind, trigger character, item count, and first labels. Logs are diagnostic support only; they are not a fix.
 
+## Encoding
+
+All Qin LSP source files, docs, configs, fixtures, generated text artifacts, and related skills must be UTF-8 without BOM. Use another encoding only when an external tool or file format absolutely requires it, and document the reason. On Windows, avoid default `Out-File` writes for tracked text; use UTF-8-no-BOM writers and inspect bytes plus git history before repairing mojibake.
+
 ## Validation
 
 For LSP fixes, validate in this order:
