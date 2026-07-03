@@ -47,11 +47,7 @@ final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElem
     }
 
     static boolean isObjectMethodReferenceCandidate(@NotNull PsiElement element) {
-        String objectName = QinJavaReference.previousQualifierName(element);
-        return objectName != null
-                && !"this".equals(objectName)
-                && QinObjectSymbols.findObjectName(element, objectName) != null
-                && QinObjectSymbols.findFieldName(element, objectName, element.getText()) == null;
+        return QinPsiTokenStream.isFollowedByCallParenthesis(element) && hasObjectMethodQualifier(element);
     }
 
     private static ResolveResult @NotNull [] resolveInner(
@@ -65,9 +61,21 @@ final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElem
 
     private static @Nullable PsiElement resolveMethodName(@NotNull PsiElement element) {
         String objectName = QinJavaReference.previousQualifierName(element);
+        if ("this".equals(objectName)) {
+            return QinObjectSymbols.findMethodNameForThis(element, element.getText());
+        }
         if (objectName == null) {
             return null;
         }
         return QinObjectSymbols.findMethodName(element, objectName, element.getText());
+    }
+
+    private static boolean hasObjectMethodQualifier(@NotNull PsiElement element) {
+        String objectName = QinJavaReference.previousQualifierName(element);
+        if ("this".equals(objectName)) {
+            return QinObjectSymbols.findMethodNameForThis(element, element.getText()) != null
+                    || QinObjectSymbols.findFieldNameForThis(element, element.getText()) == null;
+        }
+        return objectName != null && QinObjectSymbols.findObjectName(element, objectName) != null;
     }
 }

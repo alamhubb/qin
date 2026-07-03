@@ -31,6 +31,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinObjectMethodAnnotator.class",
             "com/qin/debug/lsp/QinObjectMethodReference.class",
             "com/qin/debug/lsp/QinObjectMethodReferenceContributor.class",
+            "com/qin/debug/lsp/QinObjectFieldAnnotator.class",
             "com/qin/debug/lsp/QinObjectFieldReference.class",
             "com/qin/debug/lsp/QinObjectFieldReferenceContributor.class",
             "com/qin/debug/lsp/QinReferenceElements.class",

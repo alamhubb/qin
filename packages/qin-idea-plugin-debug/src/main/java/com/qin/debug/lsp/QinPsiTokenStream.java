@@ -52,6 +52,19 @@ final class QinPsiTokenStream {
         return previousQualifierName(element.getContainingFile(), element);
     }
 
+    static boolean isFollowedByCallParenthesis(@NotNull PsiElement element) {
+        return isFollowedByCallParenthesis(element.getContainingFile(), element);
+    }
+
+    static boolean isFollowedByCallParenthesis(@NotNull PsiElement root, @NotNull PsiElement element) {
+        List<QinPsiToken> tokens = collect(root);
+        int tokenIndex = indexOfElement(tokens, element);
+        if (tokenIndex < 0 || tokenIndex + 1 >= tokens.size()) {
+            return false;
+        }
+        return tokens.get(tokenIndex + 1).is(QinTokenTypes.PAREN, "(");
+    }
+
     static @Nullable String previousQualifierName(@NotNull PsiElement root, @NotNull PsiElement element) {
         List<QinPsiToken> tokens = collect(root);
         int tokenIndex = indexOfElement(tokens, element);

@@ -37,6 +37,22 @@ final class QinObjectSymbols {
         return visitor.methodName;
     }
 
+    static @Nullable PsiElement findMethodNameForThis(@NotNull PsiElement element, @NotNull String methodName) {
+        PsiElement objectDeclaration = parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        if (objectDeclaration == null) {
+            return null;
+        }
+        return findMethodNameInObjectDeclaration(objectDeclaration, methodName);
+    }
+
+    private static @Nullable PsiElement findMethodNameInObjectDeclaration(
+            @NotNull PsiElement objectDeclaration,
+            @NotNull String methodName) {
+        MethodNameVisitor visitor = new MethodNameVisitor(methodName);
+        objectDeclaration.accept(visitor);
+        return visitor.methodName;
+    }
+
     static @Nullable PsiElement findFieldName(
             @NotNull PsiElement element,
             @NotNull String objectName,

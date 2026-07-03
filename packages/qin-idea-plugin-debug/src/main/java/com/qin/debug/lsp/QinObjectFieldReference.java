@@ -44,7 +44,7 @@ final class QinObjectFieldReference extends PsiPolyVariantReferenceBase<PsiEleme
     }
 
     static boolean isObjectFieldReferenceCandidate(@NotNull PsiElement element) {
-        return resolveFieldName(element) != null;
+        return !QinPsiTokenStream.isFollowedByCallParenthesis(element) && hasObjectFieldQualifier(element);
     }
 
     private static ResolveResult @NotNull [] resolveInner(
@@ -65,5 +65,13 @@ final class QinObjectFieldReference extends PsiPolyVariantReferenceBase<PsiEleme
             return null;
         }
         return QinObjectSymbols.findFieldName(element, qualifier, element.getText());
+    }
+
+    private static boolean hasObjectFieldQualifier(@NotNull PsiElement element) {
+        String qualifier = QinJavaReference.previousQualifierName(element);
+        if ("this".equals(qualifier)) {
+            return true;
+        }
+        return qualifier != null && QinObjectSymbols.findObjectName(element, qualifier) != null;
     }
 }

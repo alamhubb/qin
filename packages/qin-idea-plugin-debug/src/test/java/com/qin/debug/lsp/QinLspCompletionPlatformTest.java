@@ -391,6 +391,19 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightMissing(errors, "Unresolved Qin object method Counter.next");
     }
 
+    public void testQinObjectMethodAnnotatorIgnoresMissingFieldAccess() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+
+                const value = Counter.missing
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightMissing(errors, "Unresolved Qin object method Counter.missing");
+    }
+
     public void testQinObjectFieldReferenceResolvesToFieldName() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -473,6 +486,45 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue("Qin field rename should update this usage: " + text, text.contains("this.total"));
         assertTrue("Qin field rename should update object usage: " + text, text.contains("Counter.total"));
         assertFalse("Qin field rename should remove old object usage: " + text, text.contains("Counter.value"));
+    }
+
+    public void testQinObjectFieldAnnotatorReportsMissingField() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+
+                const value = Counter.missing
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightContains(errors, "Unresolved Qin object field Counter.missing");
+    }
+
+    public void testQinObjectFieldAnnotatorIgnoresMissingMethodCall() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+
+                const value = Counter.missing()
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightMissing(errors, "Unresolved Qin object field Counter.missing");
+    }
+
+    public void testQinObjectFieldAnnotatorKeepsResolvedFieldsClean() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+
+                const value = Counter.value
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightMissing(errors, "Unresolved Qin object field Counter.value");
     }
 
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
