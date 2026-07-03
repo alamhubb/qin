@@ -17,6 +17,7 @@ IDEA integration should use a hybrid architecture instead of trying to make LSP 
 - IDEA Lexer/ParserDefinition/PSI provide native file structure, syntax highlighting, references, and future refactoring support.
 - Java interop navigation resolves through IDEA Java PSI. A Qin expression like `Greeter.greet` imported from `java:demo` should resolve to `demo.Greeter` and its real `PsiMethod` through `JavaPsiFacade`, not to a generated `.d.ts` declaration.
 - IDEA semantic annotations for Java interop should reuse Qin PSI references and Java PSI resolution. For unresolved `java:` imports or static members, mark the Qin PSI element through an `Annotator`; do not duplicate a separate Java lookup model in the annotator.
+- IDEA Find Usages and Rename for Java interop should flow through the same Qin `PsiReference`. If a Java class or method is renamed, `handleElementRename` should update only the Qin reference token. Do not implement separate string-rewrite refactoring paths for Java interop.
 - Qin PSI is an IDEA adapter for Qin parser/AST and symbol model output. Do not grow a separate semantic model inside the IDEA plugin when the parser or shared Qin symbol model should own the language fact.
 
 The IDEA lexer may be backed by a Qin parser token adapter, but it must still satisfy IntelliJ lexer expectations: stable token ranges, fast incremental lexing, and tolerant behavior while the user is typing incomplete code. Do not call a whole-file parser directly as a token-by-token lexer hot path.

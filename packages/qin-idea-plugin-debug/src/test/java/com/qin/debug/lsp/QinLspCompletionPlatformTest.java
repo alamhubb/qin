@@ -7,6 +7,7 @@ import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.codeInsight.lookup.impl.LookupImpl;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.lexer.Lexer;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
@@ -16,12 +17,15 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.tree.IElementType;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.search.searches.ReferencesSearch;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.ui.UIUtil;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -323,6 +327,93 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
     }
 
+    public void testQinJavaClassReferenceParticipatesInReferencesSearch() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("Greeter.greet"));
+        assertNotNull("Qin Java class reference was not registered", reference);
+        PsiClass javaClass = assertInstanceOf(reference.resolve(), PsiClass.class);
+
+        Collection<PsiReference> references = ReferencesSearch.search(
+                javaClass,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin Java class reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "Greeter".equals(item.getElement().getText())));
+    }
+
+    public void testQinJavaMethodReferenceParticipatesInReferencesSearch() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("greet"));
+        assertNotNull("Qin Java method reference was not registered", reference);
+        PsiMethod javaMethod = assertInstanceOf(reference.resolve(), PsiMethod.class);
+
+        Collection<PsiReference> references = ReferencesSearch.search(
+                javaMethod,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin Java method reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "greet".equals(item.getElement().getText())));
+    }
+
+    public void testQinJavaReferenceRenameUpdatesQinToken() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.gr<caret>eet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin Java method reference was not registered for rename", reference);
+        WriteCommandAction.runWriteCommandAction(
+                getProject(),
+                (Runnable) () -> reference.handleElementRename("welcome"));
+
+        assertTrue("Rename should update Qin Java member reference: " + myFixture.getEditor().getDocument().getText(),
+                myFixture.getEditor().getDocument().getText().contains("Greeter.welcome(\"Qin\")"));
+    }
+
     public void testQinJavaInteropAnnotatorReportsMissingImportedClass() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { MissingGreeter } from "java:demo"
@@ -396,6 +487,14 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
     private static List<String> describeHighlights(List<HighlightInfo> highlights) {
         return highlights.stream()
                 .map(info -> info.getDescription() + "@" + info.getSeverity())
+                .toList();
+    }
+
+    private static List<String> describeReferences(Collection<PsiReference> references) {
+        return references.stream()
+                .map(reference -> reference.getElement().getText()
+                        + "@"
+                        + reference.getElement().getContainingFile().getName())
                 .toList();
     }
 
