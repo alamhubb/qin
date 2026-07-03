@@ -42,6 +42,7 @@ IDEA integration should use a hybrid architecture instead of trying to make LSP 
 - Qin-owned semantic annotations should reuse the same PSI references. For example, unresolved object methods such as `Counter.missing()` should be reported by resolving the Qin object-method reference, not by a separate object/member lookup inside the annotator.
 - Qin-owned semantic highlighting should also reuse PSI nodes and PSI references. Declarations such as `OBJECT_NAME`, `METHOD_NAME`, and `FIELD_NAME`, plus resolved Qin object/member references, may receive IntelliJ text attributes through an `Annotator`; do not duplicate lexer/parser rules or create a second symbol model just for colors.
 - Qin PSI is an IDEA adapter for Qin parser/AST and symbol model output. Do not grow a separate semantic model inside the IDEA plugin when the parser or shared Qin symbol model should own the language fact.
+- IDEA plugin descriptor smoke must verify the native Qin platform entry points: parser definition, syntax highlighter, reference contributors, completion contributor, annotators, StubIndexes, typed completion trigger, and lookup Enter handler. Missing registration should fail packaging smoke before a plugin zip is installed.
 
 The IDEA lexer should be backed by a Qin/Slime/Subhuti token adapter rather than a separate hand-written Qin token model. Map parser token names into IDEA `IElementType` values at this boundary, then let `QinLexer` act only as the IntelliJ `LexerBase` state wrapper. Do not call a whole-file parser directly as a token-by-token lexer hot path.
 

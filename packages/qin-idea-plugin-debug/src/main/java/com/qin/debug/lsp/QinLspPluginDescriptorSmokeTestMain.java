@@ -37,9 +37,12 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertQinParserShell(document);
         assertLspProvider(document);
         assertAutoPopupTypedHandler(document);
+        assertLookupEnterHandler(document);
+        assertQinReferenceContributors(document);
         assertQinObjectMemberCompletion(document);
         assertQinObjectNameStubIndex(document);
         assertQinObjectMemberStubIndexes(document);
+        assertQinAnnotators(document);
         assertNoQinObjectNameFileBasedIndex(document);
         assertNoLocalSemanticExtensions(document);
     }
@@ -138,14 +141,47 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     }
 
     private static void assertAutoPopupTypedHandler(Document document) {
-        NodeList handlers = document.getElementsByTagName("typedHandler");
-        for (int i = 0; i < handlers.getLength(); i++) {
-            Element handler = (Element) handlers.item(i);
-            if ("com.qin.debug.lsp.QinLspAutoPopupTypedHandler".equals(handler.getAttribute("implementation"))) {
-                return;
-            }
-        }
-        throw new IllegalStateException("Missing Qin LSP auto-popup typedHandler registration");
+        assertExtensionImplementation(
+                document,
+                "typedHandler",
+                "implementation",
+                "com.qin.debug.lsp.QinLspAutoPopupTypedHandler");
+    }
+
+    private static void assertLookupEnterHandler(Document document) {
+        assertExtensionImplementation(
+                document,
+                "enterHandlerDelegate",
+                "implementation",
+                "com.qin.debug.lsp.QinLspLookupEnterHandler");
+    }
+
+    private static void assertQinReferenceContributors(Document document) {
+        assertLanguageExtensionImplementation(
+                document,
+                "psi.referenceContributor",
+                "implementation",
+                "com.qin.debug.lsp.QinJavaReferenceContributor");
+        assertLanguageExtensionImplementation(
+                document,
+                "psi.referenceContributor",
+                "implementation",
+                "com.qin.debug.lsp.QinObjectReferenceContributor");
+        assertLanguageExtensionImplementation(
+                document,
+                "psi.referenceContributor",
+                "implementation",
+                "com.qin.debug.lsp.QinObjectMethodReferenceContributor");
+        assertLanguageExtensionImplementation(
+                document,
+                "psi.referenceContributor",
+                "implementation",
+                "com.qin.debug.lsp.QinObjectFieldReferenceContributor");
+        assertLanguageExtensionImplementation(
+                document,
+                "psi.referenceContributor",
+                "implementation",
+                "com.qin.debug.lsp.QinImportAliasReferenceContributor");
     }
 
     private static void assertQinObjectMemberCompletion(Document document) {
@@ -166,6 +202,29 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     private static void assertQinObjectMemberStubIndexes(Document document) {
         assertStubIndex(document, "com.qin.debug.lsp.QinObjectFieldNameStubIndex");
         assertStubIndex(document, "com.qin.debug.lsp.QinObjectMethodNameStubIndex");
+    }
+
+    private static void assertQinAnnotators(Document document) {
+        assertLanguageExtensionImplementation(
+                document,
+                "annotator",
+                "implementationClass",
+                "com.qin.debug.lsp.QinJavaInteropAnnotator");
+        assertLanguageExtensionImplementation(
+                document,
+                "annotator",
+                "implementationClass",
+                "com.qin.debug.lsp.QinObjectMethodAnnotator");
+        assertLanguageExtensionImplementation(
+                document,
+                "annotator",
+                "implementationClass",
+                "com.qin.debug.lsp.QinObjectFieldAnnotator");
+        assertLanguageExtensionImplementation(
+                document,
+                "annotator",
+                "implementationClass",
+                "com.qin.debug.lsp.QinSymbolHighlightAnnotator");
     }
 
     private static void assertStubIndex(Document document, String implementation) {
@@ -195,6 +254,37 @@ public final class QinLspPluginDescriptorSmokeTestMain {
             require(document.getElementsByTagName(tag).getLength() == 0,
                     "Qin LSP mode must not register local IDEA semantic extension: " + tag);
         }
+    }
+
+    private static void assertLanguageExtensionImplementation(
+            Document document,
+            String tagName,
+            String attributeName,
+            String expectedImplementation) {
+        NodeList extensions = document.getElementsByTagName(tagName);
+        for (int i = 0; i < extensions.getLength(); i++) {
+            Element extension = (Element) extensions.item(i);
+            if ("Qin".equals(extension.getAttribute("language"))
+                    && expectedImplementation.equals(extension.getAttribute(attributeName))) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Missing Qin " + tagName + ": " + expectedImplementation);
+    }
+
+    private static void assertExtensionImplementation(
+            Document document,
+            String tagName,
+            String attributeName,
+            String expectedImplementation) {
+        NodeList extensions = document.getElementsByTagName(tagName);
+        for (int i = 0; i < extensions.getLength(); i++) {
+            Element extension = (Element) extensions.item(i);
+            if (expectedImplementation.equals(extension.getAttribute(attributeName))) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Missing " + tagName + ": " + expectedImplementation);
     }
 
     private static void require(boolean condition, String message) {
