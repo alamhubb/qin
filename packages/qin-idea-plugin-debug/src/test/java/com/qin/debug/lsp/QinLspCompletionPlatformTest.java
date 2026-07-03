@@ -150,6 +150,29 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains("\"unterminated:" + QinTokenTypes.STRING));
     }
 
+    public void testQinDeclarationScannerFindsUniqueObjectNamesFromSharedTokenStream() {
+        String source = """
+                // object IgnoredComment
+                export object Counter {
+                  value = 0xFFn
+                }
+
+                object Store {
+                  maybe = target?.field
+                }
+
+                object Counter {
+                  next() {
+                    return this.value
+                  }
+                }
+                """;
+
+        List<String> objectNames = QinDeclarationScanner.objectNames(source);
+
+        assertEquals(List.of("Counter", "Store"), objectNames);
+    }
+
     public void testQinParserBuildsStructuredPsiForJavaInterop() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { Greeter as G } from "java:demo"

@@ -26,6 +26,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinMethodNamePsiElement.class",
             "com/qin/debug/lsp/QinFieldNamePsiElement.class",
             "com/qin/debug/lsp/QinObjectSymbols.class",
+            "com/qin/debug/lsp/QinDeclarationScanner.class",
             "com/qin/debug/lsp/QinImportBindings.class",
             "com/qin/debug/lsp/QinModuleImportTable.class",
             "com/qin/debug/lsp/QinObjectNameIndex.class",
