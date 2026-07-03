@@ -1,6 +1,7 @@
 package com.qin.debug.lsp;
 
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import org.jetbrains.annotations.NotNull;
@@ -38,5 +39,24 @@ final class QinPsiReferences {
             }
         }
         return null;
+    }
+
+    static @Nullable PsiReference findReferenceAt(@NotNull PsiFile file, int offset) {
+        PsiElement element = file.findElementAt(offset);
+        while (element != null && element != file) {
+            for (PsiReference reference : references(element)) {
+                if (containsOffset(reference, offset)) {
+                    return reference;
+                }
+            }
+            element = element.getParent();
+        }
+        return null;
+    }
+
+    private static boolean containsOffset(@NotNull PsiReference reference, int offset) {
+        return reference.getRangeInElement()
+                .shiftRight(reference.getElement().getTextRange().getStartOffset())
+                .containsOffset(offset);
     }
 }
