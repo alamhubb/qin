@@ -83,6 +83,31 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains(QinTokenTypes.MEMBER_IDENTIFIER));
     }
 
+    public void testQinLexerUsesSlimeTokenDefinitionsForModernSyntax() {
+        String source = """
+                object Store {
+                  value = 0xFFn
+                  maybe = target?.field
+                }
+                """;
+        List<String> tokens = collectLexerTokenEntries(source);
+
+        assertTrue("Qin lexer should classify Qin object as a contextual keyword: " + tokens,
+                tokens.contains("object:" + QinTokenTypes.KEYWORD));
+        assertTrue("Qin lexer should classify Slime bigint numeric literals: " + tokens,
+                tokens.contains("0xFFn:" + QinTokenTypes.NUMBER));
+        assertTrue("Qin lexer should map Slime optional chaining token into IDEA operator highlighting: " + tokens,
+                tokens.contains("?.:" + QinTokenTypes.OPERATOR));
+    }
+
+    public void testQinLexerKeepsUnterminatedStringHighlightableForIdeaEditing() {
+        String source = "const message = \"unterminated";
+        List<String> tokens = collectLexerTokenEntries(source);
+
+        assertTrue("Qin lexer should keep editor-time unterminated strings as string tokens: " + tokens,
+                tokens.contains("\"unterminated:" + QinTokenTypes.STRING));
+    }
+
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -543,6 +568,17 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         return highlights.stream()
                 .map(info -> info.getDescription() + "@" + info.getSeverity())
                 .toList();
+    }
+
+    private static List<String> collectLexerTokenEntries(String source) {
+        Lexer lexer = new QinLexer();
+        lexer.start(source);
+        List<String> tokens = new ArrayList<>();
+        while (lexer.getTokenType() != null) {
+            tokens.add(source.substring(lexer.getTokenStart(), lexer.getTokenEnd()) + ":" + lexer.getTokenType());
+            lexer.advance();
+        }
+        return tokens;
     }
 
     private static List<String> describeReferences(Collection<PsiReference> references) {

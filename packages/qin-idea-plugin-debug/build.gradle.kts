@@ -12,6 +12,8 @@ val buildTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm
 val lspUiFixture = file("fixtures/lsp-ui").canonicalFile
 val workspaceRoot = file("../../..").canonicalFile
 val qinCommand = workspaceRoot.resolve("qin/qin.bat")
+val subhutiJavaSource = workspaceRoot.resolve("slime/java-slime/subhuti-java/src/main/java")
+val slimeTokenSource = workspaceRoot.resolve("slime/java-slime/slime-token/src/main/java")
 val localIdeaHome = providers.gradleProperty("qinLocalIdeaHome")
     .orElse(providers.environmentVariable("QIN_LOCAL_IDEA_HOME"))
 val stableSmokeJvmArgs = listOf(
@@ -366,6 +368,17 @@ tasks {
 sourceSets {
     main {
         java {
+            srcDir(subhutiJavaSource)
+            srcDir(slimeTokenSource)
+            include("com/qin/**")
+            include("com/subhuti/lexer/SubhutiLexer.java")
+            include("com/subhuti/lexer/TokenCacheEntry.java")
+            include("com/subhuti/lexer/LexerState.java")
+            include("com/subhuti/struct/**")
+            include("com/slime/token/**")
+            exclude("com/subhuti/aop/**")
+            exclude("com/subhuti/lookahead/**")
+            exclude("com/subhuti/parser/**")
             exclude("com/qin/debug/run/QinDebugProcess.java")
             exclude("com/qin/debug/run/QinDebugProgramRunner.java")
             exclude("com/qin/debug/schema/**")

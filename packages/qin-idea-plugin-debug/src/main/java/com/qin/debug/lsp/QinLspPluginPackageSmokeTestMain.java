@@ -16,6 +16,8 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinLspFileType.class",
             "com/qin/debug/lsp/QinLanguage.class",
             "com/qin/debug/lsp/QinLexer.class",
+            "com/qin/debug/lsp/QinLexicalScanner.class",
+            "com/qin/debug/lsp/QinLexicalToken.class",
             "com/qin/debug/lsp/QinTokenTypes.class",
             "com/qin/debug/lsp/QinSyntaxHighlighter.class",
             "com/qin/debug/lsp/QinSyntaxHighlighterFactory.class",
@@ -29,6 +31,9 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinLspServerCommandSpec.class",
             "com/qin/debug/lsp/QinLspServerSupportProvider.class",
             "com/qin/debug/lsp/QinLspStartupProbe.class",
+            "com/slime/token/JavaScriptTokens.class",
+            "com/subhuti/lexer/SubhutiLexer.class",
+            "com/subhuti/struct/SubhutiMatchToken.class",
             "com/qin/debug/QinToolWindowFactory.class");
 
     private QinLspPluginPackageSmokeTestMain() {

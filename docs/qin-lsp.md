@@ -21,7 +21,9 @@ IDEA integration should use a hybrid architecture instead of trying to make LSP 
 - IDEA Find Usages and Rename for Java interop should flow through the same Qin `PsiReference`. If a Java class or method is renamed, `handleElementRename` should update only the Qin reference token. Do not implement separate string-rewrite refactoring paths for Java interop.
 - Qin PSI is an IDEA adapter for Qin parser/AST and symbol model output. Do not grow a separate semantic model inside the IDEA plugin when the parser or shared Qin symbol model should own the language fact.
 
-The IDEA lexer may be backed by a Qin parser token adapter, but it must still satisfy IntelliJ lexer expectations: stable token ranges, fast incremental lexing, and tolerant behavior while the user is typing incomplete code. Do not call a whole-file parser directly as a token-by-token lexer hot path.
+The IDEA lexer should be backed by a Qin/Slime/Subhuti token adapter rather than a separate hand-written Qin token model. Map parser token names into IDEA `IElementType` values at this boundary, then let `QinLexer` act only as the IntelliJ `LexerBase` state wrapper. Do not call a whole-file parser directly as a token-by-token lexer hot path.
+
+The adapter may own trivia and editor-recovery details required by the IntelliJ lexer contract: whitespace/comment tokens, stable token ranges, fast advancement, and highlightable incomplete literals while the user is typing. That recovery is an editor-tokenization boundary, not a broad parser fallback and not a reason to hide real Qin parser defects.
 
 ## Parser And Virtual TypeScript Boundaries
 
