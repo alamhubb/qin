@@ -21,6 +21,7 @@ import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
 import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.ReferencesSearch;
+import com.intellij.refactoring.rename.RenameProcessor;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.ui.UIUtil;
 
@@ -247,6 +248,27 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue("Qin object rename should update the declaration name: "
                         + myFixture.getEditor().getDocument().getText(),
                 myFixture.getEditor().getDocument().getText().contains("object Store"));
+    }
+
+    public void testQinObjectRenameProcessorUpdatesReferences() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.next()
+                """);
+
+        PsiElement objectName = findPsiElementType(myFixture.getFile(), QinTokenTypes.OBJECT_NAME);
+        assertNotNull("Qin object name PSI was not built", objectName);
+        new RenameProcessor(getProject(), objectName, "Store", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin object rename should update declaration: " + text, text.contains("object Store"));
+        assertTrue("Qin object rename should update usages: " + text, text.contains("Store.next()"));
+        assertFalse("Qin object rename should remove old usage: " + text, text.contains("Counter.next()"));
     }
 
     public void testQinCompletionFromIdeaFixtureIncludesObjectSymbol() throws Exception {
