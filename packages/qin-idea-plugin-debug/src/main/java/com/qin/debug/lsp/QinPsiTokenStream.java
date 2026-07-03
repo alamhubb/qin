@@ -3,7 +3,6 @@ package com.qin.debug.lsp;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiRecursiveElementWalkingVisitor;
-import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,9 +25,7 @@ final class QinPsiTokenStream {
             public void visitElement(@NotNull PsiElement element) {
                 if (element.getFirstChild() == null && element.getNode() != null) {
                     IElementType type = element.getNode().getElementType();
-                    if (type != TokenType.WHITE_SPACE
-                            && type != QinTokenTypes.LINE_COMMENT
-                            && type != QinTokenTypes.BLOCK_COMMENT) {
+                    if (!QinTokenFacts.isTrivia(type)) {
                         tokens.add(new QinPsiToken(tokenOwner(element), type, element.getText()));
                     }
                 }

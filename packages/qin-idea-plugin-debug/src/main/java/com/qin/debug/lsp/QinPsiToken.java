@@ -10,10 +10,7 @@ record QinPsiToken(@NotNull PsiElement element, @NotNull IElementType type, @Not
     }
 
     boolean isIdentifier() {
-        return type == QinTokenTypes.IDENTIFIER
-                || type == QinTokenTypes.CLASS_NAME
-                || type == QinTokenTypes.FUNCTION_IDENTIFIER
-                || type == QinTokenTypes.MEMBER_IDENTIFIER
+        return QinTokenFacts.isDeclarationIdentifierToken(type)
                 || type == QinTokenTypes.IMPORT_ALIAS_NAME;
     }
 
