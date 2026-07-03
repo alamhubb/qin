@@ -49,6 +49,9 @@
         <psi.referenceContributor
                 language="Qin"
                 implementation="com.qin.debug.lsp.QinJavaReferenceContributor"/>
+        <annotator
+                language="Qin"
+                implementationClass="com.qin.debug.lsp.QinJavaInteropAnnotator"/>
 
         <!-- Keep IDEA native Java Run/Debug; do not inject Qin run configuration. -->
     </extensions>

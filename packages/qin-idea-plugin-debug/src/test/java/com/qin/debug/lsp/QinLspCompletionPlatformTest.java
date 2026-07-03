@@ -1,9 +1,11 @@
 package com.qin.debug.lsp;
 
+import com.intellij.codeInsight.daemon.impl.HighlightInfo;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.codeInsight.lookup.impl.LookupImpl;
+import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
@@ -319,6 +321,82 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         PsiMethod method = (PsiMethod) reference.resolve();
         assertEquals("greet", method.getName());
         assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+    }
+
+    public void testQinJavaInteropAnnotatorReportsMissingImportedClass() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { MissingGreeter } from "java:demo"
+
+                const message = MissingGreeter.greet("Qin")
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightContains(errors, "Unresolved Java class demo.MissingGreeter");
+    }
+
+    public void testQinJavaInteropAnnotatorReportsMissingStaticMember() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.missing("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightContains(errors, "Unresolved static Java member demo.Greeter.missing");
+    }
+
+    public void testQinJavaInteropAnnotatorKeepsResolvedJavaReferencesClean() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightMissing(errors, "Unresolved Java class demo.Greeter");
+        assertHighlightMissing(errors, "Unresolved static Java member demo.Greeter.greet");
+    }
+
+    private static void assertHighlightContains(List<HighlightInfo> highlights, String expectedDescription) {
+        boolean found = highlights.stream()
+                .map(info -> info.getDescription())
+                .filter(Objects::nonNull)
+                .anyMatch(expectedDescription::equals);
+        assertTrue("Expected highlight " + expectedDescription + " but got " + describeHighlights(highlights), found);
+    }
+
+    private static void assertHighlightMissing(List<HighlightInfo> highlights, String unexpectedDescription) {
+        boolean found = highlights.stream()
+                .map(info -> info.getDescription())
+                .filter(Objects::nonNull)
+                .anyMatch(unexpectedDescription::equals);
+        assertFalse("Unexpected highlight " + unexpectedDescription + " in " + describeHighlights(highlights), found);
+    }
+
+    private static List<String> describeHighlights(List<HighlightInfo> highlights) {
+        return highlights.stream()
+                .map(info -> info.getDescription() + "@" + info.getSeverity())
+                .toList();
     }
 
     private String describeCaretElement() {

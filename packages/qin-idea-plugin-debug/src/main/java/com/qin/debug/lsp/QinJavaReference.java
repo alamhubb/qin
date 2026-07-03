@@ -46,7 +46,7 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
             boolean incompleteCode) {
         PsiElement element = reference.getElement();
         QinJavaImportTable importTable = QinJavaImportTable.fromFile(element.getContainingFile());
-        String qualifier = reference.previousQualifierName();
+        String qualifier = previousQualifierName(element);
         if (qualifier != null) {
             QinJavaImportTable.JavaImport importedClass = importTable.find(qualifier);
             if (importedClass == null) {
@@ -91,10 +91,9 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
                 GlobalSearchScope.allScope(project));
     }
 
-    @Nullable
-    private String previousQualifierName() {
-        CharSequence text = myElement.getContainingFile().getViewProvider().getContents();
-        int current = myElement.getTextRange().getStartOffset() - 1;
+    static @Nullable String previousQualifierName(@NotNull PsiElement element) {
+        CharSequence text = element.getContainingFile().getViewProvider().getContents();
+        int current = element.getTextRange().getStartOffset() - 1;
         while (current >= 0 && Character.isWhitespace(text.charAt(current))) {
             current--;
         }
