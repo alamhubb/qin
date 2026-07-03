@@ -4,8 +4,6 @@ import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiReference;
-import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import org.jetbrains.annotations.NotNull;
 
 public final class QinObjectMethodAnnotator implements Annotator {
@@ -20,20 +18,15 @@ public final class QinObjectMethodAnnotator implements Annotator {
             return;
         }
 
-        String objectName = QinJavaReference.previousQualifierName(element);
-        if (objectName == null || QinObjectSymbols.findObjectName(element, objectName) == null) {
+        if (QinPsiReferences.unresolvedReferenceOfType(element, QinObjectMethodReference.class) == null) {
             return;
         }
 
-        for (PsiReference reference : ReferenceProvidersRegistry.getReferencesFromProviders(element)) {
-            if (reference instanceof QinObjectMethodReference && reference.resolve() == null) {
-                holder.newAnnotation(
-                                HighlightSeverity.ERROR,
-                                "Unresolved Qin object method " + objectName + "." + element.getText())
-                        .range(element.getTextRange())
-                        .create();
-                return;
-            }
-        }
+        String objectName = QinJavaReference.previousQualifierName(element);
+        holder.newAnnotation(
+                        HighlightSeverity.ERROR,
+                        "Unresolved Qin object method " + objectName + "." + element.getText())
+                .range(element.getTextRange())
+                .create();
     }
 }

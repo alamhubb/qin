@@ -4,8 +4,6 @@ import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiReference;
-import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,13 +45,10 @@ public final class QinJavaInteropAnnotator implements Annotator {
             @NotNull PsiElement element,
             @NotNull AnnotationHolder holder,
             @NotNull String message) {
-        for (PsiReference reference : ReferenceProvidersRegistry.getReferencesFromProviders(element)) {
-            if (reference instanceof QinJavaReference && reference.resolve() == null) {
-                holder.newAnnotation(HighlightSeverity.ERROR, message)
-                        .range(element.getTextRange())
-                        .create();
-                return;
-            }
+        if (QinPsiReferences.unresolvedReferenceOfType(element, QinJavaReference.class) != null) {
+            holder.newAnnotation(HighlightSeverity.ERROR, message)
+                    .range(element.getTextRange())
+                    .create();
         }
     }
 }

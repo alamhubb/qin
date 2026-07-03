@@ -4,8 +4,6 @@ import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiReference;
-import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import org.jetbrains.annotations.NotNull;
 
 public final class QinObjectFieldAnnotator implements Annotator {
@@ -26,15 +24,12 @@ public final class QinObjectFieldAnnotator implements Annotator {
             return;
         }
 
-        for (PsiReference reference : ReferenceProvidersRegistry.getReferencesFromProviders(element)) {
-            if (reference instanceof QinObjectFieldReference && reference.resolve() == null) {
-                holder.newAnnotation(
-                                HighlightSeverity.ERROR,
-                                "Unresolved Qin object field " + qualifier + "." + element.getText())
-                        .range(element.getTextRange())
-                        .create();
-                return;
-            }
+        if (QinPsiReferences.unresolvedReferenceOfType(element, QinObjectFieldReference.class) != null) {
+            holder.newAnnotation(
+                            HighlightSeverity.ERROR,
+                            "Unresolved Qin object field " + qualifier + "." + element.getText())
+                    .range(element.getTextRange())
+                    .create();
         }
     }
 }

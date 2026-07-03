@@ -10,7 +10,6 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiReference;
-import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,7 +41,7 @@ public final class QinSymbolHighlightAnnotator implements Annotator {
             return;
         }
 
-        for (PsiReference reference : ReferenceProvidersRegistry.getReferencesFromProviders(element)) {
+        for (PsiReference reference : QinPsiReferences.references(element)) {
             if (reference instanceof QinObjectReference) {
                 highlight(element, holder, DefaultLanguageHighlighterColors.CLASS_NAME, "Qin object reference");
                 return;
