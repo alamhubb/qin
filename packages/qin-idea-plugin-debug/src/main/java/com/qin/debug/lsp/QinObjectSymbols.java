@@ -4,7 +4,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
-import com.intellij.psi.PsiRecursiveElementWalkingVisitor;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.stubs.StubIndex;
 import com.intellij.psi.tree.IElementType;
@@ -80,9 +79,7 @@ final class QinObjectSymbols {
     }
 
     private static @Nullable PsiElement findObjectNameInFile(@NotNull PsiFile file, @NotNull String name) {
-        ObjectNameVisitor visitor = new ObjectNameVisitor(name);
-        file.accept(visitor);
-        return visitor.objectName;
+        return QinPsiTree.firstDescendantOfType(file, QinTokenTypes.OBJECT_NAME, name);
     }
 
     static @Nullable PsiElement findMethodName(
@@ -93,17 +90,15 @@ final class QinObjectSymbols {
         if (resolvedObject == null || !hasIndexedMember(element, resolvedObject, methodName, MemberKind.METHOD)) {
             return null;
         }
-        PsiElement objectDeclaration = parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return null;
         }
-        MethodNameVisitor visitor = new MethodNameVisitor(methodName);
-        objectDeclaration.accept(visitor);
-        return visitor.methodName;
+        return findMethodNameInObjectDeclaration(objectDeclaration, methodName);
     }
 
     static @Nullable PsiElement findMethodNameForThis(@NotNull PsiElement element, @NotNull String methodName) {
-        PsiElement objectDeclaration = parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return null;
         }
@@ -121,7 +116,7 @@ final class QinObjectSymbols {
         if (resolvedObject == null) {
             return List.of();
         }
-        PsiElement objectDeclaration = parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return List.of();
         }
@@ -137,7 +132,7 @@ final class QinObjectSymbols {
     }
 
     static @NotNull List<PsiElement> memberElementsForThis(@NotNull PsiElement element) {
-        PsiElement objectDeclaration = parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return List.of();
         }
@@ -145,17 +140,22 @@ final class QinObjectSymbols {
     }
 
     private static @NotNull List<PsiElement> memberElementsInObjectDeclaration(@NotNull PsiElement objectDeclaration) {
-        MemberNameVisitor visitor = new MemberNameVisitor();
-        objectDeclaration.accept(visitor);
-        return visitor.members;
+        List<PsiElement> members = new ArrayList<>();
+        for (PsiElement member : QinPsiTree.descendantsOfAnyType(
+                objectDeclaration,
+                QinTokenTypes.FIELD_NAME,
+                QinTokenTypes.METHOD_NAME)) {
+            if (members.stream().noneMatch(item -> item.getText().equals(member.getText()))) {
+                members.add(member);
+            }
+        }
+        return members;
     }
 
     private static @Nullable PsiElement findMethodNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String methodName) {
-        MethodNameVisitor visitor = new MethodNameVisitor(methodName);
-        objectDeclaration.accept(visitor);
-        return visitor.methodName;
+        return QinPsiTree.firstDescendantOfType(objectDeclaration, QinTokenTypes.METHOD_NAME, methodName);
     }
 
     static @Nullable PsiElement findFieldName(
@@ -166,7 +166,7 @@ final class QinObjectSymbols {
         if (resolvedObject == null || !hasIndexedMember(element, resolvedObject, fieldName, MemberKind.FIELD)) {
             return null;
         }
-        PsiElement objectDeclaration = parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return null;
         }
@@ -174,7 +174,7 @@ final class QinObjectSymbols {
     }
 
     static @Nullable PsiElement findFieldNameForThis(@NotNull PsiElement element, @NotNull String fieldName) {
-        PsiElement objectDeclaration = parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
         if (objectDeclaration == null) {
             return null;
         }
@@ -184,9 +184,7 @@ final class QinObjectSymbols {
     private static @Nullable PsiElement findFieldNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String fieldName) {
-        FieldNameVisitor visitor = new FieldNameVisitor(fieldName);
-        objectDeclaration.accept(visitor);
-        return visitor.fieldName;
+        return QinPsiTree.firstDescendantOfType(objectDeclaration, QinTokenTypes.FIELD_NAME, fieldName);
     }
 
     private static boolean hasIndexedMember(
@@ -209,17 +207,6 @@ final class QinObjectSymbols {
         return indexedFiles.stream().anyMatch(file -> indexedFile.equals(file.getVirtualFile()));
     }
 
-    private static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull IElementType type) {
-        PsiElement current = element.getParent();
-        while (current != null) {
-            if (current.getNode() != null && current.getNode().getElementType() == type) {
-                return current;
-            }
-            current = current.getParent();
-        }
-        return null;
-    }
-
     private record ResolvedObject(
             @NotNull PsiElement objectName,
             @NotNull String indexedObjectName,
@@ -236,88 +223,4 @@ final class QinObjectSymbols {
         return type == QinTokenTypes.FIELD_NAME ? MemberKind.FIELD : MemberKind.METHOD;
     }
 
-    private static final class ObjectNameVisitor extends PsiRecursiveElementWalkingVisitor {
-        private final String name;
-        private PsiElement objectName;
-
-        private ObjectNameVisitor(@NotNull String name) {
-            this.name = name;
-        }
-
-        @Override
-        public void visitElement(@NotNull PsiElement element) {
-            if (objectName != null) {
-                return;
-            }
-            if (element.getNode() != null
-                    && element.getNode().getElementType() == QinTokenTypes.OBJECT_NAME
-                    && name.equals(element.getText())) {
-                objectName = element;
-                return;
-            }
-            super.visitElement(element);
-        }
-    }
-
-    private static final class MethodNameVisitor extends PsiRecursiveElementWalkingVisitor {
-        private final String name;
-        private PsiElement methodName;
-
-        private MethodNameVisitor(@NotNull String name) {
-            this.name = name;
-        }
-
-        @Override
-        public void visitElement(@NotNull PsiElement element) {
-            if (methodName != null) {
-                return;
-            }
-            if (element.getNode() != null
-                    && element.getNode().getElementType() == QinTokenTypes.METHOD_NAME
-                    && name.equals(element.getText())) {
-                methodName = element;
-                return;
-            }
-            super.visitElement(element);
-        }
-    }
-
-    private static final class FieldNameVisitor extends PsiRecursiveElementWalkingVisitor {
-        private final String name;
-        private PsiElement fieldName;
-
-        private FieldNameVisitor(@NotNull String name) {
-            this.name = name;
-        }
-
-        @Override
-        public void visitElement(@NotNull PsiElement element) {
-            if (fieldName != null) {
-                return;
-            }
-            if (element.getNode() != null
-                    && element.getNode().getElementType() == QinTokenTypes.FIELD_NAME
-                    && name.equals(element.getText())) {
-                fieldName = element;
-                return;
-            }
-            super.visitElement(element);
-        }
-    }
-
-    private static final class MemberNameVisitor extends PsiRecursiveElementWalkingVisitor {
-        private final List<PsiElement> members = new ArrayList<>();
-
-        @Override
-        public void visitElement(@NotNull PsiElement element) {
-            if (element.getNode() != null
-                    && (element.getNode().getElementType() == QinTokenTypes.FIELD_NAME
-                    || element.getNode().getElementType() == QinTokenTypes.METHOD_NAME)
-                    && members.stream().noneMatch(member -> member.getText().equals(element.getText()))) {
-                members.add(element);
-                return;
-            }
-            super.visitElement(element);
-        }
-    }
 }
