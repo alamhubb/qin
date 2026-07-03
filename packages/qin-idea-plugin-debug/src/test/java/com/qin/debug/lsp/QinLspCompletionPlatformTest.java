@@ -25,6 +25,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.ReferencesSearch;
 import com.intellij.refactoring.rename.RenameProcessor;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
+import com.intellij.util.indexing.FileBasedIndex;
 import com.intellij.util.ui.UIUtil;
 
 import java.nio.file.Path;
@@ -325,6 +326,27 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Counter", objectName.getText());
         assertEquals("Counter.qin", objectName.getContainingFile().getName());
         assertSingleQinObjectReference(reference.getElement());
+    }
+
+    public void testQinObjectNameIndexFindsObjectDeclarationFile() {
+        var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        myFixture.addFileToProject("src/main/Store.qin", """
+                export object Store {
+                  value = 1
+                }
+                """);
+
+        Collection<com.intellij.openapi.vfs.VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(
+                QinObjectNameIndex.NAME,
+                "Counter",
+                GlobalSearchScope.allScope(getProject()));
+
+        assertTrue("Qin object name index should locate Counter.qin: " + files,
+                files.contains(counterFile.getVirtualFile()));
     }
 
     public void testQinObjectReferenceAcrossRelativeImportParticipatesInReferencesSearch() {
