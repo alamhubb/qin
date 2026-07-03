@@ -14,6 +14,8 @@ import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
 import com.intellij.platform.lsp.tests.LspTestUtilKt;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiNameIdentifierOwner;
 import com.intellij.psi.PsiReference;
@@ -300,6 +302,67 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Counter", objectName.getText());
         assertEquals("Counter.qin", objectName.getContainingFile().getName());
         assertSingleQinObjectReference(reference.getElement());
+    }
+
+    public void testQinObjectReferenceAcrossRelativeImportParticipatesInReferencesSearch() {
+        var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter } from "./Counter.qin"
+
+                const value = Counter.next()
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiFile counterPsi = PsiManager.getInstance(getProject()).findFile(counterFile.getVirtualFile());
+        assertNotNull("Counter.qin PSI was not available", counterPsi);
+        PsiElement objectName = findPsiElementType(counterPsi, QinTokenTypes.OBJECT_NAME);
+        assertNotNull("Imported Qin object name PSI was not built", objectName);
+        Collection<PsiReference> references = ReferencesSearch.search(
+                objectName,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include imported Qin object reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "App.qin".equals(item.getElement().getContainingFile().getName())
+                        && "Counter".equals(item.getElement().getText())
+                        && item.getElement() != objectName));
+    }
+
+    public void testQinObjectRenameProcessorUpdatesRelativeImportUsages() {
+        var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter } from "./Counter.qin"
+
+                const value = Counter.next()
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiFile counterPsi = PsiManager.getInstance(getProject()).findFile(counterFile.getVirtualFile());
+        assertNotNull("Counter.qin PSI was not available", counterPsi);
+        PsiElement objectName = findPsiElementType(counterPsi, QinTokenTypes.OBJECT_NAME);
+        assertNotNull("Imported Qin object name PSI was not built", objectName);
+        new RenameProcessor(getProject(), objectName, "Store", false, false).run();
+
+        assertTrue("Qin object rename should update imported declaration: " + counterPsi.getText(),
+                counterPsi.getText().contains("object Store"));
+        String appText = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin object rename should update relative import specifier: " + appText,
+                appText.contains("import { Store } from \"./Counter.qin\""));
+        assertTrue("Qin object rename should update cross-file usages: " + appText,
+                appText.contains("Store.next()"));
+        assertFalse("Qin object rename should remove old cross-file usages: " + appText,
+                appText.contains("Counter.next()"));
     }
 
     public void testQinObjectNameSupportsIdeaRenamePrimitive() {
