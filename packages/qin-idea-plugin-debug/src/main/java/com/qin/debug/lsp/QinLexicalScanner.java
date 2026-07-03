@@ -60,7 +60,7 @@ final class QinLexicalScanner {
             }
         }
 
-        return tokens;
+        return classifyFunctionIdentifiers(text, tokens);
     }
 
     private static IElementType mapToken(SubhutiMatchToken token, List<QinLexicalToken> previousTokens) {
@@ -102,6 +102,42 @@ final class QinLexicalScanner {
             return QinTokenTypes.CLASS_NAME;
         }
         return QinTokenTypes.IDENTIFIER;
+    }
+
+    private static List<QinLexicalToken> classifyFunctionIdentifiers(String text, List<QinLexicalToken> tokens) {
+        List<QinLexicalToken> classified = new ArrayList<>(tokens.size());
+        for (int index = 0; index < tokens.size(); index++) {
+            QinLexicalToken token = tokens.get(index);
+            if (token.type() == QinTokenTypes.IDENTIFIER && isBeforeCallParen(text, tokens, index)) {
+                classified.add(new QinLexicalToken(
+                        QinTokenTypes.FUNCTION_IDENTIFIER,
+                        token.startOffset(),
+                        token.endOffset()));
+            } else {
+                classified.add(token);
+            }
+        }
+        return classified;
+    }
+
+    private static boolean isBeforeCallParen(String text, List<QinLexicalToken> tokens, int tokenIndex) {
+        QinLexicalToken next = nextMeaningfulToken(tokens, tokenIndex);
+        return next != null
+                && next.type() == QinTokenTypes.PAREN
+                && next.startOffset() < text.length()
+                && text.charAt(next.startOffset()) == '(';
+    }
+
+    private static QinLexicalToken nextMeaningfulToken(List<QinLexicalToken> tokens, int tokenIndex) {
+        for (int index = tokenIndex + 1; index < tokens.size(); index++) {
+            QinLexicalToken token = tokens.get(index);
+            if (token.type() != TokenType.WHITE_SPACE
+                    && token.type() != QinTokenTypes.LINE_COMMENT
+                    && token.type() != QinTokenTypes.BLOCK_COMMENT) {
+                return token;
+            }
+        }
+        return null;
     }
 
     private static QinLexicalToken previousMeaningfulToken(List<QinLexicalToken> tokens) {

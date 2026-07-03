@@ -84,6 +84,21 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains(QinTokenTypes.MEMBER_IDENTIFIER));
     }
 
+    public void testQinHighlighterFunctionCallTokens() {
+        String source = """
+                const message = formatMessage("Qin")
+                const reply = Greeter.greet("Qin")
+                """;
+        List<String> tokens = collectLexerTokenEntries(source);
+
+        assertTrue("Qin lexer should classify function call identifiers for IDEA highlighting: " + tokens,
+                tokens.contains("formatMessage:" + QinTokenTypes.FUNCTION_IDENTIFIER));
+        assertTrue("Qin lexer should keep Java-style class identifiers for IDEA highlighting: " + tokens,
+                tokens.contains("Greeter:" + QinTokenTypes.CLASS_NAME));
+        assertTrue("Qin lexer should keep member identifiers for IDEA highlighting: " + tokens,
+                tokens.contains("greet:" + QinTokenTypes.MEMBER_IDENTIFIER));
+    }
+
     public void testQinLexerUsesSlimeTokenDefinitionsForModernSyntax() {
         String source = """
                 object Store {
