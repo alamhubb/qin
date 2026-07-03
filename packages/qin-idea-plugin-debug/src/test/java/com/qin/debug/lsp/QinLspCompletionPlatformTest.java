@@ -555,6 +555,32 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         && item.getElement() != objectName));
     }
 
+    public void testQinObjectReferencesSearchIncludesAliasedExportedImportName() {
+        var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiFile counterPsi = PsiManager.getInstance(getProject()).findFile(counterFile.getVirtualFile());
+        assertNotNull("Counter.qin PSI was not available", counterPsi);
+        PsiElement objectName = findPsiElementType(counterPsi, QinTokenTypes.OBJECT_NAME);
+        assertNotNull("Imported Qin object name PSI was not built", objectName);
+        Collection<PsiReference> references = ReferencesSearch.search(
+                objectName,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include aliased exported Qin import name: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "App.qin".equals(item.getElement().getContainingFile().getName())
+                        && "Counter".equals(item.getElement().getText())));
+    }
+
     public void testQinObjectRenameProcessorUpdatesRelativeImportUsages() {
         var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
@@ -1489,6 +1515,35 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 GlobalSearchScope.allScope(getProject())).findAll();
         assertTrue("Find Usages should include Qin Java class reference: " + describeReferences(references),
                 references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "Greeter".equals(item.getElement().getText())));
+    }
+
+    public void testQinJavaClassReferencesSearchIncludesAliasedExportedImportName() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiClass javaClass = JavaPsiFacade.getInstance(getProject())
+                .findClass("demo.Greeter", GlobalSearchScope.allScope(getProject()));
+        assertNotNull("Java class demo.Greeter was not available for Find Usages", javaClass);
+        Collection<PsiReference> references = ReferencesSearch.search(
+                javaClass,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include aliased exported Java import name: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "App.qin".equals(item.getElement().getContainingFile().getName())
                         && "Greeter".equals(item.getElement().getText())));
     }
 
