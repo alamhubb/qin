@@ -1548,6 +1548,30 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Unresolved Java class demo.MissingGreeter", problems[0].getDescriptionTemplate());
     }
 
+    public void testQinUnresolvedReferenceInspectionReportsMissingAliasedJavaClass() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { MissingGreeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiElement missingClass = myFixture.getFile().findElementAt(text.indexOf("MissingGreeter"));
+        assertNotNull("Missing aliased Java class export token should be present", missingClass);
+
+        ProblemsHolder holder = new ProblemsHolder(
+                InspectionManager.getInstance(getProject()),
+                myFixture.getFile(),
+                true);
+        new QinUnresolvedReferenceInspection()
+                .buildVisitor(holder, true)
+                .visitElement(missingClass.getParent());
+
+        ProblemDescriptor[] problems = holder.getResultsArray();
+        assertEquals(1, problems.length);
+        assertEquals("Unresolved Java class demo.MissingGreeter", problems[0].getDescriptionTemplate());
+    }
+
     public void testQinUnresolvedReferenceInspectionReportsMissingJavaStaticMember() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
@@ -3077,6 +3101,17 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 import { MissingGreeter } from "java:demo"
 
                 const message = MissingGreeter.greet("Qin")
+                """);
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightContains(errors, "Unresolved Java class demo.MissingGreeter");
+    }
+
+    public void testQinUnresolvedReferenceAnnotatorReportsMissingAliasedImportedClass() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { MissingGreeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
                 """);
 
         List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);

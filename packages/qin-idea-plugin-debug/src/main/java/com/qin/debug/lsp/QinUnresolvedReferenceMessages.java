@@ -38,7 +38,12 @@ final class QinUnresolvedReferenceMessages {
             return "Unresolved static Java member " + importedClass.qualifiedClassName() + "." + element.getText();
         }
 
-        QinJavaImportTable.JavaImport importedClass = importTable.find(element.getText());
+        QinJavaImportTable.JavaImport importedClass = QinImportBindings.isAliasedLocalSpecifierElement(element)
+                ? null
+                : QinJavaImportTable.findForSpecifierElement(element);
+        if (importedClass == null) {
+            importedClass = importTable.find(element.getText());
+        }
         if (importedClass == null
                 || QinPsiReferences.unresolvedReferenceOfType(element, QinJavaReference.class) == null) {
             return null;
