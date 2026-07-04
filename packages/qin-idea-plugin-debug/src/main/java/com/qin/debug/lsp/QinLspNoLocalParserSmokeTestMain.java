@@ -101,6 +101,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertRunConfigurationDefaultsAreShared(javaRoot);
         assertRunCommandLinesAreShared(javaRoot);
         assertCliProcessBuildersAreShared(javaRoot);
+        assertToolWindowProjectDiscoveryIsShared(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -1650,6 +1651,23 @@ public final class QinLspNoLocalParserSmokeTestMain {
                     "IDEA background and tool-window surfaces must consume QinCliProcessBuilders "
                             + "instead of owning Qin CLI ProcessBuilder command shapes: " + file);
         }
+    }
+
+    private static void assertToolWindowProjectDiscoveryIsShared(Path javaRoot) throws Exception {
+        Path toolWindow = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinToolWindowFactory.java"));
+        require(Files.isRegularFile(toolWindow),
+                "Qin tool window source not found: " + toolWindow);
+        String source = Files.readString(toolWindow);
+        require(source.contains("DebugStartup.discoverQinProjects(Paths.get(basePath))")
+                        && !source.contains("scanQinProjects(")
+                        && !source.contains("MAX_SCAN_DEPTH")
+                        && !source.contains("EXCLUDED_DIRS")
+                        && !source.contains("HIDDEN_PREFIX")
+                        && !source.contains("dir.resolve(CONFIG_FILE)")
+                        && !source.contains("Files.newDirectoryStream(dir"),
+                "QinToolWindowFactory must consume shared Qin project discovery instead of "
+                        + "owning qin.config.js directory scanning rules: " + toolWindow);
     }
 
     private static boolean isAllowedSourceFile(Path file) {

@@ -17,7 +17,6 @@ import javax.swing.*;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.*;
 import java.util.*;
@@ -103,15 +102,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         if (basePath == null)
             return;
 
-        java.util.List<Path> projects = new ArrayList<>();
-
-        // 妫€鏌ユ牴鐩綍
-        if (Files.exists(Paths.get(basePath, CONFIG_FILE))) {
-            projects.add(Paths.get(basePath));
-        }
-
-        // 鎵弿瀛愮洰褰?
-        scanQinProjects(Paths.get(basePath), projects, 0, com.qin.constants.QinConstants.MAX_SCAN_DEPTH);
+        java.util.List<Path> projects = DebugStartup.discoverQinProjects(Paths.get(basePath));
 
         if (projects.isEmpty()) {
             DefaultMutableTreeNode emptyNode = new DefaultMutableTreeNode(
@@ -255,35 +246,6 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         }).start();
     }
 
-    /**
-     * 鎵弿 Qin 椤圭洰
-     */
-    private void scanQinProjects(Path dir, java.util.List<Path> projects, int depth, int maxDepth) {
-        if (depth >= maxDepth || !Files.exists(dir)) {
-            return;
-        }
-
-        // 鍏堟鏌ュ綋鍓嶇洰褰曟槸鍚︽湁閰嶇疆鏂囦欢锛堜紭鍏堢骇鏈€楂橈級
-        if (Files.exists(dir.resolve(CONFIG_FILE)) && !projects.contains(dir)) {
-            projects.add(dir);
-        }
-
-        // 鎵弿瀛愮洰褰曪紙鍗充娇褰撳墠鐩綍鏈?.git 绛変篃缁х画鎵弿瀛愮洰褰曪級
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
-            for (Path subDir : stream) {
-                String dirName = subDir.getFileName().toString();
-
-                // 鍙帓闄ゅ瓙鐩綍锛屼笉褰卞搷褰撳墠鐩綍鐨勬娴?
-                if (EXCLUDED_DIRS.contains(dirName) || dirName.startsWith(HIDDEN_PREFIX)) {
-                    continue;
-                }
-
-                scanQinProjects(subDir, projects, depth + 1, maxDepth);
-            }
-        } catch (IOException e) {
-            // 蹇界暐
-        }
-    }
 
     /**
      * 灞曞紑鎵€鏈夎妭鐐?
