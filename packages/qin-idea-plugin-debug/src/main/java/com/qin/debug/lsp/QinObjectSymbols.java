@@ -236,15 +236,12 @@ final class QinObjectSymbols {
         if (indexedFile == null) {
             return true;
         }
-        GlobalSearchScope importedFileScope = GlobalSearchScope.fileScope(element.getProject(), indexedFile);
-        String key = QinSourceStructure.objectMemberKey(resolvedObject.indexedObjectName(), memberName);
-        Collection<QinPsiFile> indexedFiles = StubIndex.getElements(
-                QinObjectMemberStubIndexes.keyFor(kind),
-                key,
+        return QinObjectMemberStubIndexes.contains(
                 element.getProject(),
-                importedFileScope,
-                QinPsiFile.class);
-        return indexedFiles.stream().anyMatch(file -> indexedFile.equals(file.getVirtualFile()));
+                indexedFile,
+                resolvedObject.indexedObjectName(),
+                memberName,
+                kind);
     }
 
     private record ResolvedObject(

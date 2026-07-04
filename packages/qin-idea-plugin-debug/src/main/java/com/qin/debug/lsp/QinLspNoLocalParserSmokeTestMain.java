@@ -864,21 +864,38 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String helperSource = Files.readString(memberStubIndexes);
         require(helperSource.contains("QinSourceStructure.ObjectMemberKind.FIELD")
                         && helperSource.contains("QinObjectFieldNameStubIndex.KEY")
-                        && helperSource.contains("QinObjectMethodNameStubIndex.KEY"),
-                "QinObjectMemberStubIndexes must own member kind to StubIndexKey mapping: "
+                        && helperSource.contains("QinObjectMethodNameStubIndex.KEY")
+                        && helperSource.contains("contains(")
+                        && helperSource.contains("QinSourceStructure.objectMemberKey(")
+                        && helperSource.contains("StubIndex.getElements("),
+                "QinObjectMemberStubIndexes must own member kind to StubIndexKey mapping "
+                        + "and object-qualified member lookup: "
                         + memberStubIndexes);
 
-        for (Path file : List.of(
-                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinFileElementType.java")),
-                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectSymbols.java")))) {
-            require(Files.isRegularFile(file), "Qin member StubIndex consumer source not found: " + file);
-            String source = Files.readString(file);
-            require(source.contains("QinObjectMemberStubIndexes.keyFor(")
-                            && !source.contains("QinObjectFieldNameStubIndex.KEY")
-                            && !source.contains("QinObjectMethodNameStubIndex.KEY"),
-                    "Qin member StubIndex consumers must use QinObjectMemberStubIndexes.keyFor "
-                            + "instead of owning field/method index selection: " + file);
-        }
+        Path fileElementType = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinFileElementType.java"));
+        require(Files.isRegularFile(fileElementType),
+                "Qin member StubIndex producer source not found: " + fileElementType);
+        String fileElementTypeSource = Files.readString(fileElementType);
+        require(fileElementTypeSource.contains("QinObjectMemberStubIndexes.keyFor(")
+                        && !fileElementTypeSource.contains("QinObjectFieldNameStubIndex.KEY")
+                        && !fileElementTypeSource.contains("QinObjectMethodNameStubIndex.KEY"),
+                "Qin file stub indexing must use QinObjectMemberStubIndexes.keyFor "
+                        + "instead of owning field/method index selection: " + fileElementType);
+
+        Path objectSymbols = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
+        require(Files.isRegularFile(objectSymbols),
+                "Qin member StubIndex consumer source not found: " + objectSymbols);
+        String objectSymbolsSource = Files.readString(objectSymbols);
+        require(objectSymbolsSource.contains("QinObjectMemberStubIndexes.contains(")
+                        && !objectSymbolsSource.contains("QinObjectMemberStubIndexes.keyFor(")
+                        && !objectSymbolsSource.contains("QinSourceStructure.objectMemberKey(")
+                        && !objectSymbolsSource.contains("QinObjectFieldNameStubIndex.KEY")
+                        && !objectSymbolsSource.contains("QinObjectMethodNameStubIndex.KEY"),
+                "QinObjectSymbols must ask QinObjectMemberStubIndexes to perform "
+                        + "object-qualified member lookup instead of owning key construction "
+                        + "or field/method index selection: " + objectSymbols);
     }
 
     private static void assertSymbolHighlightingUsesSharedHelper(Path javaRoot) throws Exception {
