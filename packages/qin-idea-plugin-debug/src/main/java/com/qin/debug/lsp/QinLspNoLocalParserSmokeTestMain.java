@@ -10,11 +10,14 @@ public final class QinLspNoLocalParserSmokeTestMain {
     private static final List<String> FORBIDDEN_DIRECT_REFERENCE_MARKERS = List.of(
             "ReferenceProvidersRegistry",
             "getReferencesFromProviders");
+    private static final List<String> FORBIDDEN_DIRECT_JAVA_PSI_MARKERS = List.of(
+            "JavaPsiFacade");
     private static final List<String> FORBIDDEN_PLUGIN_XML_MARKERS = List.of(
             "lang.psiStructureViewFactory");
     private static final List<String> ALLOWED_SOURCE_FILES = List.of(
             "QinLspNoLocalParserSmokeTestMain.java",
             "QinLspPluginDescriptorSmokeTestMain.java",
+            "QinJavaReference.java",
             "QinPsiReferences.java",
             "QinSyntaxHighlighter.java",
             "QinSyntaxHighlighterFactory.java",
@@ -37,6 +40,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoForbiddenPluginXmlMarkers(pluginXml);
         assertNoForbiddenSourceMarkers(javaRoot);
         assertNoDirectReferenceRegistryAccess(javaRoot);
+        assertNoDirectJavaPsiAccess(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -82,6 +86,25 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 for (String marker : FORBIDDEN_DIRECT_REFERENCE_MARKERS) {
                     require(!containsWholeMarker(source, marker),
                             "Qin IDEA references must flow through QinPsiReferences, not direct "
+                                    + marker + " access in " + file);
+                }
+            }
+        }
+    }
+
+    private static void assertNoDirectJavaPsiAccess(Path javaRoot) throws Exception {
+        try (var files = Files.walk(javaRoot)) {
+            for (Path file : files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(".java"))
+                    .toList()) {
+                if (isAllowedSourceFile(file)) {
+                    continue;
+                }
+                String source = Files.readString(file);
+                for (String marker : FORBIDDEN_DIRECT_JAVA_PSI_MARKERS) {
+                    require(!containsWholeMarker(source, marker),
+                            "Qin Java interop must resolve Java PSI through QinJavaReference, not direct "
                                     + marker + " access in " + file);
                 }
             }
