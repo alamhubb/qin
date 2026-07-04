@@ -70,6 +70,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertObjectSymbolsUseSourceStructureMemberKind(javaRoot);
         assertObjectMemberPsiBridgeUsesQinPsiTree(javaRoot);
         assertNamedPsiElementMappingIsCentralized(javaRoot);
+        assertFileStubBuilderUsesPsiTreeSourceStructure(javaRoot);
         assertStubIndexUsesSourceStructureMemberIndexEntries(javaRoot);
         assertMemberStubIndexKeySelectionIsShared(javaRoot);
         assertSymbolHighlightingUsesSharedHelper(javaRoot);
@@ -1091,6 +1092,18 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinParserDefinition.createElement must delegate named PSI token mapping to "
                         + "QinNamedPsiElement instead of owning declaration-token branches: "
                         + parserDefinition);
+    }
+
+    private static void assertFileStubBuilderUsesPsiTreeSourceStructure(Path javaRoot) throws Exception {
+        Path stubBuilder = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinFileStubBuilder.java"));
+        require(Files.isRegularFile(stubBuilder),
+                "Qin file StubBuilder source not found: " + stubBuilder);
+        String source = Files.readString(stubBuilder);
+        require(source.contains("QinPsiTree.sourceStructure(file).objectDeclarations()")
+                        && !source.contains("QinSourceStructure.parse(file.getText())"),
+                "QinFileStubBuilder must ask QinPsiTree to bridge PsiFile to QinSourceStructure "
+                        + "instead of parsing raw PsiFile text directly: " + stubBuilder);
     }
 
     private static void assertStubIndexUsesSourceStructureMemberIndexEntries(Path javaRoot) throws Exception {

@@ -10,7 +10,7 @@ final class QinFileStubBuilder implements StubBuilder {
     @Override
     public @NotNull StubElement<?> buildStubTree(@NotNull PsiFile file) {
         QinPsiFile qinFile = file instanceof QinPsiFile ? (QinPsiFile) file : null;
-        return new QinFileStub(qinFile, QinSourceStructure.parse(file.getText()).objectDeclarations());
+        return new QinFileStub(qinFile, QinPsiTree.sourceStructure(file).objectDeclarations());
     }
 
     @Override
