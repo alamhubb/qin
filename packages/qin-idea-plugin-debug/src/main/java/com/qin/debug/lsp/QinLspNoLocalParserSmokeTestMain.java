@@ -735,8 +735,16 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(objectSymbols),
                 "QinObjectSymbols source not found: " + objectSymbols);
         String source = Files.readString(objectSymbols);
+        Path moduleImportTable = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinModuleImportTable.java"));
+        require(Files.isRegularFile(moduleImportTable),
+                "QinModuleImportTable source not found: " + moduleImportTable);
+        String moduleImportTableSource = Files.readString(moduleImportTable);
         require(source.contains("QinObjectNameStubIndex.contains(")
                         && source.contains("QinPsiTree.psiFile(")
+                        && moduleImportTableSource.contains("resolveFile(@NotNull QinImportBindings.ImportBinding binding)")
+                        && source.contains("importTable.resolveFile(importBinding)")
+                        && !source.contains("new QinModuleImportTable.QinImport")
                         && !source.contains("PsiManager.getInstance(")
                         && !source.contains(".findFile(importedFile)")
                         && !source.contains("StubIndex.getElements(")
@@ -746,8 +754,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("keywordRange().startsAt"),
                 "QinObjectSymbols must use QinObjectNameStubIndex and QinSourceStructure "
                         + "object declaration lookup helpers instead of owning StubIndex lookup, "
-                        + "VirtualFile-to-PsiFile lookup, iterating declarations, or matching "
-                        + "keyword ranges: " + objectSymbols);
+                        + "VirtualFile-to-PsiFile lookup, Qin module import construction, "
+                        + "iterating declarations, or matching keyword ranges: " + objectSymbols);
     }
 
     private static void assertObjectDeclarationPsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {

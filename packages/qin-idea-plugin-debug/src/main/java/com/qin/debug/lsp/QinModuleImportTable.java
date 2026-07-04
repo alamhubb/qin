@@ -36,8 +36,17 @@ final class QinModuleImportTable {
         return importsByLocalName.get(localName);
     }
 
-    static boolean isQinModuleImportSpecifier(@NotNull QinImportBindings.ImportBinding binding) {
+    private static boolean isQinModuleImportSpecifier(@NotNull QinImportBindings.ImportBinding binding) {
         return QinModuleSpecifierFacts.isQinModuleSpecifier(binding.moduleSpecifier());
+    }
+
+    @Nullable VirtualFile resolveFile(@NotNull QinImportBindings.ImportBinding binding) {
+        return isQinModuleImportSpecifier(binding)
+                ? resolveFile(new QinImport(
+                        binding.moduleSpecifier(),
+                        binding.exportedName(),
+                        binding.localName()))
+                : null;
     }
 
     @Nullable VirtualFile resolveFile(@NotNull QinImport qinImport) {

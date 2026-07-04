@@ -31,12 +31,8 @@ final class QinObjectSymbols {
         QinModuleImportTable importTable = QinModuleImportTable.fromFile(file);
         QinImportBindings.ImportBinding importBinding = QinImportBindings.findForSpecifierElement(element);
         if (importBinding != null
-                && importBinding.exportedName().equals(name)
-                && QinModuleImportTable.isQinModuleImportSpecifier(importBinding)) {
-            VirtualFile importedFile = importTable.resolveFile(new QinModuleImportTable.QinImport(
-                    importBinding.moduleSpecifier(),
-                    importBinding.exportedName(),
-                    importBinding.localName()));
+                && importBinding.exportedName().equals(name)) {
+            VirtualFile importedFile = importTable.resolveFile(importBinding);
             return importedFile == null ? null : resolveImportedObjectName(
                     element,
                     importedFile,
