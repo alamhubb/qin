@@ -29,7 +29,7 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
 
     @Override
     public ResolveResult @NotNull [] multiResolve(boolean incompleteCode) {
-        return ResolveCache.getInstance(myElement.getProject()).resolveWithCaching(
+        return ResolveCache.getInstance(QinPsiTree.project(myElement)).resolveWithCaching(
                 this,
                 QinJavaReference::resolveInner,
                 false,
@@ -100,7 +100,7 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
 
     @Nullable
     private PsiClass findClass(@NotNull String qualifiedName) {
-        Project project = myElement.getProject();
+        Project project = QinPsiTree.project(myElement);
         return JavaPsiFacade.getInstance(project).findClass(
                 qualifiedName,
                 GlobalSearchScope.allScope(project));

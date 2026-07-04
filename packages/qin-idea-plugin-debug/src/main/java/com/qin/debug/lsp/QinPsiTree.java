@@ -53,6 +53,10 @@ final class QinPsiTree {
         return file.findElementAt(offset);
     }
 
+    static @NotNull Project project(@NotNull PsiElement element) {
+        return element.getProject();
+    }
+
     static @Nullable PsiFile psiFile(@NotNull Project project, @NotNull VirtualFile file) {
         return PsiManager.getInstance(project).findFile(file);
     }

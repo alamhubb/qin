@@ -19,7 +19,7 @@ final class QinImportAliasReference extends PsiPolyVariantReferenceBase<PsiEleme
 
     @Override
     public ResolveResult @NotNull [] multiResolve(boolean incompleteCode) {
-        return ResolveCache.getInstance(myElement.getProject()).resolveWithCaching(
+        return ResolveCache.getInstance(QinPsiTree.project(myElement)).resolveWithCaching(
                 this,
                 QinImportAliasReference::resolveInner,
                 false,

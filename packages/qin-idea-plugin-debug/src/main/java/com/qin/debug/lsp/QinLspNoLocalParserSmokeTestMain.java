@@ -47,6 +47,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertSyntaxHighlighterCoverageUsesTextAttributes(testJavaRoot);
         assertImportContextualKeywordCoverageUsesLexerTokens(testJavaRoot);
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
+        assertProjectLookupUsesPsiTreeBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertGoToDeclarationCoverageUsesEditorPath(testJavaRoot);
         assertFindUsagesAndRenameCoverageUsesPlatformPath(testJavaRoot);
@@ -206,6 +207,33 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !psiReferencesSource.contains("reference.getElement().getTextRange().getStartOffset()"),
                 "QinPsiTree must own PsiReference relative range to file range bridging: "
                         + psiTree);
+    }
+
+    private static void assertProjectLookupUsesPsiTreeBridge(Path javaRoot) throws Exception {
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("project(@NotNull PsiElement element)")
+                        && psiTreeSource.contains("return element.getProject();"),
+                "QinPsiTree must own PsiElement-to-Project platform lookup: " + psiTree);
+
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinImportAliasReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinJavaReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectMethodReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectFieldReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectSymbols.java")))) {
+            require(Files.isRegularFile(file), "Qin project bridge consumer source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinPsiTree.project(")
+                            && !source.contains("myElement.getProject()")
+                            && !source.contains("element.getProject()"),
+                    "Qin references and object symbol lookup must ask QinPsiTree for "
+                            + "PsiElement-to-Project bridging instead of reading getProject() "
+                            + "directly: " + file);
+        }
     }
 
     private static void assertSyntaxHighlighterCoverageUsesTextAttributes(Path testJavaRoot) throws Exception {

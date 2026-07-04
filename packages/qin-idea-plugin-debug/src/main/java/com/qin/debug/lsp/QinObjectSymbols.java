@@ -54,10 +54,10 @@ final class QinObjectSymbols {
             @NotNull PsiElement element,
             @NotNull VirtualFile importedFile,
             @NotNull String exportedName) {
-        if (!QinObjectNameStubIndex.contains(element.getProject(), importedFile, exportedName)) {
+        if (!QinObjectNameStubIndex.contains(QinPsiTree.project(element), importedFile, exportedName)) {
             return null;
         }
-        PsiFile importedPsiFile = QinPsiTree.psiFile(element.getProject(), importedFile);
+        PsiFile importedPsiFile = QinPsiTree.psiFile(QinPsiTree.project(element), importedFile);
         PsiElement objectName = importedPsiFile == null ? null : findObjectNameInFile(importedPsiFile, exportedName);
         return objectName == null ? null : new ResolvedObject(objectName, exportedName, importedFile);
     }
@@ -214,7 +214,7 @@ final class QinObjectSymbols {
             return true;
         }
         return QinObjectMemberStubIndexes.contains(
-                element.getProject(),
+                QinPsiTree.project(element),
                 indexedFile,
                 resolvedObject.indexedObjectName(),
                 memberName,
