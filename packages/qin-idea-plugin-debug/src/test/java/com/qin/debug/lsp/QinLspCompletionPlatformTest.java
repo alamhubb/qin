@@ -363,7 +363,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 import { Counter as C } from "./Counter.qin"
                 """);
 
-        List<PsiElement> declarations = QinPsiTree.descendantsOfType(
+        List<PsiElement> declarations = descendantsOfType(
                 myFixture.getFile(),
                 QinTokenTypes.IMPORT_DECLARATION);
 
@@ -2117,6 +2117,22 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
             count += countPsiElementType(child, type);
         }
         return count;
+    }
+
+    private static List<PsiElement> descendantsOfType(PsiElement root, IElementType type) {
+        List<PsiElement> elements = new ArrayList<>();
+        collectDescendantsOfType(root, type, elements);
+        return elements;
+    }
+
+    private static void collectDescendantsOfType(PsiElement root, IElementType type, List<PsiElement> elements) {
+        if (root.getNode() != null && root.getNode().getElementType() == type) {
+            elements.add(root);
+            return;
+        }
+        for (PsiElement child : root.getChildren()) {
+            collectDescendantsOfType(child, type, elements);
+        }
     }
 
     private static void assertSingleQinJavaReference(PsiElement element) {
