@@ -14,7 +14,7 @@ public final class QinUnresolvedReferenceAnnotator implements Annotator {
             return;
         }
         holder.newAnnotation(HighlightSeverity.ERROR, message)
-                .range(element.getTextRange())
+                .range(QinPsiTree.elementRange(element))
                 .create();
     }
 }

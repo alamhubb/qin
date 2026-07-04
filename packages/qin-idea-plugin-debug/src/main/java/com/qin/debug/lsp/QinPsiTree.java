@@ -25,6 +25,10 @@ final class QinPsiTree {
         return elementType(element) == type;
     }
 
+    static @NotNull TextRange elementRange(@NotNull PsiElement element) {
+        return element.getTextRange();
+    }
+
     static @Nullable PsiElement elementAt(@NotNull PsiFile file, int offset) {
         return file.findElementAt(offset);
     }

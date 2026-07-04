@@ -1178,6 +1178,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(annotatorSource.contains("QinSymbolHighlights.declarationHighlight(")
                         && annotatorSource.contains("QinSymbolHighlights.referenceHighlight(")
                         && annotatorSource.contains("QinPsiTree.isQinFile(element)")
+                        && annotatorSource.contains("QinPsiTree.elementRange(element)")
+                        && !annotatorSource.contains("element.getTextRange()")
                         && !annotatorSource.contains("DefaultLanguageHighlighterColors")
                         && !annotatorSource.contains("QinTokenTypes.")
                         && !annotatorSource.contains("instanceof QinObject")
@@ -1197,6 +1199,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String annotatorSource = Files.readString(annotator);
         require(annotatorSource.contains("QinUnresolvedReferenceMessages.messageFor(element)")
                         && annotatorSource.contains("HighlightSeverity.ERROR")
+                        && annotatorSource.contains("QinPsiTree.elementRange(element)")
+                        && !annotatorSource.contains("element.getTextRange()")
                         && !annotatorSource.contains("javaMessageFor(")
                         && !annotatorSource.contains("objectMethodMessageFor(")
                         && !annotatorSource.contains("objectFieldMessageFor("),

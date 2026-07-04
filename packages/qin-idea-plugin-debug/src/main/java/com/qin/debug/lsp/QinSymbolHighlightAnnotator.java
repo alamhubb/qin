@@ -39,7 +39,7 @@ public final class QinSymbolHighlightAnnotator implements Annotator {
             @NotNull AnnotationHolder holder,
             @NotNull QinSymbolHighlights.SymbolHighlight highlight) {
         holder.newAnnotation(HighlightSeverity.INFORMATION, highlight.description())
-                .range(element.getTextRange())
+                .range(QinPsiTree.elementRange(element))
                 .textAttributes(highlight.textAttributes())
                 .create();
     }
