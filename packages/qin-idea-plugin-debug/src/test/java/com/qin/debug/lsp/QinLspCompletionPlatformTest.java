@@ -1262,7 +1262,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   next() {
-                    return 42
+                    return this.next()
                   }
                 }
 
@@ -1274,17 +1274,17 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         Collection<PsiReference> references = ReferencesSearch.search(
                 methodName,
                 GlobalSearchScope.allScope(getProject())).findAll();
-        assertTrue("Find Usages should include Qin object method reference: " + describeReferences(references),
-                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+        assertTrue("Find Usages should include Qin object and this method references: " + describeReferences(references),
+                references.stream().filter(item -> item.getElement().getContainingFile() instanceof QinPsiFile
                         && "next".equals(item.getElement().getText())
-                        && item.getElement() != methodName));
+                        && item.getElement() != methodName).count() >= 2);
     }
 
     public void testQinObjectMethodRenameProcessorUpdatesReferences() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   next() {
-                    return 42
+                    return this.next()
                   }
                 }
 
@@ -1297,8 +1297,9 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         String text = myFixture.getEditor().getDocument().getText();
         assertTrue("Qin method rename should update declaration: " + text, text.contains("advance()"));
-        assertTrue("Qin method rename should update usages: " + text, text.contains("Counter.advance()"));
-        assertFalse("Qin method rename should remove old usage: " + text, text.contains("Counter.next()"));
+        assertTrue("Qin method rename should update this usage: " + text, text.contains("this.advance()"));
+        assertTrue("Qin method rename should update object usage: " + text, text.contains("Counter.advance()"));
+        assertFalse("Qin method rename should remove old object usage: " + text, text.contains("Counter.next()"));
     }
 
     public void testQinObjectMethodAnnotatorReportsMissingMethod() {
