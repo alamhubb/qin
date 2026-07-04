@@ -61,7 +61,7 @@ public final class QinParserDefinition implements ParserDefinition {
                 parseImportSpecifier(builder);
                 continue;
             }
-            if (QinTokenFacts.isKeyword(builder, "from")) {
+            if (QinTokenFacts.isContextualKeyword(builder, "from")) {
                 builder.advanceLexer();
                 if (builder.getTokenType() == QinTokenTypes.STRING) {
                     builder.advanceLexer();

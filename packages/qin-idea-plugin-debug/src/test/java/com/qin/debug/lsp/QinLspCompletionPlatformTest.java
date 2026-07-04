@@ -294,6 +294,21 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_SPECIFIER));
     }
 
+    public void testQinParserKeepsNewlineSeparatedImportsDistinctWithoutSemicolons() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G } from "java:demo"
+                import { Counter as C } from "./Counter.qin"
+                """);
+
+        List<PsiElement> declarations = QinPsiTree.descendantsOfType(
+                myFixture.getFile(),
+                QinTokenTypes.IMPORT_DECLARATION);
+
+        assertEquals(2, declarations.size());
+        assertEquals("import { Greeter as G } from \"java:demo\"", declarations.get(0).getText().trim());
+        assertEquals("import { Counter as C } from \"./Counter.qin\"", declarations.get(1).getText().trim());
+    }
+
     public void testQinParserUsesSourceStructureOffsetsForImportSpecifiers() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { Greeter as G, Counter } from "java:demo"
