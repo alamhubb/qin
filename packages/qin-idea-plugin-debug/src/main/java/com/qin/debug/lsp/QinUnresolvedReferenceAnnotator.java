@@ -6,10 +6,10 @@ import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.psi.PsiElement;
 import org.jetbrains.annotations.NotNull;
 
-public final class QinObjectMethodAnnotator implements Annotator {
+public final class QinUnresolvedReferenceAnnotator implements Annotator {
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        String message = QinUnresolvedReferenceMessages.objectMethodMessageFor(element);
+        String message = QinUnresolvedReferenceMessages.messageFor(element);
         if (message == null) {
             return;
         }

@@ -58,6 +58,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertStubIndexUsesSourceStructureMemberIndexEntries(javaRoot);
         assertMemberStubIndexKeySelectionIsShared(javaRoot);
         assertSymbolHighlightingUsesSharedHelper(javaRoot);
+        assertUnresolvedReferenceAnnotationIsUnified(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -485,6 +486,31 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !annotatorSource.contains("instanceof QinImportAliasReference"),
                 "QinSymbolHighlightAnnotator must consume QinSymbolHighlights instead of "
                         + "owning declaration token or reference-type highlight mappings: " + annotator);
+    }
+
+    private static void assertUnresolvedReferenceAnnotationIsUnified(Path javaRoot) throws Exception {
+        Path annotator = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinUnresolvedReferenceAnnotator.java"));
+        require(Files.isRegularFile(annotator),
+                "Unified Qin unresolved-reference annotator source not found: " + annotator);
+        String annotatorSource = Files.readString(annotator);
+        require(annotatorSource.contains("QinUnresolvedReferenceMessages.messageFor(element)")
+                        && annotatorSource.contains("HighlightSeverity.ERROR")
+                        && !annotatorSource.contains("javaMessageFor(")
+                        && !annotatorSource.contains("objectMethodMessageFor(")
+                        && !annotatorSource.contains("objectFieldMessageFor("),
+                "QinUnresolvedReferenceAnnotator must use the shared message helper instead of "
+                        + "owning Java/object unresolved-reference branches: " + annotator);
+
+        for (String removedAnnotator : List.of(
+                "QinJavaInteropAnnotator.java",
+                "QinObjectMethodAnnotator.java",
+                "QinObjectFieldAnnotator.java")) {
+            Path oldSource = javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", removedAnnotator));
+            require(!Files.exists(oldSource),
+                    "Qin unresolved-reference annotations must flow through "
+                            + "QinUnresolvedReferenceAnnotator, not " + oldSource);
+        }
     }
 
     private static boolean isAllowedSourceFile(Path file) {

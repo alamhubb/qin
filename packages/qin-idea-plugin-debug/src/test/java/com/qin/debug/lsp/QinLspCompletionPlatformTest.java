@@ -1386,7 +1386,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertFalse("Qin method rename should remove old object usage: " + text, text.contains("Counter.next()"));
     }
 
-    public void testQinObjectMethodAnnotatorReportsMissingMethod() {
+    public void testQinUnresolvedReferenceAnnotatorReportsMissingMethod() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   next() {
@@ -1486,7 +1486,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Unresolved static Java member demo.Greeter.missing", problems[0].getDescriptionTemplate());
     }
 
-    public void testQinObjectMethodAnnotatorKeepsResolvedMethodsClean() {
+    public void testQinUnresolvedReferenceAnnotatorKeepsResolvedMethodsClean() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   next() {
@@ -1501,7 +1501,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightMissing(errors, "Unresolved Qin object method Counter.next");
     }
 
-    public void testQinObjectMethodAnnotatorIgnoresMissingFieldAccess() {
+    public void testQinUnresolvedReferenceAnnotatorIgnoresMissingFieldAccess() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   value = 41
@@ -1657,7 +1657,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertFalse("Qin field rename should remove old object usage: " + text, text.contains("Counter.value"));
     }
 
-    public void testQinObjectFieldAnnotatorReportsMissingField() {
+    public void testQinUnresolvedReferenceAnnotatorReportsMissingField() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   value = 41
@@ -1670,7 +1670,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightContains(errors, "Unresolved Qin object field Counter.missing");
     }
 
-    public void testQinObjectFieldAnnotatorIgnoresMissingMethodCall() {
+    public void testQinUnresolvedReferenceAnnotatorIgnoresMissingMethodCall() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   value = 41
@@ -1683,7 +1683,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightMissing(errors, "Unresolved Qin object field Counter.missing");
     }
 
-    public void testQinObjectFieldAnnotatorKeepsResolvedFieldsClean() {
+    public void testQinUnresolvedReferenceAnnotatorKeepsResolvedFieldsClean() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
                   value = 41
@@ -2700,7 +2700,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 myFixture.getEditor().getDocument().getText().contains("Greeter.welcome(\"Qin\")"));
     }
 
-    public void testQinJavaInteropAnnotatorReportsMissingImportedClass() {
+    public void testQinUnresolvedReferenceAnnotatorReportsMissingImportedClass() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { MissingGreeter } from "java:demo"
 
@@ -2711,7 +2711,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightContains(errors, "Unresolved Java class demo.MissingGreeter");
     }
 
-    public void testQinJavaInteropAnnotatorReportsMissingStaticMember() {
+    public void testQinUnresolvedReferenceAnnotatorReportsMissingStaticMember() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
 
@@ -2732,7 +2732,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightContains(errors, "Unresolved static Java member demo.Greeter.missing");
     }
 
-    public void testQinJavaInteropAnnotatorKeepsResolvedJavaReferencesClean() {
+    public void testQinUnresolvedReferenceAnnotatorKeepsResolvedJavaReferencesClean() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
 

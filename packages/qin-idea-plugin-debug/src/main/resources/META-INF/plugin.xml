@@ -72,13 +72,7 @@
                 implementation="com.qin.debug.lsp.QinObjectMethodNameStubIndex"/>
         <annotator
                 language="Qin"
-                implementationClass="com.qin.debug.lsp.QinJavaInteropAnnotator"/>
-        <annotator
-                language="Qin"
-                implementationClass="com.qin.debug.lsp.QinObjectMethodAnnotator"/>
-        <annotator
-                language="Qin"
-                implementationClass="com.qin.debug.lsp.QinObjectFieldAnnotator"/>
+                implementationClass="com.qin.debug.lsp.QinUnresolvedReferenceAnnotator"/>
         <annotator
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinSymbolHighlightAnnotator"/>

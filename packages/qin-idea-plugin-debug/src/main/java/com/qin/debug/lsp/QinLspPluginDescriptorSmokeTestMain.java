@@ -8,6 +8,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -208,26 +209,23 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     }
 
     private static void assertQinAnnotators(Document document) {
-        assertLanguageExtensionImplementation(
-                document,
-                "annotator",
-                "implementationClass",
-                "com.qin.debug.lsp.QinJavaInteropAnnotator");
-        assertLanguageExtensionImplementation(
-                document,
-                "annotator",
-                "implementationClass",
-                "com.qin.debug.lsp.QinObjectMethodAnnotator");
-        assertLanguageExtensionImplementation(
-                document,
-                "annotator",
-                "implementationClass",
-                "com.qin.debug.lsp.QinObjectFieldAnnotator");
-        assertLanguageExtensionImplementation(
-                document,
-                "annotator",
-                "implementationClass",
+        Set<String> expected = Set.of(
+                "com.qin.debug.lsp.QinUnresolvedReferenceAnnotator",
                 "com.qin.debug.lsp.QinSymbolHighlightAnnotator");
+        Set<String> actual = new HashSet<>();
+        int qinAnnotatorCount = 0;
+        NodeList annotators = document.getElementsByTagName("annotator");
+        for (int i = 0; i < annotators.getLength(); i++) {
+            Element annotator = (Element) annotators.item(i);
+            if ("Qin".equals(annotator.getAttribute("language"))) {
+                qinAnnotatorCount++;
+                actual.add(annotator.getAttribute("implementationClass"));
+            }
+        }
+        require(qinAnnotatorCount == expected.size(),
+                "Expected exactly " + expected.size() + " Qin annotators, got " + qinAnnotatorCount);
+        require(actual.equals(expected),
+                "Qin annotators must be exactly " + expected + ", got " + actual);
     }
 
     private static void assertQinInspections(Document document) {
