@@ -145,6 +145,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
 
         List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
+        assertHighlightContains(highlights, "Qin object reference");
         assertHighlightContains(highlights, "Qin import alias symbol");
         assertHighlightContains(highlights, "Qin import alias reference");
 
@@ -173,6 +174,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
 
         List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
+        assertHighlightContains(highlights, "Java class reference");
         assertHighlightContains(highlights, "Qin import alias symbol");
         assertHighlightContains(highlights, "Qin import alias reference");
         assertHighlightContains(highlights, "Java static method reference");
