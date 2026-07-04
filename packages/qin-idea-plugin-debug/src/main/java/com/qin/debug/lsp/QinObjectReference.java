@@ -48,7 +48,7 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
     }
 
     private static boolean isImportedAliasLocalReference(@NotNull PsiElement element) {
-        QinModuleImportTable.QinImport qinImport = QinModuleImportTable.fromFile(element.getContainingFile())
+        QinImportBindings.ImportBinding qinImport = QinModuleImportTable.fromFile(element.getContainingFile())
                 .find(element.getText());
         return qinImport != null && !qinImport.exportedName().equals(qinImport.localName());
     }

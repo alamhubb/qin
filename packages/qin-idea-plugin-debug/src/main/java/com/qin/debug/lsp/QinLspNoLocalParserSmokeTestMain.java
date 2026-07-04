@@ -763,11 +763,20 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(moduleImportTable),
                 "QinModuleImportTable source not found: " + moduleImportTable);
         String moduleImportTableSource = Files.readString(moduleImportTable);
+        Path objectReference = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectReference.java"));
+        require(Files.isRegularFile(objectReference),
+                "QinObjectReference source not found: " + objectReference);
+        String objectReferenceSource = Files.readString(objectReference);
         require(source.contains("QinObjectNameStubIndex.contains(")
                         && source.contains("QinPsiTree.psiFile(")
+                        && moduleImportTableSource.contains("Map<String, QinImportBindings.ImportBinding>")
                         && moduleImportTableSource.contains("resolveFile(@NotNull QinImportBindings.ImportBinding binding)")
                         && source.contains("importTable.resolveFile(importBinding)")
                         && !source.contains("new QinModuleImportTable.QinImport")
+                        && !source.contains("QinModuleImportTable.QinImport")
+                        && !objectReferenceSource.contains("QinModuleImportTable.QinImport")
+                        && !moduleImportTableSource.contains("record QinImport")
                         && !source.contains("PsiManager.getInstance(")
                         && !source.contains(".findFile(importedFile)")
                         && !source.contains("StubIndex.getElements(")

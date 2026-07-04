@@ -39,7 +39,7 @@ final class QinObjectSymbols {
                     importBinding.exportedName());
         }
 
-        QinModuleImportTable.QinImport qinImport = importTable.find(name);
+        QinImportBindings.ImportBinding qinImport = importTable.find(name);
         if (qinImport == null) {
             return null;
         }
