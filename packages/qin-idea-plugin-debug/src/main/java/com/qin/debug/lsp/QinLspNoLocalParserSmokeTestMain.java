@@ -57,6 +57,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertObjectMemberPsiBridgeUsesQinPsiTree(javaRoot);
         assertStubIndexUsesSourceStructureMemberIndexEntries(javaRoot);
         assertMemberStubIndexKeySelectionIsShared(javaRoot);
+        assertSymbolHighlightingUsesSharedHelper(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -453,6 +454,37 @@ public final class QinLspNoLocalParserSmokeTestMain {
                     "Qin member StubIndex consumers must use QinObjectMemberStubIndexes.keyFor "
                             + "instead of owning field/method index selection: " + file);
         }
+    }
+
+    private static void assertSymbolHighlightingUsesSharedHelper(Path javaRoot) throws Exception {
+        Path symbolHighlights = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinSymbolHighlights.java"));
+        require(Files.isRegularFile(symbolHighlights),
+                "Qin symbol highlight helper source not found: " + symbolHighlights);
+        String helperSource = Files.readString(symbolHighlights);
+        require(helperSource.contains("declarationHighlight(")
+                        && helperSource.contains("referenceHighlight(")
+                        && helperSource.contains("DefaultLanguageHighlighterColors.CLASS_NAME")
+                        && helperSource.contains("QinTokenTypes.OBJECT_NAME")
+                        && helperSource.contains("QinObjectMethodReference")
+                        && helperSource.contains("QinJavaReference"),
+                "QinSymbolHighlights must own declaration/reference highlight facts: "
+                        + symbolHighlights);
+
+        Path annotator = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinSymbolHighlightAnnotator.java"));
+        require(Files.isRegularFile(annotator),
+                "Qin symbol highlight annotator source not found: " + annotator);
+        String annotatorSource = Files.readString(annotator);
+        require(annotatorSource.contains("QinSymbolHighlights.declarationHighlight(")
+                        && annotatorSource.contains("QinSymbolHighlights.referenceHighlight(")
+                        && !annotatorSource.contains("DefaultLanguageHighlighterColors")
+                        && !annotatorSource.contains("QinTokenTypes.")
+                        && !annotatorSource.contains("instanceof QinObject")
+                        && !annotatorSource.contains("instanceof QinJavaReference")
+                        && !annotatorSource.contains("instanceof QinImportAliasReference"),
+                "QinSymbolHighlightAnnotator must consume QinSymbolHighlights instead of "
+                        + "owning declaration token or reference-type highlight mappings: " + annotator);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
