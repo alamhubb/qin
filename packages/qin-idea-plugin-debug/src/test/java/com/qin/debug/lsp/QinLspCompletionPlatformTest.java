@@ -1141,6 +1141,23 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinObjectMethodReference(reference.getElement());
     }
 
+    public void testQinObjectMethodGoToDeclarationTargetsSameFileMethodName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.ne<caret>xt()
+                """);
+
+        PsiElement methodName = assertInstanceOf(myFixture.getElementAtCaret(), PsiElement.class);
+
+        assertEquals(QinTokenTypes.METHOD_NAME, methodName.getNode().getElementType());
+        assertEquals("next", methodName.getText());
+        assertSame(myFixture.getFile(), methodName.getContainingFile());
+    }
     public void testQinObjectMethodReferenceResolvesAcrossAliasedRelativeImport() {
         myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
@@ -1436,6 +1453,23 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinObjectFieldReference(reference.getElement());
     }
 
+    public void testQinThisFieldGoToDeclarationTargetsCurrentObjectFieldName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.val<caret>ue
+                  }
+                }
+                """);
+
+        PsiElement fieldName = assertInstanceOf(myFixture.getElementAtCaret(), PsiElement.class);
+
+        assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
+        assertEquals("value", fieldName.getText());
+        assertSame(myFixture.getFile(), fieldName.getContainingFile());
+    }
     public void testQinObjectFieldReferenceParticipatesInReferencesSearch() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
