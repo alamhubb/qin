@@ -864,7 +864,9 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinObjectSymbols source not found: " + objectSymbols);
         String objectSymbolsSource = Files.readString(objectSymbols);
         require(objectSymbolsSource.contains("QinPsiTree.sourceObjectDeclaration(")
+                        && objectSymbolsSource.contains("QinPsiTree.containingFile(")
                         && !objectSymbolsSource.contains("objectDeclarationAtKeywordOffset(startOffset)")
+                        && !objectSymbolsSource.contains("objectDeclaration.getContainingFile()")
                         && !objectSymbolsSource.contains("objectDeclaration.getTextRange().getStartOffset()"),
                 "QinObjectSymbols must ask QinPsiTree to bridge OBJECT_DECLARATION PSI "
                         + "to QinSourceStructure instead of owning offset lookup: " + objectSymbols);

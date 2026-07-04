@@ -19,7 +19,7 @@ final class QinObjectSymbols {
     }
 
     private static @Nullable ResolvedObject resolveObjectName(@NotNull PsiElement element, @NotNull String name) {
-        PsiFile file = element.getContainingFile();
+        PsiFile file = QinPsiTree.containingFile(element);
         if (file == null) {
             return null;
         }
@@ -124,7 +124,7 @@ final class QinObjectSymbols {
 
     private static @NotNull List<ObjectMemberElement> memberElementsInObjectDeclaration(
             @NotNull PsiElement objectDeclaration) {
-        PsiFile file = objectDeclaration.getContainingFile();
+        PsiFile file = QinPsiTree.containingFile(objectDeclaration);
         QinSourceStructure.ObjectDeclaration declaration = QinPsiTree.sourceObjectDeclaration(objectDeclaration);
         if (file == null || declaration == null) {
             return List.of();
@@ -149,7 +149,7 @@ final class QinObjectSymbols {
             @NotNull PsiElement objectDeclaration,
             @NotNull String memberName,
             @NotNull QinSourceStructure.ObjectMemberKind kind) {
-        PsiFile file = objectDeclaration.getContainingFile();
+        PsiFile file = QinPsiTree.containingFile(objectDeclaration);
         QinSourceStructure.ObjectDeclaration declaration = QinPsiTree.sourceObjectDeclaration(objectDeclaration);
         if (file == null || declaration == null) {
             return null;
