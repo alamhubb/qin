@@ -44,6 +44,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
+        assertReferenceContributorRegistrationUsesSharedReferenceElements(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertImportAliasPsiBridgeUsesQinPsiTree(javaRoot);
@@ -203,6 +204,32 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !importAliasReferenceSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
                 "QinImportAliasReference must use QinReferenceElements for import alias "
                         + "declaration checks instead of owning the token mapping: " + importAliasReference);
+    }
+
+    private static void assertReferenceContributorRegistrationUsesSharedReferenceElements(Path javaRoot) throws Exception {
+        Path referenceElements = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinReferenceElements.java"));
+        require(Files.isRegularFile(referenceElements),
+                "QinReferenceElements source not found: " + referenceElements);
+        String helperSource = Files.readString(referenceElements);
+        require(helperSource.contains("registerReferenceProvider(")
+                        && helperSource.contains("registerMemberReferenceProvider(")
+                        && helperSource.contains("PlatformPatterns.psiElement(type)"),
+                "QinReferenceElements must own reference contributor token pattern registration: "
+                        + referenceElements);
+
+        try (var files = Files.walk(javaRoot)) {
+            for (Path file : files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith("ReferenceContributor.java"))
+                    .toList()) {
+                String source = Files.readString(file);
+                require(source.contains("QinReferenceElements.register")
+                                && !source.contains("PlatformPatterns.psiElement(QinTokenTypes."),
+                        "Qin reference contributors must register through QinReferenceElements "
+                                + "instead of owning reference token patterns: " + file);
+            }
+        }
     }
 
     private static void assertImportBindingsUseSourceStructureSpecifierLookup(Path javaRoot) throws Exception {

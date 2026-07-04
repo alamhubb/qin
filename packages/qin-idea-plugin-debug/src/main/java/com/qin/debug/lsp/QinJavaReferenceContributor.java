@@ -1,6 +1,5 @@
 package com.qin.debug.lsp;
 
-import com.intellij.patterns.PlatformPatterns;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceContributor;
@@ -28,9 +27,6 @@ public final class QinJavaReferenceContributor extends PsiReferenceContributor {
             }
         };
 
-        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.REFERENCE_IDENTIFIER), provider);
-        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.IDENTIFIER), provider);
-        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.CLASS_NAME), provider);
-        registrar.registerReferenceProvider(PlatformPatterns.psiElement(QinTokenTypes.MEMBER_IDENTIFIER), provider);
+        QinReferenceElements.registerReferenceProvider(registrar, provider);
     }
 }
