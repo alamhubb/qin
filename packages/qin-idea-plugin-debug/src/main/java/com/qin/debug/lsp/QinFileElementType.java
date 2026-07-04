@@ -68,11 +68,7 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
         for (QinSourceStructure.ObjectDeclaration declaration : stub.objectDeclarations()) {
             sink.occurrence(QinObjectNameStubIndex.KEY, declaration.name());
             for (QinSourceStructure.ObjectMemberIndexEntry member : declaration.memberIndexEntries()) {
-                sink.occurrence(
-                        member.kind() == QinSourceStructure.ObjectMemberKind.FIELD
-                                ? QinObjectFieldNameStubIndex.KEY
-                                : QinObjectMethodNameStubIndex.KEY,
-                        member.key());
+                sink.occurrence(QinObjectMemberStubIndexes.keyFor(member.kind()), member.key());
             }
         }
     }

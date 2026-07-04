@@ -55,6 +55,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinModuleSpecifierFacts.class",
             "com/qin/debug/lsp/QinModuleImportTable.class",
             "com/qin/debug/lsp/QinObjectFieldNameStubIndex.class",
+            "com/qin/debug/lsp/QinObjectMemberStubIndexes.class",
             "com/qin/debug/lsp/QinObjectMethodNameStubIndex.class",
             "com/qin/debug/lsp/QinObjectNameStubIndex.class",
             "com/qin/debug/lsp/QinObjectReference.class",
