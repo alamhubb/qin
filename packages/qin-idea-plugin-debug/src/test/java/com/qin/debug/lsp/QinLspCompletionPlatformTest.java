@@ -1225,6 +1225,39 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Counter.qin", methodName.getContainingFile().getName());
     }
 
+    public void testQinThisMethodReferenceResolvesToCurrentObjectMethodName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return this.ne<caret>xt()
+                  }
+                }
+                """);
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Qin this method reference was not registered", reference);
+        PsiElement methodName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.METHOD_NAME, methodName.getNode().getElementType());
+        assertEquals("next", methodName.getText());
+        assertSingleQinObjectMethodReference(reference.getElement());
+    }
+
+    public void testQinThisMethodGoToDeclarationTargetsCurrentObjectMethodName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return this.ne<caret>xt()
+                  }
+                }
+                """);
+
+        PsiElement methodName = assertInstanceOf(myFixture.getElementAtCaret(), PsiElement.class);
+
+        assertEquals(QinTokenTypes.METHOD_NAME, methodName.getNode().getElementType());
+        assertEquals("next", methodName.getText());
+        assertSame(myFixture.getFile(), methodName.getContainingFile());
+    }
+
     public void testQinObjectMethodReferenceParticipatesInReferencesSearch() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
