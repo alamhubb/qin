@@ -1612,6 +1612,52 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinJavaReference(reference.getElement());
     }
 
+    public void testQinJavaMemberGoToDeclarationTargetsPsiMethod() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.gr<caret>eet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiMethod method = assertInstanceOf(myFixture.getElementAtCaret(), PsiMethod.class);
+
+        assertEquals("greet", method.getName());
+        assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+    }
+
+    public void testQinJavaAliasedMemberGoToDeclarationTargetsPsiMethod() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.gr<caret>eet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiMethod method = assertInstanceOf(myFixture.getElementAtCaret(), PsiMethod.class);
+
+        assertEquals("greet", method.getName());
+        assertEquals("demo.Greeter", method.getContainingClass().getQualifiedName());
+    }
+
     public void testQinJavaAliasedImportResolvesThroughStructuredPsiImportTable() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
