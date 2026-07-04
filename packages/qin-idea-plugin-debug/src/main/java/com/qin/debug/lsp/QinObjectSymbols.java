@@ -4,13 +4,10 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.stubs.StubIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 final class QinObjectSymbols {
@@ -62,14 +59,7 @@ final class QinObjectSymbols {
             @NotNull PsiElement element,
             @NotNull VirtualFile importedFile,
             @NotNull String exportedName) {
-        GlobalSearchScope importedFileScope = GlobalSearchScope.fileScope(element.getProject(), importedFile);
-        Collection<QinPsiFile> indexedFiles = StubIndex.getElements(
-                QinObjectNameStubIndex.KEY,
-                exportedName,
-                element.getProject(),
-                importedFileScope,
-                QinPsiFile.class);
-        if (indexedFiles.stream().noneMatch(indexedFile -> importedFile.equals(indexedFile.getVirtualFile()))) {
+        if (!QinObjectNameStubIndex.contains(element.getProject(), importedFile, exportedName)) {
             return null;
         }
         PsiFile importedPsiFile = PsiManager.getInstance(element.getProject()).findFile(importedFile);

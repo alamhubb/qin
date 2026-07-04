@@ -711,15 +711,31 @@ public final class QinLspNoLocalParserSmokeTestMain {
     }
 
     private static void assertObjectSymbolsUseSourceStructureDeclarationLookup(Path javaRoot) throws Exception {
+        Path objectNameStubIndex = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectNameStubIndex.java"));
+        require(Files.isRegularFile(objectNameStubIndex),
+                "Qin object name StubIndex source not found: " + objectNameStubIndex);
+        String objectNameStubIndexSource = Files.readString(objectNameStubIndex);
+        require(objectNameStubIndexSource.contains("contains(")
+                        && objectNameStubIndexSource.contains("StubIndex.getElements(")
+                        && objectNameStubIndexSource.contains("GlobalSearchScope.fileScope("),
+                "QinObjectNameStubIndex must own object-name StubIndex membership lookup: "
+                        + objectNameStubIndex);
+
         Path objectSymbols = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
         require(Files.isRegularFile(objectSymbols),
                 "QinObjectSymbols source not found: " + objectSymbols);
         String source = Files.readString(objectSymbols);
-        require(!source.contains(".objectDeclarations()")
+        require(source.contains("QinObjectNameStubIndex.contains(")
+                        && !source.contains("StubIndex.getElements(")
+                        && !source.contains("QinObjectNameStubIndex.KEY")
+                        && !source.contains("GlobalSearchScope.fileScope(")
+                        && !source.contains(".objectDeclarations()")
                         && !source.contains("keywordRange().startsAt"),
-                "QinObjectSymbols must use QinSourceStructure object declaration lookup helpers "
-                        + "instead of iterating declarations or matching keyword ranges: " + objectSymbols);
+                "QinObjectSymbols must use QinObjectNameStubIndex and QinSourceStructure "
+                        + "object declaration lookup helpers instead of owning StubIndex lookup, "
+                        + "iterating declarations, or matching keyword ranges: " + objectSymbols);
     }
 
     private static void assertObjectDeclarationPsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
