@@ -554,14 +554,6 @@ final class QinSourceStructure {
             methods = List.copyOf(methods);
         }
 
-        @NotNull List<String> fieldNames() {
-            return memberNames(ObjectMemberKind.FIELD);
-        }
-
-        @NotNull List<String> methodNames() {
-            return memberNames(ObjectMemberKind.METHOD);
-        }
-
         @NotNull List<String> memberNames(@NotNull ObjectMemberKind kind) {
             return memberDeclarations(kind).stream()
                     .map(MemberDeclaration::name)

@@ -928,7 +928,9 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinSourceStructure source not found: " + sourceStructure);
         String sourceStructureSource = Files.readString(sourceStructure);
         require(sourceStructureSource.contains("memberNames(@NotNull ObjectMemberKind kind)")
-                        && sourceStructureSource.contains("memberDeclarations(@NotNull ObjectMemberKind kind)"),
+                        && sourceStructureSource.contains("memberDeclarations(@NotNull ObjectMemberKind kind)")
+                        && !sourceStructureSource.contains("fieldNames()")
+                        && !sourceStructureSource.contains("methodNames()"),
                 "QinSourceStructure must own object member name lookup by ObjectMemberKind: "
                         + sourceStructure);
 

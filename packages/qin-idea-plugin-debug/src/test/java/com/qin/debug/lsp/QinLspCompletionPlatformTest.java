@@ -341,8 +341,8 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals(1, declarations.size());
         QinSourceStructure.ObjectDeclaration counter = declarations.get(0);
         assertEquals("Counter", counter.name());
-        assertEquals(List.of("value", "total"), counter.fieldNames());
-        assertEquals(List.of("next"), counter.methodNames());
+        assertEquals(List.of("value", "total"), counter.memberNames(QinSourceStructure.ObjectMemberKind.FIELD));
+        assertEquals(List.of("next"), counter.memberNames(QinSourceStructure.ObjectMemberKind.METHOD));
         assertTrue(counter.keywordRange().isPresent());
         assertTrue(counter.nameRange().isPresent());
         assertTrue(counter.bodyRange().isPresent());
@@ -396,8 +396,8 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         assertEquals(1, declarations.size());
         QinSourceStructure.ObjectDeclaration counter = declarations.get(0);
-        assertEquals(List.of("value"), counter.fieldNames());
-        assertEquals(List.of("next"), counter.methodNames());
+        assertEquals(List.of("value"), counter.memberNames(QinSourceStructure.ObjectMemberKind.FIELD));
+        assertEquals(List.of("next"), counter.memberNames(QinSourceStructure.ObjectMemberKind.METHOD));
     }
 
     public void testQinSourceStructureFindsImportSpecifiersFromSharedTokenStream() {
