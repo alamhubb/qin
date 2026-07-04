@@ -35,6 +35,9 @@ final class QinUnresolvedReferenceMessages {
                     || QinPsiReferences.unresolvedReferenceOfType(element, QinJavaReference.class) == null) {
                 return null;
             }
+            if (javaClassReferenceIsUnresolved(element, qualifier)) {
+                return null;
+            }
             return "Unresolved static Java member " + importedClass.qualifiedClassName() + "." + element.getText();
         }
 
@@ -73,6 +76,16 @@ final class QinUnresolvedReferenceMessages {
             return null;
         }
         return "Unresolved Qin object field " + qualifier + "." + element.getText();
+    }
+
+    private static boolean javaClassReferenceIsUnresolved(@NotNull PsiElement memberElement, @NotNull String qualifier) {
+        PsiElement qualifierElement = QinReferenceElements.previousQualifierElement(memberElement);
+        if (qualifierElement == null) {
+            return false;
+        }
+        PsiElement exportedName = QinImportBindings.findExportedName(qualifierElement, qualifier);
+        PsiElement classElement = exportedName == null ? qualifierElement : exportedName;
+        return QinPsiReferences.unresolvedReferenceOfType(classElement, QinJavaReference.class) != null;
     }
 
     private static boolean isReferenceIdentifier(@NotNull PsiElement element) {

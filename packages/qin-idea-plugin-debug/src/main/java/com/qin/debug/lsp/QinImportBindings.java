@@ -57,6 +57,21 @@ final class QinImportBindings {
         return QinPsiTree.importAliasNameElement(file, specifier);
     }
 
+    static @Nullable PsiElement findExportedName(@NotNull PsiElement element, @NotNull String localName) {
+        PsiFile file = element.getContainingFile();
+        if (file == null) {
+            return null;
+        }
+        QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
+        QinSourceStructure.ImportSpecifier specifier = sourceStructure.importAliasSpecifierNamed(localName);
+        if (specifier == null) {
+            return null;
+        }
+        return specifier.exportedNameRange().isPresent()
+                ? file.findElementAt(specifier.exportedNameRange().startOffset())
+                : null;
+    }
+
     record ImportBinding(@NotNull String moduleSpecifier, @NotNull String exportedName, @NotNull String localName) {
     }
 }

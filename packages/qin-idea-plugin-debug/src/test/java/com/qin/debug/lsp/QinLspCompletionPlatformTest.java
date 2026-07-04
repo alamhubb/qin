@@ -3105,6 +3105,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
         assertHighlightContains(errors, "Unresolved Java class demo.MissingGreeter");
+        assertHighlightMissing(errors, "Unresolved static Java member demo.MissingGreeter.greet");
     }
 
     public void testQinUnresolvedReferenceAnnotatorReportsMissingAliasedImportedClass() {
@@ -3116,6 +3117,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
         assertHighlightContains(errors, "Unresolved Java class demo.MissingGreeter");
+        assertHighlightMissing(errors, "Unresolved static Java member demo.MissingGreeter.greet");
     }
 
     public void testQinUnresolvedReferenceAnnotatorReportsMissingStaticMember() {

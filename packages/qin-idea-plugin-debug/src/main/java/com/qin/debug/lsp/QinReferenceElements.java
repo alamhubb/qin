@@ -83,6 +83,14 @@ final class QinReferenceElements {
         return null;
     }
 
+    static @Nullable PsiElement previousQualifierElement(@NotNull PsiElement element) {
+        PsiElement parent = element.getParent();
+        if (parent != null && QinPsiTree.isType(parent, QinTokenTypes.MEMBER_ACCESS)) {
+            return QinPsiTokenStream.previousQualifierElement(parent, element);
+        }
+        return null;
+    }
+
     private static void registerReferenceProvider(
             @NotNull PsiReferenceRegistrar registrar,
             @NotNull PsiReferenceProvider provider,

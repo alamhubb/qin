@@ -49,6 +49,17 @@ final class QinPsiTokenStream {
         return previousQualifierName(element.getContainingFile(), element);
     }
 
+    static @Nullable PsiElement previousQualifierElement(@NotNull PsiElement root, @NotNull PsiElement element) {
+        List<QinPsiToken> tokens = collect(root);
+        int tokenIndex = indexOfElement(tokens, element);
+        String qualifierName = tokenIndex < 0 ? null : QinTokenFacts.previousQualifierName(tokens, tokenIndex);
+        if (qualifierName == null) {
+            return null;
+        }
+        QinPsiToken qualifier = tokens.get(tokenIndex - 2);
+        return qualifierName.equals(qualifier.text()) ? qualifier.element() : null;
+    }
+
     static boolean isFollowedByCallParenthesis(@NotNull PsiElement element) {
         return isFollowedByCallParenthesis(element.getContainingFile(), element);
     }
