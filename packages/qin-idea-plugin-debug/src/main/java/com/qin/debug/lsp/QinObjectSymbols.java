@@ -79,7 +79,16 @@ final class QinObjectSymbols {
     }
 
     private static @Nullable PsiElement findObjectNameInFile(@NotNull PsiFile file, @NotNull String name) {
-        return QinPsiTree.firstDescendantOfType(file, QinTokenTypes.OBJECT_NAME, name);
+        for (QinSourceStructure.ObjectDeclaration declaration : QinSourceStructure.parse(file.getText()).objectDeclarations()) {
+            if (!declaration.name().equals(name) || !declaration.nameRange().isPresent()) {
+                continue;
+            }
+            return QinPsiTree.elementAtOrParentOfType(
+                    file,
+                    declaration.nameRange().startOffset(),
+                    QinTokenTypes.OBJECT_NAME);
+        }
+        return null;
     }
 
     static @Nullable PsiElement findMethodName(
@@ -140,22 +149,78 @@ final class QinObjectSymbols {
     }
 
     private static @NotNull List<PsiElement> memberElementsInObjectDeclaration(@NotNull PsiElement objectDeclaration) {
+        PsiFile file = objectDeclaration.getContainingFile();
+        QinSourceStructure.ObjectDeclaration declaration = sourceObjectDeclaration(objectDeclaration);
+        if (file == null || declaration == null) {
+            return List.of();
+        }
+
         List<PsiElement> members = new ArrayList<>();
-        for (PsiElement member : QinPsiTree.descendantsOfAnyType(
-                objectDeclaration,
-                QinTokenTypes.FIELD_NAME,
-                QinTokenTypes.METHOD_NAME)) {
-            if (members.stream().noneMatch(item -> item.getText().equals(member.getText()))) {
-                members.add(member);
+        for (QinSourceStructure.MemberDeclaration member : declaration.fields()) {
+            PsiElement field = elementAtRange(file, member.nameRange(), QinTokenTypes.FIELD_NAME);
+            if (field != null && members.stream().noneMatch(item -> item.getText().equals(field.getText()))) {
+                members.add(field);
+            }
+        }
+        for (QinSourceStructure.MemberDeclaration member : declaration.methods()) {
+            PsiElement method = elementAtRange(file, member.nameRange(), QinTokenTypes.METHOD_NAME);
+            if (method != null && members.stream().noneMatch(item -> item.getText().equals(method.getText()))) {
+                members.add(method);
             }
         }
         return members;
     }
 
+    private static @Nullable QinSourceStructure.ObjectDeclaration sourceObjectDeclaration(
+            @NotNull PsiElement objectDeclaration) {
+        PsiFile file = objectDeclaration.getContainingFile();
+        if (file == null) {
+            return null;
+        }
+        int startOffset = objectDeclaration.getTextRange().getStartOffset();
+        for (QinSourceStructure.ObjectDeclaration declaration : QinSourceStructure.parse(file.getText()).objectDeclarations()) {
+            if (declaration.keywordRange().startOffset() == startOffset) {
+                return declaration;
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable PsiElement elementAtRange(
+            @NotNull PsiFile file,
+            @NotNull QinSourceStructure.SourceRange range,
+            @NotNull IElementType type) {
+        return range.isPresent()
+                ? QinPsiTree.elementAtOrParentOfType(file, range.startOffset(), type)
+                : null;
+    }
+
+    private static @Nullable PsiElement findMemberNameInObjectDeclaration(
+            @NotNull PsiElement objectDeclaration,
+            @NotNull String memberName,
+            @NotNull IElementType memberType) {
+        PsiFile file = objectDeclaration.getContainingFile();
+        QinSourceStructure.ObjectDeclaration declaration = sourceObjectDeclaration(objectDeclaration);
+        if (file == null || declaration == null) {
+            return null;
+        }
+        List<QinSourceStructure.MemberDeclaration> members =
+                memberType == QinTokenTypes.FIELD_NAME ? declaration.fields() : declaration.methods();
+        for (QinSourceStructure.MemberDeclaration member : members) {
+            if (member.name().equals(memberName)) {
+                PsiElement memberElement = elementAtRange(file, member.nameRange(), memberType);
+                if (memberElement != null) {
+                    return memberElement;
+                }
+            }
+        }
+        return null;
+    }
+
     private static @Nullable PsiElement findMethodNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String methodName) {
-        return QinPsiTree.firstDescendantOfType(objectDeclaration, QinTokenTypes.METHOD_NAME, methodName);
+        return findMemberNameInObjectDeclaration(objectDeclaration, methodName, QinTokenTypes.METHOD_NAME);
     }
 
     static @Nullable PsiElement findFieldName(
@@ -184,7 +249,7 @@ final class QinObjectSymbols {
     private static @Nullable PsiElement findFieldNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String fieldName) {
-        return QinPsiTree.firstDescendantOfType(objectDeclaration, QinTokenTypes.FIELD_NAME, fieldName);
+        return findMemberNameInObjectDeclaration(objectDeclaration, fieldName, QinTokenTypes.FIELD_NAME);
     }
 
     private static boolean hasIndexedMember(
