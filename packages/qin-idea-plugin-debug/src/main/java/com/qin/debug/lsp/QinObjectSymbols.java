@@ -179,7 +179,7 @@ final class QinObjectSymbols {
         }
         int startOffset = objectDeclaration.getTextRange().getStartOffset();
         for (QinSourceStructure.ObjectDeclaration declaration : QinSourceStructure.parse(file.getText()).objectDeclarations()) {
-            if (declaration.keywordRange().startOffset() == startOffset) {
+            if (declaration.keywordRange().startsAt(startOffset)) {
                 return declaration;
             }
         }

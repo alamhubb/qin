@@ -327,6 +327,9 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue(counter.bodyRange().isPresent());
         assertTrue(counter.fields().get(0).nameRange().isPresent());
         assertTrue(counter.methods().get(0).nameRange().isPresent());
+        assertTrue(counter.nameRange().startsAt(source.indexOf("Counter")));
+        assertTrue(counter.bodyRange().containsOffset(source.indexOf("return this.value")));
+        assertFalse(counter.bodyRange().containsOffset(counter.bodyRange().endOffset()));
     }
 
     public void testQinSourceStructureCarriesMethodBodyRange() {

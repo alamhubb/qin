@@ -35,8 +35,8 @@ final class QinImportBindings {
         QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
         for (QinSourceStructure.ImportDeclaration declaration : sourceStructure.importDeclarations()) {
             for (QinSourceStructure.ImportSpecifier specifier : declaration.specifiers()) {
-                if (specifier.exportedNameRange().startOffset() == offset
-                        || specifier.localNameRange().startOffset() == offset) {
+                if (specifier.exportedNameRange().startsAt(offset)
+                        || specifier.localNameRange().startsAt(offset)) {
                     return new ImportBinding(
                             declaration.moduleSpecifier(),
                             specifier.exportedName(),

@@ -60,7 +60,7 @@ final class QinSourceStructure {
 
     ImportDeclaration importDeclarationAtKeywordOffset(int offset) {
         for (ImportDeclaration declaration : importDeclarations) {
-            if (declaration.keywordRange().startOffset() == offset) {
+            if (declaration.keywordRange().startsAt(offset)) {
                 return declaration;
             }
         }
@@ -79,7 +79,7 @@ final class QinSourceStructure {
 
     ObjectDeclaration objectDeclarationAtKeywordOffset(int offset) {
         for (ObjectDeclaration declaration : objectDeclarations) {
-            if (declaration.keywordRange().startOffset() == offset) {
+            if (declaration.keywordRange().startsAt(offset)) {
                 return declaration;
             }
         }
@@ -399,6 +399,14 @@ final class QinSourceStructure {
         boolean isPresent() {
             return startOffset >= 0 && endOffset >= startOffset;
         }
+
+        boolean startsAt(int offset) {
+            return isPresent() && startOffset == offset;
+        }
+
+        boolean containsOffset(int offset) {
+            return isPresent() && startOffset <= offset && offset < endOffset;
+        }
     }
 
     record MemberDeclaration(
@@ -439,7 +447,7 @@ final class QinSourceStructure {
 
         ImportSpecifier specifierAtExportedNameOffset(int offset) {
             for (ImportSpecifier specifier : specifiers) {
-                if (specifier.exportedNameRange().startOffset() == offset) {
+                if (specifier.exportedNameRange().startsAt(offset)) {
                     return specifier;
                 }
             }
@@ -493,7 +501,7 @@ final class QinSourceStructure {
                 @NotNull List<MemberDeclaration> members,
                 int offset) {
             for (MemberDeclaration member : members) {
-                if (member.nameRange().startOffset() == offset) {
+                if (member.nameRange().startsAt(offset)) {
                     return member;
                 }
             }

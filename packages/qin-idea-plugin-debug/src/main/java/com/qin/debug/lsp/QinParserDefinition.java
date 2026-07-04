@@ -72,8 +72,7 @@ public final class QinParserDefinition implements ParserDefinition {
             @NotNull PsiBuilder builder,
             QinSourceStructure.ImportDeclaration importDeclaration) {
         return importDeclaration != null
-                && importDeclaration.declarationRange().isPresent()
-                && builder.getCurrentOffset() < importDeclaration.declarationRange().endOffset();
+                && importDeclaration.declarationRange().containsOffset(builder.getCurrentOffset());
     }
 
     private static boolean isSourceStructureImportSpecifier(
@@ -122,7 +121,7 @@ public final class QinParserDefinition implements ParserDefinition {
             @NotNull PsiBuilder builder,
             QinSourceStructure.ObjectDeclaration objectDeclaration) {
         return objectDeclaration != null
-                && objectDeclaration.nameRange().startOffset() == builder.getCurrentOffset()
+                && objectDeclaration.nameRange().startsAt(builder.getCurrentOffset())
                 && QinTokenFacts.isReferenceLeafToken(builder.getTokenType());
     }
 
