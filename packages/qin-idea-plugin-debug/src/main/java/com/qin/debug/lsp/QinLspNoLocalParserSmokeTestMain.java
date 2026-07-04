@@ -418,9 +418,15 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinParserDefinition source not found: " + parserDefinition);
         String source = Files.readString(parserDefinition);
         require(!source.contains("bodyRange().startOffset()")
-                        && !source.contains("bodyRange().endOffset()"),
+                        && !source.contains("bodyRange().endOffset()")
+                        && source.contains("memberDeclarationAtNameOffset(builder.getCurrentOffset(), kind)")
+                        && source.contains("QinSourceStructure.ObjectMemberKind.METHOD")
+                        && source.contains("QinSourceStructure.ObjectMemberKind.FIELD")
+                        && !source.contains("sourceStructure.methodDeclarationAtNameOffset(")
+                        && !source.contains("sourceStructure.fieldDeclarationAtNameOffset("),
                 "QinParserDefinition must consume QinSourceStructure.SourceRange predicates "
-                        + "instead of directly splitting body ranges: " + parserDefinition);
+                        + "and ObjectMemberKind member lookup instead of directly splitting "
+                        + "body ranges or field/method declaration lookups: " + parserDefinition);
     }
 
     private static void assertImportBoundaryUsesSharedTokenFacts(Path javaRoot) throws Exception {

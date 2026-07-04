@@ -102,9 +102,9 @@ public final class QinParserDefinition implements ParserDefinition {
             builder.advanceLexer();
         }
         while (!builder.eof() && objectDeclaration.bodyRange().containsOffset(builder.getCurrentOffset())) {
-            if (isSourceStructureMethodName(builder, sourceStructure)) {
+            if (isSourceStructureMemberName(builder, sourceStructure, QinSourceStructure.ObjectMemberKind.METHOD)) {
                 parseMethodDeclaration(builder, sourceStructure);
-            } else if (isSourceStructureFieldName(builder, sourceStructure)) {
+            } else if (isSourceStructureMemberName(builder, sourceStructure, QinSourceStructure.ObjectMemberKind.FIELD)) {
                 parseFieldDeclaration(builder);
             } else if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
@@ -125,33 +125,31 @@ public final class QinParserDefinition implements ParserDefinition {
                 && QinTokenFacts.isReferenceLeafToken(builder.getTokenType());
     }
 
-    private static QinSourceStructure.MemberDeclaration sourceStructureMethodDeclaration(
+    private static QinSourceStructure.MemberDeclaration sourceStructureMemberDeclaration(
             @NotNull PsiBuilder builder,
-            @NotNull QinSourceStructure sourceStructure) {
+            @NotNull QinSourceStructure sourceStructure,
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
         return QinTokenFacts.isDeclarationIdentifierToken(builder.getTokenType())
-                ? sourceStructure.methodDeclarationAtNameOffset(builder.getCurrentOffset())
+                ? sourceStructure.memberDeclarationAtNameOffset(builder.getCurrentOffset(), kind)
                 : null;
     }
 
-    private static boolean isSourceStructureMethodName(
+    private static boolean isSourceStructureMemberName(
             @NotNull PsiBuilder builder,
-            @NotNull QinSourceStructure sourceStructure) {
+            @NotNull QinSourceStructure sourceStructure,
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
         return QinTokenFacts.isDeclarationIdentifierToken(builder.getTokenType())
-                && sourceStructure.methodDeclarationAtNameOffset(builder.getCurrentOffset()) != null;
-    }
-
-    private static boolean isSourceStructureFieldName(
-            @NotNull PsiBuilder builder,
-            @NotNull QinSourceStructure sourceStructure) {
-        return QinTokenFacts.isDeclarationIdentifierToken(builder.getTokenType())
-                && sourceStructure.fieldDeclarationAtNameOffset(builder.getCurrentOffset()) != null;
+                && sourceStructure.memberDeclarationAtNameOffset(builder.getCurrentOffset(), kind) != null;
     }
 
     private static void parseMethodDeclaration(
             @NotNull PsiBuilder builder,
             @NotNull QinSourceStructure sourceStructure) {
         QinSourceStructure.MemberDeclaration methodDeclaration =
-                sourceStructureMethodDeclaration(builder, sourceStructure);
+                sourceStructureMemberDeclaration(
+                        builder,
+                        sourceStructure,
+                        QinSourceStructure.ObjectMemberKind.METHOD);
         PsiBuilder.Marker methodMarker = builder.mark();
         wrapMethodName(builder);
         if (methodDeclaration == null || !methodDeclaration.bodyRange().isPresent()) {
