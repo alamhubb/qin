@@ -911,6 +911,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && moduleImportTableSource.contains("QinPsiTree.containingFile(element)")
                         && moduleImportTableSource.contains("QinPsiTree.originalVirtualFile(importingFile)")
                         && moduleImportTableSource.contains("resolveFile(@NotNull QinImportBindings.ImportBinding binding)")
+                        && moduleImportTableSource.contains("sourceFile.getParent().findFileByRelativePath(normalized)")
+                        && moduleImportTableSource.contains("sourceFile.getParent().findFileByRelativePath(normalized + \".qin\")")
                         && source.contains("importTable.resolveFile(importBinding)")
                         && objectReferenceSource.contains("QinModuleImportTable.fromElement(")
                         && !source.contains("new QinModuleImportTable.QinImport")
@@ -1362,9 +1364,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "Qin PSI rename helper source not found: " + renameHelper);
         String helperSource = Files.readString(renameHelper);
         require(helperSource.contains("replaceLeafText(")
+                        && helperSource.contains("ASTNode node = element.getNode()")
                         && helperSource.contains("LeafElement")
+                        && helperSource.contains("node.getFirstChildNode()")
                         && helperSource.contains("replaceWithText("),
-                "QinPsiRenames must own leaf-token rename replacement: " + renameHelper);
+                "QinPsiRenames must own the AST-node and leaf-token mutation boundary "
+                        + "for rename replacement: " + renameHelper);
 
         for (Path file : List.of(
                 javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinJavaReference.java")),
