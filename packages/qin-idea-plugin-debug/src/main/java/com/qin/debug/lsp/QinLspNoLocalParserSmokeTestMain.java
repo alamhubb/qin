@@ -43,6 +43,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoForbiddenSourceMarkers(javaRoot);
         assertNoDirectReferenceRegistryAccess(javaRoot);
         assertNoDirectJavaPsiAccess(javaRoot);
+        assertLexerUsesSharedScannerAdapter(javaRoot);
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
@@ -140,6 +141,35 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 }
             }
         }
+    }
+
+    private static void assertLexerUsesSharedScannerAdapter(Path javaRoot) throws Exception {
+        Path lexer = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLexer.java"));
+        Path scanner = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLexicalScanner.java"));
+        require(Files.isRegularFile(lexer), "QinLexer source not found: " + lexer);
+        require(Files.isRegularFile(scanner), "QinLexicalScanner source not found: " + scanner);
+
+        String lexerSource = Files.readString(lexer);
+        require(lexerSource.contains("extends LexerBase")
+                        && lexerSource.contains("QinLexicalScanner.scan(buffer, startOffset, endOffset)")
+                        && !lexerSource.contains("JavaScriptTokens")
+                        && !lexerSource.contains("SubhutiLexer")
+                        && !lexerSource.contains("QinParserFacade")
+                        && !lexerSource.contains("parseProgram(")
+                        && !lexerSource.contains("parseSource("),
+                "QinLexer must stay an IntelliJ LexerBase wrapper over QinLexicalScanner, "
+                        + "not a token-definition owner or whole-file parser caller: " + lexer);
+
+        String scannerSource = Files.readString(scanner);
+        require(scannerSource.contains("new SubhutiLexer(JavaScriptTokens.getTokens())")
+                        && scannerSource.contains("TokenUtils.isKeyword(")
+                        && !scannerSource.contains("QinParserFacade")
+                        && !scannerSource.contains("parseProgram(")
+                        && !scannerSource.contains("parseSource("),
+                "QinLexicalScanner must own the transitional Slime/Subhuti token adapter "
+                        + "without calling the whole-file Qin parser: " + scanner);
     }
 
     private static void assertReferenceLookupUsesPsiTreeBridge(Path javaRoot) throws Exception {
