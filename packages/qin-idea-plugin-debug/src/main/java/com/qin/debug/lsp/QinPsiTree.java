@@ -43,6 +43,18 @@ final class QinPsiTree {
         return range.isPresent() ? elementAtOrParentOfType(file, range.startOffset(), type) : null;
     }
 
+    static @Nullable PsiElement importAliasNameElement(
+            @NotNull PsiFile file,
+            @NotNull QinSourceStructure.ImportSpecifier specifier) {
+        return elementAtRangeOrParentOfType(file, specifier.localNameRange(), QinTokenTypes.IMPORT_ALIAS_NAME);
+    }
+
+    static @Nullable PsiElement objectNameElement(
+            @NotNull PsiFile file,
+            @NotNull QinSourceStructure.ObjectDeclaration declaration) {
+        return elementAtRangeOrParentOfType(file, declaration.nameRange(), QinTokenTypes.OBJECT_NAME);
+    }
+
     static @Nullable PsiElement objectMemberNameElement(
             @NotNull PsiFile file,
             @NotNull QinSourceStructure.MemberDeclaration member,

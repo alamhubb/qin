@@ -44,8 +44,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
+        assertImportAliasPsiBridgeUsesQinPsiTree(javaRoot);
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
         assertObjectDeclarationPsiBridgeUsesQinPsiTree(javaRoot);
+        assertObjectNamePsiBridgeUsesQinPsiTree(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberKind(javaRoot);
         assertObjectMemberPsiBridgeUsesQinPsiTree(javaRoot);
@@ -164,6 +166,27 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         + "instead of matching alias names itself: " + importBindings);
     }
 
+    private static void assertImportAliasPsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("importAliasNameElement(")
+                        && psiTreeSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
+                "QinPsiTree must own import alias source range to PSI name bridging: "
+                        + psiTree);
+
+        Path importBindings = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinImportBindings.java"));
+        require(Files.isRegularFile(importBindings),
+                "QinImportBindings source not found: " + importBindings);
+        String importBindingsSource = Files.readString(importBindings);
+        require(importBindingsSource.contains("QinPsiTree.importAliasNameElement(")
+                        && !importBindingsSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
+                "QinImportBindings must ask QinPsiTree to bridge import alias ranges "
+                        + "instead of owning the IMPORT_ALIAS_NAME token mapping: " + importBindings);
+    }
+
     private static void assertObjectSymbolsUseSourceStructureDeclarationLookup(Path javaRoot) throws Exception {
         Path objectSymbols = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
@@ -196,6 +219,27 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !objectSymbolsSource.contains("objectDeclaration.getTextRange().getStartOffset()"),
                 "QinObjectSymbols must ask QinPsiTree to bridge OBJECT_DECLARATION PSI "
                         + "to QinSourceStructure instead of owning offset lookup: " + objectSymbols);
+    }
+
+    private static void assertObjectNamePsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("objectNameElement(")
+                        && psiTreeSource.contains("QinTokenTypes.OBJECT_NAME"),
+                "QinPsiTree must own Qin object name source range to PSI name bridging: "
+                        + psiTree);
+
+        Path objectSymbols = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
+        require(Files.isRegularFile(objectSymbols),
+                "QinObjectSymbols source not found: " + objectSymbols);
+        String objectSymbolsSource = Files.readString(objectSymbols);
+        require(objectSymbolsSource.contains("QinPsiTree.objectNameElement(")
+                        && !objectSymbolsSource.contains("QinTokenTypes.OBJECT_NAME"),
+                "QinObjectSymbols must ask QinPsiTree to bridge object name ranges to PSI names "
+                        + "instead of owning the OBJECT_NAME token mapping: " + objectSymbols);
     }
 
     private static void assertObjectSymbolsUseSourceStructureMemberLookup(Path javaRoot) throws Exception {

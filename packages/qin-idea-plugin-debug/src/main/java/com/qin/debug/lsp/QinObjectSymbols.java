@@ -82,10 +82,7 @@ final class QinObjectSymbols {
         if (declaration == null || !declaration.nameRange().isPresent()) {
             return null;
         }
-        return QinPsiTree.elementAtRangeOrParentOfType(
-                file,
-                declaration.nameRange(),
-                QinTokenTypes.OBJECT_NAME);
+        return QinPsiTree.objectNameElement(file, declaration);
     }
 
     static @Nullable PsiElement findMethodName(

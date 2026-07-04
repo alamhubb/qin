@@ -54,10 +54,7 @@ final class QinImportBindings {
         if (specifier == null) {
             return null;
         }
-        return QinPsiTree.elementAtRangeOrParentOfType(
-                file,
-                specifier.localNameRange(),
-                QinTokenTypes.IMPORT_ALIAS_NAME);
+        return QinPsiTree.importAliasNameElement(file, specifier);
     }
 
     record ImportBinding(@NotNull String moduleSpecifier, @NotNull String exportedName, @NotNull String localName) {
