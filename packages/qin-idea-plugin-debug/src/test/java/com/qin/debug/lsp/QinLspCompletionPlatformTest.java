@@ -144,6 +144,12 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
         assertHighlightContains(highlights, "Qin import alias symbol");
         assertHighlightContains(highlights, "Qin import alias reference");
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiReference aliasReference = myFixture.getFile().findReferenceAt(text.indexOf("C.value"));
+        assertNotNull("Qin aliased object usage should have a local alias reference", aliasReference);
+        assertSingleQinImportAliasReference(aliasReference.getElement());
+        assertNoQinObjectReference(aliasReference.getElement());
     }
 
     public void testQinSymbolAnnotatorHighlightsJavaImportAliasReferencesAsLocalAliases() {
@@ -1578,6 +1584,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertNotNull("Qin Java aliased class reference was not registered", classReference);
         assertInstanceOf(classReference.resolve(), QinImportAliasNamePsiElement.class);
         assertSingleQinImportAliasReference(classReference.getElement());
+        assertNoQinJavaReference(classReference.getElement());
 
         PsiReference methodReference = myFixture.getFile().findReferenceAt(text.indexOf("greet"));
         assertNotNull("Qin Java aliased member reference was not registered", methodReference);
@@ -2007,6 +2014,20 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .filter(QinImportAliasReference.class::isInstance)
                 .count();
         assertEquals("Qin import alias references should be provided only through QinImportAliasReferenceContributor", 1L, count);
+    }
+
+    private static void assertNoQinJavaReference(PsiElement element) {
+        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
+                .filter(QinJavaReference.class::isInstance)
+                .count();
+        assertEquals("Qin Java references should not be provided on local alias usage " + element.getText(), 0L, count);
+    }
+
+    private static void assertNoQinObjectReference(PsiElement element) {
+        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
+                .filter(QinObjectReference.class::isInstance)
+                .count();
+        assertEquals("Qin object references should not be provided on local alias usage " + element.getText(), 0L, count);
     }
 
     private static void assertSingleQinObjectReference(PsiElement element) {
