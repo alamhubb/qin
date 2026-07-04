@@ -254,24 +254,6 @@ public final class QinParserDefinition implements ParserDefinition {
         aliasMarker.done(QinTokenTypes.IMPORT_ALIAS_NAME);
     }
 
-    private static void consumeParenthesizedTokens(PsiBuilder builder) {
-        if (!QinTokenFacts.isOpenParen(builder)) {
-            return;
-        }
-        int parenDepth = 0;
-        while (!builder.eof()) {
-            if (QinTokenFacts.isOpenParen(builder)) {
-                parenDepth++;
-            } else if (QinTokenFacts.isCloseParen(builder)) {
-                parenDepth--;
-            }
-            builder.advanceLexer();
-            if (parenDepth <= 0) {
-                return;
-            }
-        }
-    }
-
     @Override
     public @NotNull IFileElementType getFileNodeType() {
         return FILE;

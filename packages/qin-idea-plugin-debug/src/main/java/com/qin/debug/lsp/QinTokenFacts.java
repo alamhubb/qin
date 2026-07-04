@@ -101,37 +101,10 @@ final class QinTokenFacts {
         return token.type() == QinTokenTypes.BRACE && tokenStartsWith(content, token, '{');
     }
 
-    static boolean isOpenBrace(@NotNull PsiBuilder builder) {
-        return builder.getTokenType() == QinTokenTypes.BRACE && expectedTokenText(builder, "{");
-    }
-
     static boolean isCloseBrace(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
         return token.type() == QinTokenTypes.BRACE && tokenStartsWith(content, token, '}');
     }
 
-    static boolean isCloseBrace(@NotNull PsiBuilder builder) {
-        return builder.getTokenType() == QinTokenTypes.BRACE && expectedTokenText(builder, "}");
-    }
-
-    static boolean isOpenParen(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
-        return token.type() == QinTokenTypes.PAREN && tokenStartsWith(content, token, '(');
-    }
-
-    static boolean isOpenParen(@NotNull PsiBuilder builder) {
-        return builder.getTokenType() == QinTokenTypes.PAREN && expectedTokenText(builder, "(");
-    }
-
-    static boolean isCloseParen(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
-        return token.type() == QinTokenTypes.PAREN && tokenStartsWith(content, token, ')');
-    }
-
-    static boolean isCloseParen(@NotNull PsiBuilder builder) {
-        return builder.getTokenType() == QinTokenTypes.PAREN && expectedTokenText(builder, ")");
-    }
-
-    static boolean isAssignmentOperator(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
-        return token.type() == QinTokenTypes.OPERATOR && tokenStartsWith(content, token, '=');
-    }
     static boolean isNewStatementAfterImport(
             @NotNull CharSequence content,
             int previousMeaningfulEndOffset,
@@ -169,10 +142,6 @@ final class QinTokenFacts {
             current++;
         }
         return current;
-    }
-
-    private static boolean expectedTokenText(@NotNull PsiBuilder builder, @NotNull String expected) {
-        return expected.equals(builder.getTokenText());
     }
 
     static boolean isObjectDeclarationKeyword(
