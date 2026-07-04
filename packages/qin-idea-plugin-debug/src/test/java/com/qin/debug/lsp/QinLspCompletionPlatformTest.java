@@ -203,6 +203,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightContains(highlights, "Java static method reference");
     }
 
+    public void testQinSymbolAnnotatorHighlightsJavaAliasedStaticFieldReferences() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const name = G.DEFAULT_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
+        assertHighlightContains(highlights, "Java class reference");
+        assertHighlightContains(highlights, "Qin import alias symbol");
+        assertHighlightContains(highlights, "Qin import alias reference");
+        assertHighlightContains(highlights, "Java static field reference");
+    }
+
     public void testQinSymbolAnnotatorHighlightsJavaPsiReferences() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
