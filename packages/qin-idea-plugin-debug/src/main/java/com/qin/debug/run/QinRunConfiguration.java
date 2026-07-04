@@ -5,7 +5,6 @@ import com.intellij.execution.configurations.*;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
-import com.qin.debug.QinProjectLocator;
 import com.qin.debug.QinLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -73,11 +72,11 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
     }
 
     public String getResolvedProjectPath() {
-        return QinProjectLocator.resolveProjectPath(getProject(), getProjectPath());
+        return QinRunConfigurationDefaults.projectPath(getProject(), getProjectPath());
     }
 
     public String getResolvedMainClass() {
-        return QinProjectLocator.resolveMainClass(getProject(), getResolvedProjectPath(), getMainClass());
+        return QinRunConfigurationDefaults.mainClass(getProject(), getResolvedProjectPath(), getMainClass());
     }
 
     // ========== RunConfiguration Implementation ==========
@@ -124,7 +123,10 @@ public class QinRunConfiguration extends RunConfigurationBase<QinRunConfiguratio
             setProjectPath(resolvedProjectPath);
         }
 
-        String resolvedMainClass = QinProjectLocator.resolveMainClass(getProject(), resolvedProjectPath, getMainClass());
+        String resolvedMainClass = QinRunConfigurationDefaults.mainClass(
+                getProject(),
+                resolvedProjectPath,
+                getMainClass());
         if (resolvedMainClass != null && !resolvedMainClass.equals(getMainClass())) {
             setMainClass(resolvedMainClass);
         }

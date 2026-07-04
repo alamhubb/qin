@@ -10,7 +10,7 @@ import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
-import com.qin.debug.QinProjectLocator;
+import com.qin.debug.run.QinRunConfigurationDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +40,7 @@ public class QinTestConfiguration extends RunConfigurationBase<QinTestConfigurat
     }
 
     public String getResolvedProjectPath() {
-        return QinProjectLocator.resolveProjectPath(getProject(), getProjectPath());
+        return QinRunConfigurationDefaults.projectPath(getProject(), getProjectPath());
     }
 
     public String getTestClass() {

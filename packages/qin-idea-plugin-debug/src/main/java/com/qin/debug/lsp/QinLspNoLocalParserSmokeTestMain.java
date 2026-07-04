@@ -98,6 +98,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertReferenceRenameDoesNotPreserveAliasLocals(javaRoot);
         assertObjectMemberCompletionUsesSharedHelper(javaRoot);
         assertJavaRunSurfacesUseSharedPsiHelper(javaRoot);
+        assertRunConfigurationDefaultsAreShared(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -1528,6 +1529,41 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !producerSource.contains("findQinProjectPath("),
                 "QinRunConfigurationProducer must consume QinJavaRunPsi instead of owning "
                         + "Java run target or Qin project path decisions: " + producer);
+    }
+
+    private static void assertRunConfigurationDefaultsAreShared(Path javaRoot) throws Exception {
+        Path defaults = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "run", "QinRunConfigurationDefaults.java"));
+        require(Files.isRegularFile(defaults),
+                "Qin run configuration defaults helper source not found: " + defaults);
+        String defaultsSource = Files.readString(defaults);
+        require(defaultsSource.contains("projectPath(")
+                        && defaultsSource.contains("mainClass(")
+                        && defaultsSource.contains("QinProjectLocator.resolveProjectPath(")
+                        && defaultsSource.contains("QinProjectLocator.resolveMainClass("),
+                "QinRunConfigurationDefaults must own run/test default project and main-class resolution: "
+                        + defaults);
+
+        Path runConfiguration = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "run", "QinRunConfiguration.java"));
+        require(Files.isRegularFile(runConfiguration),
+                "Qin run configuration source not found: " + runConfiguration);
+        String runSource = Files.readString(runConfiguration);
+        require(runSource.contains("QinRunConfigurationDefaults.projectPath(")
+                        && runSource.contains("QinRunConfigurationDefaults.mainClass(")
+                        && !runSource.contains("QinProjectLocator"),
+                "QinRunConfiguration must consume QinRunConfigurationDefaults instead of "
+                        + "calling QinProjectLocator directly: " + runConfiguration);
+
+        Path testConfiguration = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "test", "QinTestConfiguration.java"));
+        require(Files.isRegularFile(testConfiguration),
+                "Qin test configuration source not found: " + testConfiguration);
+        String testSource = Files.readString(testConfiguration);
+        require(testSource.contains("QinRunConfigurationDefaults.projectPath(")
+                        && !testSource.contains("QinProjectLocator"),
+                "QinTestConfiguration must consume QinRunConfigurationDefaults instead of "
+                        + "calling QinProjectLocator directly: " + testConfiguration);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
