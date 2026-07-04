@@ -9,9 +9,8 @@ public final class QinObjectReferenceContributor extends PsiReferenceContributor
     public void registerReferenceProviders(@NotNull PsiReferenceRegistrar registrar) {
         QinReferenceElements.registerReferenceProvider(
                 registrar,
-                QinReferenceElements.referenceProvider(
-                        referenceElement -> !QinJavaReference.isJavaReferenceCandidate(referenceElement)
-                                && QinObjectReference.isObjectReferenceCandidate(referenceElement),
+                QinReferenceElements.objectReferenceProvider(
+                        QinObjectReference::isObjectReferenceCandidate,
                         QinObjectReference::new));
     }
 }

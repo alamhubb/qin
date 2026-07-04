@@ -51,6 +51,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
         assertReferenceContributorRegistrationUsesSharedReferenceElements(javaRoot);
         assertReferenceContributorsUseSharedProviderWrapper(javaRoot);
+        assertObjectReferenceContributorsUseSharedJavaBoundary(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertImportNamePsiBridgeUsesQinPsiTree(javaRoot);
@@ -330,7 +331,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
                     .filter(path -> path.getFileName().toString().endsWith("ReferenceContributor.java"))
                     .toList()) {
                 String source = Files.readString(file);
-                require(source.contains("QinReferenceElements.referenceProvider(")
+                require((source.contains("QinReferenceElements.referenceProvider(")
+                                || source.contains("QinReferenceElements.objectReferenceProvider("))
                                 && !source.contains("getContainingFile()")
                                 && !source.contains("QinReferenceElements.referenceElement(")
                                 && !source.contains("PsiReference.EMPTY_ARRAY"),
@@ -338,6 +340,31 @@ public final class QinLspNoLocalParserSmokeTestMain {
                                 + "instead of owning Qin-file filtering or reference-element bridging: "
                                 + file);
             }
+        }
+    }
+
+    private static void assertObjectReferenceContributorsUseSharedJavaBoundary(Path javaRoot) throws Exception {
+        Path referenceElements = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinReferenceElements.java"));
+        require(Files.isRegularFile(referenceElements),
+                "QinReferenceElements source not found: " + referenceElements);
+        String helperSource = Files.readString(referenceElements);
+        require(helperSource.contains("objectReferenceProvider(")
+                        && helperSource.contains("QinJavaReference.isJavaReferenceCandidate(")
+                        && helperSource.contains("candidate.test(referenceElement)"),
+                "QinReferenceElements must own the Java interop exclusion for Qin object "
+                        + "reference providers: " + referenceElements);
+
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectReferenceContributor.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectMethodReferenceContributor.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectFieldReferenceContributor.java")))) {
+            require(Files.isRegularFile(file), "Qin object reference contributor source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinReferenceElements.objectReferenceProvider(")
+                            && !source.contains("QinJavaReference.isJavaReferenceCandidate("),
+                    "Qin object reference contributors must use QinReferenceElements.objectReferenceProvider "
+                            + "instead of owning the Java interop exclusion: " + file);
         }
     }
 

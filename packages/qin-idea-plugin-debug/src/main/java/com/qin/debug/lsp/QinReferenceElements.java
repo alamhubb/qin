@@ -75,6 +75,15 @@ final class QinReferenceElements {
         };
     }
 
+    static @NotNull PsiReferenceProvider objectReferenceProvider(
+            @NotNull Predicate<PsiElement> candidate,
+            @NotNull Function<PsiElement, PsiReference> factory) {
+        return referenceProvider(
+                referenceElement -> !QinJavaReference.isJavaReferenceCandidate(referenceElement)
+                        && candidate.test(referenceElement),
+                factory);
+    }
+
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
         PsiElement parent = element.getParent();
         if (parent != null && QinPsiTree.isType(parent, QinTokenTypes.MEMBER_ACCESS)) {
