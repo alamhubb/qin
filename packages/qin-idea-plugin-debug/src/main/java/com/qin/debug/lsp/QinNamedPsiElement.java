@@ -38,7 +38,7 @@ abstract class QinNamedPsiElement extends QinPsiElement implements PsiNameIdenti
     @Override
     public @Nullable String getName() {
         PsiElement identifier = getNameIdentifier();
-        return identifier == null ? null : identifier.getText();
+        return identifier == null ? null : QinPsiTree.elementText(identifier);
     }
 
     @Override

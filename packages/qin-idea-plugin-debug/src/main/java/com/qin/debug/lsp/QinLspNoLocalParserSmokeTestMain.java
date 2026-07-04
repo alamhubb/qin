@@ -1061,8 +1061,11 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && namedElementSource.contains("QinTokenTypes.OBJECT_NAME")
                         && namedElementSource.contains("QinTokenTypes.METHOD_NAME")
                         && namedElementSource.contains("QinTokenTypes.FIELD_NAME")
-                        && namedElementSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
-                "QinNamedPsiElement must own named PSI token to element-class mapping: "
+                        && namedElementSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME")
+                        && namedElementSource.contains("QinPsiTree.elementText(identifier)")
+                        && !namedElementSource.contains("identifier.getText()"),
+                "QinNamedPsiElement must own named PSI token to element-class mapping and "
+                        + "read name text through QinPsiTree: "
                         + namedElement);
 
         Path parserDefinition = javaRoot.resolve(Path.of(
