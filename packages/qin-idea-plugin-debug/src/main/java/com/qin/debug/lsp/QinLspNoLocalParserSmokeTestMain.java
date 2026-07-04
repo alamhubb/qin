@@ -69,6 +69,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberKind(javaRoot);
         assertObjectMemberPsiBridgeUsesQinPsiTree(javaRoot);
+        assertNamedPsiElementMappingIsCentralized(javaRoot);
         assertStubIndexUsesSourceStructureMemberIndexEntries(javaRoot);
         assertMemberStubIndexKeySelectionIsShared(javaRoot);
         assertSymbolHighlightingUsesSharedHelper(javaRoot);
@@ -930,6 +931,36 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !objectSymbolsSource.contains("QinTokenTypes.METHOD_NAME"),
                 "QinObjectSymbols must ask QinPsiTree to bridge object member ranges to PSI names "
                         + "instead of owning member kind to token mapping: " + objectSymbols);
+    }
+
+    private static void assertNamedPsiElementMappingIsCentralized(Path javaRoot) throws Exception {
+        Path namedElement = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinNamedPsiElement.java"));
+        require(Files.isRegularFile(namedElement),
+                "Qin named PSI element source not found: " + namedElement);
+        String namedElementSource = Files.readString(namedElement);
+        require(namedElementSource.contains("static @Nullable QinNamedPsiElement create(")
+                        && namedElementSource.contains("QinTokenTypes.OBJECT_NAME")
+                        && namedElementSource.contains("QinTokenTypes.METHOD_NAME")
+                        && namedElementSource.contains("QinTokenTypes.FIELD_NAME")
+                        && namedElementSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
+                "QinNamedPsiElement must own named PSI token to element-class mapping: "
+                        + namedElement);
+
+        Path parserDefinition = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinParserDefinition.java"));
+        require(Files.isRegularFile(parserDefinition),
+                "QinParserDefinition source not found: " + parserDefinition);
+        String parserSource = Files.readString(parserDefinition);
+        String createElementSource = parserSource.substring(parserSource.indexOf("createElement("));
+        require(createElementSource.contains("QinNamedPsiElement.create(node)")
+                        && !createElementSource.contains("new QinObjectNamePsiElement(")
+                        && !createElementSource.contains("new QinMethodNamePsiElement(")
+                        && !createElementSource.contains("new QinFieldNamePsiElement(")
+                        && !createElementSource.contains("new QinImportAliasNamePsiElement("),
+                "QinParserDefinition.createElement must delegate named PSI token mapping to "
+                        + "QinNamedPsiElement instead of owning declaration-token branches: "
+                        + parserDefinition);
     }
 
     private static void assertStubIndexUsesSourceStructureMemberIndexEntries(Path javaRoot) throws Exception {

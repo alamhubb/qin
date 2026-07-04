@@ -273,17 +273,9 @@ public final class QinParserDefinition implements ParserDefinition {
 
     @Override
     public @NotNull PsiElement createElement(ASTNode node) {
-        if (node.getElementType() == QinTokenTypes.OBJECT_NAME) {
-            return new QinObjectNamePsiElement(node);
-        }
-        if (node.getElementType() == QinTokenTypes.METHOD_NAME) {
-            return new QinMethodNamePsiElement(node);
-        }
-        if (node.getElementType() == QinTokenTypes.FIELD_NAME) {
-            return new QinFieldNamePsiElement(node);
-        }
-        if (node.getElementType() == QinTokenTypes.IMPORT_ALIAS_NAME) {
-            return new QinImportAliasNamePsiElement(node);
+        QinNamedPsiElement namedElement = QinNamedPsiElement.create(node);
+        if (namedElement != null) {
+            return namedElement;
         }
         return new QinPsiElement(node);
     }
