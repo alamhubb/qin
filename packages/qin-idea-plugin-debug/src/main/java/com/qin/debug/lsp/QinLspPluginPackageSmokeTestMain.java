@@ -24,6 +24,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinParserDefinition.class",
             "com/qin/debug/lsp/QinPsiElement.class",
             "com/qin/debug/lsp/QinPsiFile.class",
+            "com/qin/debug/lsp/QinPsiReferences.class",
             "com/qin/debug/lsp/QinPsiResolveResult.class",
             "com/qin/debug/lsp/QinPsiToken.class",
             "com/qin/debug/lsp/QinPsiTokenStream.class",
