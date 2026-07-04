@@ -48,7 +48,7 @@ final class QinUnresolvedReferenceMessages {
                 ? null
                 : QinJavaImportTable.findForSpecifierElement(element);
         if (importedClass == null) {
-            importedClass = importTable.find(element.getText());
+            importedClass = importTable.find(QinReferenceElements.referenceName(element));
         }
         if (importedClass == null
                 || QinPsiReferences.unresolvedReferenceOfType(element, QinJavaReference.class) == null) {

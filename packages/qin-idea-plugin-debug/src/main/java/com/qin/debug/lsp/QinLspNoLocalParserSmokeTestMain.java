@@ -570,6 +570,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String unresolvedMessagesSource = Files.readString(unresolvedMessages);
         require(unresolvedMessagesSource.contains("QinReferenceElements.isReferenceIdentifier(")
                         && unresolvedMessagesSource.contains("QinReferenceElements.referenceName(")
+                        && !unresolvedMessagesSource.contains("element.getText()")
                         && !unresolvedMessagesSource.contains("+ element.getText()")
                         && !unresolvedMessagesSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
                 "QinUnresolvedReferenceMessages must use QinReferenceElements for reference "
