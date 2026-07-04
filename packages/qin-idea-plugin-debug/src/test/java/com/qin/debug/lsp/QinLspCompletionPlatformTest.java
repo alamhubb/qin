@@ -400,6 +400,31 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals(List.of("next"), counter.memberNames(QinSourceStructure.ObjectMemberKind.METHOD));
     }
 
+    public void testQinSourceStructurePreservesObjectMemberSourceOrder() {
+        String source = """
+                object Counter {
+                  next() {
+                    return this.value
+                  }
+
+                  value = 41
+                }
+                """;
+
+        QinSourceStructure.ObjectDeclaration counter = QinSourceStructure.parse(source)
+                .objectDeclarations()
+                .get(0);
+        List<QinSourceStructure.ObjectMemberDeclaration> members = counter.memberDeclarations();
+
+        assertEquals(2, members.size());
+        assertEquals(QinSourceStructure.ObjectMemberKind.METHOD, members.get(0).kind());
+        assertEquals("next", members.get(0).declaration().name());
+        assertEquals(QinSourceStructure.ObjectMemberKind.FIELD, members.get(1).kind());
+        assertEquals("value", members.get(1).declaration().name());
+        assertTrue(members.get(0).declaration().nameRange().startOffset()
+                < members.get(1).declaration().nameRange().startOffset());
+    }
+
     public void testQinSourceStructureFindsImportSpecifiersFromSharedTokenStream() {
         String source = """
                 import { Greeter as G, Counter } from "java:demo"

@@ -880,6 +880,17 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinObjectSymbols must use QinSourceStructure member declaration lookup helpers "
                         + "and member declarations instead of matching, flattening, or deriving "
                         + "source-structure member kind from PSI token types: " + objectSymbols);
+
+        Path platformTest = javaRoot.getParent().getParent().resolve("test").resolve("java").resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));
+        require(Files.isRegularFile(platformTest),
+                "Qin platform test source not found: " + platformTest);
+        String testSource = Files.readString(platformTest);
+        requireTestContainsAll(testSource, platformTest,
+                "testQinSourceStructurePreservesObjectMemberSourceOrder",
+                "QinSourceStructure.ObjectMemberKind.METHOD",
+                "QinSourceStructure.ObjectMemberKind.FIELD",
+                "nameRange().startOffset()");
     }
 
     private static void assertObjectSymbolsUseSourceStructureMemberKind(Path javaRoot) throws Exception {
@@ -929,9 +940,14 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String sourceStructureSource = Files.readString(sourceStructure);
         require(sourceStructureSource.contains("memberNames(@NotNull ObjectMemberKind kind)")
                         && sourceStructureSource.contains("memberDeclarations(@NotNull ObjectMemberKind kind)")
+                        && sourceStructureSource.contains("@NotNull List<ObjectMemberDeclaration> members")
+                        && sourceStructureSource.contains("members = List.copyOf(members)")
+                        && sourceStructureSource.contains("return members;")
+                        && !sourceStructureSource.contains("addMemberDeclarations(")
                         && !sourceStructureSource.contains("fieldNames()")
                         && !sourceStructureSource.contains("methodNames()"),
-                "QinSourceStructure must own object member name lookup by ObjectMemberKind: "
+                "QinSourceStructure must own object member name lookup and source-order "
+                        + "member collection by ObjectMemberKind: "
                         + sourceStructure);
 
         Path fileElementType = javaRoot.resolve(Path.of(
