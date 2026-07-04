@@ -2276,6 +2276,48 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinJavaReference(fieldReference.getElement());
     }
 
+    public void testQinJavaFieldGoToDeclarationTargetsPsiField() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const name = Greeter.DEFAULT<caret>_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiField field = assertInstanceOf(myFixture.getElementAtCaret(), PsiField.class);
+
+        assertEquals("DEFAULT_NAME", field.getName());
+        assertEquals("demo.Greeter", field.getContainingClass().getQualifiedName());
+    }
+
+    public void testQinJavaAliasedFieldGoToDeclarationTargetsPsiField() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const name = G.DEFAULT<caret>_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiField field = assertInstanceOf(myFixture.getElementAtCaret(), PsiField.class);
+
+        assertEquals("DEFAULT_NAME", field.getName());
+        assertEquals("demo.Greeter", field.getContainingClass().getQualifiedName());
+    }
+
     public void testQinJavaFieldRenameProcessorUpdatesReferences() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
