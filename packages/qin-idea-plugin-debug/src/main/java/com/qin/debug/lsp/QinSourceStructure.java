@@ -119,17 +119,45 @@ final class QinSourceStructure {
             if (token.type() == QinTokenTypes.SEMICOLON) {
                 return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
             }
-            if (QinTokenFacts.isKeyword(content, token, "from")) {
+            if (QinTokenFacts.isOpenBrace(content, token)) {
+                NamedImportSpecifiers namedImports = readNamedImportSpecifiers(content, tokens, current);
+                specifiers.addAll(namedImports.specifiers());
+                current = namedImports.nextTokenIndex();
+                continue;
+            }
+            if (QinTokenFacts.isContextualKeyword(content, token, "from")) {
                 int moduleIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
                 if (moduleIndex >= 0
                         && moduleIndex < tokens.size()
                         && tokens.get(moduleIndex).type() == QinTokenTypes.STRING) {
                     moduleRange = range(tokens.get(moduleIndex));
                     moduleSpecifier = unquote(QinTokenFacts.slice(content, tokens.get(moduleIndex)).toString());
-                    current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, moduleIndex + 1);
-                    continue;
+                    return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
                 }
                 return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+            }
+            current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
+        }
+        return specifiers.isEmpty() && moduleSpecifier.isEmpty()
+                ? null
+                : new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+    }
+
+    private static @NotNull NamedImportSpecifiers readNamedImportSpecifiers(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens,
+            int openBraceIndex) {
+        List<ImportSpecifier> specifiers = new ArrayList<>();
+        int current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, openBraceIndex + 1);
+        while (current >= 0 && current < tokens.size()) {
+            QinLexicalToken token = tokens.get(current);
+            if (QinTokenFacts.isCloseBrace(content, token)) {
+                return new NamedImportSpecifiers(
+                        specifiers,
+                        QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1));
+            }
+            if (token.type() == QinTokenTypes.SEMICOLON) {
+                return new NamedImportSpecifiers(specifiers, current);
             }
             if (QinTokenFacts.isReferenceLeafToken(token.type())) {
                 ImportSpecifier specifier = readImportSpecifier(content, tokens, current);
@@ -141,9 +169,7 @@ final class QinSourceStructure {
             }
             current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
         }
-        return specifiers.isEmpty() && moduleSpecifier.isEmpty()
-                ? null
-                : new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+        return new NamedImportSpecifiers(specifiers, current);
     }
 
     private static ImportSpecifier readImportSpecifier(
@@ -158,7 +184,7 @@ final class QinSourceStructure {
         String localName = exportedName;
         SourceRange localNameRange = SourceRange.missing();
         int next = QinTokenFacts.nextMeaningfulTokenIndex(tokens, exportedNameIndex + 1);
-        if (next >= 0 && next < tokens.size() && QinTokenFacts.isKeyword(content, tokens.get(next), "as")) {
+        if (next >= 0 && next < tokens.size() && QinTokenFacts.isContextualKeyword(content, tokens.get(next), "as")) {
             int aliasIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, next + 1);
             if (aliasIndex >= 0
                     && aliasIndex < tokens.size()
@@ -288,6 +314,12 @@ final class QinSourceStructure {
             @NotNull String localName,
             @NotNull SourceRange localNameRange,
             int nextTokenIndex) {
+    }
+
+    private record NamedImportSpecifiers(@NotNull List<ImportSpecifier> specifiers, int nextTokenIndex) {
+        private NamedImportSpecifiers {
+            specifiers = List.copyOf(specifiers);
+        }
     }
 
     record ImportDeclaration(

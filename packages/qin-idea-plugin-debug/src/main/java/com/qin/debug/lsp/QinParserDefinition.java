@@ -200,7 +200,7 @@ public final class QinParserDefinition implements ParserDefinition {
     private static void parseImportSpecifier(PsiBuilder builder) {
         PsiBuilder.Marker specifierMarker = builder.mark();
         wrapReferenceIdentifier(builder);
-        if (QinTokenFacts.isKeyword(builder, "as")) {
+        if (QinTokenFacts.isContextualKeyword(builder, "as")) {
             builder.advanceLexer();
             if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
                 wrapImportAliasName(builder);

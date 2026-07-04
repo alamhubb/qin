@@ -335,6 +335,23 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("C", binding.localName());
     }
 
+    public void testQinImportBindingsCollectAliasedImportsFromSourceStructure() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G } from "java:demo"
+                import { Counter as C } from "./Counter.qin"
+                """);
+
+        List<QinImportBindings.ImportBinding> bindings = QinImportBindings.collect(myFixture.getFile());
+
+        assertEquals(2, bindings.size());
+        assertEquals("java:demo", bindings.get(0).moduleSpecifier());
+        assertEquals("Greeter", bindings.get(0).exportedName());
+        assertEquals("G", bindings.get(0).localName());
+        assertEquals("./Counter.qin", bindings.get(1).moduleSpecifier());
+        assertEquals("Counter", bindings.get(1).exportedName());
+        assertEquals("C", bindings.get(1).localName());
+    }
+
     public void testQinModuleSpecifierFactsClassifyJavaAndQinImports() {
         assertEquals("demo", QinModuleSpecifierFacts.javaModuleName("java:demo"));
         assertEquals("java.util", QinModuleSpecifierFacts.javaModuleName("java:java.util"));

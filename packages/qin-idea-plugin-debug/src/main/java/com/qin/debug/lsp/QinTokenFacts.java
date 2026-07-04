@@ -79,8 +79,21 @@ final class QinTokenFacts {
                 && expected.contentEquals(slice(content, token));
     }
 
+    static boolean isContextualKeyword(
+            @NotNull CharSequence content,
+            @NotNull QinLexicalToken token,
+            @NotNull String expected) {
+        return (token.type() == QinTokenTypes.KEYWORD || isReferenceLeafToken(token.type()))
+                && expected.contentEquals(slice(content, token));
+    }
+
     static boolean isKeyword(@NotNull PsiBuilder builder, @NotNull String expected) {
         return builder.getTokenType() == QinTokenTypes.KEYWORD
+                && expected.equals(builder.getTokenText());
+    }
+
+    static boolean isContextualKeyword(@NotNull PsiBuilder builder, @NotNull String expected) {
+        return (builder.getTokenType() == QinTokenTypes.KEYWORD || isReferenceLeafToken(builder.getTokenType()))
                 && expected.equals(builder.getTokenText());
     }
 
