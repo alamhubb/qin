@@ -91,6 +91,10 @@ final class QinReferenceElements {
         return null;
     }
 
+    static boolean isFollowedByCallParenthesis(@NotNull PsiElement element) {
+        return QinPsiTokenStream.isFollowedByCallParenthesis(element);
+    }
+
     private static void registerReferenceProvider(
             @NotNull PsiReferenceRegistrar registrar,
             @NotNull PsiReferenceProvider provider,

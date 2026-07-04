@@ -40,7 +40,7 @@ final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElem
     }
 
     static boolean isObjectMethodReferenceCandidate(@NotNull PsiElement element) {
-        return QinPsiTokenStream.isFollowedByCallParenthesis(element) && hasObjectMethodQualifier(element);
+        return QinReferenceElements.isFollowedByCallParenthesis(element) && hasObjectMethodQualifier(element);
     }
 
     private static ResolveResult @NotNull [] resolveInner(

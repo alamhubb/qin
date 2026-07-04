@@ -47,6 +47,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
+        assertCallBoundaryUsesSharedReferenceElements(javaRoot);
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
         assertReferenceContributorRegistrationUsesSharedReferenceElements(javaRoot);
         assertReferenceContributorsUseSharedProviderWrapper(javaRoot);
@@ -212,6 +213,30 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         "Qin qualifier lookup must flow through QinReferenceElements, not QinJavaReference: "
                                 + file);
             }
+        }
+    }
+
+    private static void assertCallBoundaryUsesSharedReferenceElements(Path javaRoot) throws Exception {
+        Path referenceElements = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinReferenceElements.java"));
+        require(Files.isRegularFile(referenceElements),
+                "QinReferenceElements source not found: " + referenceElements);
+        String helperSource = Files.readString(referenceElements);
+        require(helperSource.contains("isFollowedByCallParenthesis(")
+                        && helperSource.contains("QinPsiTokenStream.isFollowedByCallParenthesis("),
+                "QinReferenceElements must own shared call-vs-field reference lookup: "
+                        + referenceElements);
+
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectMethodReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectFieldReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinUnresolvedReferenceMessages.java")))) {
+            require(Files.isRegularFile(file), "Qin reference consumer source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinReferenceElements.isFollowedByCallParenthesis(")
+                            && !source.contains("QinPsiTokenStream.isFollowedByCallParenthesis("),
+                    "Qin reference consumers must use QinReferenceElements for call-vs-field "
+                            + "member boundaries instead of querying QinPsiTokenStream directly: " + file);
         }
     }
 

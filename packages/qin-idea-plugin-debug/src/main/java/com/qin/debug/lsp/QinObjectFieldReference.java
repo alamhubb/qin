@@ -37,7 +37,7 @@ final class QinObjectFieldReference extends PsiPolyVariantReferenceBase<PsiEleme
     }
 
     static boolean isObjectFieldReferenceCandidate(@NotNull PsiElement element) {
-        return !QinPsiTokenStream.isFollowedByCallParenthesis(element) && hasObjectFieldQualifier(element);
+        return !QinReferenceElements.isFollowedByCallParenthesis(element) && hasObjectFieldQualifier(element);
     }
 
     private static ResolveResult @NotNull [] resolveInner(

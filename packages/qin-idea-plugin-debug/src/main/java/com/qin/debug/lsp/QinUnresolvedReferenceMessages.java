@@ -67,7 +67,7 @@ final class QinUnresolvedReferenceMessages {
     static @Nullable String objectFieldMessageFor(@NotNull PsiElement element) {
         if (!isReferenceIdentifier(element)
                 || QinJavaReference.isJavaReferenceCandidate(element)
-                || QinPsiTokenStream.isFollowedByCallParenthesis(element)) {
+                || QinReferenceElements.isFollowedByCallParenthesis(element)) {
             return null;
         }
         String qualifier = QinReferenceElements.previousQualifierName(element);
