@@ -556,6 +556,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinReferenceElements source not found: " + referenceElements);
         String helperSource = Files.readString(referenceElements);
         require(helperSource.contains("isReferenceIdentifier(")
+                        && helperSource.contains("referenceName(")
                         && helperSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER")
                         && helperSource.contains("isImportAliasDeclaration(")
                         && helperSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
@@ -568,6 +569,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinUnresolvedReferenceMessages source not found: " + unresolvedMessages);
         String unresolvedMessagesSource = Files.readString(unresolvedMessages);
         require(unresolvedMessagesSource.contains("QinReferenceElements.isReferenceIdentifier(")
+                        && unresolvedMessagesSource.contains("QinReferenceElements.referenceName(")
+                        && !unresolvedMessagesSource.contains("+ element.getText()")
                         && !unresolvedMessagesSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
                 "QinUnresolvedReferenceMessages must use QinReferenceElements for reference "
                         + "identifier checks instead of owning the token mapping: " + unresolvedMessages);

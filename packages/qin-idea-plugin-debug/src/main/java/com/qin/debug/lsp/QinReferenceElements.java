@@ -35,6 +35,11 @@ final class QinReferenceElements {
         return QinPsiTree.isType(element, QinTokenTypes.REFERENCE_IDENTIFIER);
     }
 
+    static @NotNull String referenceName(@NotNull PsiElement element) {
+        PsiElement referenceElement = referenceElement(element);
+        return referenceElement == null ? element.getText() : referenceElement.getText();
+    }
+
     static boolean isImportAliasDeclaration(@NotNull PsiElement element) {
         return QinPsiTree.isType(element, QinTokenTypes.IMPORT_ALIAS_NAME);
     }
