@@ -99,6 +99,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertObjectMemberCompletionUsesSharedHelper(javaRoot);
         assertJavaRunSurfacesUseSharedPsiHelper(javaRoot);
         assertRunConfigurationDefaultsAreShared(javaRoot);
+        assertRunCommandLinesAreShared(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -1564,6 +1565,52 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !testSource.contains("QinProjectLocator"),
                 "QinTestConfiguration must consume QinRunConfigurationDefaults instead of "
                         + "calling QinProjectLocator directly: " + testConfiguration);
+    }
+
+    private static void assertRunCommandLinesAreShared(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "run", "QinRunCommandLines.java"));
+        require(Files.isRegularFile(helper),
+                "Qin run command-line helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("run(")
+                        && helperSource.contains("test(")
+                        && helperSource.contains("requireProjectPath(")
+                        && helperSource.contains("QinCommandResolver.createGeneralCommandLine(")
+                        && helperSource.contains("command.add(\"run\")")
+                        && helperSource.contains("command.add(\"--debug\")")
+                        && helperSource.contains("command.add(\"--debug-port=\" + configuration.getDebugPort())")
+                        && helperSource.contains("command.add(\"--jvm-args=\" + jvmArgs)")
+                        && helperSource.contains("programArgs.split(\"\\\\s+\")")
+                        && helperSource.contains("command.add(\"test\")")
+                        && helperSource.contains("command.add(\"--teamcity\")")
+                        && helperSource.contains("command.add(\"--class=\" + testClass)")
+                        && helperSource.contains("command.add(\"--method=\" + testMethod)"),
+                "QinRunCommandLines must own run/test command argument construction: " + helper);
+
+        Path runProfileState = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "run", "QinRunProfileState.java"));
+        require(Files.isRegularFile(runProfileState),
+                "Qin run profile state source not found: " + runProfileState);
+        String runStateSource = Files.readString(runProfileState);
+        require(runStateSource.contains("QinRunCommandLines.run(configuration, debugMode)")
+                        && !runStateSource.contains("QinCommandResolver")
+                        && !runStateSource.contains("new ArrayList")
+                        && !runStateSource.contains("command.add("),
+                "QinRunProfileState must consume QinRunCommandLines instead of owning "
+                        + "run command construction: " + runProfileState);
+
+        Path testProfileState = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "test", "QinTestRunProfileState.java"));
+        require(Files.isRegularFile(testProfileState),
+                "Qin test profile state source not found: " + testProfileState);
+        String testStateSource = Files.readString(testProfileState);
+        require(testStateSource.contains("QinRunCommandLines.test(configuration)")
+                        && !testStateSource.contains("QinCommandResolver")
+                        && !testStateSource.contains("new ArrayList")
+                        && !testStateSource.contains("command.add("),
+                "QinTestRunProfileState must consume QinRunCommandLines instead of owning "
+                        + "test command construction: " + testProfileState);
     }
 
     private static boolean isAllowedSourceFile(Path file) {

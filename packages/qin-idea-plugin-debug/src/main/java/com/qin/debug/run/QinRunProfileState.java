@@ -14,18 +14,12 @@ import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.ConsoleViewContentType;
-import com.intellij.openapi.project.Project;
-import com.qin.debug.QinCommandResolver;
 import com.qin.debug.QinLogger;
 import com.qin.debug.console.QinConsoleFilter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Qin 杩愯鐘舵€?
- * 璐熻矗鎵ц qin run 鍛戒护骞跺鐞嗚繘绋嬭緭鍑?
+ * Qin application run profile state.
  */
 public class QinRunProfileState extends CommandLineState {
 
@@ -79,12 +73,10 @@ public class QinRunProfileState extends CommandLineState {
                 + ", debugMode=" + debugMode);
         ProcessHandler processHandler = startProcess();
 
-        // 鍒涘缓鎺у埗鍙板苟娣诲姞閿欒杩囨护鍣?
         ConsoleView console = createConsole(executor);
         console.addMessageFilter(new QinConsoleFilter(getEnvironment().getProject()));
         console.attachToProcess(processHandler);
 
-        // 鏄剧ず鍚姩淇℃伅
         console.print("Starting Qin application...\n", ConsoleViewContentType.SYSTEM_OUTPUT);
         console.print("Project: " + configuration.getProjectPath() + "\n", ConsoleViewContentType.SYSTEM_OUTPUT);
         if (debugMode) {
@@ -95,53 +87,9 @@ public class QinRunProfileState extends CommandLineState {
         return new DefaultExecutionResult(console, processHandler);
     }
 
-    /**
-     * 鍒涘缓鍛戒护琛?
-     */
     private GeneralCommandLine createCommandLine() throws ExecutionException {
-        String projectPath = configuration.getResolvedProjectPath();
-        if (projectPath == null || projectPath.isEmpty()) {
-            QinLogger.error("[RUN] Project path is empty before command creation");
-            throw new ExecutionException("Project path is not specified");
-        }
-
-        List<String> command = new ArrayList<>();
-        command.add("run");
-
-        // 璋冭瘯妯″紡娣诲姞 --debug 鍙傛暟
-        if (debugMode) {
-            command.add("--debug");
-            command.add("--debug-port=" + configuration.getDebugPort());
-        }
-
-        // 娣诲姞涓荤被鍙傛暟锛堝鏋滄寚瀹氾級
-        String mainClass = configuration.getResolvedMainClass();
-        if (mainClass != null && !mainClass.isEmpty()) {
-            command.add(mainClass);
-        }
-
-        // 娣诲姞 JVM 鍙傛暟
-        String jvmArgs = configuration.getJvmArguments();
-        if (jvmArgs != null && !jvmArgs.isEmpty()) {
-            command.add("--jvm-args=" + jvmArgs);
-        }
-
-        // 娣诲姞绋嬪簭鍙傛暟
-        String programArgs = configuration.getProgramArguments();
-        if (programArgs != null && !programArgs.isEmpty()) {
-            command.add("--");
-            for (String arg : programArgs.split("\\s+")) {
-                if (!arg.isEmpty()) {
-                    command.add(arg);
-                }
-            }
-        }
-
-        GeneralCommandLine commandLine = QinCommandResolver.createGeneralCommandLine(
-                projectPath,
-                command.toArray(String[]::new));
-        QinLogger.info("[RUN] Command prepared for mainClass=" + mainClass);
-
+        GeneralCommandLine commandLine = QinRunCommandLines.run(configuration, debugMode);
+        QinLogger.info("[RUN] Command prepared for mainClass=" + configuration.getResolvedMainClass());
         return commandLine;
     }
 
