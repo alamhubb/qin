@@ -121,40 +121,11 @@ final class QinTokenFacts {
     }
 
     static boolean isFieldDeclarationStart(@NotNull PsiBuilder builder) {
-        if (!isDeclarationIdentifierToken(builder.getTokenType())) {
-            return false;
-        }
-        int offset = nextMeaningfulRawOffset(builder, 1);
-        return builder.rawLookup(offset) == QinTokenTypes.OPERATOR
-                && rawTokenStartsWith(builder, offset, '=');
+        return isFieldDeclarationName(new BuilderTokenSequence(builder), 0);
     }
 
     static boolean isMethodDeclarationStart(@NotNull PsiBuilder builder) {
-        if (!isDeclarationIdentifierToken(builder.getTokenType())) {
-            return false;
-        }
-        int offset = nextMeaningfulRawOffset(builder, 1);
-        if (builder.rawLookup(offset) != QinTokenTypes.PAREN || !rawTokenStartsWith(builder, offset, '(')) {
-            return false;
-        }
-
-        int parenDepth = 0;
-        while (offset != 0 && builder.rawLookup(offset) != null) {
-            if (builder.rawLookup(offset) == QinTokenTypes.PAREN) {
-                if (rawTokenStartsWith(builder, offset, '(')) {
-                    parenDepth++;
-                } else if (rawTokenStartsWith(builder, offset, ')')) {
-                    parenDepth--;
-                    if (parenDepth == 0) {
-                        int afterParams = nextMeaningfulRawOffset(builder, offset + 1);
-                        return builder.rawLookup(afterParams) == QinTokenTypes.BRACE
-                                && rawTokenStartsWith(builder, afterParams, '{');
-                    }
-                }
-            }
-            offset = nextMeaningfulRawOffset(builder, offset + 1);
-        }
-        return false;
+        return isMethodDeclarationName(new BuilderTokenSequence(builder), 0);
     }
 
     static boolean isThisMemberAccessStart(@NotNull PsiBuilder builder) {
@@ -193,43 +164,98 @@ final class QinTokenFacts {
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,
             int tokenIndex) {
-        QinLexicalToken token = tokens.get(tokenIndex);
-        if (!isDeclarationIdentifierToken(token)) {
-            return false;
-        }
-        QinLexicalToken next = nextMeaningfulToken(tokens, tokenIndex);
-        return next != null && isAssignmentOperator(content, next);
+        return isFieldDeclarationName(new LexicalTokenSequence(content, tokens), tokenIndex);
     }
 
     static boolean isMethodDeclarationName(
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,
             int tokenIndex) {
-        QinLexicalToken token = tokens.get(tokenIndex);
-        if (!isDeclarationIdentifierToken(token)) {
+        return isMethodDeclarationName(new LexicalTokenSequence(content, tokens), tokenIndex);
+    }
+
+    private static boolean isFieldDeclarationName(@NotNull TokenSequence sequence, int tokenIndex) {
+        if (!isDeclarationIdentifierToken(sequence.typeAt(tokenIndex))) {
             return false;
         }
-        int current = nextMeaningfulTokenIndex(tokens, tokenIndex + 1);
-        if (current < 0 || !isOpenParen(content, tokens.get(current))) {
+        int next = sequence.nextMeaningfulIndex(tokenIndex + 1);
+        return sequence.typeAt(next) == QinTokenTypes.OPERATOR && sequence.startsWith(next, '=');
+    }
+
+    private static boolean isMethodDeclarationName(@NotNull TokenSequence sequence, int tokenIndex) {
+        if (!isDeclarationIdentifierToken(sequence.typeAt(tokenIndex))) {
+            return false;
+        }
+        int current = sequence.nextMeaningfulIndex(tokenIndex + 1);
+        if (sequence.typeAt(current) != QinTokenTypes.PAREN || !sequence.startsWith(current, '(')) {
             return false;
         }
 
         int parenDepth = 0;
-        while (current >= 0 && current < tokens.size()) {
-            QinLexicalToken currentToken = tokens.get(current);
-            if (currentToken.type() == QinTokenTypes.PAREN) {
-                if (isOpenParen(content, currentToken)) {
+        while (sequence.typeAt(current) != null) {
+            if (sequence.typeAt(current) == QinTokenTypes.PAREN) {
+                if (sequence.startsWith(current, '(')) {
                     parenDepth++;
-                } else if (isCloseParen(content, currentToken)) {
+                } else if (sequence.startsWith(current, ')')) {
                     parenDepth--;
                     if (parenDepth == 0) {
-                        int afterParams = nextMeaningfulTokenIndex(tokens, current + 1);
-                        return afterParams >= 0 && isOpenBrace(content, tokens.get(afterParams));
+                        int afterParams = sequence.nextMeaningfulIndex(current + 1);
+                        return sequence.typeAt(afterParams) == QinTokenTypes.BRACE
+                                && sequence.startsWith(afterParams, '{');
                     }
                 }
             }
-            current = nextMeaningfulTokenIndex(tokens, current + 1);
+            current = sequence.nextMeaningfulIndex(current + 1);
         }
         return false;
+    }
+
+    private interface TokenSequence {
+        @Nullable IElementType typeAt(int index);
+
+        int nextMeaningfulIndex(int startIndex);
+
+        boolean startsWith(int index, char expected);
+    }
+
+    private record LexicalTokenSequence(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens) implements TokenSequence {
+        @Override
+        public @Nullable IElementType typeAt(int index) {
+            return index >= 0 && index < tokens.size() ? tokens.get(index).type() : null;
+        }
+
+        @Override
+        public int nextMeaningfulIndex(int startIndex) {
+            return QinTokenFacts.nextMeaningfulTokenIndex(tokens, startIndex);
+        }
+
+        @Override
+        public boolean startsWith(int index, char expected) {
+            return index >= 0
+                    && index < tokens.size()
+                    && QinTokenFacts.tokenStartsWith(content, tokens.get(index), expected);
+        }
+    }
+
+    private record BuilderTokenSequence(@NotNull PsiBuilder builder) implements TokenSequence {
+        @Override
+        public @Nullable IElementType typeAt(int index) {
+            if (index < 0) {
+                return null;
+            }
+            return builder.rawLookup(index);
+        }
+
+        @Override
+        public int nextMeaningfulIndex(int startIndex) {
+            return QinTokenFacts.nextMeaningfulRawOffset(builder, startIndex);
+        }
+
+        @Override
+        public boolean startsWith(int index, char expected) {
+            return index >= 0 && QinTokenFacts.rawTokenStartsWith(builder, index, expected);
+        }
     }
 }
