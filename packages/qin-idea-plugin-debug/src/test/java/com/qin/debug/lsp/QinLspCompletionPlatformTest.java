@@ -673,6 +673,27 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 hasPsiElementType(myFixture.getFile(), QinTokenTypes.FIELD_NAME));
     }
 
+    public void testQinParserBuildsStructuredPsiForThisMemberAccess() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+
+        PsiElement thisAccess = descendantsOfType(myFixture.getFile(), QinTokenTypes.MEMBER_ACCESS).stream()
+                .filter(element -> element.getText().contains("this.value"))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull("Qin PSI should structure this.member access for IDEA references", thisAccess);
+        PsiElement valueReference = findFirstChildOfText(thisAccess, QinTokenTypes.REFERENCE_IDENTIFIER, "value");
+        assertNotNull("Qin PSI should wrap this.member name as a REFERENCE_IDENTIFIER", valueReference);
+    }
+
     public void testQinParserKeepsJavaMemberReferencesInsideObjectDeclaration() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
