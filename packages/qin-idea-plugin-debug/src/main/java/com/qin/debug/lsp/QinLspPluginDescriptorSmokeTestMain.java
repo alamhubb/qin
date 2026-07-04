@@ -43,8 +43,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertLookupEnterHandler(document);
         assertQinReferenceContributors(document);
         assertQinObjectMemberCompletion(document);
-        assertQinObjectNameStubIndex(document);
-        assertQinObjectMemberStubIndexes(document);
+        assertQinStubIndexes(document);
         assertQinAnnotators(document);
         assertQinInspections(document);
         assertNoQinObjectNameFileBasedIndex(document);
@@ -161,31 +160,27 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     }
 
     private static void assertQinReferenceContributors(Document document) {
-        assertLanguageExtensionImplementation(
-                document,
-                "psi.referenceContributor",
-                "implementation",
-                "com.qin.debug.lsp.QinJavaReferenceContributor");
-        assertLanguageExtensionImplementation(
-                document,
-                "psi.referenceContributor",
-                "implementation",
-                "com.qin.debug.lsp.QinObjectReferenceContributor");
-        assertLanguageExtensionImplementation(
-                document,
-                "psi.referenceContributor",
-                "implementation",
-                "com.qin.debug.lsp.QinObjectMethodReferenceContributor");
-        assertLanguageExtensionImplementation(
-                document,
-                "psi.referenceContributor",
-                "implementation",
-                "com.qin.debug.lsp.QinObjectFieldReferenceContributor");
-        assertLanguageExtensionImplementation(
-                document,
-                "psi.referenceContributor",
-                "implementation",
+        Set<String> expected = Set.of(
+                "com.qin.debug.lsp.QinJavaReferenceContributor",
+                "com.qin.debug.lsp.QinObjectReferenceContributor",
+                "com.qin.debug.lsp.QinObjectMethodReferenceContributor",
+                "com.qin.debug.lsp.QinObjectFieldReferenceContributor",
                 "com.qin.debug.lsp.QinImportAliasReferenceContributor");
+        Set<String> actual = new HashSet<>();
+        int qinContributorCount = 0;
+        NodeList contributors = document.getElementsByTagName("psi.referenceContributor");
+        for (int i = 0; i < contributors.getLength(); i++) {
+            Element contributor = (Element) contributors.item(i);
+            if ("Qin".equals(contributor.getAttribute("language"))) {
+                qinContributorCount++;
+                actual.add(contributor.getAttribute("implementation"));
+            }
+        }
+        require(qinContributorCount == expected.size(),
+                "Expected exactly " + expected.size() + " Qin reference contributors, got "
+                        + qinContributorCount);
+        require(actual.equals(expected),
+                "Qin reference contributors must be exactly " + expected + ", got " + actual);
     }
 
     private static void assertQinObjectMemberCompletion(Document document) {
@@ -197,15 +192,6 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         require("com.qin.debug.lsp.QinObjectMemberCompletionContributor".equals(
                         contributor.getAttribute("implementationClass")),
                 "Unexpected Qin completion contributor: " + contributor.getAttribute("implementationClass"));
-    }
-
-    private static void assertQinObjectNameStubIndex(Document document) {
-        assertStubIndex(document, "com.qin.debug.lsp.QinObjectNameStubIndex");
-    }
-
-    private static void assertQinObjectMemberStubIndexes(Document document) {
-        assertStubIndex(document, "com.qin.debug.lsp.QinObjectFieldNameStubIndex");
-        assertStubIndex(document, "com.qin.debug.lsp.QinObjectMethodNameStubIndex");
     }
 
     private static void assertQinAnnotators(Document document) {
@@ -249,15 +235,19 @@ public final class QinLspPluginDescriptorSmokeTestMain {
                 "Unexpected Qin inspection: " + inspection.getAttribute("implementationClass"));
     }
 
-    private static void assertStubIndex(Document document, String implementation) {
+    private static void assertQinStubIndexes(Document document) {
+        Set<String> expected = Set.of(
+                "com.qin.debug.lsp.QinObjectNameStubIndex",
+                "com.qin.debug.lsp.QinObjectFieldNameStubIndex",
+                "com.qin.debug.lsp.QinObjectMethodNameStubIndex");
+        Set<String> actual = new HashSet<>();
         NodeList indexes = document.getElementsByTagName("stubIndex");
         for (int i = 0; i < indexes.getLength(); i++) {
             Element index = (Element) indexes.item(i);
-            if (implementation.equals(index.getAttribute("implementation"))) {
-                return;
-            }
+            actual.add(index.getAttribute("implementation"));
         }
-        throw new IllegalStateException("Missing StubIndex registration: " + implementation);
+        require(actual.equals(expected),
+                "Qin StubIndexes must be exactly " + expected + ", got " + actual);
     }
 
     private static void assertNoQinObjectNameFileBasedIndex(Document document) {
@@ -276,22 +266,6 @@ public final class QinLspPluginDescriptorSmokeTestMain {
             require(document.getElementsByTagName(tag).getLength() == 0,
                     "Qin LSP mode must not register local IDEA semantic extension: " + tag);
         }
-    }
-
-    private static void assertLanguageExtensionImplementation(
-            Document document,
-            String tagName,
-            String attributeName,
-            String expectedImplementation) {
-        NodeList extensions = document.getElementsByTagName(tagName);
-        for (int i = 0; i < extensions.getLength(); i++) {
-            Element extension = (Element) extensions.item(i);
-            if ("Qin".equals(extension.getAttribute("language"))
-                    && expectedImplementation.equals(extension.getAttribute(attributeName))) {
-                return;
-            }
-        }
-        throw new IllegalStateException("Missing Qin " + tagName + ": " + expectedImplementation);
     }
 
     private static void assertExtensionImplementation(
