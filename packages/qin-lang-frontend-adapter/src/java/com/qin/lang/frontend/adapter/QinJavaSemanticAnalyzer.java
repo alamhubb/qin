@@ -636,6 +636,9 @@ public final class QinJavaSemanticAnalyzer {
                         QinIrTypeRef.classType(classBinaryName),
                         methodCall.methodName(),
                         argumentTypes,
+                        List.of(),
+                        packageName,
+                        importedTypes,
                         methodReturnTypes,
                         classBinaryName);
             }
@@ -708,12 +711,15 @@ public final class QinJavaSemanticAnalyzer {
                     fieldTypes,
                     methodReturnTypes,
                     classBinaryName,
-                    targetParameterTypes(receiverType, methodCall.methodName(), methodCall.arguments().size()));
+                    targetParameterTypes(receiverType, methodCall.methodName(), methodCall.arguments().size(), methodCall.typeArgumentNames(), packageName, importedTypes));
             try {
                 return resolveInstanceMethodReturnType(
                         receiverType,
                         methodCall.methodName(),
                         argumentTypes,
+                        methodCall.typeArgumentNames(),
+                        packageName,
+                        importedTypes,
                         methodReturnTypes,
                         classBinaryName);
             } catch (RuntimeException e) {
@@ -990,11 +996,11 @@ public final class QinJavaSemanticAnalyzer {
                         classBinaryName,
                         lambdaExpression.bodyStatements());
             }
-            return QinIrTypeRef.classType(LAMBDA_BINARY_NAME);
+            return targetParameterType == null ? QinIrTypeRef.classType(LAMBDA_BINARY_NAME) : targetParameterType;
         }
         if (expression instanceof JavaAstMethodReferenceExpression methodReference) {
             resolveType(methodReference.ownerName(), packageName, importedTypes);
-            return QinIrTypeRef.classType(LAMBDA_BINARY_NAME);
+            return targetParameterType == null ? QinIrTypeRef.classType(LAMBDA_BINARY_NAME) : targetParameterType;
         }
         return expressionType(
                 expression,
@@ -1938,6 +1944,9 @@ public final class QinJavaSemanticAnalyzer {
             QinIrTypeRef receiverType,
             String methodName,
             List<QinIrTypeRef> argumentTypes,
+            List<String> methodTypeArgumentNames,
+            String packageName,
+            Map<String, String> importedTypes,
             Map<String, QinIrTypeRef> methodReturnTypes,
             String classBinaryName) {
         int argumentCount = argumentTypes.size();
@@ -1957,7 +1966,7 @@ public final class QinJavaSemanticAnalyzer {
         if (isArrayBinaryName(receiverType.binaryName()) && "clone".equals(methodName) && argumentTypes.isEmpty()) {
             return receiverType;
         }
-        QinIrTypeRef genericCollectionReturnType = genericCollectionReturnType(receiverType, methodName, argumentTypes);
+        QinIrTypeRef genericCollectionReturnType = genericCollectionReturnType(receiverType, methodName, argumentTypes, methodTypeArgumentNames, packageName, importedTypes);
         if (genericCollectionReturnType != null) {
             return genericCollectionReturnType;
         }
@@ -2514,7 +2523,10 @@ public final class QinJavaSemanticAnalyzer {
     private QinIrTypeRef genericCollectionReturnType(
             QinIrTypeRef receiverType,
             String methodName,
-            List<QinIrTypeRef> argumentTypes) {
+            List<QinIrTypeRef> argumentTypes,
+            List<String> methodTypeArgumentNames,
+            String packageName,
+            Map<String, String> importedTypes) {
         if (receiverType.typeArguments().isEmpty()) {
             return null;
         }
@@ -2580,6 +2592,12 @@ public final class QinJavaSemanticAnalyzer {
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
             return receiverType;
         }
+        if ("map".equals(methodName)
+                && argumentTypes.size() == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            QinIrTypeRef mappedType = streamMapReturnElementType(argumentTypes.get(0), methodTypeArgumentNames, packageName, importedTypes);
+            return QinIrTypeRef.classType("java.util.stream.Stream", List.of(mappedType));
+        }
         if ("collect".equals(methodName)
                 && argumentTypes.size() == 1
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
@@ -2598,10 +2616,28 @@ public final class QinJavaSemanticAnalyzer {
         return null;
     }
 
+    private QinIrTypeRef streamMapReturnElementType(
+            QinIrTypeRef functionType,
+            List<String> methodTypeArgumentNames,
+            String packageName,
+            Map<String, String> importedTypes) {
+        if (!methodTypeArgumentNames.isEmpty()) {
+            return resolveType(methodTypeArgumentNames.get(0), packageName, importedTypes);
+        }
+        if ("java.util.function.Function".equals(functionType.binaryName())
+                && functionType.typeArguments().size() > 1) {
+            return functionType.typeArguments().get(1);
+        }
+        return QinIrTypeRef.classType(Object.class.getName());
+    }
+
     private List<QinIrTypeRef> targetParameterTypes(
             QinIrTypeRef receiverType,
             String methodName,
-            int argumentCount) {
+            int argumentCount,
+            List<String> methodTypeArgumentNames,
+            String packageName,
+            Map<String, String> importedTypes) {
         if ("removalListener".equals(methodName)
                 && argumentCount == 1
                 && "com.github.benmanes.caffeine.cache.Caffeine".equals(receiverType.binaryName())) {
@@ -2664,6 +2700,16 @@ public final class QinJavaSemanticAnalyzer {
             return List.of(functionalTargetType(
                     "java.util.function.Predicate",
                     List.of(receiverType.typeArguments().get(0))));
+        }
+        if ("map".equals(methodName)
+                && argumentCount == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            QinIrTypeRef mappedType = methodTypeArgumentNames.isEmpty()
+                    ? QinIrTypeRef.classType(Object.class.getName())
+                    : resolveType(methodTypeArgumentNames.get(0), packageName, importedTypes);
+            return List.of(functionalTargetType(
+                    "java.util.function.Function",
+                    List.of(receiverType.typeArguments().get(0), mappedType)));
         }
         return List.of();
     }

@@ -20,6 +20,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                         .resolve("src").resolve("main").resolve("java"),
                 workspaceRoot.resolve("slime").resolve("java-slime").resolve("slime-token")
                         .resolve("src").resolve("main").resolve("java"),
+                workspaceRoot.resolve("slime").resolve("java-slime").resolve("slime-java")
+                        .resolve("src").resolve("main").resolve("java"),
                 workspaceRoot.resolve("slime").resolve("java-slime").resolve("subhuti-java")
                         .resolve("src").resolve("main").resolve("java"));
 
@@ -33,7 +35,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                         "com.qin.parser.QinParser",
                         List.of(
                                 "com.slime.parser.cstToAst.SlimeCstToAstUtils",
-                                "com.slime.parser.cstToAst.SlimeAstCreateUtils"),
+                                "com.slime.parser.cstToAst.SlimeAstCreateUtils",
+                                "com.slime.java.ast.JavaCstToAst"),
                         outputRoot);
 
         Map<String, QinJavaProjectJsCompiler.EsmFileOutput> byBinaryName = outputs.stream()
@@ -73,10 +76,14 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated package index does not eager-export SlimeCstToAstUtils");
         require(!indexText.contains("SlimeAstCreateUtils"),
                 "generated package index does not eager-export SlimeAstCreateUtils");
+        require(!indexText.contains("JavaCstToAst"),
+                "generated package index does not eager-export JavaCstToAst");
         require(packageJsonText.contains("\"./SlimeCstToAstUtils\""),
                 "generated package subpath-exports SlimeCstToAstUtils");
         require(packageJsonText.contains("\"./SlimeAstCreateUtils\""),
                 "generated package subpath-exports SlimeAstCreateUtils");
+        require(packageJsonText.contains("\"./JavaCstToAst\""),
+                "generated package subpath-exports JavaCstToAst");
         require(packageJsonText.contains("\"./SlimeCstToAstBridge\""),
                 "generated package subpath-exports SlimeCstToAstBridge");
         require(packageJsonText.contains("\"./SubhutiSourceLocation\""),
@@ -89,6 +96,9 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
         require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
                         .resolve("cstToAst").resolve("SlimeAstCreateUtils.ts")),
                 "generated SlimeAstCreateUtils TS output");
+        require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("java")
+                        .resolve("ast").resolve("JavaCstToAst.ts")),
+                "generated JavaCstToAst TS output");
         require(Files.isRegularFile(outputRoot.resolve("SlimeCstToAstBridge.ts")),
                 "generated SlimeCstToAstBridge TS output");
 
@@ -115,6 +125,7 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 } from "@qin/generated-qin-parser-ts";
                 import { com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "@qin/generated-qin-parser-ts/SlimeCstToAstUtils";
                 import { com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "@qin/generated-qin-parser-ts/SlimeAstCreateUtils";
+                import { com_slime_java_ast_JavaCstToAst as JavaCstToAst } from "@qin/generated-qin-parser-ts/JavaCstToAst";
                 import { com_subhuti_struct_SubhutiSourceLocation as SubhutiSourceLocation } from "@qin/generated-qin-parser-ts/SubhutiSourceLocation";
                 import {
                   SlimeCstToAst,
@@ -143,6 +154,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 const bridgeAst = SlimeCstToAstBridgeUtils.createPrimaryExpressionAst({
                   getName() { return "BridgeSmokePrimaryExpression"; }
                 });
+                const javaProgram = JavaCstToAst.parse("package demo; public class Greeter { public static String DEFAULT_NAME = \\\"Qin\\\"; public static String greet(String name) { return name; } }");
+                const javaClass = javaProgram.getClasses().get(0);
                 const names = collectNames(cst, []);
                 ({
                   cstName: cst ? cst.getName() : null,
@@ -150,6 +163,10 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                   hasQinObjectBody: names.includes("QinObjectDeclarationBody"),
                   hasSlimeCstToAstUtilsExport: typeof SlimeCstToAstUtils === "function",
                   hasSlimeAstCreateUtilsExport: typeof SlimeAstCreateUtils === "function",
+                  hasJavaCstToAstExport: typeof JavaCstToAst === "function",
+                  javaClassName: javaClass.getName(),
+                  javaStaticFieldName: javaClass.getFields().get(0).getName(),
+                  javaStaticMethodName: javaClass.getMethods().get(0).getName(),
                   hasSubhutiSourceLocationExport: typeof SubhutiSourceLocation === "function",
                   hasSlimeCstToAstBridgeExport: typeof SlimeCstToAst === "function"
                     && typeof registerSlimeCstToAstUtil === "function",
@@ -170,6 +187,14 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated Qin parser package exports SlimeCstToAstUtils");
         require(Boolean.TRUE.equals(map.get("hasSlimeAstCreateUtilsExport")),
                 "generated Qin parser package exports SlimeAstCreateUtils");
+        require(Boolean.TRUE.equals(map.get("hasJavaCstToAstExport")),
+                "generated Qin parser package exports JavaCstToAst");
+        require("Greeter".equals(map.get("javaClassName")),
+                "generated JavaCstToAst parses Java class name");
+        require("DEFAULT_NAME".equals(map.get("javaStaticFieldName")),
+                "generated JavaCstToAst parses Java static field name");
+        require("greet".equals(map.get("javaStaticMethodName")),
+                "generated JavaCstToAst parses Java static method name");
         require(Boolean.TRUE.equals(map.get("hasSubhutiSourceLocationExport")),
                 "generated Qin parser package exports SubhutiSourceLocation");
         require(Boolean.TRUE.equals(map.get("hasSlimeCstToAstBridgeExport")),

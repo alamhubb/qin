@@ -5,6 +5,6 @@ export default {
   generated: {
     source: "java",
     entryBinaryName: "com.qin.parser.QinParser",
-    additionalEntryBinaryNames: ["com.slime.parser.cstToAst.SlimeCstToAstUtils", "com.slime.parser.cstToAst.SlimeAstCreateUtils"]
+    additionalEntryBinaryNames: ["com.slime.parser.cstToAst.SlimeCstToAstUtils", "com.slime.parser.cstToAst.SlimeAstCreateUtils", "com.slime.java.ast.JavaCstToAst"]
   }
 }

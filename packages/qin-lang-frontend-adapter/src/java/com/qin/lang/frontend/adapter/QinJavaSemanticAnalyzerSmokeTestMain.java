@@ -1,6 +1,7 @@
 package com.qin.lang.frontend.adapter;
 
 import com.qin.lang.ir.QinIrTypeKind;
+import com.slime.java.ast.JavaAstStatement;
 import com.slime.java.ast.JavaCstToAst;
 import java.util.List;
 
@@ -16,6 +17,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                 import com.subhuti.struct.*;
                 import com.github.benmanes.caffeine.cache.Caffeine;
                 import com.github.benmanes.caffeine.cache.RemovalCause;
+                import com.slime.java.ast.JavaAstStatement;
                 record BackData(int codeIndex) {}
                 class OtherBuilderOwner { static class Builder {} }
                 class SourceNestedOwner { static class Builder { Builder touch() { return this; } } }
@@ -79,6 +81,11 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                             .filter(c -> name.equals(c.getName()))
                             .collect(java.util.stream.Collectors.toList());
                     }
+                    List<JavaAstStatement> streamMapToStatements(List<com.slime.java.ast.JavaAstExpression> expressions) {
+                        return expressions.stream()
+                            .<JavaAstStatement>map(com.slime.java.ast.JavaAstExpressionStatement::new)
+                            .toList();
+                    }
                     SubhutiCst streamFindFirst(List<SubhutiCst> children, String name) {
                         return children.stream()
                             .filter(c -> name.equals(c.getName()) && c.getValue() != null)
@@ -127,7 +134,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 32, "method count");
+        require(person.methods().size() == 33, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
@@ -224,35 +231,43 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                 "stream filter expression generic count");
         require("com.subhuti.struct.SubhutiCst".equals(streamFilter.returnExpressionType().typeArguments().get(0).binaryName()),
                 "stream filter expression generic binary name");
-        QinJavaSemanticMethod streamFindFirst = person.methods().get(23);
+        QinJavaSemanticMethod streamMapToStatements = person.methods().get(23);
+        require("java.util.List".equals(streamMapToStatements.returnExpressionType().binaryName()),
+                "stream map toList expression binary name");
+        require(streamMapToStatements.returnExpressionType().typeArguments().size() == 1,
+                "stream map toList expression generic count");
+        require(JavaAstStatement.class.getName().equals(streamMapToStatements.returnExpressionType().typeArguments().get(0).binaryName()),
+                "stream map toList expression generic binary name: "
+                        + streamMapToStatements.returnExpressionType().typeArguments().get(0));
+        QinJavaSemanticMethod streamFindFirst = person.methods().get(24);
         require("com.subhuti.struct.SubhutiCst".equals(streamFindFirst.returnType().binaryName()),
                 "stream find first declared return binary name");
         require("com.subhuti.struct.SubhutiCst".equals(streamFindFirst.returnExpressionType().binaryName()),
                 "stream find first expression return binary name");
-        QinJavaSemanticMethod mergeCount = person.methods().get(24);
+        QinJavaSemanticMethod mergeCount = person.methods().get(25);
         require("java.lang.Integer".equals(mergeCount.returnType().binaryName()),
                 "merge count declared return binary name");
         require("java.lang.Integer".equals(mergeCount.returnExpressionType().binaryName()),
                 "merge count expression return binary name");
-        QinJavaSemanticMethod firstChildName = person.methods().get(25);
+        QinJavaSemanticMethod firstChildName = person.methods().get(26);
         require(firstChildName.returnExpressionType().kind() == QinIrTypeKind.STRING,
                 "generic list get chained method return type");
-        QinJavaSemanticMethod prefixIncrementIndex = person.methods().get(26);
+        QinJavaSemanticMethod prefixIncrementIndex = person.methods().get(27);
         require(prefixIncrementIndex.returnExpressionType().kind() == QinIrTypeKind.INT,
                 "prefix increment index char return type");
-        QinJavaSemanticMethod typedArray = person.methods().get(27);
+        QinJavaSemanticMethod typedArray = person.methods().get(28);
         require("[Lcom.subhuti.struct.SubhutiCst;".equals(typedArray.returnExpressionType().binaryName()),
                 "generic collection toArray typed return type");
-        QinJavaSemanticMethod enhancedForVarChildName = person.methods().get(28);
+        QinJavaSemanticMethod enhancedForVarChildName = person.methods().get(29);
         require(enhancedForVarChildName.returnExpressionType().kind() == QinIrTypeKind.STRING,
                 "enhanced for var generic element method return type");
-        QinJavaSemanticMethod conditionalPatternName = person.methods().get(29);
+        QinJavaSemanticMethod conditionalPatternName = person.methods().get(30);
         require(conditionalPatternName.returnExpressionType().kind() == QinIrTypeKind.STRING,
                 "conditional expression pattern variable return type");
-        QinJavaSemanticMethod logicalPatternName = person.methods().get(30);
+        QinJavaSemanticMethod logicalPatternName = person.methods().get(31);
         require(logicalPatternName.returnExpressionType().kind() == QinIrTypeKind.BOOLEAN,
                 "logical expression pattern variable return type");
-        QinJavaSemanticMethod guardPatternName = person.methods().get(31);
+        QinJavaSemanticMethod guardPatternName = person.methods().get(32);
         require(guardPatternName.returnExpressionType().kind() == QinIrTypeKind.STRING,
                 "guard return pattern variable return type");
 

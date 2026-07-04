@@ -17,10 +17,12 @@ public final class QinLanguageGenerateParserSmokeTestMain {
                 root.resolve("../slime/java-slime/slime-token/src/main/java").normalize(),
                 root.resolve("../slime/java-slime/slime-ast/src/main/java").normalize(),
                 root.resolve("../slime/java-slime/slime-parser/src/main/java").normalize(),
+                root.resolve("../slime/java-slime/slime-java/src/main/java").normalize(),
                 root.resolve("packages/qin-parser/src/java").normalize());
         List<String> additionalEntries = List.of(
                 "com.slime.parser.cstToAst.SlimeCstToAstUtils",
-                "com.slime.parser.cstToAst.SlimeAstCreateUtils");
+                "com.slime.parser.cstToAst.SlimeAstCreateUtils",
+                "com.slime.java.ast.JavaCstToAst");
 
         List<QinJavaProjectJsCompiler.EsmFileOutput> outputs = new QinJavaProjectJsCompiler()
                 .compileSuperclassClosureEsmTsFiles(
@@ -40,6 +42,18 @@ public final class QinLanguageGenerateParserSmokeTestMain {
         String typeCstToAstSource = Files.readString(typeCstToAst, StandardCharsets.UTF_8);
         if (!typeCstToAstSource.contains("com_slime_ast_AstNodeType as AstNodeType")) {
             throw new IllegalStateException("Generated SlimeTSTypeCstToAst.ts must import AstNodeType");
+        }
+        Path javaCstToAst = outputRoot.resolve("com")
+                .resolve("slime")
+                .resolve("java")
+                .resolve("ast")
+                .resolve("JavaCstToAst.ts");
+        if (!Files.isRegularFile(javaCstToAst)) {
+            throw new IllegalStateException("Generated JavaCstToAst.ts must exist");
+        }
+        String packageJsonSource = Files.readString(outputRoot.resolve("package.json"), StandardCharsets.UTF_8);
+        if (!packageJsonSource.contains("\"./JavaCstToAst\"")) {
+            throw new IllegalStateException("Generated package must subpath-export JavaCstToAst");
         }
         System.out.println("QinLanguageGenerateParserSmokeTestMain OK " + outputs.size());
     }

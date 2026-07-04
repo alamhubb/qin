@@ -18,6 +18,7 @@ export {
 
 export {
   __QinJavaLangBoolean,
+  __QinJavaLangCharacter,
   __QinSlf4jLogger,
   __QinSlf4jLoggerFactory,
   __QinJavaLangInteger,

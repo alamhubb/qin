@@ -4,6 +4,7 @@ export const qinJavaSdkCompatibility = {
     "java.lang.String": "partial",
     "java.lang.StringBuilder": "partial",
     "java.lang.Boolean": "partial",
+    "java.lang.Character": "partial",
     "java.lang.Integer": "partial",
     "java.lang.Double": "partial",
     "java.lang.Enum": "partial",

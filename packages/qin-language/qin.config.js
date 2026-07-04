@@ -40,14 +40,16 @@ export default {
     entryBinaryName: "com.qin.parser.QinParser",
     additionalEntryBinaryNames: [
       "com.slime.parser.cstToAst.SlimeCstToAstUtils",
-      "com.slime.parser.cstToAst.SlimeAstCreateUtils"
+      "com.slime.parser.cstToAst.SlimeAstCreateUtils",
+      "com.slime.java.ast.JavaCstToAst"
     ],
     sourceRoots: [
       "../qin-parser/src/java",
       "../../../slime/java-slime/slime-parser/src/main/java",
       "../../../slime/java-slime/slime-ast/src/main/java",
       "../../../slime/java-slime/slime-token/src/main/java",
-      "../../../slime/java-slime/subhuti-java/src/main/java"
+      "../../../slime/java-slime/subhuti-java/src/main/java",
+      "../../../slime/java-slime/slime-java/src/main/java"
     ],
     outputDir: "generated/qin-parser-ts"
   },

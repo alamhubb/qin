@@ -91,6 +91,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__qin_java_pattern_regexp__",
             "__QinJavaLangString",
             "__QinJavaLangBoolean",
+            "__QinJavaLangCharacter",
             "__QinSlf4jLogger",
             "__QinSlf4jLoggerFactory",
             "__QinJavaLangInteger",
@@ -299,6 +300,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("// Qin Java SDK for generated JavaScript\n");
         backend.emitBuiltinRuntimeHelpers(js, null);
         backend.emitJavaLangBooleanRuntime(js);
+        backend.emitJavaLangCharacterRuntime(js);
         backend.emitSlf4jRuntime(js);
         backend.emitJavaLangIntegerRuntime(js);
         backend.emitJavaLangDoubleRuntime(js);
@@ -828,6 +830,10 @@ public class QinJsBackend implements QinIrCodeBackend {
                 emitJavaLangSystemRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangSystem");
             }
+            case "java.lang.Character" -> {
+                emitJavaLangCharacterRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangCharacter");
+            }
             case "java.io.File" -> {
                 emitJavaIoFileRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaIoFile");
@@ -1007,6 +1013,7 @@ public class QinJsBackend implements QinIrCodeBackend {
 
     private boolean isJavaSdkToolingRuntimeImport(String name) {
         return "__qin_subhuti_rule_cache_key".equals(name)
+                || "__qin_subhuti_parser_create".equals(name)
                 || "__QinJavaIoFile".equals(name)
                 || "__QinJavaNioFilePath".equals(name)
                 || "__QinJavaNioFilePaths".equals(name)
@@ -1440,6 +1447,30 @@ public class QinJsBackend implements QinIrCodeBackend {
                 };
                 const __QinSlf4jLoggerFactory = {
                   getLogger(_owner) { return __QinSlf4jLogger; }
+                };
+                """);
+    }
+
+    private void emitJavaLangCharacterRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangCharacter");
+            return;
+        }
+        if (js.indexOf("const __QinJavaLangCharacter") >= 0) {
+            return;
+        }
+        js.append("""
+                const __QinJavaLangCharacter = {
+                  charCount(value) { const codePoint = Number(value); return codePoint >= 0x10000 && codePoint <= 0x10FFFF ? 2 : 1; },
+                  isWhitespace(value) { return /\\s/u.test(__QinJavaLangCharacter.__char(value)); },
+                  isLetter(value) { return /\\p{L}/u.test(__QinJavaLangCharacter.__char(value)); },
+                  isLetterOrDigit(value) { return /[\\p{L}\\p{N}]/u.test(__QinJavaLangCharacter.__char(value)); },
+                  isJavaIdentifierStart(value) { return /[$_\\p{L}]/u.test(__QinJavaLangCharacter.__char(value)); },
+                  toUpperCase(value) { return __QinJavaLangCharacter.__char(value).toUpperCase(); },
+                  toLowerCase(value) { return __QinJavaLangCharacter.__char(value).toLowerCase(); },
+                  __char(value) {
+                    return typeof value === "number" ? String.fromCodePoint(value) : String(value).charAt(0);
+                  }
                 };
                 """);
     }
@@ -4035,6 +4066,10 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("]");
     }
 
+    private boolean isSubhutiParserCreateCall(QinIrStaticMethodCallExpression expression) {
+        return "com.subhuti.parser.SubhutiParser".equals(expression.ownerBinaryName())
+                && "create".equals(expression.methodName());
+    }
     private void emitJavaClassLiteral(StringBuilder js, QinIrJavaClassLiteralExpression classLiteralExpression) {
         String displayName = classLiteralExpression.binaryName() == null
                 ? classLiteralExpression.typeName()
@@ -5983,6 +6018,13 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
+            if (isSubhutiParserCreateCall(staticMethodCallExpression)) {
+                requireExternalJavaSdkRuntime("__qin_subhuti_parser_create");
+                js.append("__qin_subhuti_parser_create(");
+                emitArguments(js, staticMethodCallExpression.arguments());
+                js.append(")");
+                return;
+            }
             ensureSupportedJavaOwner(staticMethodCallExpression.ownerBinaryName());
             js.append(javaOwnerReference(
                             staticMethodCallExpression.ownerBinaryName(),
@@ -6386,6 +6428,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.util.Optional".equals(ownerBinaryName)
                 || "java.util.stream.Collectors".equals(ownerBinaryName)
                 || "java.lang.String".equals(ownerBinaryName)
+                || "java.lang.Boolean".equals(ownerBinaryName)
                 || "java.lang.StringBuilder".equals(ownerBinaryName)
                 || "java.lang.Integer".equals(ownerBinaryName)
                 || "java.lang.Double".equals(ownerBinaryName)
@@ -6403,6 +6446,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.lang.IllegalArgumentException".equals(ownerBinaryName)
                 || "java.lang.IllegalStateException".equals(ownerBinaryName)
                 || "java.lang.System".equals(ownerBinaryName)
+                || "java.lang.Character".equals(ownerBinaryName)
                 || "java.io.IOException".equals(ownerBinaryName)
                 || "java.lang.Math".equals(ownerBinaryName)
                 || "java.io.File".equals(ownerBinaryName)
@@ -6495,6 +6539,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.IllegalArgumentException" -> "__QinJavaLangIllegalArgumentException";
             case "java.lang.IllegalStateException" -> "__QinJavaLangIllegalStateException";
             case "java.lang.System" -> "__QinJavaLangSystem";
+            case "java.lang.Character" -> "__QinJavaLangCharacter";
             case "java.io.IOException" -> "__QinJavaIoIOException";
             case "java.io.File" -> "__QinJavaIoFile";
             case "java.io.FileWriter" -> "__QinJavaIoFileWriter";

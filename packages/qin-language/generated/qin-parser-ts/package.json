@@ -23,6 +23,11 @@
       "import": "./com/slime/parser/cstToAst/SlimeAstCreateUtils.ts",
       "default": "./com/slime/parser/cstToAst/SlimeAstCreateUtils.ts"
     },
+    "./JavaCstToAst": {
+      "types": "./com/slime/java/ast/JavaCstToAst.ts",
+      "import": "./com/slime/java/ast/JavaCstToAst.ts",
+      "default": "./com/slime/java/ast/JavaCstToAst.ts"
+    },
 
     "./SlimeCstToAstBridge": {
       "types": "./SlimeCstToAstBridge.ts",

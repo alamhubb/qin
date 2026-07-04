@@ -16,6 +16,16 @@ export const __QinJavaLangBoolean = {
     return String(value).toLowerCase() === "true";
   }
 };
+export const __QinJavaLangCharacter = {
+  __char(value) { return typeof value === "number" ? String.fromCodePoint(value) : String(value).charAt(0); },
+  isWhitespace(value) { return /\s/u.test(__QinJavaLangCharacter.__char(value)); },
+  isLetter(value) { return /\p{L}/u.test(__QinJavaLangCharacter.__char(value)); },
+  isLetterOrDigit(value) { return /[\p{L}\p{N}]/u.test(__QinJavaLangCharacter.__char(value)); },
+  isJavaIdentifierStart(value) { return /[$_\p{L}]/u.test(__QinJavaLangCharacter.__char(value)); },
+  toUpperCase(value) { return __QinJavaLangCharacter.__char(value).toUpperCase(); },
+  toLowerCase(value) { return __QinJavaLangCharacter.__char(value).toLowerCase(); },
+  charCount(value) { return Number(value) > 0xffff ? 2 : 1; }
+};
 export const __QinSlf4jLogger = {
   warn(_message, ..._args) { return null; },
   info(_message, ..._args) { return null; },

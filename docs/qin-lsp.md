@@ -100,6 +100,7 @@ Co
 ```
 
 Do not modify the user's Qin source to add semicolons. Add semicolons only in generated TypeScript, linked module output, or other compiler-owned emitted code where the emitter knows it is ending a statement.
+Generated TypeScript parser packages must not execute JVM-only Subhuti factory internals. `SubhutiParser.create(...)` is a JVM ByteBuddy enhancement entry point in Java source, but generated TypeScript parser methods already emit `executeRuleWrapper(...)` around `@SubhutiRule` bodies. When lowering `com.subhuti.parser.SubhutiParser.create(...)` for JS/TS output, emit the `@qin/java-sdk-js/tooling` helper `__qin_subhuti_parser_create(...)`, which constructs the parser from Qin class metadata. Do not leave the Java reflection path (`Class.forName("com.subhuti.aop.ByteBuddyParserFactory")`, cached `Method.invoke`) in generated TS and do not add a fallback raw parser path in tests.
 
 ## Completion Rules
 
