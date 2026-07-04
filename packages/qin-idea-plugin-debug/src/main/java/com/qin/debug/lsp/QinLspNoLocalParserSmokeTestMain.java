@@ -100,6 +100,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertJavaRunSurfacesUseSharedPsiHelper(javaRoot);
         assertRunConfigurationDefaultsAreShared(javaRoot);
         assertRunCommandLinesAreShared(javaRoot);
+        assertCliProcessBuildersAreShared(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -1611,6 +1612,44 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !testStateSource.contains("command.add("),
                 "QinTestRunProfileState must consume QinRunCommandLines instead of owning "
                         + "test command construction: " + testProfileState);
+    }
+
+    private static void assertCliProcessBuildersAreShared(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinCliProcessBuilders.java"));
+        require(Files.isRegularFile(helper),
+                "Qin CLI process builder helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("bspServer(")
+                        && helperSource.contains("compileChangedJava(")
+                        && helperSource.contains("syncDependencies(")
+                        && helperSource.contains("syncProjectForce(")
+                        && helperSource.contains("syncWorkspaceForce(")
+                        && helperSource.contains("toolWindowTask(")
+                        && helperSource.contains("QinCommandResolver.createProcessBuilder(projectPath, \"bsp\")")
+                        && helperSource.contains("QinCommandResolver.createProcessBuilder(projectPath, \"compile\")")
+                        && helperSource.contains("QinCommandResolver.createProcessBuilder(projectPath, \"sync\")")
+                        && helperSource.contains("QinCommandResolver.createProcessBuilder(projectPath, \"sync\", \"--force\")")
+                        && helperSource.contains("QinCommandResolver.createProcessBuilder(workspacePath, \"sync\", \"--all\", \"--force\")")
+                        && helperSource.contains("QinCommandResolver.createProcessBuilder(projectPath, \"dev\")")
+                        && helperSource.contains("QinCommandResolver.createProcessBuilder(projectPath, \"script\", scriptName)"),
+                "QinCliProcessBuilders must own IDEA background/tool-window Qin CLI "
+                        + "ProcessBuilder command shapes: " + helper);
+
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "BspClient.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "DebugStartup.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "QinJavaFileWatcher.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "QinProjectSync.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "QinToolWindowFactory.java")))) {
+            require(Files.isRegularFile(file),
+                    "Qin CLI process builder consumer source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinCliProcessBuilders.")
+                            && !source.contains("QinCommandResolver.createProcessBuilder"),
+                    "IDEA background and tool-window surfaces must consume QinCliProcessBuilders "
+                            + "instead of owning Qin CLI ProcessBuilder command shapes: " + file);
+        }
     }
 
     private static boolean isAllowedSourceFile(Path file) {

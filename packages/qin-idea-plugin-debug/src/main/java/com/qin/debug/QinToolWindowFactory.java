@@ -206,19 +206,10 @@ public class QinToolWindowFactory implements ToolWindowFactory {
 
         new Thread(() -> {
             try {
-                // sync 鍛戒护浣跨敤 --force 寮哄埗鍚屾
-                ProcessBuilder pb;
-                if ("sync".equals(task.command)) {
-                    pb = QinCommandResolver.createProcessBuilder(task.projectPath, "sync", "--force");
-                } else if ("script".equals(task.command)) {
-                    if ("dev".equals(task.scriptName)) {
-                        pb = QinCommandResolver.createProcessBuilder(task.projectPath, "dev");
-                    } else {
-                        pb = QinCommandResolver.createProcessBuilder(task.projectPath, "script", task.scriptName);
-                    }
-                } else {
-                    pb = QinCommandResolver.createProcessBuilder(task.projectPath, task.command);
-                }
+                ProcessBuilder pb = QinCliProcessBuilders.toolWindowTask(
+                        task.projectPath,
+                        task.command,
+                        task.scriptName);
                 Process process = pb.start();
 
                 try (BufferedReader reader = new BufferedReader(
@@ -327,7 +318,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                     appendLog("[璋冪敤 qin sync --all --force]\n");
 
                     // 鐩存帴璋冪敤 CLI 鍛戒护锛岀敱 CLI 澶勭悊鎵€鏈夐€昏緫
-                    ProcessBuilder pb = QinCommandResolver.createProcessBuilder(project.getBasePath(), "sync", "--all", "--force");
+                    ProcessBuilder pb = QinCliProcessBuilders.syncWorkspaceForce(project.getBasePath());
 
                     Process process = pb.start();
                     try (BufferedReader reader = new BufferedReader(

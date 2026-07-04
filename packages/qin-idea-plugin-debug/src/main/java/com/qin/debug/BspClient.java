@@ -43,7 +43,7 @@ public class BspClient {
                 throw new IllegalStateException("Missing " + CONFIG_FILE + " in " + projectPath);
             }
 
-            ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath, "bsp");
+            ProcessBuilder pb = QinCliProcessBuilders.bspServer(projectPath);
 
             Process process = pb.start();
 

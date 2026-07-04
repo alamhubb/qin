@@ -135,7 +135,7 @@ public class DebugStartup implements ProjectActivity {
      * 闂傚倷绀佸﹢閬嶆偡閹惰棄骞㈤柍鍝勫€归弶?qin sync 闂傚倷绀侀幉锛勭矙閹烘鍨傛繝闈涱儏缁?
      */
     private void runQinSync(String projectPath) throws IOException, InterruptedException {
-        ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath, "sync");
+        ProcessBuilder pb = QinCliProcessBuilders.syncDependencies(projectPath);
 
         Process process = pb.start();
 

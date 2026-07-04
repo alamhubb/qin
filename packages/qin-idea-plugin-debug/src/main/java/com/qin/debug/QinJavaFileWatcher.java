@@ -198,7 +198,7 @@ public class QinJavaFileWatcher {
 
     private boolean runQinCompile(String projectPath) {
         try {
-            ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath, "compile");
+            ProcessBuilder pb = QinCliProcessBuilders.compileChangedJava(projectPath);
 
             Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(

@@ -123,7 +123,7 @@ public class QinProjectSync {
     public void syncDependencies(Path projectPath) {
         try {
             QinLogger.info("[Sync] Running `qin sync` for project dependencies...");
-            ProcessBuilder pb = QinCommandResolver.createProcessBuilder(projectPath.toString(), "sync");
+            ProcessBuilder pb = QinCliProcessBuilders.syncDependencies(projectPath.toString());
 
             Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(
