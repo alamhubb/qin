@@ -192,9 +192,16 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinPsiReferences source not found: " + psiReferences);
         String psiReferencesSource = Files.readString(psiReferences);
         require(psiReferencesSource.contains("QinPsiTree.elementAt(file, offset)")
+                        && psiReferencesSource.contains("QinPsiTree.referenceRangeInFile(reference)")
                         && !psiReferencesSource.contains("file.findElementAt(offset)"),
                 "QinPsiReferences.findReferenceAt must ask QinPsiTree for offset-to-leaf "
                         + "lookup instead of owning PsiFile.findElementAt: " + psiReferences);
+        require(psiTreeSource.contains("referenceRangeInFile(@NotNull PsiReference reference)")
+                        && psiTreeSource.contains("reference.getRangeInElement()")
+                        && psiTreeSource.contains("reference.getElement().getTextRange().getStartOffset()")
+                        && !psiReferencesSource.contains("reference.getElement().getTextRange().getStartOffset()"),
+                "QinPsiTree must own PsiReference relative range to file range bridging: "
+                        + psiTree);
     }
 
     private static void assertSyntaxHighlighterCoverageUsesTextAttributes(Path testJavaRoot) throws Exception {

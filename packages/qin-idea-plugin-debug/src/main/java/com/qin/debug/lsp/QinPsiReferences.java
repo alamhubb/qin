@@ -55,8 +55,6 @@ final class QinPsiReferences {
     }
 
     private static boolean containsOffset(@NotNull PsiReference reference, int offset) {
-        return reference.getRangeInElement()
-                .shiftRight(reference.getElement().getTextRange().getStartOffset())
-                .containsOffset(offset);
+        return QinPsiTree.referenceRangeInFile(reference).containsOffset(offset);
     }
 }

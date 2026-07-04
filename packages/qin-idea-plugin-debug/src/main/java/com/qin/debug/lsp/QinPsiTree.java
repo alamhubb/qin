@@ -1,10 +1,12 @@
 package com.qin.debug.lsp;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.PsiReference;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +27,11 @@ final class QinPsiTree {
 
     static @Nullable PsiFile psiFile(@NotNull Project project, @NotNull VirtualFile file) {
         return PsiManager.getInstance(project).findFile(file);
+    }
+
+    static @NotNull TextRange referenceRangeInFile(@NotNull PsiReference reference) {
+        return reference.getRangeInElement()
+                .shiftRight(reference.getElement().getTextRange().getStartOffset());
     }
 
     static @Nullable PsiFile containingFile(@NotNull PsiElement element) {
