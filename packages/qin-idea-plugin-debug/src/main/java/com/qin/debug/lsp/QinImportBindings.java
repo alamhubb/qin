@@ -21,13 +21,7 @@ final class QinImportBindings {
     }
 
     static @Nullable ImportBinding findForSpecifierElement(@NotNull PsiElement element) {
-        PsiFile file = element.getContainingFile();
-        if (file == null) {
-            return null;
-        }
-        int offset = element.getTextRange().getStartOffset();
-        QinSourceStructure sourceStructure = QinPsiTree.sourceStructure(file);
-        QinSourceStructure.ImportSpecifierMatch match = sourceStructure.importSpecifierAtNameOffset(offset);
+        QinSourceStructure.ImportSpecifierMatch match = QinPsiTree.importSpecifierMatchAtNameElement(element);
         if (match == null) {
             return null;
         }

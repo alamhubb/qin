@@ -707,19 +707,31 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(importBindings),
                 "QinImportBindings source not found: " + importBindings);
         String source = Files.readString(importBindings);
-        require(source.contains(".importSpecifierAtNameOffset(offset)")
+        require(source.contains("QinPsiTree.importSpecifierMatchAtNameElement(")
                         && source.contains(".importSpecifierMatches()")
                         && source.contains("QinPsiTree.sourceStructure(")
                         && !source.contains("QinSourceStructure.parse(file.getText())")
+                        && !source.contains("getTextRange().getStartOffset()")
+                        && !source.contains(".importSpecifierAtNameOffset(")
                         && !source.contains("sourceStructure.importDeclarations()")
                         && !source.contains(".specifiers()")
                         && !source.contains(".specifierAtNameOffset(offset)")
                         && !source.contains("exportedNameRange().startsAt")
                         && !source.contains("localNameRange().startsAt"),
-                "QinImportBindings must use QinSourceStructure.importSpecifierAtNameOffset "
-                        + "and QinSourceStructure.importSpecifierMatches instead of iterating declarations "
-                        + "or splitting named import ranges, and must ask QinPsiTree to bridge "
-                        + "PsiFile source structure: " + importBindings);
+                "QinImportBindings must use QinPsiTree.importSpecifierMatchAtNameElement "
+                        + "and QinSourceStructure.importSpecifierMatches instead of owning import-name "
+                        + "offset lookup, iterating declarations, or splitting named import ranges: "
+                        + importBindings);
+
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("importSpecifierMatchAtNameElement(")
+                        && psiTreeSource.contains("element.getTextRange().getStartOffset()")
+                        && psiTreeSource.contains(".importSpecifierAtNameOffset(offset)"),
+                "QinPsiTree must own import-name PSI element to source-structure offset lookup: "
+                        + psiTree);
     }
 
     private static void assertImportBindingsUseSourceStructureAliasLookup(Path javaRoot) throws Exception {

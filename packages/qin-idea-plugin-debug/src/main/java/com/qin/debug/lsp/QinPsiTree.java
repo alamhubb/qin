@@ -70,6 +70,16 @@ final class QinPsiTree {
         return elementAtRangeOrParentOfType(file, specifier.exportedNameRange(), QinTokenTypes.REFERENCE_IDENTIFIER);
     }
 
+    static @Nullable QinSourceStructure.ImportSpecifierMatch importSpecifierMatchAtNameElement(
+            @NotNull PsiElement element) {
+        PsiFile file = element.getContainingFile();
+        if (file == null) {
+            return null;
+        }
+        int offset = element.getTextRange().getStartOffset();
+        return sourceStructure(file).importSpecifierAtNameOffset(offset);
+    }
+
     static @Nullable PsiElement objectNameElement(
             @NotNull PsiFile file,
             @NotNull QinSourceStructure.ObjectDeclaration declaration) {
