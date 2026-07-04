@@ -1596,6 +1596,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinObjectFieldReference(reference.getElement());
     }
 
+    public void testQinObjectFieldReferenceResolvesAcrossAliasedRelativeImport() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.val<caret>ue
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNotNull("Aliased imported Qin object field reference was not registered", reference);
+        PsiElement fieldName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
+        assertEquals("value", fieldName.getText());
+        assertEquals("Counter.qin", fieldName.getContainingFile().getName());
+        assertSingleQinObjectFieldReference(reference.getElement());
+    }
+
     public void testQinObjectFieldGoToDeclarationTargetsImportedFieldName() {
         myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
@@ -1606,6 +1628,26 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 import { Counter } from "./Counter.qin"
 
                 const value = Counter.val<caret>ue
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiElement fieldName = assertInstanceOf(myFixture.getElementAtCaret(), PsiElement.class);
+
+        assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
+        assertEquals("value", fieldName.getText());
+        assertEquals("Counter.qin", fieldName.getContainingFile().getName());
+    }
+
+    public void testQinObjectFieldGoToDeclarationTargetsAliasedImportedFieldName() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.val<caret>ue
                 """);
         myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
 
