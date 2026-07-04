@@ -60,7 +60,7 @@ final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElem
     }
 
     private static @Nullable PsiElement resolveMethodName(@NotNull PsiElement element) {
-        String objectName = QinJavaReference.previousQualifierName(element);
+        String objectName = QinReferenceElements.previousQualifierName(element);
         if ("this".equals(objectName)) {
             return QinObjectSymbols.findMethodNameForThis(element, element.getText());
         }
@@ -71,7 +71,7 @@ final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElem
     }
 
     private static boolean hasObjectMethodQualifier(@NotNull PsiElement element) {
-        String objectName = QinJavaReference.previousQualifierName(element);
+        String objectName = QinReferenceElements.previousQualifierName(element);
         if ("this".equals(objectName)) {
             return QinObjectSymbols.findMethodNameForThis(element, element.getText()) != null
                     || QinObjectSymbols.findFieldNameForThis(element, element.getText()) == null;

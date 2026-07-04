@@ -31,7 +31,7 @@ final class QinUnresolvedReferenceMessages {
             return null;
         }
         QinJavaImportTable importTable = QinJavaImportTable.fromFile(element.getContainingFile());
-        String qualifier = QinJavaReference.previousQualifierName(element);
+        String qualifier = QinReferenceElements.previousQualifierName(element);
         if (qualifier != null) {
             QinJavaImportTable.JavaImport importedClass = importTable.find(qualifier);
             if (importedClass == null
@@ -55,7 +55,7 @@ final class QinUnresolvedReferenceMessages {
                 || QinPsiReferences.unresolvedReferenceOfType(element, QinObjectMethodReference.class) == null) {
             return null;
         }
-        String objectName = QinJavaReference.previousQualifierName(element);
+        String objectName = QinReferenceElements.previousQualifierName(element);
         return "Unresolved Qin object method " + objectName + "." + element.getText();
     }
 
@@ -65,7 +65,7 @@ final class QinUnresolvedReferenceMessages {
                 || QinPsiTokenStream.isFollowedByCallParenthesis(element)) {
             return null;
         }
-        String qualifier = QinJavaReference.previousQualifierName(element);
+        String qualifier = QinReferenceElements.previousQualifierName(element);
         if (qualifier == null
                 || QinPsiReferences.unresolvedReferenceOfType(element, QinObjectFieldReference.class) == null) {
             return null;

@@ -50,7 +50,7 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
     }
 
     static boolean isObjectReferenceCandidate(@NotNull PsiElement element) {
-        return QinJavaReference.previousQualifierName(element) == null
+        return QinReferenceElements.previousQualifierName(element) == null
                 && !QinImportBindings.isAliasedLocalSpecifierElement(element)
                 && !isImportedAliasLocalReference(element)
                 && QinJavaImportTable.fromFile(element.getContainingFile()).find(element.getText()) == null

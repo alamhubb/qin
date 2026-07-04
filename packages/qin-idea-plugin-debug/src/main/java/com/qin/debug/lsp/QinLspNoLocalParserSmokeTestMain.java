@@ -42,6 +42,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoDirectReferenceRegistryAccess(javaRoot);
         assertNoDirectJavaPsiAccess(javaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
+        assertQualifierLookupUsesSharedReferenceElements(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertImportAliasPsiBridgeUsesQinPsiTree(javaRoot);
@@ -134,6 +135,39 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("bodyRange().endOffset()"),
                 "QinParserDefinition must consume QinSourceStructure.SourceRange predicates "
                         + "instead of directly splitting body ranges: " + parserDefinition);
+    }
+
+    private static void assertQualifierLookupUsesSharedReferenceElements(Path javaRoot) throws Exception {
+        Path referenceElements = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinReferenceElements.java"));
+        require(Files.isRegularFile(referenceElements),
+                "QinReferenceElements source not found: " + referenceElements);
+        String helperSource = Files.readString(referenceElements);
+        require(helperSource.contains("previousQualifierName(")
+                        && helperSource.contains("QinTokenTypes.MEMBER_ACCESS")
+                        && helperSource.contains("QinPsiTokenStream.previousQualifierName("),
+                "QinReferenceElements must own shared Qin qualifier lookup: " + referenceElements);
+
+        Path javaReference = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinJavaReference.java"));
+        require(Files.isRegularFile(javaReference),
+                "QinJavaReference source not found: " + javaReference);
+        String javaReferenceSource = Files.readString(javaReference);
+        require(!javaReferenceSource.contains("static @Nullable String previousQualifierName("),
+                "QinJavaReference must not own generic Qin qualifier lookup: " + javaReference);
+
+        try (var files = Files.walk(javaRoot)) {
+            for (Path file : files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> !path.getFileName().toString().equals("QinLspNoLocalParserSmokeTestMain.java"))
+                    .toList()) {
+                String source = Files.readString(file);
+                require(!source.contains("QinJavaReference.previousQualifierName("),
+                        "Qin qualifier lookup must flow through QinReferenceElements, not QinJavaReference: "
+                                + file);
+            }
+        }
     }
 
     private static void assertImportBindingsUseSourceStructureSpecifierLookup(Path javaRoot) throws Exception {

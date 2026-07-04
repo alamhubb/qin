@@ -49,7 +49,7 @@ final class QinImportAliasReference extends PsiPolyVariantReferenceBase<PsiEleme
     static boolean isImportAliasReferenceCandidate(@NotNull PsiElement element) {
         return element.getNode() != null
                 && element.getNode().getElementType() != QinTokenTypes.IMPORT_ALIAS_NAME
-                && QinJavaReference.previousQualifierName(element) == null
+                && QinReferenceElements.previousQualifierName(element) == null
                 && QinImportBindings.findAliasName(element, element.getText()) != null;
     }
 

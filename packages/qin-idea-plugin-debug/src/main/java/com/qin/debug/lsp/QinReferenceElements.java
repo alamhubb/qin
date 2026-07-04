@@ -24,4 +24,12 @@ final class QinReferenceElements {
         }
         return null;
     }
+
+    static @Nullable String previousQualifierName(@NotNull PsiElement element) {
+        PsiElement parent = element.getParent();
+        if (parent != null && QinPsiTree.isType(parent, QinTokenTypes.MEMBER_ACCESS)) {
+            return QinPsiTokenStream.previousQualifierName(parent, element);
+        }
+        return null;
+    }
 }

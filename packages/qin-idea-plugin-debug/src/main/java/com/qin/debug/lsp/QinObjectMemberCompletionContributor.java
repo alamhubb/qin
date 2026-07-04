@@ -30,7 +30,7 @@ public final class QinObjectMemberCompletionContributor extends CompletionContri
                             return;
                         }
 
-                        String qualifier = QinJavaReference.previousQualifierName(referenceElement);
+                        String qualifier = QinReferenceElements.previousQualifierName(referenceElement);
                         if (qualifier == null) {
                             return;
                         }
