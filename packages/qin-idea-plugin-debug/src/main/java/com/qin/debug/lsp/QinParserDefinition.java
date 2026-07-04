@@ -31,12 +31,13 @@ public final class QinParserDefinition implements ParserDefinition {
     @Override
     public @NotNull PsiParser createParser(Project project) {
         return (root, builder) -> {
+            QinSourceStructure sourceStructure = QinSourceStructure.parse(builder.getOriginalText());
             PsiBuilder.Marker rootMarker = builder.mark();
             while (!builder.eof()) {
                 if (QinTokenFacts.isKeyword(builder, "import")) {
                     parseImportDeclaration(builder);
                 } else if (QinTokenFacts.isKeyword(builder, "object")) {
-                    parseObjectDeclaration(builder);
+                    parseObjectDeclaration(builder, sourceStructure);
                 } else if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                     parseThisMemberAccess(builder);
                 } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
@@ -77,10 +78,16 @@ public final class QinParserDefinition implements ParserDefinition {
         importMarker.done(QinTokenTypes.IMPORT_DECLARATION);
     }
 
-    private static void parseObjectDeclaration(PsiBuilder builder) {
+    private static void parseObjectDeclaration(
+            @NotNull PsiBuilder builder,
+            @NotNull QinSourceStructure sourceStructure) {
+        QinSourceStructure.ObjectDeclaration objectDeclaration =
+                sourceStructure.objectDeclarationAtKeywordOffset(builder.getCurrentOffset());
         PsiBuilder.Marker objectMarker = builder.mark();
         builder.advanceLexer();
-        if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
+        if (isSourceStructureObjectName(builder, objectDeclaration)) {
+            wrapObjectName(builder);
+        } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
             wrapObjectName(builder);
         }
         if (!QinTokenFacts.isOpenBrace(builder)) {
@@ -103,9 +110,9 @@ public final class QinParserDefinition implements ParserDefinition {
                 }
                 continue;
             }
-            if (QinTokenFacts.isMethodDeclarationStart(builder)) {
+            if (isSourceStructureMethodName(builder, sourceStructure)) {
                 parseMethodDeclaration(builder);
-            } else if (QinTokenFacts.isFieldDeclarationStart(builder)) {
+            } else if (isSourceStructureFieldName(builder, sourceStructure)) {
                 parseFieldDeclaration(builder);
             } else if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
@@ -116,6 +123,28 @@ public final class QinParserDefinition implements ParserDefinition {
             }
         }
         objectMarker.done(QinTokenTypes.OBJECT_DECLARATION);
+    }
+
+    private static boolean isSourceStructureObjectName(
+            @NotNull PsiBuilder builder,
+            QinSourceStructure.ObjectDeclaration objectDeclaration) {
+        return objectDeclaration != null
+                && objectDeclaration.nameRange().startOffset() == builder.getCurrentOffset()
+                && QinTokenFacts.isReferenceLeafToken(builder.getTokenType());
+    }
+
+    private static boolean isSourceStructureMethodName(
+            @NotNull PsiBuilder builder,
+            @NotNull QinSourceStructure sourceStructure) {
+        return QinTokenFacts.isDeclarationIdentifierToken(builder.getTokenType())
+                && sourceStructure.methodDeclarationAtNameOffset(builder.getCurrentOffset()) != null;
+    }
+
+    private static boolean isSourceStructureFieldName(
+            @NotNull PsiBuilder builder,
+            @NotNull QinSourceStructure sourceStructure) {
+        return QinTokenFacts.isDeclarationIdentifierToken(builder.getTokenType())
+                && sourceStructure.fieldDeclarationAtNameOffset(builder.getCurrentOffset()) != null;
     }
 
     private static void parseMethodDeclaration(PsiBuilder builder) {

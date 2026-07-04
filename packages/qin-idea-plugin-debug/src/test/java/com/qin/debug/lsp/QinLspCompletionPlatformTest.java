@@ -221,6 +221,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Counter", counter.name());
         assertEquals(List.of("value", "total"), counter.fieldNames());
         assertEquals(List.of("next"), counter.methodNames());
+        assertTrue(counter.keywordRange().isPresent());
         assertTrue(counter.nameRange().isPresent());
         assertTrue(counter.bodyRange().isPresent());
         assertTrue(counter.fields().get(0).nameRange().isPresent());
@@ -355,6 +356,29 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         assertNotNull("Qin PSI should classify method declarations through shared structure facts", methodName);
         assertEquals("Next", methodName.getText());
+    }
+
+    public void testQinParserUsesSourceStructureOffsetsForObjectMembers() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = helper()
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+
+        PsiElement fieldName = findPsiElementType(myFixture.getFile(), QinTokenTypes.FIELD_NAME);
+        PsiElement methodName = findPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME);
+
+        assertNotNull("Qin field name PSI should come from source-structure member offset", fieldName);
+        assertNotNull("Qin method name PSI should come from source-structure member offset", methodName);
+        assertEquals("value", fieldName.getText());
+        assertEquals("next", methodName.getText());
+        assertEquals("Only the object method declaration should become METHOD_NAME",
+                1,
+                countPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME));
     }
 
     public void testQinParserBuildsStructuredPsiForObjectFieldDeclaration() {

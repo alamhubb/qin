@@ -22,7 +22,7 @@ final class QinSourceStructure {
                 if (nameToken != null && QinTokenFacts.isDeclarationIdentifierToken(nameToken)) {
                     String name = QinTokenFacts.slice(content, nameToken).toString();
                     if (declarations.stream().noneMatch(declaration -> declaration.name().equals(name))) {
-                        declarations.add(readObjectDeclaration(content, tokens, index, name, range(nameToken)));
+                        declarations.add(readObjectDeclaration(content, tokens, index, name, range(token), range(nameToken)));
                     }
                 }
             }
@@ -44,24 +44,60 @@ final class QinSourceStructure {
         return objectDeclarations;
     }
 
+    ObjectDeclaration objectDeclarationAtKeywordOffset(int offset) {
+        for (ObjectDeclaration declaration : objectDeclarations) {
+            if (declaration.keywordRange().startOffset() == offset) {
+                return declaration;
+            }
+        }
+        return null;
+    }
+
+    MemberDeclaration methodDeclarationAtNameOffset(int offset) {
+        for (ObjectDeclaration declaration : objectDeclarations) {
+            MemberDeclaration member = declaration.methodDeclarationAtNameOffset(offset);
+            if (member != null) {
+                return member;
+            }
+        }
+        return null;
+    }
+
+    MemberDeclaration fieldDeclarationAtNameOffset(int offset) {
+        for (ObjectDeclaration declaration : objectDeclarations) {
+            MemberDeclaration member = declaration.fieldDeclarationAtNameOffset(offset);
+            if (member != null) {
+                return member;
+            }
+        }
+        return null;
+    }
+
     private static @NotNull ObjectDeclaration readObjectDeclaration(
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,
             int objectKeywordIndex,
             @NotNull String objectName,
+            @NotNull SourceRange objectKeywordRange,
             @NotNull SourceRange objectNameRange) {
         int braceIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, objectKeywordIndex + 1);
         while (braceIndex >= 0 && braceIndex < tokens.size()) {
             QinLexicalToken token = tokens.get(braceIndex);
             if (QinTokenFacts.isOpenBrace(content, token)) {
-                return readObjectBody(content, tokens, braceIndex, objectName, objectNameRange);
+                return readObjectBody(content, tokens, braceIndex, objectName, objectKeywordRange, objectNameRange);
             }
             if (QinTokenFacts.isCloseBrace(content, token)) {
                 break;
             }
             braceIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, braceIndex + 1);
         }
-        return new ObjectDeclaration(objectName, objectNameRange, SourceRange.missing(), List.of(), List.of());
+        return new ObjectDeclaration(
+                objectName,
+                objectKeywordRange,
+                objectNameRange,
+                SourceRange.missing(),
+                List.of(),
+                List.of());
     }
 
     private static @NotNull ObjectDeclaration readObjectBody(
@@ -69,6 +105,7 @@ final class QinSourceStructure {
             @NotNull List<QinLexicalToken> tokens,
             int openBraceIndex,
             @NotNull String objectName,
+            @NotNull SourceRange objectKeywordRange,
             @NotNull SourceRange objectNameRange) {
         List<MemberDeclaration> fields = new ArrayList<>();
         List<MemberDeclaration> methods = new ArrayList<>();
@@ -83,6 +120,7 @@ final class QinSourceStructure {
                     if (braceDepth <= 0) {
                         return new ObjectDeclaration(
                                 objectName,
+                                objectKeywordRange,
                                 objectNameRange,
                                 new SourceRange(tokens.get(openBraceIndex).startOffset(), token.endOffset()),
                                 fields,
@@ -103,6 +141,7 @@ final class QinSourceStructure {
         }
         return new ObjectDeclaration(
                 objectName,
+                objectKeywordRange,
                 objectNameRange,
                 new SourceRange(tokens.get(openBraceIndex).startOffset(), content.length()),
                 fields,
@@ -140,12 +179,19 @@ final class QinSourceStructure {
 
     record ObjectDeclaration(
             @NotNull String name,
+            @NotNull SourceRange keywordRange,
             @NotNull SourceRange nameRange,
             @NotNull SourceRange bodyRange,
             @NotNull List<MemberDeclaration> fields,
             @NotNull List<MemberDeclaration> methods) {
         ObjectDeclaration(@NotNull String name, @NotNull List<String> fields, @NotNull List<String> methods) {
-            this(name, SourceRange.missing(), SourceRange.missing(), membersFromNames(fields), membersFromNames(methods));
+            this(
+                    name,
+                    SourceRange.missing(),
+                    SourceRange.missing(),
+                    SourceRange.missing(),
+                    membersFromNames(fields),
+                    membersFromNames(methods));
         }
 
         ObjectDeclaration {
@@ -163,6 +209,25 @@ final class QinSourceStructure {
             return methods.stream()
                     .map(MemberDeclaration::name)
                     .toList();
+        }
+
+        MemberDeclaration fieldDeclarationAtNameOffset(int offset) {
+            return memberDeclarationAtNameOffset(fields, offset);
+        }
+
+        MemberDeclaration methodDeclarationAtNameOffset(int offset) {
+            return memberDeclarationAtNameOffset(methods, offset);
+        }
+
+        private static MemberDeclaration memberDeclarationAtNameOffset(
+                @NotNull List<MemberDeclaration> members,
+                int offset) {
+            for (MemberDeclaration member : members) {
+                if (member.nameRange().startOffset() == offset) {
+                    return member;
+                }
+            }
+            return null;
         }
     }
 }
