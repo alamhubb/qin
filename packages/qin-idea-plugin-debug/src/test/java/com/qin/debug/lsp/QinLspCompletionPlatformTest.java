@@ -5,6 +5,9 @@ import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.editorActions.TypedHandlerDelegate;
 import com.intellij.codeInsight.lookup.impl.LookupImpl;
+import com.intellij.codeInspection.InspectionManager;
+import com.intellij.codeInspection.ProblemDescriptor;
+import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.command.WriteCommandAction;
@@ -1039,6 +1042,34 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
         assertHighlightContains(errors, "Unresolved Qin object method Counter.missing");
+    }
+
+    public void testQinUnresolvedReferenceInspectionReportsMissingMethod() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+
+                const value = Counter.missing()
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiElement missingMethod = myFixture.getFile().findElementAt(text.indexOf("missing"));
+        assertNotNull("Missing method token should be present", missingMethod);
+
+        ProblemsHolder holder = new ProblemsHolder(
+                InspectionManager.getInstance(getProject()),
+                myFixture.getFile(),
+                true);
+        new QinUnresolvedReferenceInspection()
+                .buildVisitor(holder, true)
+                .visitElement(missingMethod.getParent());
+
+        ProblemDescriptor[] problems = holder.getResultsArray();
+        assertEquals(1, problems.length);
+        assertEquals("Unresolved Qin object method Counter.missing", problems[0].getDescriptionTemplate());
     }
 
     public void testQinObjectMethodAnnotatorKeepsResolvedMethodsClean() {
