@@ -66,9 +66,9 @@ final class QinImportBindings {
                         || !specifier.localName().equals(localName)) {
                     continue;
                 }
-                return QinPsiTree.elementAtOrParentOfType(
+                return QinPsiTree.elementAtRangeOrParentOfType(
                         file,
-                        specifier.localNameRange().startOffset(),
+                        specifier.localNameRange(),
                         QinTokenTypes.IMPORT_ALIAS_NAME);
             }
         }

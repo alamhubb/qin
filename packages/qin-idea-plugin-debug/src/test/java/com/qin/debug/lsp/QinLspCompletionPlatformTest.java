@@ -551,6 +551,35 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals(text.indexOf("as C") + "as ".length(), aliasName.getTextRange().getStartOffset());
     }
 
+    public void testQinPsiTreeBridgesSourceRangesToStructuredPsiWrappers() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Counter as C } from "./Counter.qin"
+
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+
+        QinSourceStructure structure = QinSourceStructure.parse(myFixture.getFile().getText());
+        QinSourceStructure.ImportSpecifier specifier = structure.importDeclarations().get(0).specifiers().get(0);
+        QinSourceStructure.ObjectDeclaration object = structure.objectDeclarations().get(0);
+        QinSourceStructure.MemberDeclaration field = object.fields().get(0);
+        QinSourceStructure.MemberDeclaration method = object.methods().get(0);
+
+        assertEquals(QinTokenTypes.IMPORT_ALIAS_NAME, QinPsiTree.elementAtRangeOrParentOfType(
+                myFixture.getFile(), specifier.localNameRange(), QinTokenTypes.IMPORT_ALIAS_NAME).getNode().getElementType());
+        assertEquals(QinTokenTypes.OBJECT_NAME, QinPsiTree.elementAtRangeOrParentOfType(
+                myFixture.getFile(), object.nameRange(), QinTokenTypes.OBJECT_NAME).getNode().getElementType());
+        assertEquals(QinTokenTypes.FIELD_NAME, QinPsiTree.elementAtRangeOrParentOfType(
+                myFixture.getFile(), field.nameRange(), QinTokenTypes.FIELD_NAME).getNode().getElementType());
+        assertEquals(QinTokenTypes.METHOD_NAME, QinPsiTree.elementAtRangeOrParentOfType(
+                myFixture.getFile(), method.nameRange(), QinTokenTypes.METHOD_NAME).getNode().getElementType());
+    }
+
     public void testQinModuleSpecifierFactsClassifyJavaAndQinImports() {
         assertEquals("demo", QinModuleSpecifierFacts.javaModuleName("java:demo"));
         assertEquals("java.util", QinModuleSpecifierFacts.javaModuleName("java:java.util"));

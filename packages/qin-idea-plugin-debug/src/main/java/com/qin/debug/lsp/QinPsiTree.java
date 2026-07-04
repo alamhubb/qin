@@ -35,4 +35,11 @@ final class QinPsiTree {
         }
         return isType(element, type) ? element : parentOfType(element, type);
     }
+
+    static @Nullable PsiElement elementAtRangeOrParentOfType(
+            @NotNull PsiFile file,
+            @NotNull QinSourceStructure.SourceRange range,
+            @NotNull IElementType type) {
+        return range.isPresent() ? elementAtOrParentOfType(file, range.startOffset(), type) : null;
+    }
 }

@@ -83,9 +83,9 @@ final class QinObjectSymbols {
             if (!declaration.name().equals(name) || !declaration.nameRange().isPresent()) {
                 continue;
             }
-            return QinPsiTree.elementAtOrParentOfType(
+            return QinPsiTree.elementAtRangeOrParentOfType(
                     file,
-                    declaration.nameRange().startOffset(),
+                    declaration.nameRange(),
                     QinTokenTypes.OBJECT_NAME);
         }
         return null;
@@ -157,13 +157,13 @@ final class QinObjectSymbols {
 
         List<PsiElement> members = new ArrayList<>();
         for (QinSourceStructure.MemberDeclaration member : declaration.fields()) {
-            PsiElement field = elementAtRange(file, member.nameRange(), QinTokenTypes.FIELD_NAME);
+            PsiElement field = QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), QinTokenTypes.FIELD_NAME);
             if (field != null && members.stream().noneMatch(item -> item.getText().equals(field.getText()))) {
                 members.add(field);
             }
         }
         for (QinSourceStructure.MemberDeclaration member : declaration.methods()) {
-            PsiElement method = elementAtRange(file, member.nameRange(), QinTokenTypes.METHOD_NAME);
+            PsiElement method = QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), QinTokenTypes.METHOD_NAME);
             if (method != null && members.stream().noneMatch(item -> item.getText().equals(method.getText()))) {
                 members.add(method);
             }
@@ -186,15 +186,6 @@ final class QinObjectSymbols {
         return null;
     }
 
-    private static @Nullable PsiElement elementAtRange(
-            @NotNull PsiFile file,
-            @NotNull QinSourceStructure.SourceRange range,
-            @NotNull IElementType type) {
-        return range.isPresent()
-                ? QinPsiTree.elementAtOrParentOfType(file, range.startOffset(), type)
-                : null;
-    }
-
     private static @Nullable PsiElement findMemberNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String memberName,
@@ -208,7 +199,7 @@ final class QinObjectSymbols {
                 memberType == QinTokenTypes.FIELD_NAME ? declaration.fields() : declaration.methods();
         for (QinSourceStructure.MemberDeclaration member : members) {
             if (member.name().equals(memberName)) {
-                PsiElement memberElement = elementAtRange(file, member.nameRange(), memberType);
+                PsiElement memberElement = QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), memberType);
                 if (memberElement != null) {
                     return memberElement;
                 }
