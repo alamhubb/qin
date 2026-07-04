@@ -7,8 +7,6 @@ import com.intellij.codeInsight.completion.CompletionResultSet;
 import com.intellij.codeInsight.completion.CompletionType;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.patterns.PlatformPatterns;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiNamedElement;
 import com.intellij.util.ProcessingContext;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,12 +21,10 @@ public final class QinObjectMemberCompletionContributor extends CompletionContri
                             @NotNull CompletionParameters parameters,
                             @NotNull ProcessingContext context,
                             @NotNull CompletionResultSet result) {
-                        for (PsiElement member : QinObjectMemberCompletions.memberElements(parameters.getPosition())) {
-                            if (member instanceof PsiNamedElement namedMember) {
-                                result.addElement(LookupElementBuilder.create(namedMember));
-                            } else {
-                                result.addElement(LookupElementBuilder.create(member.getText()).withPsiElement(member));
-                            }
+                        for (QinObjectMemberCompletions.CompletionMember member
+                                : QinObjectMemberCompletions.members(parameters.getPosition())) {
+                            result.addElement(LookupElementBuilder.create(member.name())
+                                    .withPsiElement(member.element()));
                         }
                     }
                 });

@@ -95,7 +95,9 @@ final class QinObjectSymbols {
         return findMethodNameInObjectDeclaration(objectDeclaration, methodName);
     }
 
-    static @NotNull List<PsiElement> memberElementsForObject(@NotNull PsiElement element, @NotNull String objectName) {
+    static @NotNull List<ObjectMemberElement> memberElementsForObject(
+            @NotNull PsiElement element,
+            @NotNull String objectName) {
         ResolvedObject resolvedObject = resolveObjectName(element, objectName);
         if (resolvedObject == null) {
             return List.of();
@@ -110,18 +112,15 @@ final class QinObjectSymbols {
                         resolvedObject,
                         member.name(),
                         member.kind()))
-                .map(ObjectMemberElement::element)
                 .toList();
     }
 
-    static @NotNull List<PsiElement> memberElementsForThis(@NotNull PsiElement element) {
+    static @NotNull List<ObjectMemberElement> memberElementsForThis(@NotNull PsiElement element) {
         PsiElement objectDeclaration = QinPsiTree.containingObjectDeclaration(element);
         if (objectDeclaration == null) {
             return List.of();
         }
-        return memberElementsInObjectDeclaration(objectDeclaration).stream()
-                .map(ObjectMemberElement::element)
-                .toList();
+        return memberElementsInObjectDeclaration(objectDeclaration);
     }
 
     private static @NotNull List<ObjectMemberElement> memberElementsInObjectDeclaration(
@@ -227,7 +226,7 @@ final class QinObjectSymbols {
             @Nullable VirtualFile importedFile) {
     }
 
-    private record ObjectMemberElement(
+    record ObjectMemberElement(
             @NotNull String name,
             @NotNull PsiElement element,
             @NotNull QinSourceStructure.ObjectMemberKind kind) {

@@ -1183,7 +1183,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(completionHelper),
                 "Qin object member completion helper source not found: " + completionHelper);
         String helperSource = Files.readString(completionHelper);
-        require(helperSource.contains("memberElements(")
+        require(helperSource.contains("members(")
+                        && helperSource.contains("record CompletionMember(")
+                        && helperSource.contains("member.name()")
+                        && helperSource.contains("member.element()")
                         && helperSource.contains("QinReferenceElements.referenceElement(")
                         && helperSource.contains("QinJavaReference.isJavaReferenceCandidate(")
                         && helperSource.contains("QinObjectSymbols.memberElementsForThis(")
@@ -1196,7 +1199,11 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(contributor),
                 "Qin object member completion contributor source not found: " + contributor);
         String contributorSource = Files.readString(contributor);
-        require(contributorSource.contains("QinObjectMemberCompletions.memberElements(")
+        require(contributorSource.contains("QinObjectMemberCompletions.members(")
+                        && contributorSource.contains("LookupElementBuilder.create(member.name())")
+                        && contributorSource.contains(".withPsiElement(member.element())")
+                        && !contributorSource.contains("member.getText()")
+                        && !contributorSource.contains("PsiNamedElement")
                         && !contributorSource.contains("QinJavaReference.isJavaReferenceCandidate(")
                         && !contributorSource.contains("QinReferenceElements.previousQualifierName(")
                         && !contributorSource.contains("QinObjectSymbols.memberElementsFor"),

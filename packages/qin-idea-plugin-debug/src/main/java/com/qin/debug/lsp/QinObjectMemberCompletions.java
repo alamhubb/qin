@@ -9,7 +9,7 @@ final class QinObjectMemberCompletions {
     private QinObjectMemberCompletions() {
     }
 
-    static @NotNull List<PsiElement> memberElements(@NotNull PsiElement position) {
+    static @NotNull List<CompletionMember> members(@NotNull PsiElement position) {
         PsiElement referenceElement = QinReferenceElements.referenceElement(position);
         if (referenceElement == null || QinJavaReference.isJavaReferenceCandidate(referenceElement)) {
             return List.of();
@@ -20,8 +20,18 @@ final class QinObjectMemberCompletions {
             return List.of();
         }
         if (QinReferenceElements.isThisQualifier(qualifier)) {
-            return QinObjectSymbols.memberElementsForThis(referenceElement);
+            return completionMembers(QinObjectSymbols.memberElementsForThis(referenceElement));
         }
-        return QinObjectSymbols.memberElementsForObject(referenceElement, qualifier);
+        return completionMembers(QinObjectSymbols.memberElementsForObject(referenceElement, qualifier));
+    }
+
+    private static @NotNull List<CompletionMember> completionMembers(
+            @NotNull List<QinObjectSymbols.ObjectMemberElement> members) {
+        return members.stream()
+                .map(member -> new CompletionMember(member.name(), member.element()))
+                .toList();
+    }
+
+    record CompletionMember(@NotNull String name, @NotNull PsiElement element) {
     }
 }
