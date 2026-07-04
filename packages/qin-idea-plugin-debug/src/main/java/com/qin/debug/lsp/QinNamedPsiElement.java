@@ -32,7 +32,7 @@ abstract class QinNamedPsiElement extends QinPsiElement implements PsiNameIdenti
 
     @Override
     public @Nullable PsiElement getNameIdentifier() {
-        return getFirstChild();
+        return QinPsiTree.firstChild(this);
     }
 
     @Override

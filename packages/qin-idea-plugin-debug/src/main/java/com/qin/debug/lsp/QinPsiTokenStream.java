@@ -24,7 +24,7 @@ final class QinPsiTokenStream {
             @Override
             public void visitElement(@NotNull PsiElement element) {
                 IElementType type = QinPsiTree.elementType(element);
-                if (element.getFirstChild() == null && type != null) {
+                if (QinPsiTree.isLeaf(element) && type != null) {
                     if (!QinTokenFacts.isTrivia(type)) {
                         tokens.add(new QinPsiToken(tokenOwner(element), type, QinPsiTree.elementText(element)));
                     }

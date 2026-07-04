@@ -631,13 +631,15 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && psiTokenStreamSource.contains("QinPsiTree.containingFile(element)")
                         && psiTokenStreamSource.contains("QinPsiTree.elementType(element)")
                         && psiTokenStreamSource.contains("QinPsiTree.elementText(element)")
+                        && psiTokenStreamSource.contains("QinPsiTree.isLeaf(element)")
                         && !psiTokenStreamSource.contains("element.getNode()")
                         && !psiTokenStreamSource.contains("element.getText()")
+                        && !psiTokenStreamSource.contains("element.getFirstChild()")
                         && !psiTokenStreamSource.contains("element.getContainingFile()")
                         && !psiTokenStreamSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
                 "QinPsiTokenStream must use QinReferenceElements for reference-wrapper token ownership "
-                        + "and QinPsiTree for token-type, token-text, and containing-file lookup instead "
-                        + "of owning the REFERENCE_IDENTIFIER token mapping, raw PSI access, "
+                        + "and QinPsiTree for leaf, token-type, token-text, and containing-file lookup instead "
+                        + "of owning the REFERENCE_IDENTIFIER token mapping, raw PSI tree access, "
                         + "or element-to-file bridge: "
                         + psiTokenStream);
     }
@@ -1062,10 +1064,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && namedElementSource.contains("QinTokenTypes.METHOD_NAME")
                         && namedElementSource.contains("QinTokenTypes.FIELD_NAME")
                         && namedElementSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME")
+                        && namedElementSource.contains("QinPsiTree.firstChild(this)")
                         && namedElementSource.contains("QinPsiTree.elementText(identifier)")
+                        && !namedElementSource.contains("getFirstChild()")
                         && !namedElementSource.contains("identifier.getText()"),
                 "QinNamedPsiElement must own named PSI token to element-class mapping and "
-                        + "read name text through QinPsiTree: "
+                        + "read name children/text through QinPsiTree: "
                         + namedElement);
 
         Path parserDefinition = javaRoot.resolve(Path.of(

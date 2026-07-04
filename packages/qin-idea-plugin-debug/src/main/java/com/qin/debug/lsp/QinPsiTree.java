@@ -25,6 +25,14 @@ final class QinPsiTree {
         return elementType(element) == type;
     }
 
+    static @Nullable PsiElement firstChild(@NotNull PsiElement element) {
+        return element.getFirstChild();
+    }
+
+    static boolean isLeaf(@NotNull PsiElement element) {
+        return firstChild(element) == null;
+    }
+
     static @NotNull TextRange elementRange(@NotNull PsiElement element) {
         return element.getTextRange();
     }
