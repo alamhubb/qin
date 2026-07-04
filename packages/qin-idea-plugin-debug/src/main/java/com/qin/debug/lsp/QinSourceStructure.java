@@ -129,14 +129,6 @@ final class QinSourceStructure {
         return null;
     }
 
-    MemberDeclaration methodDeclarationAtNameOffset(int offset) {
-        return memberDeclarationAtNameOffset(offset, ObjectMemberKind.METHOD);
-    }
-
-    MemberDeclaration fieldDeclarationAtNameOffset(int offset) {
-        return memberDeclarationAtNameOffset(offset, ObjectMemberKind.FIELD);
-    }
-
     MemberDeclaration memberDeclarationAtNameOffset(int offset, @NotNull ObjectMemberKind kind) {
         for (ObjectDeclaration declaration : objectDeclarations) {
             MemberDeclaration member = declaration.memberDeclarationAtNameOffset(offset, kind);
@@ -595,30 +587,12 @@ final class QinSourceStructure {
                     .toList();
         }
 
-        MemberDeclaration fieldDeclarationAtNameOffset(int offset) {
-            return memberDeclarationAtNameOffset(offset, ObjectMemberKind.FIELD);
-        }
-
-        MemberDeclaration methodDeclarationAtNameOffset(int offset) {
-            return memberDeclarationAtNameOffset(offset, ObjectMemberKind.METHOD);
-        }
-
         MemberDeclaration memberDeclarationAtNameOffset(int offset, @NotNull ObjectMemberKind kind) {
             return memberDeclarationAtNameOffset(memberDeclarations(kind), offset);
         }
 
-        MemberDeclaration fieldDeclarationNamed(@NotNull String name) {
-            return memberDeclarationNamed(fields, name);
-        }
-
-        MemberDeclaration methodDeclarationNamed(@NotNull String name) {
-            return memberDeclarationNamed(methods, name);
-        }
-
         MemberDeclaration memberDeclarationNamed(@NotNull String name, @NotNull ObjectMemberKind kind) {
-            return kind == ObjectMemberKind.FIELD
-                    ? fieldDeclarationNamed(name)
-                    : methodDeclarationNamed(name);
+            return memberDeclarationNamed(memberDeclarations(kind), name);
         }
 
         private static MemberDeclaration memberDeclarationAtNameOffset(

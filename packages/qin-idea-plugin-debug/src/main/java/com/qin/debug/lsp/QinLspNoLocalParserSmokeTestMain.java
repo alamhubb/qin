@@ -849,6 +849,23 @@ public final class QinLspNoLocalParserSmokeTestMain {
     }
 
     private static void assertObjectSymbolsUseSourceStructureMemberLookup(Path javaRoot) throws Exception {
+        Path sourceStructure = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinSourceStructure.java"));
+        require(Files.isRegularFile(sourceStructure),
+                "QinSourceStructure source not found: " + sourceStructure);
+        String sourceStructureSource = Files.readString(sourceStructure);
+        require(sourceStructureSource.contains(
+                        "memberDeclarationNamed(@NotNull String name, @NotNull ObjectMemberKind kind)")
+                        && sourceStructureSource.contains(
+                        "return memberDeclarationNamed(memberDeclarations(kind), name);")
+                        && !sourceStructureSource.contains("MemberDeclaration fieldDeclarationNamed(")
+                        && !sourceStructureSource.contains("MemberDeclaration methodDeclarationNamed(")
+                        && !sourceStructureSource.contains("MemberDeclaration fieldDeclarationAtNameOffset(")
+                        && !sourceStructureSource.contains("MemberDeclaration methodDeclarationAtNameOffset("),
+                "QinSourceStructure object member lookup must stay behind ObjectMemberKind-aware "
+                        + "helpers instead of exposing separate field/method declaration lookups: "
+                        + sourceStructure);
+
         Path objectSymbols = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
         require(Files.isRegularFile(objectSymbols),
