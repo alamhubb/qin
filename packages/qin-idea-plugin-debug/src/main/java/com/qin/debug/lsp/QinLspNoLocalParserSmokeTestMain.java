@@ -47,6 +47,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertImportBoundaryUsesSharedTokenFacts(javaRoot);
+        assertImportParsingUsesSharedContextualKeywords(javaRoot);
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
         assertCallBoundaryUsesSharedReferenceElements(javaRoot);
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
@@ -206,6 +207,33 @@ public final class QinLspNoLocalParserSmokeTestMain {
                             + "QinTokenFacts.isNewStatementAfterImport instead of owning "
                             + "separate newline-boundary logic: " + file);
         }
+    }
+
+    private static void assertImportParsingUsesSharedContextualKeywords(Path javaRoot) throws Exception {
+        Path parserDefinition = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinParserDefinition.java"));
+        Path sourceStructure = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinSourceStructure.java"));
+        require(Files.isRegularFile(parserDefinition),
+                "QinParserDefinition source not found: " + parserDefinition);
+        require(Files.isRegularFile(sourceStructure),
+                "QinSourceStructure source not found: " + sourceStructure);
+
+        String parserSource = Files.readString(parserDefinition);
+        require(parserSource.contains("importDeclaration.declarationRange().containsOffset(builder.getCurrentOffset())"),
+                "QinParserDefinition import PSI must stop at QinSourceStructure.ImportDeclaration ranges: "
+                        + parserDefinition);
+        require(parserSource.contains("QinTokenFacts.isContextualKeyword(builder, \"as\")")
+                        && !parserSource.contains("QinTokenFacts.isKeyword(builder, \"as\")")
+                        && !parserSource.contains("QinTokenFacts.isKeyword(builder, \"from\")"),
+                "QinParserDefinition import parsing must use shared contextual keyword facts "
+                        + "instead of keyword-only import rules: " + parserDefinition);
+
+        String source = Files.readString(sourceStructure);
+        require(source.contains("QinTokenFacts.isContextualKeyword(content, token, \"from\")")
+                        && source.contains("QinTokenFacts.isContextualKeyword(content, tokens.get(next), \"as\")"),
+                "QinSourceStructure import parsing must use shared contextual keyword facts "
+                        + "for from/as: " + sourceStructure);
     }
 
     private static void assertQualifierLookupUsesSharedReferenceElements(Path javaRoot) throws Exception {
