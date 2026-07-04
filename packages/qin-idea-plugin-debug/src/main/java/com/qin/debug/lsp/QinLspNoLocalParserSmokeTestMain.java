@@ -1176,6 +1176,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !annotatorSource.contains("DefaultLanguageHighlighterColors")
                         && !annotatorSource.contains("QinTokenTypes.")
                         && !annotatorSource.contains("instanceof QinObject")
+                        && !annotatorSource.contains("getNode()")
                         && !annotatorSource.contains("getContainingFile() instanceof QinPsiFile")
                         && !annotatorSource.contains("instanceof QinJavaReference")
                         && !annotatorSource.contains("instanceof QinImportAliasReference"),
