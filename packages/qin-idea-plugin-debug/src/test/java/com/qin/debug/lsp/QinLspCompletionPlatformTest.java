@@ -850,6 +850,36 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 methodFiles.stream().anyMatch(file -> file.getVirtualFile().equals(counterFile.getVirtualFile())));
     }
 
+    public void testQinObjectMemberStubIndexesDoNotExposeBareMemberNames() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+
+        Collection<QinPsiFile> bareFieldFiles = StubIndex.getElements(
+                QinObjectFieldNameStubIndex.KEY,
+                "value",
+                getProject(),
+                GlobalSearchScope.allScope(getProject()),
+                QinPsiFile.class);
+        Collection<QinPsiFile> bareMethodFiles = StubIndex.getElements(
+                QinObjectMethodNameStubIndex.KEY,
+                "next",
+                getProject(),
+                GlobalSearchScope.allScope(getProject()),
+                QinPsiFile.class);
+
+        assertTrue("Qin object field StubIndex must use object-qualified keys, not bare field names: "
+                + describePsiFiles(bareFieldFiles), bareFieldFiles.isEmpty());
+        assertTrue("Qin object method StubIndex must use object-qualified keys, not bare method names: "
+                + describePsiFiles(bareMethodFiles), bareMethodFiles.isEmpty());
+    }
+
     public void testQinObjectReferenceAcrossRelativeImportParticipatesInReferencesSearch() {
         var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
