@@ -2081,6 +2081,39 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertLookupMissing(elements, "next");
     }
 
+    public void testQinNativeCompletionDoesNotHandleAliasedJavaMemberQualifiers() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G } from "java:demo"
+
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+
+                const message = G.g<caret>
+                """);
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            return;
+        }
+
+        assertLookupMissing(elements, "value");
+        assertLookupMissing(elements, "next");
+    }
+
     public void testQinNativeCompletionDoesNotHandleUnknownMemberQualifiers() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
