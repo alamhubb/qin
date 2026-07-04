@@ -1189,6 +1189,63 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Unresolved Qin object method Counter.missing", problems[0].getDescriptionTemplate());
     }
 
+    public void testQinUnresolvedReferenceInspectionReportsMissingJavaClass() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { MissingGreeter } from "java:demo"
+
+                const message = MissingGreeter.greet("Qin")
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiElement missingClass = myFixture.getFile().findElementAt(text.indexOf("MissingGreeter"));
+        assertNotNull("Missing Java class token should be present", missingClass);
+
+        ProblemsHolder holder = new ProblemsHolder(
+                InspectionManager.getInstance(getProject()),
+                myFixture.getFile(),
+                true);
+        new QinUnresolvedReferenceInspection()
+                .buildVisitor(holder, true)
+                .visitElement(missingClass.getParent());
+
+        ProblemDescriptor[] problems = holder.getResultsArray();
+        assertEquals(1, problems.length);
+        assertEquals("Unresolved Java class demo.MissingGreeter", problems[0].getDescriptionTemplate());
+    }
+
+    public void testQinUnresolvedReferenceInspectionReportsMissingJavaStaticMember() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.missing("Qin")
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiElement missingMember = myFixture.getFile().findElementAt(text.indexOf("missing"));
+        assertNotNull("Missing Java member token should be present", missingMember);
+
+        ProblemsHolder holder = new ProblemsHolder(
+                InspectionManager.getInstance(getProject()),
+                myFixture.getFile(),
+                true);
+        new QinUnresolvedReferenceInspection()
+                .buildVisitor(holder, true)
+                .visitElement(missingMember.getParent());
+
+        ProblemDescriptor[] problems = holder.getResultsArray();
+        assertEquals(1, problems.length);
+        assertEquals("Unresolved static Java member demo.Greeter.missing", problems[0].getDescriptionTemplate());
+    }
+
     public void testQinObjectMethodAnnotatorKeepsResolvedMethodsClean() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
