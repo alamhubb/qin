@@ -1004,6 +1004,26 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         && item.getElement() != aliasName));
     }
 
+    public void testQinImportAliasUsageGoToDeclarationTargetsAliasName() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = <caret>C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiElement aliasName = assertInstanceOf(myFixture.getElementAtCaret(), PsiElement.class);
+
+        assertEquals(QinTokenTypes.IMPORT_ALIAS_NAME, aliasName.getNode().getElementType());
+        assertEquals("C", aliasName.getText());
+        assertSame(myFixture.getFile(), aliasName.getContainingFile());
+    }
+
     public void testQinObjectNameStubIndexFindsObjectDeclarationFile() {
         var counterFile = myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
@@ -2361,6 +2381,30 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 text.contains("import { Greeter as GreeterAlias }"));
         assertTrue("Java alias rename should update local alias usages: " + text,
                 text.contains("GreeterAlias.greet(\"Qin\")"));
+    }
+
+    public void testQinJavaImportAliasUsageGoToDeclarationTargetsAliasName() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = <caret>G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiElement aliasName = assertInstanceOf(myFixture.getElementAtCaret(), PsiElement.class);
+
+        assertEquals(QinTokenTypes.IMPORT_ALIAS_NAME, aliasName.getNode().getElementType());
+        assertEquals("G", aliasName.getText());
+        assertSame(myFixture.getFile(), aliasName.getContainingFile());
     }
 
     public void testQinJavaClassRenameProcessorPreservesImportAliasUsages() {
