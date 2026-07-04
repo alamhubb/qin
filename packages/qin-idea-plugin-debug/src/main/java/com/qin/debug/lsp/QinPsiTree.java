@@ -31,6 +31,10 @@ final class QinPsiTree {
         return element.getContainingFile();
     }
 
+    static boolean isQinFile(@NotNull PsiElement element) {
+        return containingFile(element) instanceof QinPsiFile;
+    }
+
     static @NotNull QinSourceStructure sourceStructure(@NotNull PsiFile file) {
         return QinSourceStructure.parse(file.getText());
     }

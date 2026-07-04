@@ -98,7 +98,7 @@ final class QinUnresolvedReferenceMessages {
     }
 
     private static boolean isReferenceIdentifier(@NotNull PsiElement element) {
-        return element.getContainingFile() instanceof QinPsiFile
+        return QinPsiTree.isQinFile(element)
                 && QinReferenceElements.isReferenceIdentifier(element);
     }
 }

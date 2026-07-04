@@ -652,7 +652,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinReferenceElements source not found: " + referenceElements);
         String helperSource = Files.readString(referenceElements);
         require(helperSource.contains("referenceProvider(")
-                        && helperSource.contains("element.getContainingFile() instanceof QinPsiFile")
+                        && helperSource.contains("QinPsiTree.isQinFile(element)")
                         && helperSource.contains("referenceElement(element)")
                         && helperSource.contains("PsiReference.EMPTY_ARRAY"),
                 "QinReferenceElements must own reference provider Qin-file filtering, "
@@ -1158,9 +1158,11 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String annotatorSource = Files.readString(annotator);
         require(annotatorSource.contains("QinSymbolHighlights.declarationHighlight(")
                         && annotatorSource.contains("QinSymbolHighlights.referenceHighlight(")
+                        && annotatorSource.contains("QinPsiTree.isQinFile(element)")
                         && !annotatorSource.contains("DefaultLanguageHighlighterColors")
                         && !annotatorSource.contains("QinTokenTypes.")
                         && !annotatorSource.contains("instanceof QinObject")
+                        && !annotatorSource.contains("getContainingFile() instanceof QinPsiFile")
                         && !annotatorSource.contains("instanceof QinJavaReference")
                         && !annotatorSource.contains("instanceof QinImportAliasReference"),
                 "QinSymbolHighlightAnnotator must consume QinSymbolHighlights instead of "
@@ -1207,6 +1209,16 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !inspectionSource.contains("QinObjectFieldReference"),
                 "QinUnresolvedReferenceInspection must use the shared message helper instead of "
                         + "owning Java/object reference branches: " + inspection);
+
+        Path messages = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinUnresolvedReferenceMessages.java"));
+        require(Files.isRegularFile(messages),
+                "Qin unresolved-reference message helper source not found: " + messages);
+        String messagesSource = Files.readString(messages);
+        require(messagesSource.contains("QinPsiTree.isQinFile(element)")
+                        && !messagesSource.contains("getContainingFile() instanceof QinPsiFile"),
+                "QinUnresolvedReferenceMessages must use QinPsiTree for Qin-file filtering: "
+                        + messages);
     }
 
     private static void assertRenameUsesSharedPsiHelper(Path javaRoot) throws Exception {

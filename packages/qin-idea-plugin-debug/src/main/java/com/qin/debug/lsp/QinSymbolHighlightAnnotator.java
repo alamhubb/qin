@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 public final class QinSymbolHighlightAnnotator implements Annotator {
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        if (!(element.getContainingFile() instanceof QinPsiFile) || element.getNode() == null) {
+        if (!QinPsiTree.isQinFile(element) || element.getNode() == null) {
             return;
         }
 

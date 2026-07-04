@@ -73,7 +73,7 @@ final class QinReferenceElements {
             public PsiReference @NotNull [] getReferencesByElement(
                     @NotNull PsiElement element,
                     @NotNull ProcessingContext context) {
-                if (!(element.getContainingFile() instanceof QinPsiFile)) {
+                if (!QinPsiTree.isQinFile(element)) {
                     return PsiReference.EMPTY_ARRAY;
                 }
                 PsiElement referenceElement = referenceElement(element);
