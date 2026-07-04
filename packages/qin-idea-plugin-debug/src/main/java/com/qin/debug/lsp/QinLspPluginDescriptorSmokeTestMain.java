@@ -77,6 +77,8 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         Map<String, String> actualNames = new HashMap<>();
         Map<String, String> actualLanguages = new HashMap<>();
         NodeList fileTypes = document.getElementsByTagName("fileType");
+        require(fileTypes.getLength() == expected.size(),
+                "Expected exactly " + expected.size() + " LSP fileTypes, got " + fileTypes.getLength());
         for (int i = 0; i < fileTypes.getLength(); i++) {
             Element fileType = (Element) fileTypes.item(i);
             actual.put(fileType.getAttribute("extensions"), fileType.getAttribute("implementationClass"));
@@ -144,7 +146,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     }
 
     private static void assertAutoPopupTypedHandler(Document document) {
-        assertExtensionImplementation(
+        assertSingleExtensionImplementation(
                 document,
                 "typedHandler",
                 "implementation",
@@ -152,7 +154,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
     }
 
     private static void assertLookupEnterHandler(Document document) {
-        assertExtensionImplementation(
+        assertSingleExtensionImplementation(
                 document,
                 "enterHandlerDelegate",
                 "implementation",
@@ -268,19 +270,17 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         }
     }
 
-    private static void assertExtensionImplementation(
+    private static void assertSingleExtensionImplementation(
             Document document,
             String tagName,
             String attributeName,
             String expectedImplementation) {
         NodeList extensions = document.getElementsByTagName(tagName);
-        for (int i = 0; i < extensions.getLength(); i++) {
-            Element extension = (Element) extensions.item(i);
-            if (expectedImplementation.equals(extension.getAttribute(attributeName))) {
-                return;
-            }
-        }
-        throw new IllegalStateException("Missing " + tagName + ": " + expectedImplementation);
+        require(extensions.getLength() == 1,
+                "Expected exactly one " + tagName + ", got " + extensions.getLength());
+        Element extension = (Element) extensions.item(0);
+        require(expectedImplementation.equals(extension.getAttribute(attributeName)),
+                "Unexpected " + tagName + ": " + extension.getAttribute(attributeName));
     }
 
     private static void require(boolean condition, String message) {
