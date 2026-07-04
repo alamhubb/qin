@@ -99,6 +99,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
             if ("qin".equals(matrixCase.id())) {
                 verifyQinLanguagePluginFeatureMappings(projectRoot);
                 verifyQinLanguageServicePluginFeatureMappings(projectRoot);
+                verifyQinJavaSourceSymbolSmoke(projectRoot);
                 verifyGeneratedQinParserPackage(projectRoot, config);
                 verifyGeneratedParserParityCorpus(projectRoot);
             } else {
@@ -1475,6 +1476,26 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                 "verification: true")) {
             require(source.contains(mappingNeedle),
                     "Qin virtual code mappings must enable " + mappingNeedle);
+        }
+    }
+
+    private static void verifyQinJavaSourceSymbolSmoke(Path qinLanguageRoot) throws Exception {
+        Path smokePath = qinLanguageRoot.resolve("tests")
+                .resolve("test-java-source-symbols.ts")
+                .normalize();
+        require(Files.isRegularFile(smokePath),
+                "Qin Java source symbol smoke must exist: " + smokePath);
+        String source = Files.readString(smokePath);
+        for (String requiredNeedle : List.of(
+                "buildJavaSourceSymbolDts(URI.file(qinSourcePath), qinSource)",
+                "static readonly DEFAULT_NAME: string;",
+                "static greet(name: string): string;",
+                "static COUNT: number;",
+                "static count(): number;",
+                "Java source symbol model leaked Counter members into Greeter",
+                "Java source symbol model leaked Greeter members into Counter")) {
+            require(source.contains(requiredNeedle),
+                    "Qin Java source symbol smoke must cover " + requiredNeedle);
         }
     }
 

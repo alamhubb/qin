@@ -46,8 +46,7 @@ export function buildJavaSourceSymbolDts(sourceUri: URI, qinSource: string): str
   if (!projectRoot) {
     return ''
   }
-  const symbolModel = buildJavaSourceSymbolModel(projectRoot, importedJavaModules)
-  return emitSymbolModelDts(symbolModel)
+  return buildJavaSourceSymbolDtsForProject(projectRoot, importedJavaModules)
 }
 
 function collectImportedJavaModules(source: string): Set<string> {
@@ -75,6 +74,11 @@ function findQinProjectRoot(sourceFilePath: string): string | undefined {
     current = path.dirname(current)
   }
   return undefined
+}
+
+function buildJavaSourceSymbolDtsForProject(projectRoot: string, importedJavaModules: Set<string>): string {
+  const symbolModel = buildJavaSourceSymbolModel(projectRoot, importedJavaModules)
+  return emitSymbolModelDts(symbolModel)
 }
 
 function buildJavaSourceSymbolModel(projectRoot: string, importedJavaModules: Set<string>): QinSymbolModel {
