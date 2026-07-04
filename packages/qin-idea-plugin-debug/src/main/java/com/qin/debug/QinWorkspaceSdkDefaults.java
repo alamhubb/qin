@@ -21,7 +21,7 @@ public final class QinWorkspaceSdkDefaults {
             return true;
         }
         try {
-            return !DebugStartup.discoverQinProjects(basePath).isEmpty();
+            return !QinProjectDiscovery.discoverQinProjects(basePath).isEmpty();
         } catch (Exception e) {
             QinLogger.info("[SDK] Failed to detect Qin project context: " + e.getMessage());
             return false;
@@ -29,7 +29,7 @@ public final class QinWorkspaceSdkDefaults {
     }
 
     public static String preferredJavaVersion(Path basePath) {
-        List<Path> qinProjects = DebugStartup.discoverQinProjects(basePath);
+        List<Path> qinProjects = QinProjectDiscovery.discoverQinProjects(basePath);
         if (qinProjects.isEmpty()) {
             QinConfig nearestConfig = QinConfigSupport.loadNearest(basePath);
             if (nearestConfig != null) {

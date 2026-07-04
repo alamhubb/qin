@@ -37,6 +37,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
             "QinSyntaxHighlighter.java",
             "QinSyntaxHighlighterFactory.java",
             "QinLexer.java",
+            "QinProjectDiscovery.java",
             "QinProjectModuleFiles.java",
             "QinProjectSdkSelection.java",
             "QinStartupSdkConfiguration.java",
@@ -1710,7 +1711,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(toolWindow),
                 "Qin tool window source not found: " + toolWindow);
         String source = Files.readString(toolWindow);
-        require(source.contains("DebugStartup.discoverQinProjects(Paths.get(basePath))")
+        require(source.contains("QinProjectDiscovery.discoverQinProjects(Paths.get(basePath))")
                         && !source.contains("scanQinProjects(")
                         && !source.contains("MAX_SCAN_DEPTH")
                         && !source.contains("EXCLUDED_DIRS")
@@ -1732,9 +1733,17 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && helperSource.contains("parseJavaVersion(")
                         && helperSource.contains("QinConfigSupport.loadNearest(")
                         && helperSource.contains("QinConfigSupport.javaVersion(")
-                        && helperSource.contains("DebugStartup.discoverQinProjects("),
+                        && helperSource.contains("QinProjectDiscovery.discoverQinProjects("),
                 "QinWorkspaceSdkDefaults must own Qin workspace Java version and SDK "
                         + "context facts: " + helper);
+
+        Path discovery = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinProjectDiscovery.java"));
+        require(Files.isRegularFile(discovery),
+                "Qin project discovery helper source not found: " + discovery);
+        String discoverySource = Files.readString(discovery);
+        require(discoverySource.contains("LocalProjectResolver.scanAllProjects("),
+                "QinProjectDiscovery must own the shared Qin project discovery entry point: " + discovery);
 
         Path startup = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "DebugStartup.java"));

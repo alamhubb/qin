@@ -91,7 +91,7 @@ public class QinProjectSync {
         }
 
         try {
-            List<Path> qinProjects = DebugStartup.discoverQinProjects(Paths.get(basePath));
+            List<Path> qinProjects = QinProjectDiscovery.discoverQinProjects(Paths.get(basePath));
             if (qinProjects.isEmpty()) {
                 QinLogger.info("[Sync] No Qin projects detected");
                 return;

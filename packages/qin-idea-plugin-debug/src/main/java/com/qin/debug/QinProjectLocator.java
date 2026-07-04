@@ -36,7 +36,7 @@ public final class QinProjectLocator {
         }
 
         try {
-            List<Path> projects = DebugStartup.discoverQinProjects(basePath);
+            List<Path> projects = QinProjectDiscovery.discoverQinProjects(basePath);
             if (projects.size() == 1) {
                 return toSystemIndependentPath(projects.get(0).toAbsolutePath().normalize());
             }

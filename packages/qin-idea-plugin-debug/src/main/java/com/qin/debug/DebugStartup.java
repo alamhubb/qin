@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.*;
-import java.util.*;
 
 // 闂傚倷绀侀幉锛勬暜閳哄懎纾婚柛鏇ㄥ灠缁犳牠鏌￠崶銉ョ仾闁哄拋鍓氶幈銊ヮ潨閸℃ぞ绨婚梺瀹狀嚙缁绘﹢寮?qin-cli 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佺煯閸楁娊宕洪埀顒併亜閹哄秶鍔嶉柣銊﹀灴閺屸剝鎷呴棃娑掑亾濡ゅ懎鏋佹い鏇楀亾妤犵偞鐗楅幏鍛村川婵犲簼鐢?import static com.qin.constants.QinConstants.*;
 
@@ -71,14 +70,5 @@ public class DebugStartup implements ProjectActivity {
 
         return Unit.INSTANCE;
     }
-
-    /**
-     * 闂傚倷绀侀幉锟犳偡閿曞倸鍨傜憸鐗堝笧瀹撲線鏌涢妷顔煎缂佺姰鍎甸弻宥堫檨闁告挾鍠庨?Qin 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳?
-     * 婵犵數鍋犻幓顏嗙礊閳ь剚绻涙径瀣鐎?qin-cli 闂?LocalProjectResolver
-     */
-    public static List<Path> discoverQinProjects(Path ideaProjectDir) {
-        return com.qin.core.LocalProjectResolver.scanAllProjects(ideaProjectDir.toString());
-    }
-
 
 }

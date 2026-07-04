@@ -102,7 +102,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
         if (basePath == null)
             return;
 
-        java.util.List<Path> projects = DebugStartup.discoverQinProjects(Paths.get(basePath));
+        java.util.List<Path> projects = QinProjectDiscovery.discoverQinProjects(Paths.get(basePath));
 
         if (projects.isEmpty()) {
             DefaultMutableTreeNode emptyNode = new DefaultMutableTreeNode(
