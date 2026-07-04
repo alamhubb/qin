@@ -974,6 +974,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && sourceStructureSource.contains("@NotNull List<ObjectMemberDeclaration> members")
                         && sourceStructureSource.contains("members = List.copyOf(members)")
                         && sourceStructureSource.contains("return members;")
+                        && !sourceStructureSource.contains("@NotNull List<MemberDeclaration> fields")
+                        && !sourceStructureSource.contains("@NotNull List<MemberDeclaration> methods")
+                        && !sourceStructureSource.contains("fields = List.copyOf(fields)")
+                        && !sourceStructureSource.contains("methods = List.copyOf(methods)")
                         && !sourceStructureSource.contains("addMemberDeclarations(")
                         && !sourceStructureSource.contains("fieldNames()")
                         && !sourceStructureSource.contains("methodNames()"),

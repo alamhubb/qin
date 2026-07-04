@@ -346,8 +346,14 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue(counter.keywordRange().isPresent());
         assertTrue(counter.nameRange().isPresent());
         assertTrue(counter.bodyRange().isPresent());
-        assertTrue(counter.fields().get(0).nameRange().isPresent());
-        assertTrue(counter.methods().get(0).nameRange().isPresent());
+        assertTrue(counter.memberDeclarations(QinSourceStructure.ObjectMemberKind.FIELD)
+                .get(0)
+                .nameRange()
+                .isPresent());
+        assertTrue(counter.memberDeclarations(QinSourceStructure.ObjectMemberKind.METHOD)
+                .get(0)
+                .nameRange()
+                .isPresent());
         assertTrue(counter.nameRange().startsAt(source.indexOf("Counter")));
         assertTrue(counter.bodyRange().startsAfter(source.indexOf("Counter")));
         assertTrue(counter.bodyRange().containsOffset(source.indexOf("return this.value")));
@@ -374,7 +380,9 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         QinSourceStructure.ObjectDeclaration counter = QinSourceStructure.parse(source)
                 .objectDeclarations()
                 .get(0);
-        QinSourceStructure.MemberDeclaration method = counter.methods().get(0);
+        QinSourceStructure.MemberDeclaration method = counter
+                .memberDeclarations(QinSourceStructure.ObjectMemberKind.METHOD)
+                .get(0);
 
         assertEquals("next", method.name());
         assertTrue("Qin method declarations should preserve method body range", method.bodyRange().isPresent());
@@ -637,8 +645,12 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         QinSourceStructure structure = QinSourceStructure.parse(myFixture.getFile().getText());
         QinSourceStructure.ImportSpecifier specifier = structure.importDeclarations().get(0).specifiers().get(0);
         QinSourceStructure.ObjectDeclaration object = structure.objectDeclarations().get(0);
-        QinSourceStructure.MemberDeclaration field = object.fields().get(0);
-        QinSourceStructure.MemberDeclaration method = object.methods().get(0);
+        QinSourceStructure.MemberDeclaration field = object
+                .memberDeclarations(QinSourceStructure.ObjectMemberKind.FIELD)
+                .get(0);
+        QinSourceStructure.MemberDeclaration method = object
+                .memberDeclarations(QinSourceStructure.ObjectMemberKind.METHOD)
+                .get(0);
 
         assertEquals(QinTokenTypes.IMPORT_ALIAS_NAME, QinPsiTree.elementAtRangeOrParentOfType(
                 myFixture.getFile(), specifier.localNameRange(), QinTokenTypes.IMPORT_ALIAS_NAME).getNode().getElementType());

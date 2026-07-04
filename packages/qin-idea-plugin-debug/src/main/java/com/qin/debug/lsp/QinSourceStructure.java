@@ -332,8 +332,6 @@ final class QinSourceStructure {
                 objectKeywordRange,
                 objectNameRange,
                 SourceRange.missing(),
-                List.of(),
-                List.of(),
                 List.of());
     }
 
@@ -344,8 +342,6 @@ final class QinSourceStructure {
             @NotNull String objectName,
             @NotNull SourceRange objectKeywordRange,
             @NotNull SourceRange objectNameRange) {
-        List<MemberDeclaration> fields = new ArrayList<>();
-        List<MemberDeclaration> methods = new ArrayList<>();
         List<ObjectMemberDeclaration> members = new ArrayList<>();
         int braceDepth = 0;
         for (int index = openBraceIndex; index < tokens.size(); index++) {
@@ -361,8 +357,6 @@ final class QinSourceStructure {
                                 objectKeywordRange,
                                 objectNameRange,
                                 readBalancedBodyRange(content, tokens, openBraceIndex),
-                                fields,
-                                methods,
                                 members);
                     }
                 }
@@ -377,14 +371,10 @@ final class QinSourceStructure {
                         memberName,
                         range(token),
                         readMethodBodyRange(content, tokens, index));
-                if (addUnique(methods, method)) {
-                    addUniqueMember(members, new ObjectMemberDeclaration(ObjectMemberKind.METHOD, method));
-                }
+                addUniqueMember(members, new ObjectMemberDeclaration(ObjectMemberKind.METHOD, method));
             } else if (QinTokenFacts.isFieldDeclarationName(content, tokens, index)) {
                 MemberDeclaration field = new MemberDeclaration(memberName, range(token));
-                if (addUnique(fields, field)) {
-                    addUniqueMember(members, new ObjectMemberDeclaration(ObjectMemberKind.FIELD, field));
-                }
+                addUniqueMember(members, new ObjectMemberDeclaration(ObjectMemberKind.FIELD, field));
             }
         }
         return new ObjectDeclaration(
@@ -392,8 +382,6 @@ final class QinSourceStructure {
                 objectKeywordRange,
                 objectNameRange,
                 readBalancedBodyRange(content, tokens, openBraceIndex),
-                fields,
-                methods,
                 members);
     }
 
@@ -415,18 +403,12 @@ final class QinSourceStructure {
         return SourceRange.missing();
     }
 
-    private static boolean addUnique(@NotNull List<MemberDeclaration> values, @NotNull MemberDeclaration value) {
-        if (values.stream().noneMatch(existing -> existing.name().equals(value.name()))) {
-            values.add(value);
-            return true;
-        }
-        return false;
-    }
-
     private static void addUniqueMember(
             @NotNull List<ObjectMemberDeclaration> values,
             @NotNull ObjectMemberDeclaration value) {
-        if (values.stream().noneMatch(existing -> existing.declaration().name().equals(value.declaration().name()))) {
+        if (values.stream().noneMatch(existing ->
+                existing.kind() == value.kind()
+                        && existing.declaration().name().equals(value.declaration().name()))) {
             values.add(value);
         }
     }
@@ -439,12 +421,6 @@ final class QinSourceStructure {
             @NotNull SourceRange startRange,
             @NotNull SourceRange endRange) {
         return new SourceRange(startRange.startOffset(), endRange.endOffset());
-    }
-
-    private static @NotNull List<MemberDeclaration> membersFromNames(@NotNull List<String> names) {
-        return names.stream()
-                .map(name -> new MemberDeclaration(name, SourceRange.missing()))
-                .toList();
     }
 
     record SourceRange(int startOffset, int endOffset) {
@@ -560,39 +536,17 @@ final class QinSourceStructure {
             @NotNull SourceRange keywordRange,
             @NotNull SourceRange nameRange,
             @NotNull SourceRange bodyRange,
-            @NotNull List<MemberDeclaration> fields,
-            @NotNull List<MemberDeclaration> methods,
             @NotNull List<ObjectMemberDeclaration> members) {
-        ObjectDeclaration(
-                @NotNull String name,
-                @NotNull SourceRange keywordRange,
-                @NotNull SourceRange nameRange,
-                @NotNull SourceRange bodyRange,
-                @NotNull List<MemberDeclaration> fields,
-                @NotNull List<MemberDeclaration> methods) {
-            this(
-                    name,
-                    keywordRange,
-                    nameRange,
-                    bodyRange,
-                    fields,
-                    methods,
-                    memberDeclarationsFromMembers(fields, methods));
-        }
-
         ObjectDeclaration(@NotNull String name, @NotNull List<String> fields, @NotNull List<String> methods) {
             this(
                     name,
                     SourceRange.missing(),
                     SourceRange.missing(),
                     SourceRange.missing(),
-                    membersFromNames(fields),
-                    membersFromNames(methods));
+                    memberDeclarationsFromNames(fields, methods));
         }
 
         ObjectDeclaration {
-            fields = List.copyOf(fields);
-            methods = List.copyOf(methods);
             members = List.copyOf(members);
         }
 
@@ -607,7 +561,10 @@ final class QinSourceStructure {
         }
 
         @NotNull List<MemberDeclaration> memberDeclarations(@NotNull ObjectMemberKind kind) {
-            return kind == ObjectMemberKind.FIELD ? fields : methods;
+            return memberDeclarations().stream()
+                    .filter(member -> member.kind() == kind)
+                    .map(ObjectMemberDeclaration::declaration)
+                    .toList();
         }
 
         @NotNull List<ObjectMemberIndexEntry> memberIndexEntries() {
@@ -648,16 +605,20 @@ final class QinSourceStructure {
             return null;
         }
 
-        private static @NotNull List<ObjectMemberDeclaration> memberDeclarationsFromMembers(
-                @NotNull List<MemberDeclaration> fields,
-                @NotNull List<MemberDeclaration> methods) {
+        private static @NotNull List<ObjectMemberDeclaration> memberDeclarationsFromNames(
+                @NotNull List<String> fields,
+                @NotNull List<String> methods) {
             List<ObjectMemberDeclaration> members = new ArrayList<>();
             fields.forEach(field -> addUniqueMember(
                     members,
-                    new ObjectMemberDeclaration(ObjectMemberKind.FIELD, field)));
+                    new ObjectMemberDeclaration(
+                            ObjectMemberKind.FIELD,
+                            new MemberDeclaration(field, SourceRange.missing()))));
             methods.forEach(method -> addUniqueMember(
                     members,
-                    new ObjectMemberDeclaration(ObjectMemberKind.METHOD, method)));
+                    new ObjectMemberDeclaration(
+                            ObjectMemberKind.METHOD,
+                            new MemberDeclaration(method, SourceRange.missing()))));
             return members;
         }
     }
