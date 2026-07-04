@@ -565,10 +565,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(helperSource.contains("isReferenceIdentifier(")
                         && helperSource.contains("referenceName(")
                         && helperSource.contains("referenceRange(")
+                        && helperSource.contains("QinPsiTree.elementType(element)")
+                        && !helperSource.contains("element.getNode()")
                         && helperSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER")
                         && helperSource.contains("isImportAliasDeclaration(")
                         && helperSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
-                "QinReferenceElements must own shared reference token checks: "
+                "QinReferenceElements must own shared reference token checks through QinPsiTree.elementType: "
                         + referenceElements);
 
         Path unresolvedMessages = javaRoot.resolve(Path.of(
@@ -622,11 +624,14 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String psiTokenStreamSource = Files.readString(psiTokenStream);
         require(psiTokenStreamSource.contains("QinReferenceElements.referenceElement(element)")
                         && psiTokenStreamSource.contains("QinPsiTree.containingFile(element)")
+                        && psiTokenStreamSource.contains("QinPsiTree.elementType(element)")
+                        && !psiTokenStreamSource.contains("element.getNode()")
                         && !psiTokenStreamSource.contains("element.getContainingFile()")
                         && !psiTokenStreamSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
                 "QinPsiTokenStream must use QinReferenceElements for reference-wrapper token ownership "
-                        + "and QinPsiTree for containing-file lookup instead of owning the "
-                        + "REFERENCE_IDENTIFIER token mapping or element-to-file bridge: " + psiTokenStream);
+                        + "and QinPsiTree for token-type and containing-file lookup instead of owning the "
+                        + "REFERENCE_IDENTIFIER token mapping, raw node access, or element-to-file bridge: "
+                        + psiTokenStream);
     }
 
     private static void assertReferenceContributorRegistrationUsesSharedReferenceElements(Path javaRoot) throws Exception {

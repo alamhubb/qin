@@ -19,7 +19,7 @@ final class QinReferenceElements {
     }
 
     static @Nullable PsiElement referenceElement(@NotNull PsiElement element) {
-        IElementType elementType = element.getNode() == null ? null : element.getNode().getElementType();
+        IElementType elementType = QinPsiTree.elementType(element);
         if (isReferenceIdentifier(element)) {
             return element;
         }

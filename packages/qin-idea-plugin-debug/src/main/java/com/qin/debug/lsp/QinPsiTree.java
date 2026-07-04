@@ -17,8 +17,12 @@ final class QinPsiTree {
     private QinPsiTree() {
     }
 
+    static @Nullable IElementType elementType(@NotNull PsiElement element) {
+        return element.getNode() == null ? null : element.getNode().getElementType();
+    }
+
     static boolean isType(@NotNull PsiElement element, @NotNull IElementType type) {
-        return element.getNode() != null && element.getNode().getElementType() == type;
+        return elementType(element) == type;
     }
 
     static @Nullable PsiElement elementAt(@NotNull PsiFile file, int offset) {

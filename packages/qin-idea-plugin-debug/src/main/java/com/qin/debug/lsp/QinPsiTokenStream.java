@@ -23,8 +23,8 @@ final class QinPsiTokenStream {
         root.accept(new PsiRecursiveElementWalkingVisitor() {
             @Override
             public void visitElement(@NotNull PsiElement element) {
-                if (element.getFirstChild() == null && element.getNode() != null) {
-                    IElementType type = element.getNode().getElementType();
+                IElementType type = QinPsiTree.elementType(element);
+                if (element.getFirstChild() == null && type != null) {
                     if (!QinTokenFacts.isTrivia(type)) {
                         tokens.add(new QinPsiToken(tokenOwner(element), type, element.getText()));
                     }
