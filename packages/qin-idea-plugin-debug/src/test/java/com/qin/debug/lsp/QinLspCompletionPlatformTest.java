@@ -2774,6 +2774,36 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         && "greet".equals(item.getElement().getText())));
     }
 
+    public void testQinJavaAliasedMethodReferenceParticipatesInReferencesSearch() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("greet"));
+        assertNotNull("Qin Java aliased method reference was not registered", reference);
+        PsiMethod javaMethod = assertInstanceOf(reference.resolve(), PsiMethod.class);
+
+        Collection<PsiReference> references = ReferencesSearch.search(
+                javaMethod,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin Java aliased method reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "greet".equals(item.getElement().getText())));
+    }
+
     public void testQinJavaMethodRenameProcessorUpdatesReferences() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
@@ -2856,6 +2886,34 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 javaField,
                 GlobalSearchScope.allScope(getProject())).findAll();
         assertTrue("Find Usages should include Qin Java field reference: " + describeReferences(references),
+                references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
+                        && "DEFAULT_NAME".equals(item.getElement().getText())));
+    }
+
+    public void testQinJavaAliasedFieldReferenceParticipatesInReferencesSearch() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const name = G.DEFAULT_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("DEFAULT_NAME"));
+        assertNotNull("Qin Java aliased field reference was not registered", reference);
+        PsiField javaField = assertInstanceOf(reference.resolve(), PsiField.class);
+
+        Collection<PsiReference> references = ReferencesSearch.search(
+                javaField,
+                GlobalSearchScope.allScope(getProject())).findAll();
+        assertTrue("Find Usages should include Qin Java aliased field reference: " + describeReferences(references),
                 references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
                         && "DEFAULT_NAME".equals(item.getElement().getText())));
     }
