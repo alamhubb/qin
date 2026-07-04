@@ -68,6 +68,80 @@ public final class QinProjectModuleFiles {
         return detectSourceDir(projectPath) != null;
     }
 
+    public static void updateImlLanguageLevel(Path projectPath, String javaVersion) {
+        try {
+            String projectName = projectPath.getFileName().toString();
+            Path imlPath = projectPath.resolve(projectName + ".iml");
+            if (!Files.exists(imlPath)) {
+                return;
+            }
+
+            String content = Files.readString(imlPath);
+            String languageLevel = "JDK_" + javaVersion;
+
+            if (content.contains("LANGUAGE_LEVEL=")) {
+                content = content.replaceAll("LANGUAGE_LEVEL=\"[^\"]*\"",
+                        "LANGUAGE_LEVEL=\"" + languageLevel + "\"");
+            } else if (content.contains("<component name=\"NewModuleRootManager\"")) {
+                content = content.replace(
+                        "<component name=\"NewModuleRootManager\"",
+                        "<component name=\"NewModuleRootManager\" LANGUAGE_LEVEL=\"" + languageLevel + "\"");
+            }
+
+            Files.writeString(imlPath, content);
+            QinLogger.info("[iml]   Updated .iml LANGUAGE_LEVEL to " + languageLevel);
+        } catch (Exception e) {
+            QinLogger.error("[iml]   Failed to update .iml LANGUAGE_LEVEL: " + e.getMessage());
+        }
+    }
+
+    public static boolean needsRepair(Path projectPath, Path ideaDir) {
+        try {
+            if (!hasSourceDirectory(projectPath)) {
+                QinLogger.info("[iml]   No source directory detected, skipping IDEA module repair check: "
+                        + projectPath.getFileName());
+                return false;
+            }
+
+            String projectName = projectPath.getFileName().toString();
+            Path imlPath = projectPath.resolve(projectName + ".iml");
+            if (!Files.exists(imlPath)) {
+                QinLogger.info("[iml]   Missing .iml file: " + imlPath);
+                return true;
+            }
+
+            String imlContent = Files.readString(imlPath);
+            if (!imlContent.contains("<sourceFolder ")) {
+                QinLogger.info("[iml]   Missing sourceFolder in .iml: " + imlPath);
+                return true;
+            }
+
+            if (ideaDir == null || ideaDir.getParent() == null) {
+                QinLogger.info("[iml]   IDEA project directory is unavailable for module repair check");
+                return true;
+            }
+
+            Path modulesXml = ideaDir.resolve("modules.xml");
+            if (!Files.exists(modulesXml)) {
+                QinLogger.info("[iml]   Missing IDEA modules.xml: " + modulesXml);
+                return true;
+            }
+
+            String modulesContent = Files.readString(modulesXml);
+            Path relativeImlPath = ideaDir.getParent().relativize(imlPath);
+            String moduleEntry = relativeImlPath.toString().replace("\\", "/");
+            if (!modulesContent.contains(moduleEntry)) {
+                QinLogger.info("[iml]   Module entry missing from modules.xml: " + moduleEntry);
+                return true;
+            }
+
+            return hasMissingClasspathEntries(projectPath, imlContent);
+        } catch (Exception e) {
+            QinLogger.error("[iml]   Failed to validate IDEA module metadata: " + e.getMessage());
+            return true;
+        }
+    }
+
     private static void repairExistingImlIfNeeded(Path projectPath, Path imlPath) throws Exception {
         QinLogger.info("[iml]   Existing .iml found, checking whether repair is needed...");
         String existingContent = Files.readString(imlPath);
@@ -319,6 +393,34 @@ public final class QinProjectModuleFiles {
             // Keep module generation best-effort for unusual classpath entries.
         }
         return null;
+    }
+
+    private static boolean hasMissingClasspathEntries(Path projectPath, String imlContent) {
+        try {
+            BspHandler bspHandler = new BspHandler(projectPath.toString());
+            List<String> classpath = bspHandler.getClasspath();
+            if (classpath == null || classpath.isEmpty()) {
+                return false;
+            }
+
+            for (String path : classpath) {
+                if (path == null || path.isBlank()) {
+                    continue;
+                }
+                String entryPath = path.replace("\\", "/");
+                String expectedRoot = entryPath.endsWith(".jar")
+                        ? "jar://" + entryPath + "!/"
+                        : "file://" + entryPath;
+                if (!imlContent.contains(expectedRoot)) {
+                    QinLogger.info("[iml]   Missing classpath entry in .iml: " + expectedRoot);
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            QinLogger.error("[iml]   Failed to validate classpath entries in .iml: " + e.getMessage());
+            return true;
+        }
     }
 
     private static String fixMissingSourceFolder(String imlContent, Path projectPath) {

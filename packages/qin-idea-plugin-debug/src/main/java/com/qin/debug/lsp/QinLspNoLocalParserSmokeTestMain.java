@@ -1770,11 +1770,14 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String helperSource = Files.readString(helper);
         require(helperSource.contains("generateImlFile(")
                         && helperSource.contains("hasSourceDirectory(")
+                        && helperSource.contains("updateImlLanguageLevel(")
+                        && helperSource.contains("needsRepair(")
                         && helperSource.contains("repairExistingImlIfNeeded(")
                         && helperSource.contains("writeImlFromBsp(")
                         && helperSource.contains("dependencyEntries(")
                         && helperSource.contains("appendJarDependency(")
                         && helperSource.contains("appendLocalDependency(")
+                        && helperSource.contains("hasMissingClasspathEntries(")
                         && helperSource.contains("findSourcesJar(")
                         && helperSource.contains("findJavadocJar(")
                         && helperSource.contains("registerModuleToIdeaProject(")
@@ -1784,7 +1787,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && helperSource.contains("<sourceFolder")
                         && helperSource.contains("<orderEntry type=\\\"module-library\\\">"),
                 "QinProjectModuleFiles must own Qin .iml generation, source-folder repair, "
-                        + "classpath library entries, and IDEA modules.xml registration: " + helper);
+                        + "LANGUAGE_LEVEL updates, classpath validation, and IDEA modules.xml "
+                        + "registration/repair checks: " + helper);
 
         Path startup = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "DebugStartup.java"));
@@ -1809,9 +1813,13 @@ public final class QinLspNoLocalParserSmokeTestMain {
             String source = Files.readString(consumer);
             require(source.contains("QinProjectModuleFiles.")
                             && !source.contains("DebugStartup.generateImlFile(")
-                            && !source.contains("DebugStartup.hasSourceDirectory("),
+                            && !source.contains("DebugStartup.hasSourceDirectory(")
+                            && !source.contains("hasMissingClasspathEntries(")
+                            && !source.contains("LANGUAGE_LEVEL=\\\"")
+                            && !source.contains("modules.xml"),
                     "Qin sync and tool-window surfaces must consume QinProjectModuleFiles "
-                            + "instead of DebugStartup for .iml/module file work: " + consumer);
+                            + "instead of owning .iml/module file generation, repair checks, "
+                            + "language-level XML mutation, or module registration: " + consumer);
         }
     }
 

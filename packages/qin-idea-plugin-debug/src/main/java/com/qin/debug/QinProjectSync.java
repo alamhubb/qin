@@ -156,37 +156,11 @@ public class QinProjectSync {
             QinLogger.info("[Sync] Regenerating module .iml file...");
             Path ideaDir = Paths.get(basePath, ".idea");
             QinProjectModuleFiles.generateImlFile(projectPath, true, ideaDir);
-
-            String projectName = projectPath.getFileName().toString();
-            Path imlPath = projectPath.resolve(projectName + ".iml");
-            if (Files.exists(imlPath)) {
-                updateImlLanguageLevel(imlPath, config);
-            }
+            QinProjectModuleFiles.updateImlLanguageLevel(projectPath, QinConfigSupport.javaVersion(config));
 
             QinLogger.info("[Sync] .iml update complete");
         } catch (Exception e) {
             QinLogger.error("[Sync] Failed to update .iml file: " + e.getMessage());
-        }
-    }
-
-    private void updateImlLanguageLevel(Path imlPath, QinConfig config) {
-        try {
-            String content = Files.readString(imlPath);
-            String languageLevel = "JDK_" + QinConfigSupport.javaVersion(config);
-
-            if (content.contains("LANGUAGE_LEVEL=")) {
-                content = content.replaceAll("LANGUAGE_LEVEL=\"[^\"]*\"",
-                        "LANGUAGE_LEVEL=\"" + languageLevel + "\"");
-            } else if (content.contains("<component name=\"NewModuleRootManager\"")) {
-                content = content.replace(
-                        "<component name=\"NewModuleRootManager\"",
-                        "<component name=\"NewModuleRootManager\" LANGUAGE_LEVEL=\"" + languageLevel + "\"");
-            }
-
-            Files.writeString(imlPath, content);
-            QinLogger.info("[Sync] Updated .iml LANGUAGE_LEVEL to " + languageLevel);
-        } catch (Exception e) {
-            QinLogger.error("[Sync] Failed to update .iml LANGUAGE_LEVEL: " + e.getMessage());
         }
     }
 
@@ -271,89 +245,15 @@ public class QinProjectSync {
             return true;
         }
 
-        if (needsIdeaModuleRepair(projectPath)) {
+        if (basePath == null) {
+            return true;
+        }
+
+        if (QinProjectModuleFiles.needsRepair(projectPath, Paths.get(basePath, ".idea"))) {
             QinLogger.info("[Sync] IDEA module metadata is incomplete, forcing resync: " + projectPath.getFileName());
             return true;
         }
 
         return false;
-    }
-
-    private boolean needsIdeaModuleRepair(Path projectPath) {
-        try {
-            if (basePath == null) {
-                return true;
-            }
-
-            if (!QinProjectModuleFiles.hasSourceDirectory(projectPath)) {
-                QinLogger.info("[Sync] No source directory detected, skipping IDEA module repair check: "
-                        + projectPath.getFileName());
-                return false;
-            }
-
-            String projectName = projectPath.getFileName().toString();
-            Path imlPath = projectPath.resolve(projectName + ".iml");
-            if (!Files.exists(imlPath)) {
-                QinLogger.info("[Sync] Missing .iml file: " + imlPath);
-                return true;
-            }
-
-            String imlContent = Files.readString(imlPath);
-            if (!imlContent.contains("<sourceFolder ")) {
-                QinLogger.info("[Sync] Missing sourceFolder in .iml: " + imlPath);
-                return true;
-            }
-
-            Path modulesXml = Paths.get(basePath, ".idea", "modules.xml");
-            if (!Files.exists(modulesXml)) {
-                QinLogger.info("[Sync] Missing IDEA modules.xml: " + modulesXml);
-                return true;
-            }
-
-            String modulesContent = Files.readString(modulesXml);
-            Path relativeImlPath = Paths.get(basePath).relativize(imlPath);
-            String moduleEntry = relativeImlPath.toString().replace("\\", "/");
-            if (!modulesContent.contains(moduleEntry)) {
-                QinLogger.info("[Sync] Module entry missing from modules.xml: " + moduleEntry);
-                return true;
-            }
-
-            if (hasMissingClasspathEntries(projectPath, imlContent)) {
-                return true;
-            }
-
-            return false;
-        } catch (Exception e) {
-            QinLogger.error("[Sync] Failed to validate IDEA module metadata: " + e.getMessage());
-            return true;
-        }
-    }
-
-    private boolean hasMissingClasspathEntries(Path projectPath, String imlContent) {
-        try {
-            com.qin.bsp.BspHandler bspHandler = new com.qin.bsp.BspHandler(projectPath.toString());
-            List<String> classpath = bspHandler.getClasspath();
-            if (classpath == null || classpath.isEmpty()) {
-                return false;
-            }
-
-            for (String path : classpath) {
-                if (path == null || path.isBlank()) {
-                    continue;
-                }
-                String entryPath = path.replace("\\", "/");
-                String expectedRoot = entryPath.endsWith(".jar")
-                        ? "jar://" + entryPath + "!/"
-                        : "file://" + entryPath;
-                if (!imlContent.contains(expectedRoot)) {
-                    QinLogger.info("[Sync] Missing classpath entry in .iml: " + expectedRoot);
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            QinLogger.error("[Sync] Failed to validate classpath entries in .iml: " + e.getMessage());
-            return true;
-        }
     }
 }
