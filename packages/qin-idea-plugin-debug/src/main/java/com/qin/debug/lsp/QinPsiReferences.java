@@ -42,7 +42,7 @@ final class QinPsiReferences {
     }
 
     static @Nullable PsiReference findReferenceAt(@NotNull PsiFile file, int offset) {
-        PsiElement element = file.findElementAt(offset);
+        PsiElement element = QinPsiTree.elementAt(file, offset);
         while (element != null && element != file) {
             for (PsiReference reference : references(element)) {
                 if (containsOffset(reference, offset)) {

@@ -14,6 +14,10 @@ final class QinPsiTree {
         return element.getNode() != null && element.getNode().getElementType() == type;
     }
 
+    static @Nullable PsiElement elementAt(@NotNull PsiFile file, int offset) {
+        return file.findElementAt(offset);
+    }
+
     static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull IElementType type) {
         PsiElement current = element.getParent();
         while (current != null) {
@@ -29,7 +33,7 @@ final class QinPsiTree {
             @NotNull PsiFile file,
             int offset,
             @NotNull IElementType type) {
-        PsiElement element = file.findElementAt(offset);
+        PsiElement element = elementAt(file, offset);
         if (element == null) {
             return null;
         }

@@ -41,6 +41,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoForbiddenSourceMarkers(javaRoot);
         assertNoDirectReferenceRegistryAccess(javaRoot);
         assertNoDirectJavaPsiAccess(javaRoot);
+        assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
@@ -131,6 +132,26 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 }
             }
         }
+    }
+
+    private static void assertReferenceLookupUsesPsiTreeBridge(Path javaRoot) throws Exception {
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("elementAt(")
+                        && psiTreeSource.contains("file.findElementAt(offset)"),
+                "QinPsiTree must own raw offset to PSI leaf lookup: " + psiTree);
+
+        Path psiReferences = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiReferences.java"));
+        require(Files.isRegularFile(psiReferences),
+                "QinPsiReferences source not found: " + psiReferences);
+        String psiReferencesSource = Files.readString(psiReferences);
+        require(psiReferencesSource.contains("QinPsiTree.elementAt(file, offset)")
+                        && !psiReferencesSource.contains("file.findElementAt(offset)"),
+                "QinPsiReferences.findReferenceAt must ask QinPsiTree for offset-to-leaf "
+                        + "lookup instead of owning PsiFile.findElementAt: " + psiReferences);
     }
 
     private static void assertParserDefinitionUsesSourceRangePredicates(Path javaRoot) throws Exception {
