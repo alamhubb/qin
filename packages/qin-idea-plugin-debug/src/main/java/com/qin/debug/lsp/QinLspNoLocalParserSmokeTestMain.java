@@ -625,12 +625,15 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(psiTokenStreamSource.contains("QinReferenceElements.referenceElement(element)")
                         && psiTokenStreamSource.contains("QinPsiTree.containingFile(element)")
                         && psiTokenStreamSource.contains("QinPsiTree.elementType(element)")
+                        && psiTokenStreamSource.contains("QinPsiTree.elementText(element)")
                         && !psiTokenStreamSource.contains("element.getNode()")
+                        && !psiTokenStreamSource.contains("element.getText()")
                         && !psiTokenStreamSource.contains("element.getContainingFile()")
                         && !psiTokenStreamSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
                 "QinPsiTokenStream must use QinReferenceElements for reference-wrapper token ownership "
-                        + "and QinPsiTree for token-type and containing-file lookup instead of owning the "
-                        + "REFERENCE_IDENTIFIER token mapping, raw node access, or element-to-file bridge: "
+                        + "and QinPsiTree for token-type, token-text, and containing-file lookup instead "
+                        + "of owning the REFERENCE_IDENTIFIER token mapping, raw PSI access, "
+                        + "or element-to-file bridge: "
                         + psiTokenStream);
     }
 

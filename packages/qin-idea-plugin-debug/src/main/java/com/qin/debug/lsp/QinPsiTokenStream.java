@@ -26,7 +26,7 @@ final class QinPsiTokenStream {
                 IElementType type = QinPsiTree.elementType(element);
                 if (element.getFirstChild() == null && type != null) {
                     if (!QinTokenFacts.isTrivia(type)) {
-                        tokens.add(new QinPsiToken(tokenOwner(element), type, element.getText()));
+                        tokens.add(new QinPsiToken(tokenOwner(element), type, QinPsiTree.elementText(element)));
                     }
                 }
                 super.visitElement(element);
