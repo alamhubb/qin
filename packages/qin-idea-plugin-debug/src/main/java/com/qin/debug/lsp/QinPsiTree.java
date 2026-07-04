@@ -25,6 +25,10 @@ final class QinPsiTree {
         return PsiManager.getInstance(project).findFile(file);
     }
 
+    static @NotNull QinSourceStructure sourceStructure(@NotNull PsiFile file) {
+        return QinSourceStructure.parse(file.getText());
+    }
+
     static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull IElementType type) {
         PsiElement current = element.getParent();
         while (current != null) {
@@ -90,7 +94,7 @@ final class QinPsiTree {
             return null;
         }
         int startOffset = objectDeclaration.getTextRange().getStartOffset();
-        return QinSourceStructure.parse(file.getText()).objectDeclarationAtKeywordOffset(startOffset);
+        return sourceStructure(file).objectDeclarationAtKeywordOffset(startOffset);
     }
 
     private static @NotNull IElementType objectMemberNameType(

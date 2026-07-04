@@ -63,7 +63,8 @@ final class QinObjectSymbols {
     }
 
     private static @Nullable PsiElement findObjectNameInFile(@NotNull PsiFile file, @NotNull String name) {
-        QinSourceStructure.ObjectDeclaration declaration = QinSourceStructure.parse(file.getText()).objectDeclarationNamed(name);
+        QinSourceStructure.ObjectDeclaration declaration =
+                QinPsiTree.sourceStructure(file).objectDeclarationNamed(name);
         if (declaration == null || !declaration.nameRange().isPresent()) {
             return null;
         }

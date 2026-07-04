@@ -12,7 +12,7 @@ final class QinImportBindings {
     }
 
     static @NotNull List<ImportBinding> collect(@NotNull PsiFile file) {
-        return QinSourceStructure.parse(file.getText()).importSpecifierMatches().stream()
+        return QinPsiTree.sourceStructure(file).importSpecifierMatches().stream()
                 .map(match -> new ImportBinding(
                         match.declaration().moduleSpecifier(),
                         match.specifier().exportedName(),
@@ -26,7 +26,7 @@ final class QinImportBindings {
             return null;
         }
         int offset = element.getTextRange().getStartOffset();
-        QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
+        QinSourceStructure sourceStructure = QinPsiTree.sourceStructure(file);
         QinSourceStructure.ImportSpecifierMatch match = sourceStructure.importSpecifierAtNameOffset(offset);
         if (match == null) {
             return null;
@@ -49,7 +49,7 @@ final class QinImportBindings {
         if (file == null) {
             return null;
         }
-        QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
+        QinSourceStructure sourceStructure = QinPsiTree.sourceStructure(file);
         QinSourceStructure.ImportSpecifier specifier = sourceStructure.importAliasSpecifierNamed(localName);
         if (specifier == null) {
             return null;
@@ -62,7 +62,7 @@ final class QinImportBindings {
         if (file == null) {
             return null;
         }
-        QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
+        QinSourceStructure sourceStructure = QinPsiTree.sourceStructure(file);
         QinSourceStructure.ImportSpecifier specifier = sourceStructure.importAliasSpecifierNamed(localName);
         if (specifier == null) {
             return null;

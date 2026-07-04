@@ -676,6 +676,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String source = Files.readString(importBindings);
         require(source.contains(".importSpecifierAtNameOffset(offset)")
                         && source.contains(".importSpecifierMatches()")
+                        && source.contains("QinPsiTree.sourceStructure(")
+                        && !source.contains("QinSourceStructure.parse(file.getText())")
                         && !source.contains("sourceStructure.importDeclarations()")
                         && !source.contains(".specifiers()")
                         && !source.contains(".specifierAtNameOffset(offset)")
@@ -683,7 +685,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("localNameRange().startsAt"),
                 "QinImportBindings must use QinSourceStructure.importSpecifierAtNameOffset "
                         + "and QinSourceStructure.importSpecifierMatches instead of iterating declarations "
-                        + "or splitting named import ranges: " + importBindings);
+                        + "or splitting named import ranges, and must ask QinPsiTree to bridge "
+                        + "PsiFile source structure: " + importBindings);
     }
 
     private static void assertImportBindingsUseSourceStructureAliasLookup(Path javaRoot) throws Exception {
@@ -777,6 +780,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
         String psiTreeSource = Files.readString(psiTree);
         require(psiTreeSource.contains("sourceObjectDeclaration(")
+                        && psiTreeSource.contains("sourceStructure(")
                         && psiTreeSource.contains(".objectDeclarationAtKeywordOffset(startOffset)"),
                 "QinPsiTree must own OBJECT_DECLARATION PSI to QinSourceStructure object bridging: "
                         + psiTree);
@@ -809,9 +813,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinObjectSymbols source not found: " + objectSymbols);
         String objectSymbolsSource = Files.readString(objectSymbols);
         require(objectSymbolsSource.contains("QinPsiTree.objectNameElement(")
+                        && objectSymbolsSource.contains("QinPsiTree.sourceStructure(")
+                        && !objectSymbolsSource.contains("QinSourceStructure.parse(file.getText())")
                         && !objectSymbolsSource.contains("QinTokenTypes.OBJECT_NAME"),
                 "QinObjectSymbols must ask QinPsiTree to bridge object name ranges to PSI names "
-                        + "instead of owning the OBJECT_NAME token mapping: " + objectSymbols);
+                        + "and PsiFile source structure instead of owning those platform "
+                        + "adapter details: " + objectSymbols);
     }
 
     private static void assertObjectDeclarationAncestryUsesQinPsiTree(Path javaRoot) throws Exception {
