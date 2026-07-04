@@ -1,6 +1,8 @@
 package com.qin.debug.lsp;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
@@ -12,6 +14,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public final class QinLspPluginPackageSmokeTestMain {
+    private static final Set<String> DESCRIPTOR_CLASS_ATTRIBUTES = Set.of(
+            "implementation",
+            "implementationClass",
+            "factoryClass",
+            "serviceImplementation");
+
     private static final Set<String> REQUIRED_CLASSES = Set.of(
             "com/qin/debug/lsp/QinLspFileType.class",
             "com/qin/debug/lsp/QinLanguage.class",
@@ -154,12 +162,34 @@ public final class QinLspPluginPackageSmokeTestMain {
                 Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(input);
                 document.getDocumentElement().normalize();
                 QinLspPluginDescriptorSmokeTestMain.assertPureLspDescriptor(document);
+                assertDescriptorImplementationClasses(pluginJar, document);
             }
 
             for (String requiredClass : REQUIRED_CLASSES) {
                 require(pluginJar.getEntry(requiredClass) != null, "Missing LSP class in plugin jar: " + requiredClass);
             }
         }
+    }
+
+    private static void assertDescriptorImplementationClasses(ZipFile pluginJar, Document document) {
+        NodeList elements = document.getElementsByTagName("*");
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+            for (String attribute : DESCRIPTOR_CLASS_ATTRIBUTES) {
+                String className = element.getAttribute(attribute).trim();
+                if (!className.isEmpty()) {
+                    assertPluginClass(pluginJar, className,
+                            element.getTagName() + " " + attribute);
+                }
+            }
+        }
+    }
+
+    private static void assertPluginClass(ZipFile pluginJar, String className, String source) {
+        String entryName = className.replace('.', '/') + ".class";
+        require(pluginJar.getEntry(entryName) != null,
+                "Descriptor registered class is missing from plugin jar: "
+                        + className + " from " + source);
     }
 
     private static void require(boolean condition, String message) {
