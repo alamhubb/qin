@@ -95,12 +95,6 @@ final class QinObjectSymbols {
         return findMethodNameInObjectDeclaration(objectDeclaration, methodName);
     }
 
-    static @NotNull List<String> memberNamesForObject(@NotNull PsiElement element, @NotNull String objectName) {
-        return memberElementsForObject(element, objectName).stream()
-                .map(PsiElement::getText)
-                .toList();
-    }
-
     static @NotNull List<PsiElement> memberElementsForObject(@NotNull PsiElement element, @NotNull String objectName) {
         ResolvedObject resolvedObject = resolveObjectName(element, objectName);
         if (resolvedObject == null) {
@@ -114,15 +108,9 @@ final class QinObjectSymbols {
                 .filter(member -> hasIndexedMember(
                         element,
                         resolvedObject,
-                        member.element().getText(),
+                        member.name(),
                         member.kind()))
                 .map(ObjectMemberElement::element)
-                .toList();
-    }
-
-    static @NotNull List<String> memberNamesForThis(@NotNull PsiElement element) {
-        return memberElementsForThis(element).stream()
-                .map(PsiElement::getText)
                 .toList();
     }
 
@@ -149,7 +137,10 @@ final class QinObjectSymbols {
             PsiElement memberElement = QinPsiTree.objectMemberNameElement(
                     file, member.declaration(), member.kind());
             if (memberElement != null) {
-                members.add(new ObjectMemberElement(memberElement, member.kind()));
+                members.add(new ObjectMemberElement(
+                        member.declaration().name(),
+                        memberElement,
+                        member.kind()));
             }
         }
         return members;
@@ -237,6 +228,7 @@ final class QinObjectSymbols {
     }
 
     private record ObjectMemberElement(
+            @NotNull String name,
             @NotNull PsiElement element,
             @NotNull QinSourceStructure.ObjectMemberKind kind) {
     }

@@ -883,8 +883,13 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String source = Files.readString(objectSymbols);
         require(source.contains(".memberDeclarationNamed(")
                         && source.contains(".memberDeclarations()")
+                        && source.contains("member.declaration().name()")
+                        && source.contains("member.name()")
                         && !source.contains("declaration.fields()")
                         && !source.contains("declaration.methods()")
+                        && !source.contains("member.element().getText()")
+                        && !source.contains("memberNamesForObject(")
+                        && !source.contains("memberNamesForThis(")
                         && !source.contains("member.name().equals(memberName)")
                         && !source.contains("memberType == QinTokenTypes.FIELD_NAME"),
                 "QinObjectSymbols must use QinSourceStructure member declaration lookup helpers "
