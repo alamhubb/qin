@@ -45,6 +45,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
         assertReferenceContributorRegistrationUsesSharedReferenceElements(javaRoot);
+        assertReferenceContributorsUseSharedProviderWrapper(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertImportAliasPsiBridgeUsesQinPsiTree(javaRoot);
@@ -232,6 +233,36 @@ public final class QinLspNoLocalParserSmokeTestMain {
                                 && !source.contains("PlatformPatterns.psiElement(QinTokenTypes."),
                         "Qin reference contributors must register through QinReferenceElements "
                                 + "instead of owning reference token patterns: " + file);
+            }
+        }
+    }
+
+    private static void assertReferenceContributorsUseSharedProviderWrapper(Path javaRoot) throws Exception {
+        Path referenceElements = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinReferenceElements.java"));
+        require(Files.isRegularFile(referenceElements),
+                "QinReferenceElements source not found: " + referenceElements);
+        String helperSource = Files.readString(referenceElements);
+        require(helperSource.contains("referenceProvider(")
+                        && helperSource.contains("element.getContainingFile() instanceof QinPsiFile")
+                        && helperSource.contains("referenceElement(element)")
+                        && helperSource.contains("PsiReference.EMPTY_ARRAY"),
+                "QinReferenceElements must own reference provider Qin-file filtering, "
+                        + "reference-element bridging, and empty-reference fallback: " + referenceElements);
+
+        try (var files = Files.walk(javaRoot)) {
+            for (Path file : files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith("ReferenceContributor.java"))
+                    .toList()) {
+                String source = Files.readString(file);
+                require(source.contains("QinReferenceElements.referenceProvider(")
+                                && !source.contains("getContainingFile()")
+                                && !source.contains("QinReferenceElements.referenceElement(")
+                                && !source.contains("PsiReference.EMPTY_ARRAY"),
+                        "Qin reference contributors must use QinReferenceElements.referenceProvider "
+                                + "instead of owning Qin-file filtering or reference-element bridging: "
+                                + file);
             }
         }
     }

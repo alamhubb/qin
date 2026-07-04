@@ -2,11 +2,16 @@ package com.qin.debug.lsp;
 
 import com.intellij.patterns.PlatformPatterns;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceProvider;
 import com.intellij.psi.PsiReferenceRegistrar;
 import com.intellij.psi.tree.IElementType;
+import com.intellij.util.ProcessingContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 final class QinReferenceElements {
     private QinReferenceElements() {
@@ -48,6 +53,26 @@ final class QinReferenceElements {
             @NotNull PsiReferenceProvider provider) {
         registerReferenceProvider(registrar, provider, QinTokenTypes.REFERENCE_IDENTIFIER);
         registerReferenceProvider(registrar, provider, QinTokenTypes.MEMBER_IDENTIFIER);
+    }
+
+    static @NotNull PsiReferenceProvider referenceProvider(
+            @NotNull Predicate<PsiElement> candidate,
+            @NotNull Function<PsiElement, PsiReference> factory) {
+        return new PsiReferenceProvider() {
+            @Override
+            public PsiReference @NotNull [] getReferencesByElement(
+                    @NotNull PsiElement element,
+                    @NotNull ProcessingContext context) {
+                if (!(element.getContainingFile() instanceof QinPsiFile)) {
+                    return PsiReference.EMPTY_ARRAY;
+                }
+                PsiElement referenceElement = referenceElement(element);
+                if (referenceElement == null || !candidate.test(referenceElement)) {
+                    return PsiReference.EMPTY_ARRAY;
+                }
+                return new PsiReference[]{factory.apply(referenceElement)};
+            }
+        };
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
