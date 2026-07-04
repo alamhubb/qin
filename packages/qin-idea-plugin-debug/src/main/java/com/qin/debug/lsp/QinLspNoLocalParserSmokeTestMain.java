@@ -46,6 +46,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
+        assertImportBoundaryUsesSharedTokenFacts(javaRoot);
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
         assertCallBoundaryUsesSharedReferenceElements(javaRoot);
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
@@ -183,6 +184,28 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("bodyRange().endOffset()"),
                 "QinParserDefinition must consume QinSourceStructure.SourceRange predicates "
                         + "instead of directly splitting body ranges: " + parserDefinition);
+    }
+
+    private static void assertImportBoundaryUsesSharedTokenFacts(Path javaRoot) throws Exception {
+        Path tokenFacts = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinTokenFacts.java"));
+        require(Files.isRegularFile(tokenFacts), "QinTokenFacts source not found: " + tokenFacts);
+        String tokenFactsSource = Files.readString(tokenFacts);
+        require(tokenFactsSource.contains("isNewStatementAfterImport(")
+                        && tokenFactsSource.contains("hasLineTerminatorBetween("),
+                "QinTokenFacts must own import new-statement boundary detection: " + tokenFacts);
+
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinLexicalScanner.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinSourceStructure.java")))) {
+            require(Files.isRegularFile(file), "Qin import boundary consumer source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinTokenFacts.isNewStatementAfterImport(")
+                            && !source.contains("hasLineTerminatorBetween("),
+                    "Qin lexer and source-structure import scanning must share "
+                            + "QinTokenFacts.isNewStatementAfterImport instead of owning "
+                            + "separate newline-boundary logic: " + file);
+        }
     }
 
     private static void assertQualifierLookupUsesSharedReferenceElements(Path javaRoot) throws Exception {
