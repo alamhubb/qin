@@ -45,6 +45,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoDirectJavaPsiAccess(javaRoot);
         assertLexerUsesSharedScannerAdapter(javaRoot);
         assertSyntaxHighlighterCoverageUsesTextAttributes(testJavaRoot);
+        assertImportContextualKeywordCoverageUsesLexerTokens(testJavaRoot);
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertGoToDeclarationCoverageUsesEditorPath(testJavaRoot);
@@ -228,6 +229,27 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "DefaultLanguageHighlighterColors.BRACES",
                 "QinTokenTypes.OPERATOR",
                 "DefaultLanguageHighlighterColors.OPERATION_SIGN");
+    }
+
+    private static void assertImportContextualKeywordCoverageUsesLexerTokens(Path testJavaRoot) throws Exception {
+        Path platformTest = testJavaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));
+        require(Files.isRegularFile(platformTest),
+                "Qin platform test source not found: " + platformTest);
+        String source = Files.readString(platformTest);
+
+        requireTestContainsAll(source, platformTest,
+                "testQinLexerHighlightsImportContextualKeywordsOnlyInsideImports",
+                "collectLexerTokenEntries(source)",
+                "as:\" + QinTokenTypes.KEYWORD",
+                "from:\" + QinTokenTypes.KEYWORD",
+                "from:\" + QinTokenTypes.IDENTIFIER");
+        requireTestContainsAll(source, platformTest,
+                "testQinLexerStopsImportContextualKeywordHighlightAtNextLine",
+                "collectLexerTokenEntries(source)",
+                "import { Greeter }",
+                "const as = \"local\"",
+                "as:\" + QinTokenTypes.IDENTIFIER");
     }
 
     private static void assertReferencePlatformTestsUseSharedHelper(Path testJavaRoot) throws Exception {

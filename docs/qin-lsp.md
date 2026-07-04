@@ -126,6 +126,8 @@ Treat import-only contextual keywords such as `as` and `from` as keyword tokens 
 
 The import token-stream pass must stop at a line terminator after an incomplete import when it is outside named-import braces, unless the current token is the import-closing `from`. This keeps the next statement's identifiers, such as `const as = "local"`, from being highlighted as import contextual keywords while still allowing multiline named imports inside `{ ... }`.
 
+No-local-parser smoke should guard the lexer platform tests for import-only contextual keyword highlighting. These tests must prove `as` and `from` become keywords inside import declarations, while ordinary identifiers such as `const from = value` and `const as = "local"` remain identifiers outside the import statement.
+
 The lexer and `QinSourceStructure` must use the same import new-statement boundary helper for this rule. Do not keep a lexer-only newline stop and a separate source-structure import range scan, because ParserDefinition consumes `QinSourceStructure.ImportDeclaration` ranges to build import PSI nodes.
 
 Keep IDEA token facts normalized behind one adapter surface. `QinLexer`, `QinParserDefinition`, declaration scanning, references, indexes, and completion may consume shared token facts such as trivia detection, reference-token detection, token slicing, next meaningful token lookup, qualifier lookup, and call-vs-field member boundaries. Do not copy those token facts into each consumer. Prefer composition through a shared token adapter/facts class over inheritance between platform adapter classes.
