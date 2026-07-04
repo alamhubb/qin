@@ -938,6 +938,24 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Counter.qin", objectName.getContainingFile().getName());
     }
 
+    public void testQinAliasedImportSpecifierDoesNotReferenceLocalAliasName() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C<caret> } from "./Counter.qin"
+
+                const value = C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+        assertNull("Aliased Qin local import name should be a local declaration, not a remote object reference",
+                reference);
+    }
+
     public void testQinImportAliasRenameProcessorUpdatesQinAliasUsages() {
         myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
