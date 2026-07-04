@@ -67,6 +67,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertUnresolvedReferenceAnnotationIsUnified(javaRoot);
         assertUnresolvedReferenceInspectionUsesSharedMessages(javaRoot);
         assertRenameUsesSharedPsiHelper(javaRoot);
+        assertReferenceRenameDoesNotPreserveAliasLocals(javaRoot);
         assertObjectMemberCompletionUsesSharedHelper(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
@@ -664,6 +665,23 @@ public final class QinLspNoLocalParserSmokeTestMain {
                             && !source.contains("replaceWithText("),
                     "Qin rename consumers must use QinPsiRenames instead of owning leaf "
                             + "replacement plumbing: " + file);
+        }
+    }
+
+    private static void assertReferenceRenameDoesNotPreserveAliasLocals(Path javaRoot) throws Exception {
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinJavaReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectReference.java")))) {
+            require(Files.isRegularFile(file), "Qin reference source not found: " + file);
+            String source = Files.readString(file);
+            int renameIndex = source.indexOf("handleElementRename(");
+            require(renameIndex >= 0, "Qin reference must implement handleElementRename: " + file);
+            int candidateIndex = source.indexOf("ReferenceCandidate(");
+            String renameSource = source.substring(renameIndex, candidateIndex < 0 ? source.length() : candidateIndex);
+            require(!renameSource.contains("isImportedAliasLocalReference(")
+                            && !renameSource.contains("return myElement"),
+                    "Qin object/class reference rename must not keep a local-alias no-op fallback; "
+                            + "local aliases should be excluded at the candidate boundary: " + file);
         }
     }
 

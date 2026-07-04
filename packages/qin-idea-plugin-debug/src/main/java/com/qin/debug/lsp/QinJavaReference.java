@@ -46,9 +46,6 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
     @Override
     public @NotNull PsiElement handleElementRename(@NotNull @NlsSafe String newElementName)
             throws IncorrectOperationException {
-        if (isImportedAliasLocalReference(myElement)) {
-            return myElement;
-        }
         return QinPsiRenames.replaceLeafText(myElement, newElementName, "Qin Java reference");
     }
 
