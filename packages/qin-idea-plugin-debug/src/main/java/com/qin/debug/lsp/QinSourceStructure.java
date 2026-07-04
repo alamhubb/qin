@@ -7,14 +7,19 @@ import java.util.List;
 
 final class QinSourceStructure {
     private final List<ObjectDeclaration> objectDeclarations;
+    private final List<ImportDeclaration> importDeclarations;
 
-    private QinSourceStructure(@NotNull List<ObjectDeclaration> objectDeclarations) {
+    private QinSourceStructure(
+            @NotNull List<ObjectDeclaration> objectDeclarations,
+            @NotNull List<ImportDeclaration> importDeclarations) {
         this.objectDeclarations = List.copyOf(objectDeclarations);
+        this.importDeclarations = List.copyOf(importDeclarations);
     }
 
     static @NotNull QinSourceStructure parse(@NotNull CharSequence content) {
         List<QinLexicalToken> tokens = QinLexicalScanner.scan(content, 0, content.length());
         List<ObjectDeclaration> declarations = new ArrayList<>();
+        List<ImportDeclaration> imports = new ArrayList<>();
         for (int index = 0; index < tokens.size(); index++) {
             QinLexicalToken token = tokens.get(index);
             if (QinTokenFacts.isObjectDeclarationKeyword(content, token)) {
@@ -25,9 +30,14 @@ final class QinSourceStructure {
                         declarations.add(readObjectDeclaration(content, tokens, index, name, range(token), range(nameToken)));
                     }
                 }
+            } else if (QinTokenFacts.isKeyword(content, token, "import")) {
+                ImportDeclaration importDeclaration = readImportDeclaration(content, tokens, index);
+                if (importDeclaration != null) {
+                    imports.add(importDeclaration);
+                }
             }
         }
-        return new QinSourceStructure(declarations);
+        return new QinSourceStructure(declarations, imports);
     }
 
     static @NotNull List<String> objectNames(@NotNull CharSequence content) {
@@ -42,6 +52,29 @@ final class QinSourceStructure {
 
     @NotNull List<ObjectDeclaration> objectDeclarations() {
         return objectDeclarations;
+    }
+
+    @NotNull List<ImportDeclaration> importDeclarations() {
+        return importDeclarations;
+    }
+
+    ImportDeclaration importDeclarationAtKeywordOffset(int offset) {
+        for (ImportDeclaration declaration : importDeclarations) {
+            if (declaration.keywordRange().startOffset() == offset) {
+                return declaration;
+            }
+        }
+        return null;
+    }
+
+    ImportSpecifier importSpecifierAtExportedNameOffset(int offset) {
+        for (ImportDeclaration declaration : importDeclarations) {
+            ImportSpecifier specifier = declaration.specifierAtExportedNameOffset(offset);
+            if (specifier != null) {
+                return specifier;
+            }
+        }
+        return null;
     }
 
     ObjectDeclaration objectDeclarationAtKeywordOffset(int offset) {
@@ -71,6 +104,78 @@ final class QinSourceStructure {
             }
         }
         return null;
+    }
+
+    private static ImportDeclaration readImportDeclaration(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens,
+            int importKeywordIndex) {
+        List<ImportSpecifier> specifiers = new ArrayList<>();
+        SourceRange moduleRange = SourceRange.missing();
+        String moduleSpecifier = "";
+        int current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, importKeywordIndex + 1);
+        while (current >= 0 && current < tokens.size()) {
+            QinLexicalToken token = tokens.get(current);
+            if (token.type() == QinTokenTypes.SEMICOLON) {
+                return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+            }
+            if (QinTokenFacts.isKeyword(content, token, "from")) {
+                int moduleIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
+                if (moduleIndex >= 0
+                        && moduleIndex < tokens.size()
+                        && tokens.get(moduleIndex).type() == QinTokenTypes.STRING) {
+                    moduleRange = range(tokens.get(moduleIndex));
+                    moduleSpecifier = unquote(QinTokenFacts.slice(content, tokens.get(moduleIndex)).toString());
+                    current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, moduleIndex + 1);
+                    continue;
+                }
+                return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+            }
+            if (QinTokenFacts.isReferenceLeafToken(token.type())) {
+                ImportSpecifier specifier = readImportSpecifier(content, tokens, current);
+                if (specifier != null) {
+                    specifiers.add(specifier);
+                    current = specifier.nextTokenIndex();
+                    continue;
+                }
+            }
+            current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
+        }
+        return specifiers.isEmpty() && moduleSpecifier.isEmpty()
+                ? null
+                : new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+    }
+
+    private static ImportSpecifier readImportSpecifier(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens,
+            int exportedNameIndex) {
+        QinLexicalToken exportedNameToken = tokens.get(exportedNameIndex);
+        if (!QinTokenFacts.isReferenceLeafToken(exportedNameToken.type())) {
+            return null;
+        }
+        String exportedName = QinTokenFacts.slice(content, exportedNameToken).toString();
+        String localName = exportedName;
+        SourceRange localNameRange = SourceRange.missing();
+        int next = QinTokenFacts.nextMeaningfulTokenIndex(tokens, exportedNameIndex + 1);
+        if (next >= 0 && next < tokens.size() && QinTokenFacts.isKeyword(content, tokens.get(next), "as")) {
+            int aliasIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, next + 1);
+            if (aliasIndex >= 0
+                    && aliasIndex < tokens.size()
+                    && QinTokenFacts.isReferenceLeafToken(tokens.get(aliasIndex).type())) {
+                localName = QinTokenFacts.slice(content, tokens.get(aliasIndex)).toString();
+                localNameRange = range(tokens.get(aliasIndex));
+                next = QinTokenFacts.nextMeaningfulTokenIndex(tokens, aliasIndex + 1);
+            }
+        }
+        return new ImportSpecifier(exportedName, range(exportedNameToken), localName, localNameRange, next);
+    }
+
+    private static @NotNull String unquote(@NotNull String text) {
+        if (text.length() < 2) {
+            return text.trim();
+        }
+        return text.substring(1, text.length() - 1).trim();
     }
 
     private static @NotNull ObjectDeclaration readObjectDeclaration(
@@ -175,6 +280,33 @@ final class QinSourceStructure {
     }
 
     record MemberDeclaration(@NotNull String name, @NotNull SourceRange nameRange) {
+    }
+
+    record ImportSpecifier(
+            @NotNull String exportedName,
+            @NotNull SourceRange exportedNameRange,
+            @NotNull String localName,
+            @NotNull SourceRange localNameRange,
+            int nextTokenIndex) {
+    }
+
+    record ImportDeclaration(
+            @NotNull SourceRange keywordRange,
+            @NotNull SourceRange moduleSpecifierRange,
+            @NotNull String moduleSpecifier,
+            @NotNull List<ImportSpecifier> specifiers) {
+        ImportDeclaration {
+            specifiers = List.copyOf(specifiers);
+        }
+
+        ImportSpecifier specifierAtExportedNameOffset(int offset) {
+            for (ImportSpecifier specifier : specifiers) {
+                if (specifier.exportedNameRange().startOffset() == offset) {
+                    return specifier;
+                }
+            }
+            return null;
+        }
     }
 
     record ObjectDeclaration(

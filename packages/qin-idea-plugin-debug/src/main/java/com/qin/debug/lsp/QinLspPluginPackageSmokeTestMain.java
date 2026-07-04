@@ -39,6 +39,8 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinPsiTree.class",
             "com/qin/debug/lsp/QinObjectSymbols.class",
             "com/qin/debug/lsp/QinSourceStructure.class",
+            "com/qin/debug/lsp/QinSourceStructure$ImportDeclaration.class",
+            "com/qin/debug/lsp/QinSourceStructure$ImportSpecifier.class",
             "com/qin/debug/lsp/QinSourceStructure$ObjectDeclaration.class",
             "com/qin/debug/lsp/QinSourceStructure$MemberDeclaration.class",
             "com/qin/debug/lsp/QinSourceStructure$SourceRange.class",

@@ -247,6 +247,27 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals(List.of("next"), counter.methodNames());
     }
 
+    public void testQinSourceStructureFindsImportSpecifiersFromSharedTokenStream() {
+        String source = """
+                import { Greeter as G, Counter } from "java:demo"
+                """;
+
+        QinSourceStructure structure = QinSourceStructure.parse(source);
+
+        assertEquals(1, structure.importDeclarations().size());
+        QinSourceStructure.ImportDeclaration declaration = structure.importDeclarations().get(0);
+        assertEquals("java:demo", declaration.moduleSpecifier());
+        assertTrue(declaration.keywordRange().isPresent());
+        assertTrue(declaration.moduleSpecifierRange().isPresent());
+        assertEquals(2, declaration.specifiers().size());
+        assertEquals("Greeter", declaration.specifiers().get(0).exportedName());
+        assertEquals("G", declaration.specifiers().get(0).localName());
+        assertTrue(declaration.specifiers().get(0).exportedNameRange().isPresent());
+        assertTrue(declaration.specifiers().get(0).localNameRange().isPresent());
+        assertEquals("Counter", declaration.specifiers().get(1).exportedName());
+        assertEquals("Counter", declaration.specifiers().get(1).localName());
+    }
+
     public void testQinParserBuildsStructuredPsiForJavaInterop() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { Greeter as G } from "java:demo"
@@ -271,6 +292,19 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Qin PSI should use one import specifier node type for Java and Qin module imports",
                 2,
                 countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_SPECIFIER));
+    }
+
+    public void testQinParserUsesSourceStructureOffsetsForImportSpecifiers() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G, Counter } from "java:demo"
+                """);
+
+        assertEquals("Only exported import names should start IMPORT_SPECIFIER nodes",
+                2,
+                countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_SPECIFIER));
+        assertEquals("Only local aliases should become IMPORT_ALIAS_NAME nodes",
+                1,
+                countPsiElementType(myFixture.getFile(), QinTokenTypes.IMPORT_ALIAS_NAME));
     }
 
     public void testQinParserBuildsImportAliasNamePsi() {
