@@ -15,7 +15,7 @@ final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElem
 
     QinObjectMethodReference(@NotNull PsiElement element) {
         super(element, TextRange.from(0, element.getTextLength()));
-        this.methodName = element.getText();
+        this.methodName = QinReferenceElements.referenceName(element);
     }
 
     @Override
@@ -46,28 +46,29 @@ final class QinObjectMethodReference extends PsiPolyVariantReferenceBase<PsiElem
     private static ResolveResult @NotNull [] resolveInner(
             @NotNull QinObjectMethodReference reference,
             boolean incompleteCode) {
-        PsiElement methodNameElement = resolveMethodName(reference.getElement());
+        PsiElement methodNameElement = resolveMethodName(reference.getElement(), reference.methodName);
         return methodNameElement == null
                 ? ResolveResult.EMPTY_ARRAY
                 : new ResolveResult[]{new QinPsiResolveResult(methodNameElement)};
     }
 
-    private static @Nullable PsiElement resolveMethodName(@NotNull PsiElement element) {
+    private static @Nullable PsiElement resolveMethodName(@NotNull PsiElement element, @NotNull String methodName) {
         String objectName = QinReferenceElements.previousQualifierName(element);
         if (QinReferenceElements.isThisQualifier(objectName)) {
-            return QinObjectSymbols.findMethodNameForThis(element, element.getText());
+            return QinObjectSymbols.findMethodNameForThis(element, methodName);
         }
         if (objectName == null) {
             return null;
         }
-        return QinObjectSymbols.findMethodName(element, objectName, element.getText());
+        return QinObjectSymbols.findMethodName(element, objectName, methodName);
     }
 
     private static boolean hasObjectMethodQualifier(@NotNull PsiElement element) {
         String objectName = QinReferenceElements.previousQualifierName(element);
+        String methodName = QinReferenceElements.referenceName(element);
         if (QinReferenceElements.isThisQualifier(objectName)) {
-            return QinObjectSymbols.findMethodNameForThis(element, element.getText()) != null
-                    || QinObjectSymbols.findFieldNameForThis(element, element.getText()) == null;
+            return QinObjectSymbols.findMethodNameForThis(element, methodName) != null
+                    || QinObjectSymbols.findFieldNameForThis(element, methodName) == null;
         }
         return objectName != null && QinObjectSymbols.findObjectName(element, objectName) != null;
     }

@@ -575,6 +575,21 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinUnresolvedReferenceMessages must use QinReferenceElements for reference "
                         + "identifier checks instead of owning the token mapping: " + unresolvedMessages);
 
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinJavaReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectMethodReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectFieldReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinImportAliasReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinImportBindings.java")))) {
+            require(Files.isRegularFile(file), "Qin reference name consumer source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinReferenceElements.referenceName(")
+                            && !source.contains("element.getText()"),
+                    "Qin reference name consumers must use QinReferenceElements.referenceName "
+                            + "instead of reading raw PSI text from reference elements: " + file);
+        }
+
         Path importAliasReference = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinImportAliasReference.java"));
         require(Files.isRegularFile(importAliasReference),

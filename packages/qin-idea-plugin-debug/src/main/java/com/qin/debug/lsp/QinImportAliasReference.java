@@ -15,7 +15,7 @@ final class QinImportAliasReference extends PsiPolyVariantReferenceBase<PsiEleme
 
     QinImportAliasReference(@NotNull PsiElement element) {
         super(element, TextRange.from(0, element.getTextLength()));
-        this.localName = element.getText();
+        this.localName = QinReferenceElements.referenceName(element);
     }
 
     @Override
@@ -42,7 +42,7 @@ final class QinImportAliasReference extends PsiPolyVariantReferenceBase<PsiEleme
     static boolean isImportAliasReferenceCandidate(@NotNull PsiElement element) {
         return !QinReferenceElements.isImportAliasDeclaration(element)
                 && QinReferenceElements.previousQualifierName(element) == null
-                && QinImportBindings.findAliasName(element, element.getText()) != null;
+                && QinImportBindings.findAliasName(element, QinReferenceElements.referenceName(element)) != null;
     }
 
     private static ResolveResult @NotNull [] resolveInner(

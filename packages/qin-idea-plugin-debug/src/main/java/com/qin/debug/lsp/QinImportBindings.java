@@ -40,7 +40,7 @@ final class QinImportBindings {
     static boolean isAliasedLocalSpecifierElement(@NotNull PsiElement element) {
         ImportBinding binding = findForSpecifierElement(element);
         return binding != null
-                && binding.localName().equals(element.getText())
+                && binding.localName().equals(QinReferenceElements.referenceName(element))
                 && !binding.exportedName().equals(binding.localName());
     }
 
