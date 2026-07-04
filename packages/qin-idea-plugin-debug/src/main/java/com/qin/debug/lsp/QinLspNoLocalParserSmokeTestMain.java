@@ -389,6 +389,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "testQinThisFieldGoToDeclarationTargetsCurrentObjectFieldName",
                 "testQinJavaMemberGoToDeclarationTargetsPsiMethod",
                 "testQinJavaAliasedMemberGoToDeclarationTargetsPsiMethod",
+                "testQinJavaImportSpecifierGoToDeclarationTargetsPsiClass",
                 "testQinJavaAliasedImportSpecifierGoToDeclarationTargetsPsiClass",
                 "testQinJavaImportAliasUsageGoToDeclarationTargetsAliasName",
                 "testQinJavaFieldGoToDeclarationTargetsPsiField",

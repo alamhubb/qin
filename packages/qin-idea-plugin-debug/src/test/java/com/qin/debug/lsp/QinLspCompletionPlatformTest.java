@@ -2603,6 +2603,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinJavaReference(reference.getElement());
     }
 
+    public void testQinJavaImportSpecifierGoToDeclarationTargetsPsiClass() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Gre<caret>eter } from "java:demo"
+
+                const message = Greeter.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiClass psiClass = assertInstanceOf(myFixture.getElementAtCaret(), PsiClass.class);
+
+        assertEquals("demo.Greeter", psiClass.getQualifiedName());
+    }
+
     public void testQinJavaAliasedImportSpecifierGoToDeclarationTargetsPsiClass() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
