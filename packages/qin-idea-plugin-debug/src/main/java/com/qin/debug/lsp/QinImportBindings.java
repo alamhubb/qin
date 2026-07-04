@@ -43,8 +43,7 @@ final class QinImportBindings {
         if (file == null) {
             return null;
         }
-        QinSourceStructure sourceStructure = QinPsiTree.sourceStructure(file);
-        QinSourceStructure.ImportSpecifier specifier = sourceStructure.importAliasSpecifierNamed(localName);
+        QinSourceStructure.ImportSpecifier specifier = QinPsiTree.importAliasSpecifierNamed(file, localName);
         if (specifier == null) {
             return null;
         }
@@ -56,8 +55,7 @@ final class QinImportBindings {
         if (file == null) {
             return null;
         }
-        QinSourceStructure sourceStructure = QinPsiTree.sourceStructure(file);
-        QinSourceStructure.ImportSpecifier specifier = sourceStructure.importAliasSpecifierNamed(localName);
+        QinSourceStructure.ImportSpecifier specifier = QinPsiTree.importAliasSpecifierNamed(file, localName);
         if (specifier == null) {
             return null;
         }

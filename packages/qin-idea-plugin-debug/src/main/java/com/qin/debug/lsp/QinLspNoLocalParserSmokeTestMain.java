@@ -740,11 +740,23 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(importBindings),
                 "QinImportBindings source not found: " + importBindings);
         String source = Files.readString(importBindings);
-        require(source.contains(".importAliasSpecifierNamed(")
+        require(source.contains("QinPsiTree.importAliasSpecifierNamed(")
+                        && !source.contains("QinSourceStructure sourceStructure")
+                        && !source.contains("sourceStructure.importAliasSpecifierNamed(")
                         && !source.contains("specifier.localName().equals(localName)")
                         && !source.contains("specifier.localNameRange().isPresent()"),
-                "QinImportBindings must use QinSourceStructure import alias lookup "
-                        + "instead of matching alias names itself: " + importBindings);
+                "QinImportBindings must use QinPsiTree import alias lookup "
+                        + "instead of owning source-structure alias lookup or matching alias names itself: "
+                        + importBindings);
+
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("importAliasSpecifierNamed(")
+                        && psiTreeSource.contains(".importAliasSpecifierNamed(localName)"),
+                "QinPsiTree must own import alias local-name to source-structure lookup: "
+                        + psiTree);
     }
 
     private static void assertImportNamePsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
