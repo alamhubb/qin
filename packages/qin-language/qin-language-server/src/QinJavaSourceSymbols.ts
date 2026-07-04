@@ -14,6 +14,7 @@ export interface QinModuleSymbol {
 
 export interface QinClassSymbol {
   name: string
+  fields: QinFieldSymbol[]
   methods: QinMethodSymbol[]
 }
 
@@ -22,6 +23,13 @@ export interface QinMethodSymbol {
   staticMethod: boolean
   parameters: QinParameterSymbol[]
   returnType: string
+}
+
+export interface QinFieldSymbol {
+  name: string
+  staticField: boolean
+  readonlyField: boolean
+  type: string
 }
 
 export interface QinParameterSymbol {
@@ -115,29 +123,99 @@ function readJavaPackageName(source: string): string {
 }
 
 function parseJavaClassSymbols(source: string): QinClassSymbol[] {
-  const classMatches = [...source.matchAll(/\bpublic\s+(?:final\s+|abstract\s+)?(?:class|record)\s+([A-Za-z_$][\w$]*)/g)]
-  if (classMatches.length === 0) {
-    return []
+  const classes: QinClassSymbol[] = []
+  const classPattern = /\bpublic\s+(?:(?:final|abstract|sealed|non-sealed)\s+)*(?:class|record)\s+([A-Za-z_$][\w$]*)[^{};]*\{/g
+  for (const match of source.matchAll(classPattern)) {
+    const openBrace = source.indexOf('{', match.index)
+    const closeBrace = findMatchingBrace(source, openBrace)
+    const body = closeBrace >= 0 ? source.slice(openBrace + 1, closeBrace) : source.slice(openBrace + 1)
+    classes.push({
+      name: match[1],
+      fields: parseJavaFieldSymbols(body),
+      methods: parseJavaMethodSymbols(body),
+    })
   }
-  const methods = parseJavaMethodSymbols(source)
-  return classMatches.map(match => ({
-    name: match[1],
-    methods,
-  }))
+  return classes
 }
 
 function parseJavaMethodSymbols(source: string): QinMethodSymbol[] {
   const methods: QinMethodSymbol[] = []
-  const methodPattern = /\bpublic\s+(static\s+)?(?:final\s+|synchronized\s+|native\s+|strictfp\s+)*([A-Za-z_$][\w$]*(?:\s*<[^;{}()]+>)?(?:\s*\[\])?|\w+(?:\.\w+)*(?:\s*<[^;{}()]+>)?(?:\s*\[\])?)\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*(?:throws\s+[^{;]+)?[{;]/g
+  const methodPattern = /\bpublic\s+((?:(?:static|final|synchronized|native|strictfp)\s+)*)((?:[A-Za-z_$][\w$]*(?:\s*<[^;{}()]+>)?(?:\s*\[\])?|\w+(?:\.\w+)*(?:\s*<[^;{}()]+>)?(?:\s*\[\])?))\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*(?:throws\s+[^{;]+)?[{;]/g
   for (const match of source.matchAll(methodPattern)) {
+    const modifiers = match[1].trim().split(/\s+/).filter(Boolean)
     methods.push({
       name: match[3],
-      staticMethod: !!match[1],
+      staticMethod: modifiers.includes('static'),
       parameters: parseJavaParameters(match[4]),
       returnType: mapJavaTypeToTypeScript(match[2]),
     })
   }
   return methods
+}
+
+function parseJavaFieldSymbols(source: string): QinFieldSymbol[] {
+  const fields: QinFieldSymbol[] = []
+  const fieldPattern = /\bpublic\s+((?:(?:static|final|transient|volatile)\s+)*)((?:[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)(?:\s*<[^;{}()]+>)?(?:\s*\[\])?)\s+([A-Za-z_$][\w$]*)\s*(?:=[^;]*)?;/g
+  for (const match of source.matchAll(fieldPattern)) {
+    const modifiers = match[1].trim().split(/\s+/).filter(Boolean)
+    fields.push({
+      name: match[3],
+      staticField: modifiers.includes('static'),
+      readonlyField: modifiers.includes('final'),
+      type: mapJavaTypeToTypeScript(match[2]),
+    })
+  }
+  return fields
+}
+
+function findMatchingBrace(source: string, openBrace: number): number {
+  if (openBrace < 0) {
+    return -1
+  }
+  let depth = 0
+  let quote: string | undefined
+  let escaping = false
+  for (let index = openBrace; index < source.length; index++) {
+    const char = source[index]
+    const next = source[index + 1]
+    if (quote) {
+      if (escaping) {
+        escaping = false
+      } else if (char === '\\') {
+        escaping = true
+      } else if (char === quote) {
+        quote = undefined
+      }
+      continue
+    }
+    if (char === '/' && next === '/') {
+      while (index < source.length && source[index] !== '\n' && source[index] !== '\r') {
+        index++
+      }
+      continue
+    }
+    if (char === '/' && next === '*') {
+      index += 2
+      while (index + 1 < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
+        index++
+      }
+      index++
+      continue
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char
+      continue
+    }
+    if (char === '{') {
+      depth++
+    } else if (char === '}') {
+      depth--
+      if (depth === 0) {
+        return index
+      }
+    }
+  }
+  return -1
 }
 
 function parseJavaParameters(source: string): QinParameterSymbol[] {
@@ -228,6 +306,12 @@ function emitSymbolModelDts(model: QinSymbolModel): string {
         continue
       }
       lines.push(`  export class ${classSymbol.name} {`)
+      for (const field of classSymbol.fields) {
+        if (!isIdentifier(field.name)) {
+          continue
+        }
+        lines.push(`    ${field.staticField ? 'static ' : ''}${field.readonlyField ? 'readonly ' : ''}${field.name}: ${field.type};`)
+      }
       for (const method of classSymbol.methods) {
         if (!isIdentifier(method.name)) {
           continue

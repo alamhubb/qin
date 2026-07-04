@@ -129,6 +129,7 @@ For IDEA navigation, the same Qin import should resolve through the platform PSI
 - `import { Greeter } from "java:demo"` resolves `Greeter` to the Java `PsiClass` `demo.Greeter`.
 - `Greeter.greet` resolves `greet` to the static Java `PsiMethod` on `demo.Greeter`.
 - The `.d.ts` bridge can inform LSP completion, but it must not be the only source of truth for Ctrl+Click, Go To Declaration, Find Usages, or Rename inside IDEA.
+- Java source `.d.ts` generation for LSP completion must expose both static methods and static fields through `QinSymbolModel`; do not add IDEA-side completion fallbacks for Java members that belong to Volar/TypeScript completion.
 
 The `.d.ts` generator should produce declarations that TypeScript can consume through Qin virtual service scripts, for example:
 

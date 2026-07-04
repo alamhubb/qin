@@ -699,6 +699,8 @@ async function main() {
     'package demo;',
     '',
     'public class Greeter {',
+    '  public static final String DEFAULT_NAME = "Qin";',
+    '',
     '  public static String greet(String name) {',
     '    return "Hello " + name;',
     '  }',
@@ -714,6 +716,7 @@ async function main() {
     'import { Greeter } from "java:demo"',
     '',
     'const message = Greeter.gr',
+    'const name = Greeter.DE',
     '',
   ].join('\n')
   server.stdin.write(createNotification('textDocument/didOpen', {
@@ -1273,6 +1276,25 @@ async function main() {
   const javaSourceCompletionLabels = javaSourceCompletionItems.map((item: any) => item.label)
   if (!javaSourceCompletionLabels.includes('greet')) {
     throw new Error(`Qin Java source completion did not include Greeter.greet: ${JSON.stringify(javaSourceCompletionLabels.slice(0, 30))}`)
+  }
+
+  const javaSourceFieldCompletionRequest = createRequest('textDocument/completion', {
+    textDocument: { uri: javaSourceQinUri },
+    position: { line: 3, character: 'const name = Greeter.DE'.length },
+    context: { triggerKind: 1 },
+  })
+  server.stdin.write(javaSourceFieldCompletionRequest.packet)
+  const javaSourceFieldCompletionResponse = await waitForResponse(
+    javaSourceFieldCompletionRequest.id,
+    messages,
+    `Qin Java source field completion response. exitCode=${exitCode} stderr=${stderr} messages=${JSON.stringify(messages)}`,
+  )
+  const javaSourceFieldCompletionItems = Array.isArray(javaSourceFieldCompletionResponse.result)
+    ? javaSourceFieldCompletionResponse.result
+    : javaSourceFieldCompletionResponse.result?.items ?? []
+  const javaSourceFieldCompletionLabels = javaSourceFieldCompletionItems.map((item: any) => item.label)
+  if (!javaSourceFieldCompletionLabels.includes('DEFAULT_NAME')) {
+    throw new Error(`Qin Java source completion did not include Greeter.DEFAULT_NAME: ${JSON.stringify(javaSourceFieldCompletionLabels.slice(0, 30))}`)
   }
 
   const definitionRequest = createRequest('textDocument/definition', {
