@@ -38,11 +38,11 @@ final class QinReferenceElements {
 
     static @NotNull String referenceName(@NotNull PsiElement element) {
         PsiElement referenceElement = referenceElement(element);
-        return referenceElement == null ? element.getText() : referenceElement.getText();
+        return QinPsiTree.elementText(referenceElement == null ? element : referenceElement);
     }
 
     static @NotNull TextRange referenceRange(@NotNull PsiElement element) {
-        return TextRange.from(0, element.getTextLength());
+        return TextRange.from(0, QinPsiTree.elementTextLength(element));
     }
 
     static boolean isImportAliasDeclaration(@NotNull PsiElement element) {

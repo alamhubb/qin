@@ -566,11 +566,16 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && helperSource.contains("referenceName(")
                         && helperSource.contains("referenceRange(")
                         && helperSource.contains("QinPsiTree.elementType(element)")
+                        && helperSource.contains("QinPsiTree.elementText(")
+                        && helperSource.contains("QinPsiTree.elementTextLength(element)")
                         && !helperSource.contains("element.getNode()")
+                        && !helperSource.contains("element.getText()")
+                        && !helperSource.contains("element.getTextLength()")
                         && helperSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER")
                         && helperSource.contains("isImportAliasDeclaration(")
                         && helperSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
-                "QinReferenceElements must own shared reference token checks through QinPsiTree.elementType: "
+                "QinReferenceElements must own shared reference token checks and normalized "
+                        + "reference text/range reads through QinPsiTree: "
                         + referenceElements);
 
         Path unresolvedMessages = javaRoot.resolve(Path.of(
