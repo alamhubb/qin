@@ -5,19 +5,14 @@ import com.intellij.execution.RunManager;
 import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
-import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowManager;
 import com.qin.debug.lsp.QinLspStartupProbe;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import static com.qin.constants.QinConstants.*;
 
 // 闂傚倷绀侀幉锛勬暜閳哄懎纾婚柛鏇ㄥ灠缁犳牠鏌￠崶銉ョ仾闁哄拋鍓氶幈銊ヮ潨閸℃ぞ绨婚梺瀹狀嚙缁绘﹢寮?qin-cli 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佺煯閸楁娊宕洪埀顒併亜閹哄秶鍔嶉柣銊﹀灴閺屸剝鎷呴棃娑掑亾濡ゅ懎鏋佹い鏇楀亾妤犵偞鐗楅幏鍛村川婵犲簼鐢?import static com.qin.constants.QinConstants.*;
 
@@ -109,48 +104,6 @@ public class DebugStartup implements ProjectActivity {
      */
     public static List<Path> discoverQinProjects(Path ideaProjectDir) {
         return com.qin.core.LocalProjectResolver.scanAllProjects(ideaProjectDir.toString());
-    }
-
-    /**
-     * 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅宕岄柡宀嬬磿娴狅妇鎷犻幓鎺戭潛闂備胶鍎甸崜婵嬫偡閳哄懎绠氶柛鏇ㄥ灱閺佸﹪鏌ゅù瀣珖閸楀繐鈹戦悙鏉戠仸闁瑰皷鏅犲畷銏ゆ寠婢光晪缍侀獮鏍ㄦ媴濮濆睗鏇㈡⒑閹稿孩顥嗗┑顔哄€楃划?Qin 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍悗娑櫳戝▍鏍⒑閸撴彃浜濈紒璇插暢閵囨劙濡烽埡鍌楁嫼濡炪倖鍔戦崐鏇㈠几閹寸偑浜滈柕澶堝劜閸ゅ洨鈧鍠栭…閿嬩繆閻戠瓔鏁嶆繝濠傛媼濡茬兘姊绘担鍛婂暈闁荤噥鍨辩粋宥夋倷鐠囇嗏偓鍧楁煕濞戝崬鏋ら柍缁樻閺屽秷顧侀柛鎾寸⊕缁傛帡鏁冮崒姘憋紲闂佹寧鏌ㄦ晶浠嬎?
-     */
-    private boolean hasQinProjectInSubdirs(Path dir) {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, Files::isDirectory)) {
-            for (Path subDir : stream) {
-                String dirName = subDir.getFileName().toString();
-                if (!EXCLUDED_DIRS.contains(dirName) && !dirName.startsWith(HIDDEN_PREFIX)) {
-                    if (Files.exists(subDir.resolve(CONFIG_FILE))) {
-                        return true;
-                    }
-                }
-            }
-        } catch (IOException e) {
-            // 闂傚倸顭崑鍕洪妸鈺佺柧妞ゆ劧绠戝Ч?
-        }
-        return false;
-    }
-
-    /**
-     * 闂傚倷绀佸﹢閬嶆偡閹惰棄骞㈤柍鍝勫€归弶?qin sync 闂傚倷绀侀幉锛勭矙閹烘鍨傛繝闈涱儏缁?
-     */
-    private void runQinSync(String projectPath) throws IOException, InterruptedException {
-        ProcessBuilder pb = QinCliProcessBuilders.syncDependencies(projectPath);
-
-        Process process = pb.start();
-
-        // 闂備浇宕垫慨鏉懨洪埡鍜佹晪鐟滄垿濡甸幇鏉跨倞闁靛濡囩粔鍫曟⒑鐟欏嫬鍔ら柛鐔风仢琚?
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                QinLogger.info("[sync] " + line);
-            }
-        }
-
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            QinLogger.error("qin sync failed with exit code: " + exitCode);
-        }
     }
 
     /**

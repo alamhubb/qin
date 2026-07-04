@@ -1645,7 +1645,6 @@ public final class QinLspNoLocalParserSmokeTestMain {
 
         for (Path file : List.of(
                 javaRoot.resolve(Path.of("com", "qin", "debug", "BspClient.java")),
-                javaRoot.resolve(Path.of("com", "qin", "debug", "DebugStartup.java")),
                 javaRoot.resolve(Path.of("com", "qin", "debug", "QinJavaFileWatcher.java")),
                 javaRoot.resolve(Path.of("com", "qin", "debug", "QinProjectSync.java")),
                 javaRoot.resolve(Path.of("com", "qin", "debug", "QinToolWindowFactory.java")))) {
@@ -1657,6 +1656,19 @@ public final class QinLspNoLocalParserSmokeTestMain {
                     "IDEA background and tool-window surfaces must consume QinCliProcessBuilders "
                             + "instead of owning Qin CLI ProcessBuilder command shapes: " + file);
         }
+
+        Path startup = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "DebugStartup.java"));
+        require(Files.isRegularFile(startup),
+                "Qin startup source not found: " + startup);
+        String startupSource = Files.readString(startup);
+        require(startupSource.contains("QinProjectSync")
+                        && !startupSource.contains("runQinSync(")
+                        && !startupSource.contains("QinCliProcessBuilders.")
+                        && !startupSource.contains("QinCommandResolver.createProcessBuilder")
+                        && !startupSource.contains("new InputStreamReader(process.getInputStream()"),
+                "DebugStartup must orchestrate QinProjectSync instead of owning qin sync "
+                        + "process execution details: " + startup);
     }
 
     private static void assertToolWindowProjectDiscoveryIsShared(Path javaRoot) throws Exception {
@@ -1699,6 +1711,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(startupSource.contains("QinWorkspaceSdkDefaults.hasQinSdkContext(")
                         && startupSource.contains("QinWorkspaceSdkDefaults.preferredJavaVersion(")
                         && startupSource.contains("QinWorkspaceSdkDefaults.parseJavaVersion(")
+                        && !startupSource.contains("hasQinProjectInSubdirs(")
                         && !startupSource.contains("private static boolean hasQinSdkContext(")
                         && !startupSource.contains("private static String resolvePreferredJavaVersion(")
                         && !startupSource.contains("private static int parseJavaVersion("),
