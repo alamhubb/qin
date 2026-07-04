@@ -1745,6 +1745,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertLookupMissing(elements, "next");
     }
 
+    public void testQinNativeCompletionDoesNotHandleUnknownMemberQualifiers() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+
+                const value = unknown.v<caret>
+                """);
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            return;
+        }
+
+        assertLookupMissing(elements, "value");
+        assertLookupMissing(elements, "next");
+    }
+
     public void testQinNativeCompletionIncludesThisObjectMembers() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -1764,6 +1786,28 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
             return;
         }
         assertLookupContains(elements, "next");
+    }
+
+    public void testQinNativeCompletionForThisUsesOnlyCurrentObjectMembers() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Other {
+                  otherValue = 1
+                }
+
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.<caret>
+                  }
+                }
+        """);
+
+        LookupElement[] elements = myFixture.completeBasic();
+        assertNotNull("IDEA native completion should produce current-object members for this.", elements);
+        assertLookupContains(elements, "value");
+        assertLookupContains(elements, "next");
+        assertLookupMissing(elements, "otherValue");
     }
 
     public void testQinAutoPopupTypedHandlerTriggersForQinIdentifierInput() {
