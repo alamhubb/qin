@@ -45,6 +45,7 @@ public final class QinLspPluginDescriptorSmokeTestMain {
         assertQinObjectNameStubIndex(document);
         assertQinObjectMemberStubIndexes(document);
         assertQinAnnotators(document);
+        assertQinInspections(document);
         assertNoQinObjectNameFileBasedIndex(document);
         assertNoLocalSemanticExtensions(document);
     }
@@ -227,6 +228,27 @@ public final class QinLspPluginDescriptorSmokeTestMain {
                 "annotator",
                 "implementationClass",
                 "com.qin.debug.lsp.QinSymbolHighlightAnnotator");
+    }
+
+    private static void assertQinInspections(Document document) {
+        NodeList inspections = document.getElementsByTagName("localInspection");
+        require(inspections.getLength() == 1, "Expected exactly one Qin localInspection");
+        Element inspection = (Element) inspections.item(0);
+        require("Qin".equals(inspection.getAttribute("language")),
+                "Unexpected Qin inspection language: " + inspection.getAttribute("language"));
+        require("QinUnresolvedReference".equals(inspection.getAttribute("shortName")),
+                "Unexpected Qin inspection shortName: " + inspection.getAttribute("shortName"));
+        require("Unresolved Qin reference".equals(inspection.getAttribute("displayName")),
+                "Unexpected Qin inspection displayName: " + inspection.getAttribute("displayName"));
+        require("Qin".equals(inspection.getAttribute("groupName")),
+                "Unexpected Qin inspection groupName: " + inspection.getAttribute("groupName"));
+        require("true".equals(inspection.getAttribute("enabledByDefault")),
+                "Qin unresolved-reference inspection should be enabled by default");
+        require("ERROR".equals(inspection.getAttribute("level")),
+                "Qin unresolved-reference inspection should report errors");
+        require("com.qin.debug.lsp.QinUnresolvedReferenceInspection".equals(
+                        inspection.getAttribute("implementationClass")),
+                "Unexpected Qin inspection: " + inspection.getAttribute("implementationClass"));
     }
 
     private static void assertStubIndex(Document document, String implementation) {

@@ -9,27 +9,12 @@ import org.jetbrains.annotations.NotNull;
 public final class QinObjectFieldAnnotator implements Annotator {
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        if (!(element.getContainingFile() instanceof QinPsiFile)
-                || element.getNode() == null
-                || element.getNode().getElementType() != QinTokenTypes.REFERENCE_IDENTIFIER) {
+        String message = QinUnresolvedReferenceMessages.objectFieldMessageFor(element);
+        if (message == null) {
             return;
         }
-        if (QinJavaReference.isJavaReferenceCandidate(element)
-                || QinPsiTokenStream.isFollowedByCallParenthesis(element)) {
-            return;
-        }
-
-        String qualifier = QinJavaReference.previousQualifierName(element);
-        if (qualifier == null) {
-            return;
-        }
-
-        if (QinPsiReferences.unresolvedReferenceOfType(element, QinObjectFieldReference.class) != null) {
-            holder.newAnnotation(
-                            HighlightSeverity.ERROR,
-                            "Unresolved Qin object field " + qualifier + "." + element.getText())
-                    .range(element.getTextRange())
-                    .create();
-        }
+        holder.newAnnotation(HighlightSeverity.ERROR, message)
+                .range(element.getTextRange())
+                .create();
     }
 }

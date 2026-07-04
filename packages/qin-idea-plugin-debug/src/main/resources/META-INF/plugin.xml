@@ -82,6 +82,14 @@
         <annotator
                 language="Qin"
                 implementationClass="com.qin.debug.lsp.QinSymbolHighlightAnnotator"/>
+        <localInspection
+                language="Qin"
+                shortName="QinUnresolvedReference"
+                displayName="Unresolved Qin reference"
+                groupName="Qin"
+                enabledByDefault="true"
+                level="ERROR"
+                implementationClass="com.qin.debug.lsp.QinUnresolvedReferenceInspection"/>
 
         <!-- Keep IDEA native Java Run/Debug; do not inject Qin run configuration. -->
     </extensions>
