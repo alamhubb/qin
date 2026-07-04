@@ -39,6 +39,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
             "QinLexer.java",
             "QinProjectModuleFiles.java",
             "QinProjectSdkSelection.java",
+            "QinStartupSdkConfiguration.java",
             "QinLegacyRunConfigurations.java");
 
     private QinLspNoLocalParserSmokeTestMain() {
@@ -1741,14 +1742,24 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "Qin startup source not found: " + startup);
         String startupSource = Files.readString(startup);
         require(startupSource.contains("QinWorkspaceSdkDefaults.hasQinSdkContext(")
-                        && startupSource.contains("QinWorkspaceSdkDefaults.preferredJavaVersion(")
-                        && startupSource.contains("QinWorkspaceSdkDefaults.parseJavaVersion(")
+                        && startupSource.contains("QinStartupSdkConfiguration.configure(project)")
                         && !startupSource.contains("hasQinProjectInSubdirs(")
                         && !startupSource.contains("private static boolean hasQinSdkContext(")
                         && !startupSource.contains("private static String resolvePreferredJavaVersion(")
-                        && !startupSource.contains("private static int parseJavaVersion("),
-                "DebugStartup must consume QinWorkspaceSdkDefaults instead of owning "
-                        + "Qin workspace SDK default parsing: " + startup);
+                        && !startupSource.contains("private static int parseJavaVersion(")
+                        && !startupSource.contains("QinWorkspaceSdkDefaults.preferredJavaVersion("),
+                "DebugStartup must schedule QinStartupSdkConfiguration instead of owning "
+                        + "Qin workspace SDK default parsing or SDK setup orchestration: " + startup);
+
+        Path startupSdk = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinStartupSdkConfiguration.java"));
+        require(Files.isRegularFile(startupSdk),
+                "Qin startup SDK configuration source not found: " + startupSdk);
+        String startupSdkSource = Files.readString(startupSdk);
+        require(startupSdkSource.contains("QinWorkspaceSdkDefaults.preferredJavaVersion(")
+                        && startupSdkSource.contains("QinWorkspaceSdkDefaults.parseJavaVersion("),
+                "QinStartupSdkConfiguration must consume QinWorkspaceSdkDefaults for "
+                        + "workspace SDK defaults: " + startupSdk);
     }
 
     private static void assertProjectModuleFilesAreShared(Path javaRoot) throws Exception {
@@ -1825,16 +1836,26 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(startup),
                 "Qin startup source not found: " + startup);
         String startupSource = Files.readString(startup);
-        require(startupSource.contains("QinProjectSdkPersistence.applyAndPersist(")
-                        && startupSource.contains("QinProjectSdkPersistence.refreshProjectStructure(")
+        require(startupSource.contains("QinStartupSdkConfiguration.configure(project)")
                         && !startupSource.contains("private static void applyAndPersistSdk(")
                         && !startupSource.contains("private static void updateMiscXmlWithSdk(")
                         && !startupSource.contains("private static void refreshProjectStructure(")
                         && !startupSource.contains("IdeaMiscXmlSupport.updateProjectSdk(")
                         && !startupSource.contains("VirtualFileManager.getInstance().refreshWithoutFileWatcher")
+                        && !startupSource.contains("QinProjectSdkPersistence.applyAndPersist(")
                         && !startupSource.contains("rootManager.setProjectSdk("),
-                "DebugStartup must consume QinProjectSdkPersistence instead of owning "
+                "DebugStartup must schedule QinStartupSdkConfiguration instead of owning "
                         + "Project SDK persistence or IDEA refresh calls: " + startup);
+
+        Path startupSdk = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinStartupSdkConfiguration.java"));
+        require(Files.isRegularFile(startupSdk),
+                "Qin startup SDK configuration source not found: " + startupSdk);
+        String startupSdkSource = Files.readString(startupSdk);
+        require(startupSdkSource.contains("QinProjectSdkPersistence.applyAndPersist(")
+                        && startupSdkSource.contains("QinProjectSdkPersistence.refreshProjectStructure("),
+                "QinStartupSdkConfiguration must consume QinProjectSdkPersistence for "
+                        + "Project SDK persistence and refresh orchestration: " + startupSdk);
     }
 
     private static void assertProjectSdkSelectionIsShared(Path javaRoot) throws Exception {
@@ -1859,16 +1880,26 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(startup),
                 "Qin startup source not found: " + startup);
         String startupSource = Files.readString(startup);
-        require(startupSource.contains("QinProjectSdkSelection.selectConfiguredJdk(")
-                        && startupSource.contains("QinProjectSdkSelection.registerJavaHomeJdk(")
-                        && startupSource.contains("QinProjectSdkSelection.sdkVersion(")
+        require(startupSource.contains("QinStartupSdkConfiguration.configure(project)")
                         && !startupSource.contains("ProjectJdkTable")
                         && !startupSource.contains("JavaSdk.getInstance()")
+                        && !startupSource.contains("QinProjectSdkSelection.selectConfiguredJdk(")
                         && !startupSource.contains("createJdk(")
                         && !startupSource.contains("addJdk(")
                         && !startupSource.contains("private static com.intellij.openapi.projectRoots.Sdk selectBestMatchingJdk("),
-                "DebugStartup must consume QinProjectSdkSelection instead of owning "
+                "DebugStartup must schedule QinStartupSdkConfiguration instead of owning "
                         + "Project SDK selection or JDK registration calls: " + startup);
+
+        Path startupSdk = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinStartupSdkConfiguration.java"));
+        require(Files.isRegularFile(startupSdk),
+                "Qin startup SDK configuration source not found: " + startupSdk);
+        String startupSdkSource = Files.readString(startupSdk);
+        require(startupSdkSource.contains("QinProjectSdkSelection.selectConfiguredJdk(")
+                        && startupSdkSource.contains("QinProjectSdkSelection.registerJavaHomeJdk(")
+                        && startupSdkSource.contains("QinProjectSdkSelection.sdkVersion("),
+                "QinStartupSdkConfiguration must consume QinProjectSdkSelection for "
+                        + "Project SDK selection and JAVA_HOME registration: " + startupSdk);
     }
 
     private static boolean isAllowedSourceFile(Path file) {

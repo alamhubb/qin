@@ -102,6 +102,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/QinProjectSdkPersistence.class",
             "com/qin/debug/QinProjectSdkSelection.class",
             "com/qin/debug/QinProjectSdkSelection$Selection.class",
+            "com/qin/debug/QinStartupSdkConfiguration.class",
             "com/qin/debug/QinWorkspaceSdkDefaults.class",
             "com/qin/debug/run/QinRunConfigurationDefaults.class",
             "com/qin/debug/run/QinRunCommandLines.class",

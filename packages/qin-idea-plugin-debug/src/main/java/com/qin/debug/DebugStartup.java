@@ -38,7 +38,7 @@ public class DebugStartup implements ProjectActivity {
         ApplicationManager.getApplication().invokeLater(() -> QinLspStartupProbe.log(project, Paths.get(basePath)));
 
         if (QinWorkspaceSdkDefaults.hasQinSdkContext(Paths.get(basePath))) {
-            ApplicationManager.getApplication().invokeLater(() -> configureProjectSdk(project));
+            ApplicationManager.getApplication().invokeLater(() -> QinStartupSdkConfiguration.configure(project));
         } else {
             QinLogger.info("[SDK] Skipping project SDK auto-configuration because no Qin config context was found");
         }
@@ -80,83 +80,5 @@ public class DebugStartup implements ProjectActivity {
         return com.qin.core.LocalProjectResolver.scanAllProjects(ideaProjectDir.toString());
     }
 
-    /**
-     * 闂傚倷鑳堕崢褔銆冩惔銏㈩洸婵犲﹤瀚崣蹇涙煃閸濆嫭鍣洪柣鎾亾闁诲骸绠嶉崕鍗灻洪妸鈺佸嚑?Project SDK
-     * 濠电姷顣藉Σ鍛村磻閳ь剟鏌涚€ｎ偅灏扮紒缁樼洴瀵爼骞嬮鐐插闂傚倷绶￠崰鏍敋椤撶姵顫?JDK 濠德板€楁慨鐑藉磻閻愬搫纾垮┑鍌氬閺佸﹪鏌￠崶鈺佇ョ痪鍓у亾閵囧嫰寮埀顒€危閹烘梻鐭嗛悗锝庝憾濞撳鏌曢崼婵囧櫤閻犳劏鍓濈换?SDK
-     */
-    private static void configureProjectSdk(Project project) {
-        try {
-            QinLogger.info("[SDK] ========== Configuring Project SDK ==========");
-            String basePath = project.getBasePath();
-            if (basePath == null) {
-                QinLogger.info("[SDK] Project base path is unavailable, skipping");
-                return;
-            }
-
-            // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷顔荤暗濞存粌缍婇弻鐔煎箚瑜嶉弳杈ㄣ亜?Project SDK
-            // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷锝呭Ω濞存粍绮撻弻娑㈡晜鐠囨彃绠虹紓浣瑰姈椤ㄥ﹪寮?SDK 闂傚倸鍊烽悞锕€顭垮Ο鑲╃煋闁割偅娲橀崑?
-            com.intellij.openapi.roots.ProjectRootManager rootManager = com.intellij.openapi.roots.ProjectRootManager
-                    .getInstance(project);
-            com.intellij.openapi.projectRoots.Sdk currentSdk = rootManager.getProjectSdk();
-            QinLogger.info("[SDK] Current Project SDK = " + (currentSdk != null ? currentSdk.getName() : "null"));
-
-            String desiredJavaVersion = QinWorkspaceSdkDefaults.preferredJavaVersion(Paths.get(basePath));
-            int desiredVersion = QinWorkspaceSdkDefaults.parseJavaVersion(desiredJavaVersion);
-            QinLogger.info("[SDK] Required Java version from Qin workspace = " + desiredJavaVersion);
-
-            int currentVersion = 0;
-            if (currentSdk != null) {
-                currentVersion = QinProjectSdkSelection.sdkVersion(currentSdk);
-                if (currentVersion >= desiredVersion) {
-                    QinLogger.info("[SDK] Existing Project SDK is compatible (current: "
-                            + currentVersion + ", required: " + desiredVersion + "), keeping as-is");
-                    return;
-                }
-                QinLogger.warn("[SDK] Existing Project SDK is lower than required (current: "
-                        + currentVersion + ", required: " + desiredVersion + "), attempting auto-upgrade");
-            } else {
-                QinLogger.info("[SDK] No Project SDK configured, selecting one automatically...");
-            }
-
-            QinProjectSdkSelection.Selection bestSelection =
-                    QinProjectSdkSelection.selectConfiguredJdk(desiredVersion);
-
-            if (bestSelection != null) {
-                final com.intellij.openapi.projectRoots.Sdk sdkToSet = bestSelection.sdk();
-                final String sdkName = sdkToSet.getName();
-                int selectedVersion = bestSelection.version();
-                QinLogger.info("[SDK] Selected JDK: " + sdkName + " (version: " + selectedVersion + ", desired: " + desiredVersion + ")");
-
-                if (currentSdk != null && sdkName.equals(currentSdk.getName())) {
-                    QinLogger.info("[SDK] Selected JDK is the same as current SDK, no update needed");
-                    return;
-                }
-
-                if (selectedVersion < desiredVersion) {
-                    QinLogger.warn("[SDK] Best available JDK is still lower than required (selected: "
-                            + selectedVersion + ", required: " + desiredVersion + ")");
-                }
-
-                // 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?Project SDK闂傚倷鐒︾€笛呯矙閹达附鍋嬮柛娑卞枤缁犻箖鏌涢妷顔煎闁稿鍔戦弻鏇熺箾閸喖濮庨悷婊勬緲濡繈寮婚敐澶涚稏妞ゆ巻鍋撳┑鈥茬矙閺屸€崇暆閳ь剟宕版惔銊ョ厺闁哄啫鐗嗛崡铏亜韫囨挻顥犳い?
-                QinLogger.info("[SDK] Applying selected Project SDK...");
-                QinProjectSdkPersistence.applyAndPersist(project, rootManager, sdkToSet);
-            } else {
-                // 濠电姷鏁搁崑娑欏緞閸ヮ剙绀堟繝闈涙４閼板灝銆掑锝呬壕濡ょ姷鍋涚粔褰掔嵁閸℃凹妲婚梺缁樻尭閸婂鍩€椤掆偓濠€閬嶁€﹂崼婵愬殨闁割偅娲栭弸渚€鏌ｉ幇顒佹儓缂佲偓閸愵亖鍋撻崗澶婁壕闂侀€炲苯澧柍?JDK闂傚倷鐒︾€笛呯矙閹达附鍤愭い鏍仦閸庡秹鏌涢幘妤€瀚悵浼存⒑閸濆嫭澶勬慨妯稿姂閹?JAVA_HOME 闂傚倷鑳堕崢褔銆冩惔銏㈩洸婵犲﹤瀚崣蹇涙煃鏉炴媽鍓ㄩ幖杈剧稻鐎氭岸鏌熺紒妯轰刊婵?
-                com.intellij.openapi.projectRoots.Sdk javaHomeSdk = QinProjectSdkSelection.registerJavaHomeJdk();
-                if (javaHomeSdk != null) {
-                    QinProjectSdkPersistence.applyAndPersist(project, rootManager, javaHomeSdk);
-                }
-            }
-
-            // 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樻彃鏆斿ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃鍫㈡閹惧瓨濯撮悷娆忓闂夊秹姊虹拠鎻掔槰闁搞劌鐖煎顐㈩吋閸涱垱娈曢梺鍛婂姈閸庢娊寮?IDEA UI 闂傚倷绀侀幖顐⒚洪妶澶嬪仱闁靛ň鏅涢拑?
-            QinLogger.info("[SDK] Refreshing IDEA project structure after SDK update...");
-            QinProjectSdkPersistence.refreshProjectStructure(project);
-
-            QinLogger.info("[SDK] ========== Project SDK configuration complete ==========");
-        } catch (Exception e) {
-            QinLogger.error("[SDK] Failed to configure Project SDK: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 
 }
