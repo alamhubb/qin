@@ -167,14 +167,6 @@ public class DebugStartup implements ProjectActivity {
             }
 
             // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷顔荤暗濞存粌缍婇弻鐔煎箚瑜嶉弳杈ㄣ亜?Project SDK
-            com.intellij.openapi.projectRoots.ProjectJdkTable jdkTable = com.intellij.openapi.projectRoots.ProjectJdkTable
-                    .getInstance();
-            com.intellij.openapi.projectRoots.Sdk[] allJdks = jdkTable.getAllJdks();
-            QinLogger.info("[SDK] Detected " + allJdks.length + " configured JDK(s)");
-            for (com.intellij.openapi.projectRoots.Sdk sdk : allJdks) {
-                QinLogger.info("[SDK]   - " + sdk.getName() + " (" + sdk.getHomePath() + ")");
-            }
-
             // 闂傚倷绀侀崥瀣磿閹惰棄搴婇柤鑹扮堪娴滃綊鏌涢妷锝呭Ω濞存粍绮撻弻娑㈡晜鐠囨彃绠虹紓浣瑰姈椤ㄥ﹪寮?SDK 闂傚倸鍊烽悞锕€顭垮Ο鑲╃煋闁割偅娲橀崑?
             com.intellij.openapi.roots.ProjectRootManager rootManager = com.intellij.openapi.roots.ProjectRootManager
                     .getInstance(project);
@@ -187,9 +179,7 @@ public class DebugStartup implements ProjectActivity {
 
             int currentVersion = 0;
             if (currentSdk != null) {
-                String currentVersionStr = com.intellij.openapi.projectRoots.JavaSdk.getInstance()
-                        .getVersionString(currentSdk);
-                currentVersion = QinWorkspaceSdkDefaults.parseJavaVersion(currentVersionStr);
+                currentVersion = QinProjectSdkSelection.sdkVersion(currentSdk);
                 if (currentVersion >= desiredVersion) {
                     QinLogger.info("[SDK] Existing Project SDK is compatible (current: "
                             + currentVersion + ", required: " + desiredVersion + "), keeping as-is");
@@ -201,13 +191,13 @@ public class DebugStartup implements ProjectActivity {
                 QinLogger.info("[SDK] No Project SDK configured, selecting one automatically...");
             }
 
-            com.intellij.openapi.projectRoots.Sdk bestSdk = selectBestMatchingJdk(allJdks, desiredVersion);
+            QinProjectSdkSelection.Selection bestSelection =
+                    QinProjectSdkSelection.selectConfiguredJdk(desiredVersion);
 
-            if (bestSdk != null) {
-                final com.intellij.openapi.projectRoots.Sdk sdkToSet = bestSdk;
-                final String sdkName = bestSdk.getName();
-                int selectedVersion = QinWorkspaceSdkDefaults.parseJavaVersion(
-                        com.intellij.openapi.projectRoots.JavaSdk.getInstance().getVersionString(bestSdk));
+            if (bestSelection != null) {
+                final com.intellij.openapi.projectRoots.Sdk sdkToSet = bestSelection.sdk();
+                final String sdkName = sdkToSet.getName();
+                int selectedVersion = bestSelection.version();
                 QinLogger.info("[SDK] Selected JDK: " + sdkName + " (version: " + selectedVersion + ", desired: " + desiredVersion + ")");
 
                 if (currentSdk != null && sdkName.equals(currentSdk.getName())) {
@@ -225,35 +215,9 @@ public class DebugStartup implements ProjectActivity {
                 QinProjectSdkPersistence.applyAndPersist(project, rootManager, sdkToSet);
             } else {
                 // 濠电姷鏁搁崑娑欏緞閸ヮ剙绀堟繝闈涙４閼板灝銆掑锝呬壕濡ょ姷鍋涚粔褰掔嵁閸℃凹妲婚梺缁樻尭閸婂鍩€椤掆偓濠€閬嶁€﹂崼婵愬殨闁割偅娲栭弸渚€鏌ｉ幇顒佹儓缂佲偓閸愵亖鍋撻崗澶婁壕闂侀€炲苯澧柍?JDK闂傚倷鐒︾€笛呯矙閹达附鍤愭い鏍仦閸庡秹鏌涢幘妤€瀚悵浼存⒑閸濆嫭澶勬慨妯稿姂閹?JAVA_HOME 闂傚倷鑳堕崢褔銆冩惔銏㈩洸婵犲﹤瀚崣蹇涙煃鏉炴媽鍓ㄩ幖杈剧稻鐎氭岸鏌熺紒妯轰刊婵?
-                String javaHome = System.getenv("JAVA_HOME");
-                if (javaHome != null && !javaHome.isEmpty() && Files.exists(Paths.get(javaHome))) {
-                    QinLogger.info("[SDK] No registered JDK found, trying JAVA_HOME: " + javaHome);
-
-                    // 闂傚倷绀侀幉锛勬暜濡ゅ啰鐭欓柟瀵稿Х绾句粙鏌熼幑鎰靛殭婵☆偅锕㈤弻鐔封枔閸喗鐏嶉梺?JDK
-                    com.intellij.openapi.projectRoots.JavaSdk javaSdkType = com.intellij.openapi.projectRoots.JavaSdk
-                            .getInstance();
-
-                    // 闂傚倷鐒﹂惇褰掑垂婵犳艾绐楅柟鐗堟緲閸?SDK 闂傚倷绀侀幉锟犳嚌閸撗呯煋闁诡垱澹嬮崣?
-                    String sdkName = "JDK-" + System.getProperty("java.version", "auto");
-
-                    // 闂傚倷绀侀幉锛勬暜濡ゅ啰鐭欓柟瀵稿Х绾?SDK
-                    com.intellij.openapi.projectRoots.Sdk newSdk = javaSdkType.createJdk(sdkName, javaHome, false);
-
-                    if (newSdk != null) {
-                        // 闂傚倷鑳堕…鍫㈡崲閹扮増鍋嬪┑鐘叉搐闁裤倕鈹戦悩鍙夋悙缂佲偓婢舵劖鐓熸俊顖濐嚙缁插鏌?JDK 闂?
-                        ApplicationManager.getApplication().runWriteAction(() -> {
-                            jdkTable.addJdk(newSdk);
-                        });
-                        QinLogger.info("[SDK]   Registered new JDK in IDE: " + sdkName);
-
-                        // 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?Project SDK闂傚倷鐒︾€笛呯矙閹达附鍋嬮柛娑卞枤缁犻箖鏌涢妷顔煎闁稿鍔戦弻鏇熺箾閸喖濮庨悷婊勬緲濡繈寮婚敐澶涚稏妞ゆ巻鍋撳┑鈥茬矙閺屸€崇暆閳ь剟宕版惔銊ョ厺闁哄啫鐗嗛崡铏亜韫囨挻顥犳い?
-                        QinProjectSdkPersistence.applyAndPersist(project, rootManager, newSdk);
-                    } else {
-                        QinLogger.error("[SDK] Unable to create JDK automatically, please configure it manually");
-                    }
-                } else {
-                    QinLogger.info("[SDK] JAVA_HOME is unavailable, Project SDK remains unset until configured manually");
-                    QinLogger.info("[SDK]   JAVA_HOME = " + (javaHome != null ? javaHome : "null"));
+                com.intellij.openapi.projectRoots.Sdk javaHomeSdk = QinProjectSdkSelection.registerJavaHomeJdk();
+                if (javaHomeSdk != null) {
+                    QinProjectSdkPersistence.applyAndPersist(project, rootManager, javaHomeSdk);
                 }
             }
 
@@ -502,51 +466,6 @@ public class DebugStartup implements ProjectActivity {
         } catch (Exception e) {
             return Integer.MAX_VALUE;
         }
-    }
-
-    private static com.intellij.openapi.projectRoots.Sdk selectBestMatchingJdk(
-            com.intellij.openapi.projectRoots.Sdk[] allJdks,
-            int desiredVersion) {
-        com.intellij.openapi.projectRoots.Sdk exactMatch = null;
-        com.intellij.openapi.projectRoots.Sdk nearestHigher = null;
-        int nearestHigherVersion = Integer.MAX_VALUE;
-        com.intellij.openapi.projectRoots.Sdk nearestLower = null;
-        int nearestLowerVersion = Integer.MIN_VALUE;
-
-        for (com.intellij.openapi.projectRoots.Sdk sdk : allJdks) {
-            if (!(sdk.getSdkType() instanceof com.intellij.openapi.projectRoots.JavaSdk)) {
-                continue;
-            }
-
-            String versionStr = com.intellij.openapi.projectRoots.JavaSdk.getInstance().getVersionString(sdk);
-            if (versionStr == null) {
-                continue;
-            }
-
-            int version = QinWorkspaceSdkDefaults.parseJavaVersion(versionStr);
-            QinLogger.info("[SDK]   Candidate JDK: " + sdk.getName() + " (version: " + version + ")");
-
-            if (version == desiredVersion) {
-                exactMatch = sdk;
-                break;
-            }
-            if (version > desiredVersion && version < nearestHigherVersion) {
-                nearestHigherVersion = version;
-                nearestHigher = sdk;
-            }
-            if (version < desiredVersion && version > nearestLowerVersion) {
-                nearestLowerVersion = version;
-                nearestLower = sdk;
-            }
-        }
-
-        if (exactMatch != null) {
-            return exactMatch;
-        }
-        if (nearestHigher != null) {
-            return nearestHigher;
-        }
-        return nearestLower;
     }
 
     public static boolean hasSourceDirectory(Path projectPath) {

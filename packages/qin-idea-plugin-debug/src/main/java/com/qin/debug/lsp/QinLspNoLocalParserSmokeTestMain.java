@@ -36,7 +36,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
             "QinPsiReferences.java",
             "QinSyntaxHighlighter.java",
             "QinSyntaxHighlighterFactory.java",
-            "QinLexer.java");
+            "QinLexer.java",
+            "QinProjectSdkSelection.java");
 
     private QinLspNoLocalParserSmokeTestMain() {
     }
@@ -103,6 +104,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertCliProcessBuildersAreShared(javaRoot);
         assertToolWindowProjectDiscoveryIsShared(javaRoot);
         assertWorkspaceSdkDefaultsAreShared(javaRoot);
+        assertProjectSdkSelectionIsShared(javaRoot);
         assertProjectSdkPersistenceIsShared(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
@@ -1733,6 +1735,40 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !startupSource.contains("rootManager.setProjectSdk("),
                 "DebugStartup must consume QinProjectSdkPersistence instead of owning "
                         + "Project SDK persistence or IDEA refresh calls: " + startup);
+    }
+
+    private static void assertProjectSdkSelectionIsShared(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinProjectSdkSelection.java"));
+        require(Files.isRegularFile(helper),
+                "Qin project SDK selection helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("selectConfiguredJdk(")
+                        && helperSource.contains("registerJavaHomeJdk(")
+                        && helperSource.contains("sdkVersion(")
+                        && helperSource.contains("selectBestMatchingJdk(")
+                        && helperSource.contains("ProjectJdkTable.getInstance()")
+                        && helperSource.contains("JavaSdk.getInstance()")
+                        && helperSource.contains("createJdk(")
+                        && helperSource.contains("addJdk(newSdk)"),
+                "QinProjectSdkSelection must own Project SDK selection and JDK "
+                        + "registration platform calls: " + helper);
+
+        Path startup = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "DebugStartup.java"));
+        require(Files.isRegularFile(startup),
+                "Qin startup source not found: " + startup);
+        String startupSource = Files.readString(startup);
+        require(startupSource.contains("QinProjectSdkSelection.selectConfiguredJdk(")
+                        && startupSource.contains("QinProjectSdkSelection.registerJavaHomeJdk(")
+                        && startupSource.contains("QinProjectSdkSelection.sdkVersion(")
+                        && !startupSource.contains("ProjectJdkTable")
+                        && !startupSource.contains("JavaSdk.getInstance()")
+                        && !startupSource.contains("createJdk(")
+                        && !startupSource.contains("addJdk(")
+                        && !startupSource.contains("private static com.intellij.openapi.projectRoots.Sdk selectBestMatchingJdk("),
+                "DebugStartup must consume QinProjectSdkSelection instead of owning "
+                        + "Project SDK selection or JDK registration calls: " + startup);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
