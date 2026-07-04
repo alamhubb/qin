@@ -44,6 +44,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoDirectReferenceRegistryAccess(javaRoot);
         assertNoDirectJavaPsiAccess(javaRoot);
         assertLexerUsesSharedScannerAdapter(javaRoot);
+        assertSyntaxHighlighterCoverageUsesTextAttributes(testJavaRoot);
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertGoToDeclarationCoverageUsesEditorPath(testJavaRoot);
@@ -194,6 +195,41 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         + "lookup instead of owning PsiFile.findElementAt: " + psiReferences);
     }
 
+    private static void assertSyntaxHighlighterCoverageUsesTextAttributes(Path testJavaRoot) throws Exception {
+        Path platformTest = testJavaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));
+        require(Files.isRegularFile(platformTest),
+                "Qin platform test source not found: " + platformTest);
+        String source = Files.readString(platformTest);
+
+        requireTestContainsAll(source, platformTest,
+                "testQinSyntaxHighlighterMapsCoreTokensToIdeaTextAttributes",
+                "new QinSyntaxHighlighter()",
+                "assertTokenHighlight(",
+                "QinTokenTypes.KEYWORD",
+                "DefaultLanguageHighlighterColors.KEYWORD",
+                "QinTokenTypes.IDENTIFIER",
+                "DefaultLanguageHighlighterColors.IDENTIFIER",
+                "QinTokenTypes.CLASS_NAME",
+                "DefaultLanguageHighlighterColors.CLASS_NAME",
+                "QinTokenTypes.FUNCTION_IDENTIFIER",
+                "DefaultLanguageHighlighterColors.FUNCTION_CALL",
+                "QinTokenTypes.MEMBER_IDENTIFIER",
+                "DefaultLanguageHighlighterColors.INSTANCE_METHOD",
+                "QinTokenTypes.STRING",
+                "DefaultLanguageHighlighterColors.STRING",
+                "QinTokenTypes.NUMBER",
+                "DefaultLanguageHighlighterColors.NUMBER",
+                "QinTokenTypes.LINE_COMMENT",
+                "DefaultLanguageHighlighterColors.LINE_COMMENT",
+                "QinTokenTypes.BLOCK_COMMENT",
+                "DefaultLanguageHighlighterColors.BLOCK_COMMENT",
+                "QinTokenTypes.BRACE",
+                "DefaultLanguageHighlighterColors.BRACES",
+                "QinTokenTypes.OPERATOR",
+                "DefaultLanguageHighlighterColors.OPERATION_SIGN");
+    }
+
     private static void assertReferencePlatformTestsUseSharedHelper(Path testJavaRoot) throws Exception {
         Path platformTest = testJavaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));
@@ -340,8 +376,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String body = testBody(source, testName, platformTest);
         for (String needle : needles) {
             require(body.contains(needle),
-                    "Qin platform test " + testName + " must keep IDEA Find Usages/Rename "
-                            + "coverage marker `" + needle + "` in " + platformTest);
+                    "Qin platform test " + testName + " must keep coverage marker `"
+                            + needle + "` in " + platformTest);
         }
     }
 
