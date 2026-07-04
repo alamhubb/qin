@@ -45,6 +45,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
+        assertObjectDeclarationPsiBridgeUsesQinPsiTree(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberKind(javaRoot);
         assertObjectMemberPsiBridgeUsesQinPsiTree(javaRoot);
@@ -173,6 +174,28 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("keywordRange().startsAt"),
                 "QinObjectSymbols must use QinSourceStructure object declaration lookup helpers "
                         + "instead of iterating declarations or matching keyword ranges: " + objectSymbols);
+    }
+
+    private static void assertObjectDeclarationPsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("sourceObjectDeclaration(")
+                        && psiTreeSource.contains(".objectDeclarationAtKeywordOffset(startOffset)"),
+                "QinPsiTree must own OBJECT_DECLARATION PSI to QinSourceStructure object bridging: "
+                        + psiTree);
+
+        Path objectSymbols = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
+        require(Files.isRegularFile(objectSymbols),
+                "QinObjectSymbols source not found: " + objectSymbols);
+        String objectSymbolsSource = Files.readString(objectSymbols);
+        require(objectSymbolsSource.contains("QinPsiTree.sourceObjectDeclaration(")
+                        && !objectSymbolsSource.contains("objectDeclarationAtKeywordOffset(startOffset)")
+                        && !objectSymbolsSource.contains("objectDeclaration.getTextRange().getStartOffset()"),
+                "QinObjectSymbols must ask QinPsiTree to bridge OBJECT_DECLARATION PSI "
+                        + "to QinSourceStructure instead of owning offset lookup: " + objectSymbols);
     }
 
     private static void assertObjectSymbolsUseSourceStructureMemberLookup(Path javaRoot) throws Exception {

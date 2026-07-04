@@ -156,7 +156,7 @@ final class QinObjectSymbols {
     private static @NotNull List<ObjectMemberElement> memberElementsInObjectDeclaration(
             @NotNull PsiElement objectDeclaration) {
         PsiFile file = objectDeclaration.getContainingFile();
-        QinSourceStructure.ObjectDeclaration declaration = sourceObjectDeclaration(objectDeclaration);
+        QinSourceStructure.ObjectDeclaration declaration = QinPsiTree.sourceObjectDeclaration(objectDeclaration);
         if (file == null || declaration == null) {
             return List.of();
         }
@@ -172,22 +172,12 @@ final class QinObjectSymbols {
         return members;
     }
 
-    private static @Nullable QinSourceStructure.ObjectDeclaration sourceObjectDeclaration(
-            @NotNull PsiElement objectDeclaration) {
-        PsiFile file = objectDeclaration.getContainingFile();
-        if (file == null) {
-            return null;
-        }
-        int startOffset = objectDeclaration.getTextRange().getStartOffset();
-        return QinSourceStructure.parse(file.getText()).objectDeclarationAtKeywordOffset(startOffset);
-    }
-
     private static @Nullable PsiElement findMemberNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String memberName,
             @NotNull QinSourceStructure.ObjectMemberKind kind) {
         PsiFile file = objectDeclaration.getContainingFile();
-        QinSourceStructure.ObjectDeclaration declaration = sourceObjectDeclaration(objectDeclaration);
+        QinSourceStructure.ObjectDeclaration declaration = QinPsiTree.sourceObjectDeclaration(objectDeclaration);
         if (file == null || declaration == null) {
             return null;
         }

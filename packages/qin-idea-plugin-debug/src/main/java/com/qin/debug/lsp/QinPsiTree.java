@@ -50,6 +50,16 @@ final class QinPsiTree {
         return elementAtRangeOrParentOfType(file, member.nameRange(), objectMemberNameType(kind));
     }
 
+    static @Nullable QinSourceStructure.ObjectDeclaration sourceObjectDeclaration(
+            @NotNull PsiElement objectDeclaration) {
+        PsiFile file = objectDeclaration.getContainingFile();
+        if (file == null) {
+            return null;
+        }
+        int startOffset = objectDeclaration.getTextRange().getStartOffset();
+        return QinSourceStructure.parse(file.getText()).objectDeclarationAtKeywordOffset(startOffset);
+    }
+
     private static @NotNull IElementType objectMemberNameType(
             @NotNull QinSourceStructure.ObjectMemberKind kind) {
         return kind == QinSourceStructure.ObjectMemberKind.FIELD
