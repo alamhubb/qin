@@ -5,7 +5,6 @@ import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 final class QinImportBindings {
@@ -13,17 +12,12 @@ final class QinImportBindings {
     }
 
     static @NotNull List<ImportBinding> collect(@NotNull PsiFile file) {
-        List<ImportBinding> bindings = new ArrayList<>();
-        QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
-        for (QinSourceStructure.ImportDeclaration declaration : sourceStructure.importDeclarations()) {
-            for (QinSourceStructure.ImportSpecifier specifier : declaration.specifiers()) {
-                bindings.add(new ImportBinding(
-                        declaration.moduleSpecifier(),
-                        specifier.exportedName(),
-                        specifier.localName()));
-            }
-        }
-        return bindings;
+        return QinSourceStructure.parse(file.getText()).importSpecifierMatches().stream()
+                .map(match -> new ImportBinding(
+                        match.declaration().moduleSpecifier(),
+                        match.specifier().exportedName(),
+                        match.specifier().localName()))
+                .toList();
     }
 
     static @Nullable ImportBinding findForSpecifierElement(@NotNull PsiElement element) {

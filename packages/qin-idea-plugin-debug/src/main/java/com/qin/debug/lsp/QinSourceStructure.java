@@ -58,6 +58,16 @@ final class QinSourceStructure {
         return importDeclarations;
     }
 
+    @NotNull List<ImportSpecifierMatch> importSpecifierMatches() {
+        List<ImportSpecifierMatch> matches = new ArrayList<>();
+        for (ImportDeclaration declaration : importDeclarations) {
+            for (ImportSpecifier specifier : declaration.specifiers()) {
+                matches.add(new ImportSpecifierMatch(declaration, specifier));
+            }
+        }
+        return matches;
+    }
+
     ImportDeclaration importDeclarationAtKeywordOffset(int offset) {
         for (ImportDeclaration declaration : importDeclarations) {
             if (declaration.keywordRange().startsAt(offset)) {
