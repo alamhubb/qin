@@ -1429,6 +1429,36 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertFalse("Qin method rename should remove old object usage: " + text, text.contains("Counter.next()"));
     }
 
+    public void testQinObjectMethodRenameProcessorPreservesImportAliasQualifier() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  next() {
+                    return 42
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.next()
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("next"));
+        assertNotNull("Aliased Qin object method reference was not registered for rename", reference);
+        PsiElement methodName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        new RenameProcessor(getProject(), methodName, "advance", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin method rename should preserve alias qualifier: " + text,
+                text.contains("C.advance()"));
+        assertTrue("Qin method rename should preserve import alias declaration: " + text,
+                text.contains("import { Counter as C }"));
+        assertFalse("Qin method rename should not rewrite alias qualifier to exported name: " + text,
+                text.contains("Counter.advance()"));
+    }
+
     public void testQinUnresolvedReferenceAnnotatorReportsMissingMethod() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -1740,6 +1770,35 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue("Qin field rename should update this usage: " + text, text.contains("this.total"));
         assertTrue("Qin field rename should update object usage: " + text, text.contains("Counter.total"));
         assertFalse("Qin field rename should remove old object usage: " + text, text.contains("Counter.value"));
+    }
+
+    public void testQinObjectFieldRenameProcessorPreservesImportAliasQualifier() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        String source = myFixture.getEditor().getDocument().getText();
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                source.indexOf("value", source.indexOf("C.value")));
+        assertNotNull("Aliased Qin object field reference was not registered for rename", reference);
+        PsiElement fieldName = assertInstanceOf(reference.resolve(), PsiElement.class);
+        new RenameProcessor(getProject(), fieldName, "total", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Qin field rename should preserve alias qualifier: " + text,
+                text.contains("C.total"));
+        assertTrue("Qin field rename should preserve import alias declaration: " + text,
+                text.contains("import { Counter as C }"));
+        assertFalse("Qin field rename should not rewrite alias qualifier to exported name: " + text,
+                text.contains("Counter.total"));
     }
 
     public void testQinUnresolvedReferenceAnnotatorReportsMissingField() {
