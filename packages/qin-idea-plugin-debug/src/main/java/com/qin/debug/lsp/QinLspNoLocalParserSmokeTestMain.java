@@ -48,7 +48,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertReferenceContributorsUseSharedProviderWrapper(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
-        assertImportAliasPsiBridgeUsesQinPsiTree(javaRoot);
+        assertImportNamePsiBridgeUsesQinPsiTree(javaRoot);
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
         assertObjectDeclarationPsiBridgeUsesQinPsiTree(javaRoot);
         assertObjectNamePsiBridgeUsesQinPsiTree(javaRoot);
@@ -299,14 +299,16 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         + "instead of matching alias names itself: " + importBindings);
     }
 
-    private static void assertImportAliasPsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
+    private static void assertImportNamePsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
         Path psiTree = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinPsiTree.java"));
         require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
         String psiTreeSource = Files.readString(psiTree);
         require(psiTreeSource.contains("importAliasNameElement(")
-                        && psiTreeSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
-                "QinPsiTree must own import alias source range to PSI name bridging: "
+                        && psiTreeSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME")
+                        && psiTreeSource.contains("importExportedNameElement(")
+                        && psiTreeSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
+                "QinPsiTree must own import exported-name and alias source range to PSI name bridging: "
                         + psiTree);
 
         Path importBindings = javaRoot.resolve(Path.of(
@@ -315,9 +317,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinImportBindings source not found: " + importBindings);
         String importBindingsSource = Files.readString(importBindings);
         require(importBindingsSource.contains("QinPsiTree.importAliasNameElement(")
+                        && importBindingsSource.contains("QinPsiTree.importExportedNameElement(")
                         && !importBindingsSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
-                "QinImportBindings must ask QinPsiTree to bridge import alias ranges "
-                        + "instead of owning the IMPORT_ALIAS_NAME token mapping: " + importBindings);
+                "QinImportBindings must ask QinPsiTree to bridge import exported-name and alias ranges "
+                        + "instead of owning import name token mappings: " + importBindings);
     }
 
     private static void assertObjectSymbolsUseSourceStructureDeclarationLookup(Path javaRoot) throws Exception {

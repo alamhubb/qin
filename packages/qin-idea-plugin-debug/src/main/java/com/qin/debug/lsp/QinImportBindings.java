@@ -67,9 +67,7 @@ final class QinImportBindings {
         if (specifier == null) {
             return null;
         }
-        return specifier.exportedNameRange().isPresent()
-                ? file.findElementAt(specifier.exportedNameRange().startOffset())
-                : null;
+        return QinPsiTree.importExportedNameElement(file, specifier);
     }
 
     record ImportBinding(@NotNull String moduleSpecifier, @NotNull String exportedName, @NotNull String localName) {

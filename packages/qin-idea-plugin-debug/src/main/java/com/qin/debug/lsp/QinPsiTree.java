@@ -49,6 +49,12 @@ final class QinPsiTree {
         return elementAtRangeOrParentOfType(file, specifier.localNameRange(), QinTokenTypes.IMPORT_ALIAS_NAME);
     }
 
+    static @Nullable PsiElement importExportedNameElement(
+            @NotNull PsiFile file,
+            @NotNull QinSourceStructure.ImportSpecifier specifier) {
+        return elementAtRangeOrParentOfType(file, specifier.exportedNameRange(), QinTokenTypes.REFERENCE_IDENTIFIER);
+    }
+
     static @Nullable PsiElement objectNameElement(
             @NotNull PsiFile file,
             @NotNull QinSourceStructure.ObjectDeclaration declaration) {
