@@ -1122,6 +1122,11 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
                         && "App.qin".equals(item.getElement().getContainingFile().getName())
                         && "Counter".equals(item.getElement().getText())));
+        assertReferencesMissingQinElement(
+                references,
+                "App.qin",
+                "C",
+                "Find Usages for the remote Qin object must not include the local import alias");
     }
 
     public void testQinObjectRenameProcessorUpdatesRelativeImportUsages() {
@@ -2428,6 +2433,11 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 references.stream().anyMatch(item -> item.getElement().getContainingFile() instanceof QinPsiFile
                         && "App.qin".equals(item.getElement().getContainingFile().getName())
                         && "Greeter".equals(item.getElement().getText())));
+        assertReferencesMissingQinElement(
+                references,
+                "App.qin",
+                "G",
+                "Find Usages for the remote Java class must not include the local import alias");
     }
 
     public void testQinJavaMethodReferenceParticipatesInReferencesSearch() {
@@ -2975,6 +2985,18 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         + "@"
                         + reference.getElement().getContainingFile().getName())
                 .toList();
+    }
+
+    private static void assertReferencesMissingQinElement(
+            Collection<PsiReference> references,
+            String fileName,
+            String text,
+            String message) {
+        assertFalse(message + ": " + describeReferences(references),
+                references.stream().anyMatch(reference ->
+                        reference.getElement().getContainingFile() instanceof QinPsiFile
+                                && fileName.equals(reference.getElement().getContainingFile().getName())
+                                && text.equals(reference.getElement().getText())));
     }
 
     private static List<String> describePsiFiles(Collection<? extends PsiFile> files) {
