@@ -1693,6 +1693,32 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightContains(errors, "Unresolved Qin object field Counter.missing");
     }
 
+    public void testQinUnresolvedReferenceInspectionReportsMissingField() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+
+                const value = Counter.missing
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiElement missingField = myFixture.getFile().findElementAt(text.indexOf("missing"));
+        assertNotNull("Missing field token should be present", missingField);
+
+        ProblemsHolder holder = new ProblemsHolder(
+                InspectionManager.getInstance(getProject()),
+                myFixture.getFile(),
+                true);
+        new QinUnresolvedReferenceInspection()
+                .buildVisitor(holder, true)
+                .visitElement(missingField.getParent());
+
+        ProblemDescriptor[] problems = holder.getResultsArray();
+        assertEquals(1, problems.length);
+        assertEquals("Unresolved Qin object field Counter.missing", problems[0].getDescriptionTemplate());
+    }
+
     public void testQinUnresolvedReferenceAnnotatorIgnoresMissingMethodCall() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
