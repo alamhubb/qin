@@ -869,8 +869,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
         String psiTreeSource = Files.readString(psiTree);
         require(psiTreeSource.contains("objectNameElement(")
+                        && psiTreeSource.contains("sourceObjectDeclarationNamed(")
+                        && psiTreeSource.contains(".objectDeclarationNamed(name)")
                         && psiTreeSource.contains("QinTokenTypes.OBJECT_NAME"),
-                "QinPsiTree must own Qin object name source range to PSI name bridging: "
+                "QinPsiTree must own Qin object name source lookup and range to PSI name bridging: "
                         + psiTree);
 
         Path objectSymbols = javaRoot.resolve(Path.of(
@@ -879,12 +881,14 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinObjectSymbols source not found: " + objectSymbols);
         String objectSymbolsSource = Files.readString(objectSymbols);
         require(objectSymbolsSource.contains("QinPsiTree.objectNameElement(")
-                        && objectSymbolsSource.contains("QinPsiTree.sourceStructure(")
+                        && objectSymbolsSource.contains("QinPsiTree.sourceObjectDeclarationNamed(")
                         && !objectSymbolsSource.contains("QinSourceStructure.parse(file.getText())")
+                        && !objectSymbolsSource.contains("sourceStructure(file).objectDeclarationNamed(")
+                        && !objectSymbolsSource.contains("QinPsiTree.sourceStructure(file).objectDeclarationNamed(")
                         && !objectSymbolsSource.contains("QinTokenTypes.OBJECT_NAME"),
-                "QinObjectSymbols must ask QinPsiTree to bridge object name ranges to PSI names "
-                        + "and PsiFile source structure instead of owning those platform "
-                        + "adapter details: " + objectSymbols);
+                "QinObjectSymbols must ask QinPsiTree to bridge object name source lookup "
+                        + "and ranges to PSI names instead of owning those platform adapter details: "
+                        + objectSymbols);
     }
 
     private static void assertObjectDeclarationAncestryUsesQinPsiTree(Path javaRoot) throws Exception {

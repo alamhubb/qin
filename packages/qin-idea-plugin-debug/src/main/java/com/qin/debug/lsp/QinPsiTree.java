@@ -113,6 +113,12 @@ final class QinPsiTree {
         return sourceStructure(file).objectDeclarationAtKeywordOffset(startOffset);
     }
 
+    static @Nullable QinSourceStructure.ObjectDeclaration sourceObjectDeclarationNamed(
+            @NotNull PsiFile file,
+            @NotNull String name) {
+        return sourceStructure(file).objectDeclarationNamed(name);
+    }
+
     private static @NotNull IElementType objectMemberNameType(
             @NotNull QinSourceStructure.ObjectMemberKind kind) {
         return kind == QinSourceStructure.ObjectMemberKind.FIELD
