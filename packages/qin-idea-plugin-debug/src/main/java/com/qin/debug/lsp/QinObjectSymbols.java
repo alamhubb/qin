@@ -156,13 +156,10 @@ final class QinObjectSymbols {
 
         List<PsiElement> members = new ArrayList<>();
         for (QinSourceStructure.ObjectMemberDeclaration member : declaration.memberDeclarations()) {
-            IElementType memberType = member.kind() == QinSourceStructure.ObjectMemberKind.FIELD
-                    ? QinTokenTypes.FIELD_NAME
-                    : QinTokenTypes.METHOD_NAME;
             PsiElement memberElement = QinPsiTree.elementAtRangeOrParentOfType(
                     file,
                     member.declaration().nameRange(),
-                    memberType);
+                    tokenTypeForMemberKind(member.kind()));
             if (memberElement != null) {
                 members.add(memberElement);
             }
@@ -183,26 +180,27 @@ final class QinObjectSymbols {
     private static @Nullable PsiElement findMemberNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String memberName,
-            @NotNull IElementType memberType) {
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
         PsiFile file = objectDeclaration.getContainingFile();
         QinSourceStructure.ObjectDeclaration declaration = sourceObjectDeclaration(objectDeclaration);
         if (file == null || declaration == null) {
             return null;
         }
-        QinSourceStructure.MemberDeclaration member =
-                memberType == QinTokenTypes.FIELD_NAME
-                        ? declaration.fieldDeclarationNamed(memberName)
-                        : declaration.methodDeclarationNamed(memberName);
+        QinSourceStructure.MemberDeclaration member = declaration.memberDeclarationNamed(memberName, kind);
         if (member == null) {
             return null;
         }
+        IElementType memberType = tokenTypeForMemberKind(kind);
         return QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), memberType);
     }
 
     private static @Nullable PsiElement findMethodNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String methodName) {
-        return findMemberNameInObjectDeclaration(objectDeclaration, methodName, QinTokenTypes.METHOD_NAME);
+        return findMemberNameInObjectDeclaration(
+                objectDeclaration,
+                methodName,
+                QinSourceStructure.ObjectMemberKind.METHOD);
     }
 
     static @Nullable PsiElement findFieldName(
@@ -232,7 +230,10 @@ final class QinObjectSymbols {
     private static @Nullable PsiElement findFieldNameInObjectDeclaration(
             @NotNull PsiElement objectDeclaration,
             @NotNull String fieldName) {
-        return findMemberNameInObjectDeclaration(objectDeclaration, fieldName, QinTokenTypes.FIELD_NAME);
+        return findMemberNameInObjectDeclaration(
+                objectDeclaration,
+                fieldName,
+                QinSourceStructure.ObjectMemberKind.FIELD);
     }
 
     private static boolean hasIndexedMember(
@@ -268,6 +269,12 @@ final class QinObjectSymbols {
         return type == QinTokenTypes.FIELD_NAME
                 ? QinSourceStructure.ObjectMemberKind.FIELD
                 : QinSourceStructure.ObjectMemberKind.METHOD;
+    }
+
+    private static @NotNull IElementType tokenTypeForMemberKind(@NotNull QinSourceStructure.ObjectMemberKind kind) {
+        return kind == QinSourceStructure.ObjectMemberKind.FIELD
+                ? QinTokenTypes.FIELD_NAME
+                : QinTokenTypes.METHOD_NAME;
     }
 
 }

@@ -179,14 +179,15 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(objectSymbols),
                 "QinObjectSymbols source not found: " + objectSymbols);
         String source = Files.readString(objectSymbols);
-        require(source.contains(".fieldDeclarationNamed(")
-                        && source.contains(".methodDeclarationNamed(")
+        require(source.contains(".memberDeclarationNamed(")
                         && source.contains(".memberDeclarations()")
                         && !source.contains("declaration.fields()")
                         && !source.contains("declaration.methods()")
-                        && !source.contains("member.name().equals(memberName)"),
+                        && !source.contains("member.name().equals(memberName)")
+                        && !source.contains("memberType == QinTokenTypes.FIELD_NAME"),
                 "QinObjectSymbols must use QinSourceStructure member declaration lookup helpers "
-                        + "and member declarations instead of matching or flattening members itself: " + objectSymbols);
+                        + "and member declarations instead of matching, flattening, or deriving "
+                        + "source-structure member kind from PSI token types: " + objectSymbols);
     }
 
     private static void assertObjectSymbolsUseSourceStructureMemberKind(Path javaRoot) throws Exception {

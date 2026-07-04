@@ -607,6 +607,12 @@ final class QinSourceStructure {
             return memberDeclarationNamed(methods, name);
         }
 
+        MemberDeclaration memberDeclarationNamed(@NotNull String name, @NotNull ObjectMemberKind kind) {
+            return kind == ObjectMemberKind.FIELD
+                    ? fieldDeclarationNamed(name)
+                    : methodDeclarationNamed(name);
+        }
+
         private static MemberDeclaration memberDeclarationAtNameOffset(
                 @NotNull List<MemberDeclaration> members,
                 int offset) {
