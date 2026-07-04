@@ -565,13 +565,15 @@ final class QinSourceStructure {
         }
 
         @NotNull List<String> fieldNames() {
-            return fields.stream()
-                    .map(MemberDeclaration::name)
-                    .toList();
+            return memberNames(ObjectMemberKind.FIELD);
         }
 
         @NotNull List<String> methodNames() {
-            return methods.stream()
+            return memberNames(ObjectMemberKind.METHOD);
+        }
+
+        @NotNull List<String> memberNames(@NotNull ObjectMemberKind kind) {
+            return memberDeclarations(kind).stream()
                     .map(MemberDeclaration::name)
                     .toList();
         }
@@ -581,6 +583,10 @@ final class QinSourceStructure {
             addMemberDeclarations(members, fields, ObjectMemberKind.FIELD);
             addMemberDeclarations(members, methods, ObjectMemberKind.METHOD);
             return members;
+        }
+
+        @NotNull List<MemberDeclaration> memberDeclarations(@NotNull ObjectMemberKind kind) {
+            return kind == ObjectMemberKind.FIELD ? fields : methods;
         }
 
         @NotNull List<ObjectMemberIndexEntry> memberIndexEntries() {

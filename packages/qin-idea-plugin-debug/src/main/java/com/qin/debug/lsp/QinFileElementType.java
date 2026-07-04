@@ -44,8 +44,8 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
         dataStream.writeVarInt(declarations.size());
         for (QinSourceStructure.ObjectDeclaration declaration : declarations) {
             dataStream.writeName(declaration.name());
-            writeNames(dataStream, declaration.fieldNames());
-            writeNames(dataStream, declaration.methodNames());
+            writeNames(dataStream, declaration.memberNames(QinSourceStructure.ObjectMemberKind.FIELD));
+            writeNames(dataStream, declaration.memberNames(QinSourceStructure.ObjectMemberKind.METHOD));
         }
     }
 

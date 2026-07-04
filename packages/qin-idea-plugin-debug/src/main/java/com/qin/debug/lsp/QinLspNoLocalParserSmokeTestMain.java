@@ -899,17 +899,32 @@ public final class QinLspNoLocalParserSmokeTestMain {
     }
 
     private static void assertStubIndexUsesSourceStructureMemberIndexEntries(Path javaRoot) throws Exception {
+        Path sourceStructure = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinSourceStructure.java"));
+        require(Files.isRegularFile(sourceStructure),
+                "QinSourceStructure source not found: " + sourceStructure);
+        String sourceStructureSource = Files.readString(sourceStructure);
+        require(sourceStructureSource.contains("memberNames(@NotNull ObjectMemberKind kind)")
+                        && sourceStructureSource.contains("memberDeclarations(@NotNull ObjectMemberKind kind)"),
+                "QinSourceStructure must own object member name lookup by ObjectMemberKind: "
+                        + sourceStructure);
+
         Path fileElementType = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinFileElementType.java"));
         require(Files.isRegularFile(fileElementType),
                 "QinFileElementType source not found: " + fileElementType);
         String source = Files.readString(fileElementType);
         require(source.contains(".memberIndexEntries()")
+                        && source.contains(".memberNames(QinSourceStructure.ObjectMemberKind.FIELD)")
+                        && source.contains(".memberNames(QinSourceStructure.ObjectMemberKind.METHOD)")
+                        && !source.contains("declaration.fieldNames()")
+                        && !source.contains("declaration.methodNames()")
                         && !source.contains("for (String field : declaration.fieldNames())")
                         && !source.contains("for (String method : declaration.methodNames())")
                         && !source.contains("static @NotNull String memberKey("),
-                "QinFileElementType must consume QinSourceStructure member index entries "
-                        + "instead of flattening members or owning object-member key syntax: " + fileElementType);
+                "QinFileElementType must consume QinSourceStructure member names and index entries "
+                        + "through ObjectMemberKind instead of flattening members or owning "
+                        + "object-member key syntax: " + fileElementType);
     }
 
     private static void assertMemberStubIndexKeySelectionIsShared(Path javaRoot) throws Exception {
