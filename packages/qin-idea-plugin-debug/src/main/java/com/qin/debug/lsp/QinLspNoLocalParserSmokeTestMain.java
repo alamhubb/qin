@@ -281,6 +281,55 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "C.total",
                 "import { Counter as C }",
                 "Counter.total");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaClassReferenceParticipatesInReferencesSearch",
+                "ReferencesSearch.search(",
+                "Greeter.greet(\"Qin\")");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaClassReferencesSearchIncludesAliasedExportedImportName",
+                "ReferencesSearch.search(",
+                "import { Greeter as G }",
+                "G.greet(\"Qin\")",
+                "assertReferencesMissingQinElement(");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaClassRenameProcessorPreservesImportAliasUsages",
+                "new RenameProcessor(",
+                "import { Welcomer as G }",
+                "G.greet(\"Qin\")");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaMethodReferenceParticipatesInReferencesSearch",
+                "ReferencesSearch.search(",
+                "Greeter.greet(\"Qin\")");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaAliasedMethodReferenceParticipatesInReferencesSearch",
+                "ReferencesSearch.search(",
+                "G.greet(\"Qin\")");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaMethodRenameProcessorUpdatesReferences",
+                "new RenameProcessor(",
+                "Greeter.welcome");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaAliasedMethodRenameProcessorPreservesAliasQualifier",
+                "new RenameProcessor(",
+                "G.welcome",
+                "Greeter.welcome");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaFieldReferenceParticipatesInReferencesSearch",
+                "ReferencesSearch.search(",
+                "Greeter.DEFAULT_NAME");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaAliasedFieldReferenceParticipatesInReferencesSearch",
+                "ReferencesSearch.search(",
+                "G.DEFAULT_NAME");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaFieldRenameProcessorUpdatesReferences",
+                "new RenameProcessor(",
+                "Greeter.FALLBACK_NAME");
+        requireTestContainsAll(source, platformTest,
+                "testQinJavaAliasedFieldRenameProcessorPreservesAliasQualifier",
+                "new RenameProcessor(",
+                "G.FALLBACK_NAME",
+                "Greeter.FALLBACK_NAME");
     }
 
     private static void requireTestContainsAll(
