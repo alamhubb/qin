@@ -32,9 +32,11 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 : Path.of(".").toAbsolutePath().normalize();
         Path sourceRoot = projectRoot.resolve("src").resolve("main").normalize();
         Path javaRoot = sourceRoot.resolve("java").normalize();
+        Path testJavaRoot = projectRoot.resolve("src").resolve("test").resolve("java").normalize();
         Path pluginXml = sourceRoot.resolve("resources").resolve("META-INF").resolve("plugin.xml").normalize();
 
         require(Files.isDirectory(javaRoot), "Java source root not found: " + javaRoot);
+        require(Files.isDirectory(testJavaRoot), "Java test root not found: " + testJavaRoot);
         require(Files.isRegularFile(pluginXml), "plugin.xml not found: " + pluginXml);
 
         assertNoForbiddenPluginXmlMarkers(pluginXml);
@@ -42,6 +44,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoDirectReferenceRegistryAccess(javaRoot);
         assertNoDirectJavaPsiAccess(javaRoot);
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
+        assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
         assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
@@ -152,6 +155,19 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !psiReferencesSource.contains("file.findElementAt(offset)"),
                 "QinPsiReferences.findReferenceAt must ask QinPsiTree for offset-to-leaf "
                         + "lookup instead of owning PsiFile.findElementAt: " + psiReferences);
+    }
+
+    private static void assertReferencePlatformTestsUseSharedHelper(Path testJavaRoot) throws Exception {
+        Path platformTest = testJavaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));
+        require(Files.isRegularFile(platformTest),
+                "Qin platform test source not found: " + platformTest);
+        String source = Files.readString(platformTest);
+        require(source.contains("QinPsiReferences.references(")
+                        && !source.contains("ReferenceProvidersRegistry")
+                        && !source.contains("getReferencesFromProviders"),
+                "Qin platform tests must count registered references through QinPsiReferences "
+                        + "instead of calling ReferenceProvidersRegistry directly: " + platformTest);
     }
 
     private static void assertParserDefinitionUsesSourceRangePredicates(Path javaRoot) throws Exception {

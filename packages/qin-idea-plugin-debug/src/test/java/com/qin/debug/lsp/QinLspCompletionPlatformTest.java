@@ -26,7 +26,6 @@ import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiNameIdentifierOwner;
 import com.intellij.psi.PsiReference;
-import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.ReferencesSearch;
@@ -3263,52 +3262,44 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
     }
 
     private static void assertSingleQinJavaReference(PsiElement element) {
-        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
-                .filter(QinJavaReference.class::isInstance)
-                .count();
+        long count = countQinReferences(element, QinJavaReference.class);
         assertEquals("Qin Java references should be provided only through QinJavaReferenceContributor", 1L, count);
     }
 
     private static void assertSingleQinImportAliasReference(PsiElement element) {
-        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
-                .filter(QinImportAliasReference.class::isInstance)
-                .count();
+        long count = countQinReferences(element, QinImportAliasReference.class);
         assertEquals("Qin import alias references should be provided only through QinImportAliasReferenceContributor", 1L, count);
     }
 
     private static void assertNoQinJavaReference(PsiElement element) {
-        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
-                .filter(QinJavaReference.class::isInstance)
-                .count();
+        long count = countQinReferences(element, QinJavaReference.class);
         assertEquals("Qin Java references should not be provided on local alias usage " + element.getText(), 0L, count);
     }
 
     private static void assertNoQinObjectReference(PsiElement element) {
-        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
-                .filter(QinObjectReference.class::isInstance)
-                .count();
+        long count = countQinReferences(element, QinObjectReference.class);
         assertEquals("Qin object references should not be provided on local alias usage " + element.getText(), 0L, count);
     }
 
     private static void assertSingleQinObjectReference(PsiElement element) {
-        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
-                .filter(QinObjectReference.class::isInstance)
-                .count();
+        long count = countQinReferences(element, QinObjectReference.class);
         assertEquals("Qin object references should be provided only through QinObjectReferenceContributor", 1L, count);
     }
 
     private static void assertSingleQinObjectMethodReference(PsiElement element) {
-        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
-                .filter(QinObjectMethodReference.class::isInstance)
-                .count();
+        long count = countQinReferences(element, QinObjectMethodReference.class);
         assertEquals("Qin object method references should be provided only through QinObjectMethodReferenceContributor", 1L, count);
     }
 
     private static void assertSingleQinObjectFieldReference(PsiElement element) {
-        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
-                .filter(QinObjectFieldReference.class::isInstance)
-                .count();
+        long count = countQinReferences(element, QinObjectFieldReference.class);
         assertEquals("Qin object field references should be provided only through QinObjectFieldReferenceContributor", 1L, count);
+    }
+
+    private static long countQinReferences(PsiElement element, Class<? extends PsiReference> referenceType) {
+        return Arrays.stream(QinPsiReferences.references(element))
+                .filter(referenceType::isInstance)
+                .count();
     }
 
     private static void assertLookupContains(LookupElement[] elements, String expected) {
