@@ -48,6 +48,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
         assertObjectDeclarationPsiBridgeUsesQinPsiTree(javaRoot);
         assertObjectNamePsiBridgeUsesQinPsiTree(javaRoot);
+        assertObjectDeclarationAncestryUsesQinPsiTree(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberKind(javaRoot);
         assertObjectMemberPsiBridgeUsesQinPsiTree(javaRoot);
@@ -240,6 +241,27 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !objectSymbolsSource.contains("QinTokenTypes.OBJECT_NAME"),
                 "QinObjectSymbols must ask QinPsiTree to bridge object name ranges to PSI names "
                         + "instead of owning the OBJECT_NAME token mapping: " + objectSymbols);
+    }
+
+    private static void assertObjectDeclarationAncestryUsesQinPsiTree(Path javaRoot) throws Exception {
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("containingObjectDeclaration(")
+                        && psiTreeSource.contains("QinTokenTypes.OBJECT_DECLARATION"),
+                "QinPsiTree must own OBJECT_DECLARATION PSI ancestry lookup: "
+                        + psiTree);
+
+        Path objectSymbols = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
+        require(Files.isRegularFile(objectSymbols),
+                "QinObjectSymbols source not found: " + objectSymbols);
+        String objectSymbolsSource = Files.readString(objectSymbols);
+        require(objectSymbolsSource.contains("QinPsiTree.containingObjectDeclaration(")
+                        && !objectSymbolsSource.contains("QinTokenTypes.OBJECT_DECLARATION"),
+                "QinObjectSymbols must ask QinPsiTree for containing object declarations "
+                        + "instead of owning the OBJECT_DECLARATION token mapping: " + objectSymbols);
     }
 
     private static void assertObjectSymbolsUseSourceStructureMemberLookup(Path javaRoot) throws Exception {

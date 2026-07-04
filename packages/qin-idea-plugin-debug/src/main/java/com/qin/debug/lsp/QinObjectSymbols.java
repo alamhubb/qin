@@ -94,7 +94,7 @@ final class QinObjectSymbols {
                 || !hasIndexedMember(element, resolvedObject, methodName, QinSourceStructure.ObjectMemberKind.METHOD)) {
             return null;
         }
-        PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.containingObjectDeclaration(resolvedObject.objectName());
         if (objectDeclaration == null) {
             return null;
         }
@@ -102,7 +102,7 @@ final class QinObjectSymbols {
     }
 
     static @Nullable PsiElement findMethodNameForThis(@NotNull PsiElement element, @NotNull String methodName) {
-        PsiElement objectDeclaration = QinPsiTree.parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.containingObjectDeclaration(element);
         if (objectDeclaration == null) {
             return null;
         }
@@ -120,7 +120,7 @@ final class QinObjectSymbols {
         if (resolvedObject == null) {
             return List.of();
         }
-        PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.containingObjectDeclaration(resolvedObject.objectName());
         if (objectDeclaration == null) {
             return List.of();
         }
@@ -141,7 +141,7 @@ final class QinObjectSymbols {
     }
 
     static @NotNull List<PsiElement> memberElementsForThis(@NotNull PsiElement element) {
-        PsiElement objectDeclaration = QinPsiTree.parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.containingObjectDeclaration(element);
         if (objectDeclaration == null) {
             return List.of();
         }
@@ -203,7 +203,7 @@ final class QinObjectSymbols {
                 || !hasIndexedMember(element, resolvedObject, fieldName, QinSourceStructure.ObjectMemberKind.FIELD)) {
             return null;
         }
-        PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.containingObjectDeclaration(resolvedObject.objectName());
         if (objectDeclaration == null) {
             return null;
         }
@@ -211,7 +211,7 @@ final class QinObjectSymbols {
     }
 
     static @Nullable PsiElement findFieldNameForThis(@NotNull PsiElement element, @NotNull String fieldName) {
-        PsiElement objectDeclaration = QinPsiTree.parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+        PsiElement objectDeclaration = QinPsiTree.containingObjectDeclaration(element);
         if (objectDeclaration == null) {
             return null;
         }

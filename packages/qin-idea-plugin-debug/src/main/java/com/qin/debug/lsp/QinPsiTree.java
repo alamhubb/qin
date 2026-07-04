@@ -55,6 +55,10 @@ final class QinPsiTree {
         return elementAtRangeOrParentOfType(file, declaration.nameRange(), QinTokenTypes.OBJECT_NAME);
     }
 
+    static @Nullable PsiElement containingObjectDeclaration(@NotNull PsiElement element) {
+        return parentOfType(element, QinTokenTypes.OBJECT_DECLARATION);
+    }
+
     static @Nullable PsiElement objectMemberNameElement(
             @NotNull PsiFile file,
             @NotNull QinSourceStructure.MemberDeclaration member,
