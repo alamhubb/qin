@@ -44,6 +44,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         "tests/test-language-server.ts",
                         "tsx tests/test-language-plugin.ts",
                         "tsx tests/test-generated-parser-parity.ts",
+                        "tsx tests/test-java-source-symbols.ts",
                         "tsx tests/test-language-server.ts"),
                 new MatrixCase("ovs", ".ovs", Path.of("ovsjs", "ovs-language"),
                         Path.of("ovsjs", "ovs", "ovs-compiler"),
