@@ -1,6 +1,7 @@
 package com.qin.debug.lsp;
 
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -9,11 +10,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 final class QinModuleImportTable {
-    private final PsiFile importingFile;
+    private final @Nullable PsiFile importingFile;
     private final Map<String, QinImportBindings.ImportBinding> importsByLocalName;
 
     private QinModuleImportTable(
-            @NotNull PsiFile importingFile,
+            @Nullable PsiFile importingFile,
             @NotNull Map<String, QinImportBindings.ImportBinding> importsByLocalName) {
         this.importingFile = importingFile;
         this.importsByLocalName = importsByLocalName;
@@ -29,6 +30,11 @@ final class QinModuleImportTable {
         return new QinModuleImportTable(file, imports);
     }
 
+    static @NotNull QinModuleImportTable fromElement(@NotNull PsiElement element) {
+        PsiFile file = QinPsiTree.containingFile(element);
+        return file == null ? new QinModuleImportTable(null, Map.of()) : fromFile(file);
+    }
+
     @Nullable QinImportBindings.ImportBinding find(@NotNull String localName) {
         return importsByLocalName.get(localName);
     }
@@ -39,6 +45,9 @@ final class QinModuleImportTable {
 
     @Nullable VirtualFile resolveFile(@NotNull QinImportBindings.ImportBinding binding) {
         if (!isQinModuleImportSpecifier(binding)) {
+            return null;
+        }
+        if (importingFile == null) {
             return null;
         }
         VirtualFile sourceFile = importingFile.getOriginalFile().getVirtualFile();

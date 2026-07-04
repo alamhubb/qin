@@ -27,6 +27,11 @@ final class QinJavaImportTable {
         return new QinJavaImportTable(imports);
     }
 
+    static QinJavaImportTable fromElement(@NotNull PsiElement element) {
+        PsiFile file = QinPsiTree.containingFile(element);
+        return file == null ? new QinJavaImportTable(Map.of()) : fromFile(file);
+    }
+
     @Nullable JavaImport find(String localName) {
         return importsByLocalName.get(localName);
     }

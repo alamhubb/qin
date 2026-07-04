@@ -831,11 +831,15 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(source.contains("QinObjectNameStubIndex.contains(")
                         && source.contains("QinPsiTree.psiFile(")
                         && moduleImportTableSource.contains("Map<String, QinImportBindings.ImportBinding>")
+                        && moduleImportTableSource.contains("fromElement(@NotNull PsiElement element)")
+                        && moduleImportTableSource.contains("QinPsiTree.containingFile(element)")
                         && moduleImportTableSource.contains("resolveFile(@NotNull QinImportBindings.ImportBinding binding)")
                         && source.contains("importTable.resolveFile(importBinding)")
+                        && objectReferenceSource.contains("QinModuleImportTable.fromElement(")
                         && !source.contains("new QinModuleImportTable.QinImport")
                         && !source.contains("QinModuleImportTable.QinImport")
                         && !objectReferenceSource.contains("QinModuleImportTable.QinImport")
+                        && !objectReferenceSource.contains("QinModuleImportTable.fromFile(element.getContainingFile())")
                         && !moduleImportTableSource.contains("record QinImport")
                         && !source.contains("PsiManager.getInstance(")
                         && !source.contains(".findFile(importedFile)")
@@ -1222,6 +1226,30 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !messagesSource.contains("getContainingFile() instanceof QinPsiFile"),
                 "QinUnresolvedReferenceMessages must use QinPsiTree for Qin-file filtering: "
                         + messages);
+
+        Path javaImportTable = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinJavaImportTable.java"));
+        require(Files.isRegularFile(javaImportTable),
+                "Qin Java import table source not found: " + javaImportTable);
+        String javaImportTableSource = Files.readString(javaImportTable);
+        require(javaImportTableSource.contains("fromElement(@NotNull PsiElement element)")
+                        && javaImportTableSource.contains("QinPsiTree.containingFile(element)"),
+                "QinJavaImportTable must own element-to-file table construction: "
+                        + javaImportTable);
+
+        Path javaReference = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinJavaReference.java"));
+        require(Files.isRegularFile(javaReference),
+                "Qin Java reference source not found: " + javaReference);
+        String javaReferenceSource = Files.readString(javaReference);
+        require(javaReferenceSource.contains("QinJavaImportTable.fromElement(element)")
+                        && !javaReferenceSource.contains("QinJavaImportTable.fromFile(element.getContainingFile())"),
+                "QinJavaReference must ask QinJavaImportTable to bridge element to import table: "
+                        + javaReference);
+        require(messagesSource.contains("QinJavaImportTable.fromElement(element)")
+                        && !messagesSource.contains("QinJavaImportTable.fromFile(element.getContainingFile())"),
+                "QinUnresolvedReferenceMessages must ask QinJavaImportTable to bridge "
+                        + "element to import table: " + messages);
     }
 
     private static void assertRenameUsesSharedPsiHelper(Path javaRoot) throws Exception {

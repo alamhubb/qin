@@ -52,7 +52,7 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
             @NotNull QinJavaReference reference,
             boolean incompleteCode) {
         PsiElement element = reference.getElement();
-        QinJavaImportTable importTable = QinJavaImportTable.fromFile(element.getContainingFile());
+        QinJavaImportTable importTable = QinJavaImportTable.fromElement(element);
         String qualifier = QinReferenceElements.previousQualifierName(element);
         if (qualifier != null) {
             QinJavaImportTable.JavaImport importedClass = importTable.find(qualifier);
@@ -110,7 +110,7 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
         if (QinImportBindings.isAliasedLocalSpecifierElement(element)) {
             return false;
         }
-        QinJavaImportTable importTable = QinJavaImportTable.fromFile(element.getContainingFile());
+        QinJavaImportTable importTable = QinJavaImportTable.fromElement(element);
         String qualifier = QinReferenceElements.previousQualifierName(element);
         if (qualifier != null) {
             return importTable.find(qualifier) != null;
@@ -132,7 +132,7 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
                 && !specifierImport.exportedName().equals(specifierImport.localName())) {
             return true;
         }
-        QinJavaImportTable.JavaImport javaImport = QinJavaImportTable.fromFile(element.getContainingFile())
+        QinJavaImportTable.JavaImport javaImport = QinJavaImportTable.fromElement(element)
                 .find(referenceName);
         return javaImport != null && !javaImport.exportedName().equals(javaImport.localName());
     }

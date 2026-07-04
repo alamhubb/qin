@@ -43,12 +43,12 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
         return QinReferenceElements.previousQualifierName(element) == null
                 && !QinImportBindings.isAliasedLocalSpecifierElement(element)
                 && !isImportedAliasLocalReference(element)
-                && QinJavaImportTable.fromFile(element.getContainingFile()).find(referenceName) == null
+                && QinJavaImportTable.fromElement(element).find(referenceName) == null
                 && QinObjectSymbols.findObjectName(element, referenceName) != null;
     }
 
     private static boolean isImportedAliasLocalReference(@NotNull PsiElement element) {
-        QinImportBindings.ImportBinding qinImport = QinModuleImportTable.fromFile(element.getContainingFile())
+        QinImportBindings.ImportBinding qinImport = QinModuleImportTable.fromElement(element)
                 .find(QinReferenceElements.referenceName(element));
         return qinImport != null && !qinImport.exportedName().equals(qinImport.localName());
     }

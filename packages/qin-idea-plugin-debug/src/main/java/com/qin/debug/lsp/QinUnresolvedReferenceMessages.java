@@ -27,7 +27,7 @@ final class QinUnresolvedReferenceMessages {
         if (!isReferenceIdentifier(element)) {
             return null;
         }
-        QinJavaImportTable importTable = QinJavaImportTable.fromFile(element.getContainingFile());
+        QinJavaImportTable importTable = QinJavaImportTable.fromElement(element);
         String qualifier = QinReferenceElements.previousQualifierName(element);
         if (qualifier != null) {
             QinJavaImportTable.JavaImport importedClass = importTable.find(qualifier);
