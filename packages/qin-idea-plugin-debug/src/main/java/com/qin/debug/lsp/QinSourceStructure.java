@@ -86,6 +86,15 @@ final class QinSourceStructure {
         return null;
     }
 
+    ObjectDeclaration objectDeclarationNamed(@NotNull String name) {
+        for (ObjectDeclaration declaration : objectDeclarations) {
+            if (declaration.name().equals(name)) {
+                return declaration;
+            }
+        }
+        return null;
+    }
+
     MemberDeclaration methodDeclarationAtNameOffset(int offset) {
         for (ObjectDeclaration declaration : objectDeclarations) {
             MemberDeclaration member = declaration.methodDeclarationAtNameOffset(offset);

@@ -79,16 +79,14 @@ final class QinObjectSymbols {
     }
 
     private static @Nullable PsiElement findObjectNameInFile(@NotNull PsiFile file, @NotNull String name) {
-        for (QinSourceStructure.ObjectDeclaration declaration : QinSourceStructure.parse(file.getText()).objectDeclarations()) {
-            if (!declaration.name().equals(name) || !declaration.nameRange().isPresent()) {
-                continue;
-            }
-            return QinPsiTree.elementAtRangeOrParentOfType(
-                    file,
-                    declaration.nameRange(),
-                    QinTokenTypes.OBJECT_NAME);
+        QinSourceStructure.ObjectDeclaration declaration = QinSourceStructure.parse(file.getText()).objectDeclarationNamed(name);
+        if (declaration == null || !declaration.nameRange().isPresent()) {
+            return null;
         }
-        return null;
+        return QinPsiTree.elementAtRangeOrParentOfType(
+                file,
+                declaration.nameRange(),
+                QinTokenTypes.OBJECT_NAME);
     }
 
     static @Nullable PsiElement findMethodName(
@@ -178,12 +176,7 @@ final class QinObjectSymbols {
             return null;
         }
         int startOffset = objectDeclaration.getTextRange().getStartOffset();
-        for (QinSourceStructure.ObjectDeclaration declaration : QinSourceStructure.parse(file.getText()).objectDeclarations()) {
-            if (declaration.keywordRange().startsAt(startOffset)) {
-                return declaration;
-            }
-        }
-        return null;
+        return QinSourceStructure.parse(file.getText()).objectDeclarationAtKeywordOffset(startOffset);
     }
 
     private static @Nullable PsiElement findMemberNameInObjectDeclaration(

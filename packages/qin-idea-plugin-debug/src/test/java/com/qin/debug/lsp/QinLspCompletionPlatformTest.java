@@ -331,6 +331,14 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue(counter.bodyRange().startsAfter(source.indexOf("Counter")));
         assertTrue(counter.bodyRange().containsOffset(source.indexOf("return this.value")));
         assertFalse(counter.bodyRange().containsOffset(counter.bodyRange().endOffset()));
+
+        QinSourceStructure structure = QinSourceStructure.parse(source);
+        QinSourceStructure.ObjectDeclaration namedCounter = structure.objectDeclarationNamed("Counter");
+        QinSourceStructure.ObjectDeclaration offsetCounter = structure.objectDeclarationAtKeywordOffset(source.indexOf("object"));
+        assertNotNull("Qin source structure should find object declarations by name", namedCounter);
+        assertNotNull("Qin source structure should find object declarations by keyword offset", offsetCounter);
+        assertEquals("Counter", namedCounter.name());
+        assertEquals("Counter", offsetCounter.name());
     }
 
     public void testQinSourceStructureCarriesMethodBodyRange() {
