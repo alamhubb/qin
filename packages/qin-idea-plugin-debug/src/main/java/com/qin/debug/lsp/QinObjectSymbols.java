@@ -129,7 +129,12 @@ final class QinObjectSymbols {
             return List.of();
         }
         return memberElementsInObjectDeclaration(objectDeclaration).stream()
-                .filter(member -> hasIndexedMember(element, resolvedObject, member.getText(), memberKind(member)))
+                .filter(member -> hasIndexedMember(
+                        element,
+                        resolvedObject,
+                        member.element().getText(),
+                        member.kind()))
+                .map(ObjectMemberElement::element)
                 .toList();
     }
 
@@ -144,24 +149,27 @@ final class QinObjectSymbols {
         if (objectDeclaration == null) {
             return List.of();
         }
-        return memberElementsInObjectDeclaration(objectDeclaration);
+        return memberElementsInObjectDeclaration(objectDeclaration).stream()
+                .map(ObjectMemberElement::element)
+                .toList();
     }
 
-    private static @NotNull List<PsiElement> memberElementsInObjectDeclaration(@NotNull PsiElement objectDeclaration) {
+    private static @NotNull List<ObjectMemberElement> memberElementsInObjectDeclaration(
+            @NotNull PsiElement objectDeclaration) {
         PsiFile file = objectDeclaration.getContainingFile();
         QinSourceStructure.ObjectDeclaration declaration = sourceObjectDeclaration(objectDeclaration);
         if (file == null || declaration == null) {
             return List.of();
         }
 
-        List<PsiElement> members = new ArrayList<>();
+        List<ObjectMemberElement> members = new ArrayList<>();
         for (QinSourceStructure.ObjectMemberDeclaration member : declaration.memberDeclarations()) {
             PsiElement memberElement = QinPsiTree.elementAtRangeOrParentOfType(
                     file,
                     member.declaration().nameRange(),
                     tokenTypeForMemberKind(member.kind()));
             if (memberElement != null) {
-                members.add(memberElement);
+                members.add(new ObjectMemberElement(memberElement, member.kind()));
             }
         }
         return members;
@@ -264,11 +272,9 @@ final class QinObjectSymbols {
             @Nullable VirtualFile importedFile) {
     }
 
-    private static @NotNull QinSourceStructure.ObjectMemberKind memberKind(@NotNull PsiElement member) {
-        IElementType type = member.getNode() == null ? null : member.getNode().getElementType();
-        return type == QinTokenTypes.FIELD_NAME
-                ? QinSourceStructure.ObjectMemberKind.FIELD
-                : QinSourceStructure.ObjectMemberKind.METHOD;
+    private record ObjectMemberElement(
+            @NotNull PsiElement element,
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
     }
 
     private static @NotNull IElementType tokenTypeForMemberKind(@NotNull QinSourceStructure.ObjectMemberKind kind) {

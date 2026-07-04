@@ -198,9 +198,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String source = Files.readString(objectSymbols);
         require(source.contains("QinSourceStructure.ObjectMemberKind")
                         && !source.contains("private enum MemberKind")
-                        && !containsWholeMarker(source, "MemberKind"),
+                        && !containsWholeMarker(source, "MemberKind")
+                        && !source.contains("memberKind("),
                 "QinObjectSymbols must use QinSourceStructure.ObjectMemberKind "
-                        + "instead of defining a local member-kind enum: " + objectSymbols);
+                        + "instead of defining or deriving a local member kind: " + objectSymbols);
     }
 
     private static void assertStubIndexUsesSourceStructureMemberIndexEntries(Path javaRoot) throws Exception {
