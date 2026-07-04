@@ -520,11 +520,30 @@ final class QinSourceStructure {
             return memberDeclarationAtNameOffset(methods, offset);
         }
 
+        MemberDeclaration fieldDeclarationNamed(@NotNull String name) {
+            return memberDeclarationNamed(fields, name);
+        }
+
+        MemberDeclaration methodDeclarationNamed(@NotNull String name) {
+            return memberDeclarationNamed(methods, name);
+        }
+
         private static MemberDeclaration memberDeclarationAtNameOffset(
                 @NotNull List<MemberDeclaration> members,
                 int offset) {
             for (MemberDeclaration member : members) {
                 if (member.nameRange().startsAt(offset)) {
+                    return member;
+                }
+            }
+            return null;
+        }
+
+        private static MemberDeclaration memberDeclarationNamed(
+                @NotNull List<MemberDeclaration> members,
+                @NotNull String name) {
+            for (MemberDeclaration member : members) {
+                if (member.name().equals(name)) {
                     return member;
                 }
             }

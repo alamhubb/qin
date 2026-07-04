@@ -188,17 +188,14 @@ final class QinObjectSymbols {
         if (file == null || declaration == null) {
             return null;
         }
-        List<QinSourceStructure.MemberDeclaration> members =
-                memberType == QinTokenTypes.FIELD_NAME ? declaration.fields() : declaration.methods();
-        for (QinSourceStructure.MemberDeclaration member : members) {
-            if (member.name().equals(memberName)) {
-                PsiElement memberElement = QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), memberType);
-                if (memberElement != null) {
-                    return memberElement;
-                }
-            }
+        QinSourceStructure.MemberDeclaration member =
+                memberType == QinTokenTypes.FIELD_NAME
+                        ? declaration.fieldDeclarationNamed(memberName)
+                        : declaration.methodDeclarationNamed(memberName);
+        if (member == null) {
+            return null;
         }
-        return null;
+        return QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), memberType);
     }
 
     private static @Nullable PsiElement findMethodNameInObjectDeclaration(
