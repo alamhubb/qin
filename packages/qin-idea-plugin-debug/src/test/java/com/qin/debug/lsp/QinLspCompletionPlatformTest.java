@@ -1998,6 +1998,33 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertLookupPsiElement(elements, "next", QinTokenTypes.METHOD_NAME, "Counter.qin");
     }
 
+    public void testQinNativeCompletionIncludesAliasedImportedObjectFieldsAfterObjectQualifier() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.v<caret>
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            assertTrue("IDEA native completion neither produced a lookup list nor inserted imported object field value: "
+                            + myFixture.getEditor().getDocument().getText(),
+                    myFixture.getEditor().getDocument().getText().contains("C.value"));
+            return;
+        }
+        assertLookupPsiElement(elements, "value", QinTokenTypes.FIELD_NAME, "Counter.qin");
+    }
+
     public void testQinNativeCompletionItemsCarryImportedMemberPsiElements() {
         myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
