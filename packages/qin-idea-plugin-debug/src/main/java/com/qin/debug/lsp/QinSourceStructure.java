@@ -112,12 +112,21 @@ final class QinSourceStructure {
             int importKeywordIndex) {
         SourceRange keywordRange = range(tokens.get(importKeywordIndex));
         SourceRange lastImportRange = keywordRange;
+        SourceRange previousMeaningfulRange = keywordRange;
+        int braceDepth = 0;
         List<ImportSpecifier> specifiers = new ArrayList<>();
         SourceRange moduleRange = SourceRange.missing();
         String moduleSpecifier = "";
         int current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, importKeywordIndex + 1);
         while (current >= 0 && current < tokens.size()) {
             QinLexicalToken token = tokens.get(current);
+            if (QinTokenFacts.isNewStatementAfterImport(
+                    content,
+                    previousMeaningfulRange.endOffset(),
+                    token,
+                    braceDepth)) {
+                break;
+            }
             if (token.type() == QinTokenTypes.SEMICOLON) {
                 return new ImportDeclaration(
                         keywordRange,
@@ -127,9 +136,12 @@ final class QinSourceStructure {
                         specifiers);
             }
             if (QinTokenFacts.isOpenBrace(content, token)) {
+                braceDepth++;
                 NamedImportSpecifiers namedImports = readNamedImportSpecifiers(content, tokens, current);
                 specifiers.addAll(namedImports.specifiers());
                 lastImportRange = namedImports.sourceRange();
+                previousMeaningfulRange = namedImports.sourceRange();
+                braceDepth--;
                 current = namedImports.nextTokenIndex();
                 continue;
             }
@@ -163,6 +175,7 @@ final class QinSourceStructure {
                         specifiers);
             }
             lastImportRange = range(token);
+            previousMeaningfulRange = lastImportRange;
             current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
         }
         return specifiers.isEmpty() && moduleSpecifier.isEmpty()
@@ -174,7 +187,6 @@ final class QinSourceStructure {
                         moduleSpecifier,
                         specifiers);
     }
-
     private static @NotNull NamedImportSpecifiers readNamedImportSpecifiers(
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,

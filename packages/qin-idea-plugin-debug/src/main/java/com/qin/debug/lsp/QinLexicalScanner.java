@@ -139,7 +139,7 @@ final class QinLexicalScanner {
                 if (currentToken.type() == QinTokenTypes.SEMICOLON) {
                     break;
                 }
-                if (isNewStatementAfterImport(text, previousMeaningful, currentToken, braceDepth)) {
+                if (QinTokenFacts.isNewStatementAfterImport(text, previousMeaningful.endOffset(), currentToken, braceDepth)) {
                     break;
                 }
                 if (QinTokenFacts.isOpenBrace(text, currentToken)) {
@@ -164,25 +164,6 @@ final class QinLexicalScanner {
         return classified;
     }
 
-    private static boolean isNewStatementAfterImport(
-            String text,
-            QinLexicalToken previousMeaningful,
-            QinLexicalToken currentToken,
-            int braceDepth) {
-        return braceDepth <= 0
-                && !QinTokenFacts.isContextualKeyword(text, currentToken, "from")
-                && hasLineTerminatorBetween(text, previousMeaningful.endOffset(), currentToken.startOffset());
-    }
-
-    private static boolean hasLineTerminatorBetween(String text, int startOffset, int endOffset) {
-        for (int index = Math.max(0, startOffset); index < Math.min(text.length(), endOffset); index++) {
-            char value = text.charAt(index);
-            if (value == '\n' || value == '\r') {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private static boolean isBeforeCallParen(String text, List<QinLexicalToken> tokens, int tokenIndex) {
         QinLexicalToken next = QinTokenFacts.nextMeaningfulToken(tokens, tokenIndex);

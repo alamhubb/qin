@@ -132,6 +132,28 @@ final class QinTokenFacts {
     static boolean isAssignmentOperator(@NotNull CharSequence content, @NotNull QinLexicalToken token) {
         return token.type() == QinTokenTypes.OPERATOR && tokenStartsWith(content, token, '=');
     }
+    static boolean isNewStatementAfterImport(
+            @NotNull CharSequence content,
+            int previousMeaningfulEndOffset,
+            @NotNull QinLexicalToken currentToken,
+            int braceDepth) {
+        return braceDepth <= 0
+                && !isContextualKeyword(content, currentToken, "from")
+                && hasLineTerminatorBetween(content, previousMeaningfulEndOffset, currentToken.startOffset());
+    }
+
+    static boolean hasLineTerminatorBetween(
+            @NotNull CharSequence content,
+            int startOffset,
+            int endOffset) {
+        for (int index = Math.max(0, startOffset); index < Math.min(content.length(), endOffset); index++) {
+            char value = content.charAt(index);
+            if (value == '\n' || value == '\r') {
+                return true;
+            }
+        }
+        return false;
+    }
 
     static boolean isThisMemberAccessStart(@NotNull PsiBuilder builder) {
         if (!isKeyword(builder, "this")) {

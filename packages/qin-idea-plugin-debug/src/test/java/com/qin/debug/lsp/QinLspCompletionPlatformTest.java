@@ -388,6 +388,19 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 second.declarationRange().endOffset());
     }
 
+    public void testQinSourceStructureStopsIncompleteImportAtNextStatement() {
+        String source = """
+                import { Greeter }
+                const as = "local"
+                """;
+
+        QinSourceStructure structure = QinSourceStructure.parse(source);
+
+        assertEquals(1, structure.importDeclarations().size());
+        QinSourceStructure.ImportDeclaration declaration = structure.importDeclarations().get(0);
+        assertEquals(source.indexOf("import { Greeter }"), declaration.declarationRange().startOffset());
+        assertEquals(source.indexOf("}") + 1, declaration.declarationRange().endOffset());
+    }
     public void testQinParserBuildsStructuredPsiForJavaInterop() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { Greeter as G } from "java:demo"
@@ -429,6 +442,19 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("import { Counter as C } from \"./Counter.qin\"", declarations.get(1).getText().trim());
     }
 
+    public void testQinParserStopsIncompleteImportDeclarationAtNextStatement() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter }
+                const as = "local"
+                """);
+
+        List<PsiElement> declarations = descendantsOfType(
+                myFixture.getFile(),
+                QinTokenTypes.IMPORT_DECLARATION);
+
+        assertEquals(1, declarations.size());
+        assertEquals("import { Greeter }", declarations.get(0).getText().trim());
+    }
     public void testQinParserUsesSourceStructureOffsetsForImportSpecifiers() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 import { Greeter as G, Counter } from "java:demo"
