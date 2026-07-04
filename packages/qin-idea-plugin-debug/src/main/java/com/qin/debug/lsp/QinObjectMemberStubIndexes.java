@@ -34,6 +34,6 @@ final class QinObjectMemberStubIndexes {
                 project,
                 indexedFileScope,
                 QinPsiFile.class);
-        return indexedFiles.stream().anyMatch(file -> indexedFile.equals(file.getVirtualFile()));
+        return indexedFiles.stream().anyMatch(file -> indexedFile.equals(QinPsiTree.virtualFile(file)));
     }
 }

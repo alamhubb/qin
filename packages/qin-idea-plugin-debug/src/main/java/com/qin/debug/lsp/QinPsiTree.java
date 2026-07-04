@@ -61,6 +61,10 @@ final class QinPsiTree {
         return PsiManager.getInstance(project).findFile(file);
     }
 
+    static @Nullable VirtualFile virtualFile(@NotNull PsiFile file) {
+        return file.getVirtualFile();
+    }
+
     static @Nullable VirtualFile originalVirtualFile(@NotNull PsiFile file) {
         return file.getOriginalFile().getVirtualFile();
     }

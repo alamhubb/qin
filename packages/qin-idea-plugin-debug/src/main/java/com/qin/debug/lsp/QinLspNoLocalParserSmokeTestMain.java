@@ -857,7 +857,9 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String objectNameStubIndexSource = Files.readString(objectNameStubIndex);
         require(objectNameStubIndexSource.contains("contains(")
                         && objectNameStubIndexSource.contains("StubIndex.getElements(")
-                        && objectNameStubIndexSource.contains("GlobalSearchScope.fileScope("),
+                        && objectNameStubIndexSource.contains("GlobalSearchScope.fileScope(")
+                        && objectNameStubIndexSource.contains("QinPsiTree.virtualFile(file)")
+                        && !objectNameStubIndexSource.contains("file.getVirtualFile()"),
                 "QinObjectNameStubIndex must own object-name StubIndex membership lookup: "
                         + objectNameStubIndex);
 
@@ -867,6 +869,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String psiTreeSource = Files.readString(psiTree);
         require(psiTreeSource.contains("psiFile(")
                         && psiTreeSource.contains("PsiManager.getInstance(project).findFile(file)")
+                        && psiTreeSource.contains("virtualFile(")
+                        && psiTreeSource.contains("return file.getVirtualFile();")
                         && psiTreeSource.contains("originalVirtualFile(")
                         && psiTreeSource.contains("file.getOriginalFile().getVirtualFile()"),
                 "QinPsiTree must own VirtualFile/PsiFile platform lookup bridges: " + psiTree);
@@ -1189,9 +1193,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && helperSource.contains("QinObjectMethodNameStubIndex.KEY")
                         && helperSource.contains("contains(")
                         && helperSource.contains("QinSourceStructure.objectMemberKey(")
-                        && helperSource.contains("StubIndex.getElements("),
+                        && helperSource.contains("StubIndex.getElements(")
+                        && helperSource.contains("QinPsiTree.virtualFile(file)")
+                        && !helperSource.contains("file.getVirtualFile()"),
                 "QinObjectMemberStubIndexes must own member kind to StubIndexKey mapping "
-                        + "and object-qualified member lookup: "
+                        + "and object-qualified member lookup while using QinPsiTree for "
+                        + "indexed PsiFile to VirtualFile bridging: "
                         + memberStubIndexes);
 
         Path fileElementType = javaRoot.resolve(Path.of(
