@@ -39,7 +39,7 @@ final class QinImportBindings {
     }
 
     static @Nullable PsiElement findAliasName(@NotNull PsiElement element, @NotNull String localName) {
-        PsiFile file = element.getContainingFile();
+        PsiFile file = QinPsiTree.containingFile(element);
         if (file == null) {
             return null;
         }
@@ -51,7 +51,7 @@ final class QinImportBindings {
     }
 
     static @Nullable PsiElement findExportedName(@NotNull PsiElement element, @NotNull String localName) {
-        PsiFile file = element.getContainingFile();
+        PsiFile file = QinPsiTree.containingFile(element);
         if (file == null) {
             return null;
         }

@@ -27,6 +27,10 @@ final class QinPsiTree {
         return PsiManager.getInstance(project).findFile(file);
     }
 
+    static @Nullable PsiFile containingFile(@NotNull PsiElement element) {
+        return element.getContainingFile();
+    }
+
     static @NotNull QinSourceStructure sourceStructure(@NotNull PsiFile file) {
         return QinSourceStructure.parse(file.getText());
     }
@@ -74,7 +78,7 @@ final class QinPsiTree {
 
     static @Nullable QinSourceStructure.ImportSpecifierMatch importSpecifierMatchAtNameElement(
             @NotNull PsiElement element) {
-        PsiFile file = element.getContainingFile();
+        PsiFile file = containingFile(element);
         if (file == null) {
             return null;
         }
@@ -111,7 +115,7 @@ final class QinPsiTree {
 
     static @Nullable QinSourceStructure.ObjectDeclaration sourceObjectDeclaration(
             @NotNull PsiElement objectDeclaration) {
-        PsiFile file = objectDeclaration.getContainingFile();
+        PsiFile file = containingFile(objectDeclaration);
         if (file == null) {
             return null;
         }

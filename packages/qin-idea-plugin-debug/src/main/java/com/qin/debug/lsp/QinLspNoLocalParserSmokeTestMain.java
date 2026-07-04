@@ -709,8 +709,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String source = Files.readString(importBindings);
         require(source.contains("QinPsiTree.importSpecifierMatchAtNameElement(")
                         && source.contains("QinPsiTree.importSpecifierMatches(")
+                        && source.contains("QinPsiTree.containingFile(")
                         && !source.contains("QinPsiTree.sourceStructure(")
                         && !source.contains("QinSourceStructure.parse(file.getText())")
+                        && !source.contains("element.getContainingFile()")
                         && !source.contains("getTextRange().getStartOffset()")
                         && !source.contains(".importSpecifierAtNameOffset(")
                         && !source.contains(".importSpecifierMatches()")
@@ -729,6 +731,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
         String psiTreeSource = Files.readString(psiTree);
         require(psiTreeSource.contains("importSpecifierMatchAtNameElement(")
+                        && psiTreeSource.contains("containingFile(")
                         && psiTreeSource.contains("element.getTextRange().getStartOffset()")
                         && psiTreeSource.contains(".importSpecifierAtNameOffset(offset)")
                         && psiTreeSource.contains("importSpecifierMatches(")
