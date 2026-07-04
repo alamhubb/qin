@@ -255,6 +255,27 @@ final class QinSourceStructure {
         return text.substring(1, text.length() - 1).trim();
     }
 
+    private static @NotNull SourceRange readBalancedBodyRange(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens,
+            int openBraceIndex) {
+        int braceDepth = 0;
+        for (int index = openBraceIndex; index < tokens.size(); index++) {
+            QinLexicalToken token = tokens.get(index);
+            if (token.type() != QinTokenTypes.BRACE) {
+                continue;
+            }
+            if (QinTokenFacts.isOpenBrace(content, token)) {
+                braceDepth++;
+            } else if (QinTokenFacts.isCloseBrace(content, token)) {
+                braceDepth--;
+                if (braceDepth <= 0) {
+                    return new SourceRange(tokens.get(openBraceIndex).startOffset(), token.endOffset());
+                }
+            }
+        }
+        return new SourceRange(tokens.get(openBraceIndex).startOffset(), content.length());
+    }
     private static @NotNull ObjectDeclaration readObjectDeclaration(
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,
@@ -304,7 +325,7 @@ final class QinSourceStructure {
                                 objectName,
                                 objectKeywordRange,
                                 objectNameRange,
-                                new SourceRange(tokens.get(openBraceIndex).startOffset(), token.endOffset()),
+                                readBalancedBodyRange(content, tokens, openBraceIndex),
                                 fields,
                                 methods);
                     }
@@ -316,7 +337,7 @@ final class QinSourceStructure {
             }
             String memberName = QinTokenFacts.slice(content, token).toString();
             if (QinTokenFacts.isMethodDeclarationName(content, tokens, index)) {
-                addUnique(methods, new MemberDeclaration(memberName, range(token)));
+                addUnique(methods, new MemberDeclaration(memberName, range(token), readMethodBodyRange(content, tokens, index)));
             } else if (QinTokenFacts.isFieldDeclarationName(content, tokens, index)) {
                 addUnique(fields, new MemberDeclaration(memberName, range(token)));
             }
@@ -325,9 +346,27 @@ final class QinSourceStructure {
                 objectName,
                 objectKeywordRange,
                 objectNameRange,
-                new SourceRange(tokens.get(openBraceIndex).startOffset(), content.length()),
+                readBalancedBodyRange(content, tokens, openBraceIndex),
                 fields,
                 methods);
+    }
+
+    private static @NotNull SourceRange readMethodBodyRange(
+            @NotNull CharSequence content,
+            @NotNull List<QinLexicalToken> tokens,
+            int methodNameIndex) {
+        int current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, methodNameIndex + 1);
+        while (current >= 0 && current < tokens.size()) {
+            QinLexicalToken token = tokens.get(current);
+            if (QinTokenFacts.isOpenBrace(content, token)) {
+                return readBalancedBodyRange(content, tokens, current);
+            }
+            if (QinTokenFacts.isCloseBrace(content, token)) {
+                break;
+            }
+            current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
+        }
+        return SourceRange.missing();
     }
 
     private static void addUnique(@NotNull List<MemberDeclaration> values, @NotNull MemberDeclaration value) {
@@ -362,7 +401,13 @@ final class QinSourceStructure {
         }
     }
 
-    record MemberDeclaration(@NotNull String name, @NotNull SourceRange nameRange) {
+    record MemberDeclaration(
+            @NotNull String name,
+            @NotNull SourceRange nameRange,
+            @NotNull SourceRange bodyRange) {
+        MemberDeclaration(@NotNull String name, @NotNull SourceRange nameRange) {
+            this(name, nameRange, SourceRange.missing());
+        }
     }
 
     record ImportSpecifier(

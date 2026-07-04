@@ -329,6 +329,25 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue(counter.methods().get(0).nameRange().isPresent());
     }
 
+    public void testQinSourceStructureCarriesMethodBodyRange() {
+        String source = """
+                object Counter {
+                  next(): Int {
+                    return 42
+                  }
+                }
+                """;
+
+        QinSourceStructure.ObjectDeclaration counter = QinSourceStructure.parse(source)
+                .objectDeclarations()
+                .get(0);
+        QinSourceStructure.MemberDeclaration method = counter.methods().get(0);
+
+        assertEquals("next", method.name());
+        assertTrue("Qin method declarations should preserve method body range", method.bodyRange().isPresent());
+        assertEquals(source.indexOf("{", source.indexOf("next")), method.bodyRange().startOffset());
+        assertEquals(source.lastIndexOf("  }") + "  }".length(), method.bodyRange().endOffset());
+    }
     public void testQinSourceStructureRequiresMethodBodyFromSharedStructureFacts() {
         String source = """
                 object Counter {
@@ -623,6 +642,23 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         assertNotNull("Qin object PSI should consume the SourceStructure body range after object metadata", fieldName);
         assertEquals("value", fieldName.getText());
+    }
+    public void testQinParserUsesSourceStructureBodyRangeForMethodDeclaration() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  next(): Int {
+                    return this.value
+                  }
+                }
+                """);
+
+        List<PsiElement> methods = descendantsOfType(
+                myFixture.getFile(),
+                QinTokenTypes.METHOD_DECLARATION);
+
+        assertEquals(1, methods.size());
+        assertTrue("Method PSI should include the method body after signature metadata: " + methods.get(0).getText(),
+                methods.get(0).getText().contains("return this.value"));
     }
     public void testQinParserBuildsStructuredPsiForObjectFieldDeclaration() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """

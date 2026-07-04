@@ -220,12 +220,30 @@ final class QinTokenFacts {
                 } else if (sequence.startsWith(current, ')')) {
                     parenDepth--;
                     if (parenDepth == 0) {
-                        int afterParams = sequence.nextMeaningfulIndex(current + 1);
-                        return sequence.typeAt(afterParams) == QinTokenTypes.BRACE
-                                && sequence.startsWith(afterParams, '{');
+                        return hasMethodBodyAfterParameters(sequence, current + 1);
                     }
                 }
             }
+            current = sequence.nextMeaningfulIndex(current + 1);
+        }
+        return false;
+    }
+
+    private static boolean hasMethodBodyAfterParameters(@NotNull TokenSequence sequence, int startIndex) {
+        int previous = startIndex - 1;
+        int current = sequence.nextMeaningfulIndex(startIndex);
+        while (sequence.typeAt(current) != null) {
+            if (sequence.hasLineTerminatorBetween(previous, current)) {
+                return sequence.typeAt(current) == QinTokenTypes.BRACE && sequence.startsWith(current, '{');
+            }
+            if (sequence.typeAt(current) == QinTokenTypes.BRACE) {
+                return sequence.startsWith(current, '{');
+            }
+            if (sequence.typeAt(current) == QinTokenTypes.SEMICOLON
+                    || (sequence.typeAt(current) == QinTokenTypes.OPERATOR && sequence.startsWith(current, '='))) {
+                return false;
+            }
+            previous = current;
             current = sequence.nextMeaningfulIndex(current + 1);
         }
         return false;
@@ -237,6 +255,8 @@ final class QinTokenFacts {
         int nextMeaningfulIndex(int startIndex);
 
         boolean startsWith(int index, char expected);
+
+        boolean hasLineTerminatorBetween(int previousIndex, int currentIndex);
     }
 
     private record LexicalTokenSequence(
@@ -250,6 +270,17 @@ final class QinTokenFacts {
         @Override
         public int nextMeaningfulIndex(int startIndex) {
             return QinTokenFacts.nextMeaningfulTokenIndex(tokens, startIndex);
+        }
+
+        @Override
+        public boolean hasLineTerminatorBetween(int previousIndex, int currentIndex) {
+            if (previousIndex < 0 || previousIndex >= tokens.size() || currentIndex < 0 || currentIndex >= tokens.size()) {
+                return false;
+            }
+            return QinTokenFacts.hasLineTerminatorBetween(
+                    content,
+                    tokens.get(previousIndex).endOffset(),
+                    tokens.get(currentIndex).startOffset());
         }
 
         @Override

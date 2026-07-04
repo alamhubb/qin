@@ -104,7 +104,7 @@ public final class QinParserDefinition implements ParserDefinition {
         }
         while (!builder.eof() && builder.getCurrentOffset() < objectDeclaration.bodyRange().endOffset()) {
             if (isSourceStructureMethodName(builder, sourceStructure)) {
-                parseMethodDeclaration(builder);
+                parseMethodDeclaration(builder, sourceStructure);
             } else if (isSourceStructureFieldName(builder, sourceStructure)) {
                 parseFieldDeclaration(builder);
             } else if (QinTokenFacts.isThisMemberAccessStart(builder)) {
@@ -126,6 +126,14 @@ public final class QinParserDefinition implements ParserDefinition {
                 && QinTokenFacts.isReferenceLeafToken(builder.getTokenType());
     }
 
+    private static QinSourceStructure.MemberDeclaration sourceStructureMethodDeclaration(
+            @NotNull PsiBuilder builder,
+            @NotNull QinSourceStructure sourceStructure) {
+        return QinTokenFacts.isDeclarationIdentifierToken(builder.getTokenType())
+                ? sourceStructure.methodDeclarationAtNameOffset(builder.getCurrentOffset())
+                : null;
+    }
+
     private static boolean isSourceStructureMethodName(
             @NotNull PsiBuilder builder,
             @NotNull QinSourceStructure sourceStructure) {
@@ -140,30 +148,21 @@ public final class QinParserDefinition implements ParserDefinition {
                 && sourceStructure.fieldDeclarationAtNameOffset(builder.getCurrentOffset()) != null;
     }
 
-    private static void parseMethodDeclaration(PsiBuilder builder) {
+    private static void parseMethodDeclaration(
+            @NotNull PsiBuilder builder,
+            @NotNull QinSourceStructure sourceStructure) {
+        QinSourceStructure.MemberDeclaration methodDeclaration =
+                sourceStructureMethodDeclaration(builder, sourceStructure);
         PsiBuilder.Marker methodMarker = builder.mark();
         wrapMethodName(builder);
-        consumeParenthesizedTokens(builder);
-        if (!QinTokenFacts.isOpenBrace(builder)) {
+        if (methodDeclaration == null || !methodDeclaration.bodyRange().isPresent()) {
             methodMarker.done(QinTokenTypes.METHOD_DECLARATION);
             return;
         }
-
-        int braceDepth = 0;
-        while (!builder.eof()) {
-            if (QinTokenFacts.isOpenBrace(builder)) {
-                braceDepth++;
-                builder.advanceLexer();
-                continue;
-            }
-            if (QinTokenFacts.isCloseBrace(builder)) {
-                braceDepth--;
-                builder.advanceLexer();
-                if (braceDepth <= 0) {
-                    break;
-                }
-                continue;
-            }
+        while (!builder.eof() && builder.getCurrentOffset() < methodDeclaration.bodyRange().startOffset()) {
+            builder.advanceLexer();
+        }
+        while (!builder.eof() && builder.getCurrentOffset() < methodDeclaration.bodyRange().endOffset()) {
             if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
             } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
