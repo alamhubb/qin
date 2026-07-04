@@ -48,6 +48,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertImportContextualKeywordCoverageUsesLexerTokens(testJavaRoot);
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertProjectLookupUsesPsiTreeBridge(javaRoot);
+        assertLookupEnterHandlerUsesPsiTreeProjectBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertGoToDeclarationCoverageUsesEditorPath(testJavaRoot);
         assertFindUsagesAndRenameCoverageUsesPlatformPath(testJavaRoot);
@@ -234,6 +235,19 @@ public final class QinLspNoLocalParserSmokeTestMain {
                             + "PsiElement-to-Project bridging instead of reading getProject() "
                             + "directly: " + file);
         }
+    }
+
+    private static void assertLookupEnterHandlerUsesPsiTreeProjectBridge(Path javaRoot) throws Exception {
+        Path handler = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLspLookupEnterHandler.java"));
+        require(Files.isRegularFile(handler), "Qin LSP lookup Enter handler source not found: " + handler);
+        String source = Files.readString(handler);
+        require(source.contains("Project project = QinPsiTree.project(file)")
+                        && source.contains("QinLogger.ensureInitialized(project, project.getBasePath())")
+                        && source.contains("project.isDisposed()")
+                        && !source.contains("file.getProject()"),
+                "QinLspLookupEnterHandler must ask QinPsiTree for PsiFile-to-Project "
+                        + "bridging instead of reading file.getProject() directly: " + handler);
     }
 
     private static void assertSyntaxHighlighterCoverageUsesTextAttributes(Path testJavaRoot) throws Exception {

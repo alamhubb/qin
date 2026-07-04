@@ -10,6 +10,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Ref;
 import com.intellij.psi.PsiFile;
 import com.qin.debug.QinLogger;
@@ -39,13 +40,14 @@ public final class QinLspLookupEnterHandler extends EnterHandlerDelegateAdapter 
             return Result.Continue;
         }
 
-        QinLogger.ensureInitialized(file.getProject(), file.getProject().getBasePath());
+        Project project = QinPsiTree.project(file);
+        QinLogger.ensureInitialized(project, project.getBasePath());
         QinLogger.debug("[LSP-LOOKUP-ENTER] fileType=" + file.getFileType().getName()
                 + " item=" + item.getLookupString()
                 + " caretOffset=" + editor.getCaretModel().getOffset());
         ApplicationManager.getApplication().invokeLater(() -> {
             LookupImpl activeLookup = (LookupImpl) LookupManager.getActiveLookup(editor);
-            if (file.getProject().isDisposed()
+            if (project.isDisposed()
                     || editor.isDisposed()
                     || activeLookup == null
                     || activeLookup != lookup) {
