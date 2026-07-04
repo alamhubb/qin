@@ -59,34 +59,26 @@ final class QinImportBindings {
         if (file == null) {
             return null;
         }
-        AliasNameVisitor visitor = new AliasNameVisitor(localName);
-        file.accept(visitor);
-        return visitor.aliasName;
+        QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
+        for (QinSourceStructure.ImportDeclaration declaration : sourceStructure.importDeclarations()) {
+            for (QinSourceStructure.ImportSpecifier specifier : declaration.specifiers()) {
+                if (!specifier.localNameRange().isPresent()
+                        || !specifier.localName().equals(localName)) {
+                    continue;
+                }
+                PsiElement aliasLeaf = file.findElementAt(specifier.localNameRange().startOffset());
+                if (aliasLeaf == null) {
+                    return null;
+                }
+                if (QinPsiTree.isType(aliasLeaf, QinTokenTypes.IMPORT_ALIAS_NAME)) {
+                    return aliasLeaf;
+                }
+                return QinPsiTree.parentOfType(aliasLeaf, QinTokenTypes.IMPORT_ALIAS_NAME);
+            }
+        }
+        return null;
     }
 
     record ImportBinding(@NotNull String moduleSpecifier, @NotNull String exportedName, @NotNull String localName) {
-    }
-
-    private static final class AliasNameVisitor extends com.intellij.psi.PsiRecursiveElementWalkingVisitor {
-        private final String localName;
-        private PsiElement aliasName;
-
-        private AliasNameVisitor(@NotNull String localName) {
-            this.localName = localName;
-        }
-
-        @Override
-        public void visitElement(@NotNull PsiElement element) {
-            if (aliasName != null) {
-                return;
-            }
-            if (element.getNode() != null
-                    && element.getNode().getElementType() == QinTokenTypes.IMPORT_ALIAS_NAME
-                    && localName.equals(element.getText())) {
-                aliasName = element;
-                return;
-            }
-            super.visitElement(element);
-        }
     }
 }

@@ -352,6 +352,25 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("C", bindings.get(1).localName());
     }
 
+    public void testQinImportBindingsFindAliasNameFromSourceStructureRange() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { C } from "./C.qin"
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.value
+                """);
+
+        String text = myFixture.getFile().getText();
+        PsiElement usage = myFixture.getFile().findElementAt(text.lastIndexOf("C.value"));
+        assertNotNull("Qin alias usage token should be present", usage);
+
+        PsiElement aliasName = QinImportBindings.findAliasName(usage, "C");
+
+        assertNotNull("Qin alias lookup should use the alias source range", aliasName);
+        assertEquals(QinTokenTypes.IMPORT_ALIAS_NAME, aliasName.getNode().getElementType());
+        assertEquals(text.indexOf("as C") + "as ".length(), aliasName.getTextRange().getStartOffset());
+    }
+
     public void testQinModuleSpecifierFactsClassifyJavaAndQinImports() {
         assertEquals("demo", QinModuleSpecifierFacts.javaModuleName("java:demo"));
         assertEquals("java.util", QinModuleSpecifierFacts.javaModuleName("java:java.util"));
