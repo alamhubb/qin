@@ -1814,6 +1814,64 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         && "greet".equals(item.getElement().getText())));
     }
 
+    public void testQinJavaMethodRenameProcessorUpdatesReferences() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter } from "java:demo"
+
+                const message = Greeter.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("greet"));
+        assertNotNull("Qin Java method reference was not registered for rename", reference);
+        PsiMethod javaMethod = assertInstanceOf(reference.resolve(), PsiMethod.class);
+        new RenameProcessor(getProject(), javaMethod, "welcome", false, false).run();
+
+        assertTrue("Java method rename should update Qin method reference: "
+                        + myFixture.getEditor().getDocument().getText(),
+                myFixture.getEditor().getDocument().getText().contains("Greeter.welcome(\"Qin\")"));
+    }
+
+    public void testQinJavaAliasedMethodRenameProcessorPreservesAliasQualifier() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("greet"));
+        assertNotNull("Qin Java aliased method reference was not registered for rename", reference);
+        PsiMethod javaMethod = assertInstanceOf(reference.resolve(), PsiMethod.class);
+        new RenameProcessor(getProject(), javaMethod, "welcome", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Java method rename should update Qin aliased method reference: " + text,
+                text.contains("G.welcome(\"Qin\")"));
+        assertFalse("Java method rename should preserve the local alias qualifier: " + text,
+                text.contains("Greeter.welcome"));
+    }
+
     public void testQinJavaFieldReferenceParticipatesInReferencesSearch() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
