@@ -272,6 +272,16 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !importAliasReferenceSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
                 "QinImportAliasReference must use QinReferenceElements for import alias "
                         + "declaration checks instead of owning the token mapping: " + importAliasReference);
+
+        Path psiTokenStream = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTokenStream.java"));
+        require(Files.isRegularFile(psiTokenStream),
+                "Qin PSI token stream source not found: " + psiTokenStream);
+        String psiTokenStreamSource = Files.readString(psiTokenStream);
+        require(psiTokenStreamSource.contains("QinReferenceElements.referenceElement(element)")
+                        && !psiTokenStreamSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
+                "QinPsiTokenStream must use QinReferenceElements for reference-wrapper token ownership "
+                        + "instead of owning the REFERENCE_IDENTIFIER token mapping: " + psiTokenStream);
     }
 
     private static void assertReferenceContributorRegistrationUsesSharedReferenceElements(Path javaRoot) throws Exception {

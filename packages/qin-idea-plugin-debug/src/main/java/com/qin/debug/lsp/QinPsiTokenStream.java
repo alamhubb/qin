@@ -36,13 +36,8 @@ final class QinPsiTokenStream {
     }
 
     private static PsiElement tokenOwner(PsiElement element) {
-        PsiElement parent = element.getParent();
-        if (parent != null
-                && parent.getNode() != null
-                && parent.getNode().getElementType() == QinTokenTypes.REFERENCE_IDENTIFIER) {
-            return parent;
-        }
-        return element;
+        PsiElement referenceElement = QinReferenceElements.referenceElement(element);
+        return referenceElement == null ? element : referenceElement;
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
