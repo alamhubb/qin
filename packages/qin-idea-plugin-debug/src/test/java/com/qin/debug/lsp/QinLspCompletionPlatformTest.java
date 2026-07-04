@@ -321,6 +321,7 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         QinSourceStructure.ImportDeclaration declaration = structure.importDeclarations().get(0);
         assertEquals("java:demo", declaration.moduleSpecifier());
         assertTrue(declaration.keywordRange().isPresent());
+        assertTrue(declaration.declarationRange().isPresent());
         assertTrue(declaration.moduleSpecifierRange().isPresent());
         assertEquals(2, declaration.specifiers().size());
         assertEquals("Greeter", declaration.specifiers().get(0).exportedName());
@@ -329,6 +330,24 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue(declaration.specifiers().get(0).localNameRange().isPresent());
         assertEquals("Counter", declaration.specifiers().get(1).exportedName());
         assertEquals("Counter", declaration.specifiers().get(1).localName());
+    }
+
+    public void testQinSourceStructureFindsImportDeclarationRangesWithoutSemicolons() {
+        String source = """
+                import { Greeter as G } from "java:demo"
+                import { Counter as C } from "./Counter.qin"
+                """;
+
+        QinSourceStructure structure = QinSourceStructure.parse(source);
+
+        assertEquals(2, structure.importDeclarations().size());
+        QinSourceStructure.ImportDeclaration first = structure.importDeclarations().get(0);
+        QinSourceStructure.ImportDeclaration second = structure.importDeclarations().get(1);
+        assertEquals(source.indexOf("import { Greeter"), first.declarationRange().startOffset());
+        assertEquals(source.indexOf("\"java:demo\"") + "\"java:demo\"".length(), first.declarationRange().endOffset());
+        assertEquals(source.indexOf("import { Counter"), second.declarationRange().startOffset());
+        assertEquals(source.indexOf("\"./Counter.qin\"") + "\"./Counter.qin\"".length(),
+                second.declarationRange().endOffset());
     }
 
     public void testQinParserBuildsStructuredPsiForJavaInterop() {

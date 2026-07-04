@@ -110,6 +110,8 @@ final class QinSourceStructure {
             @NotNull CharSequence content,
             @NotNull List<QinLexicalToken> tokens,
             int importKeywordIndex) {
+        SourceRange keywordRange = range(tokens.get(importKeywordIndex));
+        SourceRange lastImportRange = keywordRange;
         List<ImportSpecifier> specifiers = new ArrayList<>();
         SourceRange moduleRange = SourceRange.missing();
         String moduleSpecifier = "";
@@ -117,30 +119,60 @@ final class QinSourceStructure {
         while (current >= 0 && current < tokens.size()) {
             QinLexicalToken token = tokens.get(current);
             if (token.type() == QinTokenTypes.SEMICOLON) {
-                return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+                return new ImportDeclaration(
+                        keywordRange,
+                        rangeBetween(keywordRange, range(token)),
+                        moduleRange,
+                        moduleSpecifier,
+                        specifiers);
             }
             if (QinTokenFacts.isOpenBrace(content, token)) {
                 NamedImportSpecifiers namedImports = readNamedImportSpecifiers(content, tokens, current);
                 specifiers.addAll(namedImports.specifiers());
+                lastImportRange = namedImports.sourceRange();
                 current = namedImports.nextTokenIndex();
                 continue;
             }
             if (QinTokenFacts.isContextualKeyword(content, token, "from")) {
+                SourceRange fromRange = range(token);
                 int moduleIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
                 if (moduleIndex >= 0
                         && moduleIndex < tokens.size()
                         && tokens.get(moduleIndex).type() == QinTokenTypes.STRING) {
                     moduleRange = range(tokens.get(moduleIndex));
                     moduleSpecifier = unquote(QinTokenFacts.slice(content, tokens.get(moduleIndex)).toString());
-                    return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+                    SourceRange declarationEndRange = moduleRange;
+                    int afterModuleIndex = QinTokenFacts.nextMeaningfulTokenIndex(tokens, moduleIndex + 1);
+                    if (afterModuleIndex >= 0
+                            && afterModuleIndex < tokens.size()
+                            && tokens.get(afterModuleIndex).type() == QinTokenTypes.SEMICOLON) {
+                        declarationEndRange = range(tokens.get(afterModuleIndex));
+                    }
+                    return new ImportDeclaration(
+                            keywordRange,
+                            rangeBetween(keywordRange, declarationEndRange),
+                            moduleRange,
+                            moduleSpecifier,
+                            specifiers);
                 }
-                return new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+                return new ImportDeclaration(
+                        keywordRange,
+                        rangeBetween(keywordRange, fromRange),
+                        moduleRange,
+                        moduleSpecifier,
+                        specifiers);
             }
+            lastImportRange = range(token);
             current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
         }
         return specifiers.isEmpty() && moduleSpecifier.isEmpty()
                 ? null
-                : new ImportDeclaration(range(tokens.get(importKeywordIndex)), moduleRange, moduleSpecifier, specifiers);
+                : new ImportDeclaration(
+                        keywordRange,
+                        rangeBetween(keywordRange, lastImportRange),
+                        moduleRange,
+                        moduleSpecifier,
+                        specifiers);
     }
 
     private static @NotNull NamedImportSpecifiers readNamedImportSpecifiers(
@@ -154,10 +186,14 @@ final class QinSourceStructure {
             if (QinTokenFacts.isCloseBrace(content, token)) {
                 return new NamedImportSpecifiers(
                         specifiers,
-                        QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1));
+                        QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1),
+                        new SourceRange(tokens.get(openBraceIndex).startOffset(), token.endOffset()));
             }
             if (token.type() == QinTokenTypes.SEMICOLON) {
-                return new NamedImportSpecifiers(specifiers, current);
+                return new NamedImportSpecifiers(
+                        specifiers,
+                        current,
+                        new SourceRange(tokens.get(openBraceIndex).startOffset(), token.startOffset()));
             }
             if (QinTokenFacts.isReferenceLeafToken(token.type())) {
                 ImportSpecifier specifier = readImportSpecifier(content, tokens, current);
@@ -169,7 +205,10 @@ final class QinSourceStructure {
             }
             current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
         }
-        return new NamedImportSpecifiers(specifiers, current);
+        return new NamedImportSpecifiers(
+                specifiers,
+                current,
+                new SourceRange(tokens.get(openBraceIndex).startOffset(), content.length()));
     }
 
     private static ImportSpecifier readImportSpecifier(
@@ -289,6 +328,12 @@ final class QinSourceStructure {
         return new SourceRange(token.startOffset(), token.endOffset());
     }
 
+    private static @NotNull SourceRange rangeBetween(
+            @NotNull SourceRange startRange,
+            @NotNull SourceRange endRange) {
+        return new SourceRange(startRange.startOffset(), endRange.endOffset());
+    }
+
     private static @NotNull List<MemberDeclaration> membersFromNames(@NotNull List<String> names) {
         return names.stream()
                 .map(name -> new MemberDeclaration(name, SourceRange.missing()))
@@ -316,7 +361,10 @@ final class QinSourceStructure {
             int nextTokenIndex) {
     }
 
-    private record NamedImportSpecifiers(@NotNull List<ImportSpecifier> specifiers, int nextTokenIndex) {
+    private record NamedImportSpecifiers(
+            @NotNull List<ImportSpecifier> specifiers,
+            int nextTokenIndex,
+            @NotNull SourceRange sourceRange) {
         private NamedImportSpecifiers {
             specifiers = List.copyOf(specifiers);
         }
@@ -324,6 +372,7 @@ final class QinSourceStructure {
 
     record ImportDeclaration(
             @NotNull SourceRange keywordRange,
+            @NotNull SourceRange declarationRange,
             @NotNull SourceRange moduleSpecifierRange,
             @NotNull String moduleSpecifier,
             @NotNull List<ImportSpecifier> specifiers) {

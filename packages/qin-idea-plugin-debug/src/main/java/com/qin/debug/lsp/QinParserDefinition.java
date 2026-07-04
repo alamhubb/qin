@@ -54,30 +54,26 @@ public final class QinParserDefinition implements ParserDefinition {
     private static void parseImportDeclaration(
             @NotNull PsiBuilder builder,
             @NotNull QinSourceStructure sourceStructure) {
+        QinSourceStructure.ImportDeclaration importDeclaration =
+                sourceStructure.importDeclarationAtKeywordOffset(builder.getCurrentOffset());
         PsiBuilder.Marker importMarker = builder.mark();
         builder.advanceLexer();
-        while (!builder.eof()) {
+        while (!builder.eof() && isInsideSourceStructureImportDeclaration(builder, importDeclaration)) {
             if (isSourceStructureImportSpecifier(builder, sourceStructure)) {
                 parseImportSpecifier(builder);
                 continue;
             }
-            if (QinTokenFacts.isContextualKeyword(builder, "from")) {
-                builder.advanceLexer();
-                if (builder.getTokenType() == QinTokenTypes.STRING) {
-                    builder.advanceLexer();
-                }
-                if (builder.getTokenType() == QinTokenTypes.SEMICOLON) {
-                    builder.advanceLexer();
-                }
-                break;
-            }
-            if (builder.getTokenType() == QinTokenTypes.SEMICOLON) {
-                builder.advanceLexer();
-                break;
-            }
             builder.advanceLexer();
         }
         importMarker.done(QinTokenTypes.IMPORT_DECLARATION);
+    }
+
+    private static boolean isInsideSourceStructureImportDeclaration(
+            @NotNull PsiBuilder builder,
+            QinSourceStructure.ImportDeclaration importDeclaration) {
+        return importDeclaration != null
+                && importDeclaration.declarationRange().isPresent()
+                && builder.getCurrentOffset() < importDeclaration.declarationRange().endOffset();
     }
 
     private static boolean isSourceStructureImportSpecifier(
