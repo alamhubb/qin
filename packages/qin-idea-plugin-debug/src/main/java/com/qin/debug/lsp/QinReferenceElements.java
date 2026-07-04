@@ -24,7 +24,7 @@ final class QinReferenceElements {
             return element;
         }
         if (QinTokenFacts.isReferenceLeafToken(elementType)) {
-            PsiElement parent = element.getParent();
+            PsiElement parent = QinPsiTree.parent(element);
             if (parent != null && isReferenceIdentifier(parent)) {
                 return parent;
             }
@@ -95,7 +95,7 @@ final class QinReferenceElements {
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
-        PsiElement parent = element.getParent();
+        PsiElement parent = QinPsiTree.parent(element);
         if (parent != null && QinPsiTree.isType(parent, QinTokenTypes.MEMBER_ACCESS)) {
             return QinPsiTokenStream.previousQualifierName(parent, element);
         }
@@ -103,7 +103,7 @@ final class QinReferenceElements {
     }
 
     static @Nullable PsiElement previousQualifierElement(@NotNull PsiElement element) {
-        PsiElement parent = element.getParent();
+        PsiElement parent = QinPsiTree.parent(element);
         if (parent != null && QinPsiTree.isType(parent, QinTokenTypes.MEMBER_ACCESS)) {
             return QinPsiTokenStream.previousQualifierElement(parent, element);
         }

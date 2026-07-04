@@ -193,9 +193,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String psiReferencesSource = Files.readString(psiReferences);
         require(psiReferencesSource.contains("QinPsiTree.elementAt(file, offset)")
                         && psiReferencesSource.contains("QinPsiTree.referenceRangeInFile(reference)")
-                        && !psiReferencesSource.contains("file.findElementAt(offset)"),
+                        && psiReferencesSource.contains("QinPsiTree.parent(element)")
+                        && !psiReferencesSource.contains("file.findElementAt(offset)")
+                        && !psiReferencesSource.contains("element.getParent()"),
                 "QinPsiReferences.findReferenceAt must ask QinPsiTree for offset-to-leaf "
-                        + "lookup instead of owning PsiFile.findElementAt: " + psiReferences);
+                        + "lookup and parent traversal instead of owning raw PSI tree access: "
+                        + psiReferences);
         require(psiTreeSource.contains("referenceRangeInFile(@NotNull PsiReference reference)")
                         && psiTreeSource.contains("reference.getRangeInElement()")
                         && psiTreeSource.contains("reference.getElement().getTextRange().getStartOffset()")
@@ -568,14 +571,16 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && helperSource.contains("QinPsiTree.elementType(element)")
                         && helperSource.contains("QinPsiTree.elementText(")
                         && helperSource.contains("QinPsiTree.elementTextLength(element)")
+                        && helperSource.contains("QinPsiTree.parent(element)")
                         && !helperSource.contains("element.getNode()")
                         && !helperSource.contains("element.getText()")
                         && !helperSource.contains("element.getTextLength()")
+                        && !helperSource.contains("element.getParent()")
                         && helperSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER")
                         && helperSource.contains("isImportAliasDeclaration(")
                         && helperSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
                 "QinReferenceElements must own shared reference token checks and normalized "
-                        + "reference text/range reads through QinPsiTree: "
+                        + "reference text/range/tree reads through QinPsiTree: "
                         + referenceElements);
 
         Path unresolvedMessages = javaRoot.resolve(Path.of(

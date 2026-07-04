@@ -29,6 +29,10 @@ final class QinPsiTree {
         return element.getFirstChild();
     }
 
+    static @Nullable PsiElement parent(@NotNull PsiElement element) {
+        return element.getParent();
+    }
+
     static boolean isLeaf(@NotNull PsiElement element) {
         return firstChild(element) == null;
     }
@@ -71,12 +75,12 @@ final class QinPsiTree {
     }
 
     static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull IElementType type) {
-        PsiElement current = element.getParent();
+        PsiElement current = parent(element);
         while (current != null) {
             if (isType(current, type)) {
                 return current;
             }
-            current = current.getParent();
+            current = parent(current);
         }
         return null;
     }

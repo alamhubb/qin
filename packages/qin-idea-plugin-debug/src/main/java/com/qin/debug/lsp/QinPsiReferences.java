@@ -49,7 +49,7 @@ final class QinPsiReferences {
                     return reference;
                 }
             }
-            element = element.getParent();
+            element = QinPsiTree.parent(element);
         }
         return null;
     }
