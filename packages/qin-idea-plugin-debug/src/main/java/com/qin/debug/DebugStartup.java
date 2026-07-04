@@ -8,7 +8,6 @@ import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.qin.debug.lsp.QinLspStartupProbe;
-import com.qin.types.QinConfig;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +46,7 @@ public class DebugStartup implements ProjectActivity {
         removeLegacyQinRunConfigurations(project);
         ApplicationManager.getApplication().invokeLater(() -> QinLspStartupProbe.log(project, Paths.get(basePath)));
 
-        if (hasQinSdkContext(Paths.get(basePath))) {
+        if (QinWorkspaceSdkDefaults.hasQinSdkContext(Paths.get(basePath))) {
             ApplicationManager.getApplication().invokeLater(() -> configureProjectSdk(project));
         } else {
             QinLogger.info("[SDK] Skipping project SDK auto-configuration because no Qin config context was found");
@@ -182,15 +181,15 @@ public class DebugStartup implements ProjectActivity {
             com.intellij.openapi.projectRoots.Sdk currentSdk = rootManager.getProjectSdk();
             QinLogger.info("[SDK] Current Project SDK = " + (currentSdk != null ? currentSdk.getName() : "null"));
 
-            String desiredJavaVersion = resolvePreferredJavaVersion(Paths.get(basePath));
-            int desiredVersion = parseJavaVersion(desiredJavaVersion);
+            String desiredJavaVersion = QinWorkspaceSdkDefaults.preferredJavaVersion(Paths.get(basePath));
+            int desiredVersion = QinWorkspaceSdkDefaults.parseJavaVersion(desiredJavaVersion);
             QinLogger.info("[SDK] Required Java version from Qin workspace = " + desiredJavaVersion);
 
             int currentVersion = 0;
             if (currentSdk != null) {
                 String currentVersionStr = com.intellij.openapi.projectRoots.JavaSdk.getInstance()
                         .getVersionString(currentSdk);
-                currentVersion = parseJavaVersion(currentVersionStr);
+                currentVersion = QinWorkspaceSdkDefaults.parseJavaVersion(currentVersionStr);
                 if (currentVersion >= desiredVersion) {
                     QinLogger.info("[SDK] Existing Project SDK is compatible (current: "
                             + currentVersion + ", required: " + desiredVersion + "), keeping as-is");
@@ -207,7 +206,7 @@ public class DebugStartup implements ProjectActivity {
             if (bestSdk != null) {
                 final com.intellij.openapi.projectRoots.Sdk sdkToSet = bestSdk;
                 final String sdkName = bestSdk.getName();
-                int selectedVersion = parseJavaVersion(
+                int selectedVersion = QinWorkspaceSdkDefaults.parseJavaVersion(
                         com.intellij.openapi.projectRoots.JavaSdk.getInstance().getVersionString(bestSdk));
                 QinLogger.info("[SDK] Selected JDK: " + sdkName + " (version: " + selectedVersion + ", desired: " + desiredVersion + ")");
 
@@ -389,28 +388,6 @@ public class DebugStartup implements ProjectActivity {
             QinLogger.error("[SDK]   Failed to update misc.xml: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    /**
-     * 闂備浇宕甸崰鎰版偡鏉堚晛绶ゅΔ锝呭暞閸?Java 闂傚倷鑳剁划顖炪€冮崨瀛樺亱濠电姴鍋婇懓鍨归崗鍏肩稇闁?
-     */
-    private static int parseJavaVersion(String versionStr) {
-        try {
-            // 闂傚倷绀侀幉锟犳偋閺囩姷绀婂┑鐘叉搐閸屻劑鏌曢崼婵愭Ч闁稿顑夐弻娑㈩敃閵堝懏鐎鹃梺鍦厴娴滃爼寮诲☉妯锋瀻闊洦鎸婚鈧紓鍌欐祰妞村摜鎹㈤崘鈺冣攳?"21", "17", "1.8"
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(\\d+)");
-            java.util.regex.Matcher matcher = pattern.matcher(versionStr);
-            if (matcher.find()) {
-                int version = Integer.parseInt(matcher.group(1));
-                // 1.8 -> 8
-                if (version == 1 && matcher.find()) {
-                    version = Integer.parseInt(matcher.group(1));
-                }
-                return version;
-            }
-        } catch (Exception e) {
-            // 闂傚倸顭崑鍕洪妸鈺佺柧妞ゆ劧绠戝Ч?
-        }
-        return 0;
     }
 
     /**
@@ -641,67 +618,6 @@ public class DebugStartup implements ProjectActivity {
         }
     }
 
-    private static boolean hasQinSdkContext(Path basePath) {
-        if (basePath == null) {
-            return false;
-        }
-        if (QinConfigSupport.loadNearest(basePath) != null) {
-            return true;
-        }
-        try {
-            return !discoverQinProjects(basePath).isEmpty();
-        } catch (Exception e) {
-            QinLogger.info("[SDK] Failed to detect Qin project context: " + e.getMessage());
-            return false;
-        }
-    }
-
-    private static String resolvePreferredJavaVersion(Path basePath) {
-        List<Path> qinProjects = discoverQinProjects(basePath);
-        if (qinProjects.isEmpty()) {
-            QinConfig nearestConfig = QinConfigSupport.loadNearest(basePath);
-            if (nearestConfig != null) {
-                String version = QinConfigSupport.javaVersion(nearestConfig);
-                QinLogger.info("[SDK] Resolved Java version from nearest Qin config: " + version);
-                return version;
-            }
-            QinLogger.info("[SDK] No Qin project config found, using default Java version: " + DEFAULT_JAVA_VERSION);
-            return DEFAULT_JAVA_VERSION;
-        }
-
-        Map<String, Integer> versionCounts = new LinkedHashMap<>();
-        int maxVersion = parseJavaVersion(DEFAULT_JAVA_VERSION);
-        String maxVersionStr = DEFAULT_JAVA_VERSION;
-
-        for (Path projectPath : qinProjects) {
-            QinConfig config = QinConfigSupport.load(projectPath);
-            if (config == null) {
-                continue;
-            }
-
-            String version = QinConfigSupport.javaVersion(config);
-            versionCounts.merge(version, 1, Integer::sum);
-            int parsed = parseJavaVersion(version);
-            if (parsed > maxVersion) {
-                maxVersion = parsed;
-                maxVersionStr = version;
-            }
-        }
-
-        if (versionCounts.isEmpty()) {
-            QinLogger.info("[SDK] Workspace Qin configs did not provide a Java version, using default: " + DEFAULT_JAVA_VERSION);
-            return DEFAULT_JAVA_VERSION;
-        }
-
-        if (versionCounts.size() > 1) {
-            QinLogger.info("[SDK] Multiple Java versions detected in workspace: " + versionCounts
-                    + ". Using highest required version: " + maxVersionStr);
-        } else {
-            QinLogger.info("[SDK] Resolved Java version from workspace Qin projects: " + maxVersionStr);
-        }
-        return maxVersionStr;
-    }
-
     private static int depthFrom(Path basePath, Path childPath) {
         try {
             return basePath.relativize(childPath).getNameCount();
@@ -729,7 +645,7 @@ public class DebugStartup implements ProjectActivity {
                 continue;
             }
 
-            int version = parseJavaVersion(versionStr);
+            int version = QinWorkspaceSdkDefaults.parseJavaVersion(versionStr);
             QinLogger.info("[SDK]   Candidate JDK: " + sdk.getName() + " (version: " + version + ")");
 
             if (version == desiredVersion) {
@@ -934,4 +850,3 @@ public class DebugStartup implements ProjectActivity {
         }
     }
 }
-

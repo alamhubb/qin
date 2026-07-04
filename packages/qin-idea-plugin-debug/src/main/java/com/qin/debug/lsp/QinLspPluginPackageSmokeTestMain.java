@@ -98,6 +98,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/lsp/QinLspServerSupportProvider.class",
             "com/qin/debug/lsp/QinLspStartupProbe.class",
             "com/qin/debug/QinCliProcessBuilders.class",
+            "com/qin/debug/QinWorkspaceSdkDefaults.class",
             "com/qin/debug/run/QinRunConfigurationDefaults.class",
             "com/qin/debug/run/QinRunCommandLines.class",
             "com/qin/debug/run/QinJavaRunPsi.class",

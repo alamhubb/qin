@@ -102,6 +102,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertRunCommandLinesAreShared(javaRoot);
         assertCliProcessBuildersAreShared(javaRoot);
         assertToolWindowProjectDiscoveryIsShared(javaRoot);
+        assertWorkspaceSdkDefaultsAreShared(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -1668,6 +1669,36 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("Files.newDirectoryStream(dir"),
                 "QinToolWindowFactory must consume shared Qin project discovery instead of "
                         + "owning qin.config.js directory scanning rules: " + toolWindow);
+    }
+
+    private static void assertWorkspaceSdkDefaultsAreShared(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinWorkspaceSdkDefaults.java"));
+        require(Files.isRegularFile(helper),
+                "Qin workspace SDK defaults helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("hasQinSdkContext(")
+                        && helperSource.contains("preferredJavaVersion(")
+                        && helperSource.contains("parseJavaVersion(")
+                        && helperSource.contains("QinConfigSupport.loadNearest(")
+                        && helperSource.contains("QinConfigSupport.javaVersion(")
+                        && helperSource.contains("DebugStartup.discoverQinProjects("),
+                "QinWorkspaceSdkDefaults must own Qin workspace Java version and SDK "
+                        + "context facts: " + helper);
+
+        Path startup = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "DebugStartup.java"));
+        require(Files.isRegularFile(startup),
+                "Qin startup source not found: " + startup);
+        String startupSource = Files.readString(startup);
+        require(startupSource.contains("QinWorkspaceSdkDefaults.hasQinSdkContext(")
+                        && startupSource.contains("QinWorkspaceSdkDefaults.preferredJavaVersion(")
+                        && startupSource.contains("QinWorkspaceSdkDefaults.parseJavaVersion(")
+                        && !startupSource.contains("private static boolean hasQinSdkContext(")
+                        && !startupSource.contains("private static String resolvePreferredJavaVersion(")
+                        && !startupSource.contains("private static int parseJavaVersion("),
+                "DebugStartup must consume QinWorkspaceSdkDefaults instead of owning "
+                        + "Qin workspace SDK default parsing: " + startup);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
