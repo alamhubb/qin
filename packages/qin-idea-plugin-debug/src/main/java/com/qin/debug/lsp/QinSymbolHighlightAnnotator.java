@@ -42,6 +42,10 @@ public final class QinSymbolHighlightAnnotator implements Annotator {
         }
 
         for (PsiReference reference : QinPsiReferences.references(element)) {
+            if (reference instanceof QinImportAliasReference) {
+                highlight(element, holder, DefaultLanguageHighlighterColors.LOCAL_VARIABLE, "Qin import alias reference");
+                return;
+            }
             if (reference instanceof QinObjectReference) {
                 highlight(element, holder, DefaultLanguageHighlighterColors.CLASS_NAME, "Qin object reference");
                 return;
@@ -52,10 +56,6 @@ public final class QinSymbolHighlightAnnotator implements Annotator {
             }
             if (reference instanceof QinObjectFieldReference) {
                 highlight(element, holder, DefaultLanguageHighlighterColors.INSTANCE_FIELD, "Qin field reference");
-                return;
-            }
-            if (reference instanceof QinImportAliasReference) {
-                highlight(element, holder, DefaultLanguageHighlighterColors.LOCAL_VARIABLE, "Qin import alias reference");
                 return;
             }
             if (reference instanceof QinJavaReference) {

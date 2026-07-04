@@ -128,6 +128,47 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertHighlightContains(highlights, "Qin field reference");
     }
 
+    public void testQinSymbolAnnotatorHighlightsImportAliasDeclarationsAndReferences() {
+        myFixture.addFileToProject("src/main/Counter.qin", """
+                export object Counter {
+                  value = 41
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Counter as C } from "./Counter.qin"
+
+                const value = C.value
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
+        assertHighlightContains(highlights, "Qin import alias symbol");
+        assertHighlightContains(highlights, "Qin import alias reference");
+    }
+
+    public void testQinSymbolAnnotatorHighlightsJavaImportAliasReferencesAsLocalAliases() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.greet("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        List<HighlightInfo> highlights = myFixture.doHighlighting(HighlightSeverity.INFORMATION);
+        assertHighlightContains(highlights, "Qin import alias symbol");
+        assertHighlightContains(highlights, "Qin import alias reference");
+        assertHighlightContains(highlights, "Java static method reference");
+    }
+
     public void testQinSymbolAnnotatorHighlightsJavaPsiReferences() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
@@ -1535,9 +1576,8 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         String text = myFixture.getEditor().getDocument().getText();
         PsiReference classReference = myFixture.getFile().findReferenceAt(text.indexOf("G.greet"));
         assertNotNull("Qin Java aliased class reference was not registered", classReference);
-        PsiClass psiClass = assertInstanceOf(classReference.resolve(), PsiClass.class);
-        assertEquals("demo.Greeter", psiClass.getQualifiedName());
-        assertSingleQinJavaReference(classReference.getElement());
+        assertInstanceOf(classReference.resolve(), QinImportAliasNamePsiElement.class);
+        assertSingleQinImportAliasReference(classReference.getElement());
 
         PsiReference methodReference = myFixture.getFile().findReferenceAt(text.indexOf("greet"));
         assertNotNull("Qin Java aliased member reference was not registered", methodReference);
@@ -1960,6 +2000,13 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .filter(QinJavaReference.class::isInstance)
                 .count();
         assertEquals("Qin Java references should be provided only through QinJavaReferenceContributor", 1L, count);
+    }
+
+    private static void assertSingleQinImportAliasReference(PsiElement element) {
+        long count = Arrays.stream(ReferenceProvidersRegistry.getReferencesFromProviders(element))
+                .filter(QinImportAliasReference.class::isInstance)
+                .count();
+        assertEquals("Qin import alias references should be provided only through QinImportAliasReferenceContributor", 1L, count);
     }
 
     private static void assertSingleQinObjectReference(PsiElement element) {

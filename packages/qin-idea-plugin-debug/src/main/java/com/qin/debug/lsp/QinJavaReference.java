@@ -136,6 +136,9 @@ final class QinJavaReference extends PsiPolyVariantReferenceBase<PsiElement> {
         if (qualifier != null) {
             return importTable.find(qualifier) != null;
         }
+        if (isImportedAliasLocalReference(element)) {
+            return false;
+        }
         if (QinJavaImportTable.findForSpecifierElement(element) != null) {
             return true;
         }
