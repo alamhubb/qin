@@ -407,6 +407,10 @@ final class QinSourceStructure {
         boolean containsOffset(int offset) {
             return isPresent() && startOffset <= offset && offset < endOffset;
         }
+
+        boolean startsAfter(int offset) {
+            return isPresent() && offset < startOffset;
+        }
     }
 
     record MemberDeclaration(

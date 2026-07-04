@@ -98,10 +98,10 @@ public final class QinParserDefinition implements ParserDefinition {
             objectMarker.done(QinTokenTypes.OBJECT_DECLARATION);
             return;
         }
-        while (!builder.eof() && builder.getCurrentOffset() < objectDeclaration.bodyRange().startOffset()) {
+        while (!builder.eof() && objectDeclaration.bodyRange().startsAfter(builder.getCurrentOffset())) {
             builder.advanceLexer();
         }
-        while (!builder.eof() && builder.getCurrentOffset() < objectDeclaration.bodyRange().endOffset()) {
+        while (!builder.eof() && objectDeclaration.bodyRange().containsOffset(builder.getCurrentOffset())) {
             if (isSourceStructureMethodName(builder, sourceStructure)) {
                 parseMethodDeclaration(builder, sourceStructure);
             } else if (isSourceStructureFieldName(builder, sourceStructure)) {
@@ -158,10 +158,10 @@ public final class QinParserDefinition implements ParserDefinition {
             methodMarker.done(QinTokenTypes.METHOD_DECLARATION);
             return;
         }
-        while (!builder.eof() && builder.getCurrentOffset() < methodDeclaration.bodyRange().startOffset()) {
+        while (!builder.eof() && methodDeclaration.bodyRange().startsAfter(builder.getCurrentOffset())) {
             builder.advanceLexer();
         }
-        while (!builder.eof() && builder.getCurrentOffset() < methodDeclaration.bodyRange().endOffset()) {
+        while (!builder.eof() && methodDeclaration.bodyRange().containsOffset(builder.getCurrentOffset())) {
             if (QinTokenFacts.isThisMemberAccessStart(builder)) {
                 parseThisMemberAccess(builder);
             } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
