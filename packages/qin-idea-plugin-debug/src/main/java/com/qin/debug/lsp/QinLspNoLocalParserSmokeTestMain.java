@@ -60,6 +60,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertMemberStubIndexKeySelectionIsShared(javaRoot);
         assertSymbolHighlightingUsesSharedHelper(javaRoot);
         assertUnresolvedReferenceAnnotationIsUnified(javaRoot);
+        assertUnresolvedReferenceInspectionUsesSharedMessages(javaRoot);
         assertRenameUsesSharedPsiHelper(javaRoot);
         assertObjectMemberCompletionUsesSharedHelper(javaRoot);
 
@@ -544,6 +545,23 @@ public final class QinLspNoLocalParserSmokeTestMain {
                     "Qin unresolved-reference annotations must flow through "
                             + "QinUnresolvedReferenceAnnotator, not " + oldSource);
         }
+    }
+
+    private static void assertUnresolvedReferenceInspectionUsesSharedMessages(Path javaRoot) throws Exception {
+        Path inspection = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinUnresolvedReferenceInspection.java"));
+        require(Files.isRegularFile(inspection),
+                "Qin unresolved-reference inspection source not found: " + inspection);
+        String inspectionSource = Files.readString(inspection);
+        require(inspectionSource.contains("QinUnresolvedReferenceMessages.messageFor(element)")
+                        && !inspectionSource.contains("javaMessageFor(")
+                        && !inspectionSource.contains("objectMethodMessageFor(")
+                        && !inspectionSource.contains("objectFieldMessageFor(")
+                        && !inspectionSource.contains("QinJavaReference")
+                        && !inspectionSource.contains("QinObjectMethodReference")
+                        && !inspectionSource.contains("QinObjectFieldReference"),
+                "QinUnresolvedReferenceInspection must use the shared message helper instead of "
+                        + "owning Java/object reference branches: " + inspection);
     }
 
     private static void assertRenameUsesSharedPsiHelper(Path javaRoot) throws Exception {
