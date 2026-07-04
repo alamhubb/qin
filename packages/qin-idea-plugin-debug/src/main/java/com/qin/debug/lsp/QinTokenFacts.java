@@ -133,14 +133,6 @@ final class QinTokenFacts {
         return token.type() == QinTokenTypes.OPERATOR && tokenStartsWith(content, token, '=');
     }
 
-    static boolean isFieldDeclarationStart(@NotNull PsiBuilder builder) {
-        return isFieldDeclarationName(new BuilderTokenSequence(builder), 0);
-    }
-
-    static boolean isMethodDeclarationStart(@NotNull PsiBuilder builder) {
-        return isMethodDeclarationName(new BuilderTokenSequence(builder), 0);
-    }
-
     static boolean isThisMemberAccessStart(@NotNull PsiBuilder builder) {
         if (!isKeyword(builder, "this")) {
             return false;
@@ -155,12 +147,6 @@ final class QinTokenFacts {
             current++;
         }
         return current;
-    }
-
-    static boolean rawTokenStartsWith(@NotNull PsiBuilder builder, int offset, char expected) {
-        int start = builder.rawTokenTypeStart(offset);
-        CharSequence text = builder.getOriginalText();
-        return start >= 0 && start < text.length() && text.charAt(start) == expected;
     }
 
     private static boolean expectedTokenText(@NotNull PsiBuilder builder, @NotNull String expected) {
@@ -249,26 +235,6 @@ final class QinTokenFacts {
             return index >= 0
                     && index < tokens.size()
                     && QinTokenFacts.tokenStartsWith(content, tokens.get(index), expected);
-        }
-    }
-
-    private record BuilderTokenSequence(@NotNull PsiBuilder builder) implements TokenSequence {
-        @Override
-        public @Nullable IElementType typeAt(int index) {
-            if (index < 0) {
-                return null;
-            }
-            return builder.rawLookup(index);
-        }
-
-        @Override
-        public int nextMeaningfulIndex(int startIndex) {
-            return QinTokenFacts.nextMeaningfulRawOffset(builder, startIndex);
-        }
-
-        @Override
-        public boolean startsWith(int index, char expected) {
-            return index >= 0 && QinTokenFacts.rawTokenStartsWith(builder, index, expected);
         }
     }
 }
