@@ -60,13 +60,13 @@ final class QinLexicalScanner {
             }
         }
 
-        return classifyFunctionIdentifiers(text, tokens);
+        return classifyFunctionIdentifiers(text, classifyImportContextualKeywords(text, tokens));
     }
 
     private static IElementType mapToken(SubhutiMatchToken token, List<QinLexicalToken> previousTokens) {
         String tokenName = token.getTokenName();
         String value = token.getTokenValue();
-        if (TokenUtils.isKeyword(value)) {
+        if (TokenUtils.isKeyword(value) && !isImportOnlyContextualKeyword(value)) {
             return QinTokenTypes.KEYWORD;
         }
         if ("IdentifierName".equals(tokenName) || "PrivateIdentifier".equals(tokenName)) {
@@ -93,6 +93,10 @@ final class QinLexicalScanner {
         };
     }
 
+    private static boolean isImportOnlyContextualKeyword(String value) {
+        return "as".equals(value) || "from".equals(value);
+    }
+
     private static IElementType classifyIdentifier(String value, List<QinLexicalToken> previousTokens) {
         QinLexicalToken previous = QinTokenFacts.previousMeaningfulToken(previousTokens);
         if (previous != null && previous.type() == QinTokenTypes.DOT) {
@@ -115,6 +119,35 @@ final class QinLexicalScanner {
                         token.endOffset()));
             } else {
                 classified.add(token);
+            }
+        }
+        return classified;
+    }
+
+    private static List<QinLexicalToken> classifyImportContextualKeywords(String text, List<QinLexicalToken> tokens) {
+        List<QinLexicalToken> classified = new ArrayList<>(tokens);
+        for (int index = 0; index < tokens.size(); index++) {
+            QinLexicalToken token = tokens.get(index);
+            if (!QinTokenFacts.isKeyword(text, token, "import")) {
+                continue;
+            }
+            int current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, index + 1);
+            while (current >= 0 && current < tokens.size()) {
+                QinLexicalToken currentToken = tokens.get(current);
+                if (currentToken.type() == QinTokenTypes.SEMICOLON) {
+                    break;
+                }
+                if (QinTokenFacts.isContextualKeyword(text, currentToken, "as")
+                        || QinTokenFacts.isContextualKeyword(text, currentToken, "from")) {
+                    classified.set(current, new QinLexicalToken(
+                            QinTokenTypes.KEYWORD,
+                            currentToken.startOffset(),
+                            currentToken.endOffset()));
+                }
+                if (QinTokenFacts.isContextualKeyword(text, currentToken, "from")) {
+                    break;
+                }
+                current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, current + 1);
             }
         }
         return classified;

@@ -171,6 +171,22 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains("?.:" + QinTokenTypes.OPERATOR));
     }
 
+    public void testQinLexerHighlightsImportContextualKeywordsOnlyInsideImports() {
+        String source = """
+                import { Greeter as G } from "java:demo"
+
+                const from = "local"
+                """;
+        List<String> tokens = collectLexerTokenEntries(source);
+
+        assertTrue("Qin lexer should highlight import alias as contextual keyword: " + tokens,
+                tokens.contains("as:" + QinTokenTypes.KEYWORD));
+        assertTrue("Qin lexer should highlight import source marker as contextual keyword: " + tokens,
+                tokens.contains("from:" + QinTokenTypes.KEYWORD));
+        assertTrue("Qin lexer should keep non-import from identifiers as identifiers: " + tokens,
+                tokens.contains("from:" + QinTokenTypes.IDENTIFIER));
+    }
+
     public void testQinLexerKeepsUnterminatedStringHighlightableForIdeaEditing() {
         String source = "const message = \"unterminated";
         List<String> tokens = collectLexerTokenEntries(source);
