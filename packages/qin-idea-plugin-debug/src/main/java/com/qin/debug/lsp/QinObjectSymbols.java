@@ -6,7 +6,6 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.stubs.StubIndex;
-import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -164,10 +163,8 @@ final class QinObjectSymbols {
 
         List<ObjectMemberElement> members = new ArrayList<>();
         for (QinSourceStructure.ObjectMemberDeclaration member : declaration.memberDeclarations()) {
-            PsiElement memberElement = QinPsiTree.elementAtRangeOrParentOfType(
-                    file,
-                    member.declaration().nameRange(),
-                    tokenTypeForMemberKind(member.kind()));
+            PsiElement memberElement = QinPsiTree.objectMemberNameElement(
+                    file, member.declaration(), member.kind());
             if (memberElement != null) {
                 members.add(new ObjectMemberElement(memberElement, member.kind()));
             }
@@ -198,8 +195,7 @@ final class QinObjectSymbols {
         if (member == null) {
             return null;
         }
-        IElementType memberType = tokenTypeForMemberKind(kind);
-        return QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), memberType);
+        return QinPsiTree.objectMemberNameElement(file, member, kind);
     }
 
     private static @Nullable PsiElement findMethodNameInObjectDeclaration(
@@ -273,12 +269,6 @@ final class QinObjectSymbols {
     private record ObjectMemberElement(
             @NotNull PsiElement element,
             @NotNull QinSourceStructure.ObjectMemberKind kind) {
-    }
-
-    private static @NotNull IElementType tokenTypeForMemberKind(@NotNull QinSourceStructure.ObjectMemberKind kind) {
-        return kind == QinSourceStructure.ObjectMemberKind.FIELD
-                ? QinTokenTypes.FIELD_NAME
-                : QinTokenTypes.METHOD_NAME;
     }
 
 }

@@ -42,4 +42,18 @@ final class QinPsiTree {
             @NotNull IElementType type) {
         return range.isPresent() ? elementAtOrParentOfType(file, range.startOffset(), type) : null;
     }
+
+    static @Nullable PsiElement objectMemberNameElement(
+            @NotNull PsiFile file,
+            @NotNull QinSourceStructure.MemberDeclaration member,
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
+        return elementAtRangeOrParentOfType(file, member.nameRange(), objectMemberNameType(kind));
+    }
+
+    private static @NotNull IElementType objectMemberNameType(
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
+        return kind == QinSourceStructure.ObjectMemberKind.FIELD
+                ? QinTokenTypes.FIELD_NAME
+                : QinTokenTypes.METHOD_NAME;
+    }
 }

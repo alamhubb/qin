@@ -47,6 +47,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberKind(javaRoot);
+        assertObjectMemberPsiBridgeUsesQinPsiTree(javaRoot);
         assertStubIndexUsesSourceStructureMemberIndexEntries(javaRoot);
         assertMemberStubIndexKeySelectionIsShared(javaRoot);
 
@@ -203,6 +204,31 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("memberKind("),
                 "QinObjectSymbols must use QinSourceStructure.ObjectMemberKind "
                         + "instead of defining or deriving a local member kind: " + objectSymbols);
+    }
+
+    private static void assertObjectMemberPsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("objectMemberNameElement(")
+                        && psiTreeSource.contains("objectMemberNameType(")
+                        && psiTreeSource.contains("QinTokenTypes.FIELD_NAME")
+                        && psiTreeSource.contains("QinTokenTypes.METHOD_NAME"),
+                "QinPsiTree must own Qin object member source range to PSI name token bridging: "
+                        + psiTree);
+
+        Path objectSymbols = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
+        require(Files.isRegularFile(objectSymbols),
+                "QinObjectSymbols source not found: " + objectSymbols);
+        String objectSymbolsSource = Files.readString(objectSymbols);
+        require(objectSymbolsSource.contains("QinPsiTree.objectMemberNameElement(")
+                        && !objectSymbolsSource.contains("tokenTypeForMemberKind(")
+                        && !objectSymbolsSource.contains("QinTokenTypes.FIELD_NAME")
+                        && !objectSymbolsSource.contains("QinTokenTypes.METHOD_NAME"),
+                "QinObjectSymbols must ask QinPsiTree to bridge object member ranges to PSI names "
+                        + "instead of owning member kind to token mapping: " + objectSymbols);
     }
 
     private static void assertStubIndexUsesSourceStructureMemberIndexEntries(Path javaRoot) throws Exception {
