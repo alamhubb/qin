@@ -94,7 +94,8 @@ final class QinObjectSymbols {
             @NotNull String objectName,
             @NotNull String methodName) {
         ResolvedObject resolvedObject = resolveObjectName(element, objectName);
-        if (resolvedObject == null || !hasIndexedMember(element, resolvedObject, methodName, MemberKind.METHOD)) {
+        if (resolvedObject == null
+                || !hasIndexedMember(element, resolvedObject, methodName, QinSourceStructure.ObjectMemberKind.METHOD)) {
             return null;
         }
         PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
@@ -209,7 +210,8 @@ final class QinObjectSymbols {
             @NotNull String objectName,
             @NotNull String fieldName) {
         ResolvedObject resolvedObject = resolveObjectName(element, objectName);
-        if (resolvedObject == null || !hasIndexedMember(element, resolvedObject, fieldName, MemberKind.FIELD)) {
+        if (resolvedObject == null
+                || !hasIndexedMember(element, resolvedObject, fieldName, QinSourceStructure.ObjectMemberKind.FIELD)) {
             return null;
         }
         PsiElement objectDeclaration = QinPsiTree.parentOfType(resolvedObject.objectName(), QinTokenTypes.OBJECT_DECLARATION);
@@ -237,7 +239,7 @@ final class QinObjectSymbols {
             @NotNull PsiElement element,
             @NotNull ResolvedObject resolvedObject,
             @NotNull String memberName,
-            @NotNull MemberKind kind) {
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
         VirtualFile indexedFile = resolvedObject.importedFile();
         if (indexedFile == null) {
             return true;
@@ -245,7 +247,9 @@ final class QinObjectSymbols {
         GlobalSearchScope importedFileScope = GlobalSearchScope.fileScope(element.getProject(), indexedFile);
         String key = QinSourceStructure.objectMemberKey(resolvedObject.indexedObjectName(), memberName);
         Collection<QinPsiFile> indexedFiles = StubIndex.getElements(
-                kind == MemberKind.FIELD ? QinObjectFieldNameStubIndex.KEY : QinObjectMethodNameStubIndex.KEY,
+                kind == QinSourceStructure.ObjectMemberKind.FIELD
+                        ? QinObjectFieldNameStubIndex.KEY
+                        : QinObjectMethodNameStubIndex.KEY,
                 key,
                 element.getProject(),
                 importedFileScope,
@@ -259,14 +263,11 @@ final class QinObjectSymbols {
             @Nullable VirtualFile importedFile) {
     }
 
-    private enum MemberKind {
-        FIELD,
-        METHOD
-    }
-
-    private static @NotNull MemberKind memberKind(@NotNull PsiElement member) {
+    private static @NotNull QinSourceStructure.ObjectMemberKind memberKind(@NotNull PsiElement member) {
         IElementType type = member.getNode() == null ? null : member.getNode().getElementType();
-        return type == QinTokenTypes.FIELD_NAME ? MemberKind.FIELD : MemberKind.METHOD;
+        return type == QinTokenTypes.FIELD_NAME
+                ? QinSourceStructure.ObjectMemberKind.FIELD
+                : QinSourceStructure.ObjectMemberKind.METHOD;
     }
 
 }

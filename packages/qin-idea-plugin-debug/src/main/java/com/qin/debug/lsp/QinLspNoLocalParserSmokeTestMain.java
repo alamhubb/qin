@@ -46,6 +46,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
+        assertObjectSymbolsUseSourceStructureMemberKind(javaRoot);
         assertStubIndexUsesSourceStructureMemberIndexEntries(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
@@ -186,6 +187,19 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("member.name().equals(memberName)"),
                 "QinObjectSymbols must use QinSourceStructure member declaration lookup helpers "
                         + "and member declarations instead of matching or flattening members itself: " + objectSymbols);
+    }
+
+    private static void assertObjectSymbolsUseSourceStructureMemberKind(Path javaRoot) throws Exception {
+        Path objectSymbols = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
+        require(Files.isRegularFile(objectSymbols),
+                "QinObjectSymbols source not found: " + objectSymbols);
+        String source = Files.readString(objectSymbols);
+        require(source.contains("QinSourceStructure.ObjectMemberKind")
+                        && !source.contains("private enum MemberKind")
+                        && !containsWholeMarker(source, "MemberKind"),
+                "QinObjectSymbols must use QinSourceStructure.ObjectMemberKind "
+                        + "instead of defining a local member-kind enum: " + objectSymbols);
     }
 
     private static void assertStubIndexUsesSourceStructureMemberIndexEntries(Path javaRoot) throws Exception {
