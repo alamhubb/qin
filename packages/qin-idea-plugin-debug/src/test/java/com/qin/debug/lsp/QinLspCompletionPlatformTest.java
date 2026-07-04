@@ -1581,6 +1581,39 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("Unresolved static Java member demo.Greeter.missing", problems[0].getDescriptionTemplate());
     }
 
+    public void testQinUnresolvedReferenceInspectionReportsMissingAliasedJavaStaticMember() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.missing("Qin")
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiElement missingMember = myFixture.getFile().findElementAt(text.indexOf("missing"));
+        assertNotNull("Missing aliased Java member token should be present", missingMember);
+
+        ProblemsHolder holder = new ProblemsHolder(
+                InspectionManager.getInstance(getProject()),
+                myFixture.getFile(),
+                true);
+        new QinUnresolvedReferenceInspection()
+                .buildVisitor(holder, true)
+                .visitElement(missingMember.getParent());
+
+        ProblemDescriptor[] problems = holder.getResultsArray();
+        assertEquals(1, problems.length);
+        assertEquals("Unresolved static Java member demo.Greeter.missing", problems[0].getDescriptionTemplate());
+    }
+
     public void testQinUnresolvedReferenceAnnotatorKeepsResolvedMethodsClean() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -3006,6 +3039,27 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 import { Greeter } from "java:demo"
 
                 const message = Greeter.missing("Qin")
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        List<HighlightInfo> errors = myFixture.doHighlighting(HighlightSeverity.ERROR);
+        assertHighlightContains(errors, "Unresolved static Java member demo.Greeter.missing");
+    }
+
+    public void testQinUnresolvedReferenceAnnotatorReportsMissingAliasedStaticMember() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const message = G.missing("Qin")
                 """);
         myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
 
