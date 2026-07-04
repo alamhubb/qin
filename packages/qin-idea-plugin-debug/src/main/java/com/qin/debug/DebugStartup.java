@@ -222,7 +222,7 @@ public class DebugStartup implements ProjectActivity {
 
                 // 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?Project SDK闂傚倷鐒︾€笛呯矙閹达附鍋嬮柛娑卞枤缁犻箖鏌涢妷顔煎闁稿鍔戦弻鏇熺箾閸喖濮庨悷婊勬緲濡繈寮婚敐澶涚稏妞ゆ巻鍋撳┑鈥茬矙閺屸€崇暆閳ь剟宕版惔銊ョ厺闁哄啫鐗嗛崡铏亜韫囨挻顥犳い?
                 QinLogger.info("[SDK] Applying selected Project SDK...");
-                applyAndPersistSdk(project, rootManager, sdkToSet);
+                QinProjectSdkPersistence.applyAndPersist(project, rootManager, sdkToSet);
             } else {
                 // 濠电姷鏁搁崑娑欏緞閸ヮ剙绀堟繝闈涙４閼板灝銆掑锝呬壕濡ょ姷鍋涚粔褰掔嵁閸℃凹妲婚梺缁樻尭閸婂鍩€椤掆偓濠€閬嶁€﹂崼婵愬殨闁割偅娲栭弸渚€鏌ｉ幇顒佹儓缂佲偓閸愵亖鍋撻崗澶婁壕闂侀€炲苯澧柍?JDK闂傚倷鐒︾€笛呯矙閹达附鍤愭い鏍仦閸庡秹鏌涢幘妤€瀚悵浼存⒑閸濆嫭澶勬慨妯稿姂閹?JAVA_HOME 闂傚倷鑳堕崢褔銆冩惔銏㈩洸婵犲﹤瀚崣蹇涙煃鏉炴媽鍓ㄩ幖杈剧稻鐎氭岸鏌熺紒妯轰刊婵?
                 String javaHome = System.getenv("JAVA_HOME");
@@ -247,7 +247,7 @@ public class DebugStartup implements ProjectActivity {
                         QinLogger.info("[SDK]   Registered new JDK in IDE: " + sdkName);
 
                         // 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?Project SDK闂傚倷鐒︾€笛呯矙閹达附鍋嬮柛娑卞枤缁犻箖鏌涢妷顔煎闁稿鍔戦弻鏇熺箾閸喖濮庨悷婊勬緲濡繈寮婚敐澶涚稏妞ゆ巻鍋撳┑鈥茬矙閺屸€崇暆閳ь剟宕版惔銊ョ厺闁哄啫鐗嗛崡铏亜韫囨挻顥犳い?
-                        applyAndPersistSdk(project, rootManager, newSdk);
+                        QinProjectSdkPersistence.applyAndPersist(project, rootManager, newSdk);
                     } else {
                         QinLogger.error("[SDK] Unable to create JDK automatically, please configure it manually");
                     }
@@ -259,133 +259,11 @@ public class DebugStartup implements ProjectActivity {
 
             // 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樻彃鏆斿ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃鍫㈡閹惧瓨濯撮悷娆忓闂夊秹姊虹拠鎻掔槰闁搞劌鐖煎顐㈩吋閸涱垱娈曢梺鍛婂姈閸庢娊寮?IDEA UI 闂傚倷绀侀幖顐⒚洪妶澶嬪仱闁靛ň鏅涢拑?
             QinLogger.info("[SDK] Refreshing IDEA project structure after SDK update...");
-            refreshProjectStructure(project);
+            QinProjectSdkPersistence.refreshProjectStructure(project);
 
             QinLogger.info("[SDK] ========== Project SDK configuration complete ==========");
         } catch (Exception e) {
             QinLogger.error("[SDK] Failed to configure Project SDK: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樻彃鏆斿ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃鍫㈡閹惧瓨濯撮悷娆忓闂夊秹姊?
-     * 闂?IDEA 闂傚倸鍊烽悞锕併亹閸愵亞鐭撻柣銏㈩焾閽冪喎鈹戦悩鍙夋悙缂佲偓婢舵劖鐓熸俊顖滃帶閸斿绱掓担瑙勭凡妞ゎ亜鍟存俊鍫曞川椤旇法顢呮繝鐢靛仩瀵捇宕￠幎钘夎摕濠电姴鍋嗛崥瀣煕閵夈垺娅嗛柣?
-     */
-    private static void refreshProjectStructure(Project project) {
-        try {
-            String basePath = project.getBasePath();
-
-            // 1. 闂傚倷鑳堕…鍫㈡崲閹扮増鍋嬮柛鈩冪☉閺勩儲绻涢幋娆忕仼婵?misc.xml 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涚箞閸婃牠寮查鍌楀亾閸忓浜鹃梺閫炲苯澧撮柛銊﹀劤铻ｉ柤濮愬€愰弨?IDEA 闂傚倷鑳堕崢褏澹曢銏犵柧妞ゆ劦婢侀懓鍧楁煕濞戞瑦缍戠紒鈧崱娑欑厽婵°倐鍋撻柣妤€妫濋幃妯诲緞婵炴帒缍婇幃顏堝焵椤掑嫬绀堟繛鎴炃氶弸鏃堟煙鐎电浠ч柍鐟扮У閵囧嫰寮崶顬捇鏌?
-            if (basePath != null) {
-                Path miscXmlPath = Paths.get(basePath, ".idea", "misc.xml");
-                com.intellij.openapi.vfs.VirtualFile miscVf = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
-                        .refreshAndFindFileByPath(miscXmlPath.toString().replace('\\', '/'));
-                if (miscVf != null) {
-                    miscVf.refresh(false, false);
-                    QinLogger.info("[SDK]   Refreshed misc.xml VirtualFile");
-                }
-            }
-
-            // 2. 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樺弶鎼愰柡瀣╄兌缁辨捇宕奸姀鐘瀰闂佹悶鍊曢澶愬蓟瑜戠粻娑㈠籍閸屻倖娈归梺璇插绾板秹鎮烽埡渚囧殨妞ゆ帒瀚悙濠囨煥閺冨倻鎽傞柛瀣ㄥ妿缁辨挻绗熼崶褏浠撮悗瑙勬礈閺佹悂宕?
-            com.intellij.openapi.vfs.VirtualFileManager.getInstance().refreshWithoutFileWatcher(true);
-            QinLogger.info("[SDK]   VirtualFileManager refresh complete");
-
-            // 3. 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑鐔封攽閻樻彃鏆斿ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃鍡樼┍婵犲浂鏁嶆俊鐐额嚙娴滃墽鈧娲栧ú鐘诲磻?
-            ApplicationManager.getApplication().invokeLater(() -> {
-                try {
-                    // 闂備浇宕甸崰鎰版偡鏉堚晝涓嶉柟杈剧祷娴滃綊鏌涚仦鍓р棨濞存粍绮撻弻娑㈡晜鐠囨彃绠虹紓浣瑰姈椤ㄥ﹤顫忓ú顏勭闁圭儤鏋敐澶嬬厸閻忕偞鏋婚煬顒傗偓瑙勬磸閸庤櫕绂掗敂鍓х＜闁靛繒濮村穽
-                    com.intellij.openapi.project.DumbService dumbService = com.intellij.openapi.project.DumbService
-                            .getInstance(project);
-
-                    dumbService.runWhenSmart(() -> {
-                        QinLogger.info("[SDK]   Project index rebuild complete");
-
-                        // 闂傚倷绀侀幉锟犲礉閺囩姷鐭撻柣銏犲閺佸啴鏌涜箛鏇楁嫛婵炲牏鏅埀顒€鍘滈崑鎾绘煕閹板吀绨兼い?SDK 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?
-                        com.intellij.openapi.roots.ProjectRootManager rootManager = com.intellij.openapi.roots.ProjectRootManager
-                                .getInstance(project);
-                        com.intellij.openapi.projectRoots.Sdk sdk = rootManager.getProjectSdk();
-                        QinLogger.info("[SDK]   Project SDK after refresh = " + (sdk != null ? sdk.getName() : "null"));
-                    });
-                } catch (Exception e) {
-                    QinLogger.error("[SDK]   Failed during deferred project refresh: " + e.getMessage());
-                }
-            });
-        } catch (Exception e) {
-            QinLogger.error("[SDK]   Failed to refresh project structure: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 婵犵數鍎戠徊钘壝洪敂鐐床闁稿瞼鍋為崑銈夋煏婵犲繗绀嬪ù婊勭矒閺屾盯鏁傜拠鎻掔缂備焦鍔栭〃濠囧箖鐟欏嫭濯寸紒瀣氨閹稿啴姊哄Ч鍥р偓鏇炍涘┑鍡欐殾婵娉涚粻銉︺亜閺囩偞鍣洪柍閿嬬墵濮?
-     * 闂傚倸顭崑鍕洪妶澶婄疇婵せ鍋撳┑锛勵棎缁犳稑鈽夊Ο璇茬ザ?write action 婵犵數濮伴崹濂稿春閺嶎厽鍋嬮柣妯款嚙绾惧潡鎮楅棃娑欏暈閻庢凹鍓熼弻娑㈠箛閸忓摜鍑归梺?
-     */
-    private static void saveProjectToDisk(Project project) {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            try {
-                project.save();
-                QinLogger.info("[SDK]   Project save requested");
-            } catch (Exception e) {
-                QinLogger.error("[SDK]   Failed to save project: " + e.getMessage());
-            }
-        });
-    }
-
-    /**
-     * 闂備礁婀遍崢褔鎮洪妸銉綎濠电姵鑹鹃弸渚€鏌曢崼婵愭Ш鐎规挷绶氶弻銈夊箹娴ｈ閿梺浼欏瘜閸犳牠鍩ユ径鎰闁圭楠稿▍锝夋煟?SDK 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸?
-     * 闂備礁鎼ˇ顐﹀疾濠婂牊鍋￠柨鏇楀亾閸楅亶鏌涘┑鍕姕濠殿垰銈搁弻娑㈠箻濡も偓閹冲繘鎮?Project SDK 闂傚倷鐒﹂惇褰掑礉瀹€鈧埀顒佸嚬閸犳岸宕氶幒妤佸€绘俊顖氱毞閺嬫牠姊洪柅鐐茶嫰婢у鈧鍣崜娑㈠箟閹绢喖绀嬫い鎾村閸?
-     * 
-     * @param project     婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳?
-     * @param rootManager 婵犵绱曢崑鎴﹀磹閺囩儑鑰块柛妤冧紳閻戞ê顕遍柡澶嬪灥閸炪劑姊洪棃鈺佺槣闁告瑥閰ｅ畷銉╁焵椤掑嫭鈷戦柤濮愬€曟禒婊勪繆椤愶綆娈旈柍?
-     * @param sdk         闂備浇宕甸崰鎰洪幋婢濆綊宕堕澶嬫櫓闂佸搫娲ㄦ慨椋庡閻愵兙浜滈柡鍐ㄥ€告禍楣冩煟?SDK
-     */
-    private static void applyAndPersistSdk(Project project,
-            com.intellij.openapi.roots.ProjectRootManager rootManager,
-            com.intellij.openapi.projectRoots.Sdk sdk) {
-        String sdkName = sdk.getName();
-        QinLogger.info("[SDK]   Applying SDK: " + sdkName);
-
-        // 1. 婵犵數鍋犻幓顏嗙礊閳ь剚绻涙径瀣鐎?IDEA API 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸嬵亪鏌涢埄鍐槈缂佲偓閸愵喗鐓曟繛鎴濆船楠炴﹢鏌熼悾灞叫㈤柍钘夘樀楠炴瑩宕橀妸銉ь啋婵犵數鍋涢悧濠囧垂閸喚鏆?
-        ApplicationManager.getApplication().runWriteAction(() -> {
-            rootManager.setProjectSdk(sdk);
-        });
-        QinLogger.info("[SDK]   Writing Project SDK to misc.xml");
-
-        // 2. 闂傚倷鑳堕崕鐢稿疾濞戙垺鍋ら柕濞у嫭娈伴柣搴㈢⊕椤洭鍩炲鍡愪簻闁哄啫娲よ闂?misc.xml 缂傚倷鑳堕搹搴ㄥ矗鎼淬劌绐楅柡鍥╁У瀹曞弶鎱ㄥΟ鎸庣【缂佺姵婢橀湁闁挎繂顦藉Λ鎴︽煟閿濆嫮鐭欓柡?
-        String basePath = project.getBasePath();
-        if (basePath != null) {
-            Path miscXml = Paths.get(basePath, ".idea", "misc.xml");
-            updateMiscXmlWithSdk(miscXml, sdkName);
-        }
-
-        // 3. 闂傚倷绀侀幉锛勬暜閿熺姴缁╅梺顒€绉撮拑?IDEA
-        refreshProjectStructure(project);
-
-        // 4. 婵犲痉鏉库偓妤佹叏閹绢喗鍎楀〒姘ｅ亾闁?
-        com.intellij.openapi.projectRoots.Sdk afterSdk = rootManager.getProjectSdk();
-        if (afterSdk != null && afterSdk.getName().equals(sdkName)) {
-            QinLogger.info("[SDK] Project SDK persisted to misc.xml: " + sdkName);
-        } else {
-            QinLogger.info("[SDK]   misc.xml updated, you may need to reopen the project for changes to fully apply");
-        }
-    }
-
-    /**
-     * 闂傚倷鑳堕崕鐢稿疾濞戙垺鍋ら柕濞у嫭娈伴柣搴㈢⊕椤洭鍩炲鍡愪簻闁哄啫娲よ闂?misc.xml 闂傚倷绀侀幖顐﹀磹缁嬫５娲晲閸涱亝鐎婚梺闈涚箞閸ㄧ儤鍒婃總鍛婄厱闁圭偓顨呴幊蹇涙倵?Project SDK
-     * 闂備礁鎼ˇ顐﹀疾濠婂牊鍋￠柨鏇楀亾閸楅亶鏌熼梻瀵割槮閻庢艾顦甸弻宥堫檨闁告挾鍠庨悾鐑芥晲婢舵ɑ鏅梺缁樺姇閻°劎绮婇鈧鍝勑ч崶褍顬堥柣搴㈠嚬閸欏啫顕ｆ繝姘亜濠靛倸顦▓銊╂椤愩垺鍌ㄩ柛搴＄－缁牊寰勫畝鈧Λ顖涖亜閹炬鍟悘鍡欑磽?SDK 闂備浇宕垫慨宕囩矆娴ｈ娅犲ù鐘差儐閸嬵亪鏌涢埄鍐噭闁稿鐗楅妵鍕箛閸撲礁鍩岄梺浼欏瘜閸犳牠鍩ユ径鎰闁圭楠稿▍锝夋煟?
-     */
-    private static void updateMiscXmlWithSdk(Path miscXml, String sdkName) {
-        try {
-            QinLogger.info("[SDK]   Updating misc.xml: " + miscXml);
-            IdeaMiscXmlSupport.updateProjectSdk(miscXml, sdkName);
-            String verify = Files.readString(miscXml, StandardCharsets.UTF_8);
-            if (verify.contains("project-jdk-name=\"" + sdkName + "\"")) {
-                QinLogger.info("[SDK] misc.xml write verification succeeded");
-            } else {
-                QinLogger.error("[SDK] misc.xml write verification failed");
-            }
-        } catch (Exception e) {
-            QinLogger.error("[SDK]   Failed to update misc.xml: " + e.getMessage());
             e.printStackTrace();
         }
     }

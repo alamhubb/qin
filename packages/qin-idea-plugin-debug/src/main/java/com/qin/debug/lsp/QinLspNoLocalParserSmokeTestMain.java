@@ -103,6 +103,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertCliProcessBuildersAreShared(javaRoot);
         assertToolWindowProjectDiscoveryIsShared(javaRoot);
         assertWorkspaceSdkDefaultsAreShared(javaRoot);
+        assertProjectSdkPersistenceIsShared(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -1699,6 +1700,39 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !startupSource.contains("private static int parseJavaVersion("),
                 "DebugStartup must consume QinWorkspaceSdkDefaults instead of owning "
                         + "Qin workspace SDK default parsing: " + startup);
+    }
+
+    private static void assertProjectSdkPersistenceIsShared(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinProjectSdkPersistence.java"));
+        require(Files.isRegularFile(helper),
+                "Qin project SDK persistence helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("applyAndPersist(")
+                        && helperSource.contains("refreshProjectStructure(")
+                        && helperSource.contains("updateMiscXmlWithSdk(")
+                        && helperSource.contains("rootManager.setProjectSdk(sdk)")
+                        && helperSource.contains("IdeaMiscXmlSupport.updateProjectSdk(")
+                        && helperSource.contains("VirtualFileManager.getInstance().refreshWithoutFileWatcher(true)")
+                        && helperSource.contains("DumbService"),
+                "QinProjectSdkPersistence must own Project SDK persistence and IDEA "
+                        + "refresh platform calls: " + helper);
+
+        Path startup = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "DebugStartup.java"));
+        require(Files.isRegularFile(startup),
+                "Qin startup source not found: " + startup);
+        String startupSource = Files.readString(startup);
+        require(startupSource.contains("QinProjectSdkPersistence.applyAndPersist(")
+                        && startupSource.contains("QinProjectSdkPersistence.refreshProjectStructure(")
+                        && !startupSource.contains("private static void applyAndPersistSdk(")
+                        && !startupSource.contains("private static void updateMiscXmlWithSdk(")
+                        && !startupSource.contains("private static void refreshProjectStructure(")
+                        && !startupSource.contains("IdeaMiscXmlSupport.updateProjectSdk(")
+                        && !startupSource.contains("VirtualFileManager.getInstance().refreshWithoutFileWatcher")
+                        && !startupSource.contains("rootManager.setProjectSdk("),
+                "DebugStartup must consume QinProjectSdkPersistence instead of owning "
+                        + "Project SDK persistence or IDEA refresh calls: " + startup);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
