@@ -44,6 +44,10 @@ final class QinSourceStructure {
         return parse(content).objectNames();
     }
 
+    static @NotNull String objectMemberKey(@NotNull String objectName, @NotNull String memberName) {
+        return objectName + "." + memberName;
+    }
+
     @NotNull List<String> objectNames() {
         return objectDeclarations.stream()
                 .map(ObjectDeclaration::name)
@@ -471,6 +475,11 @@ final class QinSourceStructure {
             @NotNull MemberDeclaration declaration) {
     }
 
+    record ObjectMemberIndexEntry(
+            @NotNull ObjectMemberKind kind,
+            @NotNull String key) {
+    }
+
     record ImportSpecifier(
             @NotNull String exportedName,
             @NotNull SourceRange exportedNameRange,
@@ -572,6 +581,14 @@ final class QinSourceStructure {
             addMemberDeclarations(members, fields, ObjectMemberKind.FIELD);
             addMemberDeclarations(members, methods, ObjectMemberKind.METHOD);
             return members;
+        }
+
+        @NotNull List<ObjectMemberIndexEntry> memberIndexEntries() {
+            return memberDeclarations().stream()
+                    .map(member -> new ObjectMemberIndexEntry(
+                            member.kind(),
+                            objectMemberKey(name, member.declaration().name())))
+                    .toList();
         }
 
         MemberDeclaration fieldDeclarationAtNameOffset(int offset) {

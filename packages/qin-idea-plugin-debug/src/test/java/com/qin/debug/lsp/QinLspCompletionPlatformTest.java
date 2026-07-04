@@ -1022,13 +1022,13 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
 
         Collection<QinPsiFile> fieldFiles = StubIndex.getElements(
                 QinObjectFieldNameStubIndex.KEY,
-                QinFileElementType.memberKey("Counter", "value"),
+                QinSourceStructure.objectMemberKey("Counter", "value"),
                 getProject(),
                 GlobalSearchScope.allScope(getProject()),
                 QinPsiFile.class);
         Collection<QinPsiFile> methodFiles = StubIndex.getElements(
                 QinObjectMethodNameStubIndex.KEY,
-                QinFileElementType.memberKey("Counter", "next"),
+                QinSourceStructure.objectMemberKey("Counter", "next"),
                 getProject(),
                 GlobalSearchScope.allScope(getProject()),
                 QinPsiFile.class);

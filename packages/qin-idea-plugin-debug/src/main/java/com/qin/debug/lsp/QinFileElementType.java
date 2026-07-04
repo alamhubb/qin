@@ -67,11 +67,12 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
     public void indexStub(@NotNull QinFileStub stub, @NotNull IndexSink sink) {
         for (QinSourceStructure.ObjectDeclaration declaration : stub.objectDeclarations()) {
             sink.occurrence(QinObjectNameStubIndex.KEY, declaration.name());
-            for (String field : declaration.fieldNames()) {
-                sink.occurrence(QinObjectFieldNameStubIndex.KEY, memberKey(declaration.name(), field));
-            }
-            for (String method : declaration.methodNames()) {
-                sink.occurrence(QinObjectMethodNameStubIndex.KEY, memberKey(declaration.name(), method));
+            for (QinSourceStructure.ObjectMemberIndexEntry member : declaration.memberIndexEntries()) {
+                sink.occurrence(
+                        member.kind() == QinSourceStructure.ObjectMemberKind.FIELD
+                                ? QinObjectFieldNameStubIndex.KEY
+                                : QinObjectMethodNameStubIndex.KEY,
+                        member.key());
             }
         }
     }
@@ -79,10 +80,6 @@ final class QinFileElementType extends IStubFileElementType<QinFileStub> {
     @Override
     public boolean shouldBuildStubFor(@NotNull VirtualFile file) {
         return file.getFileType() == QinLspFileType.INSTANCE;
-    }
-
-    static @NotNull String memberKey(@NotNull String objectName, @NotNull String memberName) {
-        return objectName + "." + memberName;
     }
 
     private static void writeNames(@NotNull StubOutputStream dataStream, @NotNull List<String> names)

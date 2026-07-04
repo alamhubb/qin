@@ -46,6 +46,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
+        assertStubIndexUsesSourceStructureMemberIndexEntries(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -185,6 +186,20 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("member.name().equals(memberName)"),
                 "QinObjectSymbols must use QinSourceStructure member declaration lookup helpers "
                         + "and member declarations instead of matching or flattening members itself: " + objectSymbols);
+    }
+
+    private static void assertStubIndexUsesSourceStructureMemberIndexEntries(Path javaRoot) throws Exception {
+        Path fileElementType = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinFileElementType.java"));
+        require(Files.isRegularFile(fileElementType),
+                "QinFileElementType source not found: " + fileElementType);
+        String source = Files.readString(fileElementType);
+        require(source.contains(".memberIndexEntries()")
+                        && !source.contains("for (String field : declaration.fieldNames())")
+                        && !source.contains("for (String method : declaration.methodNames())")
+                        && !source.contains("static @NotNull String memberKey("),
+                "QinFileElementType must consume QinSourceStructure member index entries "
+                        + "instead of flattening members or owning object-member key syntax: " + fileElementType);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
