@@ -95,26 +95,14 @@ public final class QinParserDefinition implements ParserDefinition {
         } else if (QinTokenFacts.isReferenceLeafToken(builder.getTokenType())) {
             wrapObjectName(builder);
         }
-        if (!QinTokenFacts.isOpenBrace(builder)) {
+        if (objectDeclaration == null || !objectDeclaration.bodyRange().isPresent()) {
             objectMarker.done(QinTokenTypes.OBJECT_DECLARATION);
             return;
         }
-
-        int braceDepth = 0;
-        while (!builder.eof()) {
-            if (QinTokenFacts.isOpenBrace(builder)) {
-                braceDepth++;
-                builder.advanceLexer();
-                continue;
-            }
-            if (QinTokenFacts.isCloseBrace(builder)) {
-                braceDepth--;
-                builder.advanceLexer();
-                if (braceDepth <= 0) {
-                    break;
-                }
-                continue;
-            }
+        while (!builder.eof() && builder.getCurrentOffset() < objectDeclaration.bodyRange().startOffset()) {
+            builder.advanceLexer();
+        }
+        while (!builder.eof() && builder.getCurrentOffset() < objectDeclaration.bodyRange().endOffset()) {
             if (isSourceStructureMethodName(builder, sourceStructure)) {
                 parseMethodDeclaration(builder);
             } else if (isSourceStructureFieldName(builder, sourceStructure)) {

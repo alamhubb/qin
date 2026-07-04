@@ -612,6 +612,18 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 countPsiElementType(myFixture.getFile(), QinTokenTypes.METHOD_NAME));
     }
 
+    public void testQinParserUsesSourceStructureBodyRangeForObjectDeclaration() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter extends Base {
+                  value = 41
+                }
+                """);
+
+        PsiElement fieldName = findPsiElementType(myFixture.getFile(), QinTokenTypes.FIELD_NAME);
+
+        assertNotNull("Qin object PSI should consume the SourceStructure body range after object metadata", fieldName);
+        assertEquals("value", fieldName.getText());
+    }
     public void testQinParserBuildsStructuredPsiForObjectFieldDeclaration() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
