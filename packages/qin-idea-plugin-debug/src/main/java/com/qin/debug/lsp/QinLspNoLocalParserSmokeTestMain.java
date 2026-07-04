@@ -614,9 +614,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "Qin PSI token stream source not found: " + psiTokenStream);
         String psiTokenStreamSource = Files.readString(psiTokenStream);
         require(psiTokenStreamSource.contains("QinReferenceElements.referenceElement(element)")
+                        && psiTokenStreamSource.contains("QinPsiTree.containingFile(element)")
+                        && !psiTokenStreamSource.contains("element.getContainingFile()")
                         && !psiTokenStreamSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
                 "QinPsiTokenStream must use QinReferenceElements for reference-wrapper token ownership "
-                        + "instead of owning the REFERENCE_IDENTIFIER token mapping: " + psiTokenStream);
+                        + "and QinPsiTree for containing-file lookup instead of owning the "
+                        + "REFERENCE_IDENTIFIER token mapping or element-to-file bridge: " + psiTokenStream);
     }
 
     private static void assertReferenceContributorRegistrationUsesSharedReferenceElements(Path javaRoot) throws Exception {

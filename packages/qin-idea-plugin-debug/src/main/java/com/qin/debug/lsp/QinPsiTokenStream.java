@@ -41,10 +41,13 @@ final class QinPsiTokenStream {
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
-        return previousQualifierName(element.getContainingFile(), element);
+        return previousQualifierName(QinPsiTree.containingFile(element), element);
     }
 
-    static @Nullable PsiElement previousQualifierElement(@NotNull PsiElement root, @NotNull PsiElement element) {
+    static @Nullable PsiElement previousQualifierElement(@Nullable PsiElement root, @NotNull PsiElement element) {
+        if (root == null) {
+            return null;
+        }
         List<QinPsiToken> tokens = collect(root);
         int tokenIndex = indexOfElement(tokens, element);
         String qualifierName = tokenIndex < 0 ? null : QinTokenFacts.previousQualifierName(tokens, tokenIndex);
@@ -56,16 +59,22 @@ final class QinPsiTokenStream {
     }
 
     static boolean isFollowedByCallParenthesis(@NotNull PsiElement element) {
-        return isFollowedByCallParenthesis(element.getContainingFile(), element);
+        return isFollowedByCallParenthesis(QinPsiTree.containingFile(element), element);
     }
 
-    static boolean isFollowedByCallParenthesis(@NotNull PsiElement root, @NotNull PsiElement element) {
+    static boolean isFollowedByCallParenthesis(@Nullable PsiElement root, @NotNull PsiElement element) {
+        if (root == null) {
+            return false;
+        }
         List<QinPsiToken> tokens = collect(root);
         int tokenIndex = indexOfElement(tokens, element);
         return tokenIndex >= 0 && QinTokenFacts.isFollowedByCallParenthesis(tokens, tokenIndex);
     }
 
-    static @Nullable String previousQualifierName(@NotNull PsiElement root, @NotNull PsiElement element) {
+    static @Nullable String previousQualifierName(@Nullable PsiElement root, @NotNull PsiElement element) {
+        if (root == null) {
+            return null;
+        }
         List<QinPsiToken> tokens = collect(root);
         int tokenIndex = indexOfElement(tokens, element);
         return tokenIndex < 0 ? null : QinTokenFacts.previousQualifierName(tokens, tokenIndex);
