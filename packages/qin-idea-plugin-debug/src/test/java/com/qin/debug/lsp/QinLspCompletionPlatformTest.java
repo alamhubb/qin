@@ -1537,6 +1537,39 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertLookupPsiElement(elements, "next", QinTokenTypes.METHOD_NAME, "Counter.qin");
     }
 
+    public void testQinNativeCompletionDoesNotHandleJavaMemberQualifiers() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static String greet(String name) {
+                    return "Hello " + name;
+                  }
+                }
+                """);
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                import { Greeter } from "java:demo"
+
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+                }
+
+                const message = Greeter.g<caret>
+                """);
+
+        LookupElement[] elements = myFixture.completeBasic();
+        if (elements == null) {
+            return;
+        }
+
+        assertLookupMissing(elements, "value");
+        assertLookupMissing(elements, "next");
+    }
+
     public void testQinNativeCompletionIncludesThisObjectMembers() {
         myFixture.configureByText(QinLspFileType.INSTANCE, """
                 export object Counter {
@@ -2454,6 +2487,18 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 .filter(Objects::nonNull)
                 .anyMatch(expected::equals);
         assertTrue("IDEA completion did not include " + expected + ": "
+                + Arrays.toString(Arrays.stream(elements)
+                .map(LookupElement::getLookupString)
+                .limit(40)
+                .toArray(String[]::new)), found);
+    }
+
+    private static void assertLookupMissing(LookupElement[] elements, String unexpected) {
+        boolean found = Arrays.stream(elements)
+                .map(LookupElement::getLookupString)
+                .filter(Objects::nonNull)
+                .anyMatch(unexpected::equals);
+        assertFalse("IDEA native Qin completion should not include " + unexpected + ": "
                 + Arrays.toString(Arrays.stream(elements)
                 .map(LookupElement::getLookupString)
                 .limit(40)
