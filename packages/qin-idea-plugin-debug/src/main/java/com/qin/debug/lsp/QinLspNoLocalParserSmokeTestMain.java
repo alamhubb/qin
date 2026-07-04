@@ -43,6 +43,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoDirectJavaPsiAccess(javaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
+        assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -135,6 +136,18 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("localNameRange().startsAt"),
                 "QinImportBindings must use QinSourceStructure.ImportDeclaration.specifierAtNameOffset "
                         + "instead of splitting named import ranges: " + importBindings);
+    }
+
+    private static void assertObjectSymbolsUseSourceStructureDeclarationLookup(Path javaRoot) throws Exception {
+        Path objectSymbols = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
+        require(Files.isRegularFile(objectSymbols),
+                "QinObjectSymbols source not found: " + objectSymbols);
+        String source = Files.readString(objectSymbols);
+        require(!source.contains(".objectDeclarations()")
+                        && !source.contains("keywordRange().startsAt"),
+                "QinObjectSymbols must use QinSourceStructure object declaration lookup helpers "
+                        + "instead of iterating declarations or matching keyword ranges: " + objectSymbols);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
