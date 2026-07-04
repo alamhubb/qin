@@ -59,6 +59,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertMemberStubIndexKeySelectionIsShared(javaRoot);
         assertSymbolHighlightingUsesSharedHelper(javaRoot);
         assertUnresolvedReferenceAnnotationIsUnified(javaRoot);
+        assertRenameUsesSharedPsiHelper(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -510,6 +511,34 @@ public final class QinLspNoLocalParserSmokeTestMain {
             require(!Files.exists(oldSource),
                     "Qin unresolved-reference annotations must flow through "
                             + "QinUnresolvedReferenceAnnotator, not " + oldSource);
+        }
+    }
+
+    private static void assertRenameUsesSharedPsiHelper(Path javaRoot) throws Exception {
+        Path renameHelper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiRenames.java"));
+        require(Files.isRegularFile(renameHelper),
+                "Qin PSI rename helper source not found: " + renameHelper);
+        String helperSource = Files.readString(renameHelper);
+        require(helperSource.contains("replaceLeafText(")
+                        && helperSource.contains("LeafElement")
+                        && helperSource.contains("replaceWithText("),
+                "QinPsiRenames must own leaf-token rename replacement: " + renameHelper);
+
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinJavaReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectMethodReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectFieldReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinImportAliasReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinNamedPsiElement.java")))) {
+            require(Files.isRegularFile(file), "Qin rename consumer source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinPsiRenames.replaceLeafText(")
+                            && !source.contains("LeafElement")
+                            && !source.contains("replaceWithText("),
+                    "Qin rename consumers must use QinPsiRenames instead of owning leaf "
+                            + "replacement plumbing: " + file);
         }
     }
 

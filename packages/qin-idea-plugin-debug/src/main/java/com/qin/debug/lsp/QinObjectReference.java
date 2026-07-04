@@ -1,13 +1,11 @@
 package com.qin.debug.lsp;
 
-import com.intellij.lang.ASTNode;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiPolyVariantReferenceBase;
 import com.intellij.psi.ResolveResult;
 import com.intellij.psi.impl.source.resolve.ResolveCache;
-import com.intellij.psi.impl.source.tree.LeafElement;
 import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,12 +39,7 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
         if (isImportedAliasLocalReference(myElement)) {
             return myElement;
         }
-        ASTNode leaf = myElement.getNode().getFirstChildNode();
-        if (leaf instanceof LeafElement leafElement) {
-            leafElement.replaceWithText(newElementName);
-            return myElement;
-        }
-        throw new IncorrectOperationException("Cannot rename Qin object reference without a leaf token: " + myElement);
+        return QinPsiRenames.replaceLeafText(myElement, newElementName, "Qin object reference");
     }
 
     static boolean isObjectReferenceCandidate(@NotNull PsiElement element) {
