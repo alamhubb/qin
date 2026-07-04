@@ -7,7 +7,9 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
+import com.qin.debug.lsp.QinPsiTree;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,10 +34,11 @@ public class QinExternalAnnotator extends ExternalAnnotator<
 
         InitialInfo(PsiFile psiFile) {
             this.psiFile = psiFile;
-            this.filePath = psiFile.getVirtualFile() != null
-                ? psiFile.getVirtualFile().getPath()
+            VirtualFile virtualFile = QinPsiTree.virtualFile(psiFile);
+            this.filePath = virtualFile != null
+                ? virtualFile.getPath()
                 : null;
-            this.project = psiFile.getProject();
+            this.project = QinPsiTree.project(psiFile);
         }
     }
 
@@ -45,7 +48,7 @@ public class QinExternalAnnotator extends ExternalAnnotator<
         if (!file.getName().endsWith(".java")) {
             return null;
         }
-        if (file.getVirtualFile() == null) {
+        if (QinPsiTree.virtualFile(file) == null) {
             return null;
         }
         return new InitialInfo(file);

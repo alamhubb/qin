@@ -23,6 +23,7 @@ import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiType;
 import com.qin.debug.QinLogger;
 import com.qin.debug.QinProjectLocator;
+import com.qin.debug.lsp.QinPsiTree;
 import com.qin.debug.run.QinRunConfiguration;
 import com.qin.debug.run.QinRunConfigurationType;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +46,7 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
             return null;
         }
 
-        PsiElement parent = element.getParent();
+        PsiElement parent = QinPsiTree.parent(element);
         if (!(parent instanceof PsiMethod method)) {
             return null;
         }
@@ -106,7 +107,7 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
     private LineMarkerInfo<PsiElement> createLineMarkerInfo(PsiElement element, String text, Icon icon) {
         return new LineMarkerInfo<>(
                 element,
-                element.getTextRange(),
+                QinPsiTree.elementRange(element),
                 icon,
                 psi -> text + " with Qin",
                 (e, elt) -> runWithQin(elt, false),
@@ -127,7 +128,7 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
             return;
         }
 
-        Project project = element.getProject();
+        Project project = QinPsiTree.project(element);
         String qualifiedName = containingClass.getQualifiedName();
         String projectPath = findQinProjectPath(element);
 
@@ -166,7 +167,7 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
         if (element instanceof PsiMethod method) {
             return method;
         }
-        PsiElement parent = element.getParent();
+        PsiElement parent = QinPsiTree.parent(element);
         if (parent instanceof PsiMethod method) {
             return method;
         }
@@ -174,10 +175,10 @@ public class QinRunLineMarkerProvider implements LineMarkerProvider {
     }
 
     private String findQinProjectPath(PsiElement element) {
-        PsiFile file = element.getContainingFile();
+        PsiFile file = QinPsiTree.containingFile(element);
         if (file == null) return null;
 
-        VirtualFile virtualFile = file.getVirtualFile();
+        VirtualFile virtualFile = QinPsiTree.virtualFile(file);
         if (virtualFile == null) return null;
 
         Path nearest = QinProjectLocator.findNearestQinProject(Path.of(virtualFile.getPath()));

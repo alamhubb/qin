@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-final class QinPsiTree {
+public final class QinPsiTree {
     private QinPsiTree() {
     }
 
@@ -29,7 +29,7 @@ final class QinPsiTree {
         return element.getFirstChild();
     }
 
-    static @Nullable PsiElement parent(@NotNull PsiElement element) {
+    public static @Nullable PsiElement parent(@NotNull PsiElement element) {
         return element.getParent();
     }
 
@@ -37,7 +37,7 @@ final class QinPsiTree {
         return firstChild(element) == null;
     }
 
-    static @NotNull TextRange elementRange(@NotNull PsiElement element) {
+    public static @NotNull TextRange elementRange(@NotNull PsiElement element) {
         return element.getTextRange();
     }
 
@@ -53,7 +53,7 @@ final class QinPsiTree {
         return file.findElementAt(offset);
     }
 
-    static @NotNull Project project(@NotNull PsiElement element) {
+    public static @NotNull Project project(@NotNull PsiElement element) {
         return element.getProject();
     }
 
@@ -61,7 +61,7 @@ final class QinPsiTree {
         return PsiManager.getInstance(project).findFile(file);
     }
 
-    static @Nullable VirtualFile virtualFile(@NotNull PsiFile file) {
+    public static @Nullable VirtualFile virtualFile(@NotNull PsiFile file) {
         return file.getVirtualFile();
     }
 
@@ -74,7 +74,7 @@ final class QinPsiTree {
                 .shiftRight(reference.getElement().getTextRange().getStartOffset());
     }
 
-    static @Nullable PsiFile containingFile(@NotNull PsiElement element) {
+    public static @Nullable PsiFile containingFile(@NotNull PsiElement element) {
         return element.getContainingFile();
     }
 

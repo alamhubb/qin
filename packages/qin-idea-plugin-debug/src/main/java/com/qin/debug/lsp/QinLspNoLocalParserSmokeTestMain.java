@@ -12,6 +12,21 @@ public final class QinLspNoLocalParserSmokeTestMain {
             "getReferencesFromProviders");
     private static final List<String> FORBIDDEN_DIRECT_JAVA_PSI_MARKERS = List.of(
             "JavaPsiFacade");
+    private static final List<AllowedDirectPsiBridge> ALLOWED_DIRECT_PSI_BRIDGES = List.of(
+            new AllowedDirectPsiBridge("element.getProject()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("element.getNode()", "QinPsiTree.java", "QinPsiRenames.java"),
+            new AllowedDirectPsiBridge("element.getFirstChild()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("element.getParent()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("element.getTextRange()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("element.getText()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("element.getContainingFile()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("objectDeclaration.getTextRange()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("reference.getElement().getTextRange()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("file.getVirtualFile()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("file.getOriginalFile().getVirtualFile()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("psiFile.getVirtualFile()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("psiFile.getProject()", "QinPsiTree.java"),
+            new AllowedDirectPsiBridge("file.getText()", "QinPsiTree.java"));
     private static final List<String> FORBIDDEN_PLUGIN_XML_MARKERS = List.of(
             "lang.psiStructureViewFactory");
     private static final List<String> ALLOWED_SOURCE_FILES = List.of(
@@ -43,6 +58,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoForbiddenSourceMarkers(javaRoot);
         assertNoDirectReferenceRegistryAccess(javaRoot);
         assertNoDirectJavaPsiAccess(javaRoot);
+        assertDirectPsiPlatformAccessIsWhitelisted(javaRoot);
         assertLexerUsesSharedScannerAdapter(javaRoot);
         assertSyntaxHighlighterCoverageUsesTextAttributes(testJavaRoot);
         assertImportContextualKeywordCoverageUsesLexerTokens(testJavaRoot);
@@ -99,6 +115,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
             for (Path file : files
                     .filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> !path.getFileName().toString().equals("QinLspNoLocalParserSmokeTestMain.java"))
                     .toList()) {
                 if (isAllowedSourceFile(file)) {
                     continue;
@@ -118,6 +135,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
             for (Path file : files
                     .filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> !path.getFileName().toString().equals("QinLspNoLocalParserSmokeTestMain.java"))
                     .toList()) {
                 if (isAllowedSourceFile(file)) {
                     continue;
@@ -137,6 +155,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
             for (Path file : files
                     .filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> !path.getFileName().toString().equals("QinLspNoLocalParserSmokeTestMain.java"))
                     .toList()) {
                 if (isAllowedSourceFile(file)) {
                     continue;
@@ -146,6 +165,26 @@ public final class QinLspNoLocalParserSmokeTestMain {
                     require(!containsWholeMarker(source, marker),
                             "Qin Java interop must resolve Java PSI through QinJavaReference, not direct "
                                     + marker + " access in " + file);
+                }
+            }
+        }
+    }
+
+    private static void assertDirectPsiPlatformAccessIsWhitelisted(Path javaRoot) throws Exception {
+        try (var files = Files.walk(javaRoot)) {
+            for (Path file : files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> !path.getFileName().toString().equals("QinLspNoLocalParserSmokeTestMain.java"))
+                    .toList()) {
+                String source = Files.readString(file);
+                for (AllowedDirectPsiBridge allowed : ALLOWED_DIRECT_PSI_BRIDGES) {
+                    if (!source.contains(allowed.marker())) {
+                        continue;
+                    }
+                    require(allowed.isAllowed(file),
+                            "Direct PSI platform access " + allowed.marker()
+                                    + " must stay behind an explicit bridge boundary, not in " + file);
                 }
             }
         }
@@ -1466,6 +1505,18 @@ public final class QinLspNoLocalParserSmokeTestMain {
     private static void require(boolean condition, String message) {
         if (!condition) {
             throw new IllegalStateException(message);
+        }
+    }
+
+    private record AllowedDirectPsiBridge(
+            String marker,
+            List<String> allowedFileNames) {
+        AllowedDirectPsiBridge(String marker, String... allowedFileNames) {
+            this(marker, List.of(allowedFileNames));
+        }
+
+        boolean isAllowed(Path file) {
+            return allowedFileNames.contains(file.getFileName().toString());
         }
     }
 }

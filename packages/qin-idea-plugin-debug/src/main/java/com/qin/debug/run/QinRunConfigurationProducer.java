@@ -6,6 +6,7 @@ import com.intellij.execution.configurations.ConfigurationFactory;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.qin.debug.QinProjectLocator;
+import com.qin.debug.lsp.QinPsiTree;
 import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
@@ -110,10 +111,10 @@ public class QinRunConfigurationProducer extends LazyRunConfigurationProducer<Qi
     /**
      * 鍚戜笂鏌ユ壘 qin.config.js 鎵€鍦ㄧ洰褰?     */
     private String findQinProjectPath(PsiElement element) {
-        PsiFile psiFile = element.getContainingFile();
+        PsiFile psiFile = QinPsiTree.containingFile(element);
         if (psiFile == null) return null;
 
-        VirtualFile file = psiFile.getVirtualFile();
+        VirtualFile file = QinPsiTree.virtualFile(psiFile);
         if (file == null) return null;
 
         Path nearest = QinProjectLocator.findNearestQinProject(Path.of(file.getPath()));
