@@ -11,6 +11,8 @@ import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
+import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterFactory;
@@ -107,6 +109,27 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains("Greeter:" + QinTokenTypes.CLASS_NAME));
         assertTrue("Qin lexer should keep member identifiers for IDEA highlighting: " + tokens,
                 tokens.contains("greet:" + QinTokenTypes.MEMBER_IDENTIFIER));
+    }
+
+    public void testQinSyntaxHighlighterMapsCoreTokensToIdeaTextAttributes() {
+        QinSyntaxHighlighter highlighter = new QinSyntaxHighlighter();
+
+        assertTokenHighlight(highlighter, QinTokenTypes.KEYWORD, DefaultLanguageHighlighterColors.KEYWORD);
+        assertTokenHighlight(highlighter, QinTokenTypes.IDENTIFIER, DefaultLanguageHighlighterColors.IDENTIFIER);
+        assertTokenHighlight(highlighter, QinTokenTypes.CLASS_NAME, DefaultLanguageHighlighterColors.CLASS_NAME);
+        assertTokenHighlight(highlighter, QinTokenTypes.FUNCTION_IDENTIFIER, DefaultLanguageHighlighterColors.FUNCTION_CALL);
+        assertTokenHighlight(highlighter, QinTokenTypes.MEMBER_IDENTIFIER, DefaultLanguageHighlighterColors.INSTANCE_METHOD);
+        assertTokenHighlight(highlighter, QinTokenTypes.STRING, DefaultLanguageHighlighterColors.STRING);
+        assertTokenHighlight(highlighter, QinTokenTypes.NUMBER, DefaultLanguageHighlighterColors.NUMBER);
+        assertTokenHighlight(highlighter, QinTokenTypes.LINE_COMMENT, DefaultLanguageHighlighterColors.LINE_COMMENT);
+        assertTokenHighlight(highlighter, QinTokenTypes.BLOCK_COMMENT, DefaultLanguageHighlighterColors.BLOCK_COMMENT);
+        assertTokenHighlight(highlighter, QinTokenTypes.BRACE, DefaultLanguageHighlighterColors.BRACES);
+        assertTokenHighlight(highlighter, QinTokenTypes.PAREN, DefaultLanguageHighlighterColors.PARENTHESES);
+        assertTokenHighlight(highlighter, QinTokenTypes.BRACKET, DefaultLanguageHighlighterColors.BRACKETS);
+        assertTokenHighlight(highlighter, QinTokenTypes.OPERATOR, DefaultLanguageHighlighterColors.OPERATION_SIGN);
+        assertTokenHighlight(highlighter, QinTokenTypes.COMMA, DefaultLanguageHighlighterColors.COMMA);
+        assertTokenHighlight(highlighter, QinTokenTypes.SEMICOLON, DefaultLanguageHighlighterColors.SEMICOLON);
+        assertTokenHighlight(highlighter, QinTokenTypes.DOT, DefaultLanguageHighlighterColors.DOT);
     }
 
     public void testQinSymbolAnnotatorHighlightsObjectDeclarationsAndReferences() {
@@ -2299,6 +2322,15 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
             lexer.advance();
         }
         return tokens;
+    }
+
+    private static void assertTokenHighlight(
+            QinSyntaxHighlighter highlighter,
+            IElementType tokenType,
+            TextAttributesKey expectedKey) {
+        TextAttributesKey[] keys = highlighter.getTokenHighlights(tokenType);
+        assertTrue("Expected " + tokenType + " to include " + expectedKey + " but got " + Arrays.toString(keys),
+                Arrays.asList(keys).contains(expectedKey));
     }
 
     private static boolean hasPsiElementType(PsiElement root, IElementType type) {

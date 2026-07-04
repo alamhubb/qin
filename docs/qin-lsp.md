@@ -66,6 +66,8 @@ The IDEA lexer should be backed by a Qin/Slime/Subhuti token adapter rather than
 
 Do not duplicate Qin/Slime lexical rules in the IDEA plugin. Token creation should use the same Slime/Subhuti token definitions as `QinParser` (`JavaScriptTokens.getTokens()`), and shared token classification such as keyword detection should use Slime token utilities instead of IDEA-local keyword lists. IDEA-owned code may map shared token facts into platform-specific `IElementType` categories, because that mapping is an IntelliJ presentation boundary rather than a language rule.
 
+Base syntax highlighting tests should cover the `QinSyntaxHighlighter` mapping from shared Qin token types to IntelliJ `TextAttributesKey` values. Lexer token classification tests alone are not enough to prove that IDEA will color keywords, identifiers, literals, comments, delimiters, and operators correctly.
+
 Treat import-only contextual keywords such as `as` and `from` as keyword tokens only inside import declarations. If the shared token utility reports them as keywords globally, normalize them back to identifiers first and then upgrade them in the import token-stream pass. Do not highlight ordinary identifiers such as `const from = value` as keywords.
 
 Keep IDEA token facts normalized behind one adapter surface. `QinLexer`, `QinParserDefinition`, declaration scanning, references, indexes, and completion may consume shared token facts such as trivia detection, reference-token detection, token slicing, and next meaningful token lookup. Do not copy those token facts into each consumer. Prefer composition through a shared token adapter/facts class over inheritance between platform adapter classes.
