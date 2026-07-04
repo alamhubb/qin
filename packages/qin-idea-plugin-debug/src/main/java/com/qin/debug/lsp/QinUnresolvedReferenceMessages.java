@@ -1,7 +1,6 @@
 package com.qin.debug.lsp;
 
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,9 +9,7 @@ final class QinUnresolvedReferenceMessages {
     }
 
     static @Nullable String messageFor(@NotNull PsiElement element) {
-        if (!(element.getContainingFile() instanceof QinPsiFile)
-                || element.getNode() == null
-                || element.getNode().getElementType() != QinTokenTypes.REFERENCE_IDENTIFIER) {
+        if (!isReferenceIdentifier(element)) {
             return null;
         }
         String javaMessage = javaMessageFor(element);
@@ -74,8 +71,7 @@ final class QinUnresolvedReferenceMessages {
     }
 
     private static boolean isReferenceIdentifier(@NotNull PsiElement element) {
-        IElementType elementType = element.getNode() == null ? null : element.getNode().getElementType();
         return element.getContainingFile() instanceof QinPsiFile
-                && elementType == QinTokenTypes.REFERENCE_IDENTIFIER;
+                && QinReferenceElements.isReferenceIdentifier(element);
     }
 }

@@ -43,6 +43,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoDirectJavaPsiAccess(javaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertQualifierLookupUsesSharedReferenceElements(javaRoot);
+        assertReferenceTokenChecksUseSharedReferenceElements(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
         assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertImportAliasPsiBridgeUsesQinPsiTree(javaRoot);
@@ -168,6 +169,40 @@ public final class QinLspNoLocalParserSmokeTestMain {
                                 + file);
             }
         }
+    }
+
+    private static void assertReferenceTokenChecksUseSharedReferenceElements(Path javaRoot) throws Exception {
+        Path referenceElements = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinReferenceElements.java"));
+        require(Files.isRegularFile(referenceElements),
+                "QinReferenceElements source not found: " + referenceElements);
+        String helperSource = Files.readString(referenceElements);
+        require(helperSource.contains("isReferenceIdentifier(")
+                        && helperSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER")
+                        && helperSource.contains("isImportAliasDeclaration(")
+                        && helperSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
+                "QinReferenceElements must own shared reference token checks: "
+                        + referenceElements);
+
+        Path unresolvedMessages = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinUnresolvedReferenceMessages.java"));
+        require(Files.isRegularFile(unresolvedMessages),
+                "QinUnresolvedReferenceMessages source not found: " + unresolvedMessages);
+        String unresolvedMessagesSource = Files.readString(unresolvedMessages);
+        require(unresolvedMessagesSource.contains("QinReferenceElements.isReferenceIdentifier(")
+                        && !unresolvedMessagesSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER"),
+                "QinUnresolvedReferenceMessages must use QinReferenceElements for reference "
+                        + "identifier checks instead of owning the token mapping: " + unresolvedMessages);
+
+        Path importAliasReference = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinImportAliasReference.java"));
+        require(Files.isRegularFile(importAliasReference),
+                "QinImportAliasReference source not found: " + importAliasReference);
+        String importAliasReferenceSource = Files.readString(importAliasReference);
+        require(importAliasReferenceSource.contains("QinReferenceElements.isImportAliasDeclaration(")
+                        && !importAliasReferenceSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
+                "QinImportAliasReference must use QinReferenceElements for import alias "
+                        + "declaration checks instead of owning the token mapping: " + importAliasReference);
     }
 
     private static void assertImportBindingsUseSourceStructureSpecifierLookup(Path javaRoot) throws Exception {

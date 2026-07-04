@@ -11,18 +11,24 @@ final class QinReferenceElements {
 
     static @Nullable PsiElement referenceElement(@NotNull PsiElement element) {
         IElementType elementType = element.getNode() == null ? null : element.getNode().getElementType();
-        if (elementType == QinTokenTypes.REFERENCE_IDENTIFIER) {
+        if (isReferenceIdentifier(element)) {
             return element;
         }
         if (QinTokenFacts.isReferenceLeafToken(elementType)) {
             PsiElement parent = element.getParent();
-            if (parent != null
-                    && parent.getNode() != null
-                    && parent.getNode().getElementType() == QinTokenTypes.REFERENCE_IDENTIFIER) {
+            if (parent != null && isReferenceIdentifier(parent)) {
                 return parent;
             }
         }
         return null;
+    }
+
+    static boolean isReferenceIdentifier(@NotNull PsiElement element) {
+        return QinPsiTree.isType(element, QinTokenTypes.REFERENCE_IDENTIFIER);
+    }
+
+    static boolean isImportAliasDeclaration(@NotNull PsiElement element) {
+        return QinPsiTree.isType(element, QinTokenTypes.IMPORT_ALIAS_NAME);
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement element) {
