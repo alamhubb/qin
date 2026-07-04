@@ -1,6 +1,7 @@
 package com.qin.debug.lsp;
 
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiRecursiveElementWalkingVisitor;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
@@ -26,6 +27,17 @@ final class QinPsiTree {
             current = current.getParent();
         }
         return null;
+    }
+
+    static @Nullable PsiElement elementAtOrParentOfType(
+            @NotNull PsiFile file,
+            int offset,
+            @NotNull IElementType type) {
+        PsiElement element = file.findElementAt(offset);
+        if (element == null) {
+            return null;
+        }
+        return isType(element, type) ? element : parentOfType(element, type);
     }
 
     static @Nullable PsiElement firstDescendantOfType(@NotNull PsiElement root, @NotNull IElementType type) {

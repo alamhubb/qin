@@ -66,14 +66,10 @@ final class QinImportBindings {
                         || !specifier.localName().equals(localName)) {
                     continue;
                 }
-                PsiElement aliasLeaf = file.findElementAt(specifier.localNameRange().startOffset());
-                if (aliasLeaf == null) {
-                    return null;
-                }
-                if (QinPsiTree.isType(aliasLeaf, QinTokenTypes.IMPORT_ALIAS_NAME)) {
-                    return aliasLeaf;
-                }
-                return QinPsiTree.parentOfType(aliasLeaf, QinTokenTypes.IMPORT_ALIAS_NAME);
+                return QinPsiTree.elementAtOrParentOfType(
+                        file,
+                        specifier.localNameRange().startOffset(),
+                        QinTokenTypes.IMPORT_ALIAS_NAME);
             }
         }
         return null;
