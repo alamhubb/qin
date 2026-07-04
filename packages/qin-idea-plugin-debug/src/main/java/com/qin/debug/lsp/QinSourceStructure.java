@@ -77,6 +77,16 @@ final class QinSourceStructure {
         return null;
     }
 
+    ImportSpecifier importAliasSpecifierNamed(@NotNull String localName) {
+        for (ImportDeclaration declaration : importDeclarations) {
+            ImportSpecifier specifier = declaration.aliasSpecifierNamed(localName);
+            if (specifier != null) {
+                return specifier;
+            }
+        }
+        return null;
+    }
+
     ObjectDeclaration objectDeclarationAtKeywordOffset(int offset) {
         for (ObjectDeclaration declaration : objectDeclarations) {
             if (declaration.keywordRange().startsAt(offset)) {
@@ -471,6 +481,16 @@ final class QinSourceStructure {
             for (ImportSpecifier specifier : specifiers) {
                 if (specifier.exportedNameRange().startsAt(offset)
                         || specifier.localNameRange().startsAt(offset)) {
+                    return specifier;
+                }
+            }
+            return null;
+        }
+
+        ImportSpecifier aliasSpecifierNamed(@NotNull String localName) {
+            for (ImportSpecifier specifier : specifiers) {
+                if (specifier.localNameRange().isPresent()
+                        && specifier.localName().equals(localName)) {
                     return specifier;
                 }
             }

@@ -58,19 +58,14 @@ final class QinImportBindings {
             return null;
         }
         QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
-        for (QinSourceStructure.ImportDeclaration declaration : sourceStructure.importDeclarations()) {
-            for (QinSourceStructure.ImportSpecifier specifier : declaration.specifiers()) {
-                if (!specifier.localNameRange().isPresent()
-                        || !specifier.localName().equals(localName)) {
-                    continue;
-                }
-                return QinPsiTree.elementAtRangeOrParentOfType(
-                        file,
-                        specifier.localNameRange(),
-                        QinTokenTypes.IMPORT_ALIAS_NAME);
-            }
+        QinSourceStructure.ImportSpecifier specifier = sourceStructure.importAliasSpecifierNamed(localName);
+        if (specifier == null) {
+            return null;
         }
-        return null;
+        return QinPsiTree.elementAtRangeOrParentOfType(
+                file,
+                specifier.localNameRange(),
+                QinTokenTypes.IMPORT_ALIAS_NAME);
     }
 
     record ImportBinding(@NotNull String moduleSpecifier, @NotNull String exportedName, @NotNull String localName) {

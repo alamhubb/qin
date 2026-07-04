@@ -43,6 +43,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertNoDirectJavaPsiAccess(javaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertImportBindingsUseSourceStructureSpecifierLookup(javaRoot);
+        assertImportBindingsUseSourceStructureAliasLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureDeclarationLookup(javaRoot);
         assertObjectSymbolsUseSourceStructureMemberLookup(javaRoot);
 
@@ -137,6 +138,19 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("localNameRange().startsAt"),
                 "QinImportBindings must use QinSourceStructure.ImportDeclaration.specifierAtNameOffset "
                         + "instead of splitting named import ranges: " + importBindings);
+    }
+
+    private static void assertImportBindingsUseSourceStructureAliasLookup(Path javaRoot) throws Exception {
+        Path importBindings = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinImportBindings.java"));
+        require(Files.isRegularFile(importBindings),
+                "QinImportBindings source not found: " + importBindings);
+        String source = Files.readString(importBindings);
+        require(source.contains(".importAliasSpecifierNamed(")
+                        && !source.contains("specifier.localName().equals(localName)")
+                        && !source.contains("specifier.localNameRange().isPresent()"),
+                "QinImportBindings must use QinSourceStructure import alias lookup "
+                        + "instead of matching alias names itself: " + importBindings);
     }
 
     private static void assertObjectSymbolsUseSourceStructureDeclarationLookup(Path javaRoot) throws Exception {
