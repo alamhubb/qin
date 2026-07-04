@@ -694,6 +694,37 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertNotNull("Qin PSI should wrap this.member name as a REFERENCE_IDENTIFIER", valueReference);
     }
 
+    public void testQinPsiTokenStreamUsesSharedFactsForThisMemberBoundaries() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+
+                  next() {
+                    return this.value
+                  }
+
+                  again() {
+                    return this.next()
+                  }
+                }
+                """);
+
+        String text = myFixture.getEditor().getDocument().getText();
+        PsiElement value = myFixture.getFile().findElementAt(text.indexOf("value", text.indexOf("this.value")));
+        PsiElement next = myFixture.getFile().findElementAt(text.indexOf("next", text.indexOf("this.next")));
+        PsiElement valueReference = QinReferenceElements.referenceElement(value);
+        PsiElement nextReference = QinReferenceElements.referenceElement(next);
+
+        assertNotNull("this.value should expose a Qin reference element", valueReference);
+        assertNotNull("this.next() should expose a Qin reference element", nextReference);
+        assertEquals("this", QinPsiTokenStream.previousQualifierName(valueReference));
+        assertEquals("this", QinPsiTokenStream.previousQualifierName(nextReference));
+        assertFalse("this.value should be classified as field access",
+                QinPsiTokenStream.isFollowedByCallParenthesis(valueReference));
+        assertTrue("this.next() should be classified as method call",
+                QinPsiTokenStream.isFollowedByCallParenthesis(nextReference));
+    }
+
     public void testQinParserKeepsJavaMemberReferencesInsideObjectDeclaration() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;

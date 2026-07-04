@@ -164,6 +164,23 @@ final class QinTokenFacts {
         return isMethodDeclarationName(new LexicalTokenSequence(content, tokens), tokenIndex);
     }
 
+    static boolean isFollowedByCallParenthesis(@NotNull List<QinPsiToken> tokens, int tokenIndex) {
+        int next = tokenIndex + 1;
+        return next >= 0 && next < tokens.size() && tokens.get(next).is(QinTokenTypes.PAREN, "(");
+    }
+
+    static @Nullable String previousQualifierName(@NotNull List<QinPsiToken> tokens, int tokenIndex) {
+        if (tokenIndex < 2 || tokenIndex >= tokens.size()) {
+            return null;
+        }
+        QinPsiToken dot = tokens.get(tokenIndex - 1);
+        QinPsiToken qualifier = tokens.get(tokenIndex - 2);
+        if (!dot.is(QinTokenTypes.DOT, ".") || (!qualifier.isIdentifier() && !qualifier.isKeyword("this"))) {
+            return null;
+        }
+        return qualifier.text();
+    }
+
     private static boolean isFieldDeclarationName(@NotNull TokenSequence sequence, int tokenIndex) {
         if (!isDeclarationIdentifierToken(sequence.typeAt(tokenIndex))) {
             return false;

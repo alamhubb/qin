@@ -56,24 +56,13 @@ final class QinPsiTokenStream {
     static boolean isFollowedByCallParenthesis(@NotNull PsiElement root, @NotNull PsiElement element) {
         List<QinPsiToken> tokens = collect(root);
         int tokenIndex = indexOfElement(tokens, element);
-        if (tokenIndex < 0 || tokenIndex + 1 >= tokens.size()) {
-            return false;
-        }
-        return tokens.get(tokenIndex + 1).is(QinTokenTypes.PAREN, "(");
+        return tokenIndex >= 0 && QinTokenFacts.isFollowedByCallParenthesis(tokens, tokenIndex);
     }
 
     static @Nullable String previousQualifierName(@NotNull PsiElement root, @NotNull PsiElement element) {
         List<QinPsiToken> tokens = collect(root);
         int tokenIndex = indexOfElement(tokens, element);
-        if (tokenIndex < 2) {
-            return null;
-        }
-        QinPsiToken dot = tokens.get(tokenIndex - 1);
-        QinPsiToken qualifier = tokens.get(tokenIndex - 2);
-        if (!dot.is(QinTokenTypes.DOT, ".") || (!qualifier.isIdentifier() && !qualifier.isKeyword("this"))) {
-            return null;
-        }
-        return qualifier.text();
+        return tokenIndex < 0 ? null : QinTokenFacts.previousQualifierName(tokens, tokenIndex);
     }
 
     private static int indexOfElement(List<QinPsiToken> tokens, PsiElement element) {

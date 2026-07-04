@@ -87,7 +87,7 @@ The import token-stream pass must stop at a line terminator after an incomplete 
 
 The lexer and `QinSourceStructure` must use the same import new-statement boundary helper for this rule. Do not keep a lexer-only newline stop and a separate source-structure import range scan, because ParserDefinition consumes `QinSourceStructure.ImportDeclaration` ranges to build import PSI nodes.
 
-Keep IDEA token facts normalized behind one adapter surface. `QinLexer`, `QinParserDefinition`, declaration scanning, references, indexes, and completion may consume shared token facts such as trivia detection, reference-token detection, token slicing, and next meaningful token lookup. Do not copy those token facts into each consumer. Prefer composition through a shared token adapter/facts class over inheritance between platform adapter classes.
+Keep IDEA token facts normalized behind one adapter surface. `QinLexer`, `QinParserDefinition`, declaration scanning, references, indexes, and completion may consume shared token facts such as trivia detection, reference-token detection, token slicing, next meaningful token lookup, qualifier lookup, and call-vs-field member boundaries. Do not copy those token facts into each consumer. Prefer composition through a shared token adapter/facts class over inheritance between platform adapter classes.
 
 The adapter may own trivia and editor-recovery details required by the IntelliJ lexer contract: whitespace/comment tokens, stable token ranges, fast advancement, and highlightable incomplete literals while the user is typing. That recovery is an editor-tokenization boundary, not a broad parser fallback and not a reason to hide real Qin parser defects.
 
