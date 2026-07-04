@@ -838,8 +838,10 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
         String psiTreeSource = Files.readString(psiTree);
         require(psiTreeSource.contains("psiFile(")
-                        && psiTreeSource.contains("PsiManager.getInstance(project).findFile(file)"),
-                "QinPsiTree must own VirtualFile to PsiFile lookup: " + psiTree);
+                        && psiTreeSource.contains("PsiManager.getInstance(project).findFile(file)")
+                        && psiTreeSource.contains("originalVirtualFile(")
+                        && psiTreeSource.contains("file.getOriginalFile().getVirtualFile()"),
+                "QinPsiTree must own VirtualFile/PsiFile platform lookup bridges: " + psiTree);
 
         Path objectSymbols = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
@@ -861,6 +863,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && moduleImportTableSource.contains("Map<String, QinImportBindings.ImportBinding>")
                         && moduleImportTableSource.contains("fromElement(@NotNull PsiElement element)")
                         && moduleImportTableSource.contains("QinPsiTree.containingFile(element)")
+                        && moduleImportTableSource.contains("QinPsiTree.originalVirtualFile(importingFile)")
                         && moduleImportTableSource.contains("resolveFile(@NotNull QinImportBindings.ImportBinding binding)")
                         && source.contains("importTable.resolveFile(importBinding)")
                         && objectReferenceSource.contains("QinModuleImportTable.fromElement(")
@@ -869,6 +872,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !objectReferenceSource.contains("QinModuleImportTable.QinImport")
                         && !objectReferenceSource.contains("QinModuleImportTable.fromFile(element.getContainingFile())")
                         && !moduleImportTableSource.contains("record QinImport")
+                        && !moduleImportTableSource.contains("importingFile.getOriginalFile().getVirtualFile()")
                         && !source.contains("PsiManager.getInstance(")
                         && !source.contains(".findFile(importedFile)")
                         && !source.contains("StubIndex.getElements(")

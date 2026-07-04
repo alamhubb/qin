@@ -50,7 +50,7 @@ final class QinModuleImportTable {
         if (importingFile == null) {
             return null;
         }
-        VirtualFile sourceFile = importingFile.getOriginalFile().getVirtualFile();
+        VirtualFile sourceFile = QinPsiTree.originalVirtualFile(importingFile);
         if (sourceFile == null || sourceFile.getParent() == null) {
             return null;
         }

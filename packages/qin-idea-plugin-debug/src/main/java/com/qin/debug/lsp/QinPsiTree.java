@@ -57,6 +57,10 @@ final class QinPsiTree {
         return PsiManager.getInstance(project).findFile(file);
     }
 
+    static @Nullable VirtualFile originalVirtualFile(@NotNull PsiFile file) {
+        return file.getOriginalFile().getVirtualFile();
+    }
+
     static @NotNull TextRange referenceRangeInFile(@NotNull PsiReference reference) {
         return reference.getRangeInElement()
                 .shiftRight(reference.getElement().getTextRange().getStartOffset());
