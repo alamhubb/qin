@@ -100,6 +100,10 @@ final class QinReferenceElements {
         return null;
     }
 
+    static boolean isThisQualifier(@Nullable String qualifier) {
+        return "this".equals(qualifier);
+    }
+
     static boolean isFollowedByCallParenthesis(@NotNull PsiElement element) {
         return QinPsiTokenStream.isFollowedByCallParenthesis(element);
     }

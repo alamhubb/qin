@@ -19,7 +19,7 @@ final class QinObjectMemberCompletions {
         if (qualifier == null) {
             return List.of();
         }
-        if ("this".equals(qualifier)) {
+        if (QinReferenceElements.isThisQualifier(qualifier)) {
             return QinObjectSymbols.memberElementsForThis(referenceElement);
         }
         return QinObjectSymbols.memberElementsForObject(referenceElement, qualifier);

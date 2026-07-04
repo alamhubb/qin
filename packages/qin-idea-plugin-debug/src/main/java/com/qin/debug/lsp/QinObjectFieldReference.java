@@ -51,7 +51,7 @@ final class QinObjectFieldReference extends PsiPolyVariantReferenceBase<PsiEleme
 
     private static @Nullable PsiElement resolveFieldName(@NotNull PsiElement element) {
         String qualifier = QinReferenceElements.previousQualifierName(element);
-        if ("this".equals(qualifier)) {
+        if (QinReferenceElements.isThisQualifier(qualifier)) {
             return QinObjectSymbols.findFieldNameForThis(element, element.getText());
         }
         if (qualifier == null) {
@@ -62,7 +62,7 @@ final class QinObjectFieldReference extends PsiPolyVariantReferenceBase<PsiEleme
 
     private static boolean hasObjectFieldQualifier(@NotNull PsiElement element) {
         String qualifier = QinReferenceElements.previousQualifierName(element);
-        if ("this".equals(qualifier)) {
+        if (QinReferenceElements.isThisQualifier(qualifier)) {
             return true;
         }
         return qualifier != null && QinObjectSymbols.findObjectName(element, qualifier) != null;

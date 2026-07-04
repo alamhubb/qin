@@ -480,7 +480,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String helperSource = Files.readString(referenceElements);
         require(helperSource.contains("previousQualifierName(")
                         && helperSource.contains("QinTokenTypes.MEMBER_ACCESS")
-                        && helperSource.contains("QinPsiTokenStream.previousQualifierName("),
+                        && helperSource.contains("QinPsiTokenStream.previousQualifierName(")
+                        && helperSource.contains("isThisQualifier("),
                 "QinReferenceElements must own shared Qin qualifier lookup: " + referenceElements);
 
         Path javaReference = javaRoot.resolve(Path.of(
@@ -502,6 +503,18 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         "Qin qualifier lookup must flow through QinReferenceElements, not QinJavaReference: "
                                 + file);
             }
+        }
+
+        for (Path file : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectMethodReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectFieldReference.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "lsp", "QinObjectMemberCompletions.java")))) {
+            require(Files.isRegularFile(file), "Qin qualifier consumer source not found: " + file);
+            String source = Files.readString(file);
+            require(source.contains("QinReferenceElements.isThisQualifier(")
+                            && !source.contains("\"this\".equals("),
+                    "Qin qualifier consumers must use QinReferenceElements.isThisQualifier "
+                            + "instead of direct string checks: " + file);
         }
     }
 
