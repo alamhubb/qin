@@ -722,12 +722,23 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinObjectNameStubIndex must own object-name StubIndex membership lookup: "
                         + objectNameStubIndex);
 
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("psiFile(")
+                        && psiTreeSource.contains("PsiManager.getInstance(project).findFile(file)"),
+                "QinPsiTree must own VirtualFile to PsiFile lookup: " + psiTree);
+
         Path objectSymbols = javaRoot.resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinObjectSymbols.java"));
         require(Files.isRegularFile(objectSymbols),
                 "QinObjectSymbols source not found: " + objectSymbols);
         String source = Files.readString(objectSymbols);
         require(source.contains("QinObjectNameStubIndex.contains(")
+                        && source.contains("QinPsiTree.psiFile(")
+                        && !source.contains("PsiManager.getInstance(")
+                        && !source.contains(".findFile(importedFile)")
                         && !source.contains("StubIndex.getElements(")
                         && !source.contains("QinObjectNameStubIndex.KEY")
                         && !source.contains("GlobalSearchScope.fileScope(")
@@ -735,7 +746,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("keywordRange().startsAt"),
                 "QinObjectSymbols must use QinObjectNameStubIndex and QinSourceStructure "
                         + "object declaration lookup helpers instead of owning StubIndex lookup, "
-                        + "iterating declarations, or matching keyword ranges: " + objectSymbols);
+                        + "VirtualFile-to-PsiFile lookup, iterating declarations, or matching "
+                        + "keyword ranges: " + objectSymbols);
     }
 
     private static void assertObjectDeclarationPsiBridgeUsesQinPsiTree(Path javaRoot) throws Exception {

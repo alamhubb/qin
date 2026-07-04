@@ -3,7 +3,6 @@ package com.qin.debug.lsp;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,7 +61,7 @@ final class QinObjectSymbols {
         if (!QinObjectNameStubIndex.contains(element.getProject(), importedFile, exportedName)) {
             return null;
         }
-        PsiFile importedPsiFile = PsiManager.getInstance(element.getProject()).findFile(importedFile);
+        PsiFile importedPsiFile = QinPsiTree.psiFile(element.getProject(), importedFile);
         PsiElement objectName = importedPsiFile == null ? null : findObjectNameInFile(importedPsiFile, exportedName);
         return objectName == null ? null : new ResolvedObject(objectName, exportedName, importedFile);
     }

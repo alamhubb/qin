@@ -1,7 +1,10 @@
 package com.qin.debug.lsp;
 
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,6 +19,10 @@ final class QinPsiTree {
 
     static @Nullable PsiElement elementAt(@NotNull PsiFile file, int offset) {
         return file.findElementAt(offset);
+    }
+
+    static @Nullable PsiFile psiFile(@NotNull Project project, @NotNull VirtualFile file) {
+        return PsiManager.getInstance(project).findFile(file);
     }
 
     static @Nullable PsiElement parentOfType(@NotNull PsiElement element, @NotNull IElementType type) {
