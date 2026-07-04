@@ -12,8 +12,6 @@ import com.intellij.psi.PsiNamedElement;
 import com.intellij.util.ProcessingContext;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 public final class QinObjectMemberCompletionContributor extends CompletionContributor {
     public QinObjectMemberCompletionContributor() {
         extend(
@@ -25,20 +23,7 @@ public final class QinObjectMemberCompletionContributor extends CompletionContri
                             @NotNull CompletionParameters parameters,
                             @NotNull ProcessingContext context,
                             @NotNull CompletionResultSet result) {
-                        PsiElement referenceElement = QinReferenceElements.referenceElement(parameters.getPosition());
-                        if (referenceElement == null || QinJavaReference.isJavaReferenceCandidate(referenceElement)) {
-                            return;
-                        }
-
-                        String qualifier = QinReferenceElements.previousQualifierName(referenceElement);
-                        if (qualifier == null) {
-                            return;
-                        }
-
-                        List<PsiElement> members = "this".equals(qualifier)
-                                ? QinObjectSymbols.memberElementsForThis(referenceElement)
-                                : QinObjectSymbols.memberElementsForObject(referenceElement, qualifier);
-                        for (PsiElement member : members) {
+                        for (PsiElement member : QinObjectMemberCompletions.memberElements(parameters.getPosition())) {
                             if (member instanceof PsiNamedElement namedMember) {
                                 result.addElement(LookupElementBuilder.create(namedMember));
                             } else {

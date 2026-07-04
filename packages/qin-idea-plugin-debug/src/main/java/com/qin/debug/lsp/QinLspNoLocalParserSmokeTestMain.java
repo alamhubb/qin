@@ -60,6 +60,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertSymbolHighlightingUsesSharedHelper(javaRoot);
         assertUnresolvedReferenceAnnotationIsUnified(javaRoot);
         assertRenameUsesSharedPsiHelper(javaRoot);
+        assertObjectMemberCompletionUsesSharedHelper(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -540,6 +541,34 @@ public final class QinLspNoLocalParserSmokeTestMain {
                     "Qin rename consumers must use QinPsiRenames instead of owning leaf "
                             + "replacement plumbing: " + file);
         }
+    }
+
+    private static void assertObjectMemberCompletionUsesSharedHelper(Path javaRoot) throws Exception {
+        Path completionHelper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectMemberCompletions.java"));
+        require(Files.isRegularFile(completionHelper),
+                "Qin object member completion helper source not found: " + completionHelper);
+        String helperSource = Files.readString(completionHelper);
+        require(helperSource.contains("memberElements(")
+                        && helperSource.contains("QinReferenceElements.referenceElement(")
+                        && helperSource.contains("QinJavaReference.isJavaReferenceCandidate(")
+                        && helperSource.contains("QinObjectSymbols.memberElementsForThis(")
+                        && helperSource.contains("QinObjectSymbols.memberElementsForObject("),
+                "QinObjectMemberCompletions must own object-member completion context "
+                        + "selection: " + completionHelper);
+
+        Path contributor = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinObjectMemberCompletionContributor.java"));
+        require(Files.isRegularFile(contributor),
+                "Qin object member completion contributor source not found: " + contributor);
+        String contributorSource = Files.readString(contributor);
+        require(contributorSource.contains("QinObjectMemberCompletions.memberElements(")
+                        && !contributorSource.contains("QinJavaReference.isJavaReferenceCandidate(")
+                        && !contributorSource.contains("QinReferenceElements.previousQualifierName(")
+                        && !contributorSource.contains("QinObjectSymbols.memberElementsFor"),
+                "QinObjectMemberCompletionContributor must consume QinObjectMemberCompletions "
+                        + "instead of owning qualifier, Java-boundary, or member lookup decisions: "
+                        + contributor);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
