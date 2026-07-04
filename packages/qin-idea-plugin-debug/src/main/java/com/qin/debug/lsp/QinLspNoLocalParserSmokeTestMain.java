@@ -47,6 +47,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
         assertGoToDeclarationCoverageUsesEditorPath(testJavaRoot);
+        assertFindUsagesAndRenameCoverageUsesPlatformPath(testJavaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertImportBoundaryUsesSharedTokenFacts(javaRoot);
         assertImportParsingUsesSharedContextualKeywords(javaRoot);
@@ -234,16 +235,73 @@ public final class QinLspNoLocalParserSmokeTestMain {
             String source,
             String testName,
             Path platformTest) {
-        String signature = "public void " + testName + "(";
-        int start = source.indexOf(signature);
-        require(start >= 0, "Missing Qin Go To Declaration editor-path coverage test "
-                + testName + " in " + platformTest);
-        int nextTest = source.indexOf("\n    public void ", start + signature.length());
-        String body = nextTest >= 0 ? source.substring(start, nextTest) : source.substring(start);
+        String body = testBody(source, testName, platformTest);
         require(body.contains("myFixture.getElementAtCaret()"),
                 "Qin Go To Declaration test " + testName
                         + " must exercise the IDEA editor path with myFixture.getElementAtCaret(), "
                         + "not only findReferenceAt().resolve(): " + platformTest);
+    }
+
+    private static void assertFindUsagesAndRenameCoverageUsesPlatformPath(Path testJavaRoot) throws Exception {
+        Path platformTest = testJavaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));
+        require(Files.isRegularFile(platformTest),
+                "Qin platform test source not found: " + platformTest);
+        String source = Files.readString(platformTest);
+
+        requireTestContainsAll(source, platformTest,
+                "testQinObjectMethodReferenceParticipatesInReferencesSearch",
+                "ReferencesSearch.search(",
+                "this.next()",
+                "Counter.next()");
+        requireTestContainsAll(source, platformTest,
+                "testQinObjectFieldReferenceParticipatesInReferencesSearch",
+                "ReferencesSearch.search(",
+                "this.value",
+                "Counter.value");
+        requireTestContainsAll(source, platformTest,
+                "testQinObjectMethodRenameProcessorUpdatesReferences",
+                "new RenameProcessor(",
+                "this.advance()",
+                "Counter.advance()");
+        requireTestContainsAll(source, platformTest,
+                "testQinObjectFieldRenameProcessorUpdatesReferences",
+                "new RenameProcessor(",
+                "this.total",
+                "Counter.total");
+        requireTestContainsAll(source, platformTest,
+                "testQinObjectMethodRenameProcessorPreservesImportAliasQualifier",
+                "new RenameProcessor(",
+                "C.advance()",
+                "import { Counter as C }",
+                "Counter.advance()");
+        requireTestContainsAll(source, platformTest,
+                "testQinObjectFieldRenameProcessorPreservesImportAliasQualifier",
+                "new RenameProcessor(",
+                "C.total",
+                "import { Counter as C }",
+                "Counter.total");
+    }
+
+    private static void requireTestContainsAll(
+            String source,
+            Path platformTest,
+            String testName,
+            String... needles) {
+        String body = testBody(source, testName, platformTest);
+        for (String needle : needles) {
+            require(body.contains(needle),
+                    "Qin platform test " + testName + " must keep IDEA Find Usages/Rename "
+                            + "coverage marker `" + needle + "` in " + platformTest);
+        }
+    }
+
+    private static String testBody(String source, String testName, Path platformTest) {
+        String signature = "public void " + testName + "(";
+        int start = source.indexOf(signature);
+        require(start >= 0, "Missing Qin platform coverage test " + testName + " in " + platformTest);
+        int nextTest = source.indexOf("\n    public void ", start + signature.length());
+        return nextTest >= 0 ? source.substring(start, nextTest) : source.substring(start);
     }
 
     private static void assertParserDefinitionUsesSourceRangePredicates(Path javaRoot) throws Exception {
