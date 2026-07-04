@@ -1,11 +1,10 @@
 package com.qin.debug;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.execution.RunManager;
-import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.qin.debug.lsp.QinLspStartupProbe;
+import com.qin.debug.run.QinLegacyRunConfigurations;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
@@ -22,9 +21,6 @@ import java.util.*;
  * 闂傚倷娴囬妴鈧柛瀣尰閵囧嫰寮介妸褉妲堥梺?Monorepo闂傚倷鐒︾€笛呯矙閹烘挾鈹嶆繛宸簻閸氳绻濇繝鍌滃缂佲偓婢舵劖鐓忓┑鐘茬箳閻ｈ鲸銇勯妷銉﹀枠闁哄瞼鍠撻幏鐘绘嚑椤掑偆鍞瑰┑鐘媰閸愵€呪偓娈垮枛閻忔艾顕ラ崟顒傜瘈闁告洦鍓氶崯銏犫攽閿涘嫬浜奸柛濠冩礀閿曘垽宕￠悘?
  */
 public class DebugStartup implements ProjectActivity {
-    private static final String LEGACY_QIN_RUN_CONFIG_ID = "QinRunConfiguration";
-    private static final String LEGACY_QIN_TEST_CONFIG_ID = "QinTestConfiguration";
-
     @Nullable
     @Override
     public Object execute(@NotNull Project project,
@@ -38,7 +34,7 @@ public class DebugStartup implements ProjectActivity {
         QinLogger.init(basePath, project);
         QinLogger.info("[STARTUP] Qin plugin startup: " + project.getName());
         QinLogger.info("[STARTUP] Project base path: " + basePath);
-        removeLegacyQinRunConfigurations(project);
+        QinLegacyRunConfigurations.remove(project);
         ApplicationManager.getApplication().invokeLater(() -> QinLspStartupProbe.log(project, Paths.get(basePath)));
 
         if (QinWorkspaceSdkDefaults.hasQinSdkContext(Paths.get(basePath))) {
@@ -74,28 +70,6 @@ public class DebugStartup implements ProjectActivity {
         QinLogger.info("[STARTUP] Java file watcher started (incremental compile + debounce)");
 
         return Unit.INSTANCE;
-    }
-
-    private static void removeLegacyQinRunConfigurations(Project project) {
-        ApplicationManager.getApplication().invokeLater(() -> ApplicationManager.getApplication().runWriteAction(() -> {
-            RunManager runManager = RunManager.getInstance(project);
-            List<RunnerAndConfigurationSettings> allSettings = new ArrayList<>(runManager.getAllSettings());
-            int removed = 0;
-
-            for (RunnerAndConfigurationSettings settings : allSettings) {
-                String typeId = settings.getType().getId();
-                if (LEGACY_QIN_RUN_CONFIG_ID.equals(typeId) || LEGACY_QIN_TEST_CONFIG_ID.equals(typeId)) {
-                    runManager.removeConfiguration(settings);
-                    removed++;
-                }
-            }
-
-            if (removed > 0) {
-                QinLogger.info("[RUN] Removed legacy Qin run configurations: " + removed);
-            } else {
-                QinLogger.info("[RUN] No legacy Qin run configurations found.");
-            }
-        }));
     }
 
     /**

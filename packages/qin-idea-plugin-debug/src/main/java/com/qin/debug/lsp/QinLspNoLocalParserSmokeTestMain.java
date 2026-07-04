@@ -38,7 +38,8 @@ public final class QinLspNoLocalParserSmokeTestMain {
             "QinSyntaxHighlighterFactory.java",
             "QinLexer.java",
             "QinProjectModuleFiles.java",
-            "QinProjectSdkSelection.java");
+            "QinProjectSdkSelection.java",
+            "QinLegacyRunConfigurations.java");
 
     private QinLspNoLocalParserSmokeTestMain() {
     }
@@ -101,6 +102,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertObjectMemberCompletionUsesSharedHelper(javaRoot);
         assertJavaRunSurfacesUseSharedPsiHelper(javaRoot);
         assertRunConfigurationDefaultsAreShared(javaRoot);
+        assertLegacyRunConfigurationCleanupIsShared(javaRoot);
         assertRunCommandLinesAreShared(javaRoot);
         assertCliProcessBuildersAreShared(javaRoot);
         assertToolWindowProjectDiscoveryIsShared(javaRoot);
@@ -1573,6 +1575,36 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !testSource.contains("QinProjectLocator"),
                 "QinTestConfiguration must consume QinRunConfigurationDefaults instead of "
                         + "calling QinProjectLocator directly: " + testConfiguration);
+    }
+
+    private static void assertLegacyRunConfigurationCleanupIsShared(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "run", "QinLegacyRunConfigurations.java"));
+        require(Files.isRegularFile(helper),
+                "Qin legacy run-configuration cleanup helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("remove(")
+                        && helperSource.contains("RunManager.getInstance(project)")
+                        && helperSource.contains("QinRunConfigurationType.ID")
+                        && helperSource.contains("QinTestConfigurationType.ID")
+                        && helperSource.contains("runManager.removeConfiguration(settings)"),
+                "QinLegacyRunConfigurations must own legacy Qin run/test configuration cleanup: "
+                        + helper);
+
+        Path startup = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "DebugStartup.java"));
+        require(Files.isRegularFile(startup),
+                "Qin startup source not found: " + startup);
+        String startupSource = Files.readString(startup);
+        require(startupSource.contains("QinLegacyRunConfigurations.remove(project)")
+                        && !startupSource.contains("RunManager")
+                        && !startupSource.contains("RunnerAndConfigurationSettings")
+                        && !startupSource.contains("removeLegacyQinRunConfigurations(")
+                        && !startupSource.contains("LEGACY_QIN_RUN_CONFIG_ID")
+                        && !startupSource.contains("LEGACY_QIN_TEST_CONFIG_ID")
+                        && !startupSource.contains("removeConfiguration("),
+                "DebugStartup must consume QinLegacyRunConfigurations instead of owning "
+                        + "legacy run/test configuration cleanup: " + startup);
     }
 
     private static void assertRunCommandLinesAreShared(Path javaRoot) throws Exception {

@@ -105,6 +105,7 @@ public final class QinLspPluginPackageSmokeTestMain {
             "com/qin/debug/QinWorkspaceSdkDefaults.class",
             "com/qin/debug/run/QinRunConfigurationDefaults.class",
             "com/qin/debug/run/QinRunCommandLines.class",
+            "com/qin/debug/run/QinLegacyRunConfigurations.class",
             "com/qin/debug/run/QinJavaRunPsi.class",
             "com/qin/debug/run/QinJavaRunPsi$RunTarget.class",
             "com/slime/token/JavaScriptTokens.class",
