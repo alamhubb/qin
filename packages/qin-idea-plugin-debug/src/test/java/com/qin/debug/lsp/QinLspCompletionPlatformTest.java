@@ -1842,6 +1842,37 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                         && "DEFAULT_NAME".equals(item.getElement().getText())));
     }
 
+    public void testQinJavaAliasedFieldReferenceResolvesToPsiField() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const name = G.DEFAULT_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference aliasReference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("G.DEFAULT_NAME"));
+        assertNotNull("Qin Java alias reference was not registered for static field qualifier", aliasReference);
+        assertInstanceOf(aliasReference.resolve(), QinImportAliasNamePsiElement.class);
+        assertSingleQinImportAliasReference(aliasReference.getElement());
+        assertNoQinJavaReference(aliasReference.getElement());
+
+        PsiReference fieldReference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("DEFAULT_NAME"));
+        assertNotNull("Qin Java aliased field reference was not registered", fieldReference);
+        PsiField javaField = assertInstanceOf(fieldReference.resolve(), PsiField.class);
+        assertEquals("DEFAULT_NAME", javaField.getName());
+        assertEquals("demo.Greeter", javaField.getContainingClass().getQualifiedName());
+        assertSingleQinJavaReference(fieldReference.getElement());
+    }
+
     public void testQinJavaFieldRenameProcessorUpdatesReferences() {
         myFixture.addFileToProject("src/main/demo/Greeter.java", """
                 package demo;
@@ -1866,6 +1897,34 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertTrue("Java field rename should update Qin field reference: "
                         + myFixture.getEditor().getDocument().getText(),
                 myFixture.getEditor().getDocument().getText().contains("Greeter.FALLBACK_NAME"));
+    }
+
+    public void testQinJavaAliasedFieldRenameProcessorPreservesAliasQualifier() {
+        myFixture.addFileToProject("src/main/demo/Greeter.java", """
+                package demo;
+
+                public class Greeter {
+                  public static final String DEFAULT_NAME = "Qin";
+                }
+                """);
+        var qinFile = myFixture.addFileToProject("src/main/App.qin", """
+                import { Greeter as G } from "java:demo"
+
+                const name = G.DEFAULT_NAME
+                """);
+        myFixture.configureFromExistingVirtualFile(qinFile.getVirtualFile());
+
+        PsiReference reference = myFixture.getFile().findReferenceAt(
+                myFixture.getEditor().getDocument().getText().indexOf("DEFAULT_NAME"));
+        assertNotNull("Qin Java aliased field reference was not registered for rename", reference);
+        PsiField javaField = assertInstanceOf(reference.resolve(), PsiField.class);
+        new RenameProcessor(getProject(), javaField, "FALLBACK_NAME", false, false).run();
+
+        String text = myFixture.getEditor().getDocument().getText();
+        assertTrue("Java field rename should update Qin aliased field reference: " + text,
+                text.contains("G.FALLBACK_NAME"));
+        assertFalse("Java field rename should preserve the local alias qualifier: " + text,
+                text.contains("Greeter.FALLBACK_NAME"));
     }
 
     public void testQinJavaReferenceRenameUpdatesQinToken() {
