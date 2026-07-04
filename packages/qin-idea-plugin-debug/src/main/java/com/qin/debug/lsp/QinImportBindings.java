@@ -34,14 +34,12 @@ final class QinImportBindings {
         int offset = element.getTextRange().getStartOffset();
         QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
         for (QinSourceStructure.ImportDeclaration declaration : sourceStructure.importDeclarations()) {
-            for (QinSourceStructure.ImportSpecifier specifier : declaration.specifiers()) {
-                if (specifier.exportedNameRange().startsAt(offset)
-                        || specifier.localNameRange().startsAt(offset)) {
-                    return new ImportBinding(
-                            declaration.moduleSpecifier(),
-                            specifier.exportedName(),
-                            specifier.localName());
-                }
+            QinSourceStructure.ImportSpecifier specifier = declaration.specifierAtNameOffset(offset);
+            if (specifier != null) {
+                return new ImportBinding(
+                        declaration.moduleSpecifier(),
+                        specifier.exportedName(),
+                        specifier.localName());
             }
         }
         return null;

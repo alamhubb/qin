@@ -517,6 +517,18 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertEquals("./Counter.qin", binding.moduleSpecifier());
         assertEquals("Counter", binding.exportedName());
         assertEquals("C", binding.localName());
+
+        PsiElement localCounterAlias = findFirstChildOfText(
+                findImportSpecifierStartingWith(myFixture.getFile(), "Counter"),
+                QinTokenTypes.IMPORT_ALIAS_NAME,
+                "C");
+        assertNotNull("Local alias PSI node should be available", localCounterAlias);
+        QinImportBindings.ImportBinding aliasBinding = QinImportBindings.findForSpecifierElement(localCounterAlias);
+
+        assertNotNull("Qin import binding should also be read from the local alias PSI node", aliasBinding);
+        assertEquals("./Counter.qin", aliasBinding.moduleSpecifier());
+        assertEquals("Counter", aliasBinding.exportedName());
+        assertEquals("C", aliasBinding.localName());
     }
 
     public void testQinImportBindingsCollectAliasedImportsFromSourceStructure() {

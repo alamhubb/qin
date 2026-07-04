@@ -457,6 +457,16 @@ final class QinSourceStructure {
             }
             return null;
         }
+
+        ImportSpecifier specifierAtNameOffset(int offset) {
+            for (ImportSpecifier specifier : specifiers) {
+                if (specifier.exportedNameRange().startsAt(offset)
+                        || specifier.localNameRange().startsAt(offset)) {
+                    return specifier;
+                }
+            }
+            return null;
+        }
     }
 
     record ObjectDeclaration(
