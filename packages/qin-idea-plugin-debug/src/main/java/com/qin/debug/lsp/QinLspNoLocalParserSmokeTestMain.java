@@ -97,6 +97,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertRenameUsesSharedPsiHelper(javaRoot);
         assertReferenceRenameDoesNotPreserveAliasLocals(javaRoot);
         assertObjectMemberCompletionUsesSharedHelper(javaRoot);
+        assertJavaRunSurfacesUseSharedPsiHelper(javaRoot);
 
         System.out.println("Qin IDEA LSP no-local-parser smoke passed");
     }
@@ -1477,6 +1478,56 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinObjectMemberCompletionContributor must consume QinObjectMemberCompletions "
                         + "instead of owning qualifier, Java-boundary, or member lookup decisions: "
                         + contributor);
+    }
+
+    private static void assertJavaRunSurfacesUseSharedPsiHelper(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "run", "QinJavaRunPsi.java"));
+        require(Files.isRegularFile(helper),
+                "Qin Java run PSI helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("record RunTarget(")
+                        && helperSource.contains("runTargetAt(")
+                        && helperSource.contains("gutterRunTargetAt(")
+                        && helperSource.contains("runTargetForMethodElement(")
+                        && helperSource.contains("isMainMethod(")
+                        && helperSource.contains("isTestMethod(")
+                        && helperSource.contains("QinPsiTree.containingFile(element)")
+                        && helperSource.contains("QinPsiTree.virtualFile(file)")
+                        && helperSource.contains("QinProjectLocator.findNearestQinProject("),
+                "QinJavaRunPsi must own Java run target PSI and project-path lookup facts: "
+                        + helper);
+
+        Path gutter = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "gutter", "QinRunLineMarkerProvider.java"));
+        require(Files.isRegularFile(gutter),
+                "Qin run gutter provider source not found: " + gutter);
+        String gutterSource = Files.readString(gutter);
+        require(gutterSource.contains("QinJavaRunPsi.gutterRunTargetAt(element)")
+                        && gutterSource.contains("QinJavaRunPsi.runTargetForMethodElement(element)")
+                        && !gutterSource.contains("QinProjectLocator")
+                        && !gutterSource.contains("PsiAnnotation")
+                        && !gutterSource.contains("PsiParameter")
+                        && !gutterSource.contains("PsiModifier")
+                        && !gutterSource.contains("findQinProjectPath(")
+                        && !gutterSource.contains("private boolean isMainMethod(")
+                        && !gutterSource.contains("private boolean isTestMethod("),
+                "QinRunLineMarkerProvider must consume QinJavaRunPsi instead of owning "
+                        + "Java run target or Qin project path decisions: " + gutter);
+
+        Path producer = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "run", "QinRunConfigurationProducer.java"));
+        require(Files.isRegularFile(producer),
+                "Qin run configuration producer source not found: " + producer);
+        String producerSource = Files.readString(producer);
+        require(producerSource.contains("QinJavaRunPsi.runTargetAt(element)")
+                        && !producerSource.contains("PsiTreeUtil")
+                        && !producerSource.contains("QinProjectLocator")
+                        && !producerSource.contains("findMainMethod(")
+                        && !producerSource.contains("isMainMethod(")
+                        && !producerSource.contains("findQinProjectPath("),
+                "QinRunConfigurationProducer must consume QinJavaRunPsi instead of owning "
+                        + "Java run target or Qin project path decisions: " + producer);
     }
 
     private static boolean isAllowedSourceFile(Path file) {
