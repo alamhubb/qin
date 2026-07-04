@@ -1,6 +1,7 @@
 package com.qin.debug.lsp;
 
 import com.intellij.patterns.PlatformPatterns;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceProvider;
@@ -38,6 +39,10 @@ final class QinReferenceElements {
     static @NotNull String referenceName(@NotNull PsiElement element) {
         PsiElement referenceElement = referenceElement(element);
         return referenceElement == null ? element.getText() : referenceElement.getText();
+    }
+
+    static @NotNull TextRange referenceRange(@NotNull PsiElement element) {
+        return TextRange.from(0, element.getTextLength());
     }
 
     static boolean isImportAliasDeclaration(@NotNull PsiElement element) {

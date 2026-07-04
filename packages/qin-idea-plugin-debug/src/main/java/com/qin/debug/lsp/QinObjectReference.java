@@ -1,7 +1,6 @@
 package com.qin.debug.lsp;
 
 import com.intellij.openapi.util.NlsSafe;
-import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiPolyVariantReferenceBase;
 import com.intellij.psi.ResolveResult;
@@ -14,7 +13,7 @@ final class QinObjectReference extends PsiPolyVariantReferenceBase<PsiElement> {
     private final String identifier;
 
     QinObjectReference(@NotNull PsiElement element) {
-        super(element, TextRange.from(0, element.getTextLength()));
+        super(element, QinReferenceElements.referenceRange(element));
         this.identifier = QinReferenceElements.referenceName(element);
     }
 

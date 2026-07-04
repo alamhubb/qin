@@ -1,7 +1,6 @@
 package com.qin.debug.lsp;
 
 import com.intellij.openapi.util.NlsSafe;
-import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiPolyVariantReferenceBase;
 import com.intellij.psi.ResolveResult;
@@ -12,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 final class QinObjectFieldReference extends PsiPolyVariantReferenceBase<PsiElement> {
     QinObjectFieldReference(@NotNull PsiElement element) {
-        super(element, TextRange.from(0, element.getTextLength()));
+        super(element, QinReferenceElements.referenceRange(element));
     }
 
     @Override

@@ -557,6 +557,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String helperSource = Files.readString(referenceElements);
         require(helperSource.contains("isReferenceIdentifier(")
                         && helperSource.contains("referenceName(")
+                        && helperSource.contains("referenceRange(")
                         && helperSource.contains("QinTokenTypes.REFERENCE_IDENTIFIER")
                         && helperSource.contains("isImportAliasDeclaration(")
                         && helperSource.contains("QinTokenTypes.IMPORT_ALIAS_NAME"),
@@ -589,6 +590,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
                             && !source.contains("element.getText()"),
                     "Qin reference name consumers must use QinReferenceElements.referenceName "
                             + "instead of reading raw PSI text from reference elements: " + file);
+            if (!file.getFileName().toString().equals("QinImportBindings.java")) {
+                require(source.contains("QinReferenceElements.referenceRange(")
+                                && !source.contains("TextRange.from(0, element.getTextLength())"),
+                        "Qin references must use QinReferenceElements.referenceRange instead of owning "
+                                + "the full-reference token range: " + file);
+            }
         }
 
         Path importAliasReference = javaRoot.resolve(Path.of(
