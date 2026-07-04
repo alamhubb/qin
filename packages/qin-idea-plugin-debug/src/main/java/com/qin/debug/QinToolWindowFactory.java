@@ -218,7 +218,7 @@ public class QinToolWindowFactory implements ToolWindowFactory {
                 // 濡傛灉鏄?sync 鍛戒护涓旀垚鍔燂紝鐢熸垚 .iml 鏂囦欢
                 if ("sync".equals(task.command) && exitCode == 0) {
                     Path ideaDir = Paths.get(project.getBasePath(), ".idea");
-                    DebugStartup.generateImlFile(Paths.get(task.projectPath), true, ideaDir); // 鎵嬪姩 sync锛氬己鍒惰鐩栧苟娉ㄥ唽
+                    QinProjectModuleFiles.generateImlFile(Paths.get(task.projectPath), true, ideaDir); // 鎵嬪姩 sync锛氬己鍒惰鐩栧苟娉ㄥ唽
                     appendLog("[鐢熸垚 .iml 鏂囦欢瀹屾垚]");
 
                     // 鉁?瑙﹀彂 IDEA 瀹屾暣鍒锋柊锛堝寘鎷储寮曢噸寤猴級

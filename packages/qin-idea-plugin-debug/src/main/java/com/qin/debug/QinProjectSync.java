@@ -147,7 +147,7 @@ public class QinProjectSync {
 
     public void updateImlFile(Path projectPath, QinConfig config) {
         try {
-            if (!DebugStartup.hasSourceDirectory(projectPath)) {
+            if (!QinProjectModuleFiles.hasSourceDirectory(projectPath)) {
                 QinLogger.info("[Sync] No source directory detected, skipping .iml generation for aggregate project: "
                         + projectPath.getFileName());
                 return;
@@ -155,7 +155,7 @@ public class QinProjectSync {
 
             QinLogger.info("[Sync] Regenerating module .iml file...");
             Path ideaDir = Paths.get(basePath, ".idea");
-            DebugStartup.generateImlFile(projectPath, true, ideaDir);
+            QinProjectModuleFiles.generateImlFile(projectPath, true, ideaDir);
 
             String projectName = projectPath.getFileName().toString();
             Path imlPath = projectPath.resolve(projectName + ".iml");
@@ -285,7 +285,7 @@ public class QinProjectSync {
                 return true;
             }
 
-            if (!DebugStartup.hasSourceDirectory(projectPath)) {
+            if (!QinProjectModuleFiles.hasSourceDirectory(projectPath)) {
                 QinLogger.info("[Sync] No source directory detected, skipping IDEA module repair check: "
                         + projectPath.getFileName());
                 return false;

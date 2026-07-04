@@ -37,6 +37,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
             "QinSyntaxHighlighter.java",
             "QinSyntaxHighlighterFactory.java",
             "QinLexer.java",
+            "QinProjectModuleFiles.java",
             "QinProjectSdkSelection.java");
 
     private QinLspNoLocalParserSmokeTestMain() {
@@ -103,6 +104,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertRunCommandLinesAreShared(javaRoot);
         assertCliProcessBuildersAreShared(javaRoot);
         assertToolWindowProjectDiscoveryIsShared(javaRoot);
+        assertProjectModuleFilesAreShared(javaRoot);
         assertWorkspaceSdkDefaultsAreShared(javaRoot);
         assertProjectSdkSelectionIsShared(javaRoot);
         assertProjectSdkPersistenceIsShared(javaRoot);
@@ -1702,6 +1704,59 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !startupSource.contains("private static int parseJavaVersion("),
                 "DebugStartup must consume QinWorkspaceSdkDefaults instead of owning "
                         + "Qin workspace SDK default parsing: " + startup);
+    }
+
+    private static void assertProjectModuleFilesAreShared(Path javaRoot) throws Exception {
+        Path helper = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "QinProjectModuleFiles.java"));
+        require(Files.isRegularFile(helper),
+                "Qin project module files helper source not found: " + helper);
+        String helperSource = Files.readString(helper);
+        require(helperSource.contains("generateImlFile(")
+                        && helperSource.contains("hasSourceDirectory(")
+                        && helperSource.contains("repairExistingImlIfNeeded(")
+                        && helperSource.contains("writeImlFromBsp(")
+                        && helperSource.contains("dependencyEntries(")
+                        && helperSource.contains("appendJarDependency(")
+                        && helperSource.contains("appendLocalDependency(")
+                        && helperSource.contains("findSourcesJar(")
+                        && helperSource.contains("findJavadocJar(")
+                        && helperSource.contains("registerModuleToIdeaProject(")
+                        && helperSource.contains("fixMissingSourceFolder(")
+                        && helperSource.contains("BspHandler")
+                        && helperSource.contains("modules.xml")
+                        && helperSource.contains("<sourceFolder")
+                        && helperSource.contains("<orderEntry type=\\\"module-library\\\">"),
+                "QinProjectModuleFiles must own Qin .iml generation, source-folder repair, "
+                        + "classpath library entries, and IDEA modules.xml registration: " + helper);
+
+        Path startup = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "DebugStartup.java"));
+        require(Files.isRegularFile(startup),
+                "Qin startup source not found: " + startup);
+        String startupSource = Files.readString(startup);
+        require(!startupSource.contains("generateImlFile(")
+                        && !startupSource.contains("hasSourceDirectory(")
+                        && !startupSource.contains("findSourcesJar(")
+                        && !startupSource.contains("findJavadocJar(")
+                        && !startupSource.contains("registerModuleToIdeaProject(")
+                        && !startupSource.contains("fixMissingSourceFolder(")
+                        && !startupSource.contains("BspHandler"),
+                "DebugStartup must not own Qin .iml/module file generation or BSP module "
+                        + "classpath facts: " + startup);
+
+        for (Path consumer : List.of(
+                javaRoot.resolve(Path.of("com", "qin", "debug", "QinProjectSync.java")),
+                javaRoot.resolve(Path.of("com", "qin", "debug", "QinToolWindowFactory.java")))) {
+            require(Files.isRegularFile(consumer),
+                    "Qin project module files consumer source not found: " + consumer);
+            String source = Files.readString(consumer);
+            require(source.contains("QinProjectModuleFiles.")
+                            && !source.contains("DebugStartup.generateImlFile(")
+                            && !source.contains("DebugStartup.hasSourceDirectory("),
+                    "Qin sync and tool-window surfaces must consume QinProjectModuleFiles "
+                            + "instead of DebugStartup for .iml/module file work: " + consumer);
+        }
     }
 
     private static void assertProjectSdkPersistenceIsShared(Path javaRoot) throws Exception {
