@@ -179,9 +179,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String source = Files.readString(objectSymbols);
         require(source.contains(".fieldDeclarationNamed(")
                         && source.contains(".methodDeclarationNamed(")
+                        && source.contains(".memberDeclarations()")
+                        && !source.contains("declaration.fields()")
+                        && !source.contains("declaration.methods()")
                         && !source.contains("member.name().equals(memberName)"),
                 "QinObjectSymbols must use QinSourceStructure member declaration lookup helpers "
-                        + "instead of matching member names itself: " + objectSymbols);
+                        + "and member declarations instead of matching or flattening members itself: " + objectSymbols);
     }
 
     private static boolean isAllowedSourceFile(Path file) {

@@ -461,6 +461,16 @@ final class QinSourceStructure {
         }
     }
 
+    enum ObjectMemberKind {
+        FIELD,
+        METHOD
+    }
+
+    record ObjectMemberDeclaration(
+            @NotNull ObjectMemberKind kind,
+            @NotNull MemberDeclaration declaration) {
+    }
+
     record ImportSpecifier(
             @NotNull String exportedName,
             @NotNull SourceRange exportedNameRange,
@@ -557,6 +567,13 @@ final class QinSourceStructure {
                     .toList();
         }
 
+        @NotNull List<ObjectMemberDeclaration> memberDeclarations() {
+            List<ObjectMemberDeclaration> members = new ArrayList<>();
+            addMemberDeclarations(members, fields, ObjectMemberKind.FIELD);
+            addMemberDeclarations(members, methods, ObjectMemberKind.METHOD);
+            return members;
+        }
+
         MemberDeclaration fieldDeclarationAtNameOffset(int offset) {
             return memberDeclarationAtNameOffset(fields, offset);
         }
@@ -593,6 +610,17 @@ final class QinSourceStructure {
                 }
             }
             return null;
+        }
+
+        private static void addMemberDeclarations(
+                @NotNull List<ObjectMemberDeclaration> target,
+                @NotNull List<MemberDeclaration> source,
+                @NotNull ObjectMemberKind kind) {
+            for (MemberDeclaration member : source) {
+                if (target.stream().noneMatch(existing -> existing.declaration().name().equals(member.name()))) {
+                    target.add(new ObjectMemberDeclaration(kind, member));
+                }
+            }
         }
     }
 }

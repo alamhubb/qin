@@ -154,16 +154,16 @@ final class QinObjectSymbols {
         }
 
         List<PsiElement> members = new ArrayList<>();
-        for (QinSourceStructure.MemberDeclaration member : declaration.fields()) {
-            PsiElement field = QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), QinTokenTypes.FIELD_NAME);
-            if (field != null && members.stream().noneMatch(item -> item.getText().equals(field.getText()))) {
-                members.add(field);
-            }
-        }
-        for (QinSourceStructure.MemberDeclaration member : declaration.methods()) {
-            PsiElement method = QinPsiTree.elementAtRangeOrParentOfType(file, member.nameRange(), QinTokenTypes.METHOD_NAME);
-            if (method != null && members.stream().noneMatch(item -> item.getText().equals(method.getText()))) {
-                members.add(method);
+        for (QinSourceStructure.ObjectMemberDeclaration member : declaration.memberDeclarations()) {
+            IElementType memberType = member.kind() == QinSourceStructure.ObjectMemberKind.FIELD
+                    ? QinTokenTypes.FIELD_NAME
+                    : QinTokenTypes.METHOD_NAME;
+            PsiElement memberElement = QinPsiTree.elementAtRangeOrParentOfType(
+                    file,
+                    member.declaration().nameRange(),
+                    memberType);
+            if (memberElement != null) {
+                members.add(memberElement);
             }
         }
         return members;
