@@ -46,6 +46,7 @@ public final class QinLspNoLocalParserSmokeTestMain {
         assertLexerUsesSharedScannerAdapter(javaRoot);
         assertReferenceLookupUsesPsiTreeBridge(javaRoot);
         assertReferencePlatformTestsUseSharedHelper(testJavaRoot);
+        assertGoToDeclarationCoverageUsesEditorPath(testJavaRoot);
         assertParserDefinitionUsesSourceRangePredicates(javaRoot);
         assertImportBoundaryUsesSharedTokenFacts(javaRoot);
         assertImportParsingUsesSharedContextualKeywords(javaRoot);
@@ -203,6 +204,46 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("getReferencesFromProviders"),
                 "Qin platform tests must count registered references through QinPsiReferences "
                         + "instead of calling ReferenceProvidersRegistry directly: " + platformTest);
+    }
+
+    private static void assertGoToDeclarationCoverageUsesEditorPath(Path testJavaRoot) throws Exception {
+        Path platformTest = testJavaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));
+        require(Files.isRegularFile(platformTest),
+                "Qin platform test source not found: " + platformTest);
+        String source = Files.readString(platformTest);
+        for (String testName : List.of(
+                "testQinObjectMethodGoToDeclarationTargetsSameFileMethodName",
+                "testQinObjectMethodGoToDeclarationTargetsImportedMethodName",
+                "testQinThisMethodGoToDeclarationTargetsCurrentObjectMethodName",
+                "testQinObjectFieldGoToDeclarationTargetsSameFileFieldName",
+                "testQinObjectFieldGoToDeclarationTargetsImportedFieldName",
+                "testQinObjectFieldGoToDeclarationTargetsAliasedImportedFieldName",
+                "testQinThisFieldGoToDeclarationTargetsCurrentObjectFieldName",
+                "testQinJavaMemberGoToDeclarationTargetsPsiMethod",
+                "testQinJavaAliasedMemberGoToDeclarationTargetsPsiMethod",
+                "testQinJavaAliasedImportSpecifierGoToDeclarationTargetsPsiClass",
+                "testQinJavaImportAliasUsageGoToDeclarationTargetsAliasName",
+                "testQinJavaFieldGoToDeclarationTargetsPsiField",
+                "testQinJavaAliasedFieldGoToDeclarationTargetsPsiField")) {
+            requireTestUsesEditorPath(source, testName, platformTest);
+        }
+    }
+
+    private static void requireTestUsesEditorPath(
+            String source,
+            String testName,
+            Path platformTest) {
+        String signature = "public void " + testName + "(";
+        int start = source.indexOf(signature);
+        require(start >= 0, "Missing Qin Go To Declaration editor-path coverage test "
+                + testName + " in " + platformTest);
+        int nextTest = source.indexOf("\n    public void ", start + signature.length());
+        String body = nextTest >= 0 ? source.substring(start, nextTest) : source.substring(start);
+        require(body.contains("myFixture.getElementAtCaret()"),
+                "Qin Go To Declaration test " + testName
+                        + " must exercise the IDEA editor path with myFixture.getElementAtCaret(), "
+                        + "not only findReferenceAt().resolve(): " + platformTest);
     }
 
     private static void assertParserDefinitionUsesSourceRangePredicates(Path javaRoot) throws Exception {

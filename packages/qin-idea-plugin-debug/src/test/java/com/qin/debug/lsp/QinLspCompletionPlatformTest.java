@@ -1682,6 +1682,22 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
         assertSingleQinObjectFieldReference(reference.getElement());
     }
 
+    public void testQinObjectFieldGoToDeclarationTargetsSameFileFieldName() {
+        myFixture.configureByText(QinLspFileType.INSTANCE, """
+                export object Counter {
+                  value = 41
+                }
+
+                const value = Counter.val<caret>ue
+                """);
+
+        PsiElement fieldName = assertInstanceOf(myFixture.getElementAtCaret(), PsiElement.class);
+
+        assertEquals(QinTokenTypes.FIELD_NAME, fieldName.getNode().getElementType());
+        assertEquals("value", fieldName.getText());
+        assertSame(myFixture.getFile(), fieldName.getContainingFile());
+    }
+
     public void testQinObjectFieldReferenceResolvesAcrossRelativeImport() {
         myFixture.addFileToProject("src/main/Counter.qin", """
                 export object Counter {
