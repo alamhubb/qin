@@ -77,6 +77,16 @@ final class QinSourceStructure {
         return null;
     }
 
+    ImportSpecifierMatch importSpecifierAtNameOffset(int offset) {
+        for (ImportDeclaration declaration : importDeclarations) {
+            ImportSpecifier specifier = declaration.specifierAtNameOffset(offset);
+            if (specifier != null) {
+                return new ImportSpecifierMatch(declaration, specifier);
+            }
+        }
+        return null;
+    }
+
     ImportSpecifier importAliasSpecifierNamed(@NotNull String localName) {
         for (ImportDeclaration declaration : importDeclarations) {
             ImportSpecifier specifier = declaration.aliasSpecifierNamed(localName);
@@ -447,6 +457,11 @@ final class QinSourceStructure {
             @NotNull String localName,
             @NotNull SourceRange localNameRange,
             int nextTokenIndex) {
+    }
+
+    record ImportSpecifierMatch(
+            @NotNull ImportDeclaration declaration,
+            @NotNull ImportSpecifier specifier) {
     }
 
     private record NamedImportSpecifiers(

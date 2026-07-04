@@ -33,16 +33,14 @@ final class QinImportBindings {
         }
         int offset = element.getTextRange().getStartOffset();
         QinSourceStructure sourceStructure = QinSourceStructure.parse(file.getText());
-        for (QinSourceStructure.ImportDeclaration declaration : sourceStructure.importDeclarations()) {
-            QinSourceStructure.ImportSpecifier specifier = declaration.specifierAtNameOffset(offset);
-            if (specifier != null) {
-                return new ImportBinding(
-                        declaration.moduleSpecifier(),
-                        specifier.exportedName(),
-                        specifier.localName());
-            }
+        QinSourceStructure.ImportSpecifierMatch match = sourceStructure.importSpecifierAtNameOffset(offset);
+        if (match == null) {
+            return null;
         }
-        return null;
+        return new ImportBinding(
+                match.declaration().moduleSpecifier(),
+                match.specifier().exportedName(),
+                match.specifier().localName());
     }
 
     static boolean isAliasedLocalSpecifierElement(@NotNull PsiElement element) {

@@ -134,10 +134,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(importBindings),
                 "QinImportBindings source not found: " + importBindings);
         String source = Files.readString(importBindings);
-        require(!source.contains("exportedNameRange().startsAt")
+        require(source.contains(".importSpecifierAtNameOffset(offset)")
+                        && !source.contains(".specifierAtNameOffset(offset)")
+                        && !source.contains("exportedNameRange().startsAt")
                         && !source.contains("localNameRange().startsAt"),
-                "QinImportBindings must use QinSourceStructure.ImportDeclaration.specifierAtNameOffset "
-                        + "instead of splitting named import ranges: " + importBindings);
+                "QinImportBindings must use QinSourceStructure.importSpecifierAtNameOffset "
+                        + "instead of iterating declarations or splitting named import ranges: " + importBindings);
     }
 
     private static void assertImportBindingsUseSourceStructureAliasLookup(Path javaRoot) throws Exception {
