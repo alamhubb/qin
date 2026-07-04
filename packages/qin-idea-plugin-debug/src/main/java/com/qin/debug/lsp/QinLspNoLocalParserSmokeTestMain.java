@@ -708,18 +708,19 @@ public final class QinLspNoLocalParserSmokeTestMain {
                 "QinImportBindings source not found: " + importBindings);
         String source = Files.readString(importBindings);
         require(source.contains("QinPsiTree.importSpecifierMatchAtNameElement(")
-                        && source.contains(".importSpecifierMatches()")
-                        && source.contains("QinPsiTree.sourceStructure(")
+                        && source.contains("QinPsiTree.importSpecifierMatches(")
+                        && !source.contains("QinPsiTree.sourceStructure(")
                         && !source.contains("QinSourceStructure.parse(file.getText())")
                         && !source.contains("getTextRange().getStartOffset()")
                         && !source.contains(".importSpecifierAtNameOffset(")
+                        && !source.contains(".importSpecifierMatches()")
                         && !source.contains("sourceStructure.importDeclarations()")
                         && !source.contains(".specifiers()")
                         && !source.contains(".specifierAtNameOffset(offset)")
                         && !source.contains("exportedNameRange().startsAt")
                         && !source.contains("localNameRange().startsAt"),
                 "QinImportBindings must use QinPsiTree.importSpecifierMatchAtNameElement "
-                        + "and QinSourceStructure.importSpecifierMatches instead of owning import-name "
+                        + "and QinPsiTree.importSpecifierMatches instead of owning import-name "
                         + "offset lookup, iterating declarations, or splitting named import ranges: "
                         + importBindings);
 
@@ -729,8 +730,11 @@ public final class QinLspNoLocalParserSmokeTestMain {
         String psiTreeSource = Files.readString(psiTree);
         require(psiTreeSource.contains("importSpecifierMatchAtNameElement(")
                         && psiTreeSource.contains("element.getTextRange().getStartOffset()")
-                        && psiTreeSource.contains(".importSpecifierAtNameOffset(offset)"),
-                "QinPsiTree must own import-name PSI element to source-structure offset lookup: "
+                        && psiTreeSource.contains(".importSpecifierAtNameOffset(offset)")
+                        && psiTreeSource.contains("importSpecifierMatches(")
+                        && psiTreeSource.contains(".importSpecifierMatches()"),
+                "QinPsiTree must own import-name PSI element to source-structure offset lookup "
+                        + "and import specifier match collection: "
                         + psiTree);
     }
 

@@ -82,6 +82,10 @@ final class QinPsiTree {
         return sourceStructure(file).importSpecifierAtNameOffset(offset);
     }
 
+    static @NotNull List<QinSourceStructure.ImportSpecifierMatch> importSpecifierMatches(@NotNull PsiFile file) {
+        return sourceStructure(file).importSpecifierMatches();
+    }
+
     static @Nullable QinSourceStructure.ImportSpecifier importAliasSpecifierNamed(
             @NotNull PsiFile file,
             @NotNull String localName) {

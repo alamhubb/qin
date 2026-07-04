@@ -12,7 +12,7 @@ final class QinImportBindings {
     }
 
     static @NotNull List<ImportBinding> collect(@NotNull PsiFile file) {
-        return QinPsiTree.sourceStructure(file).importSpecifierMatches().stream()
+        return QinPsiTree.importSpecifierMatches(file).stream()
                 .map(match -> new ImportBinding(
                         match.declaration().moduleSpecifier(),
                         match.specifier().exportedName(),
