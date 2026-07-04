@@ -935,10 +935,12 @@ public final class QinLspNoLocalParserSmokeTestMain {
         require(Files.isRegularFile(objectSymbols),
                 "QinObjectSymbols source not found: " + objectSymbols);
         String source = Files.readString(objectSymbols);
-        require(source.contains(".memberDeclarationNamed(")
-                        && source.contains(".memberDeclarations()")
+        require(source.contains("QinPsiTree.sourceObjectMemberDeclarationNamed(")
+                        && source.contains("QinPsiTree.sourceObjectMemberDeclarations(")
                         && source.contains("member.declaration().name()")
                         && source.contains("member.name()")
+                        && !source.contains(".memberDeclarationNamed(")
+                        && !source.contains(".memberDeclarations()")
                         && !source.contains("declaration.fields()")
                         && !source.contains("declaration.methods()")
                         && !source.contains("member.element().getText()")
@@ -946,9 +948,21 @@ public final class QinLspNoLocalParserSmokeTestMain {
                         && !source.contains("memberNamesForThis(")
                         && !source.contains("member.name().equals(memberName)")
                         && !source.contains("memberType == QinTokenTypes.FIELD_NAME"),
-                "QinObjectSymbols must use QinSourceStructure member declaration lookup helpers "
-                        + "and member declarations instead of matching, flattening, or deriving "
-                        + "source-structure member kind from PSI token types: " + objectSymbols);
+                "QinObjectSymbols must use QinPsiTree member declaration lookup helpers "
+                        + "and member declarations instead of matching, flattening, owning "
+                        + "source-structure member collection, or deriving member kind from PSI token types: "
+                        + objectSymbols);
+
+        Path psiTree = javaRoot.resolve(Path.of(
+                "com", "qin", "debug", "lsp", "QinPsiTree.java"));
+        require(Files.isRegularFile(psiTree), "QinPsiTree source not found: " + psiTree);
+        String psiTreeSource = Files.readString(psiTree);
+        require(psiTreeSource.contains("sourceObjectMemberDeclarationNamed(")
+                        && psiTreeSource.contains(".memberDeclarationNamed(memberName, kind)")
+                        && psiTreeSource.contains("sourceObjectMemberDeclarations(")
+                        && psiTreeSource.contains(".memberDeclarations()"),
+                "QinPsiTree must own object source member lookup and source-order member collection: "
+                        + psiTree);
 
         Path platformTest = javaRoot.getParent().getParent().resolve("test").resolve("java").resolve(Path.of(
                 "com", "qin", "debug", "lsp", "QinLspCompletionPlatformTest.java"));

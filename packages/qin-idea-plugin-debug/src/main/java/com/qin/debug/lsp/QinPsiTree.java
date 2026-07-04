@@ -9,6 +9,8 @@ import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 final class QinPsiTree {
     private QinPsiTree() {
     }
@@ -117,6 +119,18 @@ final class QinPsiTree {
             @NotNull PsiFile file,
             @NotNull String name) {
         return sourceStructure(file).objectDeclarationNamed(name);
+    }
+
+    static @NotNull List<QinSourceStructure.ObjectMemberDeclaration> sourceObjectMemberDeclarations(
+            @NotNull QinSourceStructure.ObjectDeclaration declaration) {
+        return declaration.memberDeclarations();
+    }
+
+    static @Nullable QinSourceStructure.MemberDeclaration sourceObjectMemberDeclarationNamed(
+            @NotNull QinSourceStructure.ObjectDeclaration declaration,
+            @NotNull String memberName,
+            @NotNull QinSourceStructure.ObjectMemberKind kind) {
+        return declaration.memberDeclarationNamed(memberName, kind);
     }
 
     private static @NotNull IElementType objectMemberNameType(

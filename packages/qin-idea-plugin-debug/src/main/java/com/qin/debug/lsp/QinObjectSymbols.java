@@ -131,7 +131,8 @@ final class QinObjectSymbols {
         }
 
         List<ObjectMemberElement> members = new ArrayList<>();
-        for (QinSourceStructure.ObjectMemberDeclaration member : declaration.memberDeclarations()) {
+        for (QinSourceStructure.ObjectMemberDeclaration member :
+                QinPsiTree.sourceObjectMemberDeclarations(declaration)) {
             PsiElement memberElement = QinPsiTree.objectMemberNameElement(
                     file, member.declaration(), member.kind());
             if (memberElement != null) {
@@ -153,7 +154,8 @@ final class QinObjectSymbols {
         if (file == null || declaration == null) {
             return null;
         }
-        QinSourceStructure.MemberDeclaration member = declaration.memberDeclarationNamed(memberName, kind);
+        QinSourceStructure.MemberDeclaration member =
+                QinPsiTree.sourceObjectMemberDeclarationNamed(declaration, memberName, kind);
         if (member == null) {
             return null;
         }
