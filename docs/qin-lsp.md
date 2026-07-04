@@ -74,6 +74,8 @@ Base syntax highlighting tests should cover the `QinSyntaxHighlighter` mapping f
 
 Treat import-only contextual keywords such as `as` and `from` as keyword tokens only inside import declarations. If the shared token utility reports them as keywords globally, normalize them back to identifiers first and then upgrade them in the import token-stream pass. Do not highlight ordinary identifiers such as `const from = value` as keywords.
 
+The import token-stream pass must stop at a line terminator after an incomplete import when it is outside named-import braces, unless the current token is the import-closing `from`. This keeps the next statement's identifiers, such as `const as = "local"`, from being highlighted as import contextual keywords while still allowing multiline named imports inside `{ ... }`.
+
 Keep IDEA token facts normalized behind one adapter surface. `QinLexer`, `QinParserDefinition`, declaration scanning, references, indexes, and completion may consume shared token facts such as trivia detection, reference-token detection, token slicing, and next meaningful token lookup. Do not copy those token facts into each consumer. Prefer composition through a shared token adapter/facts class over inheritance between platform adapter classes.
 
 The adapter may own trivia and editor-recovery details required by the IntelliJ lexer contract: whitespace/comment tokens, stable token ranges, fast advancement, and highlightable incomplete literals while the user is typing. That recovery is an editor-tokenization boundary, not a broad parser fallback and not a reason to hide real Qin parser defects.

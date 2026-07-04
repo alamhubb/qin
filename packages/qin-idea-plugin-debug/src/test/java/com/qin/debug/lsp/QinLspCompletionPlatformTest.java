@@ -262,6 +262,16 @@ public final class QinLspCompletionPlatformTest extends BasePlatformTestCase {
                 tokens.contains("from:" + QinTokenTypes.IDENTIFIER));
     }
 
+    public void testQinLexerStopsImportContextualKeywordHighlightAtNextLine() {
+        String source = """
+                import { Greeter }
+                const as = "local"
+                """;
+        List<String> tokens = collectLexerTokenEntries(source);
+
+        assertTrue("Qin lexer should not treat as on the next statement as an import keyword: " + tokens,
+                tokens.contains("as:" + QinTokenTypes.IDENTIFIER));
+    }
     public void testQinLexerKeepsUnterminatedStringHighlightableForIdeaEditing() {
         String source = "const message = \"unterminated";
         List<String> tokens = collectLexerTokenEntries(source);

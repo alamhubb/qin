@@ -131,11 +131,21 @@ final class QinLexicalScanner {
             if (!QinTokenFacts.isKeyword(text, token, "import")) {
                 continue;
             }
+            int braceDepth = 0;
+            QinLexicalToken previousMeaningful = token;
             int current = QinTokenFacts.nextMeaningfulTokenIndex(tokens, index + 1);
             while (current >= 0 && current < tokens.size()) {
                 QinLexicalToken currentToken = tokens.get(current);
                 if (currentToken.type() == QinTokenTypes.SEMICOLON) {
                     break;
+                }
+                if (isNewStatementAfterImport(text, previousMeaningful, currentToken, braceDepth)) {
+                    break;
+                }
+                if (QinTokenFacts.isOpenBrace(text, currentToken)) {
+                    braceDepth++;
+                } else if (QinTokenFacts.isCloseBrace(text, currentToken) && braceDepth > 0) {
+                    braceDepth--;
                 }
                 if (QinTokenFacts.isContextualKeyword(text, currentToken, "as")
                         || QinTokenFacts.isContextualKeyword(text, currentToken, "from")) {
@@ -144,6 +154,7 @@ final class QinLexicalScanner {
                             currentToken.startOffset(),
                             currentToken.endOffset()));
                 }
+                previousMeaningful = currentToken;
                 if (QinTokenFacts.isContextualKeyword(text, currentToken, "from")) {
                     break;
                 }
@@ -151,6 +162,26 @@ final class QinLexicalScanner {
             }
         }
         return classified;
+    }
+
+    private static boolean isNewStatementAfterImport(
+            String text,
+            QinLexicalToken previousMeaningful,
+            QinLexicalToken currentToken,
+            int braceDepth) {
+        return braceDepth <= 0
+                && !QinTokenFacts.isContextualKeyword(text, currentToken, "from")
+                && hasLineTerminatorBetween(text, previousMeaningful.endOffset(), currentToken.startOffset());
+    }
+
+    private static boolean hasLineTerminatorBetween(String text, int startOffset, int endOffset) {
+        for (int index = Math.max(0, startOffset); index < Math.min(text.length(), endOffset); index++) {
+            char value = text.charAt(index);
+            if (value == '\n' || value == '\r') {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isBeforeCallParen(String text, List<QinLexicalToken> tokens, int tokenIndex) {
