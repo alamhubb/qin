@@ -40,3 +40,7 @@ These rules capture durable workflow expectations for Codex work on Qin.
 - Manual cache deletion, forced full rebuilds, larger timeouts, or source
   rewrites may be used only as diagnostics. They are not acceptable final
   fixes for stale cache or instant compilation defects.
+- Qin engineering should follow the target-aware instant compilation model in
+  `docs/spec/qin-engineering-instant-compilation.md`: stable cache identities,
+  layered caches, content-aware package stamps, lightweight dependency
+  fingerprints, hot in-process state, and no incidental temp-path invalidation.
