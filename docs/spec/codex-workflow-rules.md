@@ -29,3 +29,14 @@ These rules capture durable workflow expectations for Codex work on Qin.
   explicitly told otherwise.
 - If validation is blocked or a push fails, keep the local commit when safe and
   report the exact blocker.
+
+## Cache And Instant Compilation
+
+- If Qin cache behavior, module-class disk cache, dependency classpath refresh,
+  generated parser materialization, hot rebuild, or instant compilation is
+  stale or incorrect, treat it as a toolchain defect.
+- Fix the owning cache/compiler/build layer directly and add a focused smoke
+  test when practical.
+- Manual cache deletion, forced full rebuilds, larger timeouts, or source
+  rewrites may be used only as diagnostics. They are not acceptable final
+  fixes for stale cache or instant compilation defects.
