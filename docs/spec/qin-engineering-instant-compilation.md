@@ -508,6 +508,41 @@ When a parser/compiler cache hit exposes malformed ESM, reproduce the failing mo
 
 Do not make cache reuse, parser conversion, or emitter normalization depend on a fallback that reads the legacy handwritten TS `slime-parser` CST shape when the generated result is empty. That creates two semantic paths and can cache a masked defect. The only acceptable permanent fix is a single active generated/parser/compiler path that emits standard ESM for both fresh and cached transforms.
 
+## Subhuti Parser Framework Optimization
+
+Parser performance should be improved first in the Subhuti parser framework,
+not by requiring each grammar author to hand-optimize every hot syntax rule.
+Grammar-local first-token dispatch may be used as a focused diagnostic or a
+temporary proof of the slow boundary, but the durable Qin direction is a
+framework-level prediction layer.
+
+Subhuti should learn from mature parser frameworks by recording enough grammar
+metadata to predict alternatives before executing them. The framework should
+prefer first-set and lookahead based alternative selection, ambiguity reporting,
+predicate or gate support for genuinely contextual choices, and optional
+commit/cut semantics after a branch has consumed a decisive prefix. These
+features must preserve the single active grammar path: they are parser
+prediction and pruning, not fallback parsers, compatibility syntax, or degraded
+success.
+
+The target behavior is:
+
+- an `Or(...)` with alternatives that start with distinct tokens should select
+  the matching alternative without executing the others;
+- an `Or(...)` with overlapping starts should either use declared lookahead or
+  report an ambiguity during grammar analysis/profile mode;
+- rules should expose profile counters for tried alternatives, skipped
+  alternatives, ambiguous alternatives, memo hits/misses, and commit failures;
+- parser generated Java and generated TypeScript should share the same
+  prediction semantics;
+- grammar authors should express syntax normally, adding explicit predicates
+  only for real language ambiguity that the framework cannot infer safely.
+
+Framework optimization must be proven with focused parser probes before it is
+trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
+preserve token -> CST -> AST -> emitted ESM -> integration behavior while
+reducing unnecessary rule execution.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
