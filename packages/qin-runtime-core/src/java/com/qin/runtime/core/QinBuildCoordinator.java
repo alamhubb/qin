@@ -59,6 +59,7 @@ public final class QinBuildCoordinator {
     }
 
     public QinBuildResult build(QinBuildRequest request) throws Exception {
+        QinPhaseTimer profile = QinPhaseTimer.start("qin-build-coordinator");
         Path root = sourceResolver.resolveRoot(request.rootDir());
         QinResolvedDependencies deps = dependencyService.resolve(root);
         if (!deps.classpathEntries().isEmpty()) {
@@ -66,9 +67,13 @@ public final class QinBuildCoordinator {
         }
         QinRuntimeProjectLayout layout = QinRuntimeProjectLayout.discover(root);
         Path sourceFile = sourceResolver.resolveSourceFile(request, layout);
+        profile.checkpoint("resolve inputs", "source=" + sourceFile.getFileName()
+                + ", target=" + request.target());
 
         if (request.target() == QinBuildTarget.JVM && cfaPipeline instanceof QinSlimeCfaCompiler compiler) {
-            return buildJvmModuleClasses(request, layout, root, sourceFile, compiler);
+            QinBuildResult result = buildJvmModuleClasses(request, layout, root, sourceFile, compiler, profile);
+            profile.done("module-class path");
+            return result;
         }
 
         QinCfaCompileResult compileResult = cfaPipeline.compile(
@@ -77,9 +82,11 @@ public final class QinBuildCoordinator {
                         root,
                         request.className(),
                         request.target().emitJvm()));
+        profile.checkpoint("compile cfa pipeline");
         QinIrProgram program = compileResult.loweredProgram();
         QinFunctionModelArtifactRegistrar.register(program);
         irValidator.validate(program, request.target());
+        profile.checkpoint("validate ir");
 
         Path classFile = null;
         Path jsFile = null;
@@ -96,6 +103,7 @@ public final class QinBuildCoordinator {
                 QinClassFileWriter.writeClassFile(request.classOutputDir(), entry.getKey(), entry.getValue());
             }
             classFile = QinClassFileWriter.writeClassFile(request.classOutputDir(), request.className(), classBytes);
+            profile.checkpoint("emit jvm class");
         }
 
         if (request.target().emitJs()) {
@@ -106,6 +114,7 @@ public final class QinBuildCoordinator {
             }
             Files.writeString(request.jsOutputFile(), jsCode, StandardCharsets.UTF_8);
             jsFile = request.jsOutputFile();
+            profile.checkpoint("emit js");
         }
 
         try {
@@ -123,6 +132,7 @@ public final class QinBuildCoordinator {
         } catch (Exception snapshotError) {
             System.err.println("[WARN] failed to write compile snapshot: " + snapshotError.getMessage());
         }
+        profile.done("single-module path");
 
         return new QinBuildResult(layout, sourceFile, program, classFile, jsFile);
     }
@@ -132,13 +142,16 @@ public final class QinBuildCoordinator {
             QinRuntimeProjectLayout layout,
             Path root,
             Path sourceFile,
-            QinSlimeCfaCompiler compiler) throws Exception {
+            QinSlimeCfaCompiler compiler,
+            QinPhaseTimer profile) throws Exception {
         QinCfaModuleClassCompileResult compileResult = compiler.compileModuleClasses(
                 QinCfaCompileRequest.forJvm(sourceFile, root, request.className()));
+        profile.checkpoint("compile module classes", "modules=" + compileResult.moduleClasses().size());
 
         QinIrProgram program = entryProgram(compileResult);
         registerFunctionModelArtifacts(compileResult);
         irValidator.validate(program, request.target());
+        profile.checkpoint("validate module ir");
 
         QinCfaModuleClassFile initializerClass = compileResult.initializerClass();
         if (initializerClass != null) {
@@ -147,7 +160,9 @@ public final class QinBuildCoordinator {
         for (QinCfaModuleClassFile moduleClass : compileResult.moduleClasses()) {
             writeModuleClassFile(request.classOutputDir(), moduleClass);
         }
+        profile.checkpoint("write module classes", "modules=" + compileResult.moduleClasses().size());
         Path classFile = writeModuleLauncherClass(request.classOutputDir(), request.className(), compileResult);
+        profile.checkpoint("write launcher class");
         return new QinBuildResult(layout, sourceFile, program, classFile, null);
     }
 

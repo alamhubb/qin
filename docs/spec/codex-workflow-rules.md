@@ -66,6 +66,11 @@ These rules capture durable workflow expectations for Codex work on Qin.
   developer tooling where they help Qin stay fast and simple. These references
   are acceptable only when they preserve Qin's target-aware `.class`, JS, and
   `shared/` boundaries.
+- For Qin fullstack startup or rebuild latency, use the opt-in profile mode
+  first: `--profile`, `-Dqin.profile=true`, or `QIN_PROFILE=1`. Read the
+  phase timings to identify the smallest slow boundary, then reproduce that
+  boundary with a focused smoke/probe before widening to package and app
+  validation.
 ## Knowledge Capture During Qin Work
 
 - User-stated durable engineering rules, corrections, and preferences are implementation requirements, not chat-only context. Capture them in the relevant global skill, Qin project skill, and Qin repo docs during the same work turn.

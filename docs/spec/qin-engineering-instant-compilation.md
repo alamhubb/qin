@@ -343,6 +343,21 @@ progress output, and should be enabled only with `QIN_MODULE_CLASS_TRACE=1` or
 debug logging: keep cache/phase summaries visible, and make very detailed
 module traces opt-in.
 
+Fullstack build profiling is likewise opt-in. Use `qin dev --profile`,
+`qin build --profile`, `-Dqin.profile=true`, or `QIN_PROFILE=1` when diagnosing
+startup or rebuild latency. The profile output must show phase timings for the
+current standard path, including project layout resolution, dependency
+materialization, source selection, backend compilation, frontend service
+creation, frontend production emit, `javac`, and Qin build-coordinator stages.
+This follows Kotlin/Gradle build-scan and Vite debug-mode practice: first expose
+the slow boundary with cheap structured timings, then reproduce that boundary
+with a focused smoke or probe before broadening validation.
+
+Profiling is evidence, not a workaround. A slow phase found by `--profile`
+should lead to an owning-layer cache, graph, parser, compiler, or runtime fix
+with focused hit/invalidation coverage. Do not solve a slow phase by hiding
+errors, forcing broad rebuilds, or asking project authors to clean caches.
+
 If a smoke test uses a temp project root, it must still prove stable cache
 identity or use a stable test root when the test is about cache reuse.
 

@@ -54,6 +54,9 @@ public final class QinFullstackMain {
             printHelp();
             return;
         }
+        if (options.profile) {
+            System.setProperty("qin.profile", "true");
+        }
 
         BuildArtifacts artifacts = build(options);
         if (options.buildOnly) {
@@ -68,16 +71,21 @@ public final class QinFullstackMain {
     }
 
     private static BuildArtifacts build(Options options) throws Exception {
+        QinPhaseTimer profile = QinPhaseTimer.start("fullstack-build");
         Path root = resolveRoot(options.rootDir);
         QinRuntimeProjectLayout layout = QinRuntimeProjectLayout.discover(root);
         QinBuildCoordinator coordinator = new QinBuildCoordinator();
+        profile.checkpoint("resolve project layout", "root=" + root);
 
         materializeProjectNpmDependencies(root);
+        profile.checkpoint("materialize npm dependencies");
         Path backendSource = resolveBackendSource(layout, options.backendSourceFile);
         Path frontendSource = resolveFrontendSource(layout, options.frontendSourceFile);
         Path classOutputDir = resolvePath(root, options.classOutputDir);
         Path staticRoot = resolveStaticRoot(layout, root, options.staticDir);
         Path jsOutputFile = staticRoot.resolve("app.js").normalize();
+        profile.checkpoint("resolve sources", "backend=" + backendSource.getFileName()
+                + ", frontend=" + (frontendSource == null ? "<none>" : frontendSource.getFileName()));
 
         BackendBuild backendBuild = buildBackend(
                 coordinator,
@@ -86,22 +94,27 @@ public final class QinFullstackMain {
                 classOutputDir,
                 jsOutputFile,
                 options);
+        profile.checkpoint("build backend", "class=" + backendBuild.classFile().getFileName());
         Method runMethod = backendBuild.runMethod();
         QinFrontendEsmService frontendEsmService = null;
 
         if (frontendSource != null) {
             frontendEsmService = QinFrontendEsmService.create(root, frontendSource);
+            profile.checkpoint("create frontend service");
             if (!options.dev || options.buildOnly) {
                 frontendEsmService.emitProduction(staticRoot);
+                profile.checkpoint("emit frontend production");
             }
         } else {
             Files.createDirectories(staticRoot);
             if (!Files.exists(jsOutputFile)) {
                 Files.writeString(jsOutputFile, "console.log('Qin frontend source not found.');", StandardCharsets.UTF_8);
             }
+            profile.checkpoint("write frontend placeholder");
         }
 
         ensureIndexFile(staticRoot);
+        profile.checkpoint("ensure index");
 
         System.out.println("Project root: " + root.toAbsolutePath());
         System.out.println("Backend source: " + backendSource.toAbsolutePath());
@@ -121,6 +134,8 @@ public final class QinFullstackMain {
             System.out.println("Generated frontend js: " + jsOutputFile.toAbsolutePath());
         }
         System.out.println("Static root: " + staticRoot.toAbsolutePath());
+        profile.done("mode=" + (options.dev ? "dev" : "build")
+                + ", buildOnly=" + options.buildOnly);
 
         return new BuildArtifacts(root, staticRoot, runMethod, backendBuild.httpAppMethod(), frontendEsmService);
     }
@@ -446,12 +461,14 @@ public final class QinFullstackMain {
             List<Path> sourceFiles,
             Path classOutputDir,
             String description) throws Exception {
+        QinPhaseTimer profile = QinPhaseTimer.start("javac");
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
             throw new IllegalStateException("JDK compiler is required for " + description + ".");
         }
 
         Files.createDirectories(classOutputDir);
+        profile.checkpoint("prepare", description + ", sources=" + sourceFiles.size());
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
             Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sourceFiles);
@@ -484,6 +501,7 @@ public final class QinFullstackMain {
                 throw new IllegalStateException(message.toString());
             }
         }
+        profile.done(description + ", sources=" + sourceFiles.size());
     }
 
     private static Path writeQinBackendAdapterSource(
@@ -856,6 +874,7 @@ public final class QinFullstackMain {
                 case "--dev" -> options.dev = true;
                 case "--build-only" -> options.buildOnly = true;
                 case "--print-ir" -> options.printIr = true;
+                case "--profile" -> options.profile = true;
                 case "--port" -> options.port = parsePort(nextValue(args, ++i, "--port"));
                 case "--root" -> options.rootDir = Path.of(nextValue(args, ++i, "--root"));
                 case "--class" -> options.className = nextValue(args, ++i, "--class");
@@ -896,6 +915,7 @@ public final class QinFullstackMain {
         System.out.println("  --backend-file <file>    Backend .qin/.js/.mjs/.ts/.java source override");
         System.out.println("  --frontend-file <file>   Frontend .js/.ts/.qin/.vue/.ovs/.cssts source override");
         System.out.println("  --print-ir               Print IR summaries while building");
+        System.out.println("  --profile                Print phase timings for build diagnostics");
         System.out.println("  --build-only             Build outputs only");
         System.out.println("  --help                   Show help");
     }
@@ -909,6 +929,7 @@ public final class QinFullstackMain {
         private Path backendSourceFile;
         private Path frontendSourceFile;
         private boolean printIr;
+        private boolean profile;
         private boolean dev;
         private boolean buildOnly;
         private boolean showHelp;
