@@ -297,3 +297,11 @@ Instant compilation caches are only correct when they preserve the active langua
 When a parser/compiler cache hit exposes malformed ESM, reproduce the failing module boundary and compare the active generated parser/CST-to-AST/emitter path with the legacy handwritten TypeScript `slime-parser` for the same syntax. Use that comparison to repair the owning active layer and add a focused smoke for both fresh compile and cache-hit reuse.
 
 Do not make cache reuse, parser conversion, or emitter normalization depend on a fallback that reads the legacy handwritten TS `slime-parser` CST shape when the generated result is empty. That creates two semantic paths and can cache a masked defect. The only acceptable permanent fix is a single active generated/parser/compiler path that emits standard ESM for both fresh and cached transforms.
+
+## Pipeline Probe Artifact Reuse
+
+Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
+
+When a probe has already produced active tokens, CST, and AST for a source, the emitted ESM stage should reuse those exact artifacts and call the active emitter directly. It should not call a second full transform that reparses the same source and reruns CST-to-AST just to get generated code.
+
+This is not fallback behavior. The probe still uses the single active parser, CST-to-AST, and emitter path. It only avoids duplicate diagnostic work inside one probe. If the goal is specifically to compare the public full-transform API with the staged artifacts, add that as an explicit parity smoke instead of making every ordinary probe pay that cost.
