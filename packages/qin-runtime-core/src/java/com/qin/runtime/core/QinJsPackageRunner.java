@@ -439,17 +439,19 @@ final class QinJsPackageRunner {
             writeRuntimePackageStamp(targetPackageDir);
         }
 
-        for (Map.Entry<String, String> dependency : readDependencyVersions(sourcePackageDir.resolve("package.json")).entrySet()) {
-            materializeDependency(
-                    dependency.getKey(),
-                    dependency.getValue(),
-                    sourcePackageDir,
-                    projectRoot,
-                    runtimeNodeModules,
-                    workspaceRoot,
-                    workspacePackages,
-                    packageOverrides,
-                    materialized);
+        if (!(workspacePackage || overridePackage || filePackage)) {
+            for (Map.Entry<String, String> dependency : readDependencyVersions(sourcePackageDir.resolve("package.json")).entrySet()) {
+                materializeDependency(
+                        dependency.getKey(),
+                        dependency.getValue(),
+                        sourcePackageDir,
+                        projectRoot,
+                        runtimeNodeModules,
+                        workspaceRoot,
+                        workspacePackages,
+                        packageOverrides,
+                        materialized);
+            }
         }
         for (String importedSpecifier : scanPackageBareModuleSpecifiers(
                 targetPackageDir,

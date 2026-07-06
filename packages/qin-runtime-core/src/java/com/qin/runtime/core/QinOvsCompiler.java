@@ -27,7 +27,6 @@ public final class QinOvsCompiler {
     private static final int MAX_CACHE_ENTRIES = 64;
     private static final List<String> TRANSFORM_TOOLCHAIN_PACKAGES = List.of(
             "ovs-compiler",
-            "vite-plugin-ovs",
             "cssts-compiler",
             "@qin/generated-qin-parser-ts",
             "slime-generator",
@@ -40,6 +39,7 @@ public final class QinOvsCompiler {
             "packageOverrides\\s*:\\s*\\{([^}]*)\\}",
             Pattern.DOTALL);
     private static final Pattern QIN_STRING_FIELD = Pattern.compile("[\"']([^\"']+)[\"']\\s*:\\s*[\"']([^\"']*)[\"']");
+    private static final Object TRANSFORM_INPUT_LOCK = new Object();
 
     private final QinJsPackageRunner packageRunner = new QinJsPackageRunner();
     private final Map<CacheKey, QinOvsCompileResult> cache = new LinkedHashMap<>() {
@@ -76,6 +76,32 @@ public final class QinOvsCompiler {
                         + "\ntoolchain=" + toolchainFingerprint
                         + "\nsource=" + (source == null ? "" : source),
                 configSource);
+    }
+
+    Map<Path, String> frontendCacheIdentities(Path projectRoot, Map<Path, String> modules) throws Exception {
+        if (modules == null || modules.isEmpty()) {
+            return Map.of();
+        }
+        Path normalizedRoot = projectRoot.toAbsolutePath().normalize();
+        String configSource = readConfigSource(normalizedRoot);
+        String toolchainFingerprint = transformToolchainFingerprint(normalizedRoot, configSource);
+        String semanticRoot = semanticRoot(normalizedRoot);
+        Map<Path, String> identities = new LinkedHashMap<>();
+        for (Map.Entry<Path, String> entry : modules.entrySet()) {
+            Path normalizedModuleFile = entry.getKey() == null
+                    ? null
+                    : entry.getKey().toAbsolutePath().normalize();
+            String source = entry.getValue() == null ? "" : entry.getValue();
+            String semanticModule = semanticModuleFile(normalizedRoot, normalizedModuleFile);
+            String identity = QinFrontendTransformDiskCache.keyMaterial(
+                    semanticRoot,
+                    "module=" + semanticModule
+                            + "\ntoolchain=" + toolchainFingerprint
+                            + "\nsource=" + source,
+                    configSource);
+            identities.put(normalizedModuleFile, identity);
+        }
+        return identities;
     }
 
     public QinOvsCompileResult compile(Path projectRoot, Path moduleFile, String source) throws Exception {
@@ -117,14 +143,17 @@ public final class QinOvsCompiler {
             return diskCached;
         }
         try {
-            bindTransformInputs(
-                    normalizedRoot,
-                    source,
-                    renderViteId(normalizedRoot, normalizedModuleFile, semanticModule));
-            Object result = packageRunner.runModuleSource(
-                    normalizedRoot,
-                    buildWrapperSource(normalizedRoot),
-                    "vite_plugin_ovs_transform");
+            Object result;
+            synchronized (TRANSFORM_INPUT_LOCK) {
+                bindTransformInputs(
+                        normalizedRoot,
+                        source,
+                        renderViteId(normalizedRoot, normalizedModuleFile, semanticModule));
+                result = packageRunner.runModuleSource(
+                        normalizedRoot,
+                        buildWrapperSource(normalizedRoot),
+                        "vite_plugin_ovs_transform");
+            }
             QinOvsCompileResult decoded = decodeResult(result);
             QinFrontendTransformDiskCache.write(transformCacheRoot, normalizedRoot, "ovs", diskKey, encodeDiskCache(decoded));
             synchronized (cache) {
@@ -132,7 +161,7 @@ public final class QinOvsCompiler {
             }
             return decoded;
         } catch (Exception error) {
-            throw new IllegalStateException("Qin vite-plugin-ovs transform failed for " + projectRoot, error);
+            throw new IllegalStateException("Qin ovs-compiler transform failed for " + projectRoot, error);
         }
     }
 
@@ -141,13 +170,22 @@ public final class QinOvsCompiler {
             return Map.of();
         }
 
+        QinPhaseTimer profile = QinPhaseTimer.start("ovs-compile-all");
         Path normalizedRoot = projectRoot.toAbsolutePath().normalize();
         String configSource = readConfigSource(normalizedRoot);
+        profile.checkpoint("read config", normalizedRoot.toString());
+        int digestHitsBefore = directoryDigestCacheHits;
+        int digestHashesBefore = directoryDigestContentHashes;
         String toolchainFingerprint = transformToolchainFingerprint(normalizedRoot, configSource);
+        profile.checkpoint("toolchain fingerprint",
+                "digestHits=" + (directoryDigestCacheHits - digestHitsBefore)
+                        + ", contentHashes=" + (directoryDigestContentHashes - digestHashesBefore));
         Path transformCacheRoot = transformCacheRoot(normalizedRoot);
         String semanticRoot = semanticRoot(normalizedRoot);
         Map<Path, QinOvsCompileResult> results = new LinkedHashMap<>();
         List<BatchCompileInput> toTransform = new java.util.ArrayList<>();
+        int memoryHits = 0;
+        int diskHits = 0;
 
         for (Map.Entry<Path, String> entry : modules.entrySet()) {
             Path normalizedModuleFile = entry.getKey() == null
@@ -161,6 +199,7 @@ public final class QinOvsCompiler {
                 cached = cache.get(key);
             }
             if (cached != null) {
+                memoryHits++;
                 results.put(normalizedModuleFile, cached);
                 continue;
             }
@@ -183,6 +222,7 @@ public final class QinOvsCompiler {
                     cache.put(key, diskCached);
                 }
                 System.out.println("[QinOvsCompiler] transform disk cache hit");
+                diskHits++;
                 results.put(normalizedModuleFile, diskCached);
                 continue;
             }
@@ -193,18 +233,30 @@ public final class QinOvsCompiler {
                     diskKey,
                     key));
         }
+        profile.checkpoint("scan caches",
+                "modules=" + modules.size()
+                        + ", memoryHits=" + memoryHits
+                        + ", diskHits=" + diskHits
+                        + ", toTransform=" + toTransform.size());
 
         if (toTransform.isEmpty()) {
+            profile.done("all cached");
             return results;
         }
 
         try {
-            bindBatchTransformInputs(normalizedRoot, toTransform);
-            Object result = packageRunner.runModuleSource(
-                    normalizedRoot,
-                    buildBatchWrapperSource(normalizedRoot),
-                    "vite_plugin_ovs_transform_batch");
+            Object result;
+            synchronized (TRANSFORM_INPUT_LOCK) {
+                bindBatchTransformInputs(normalizedRoot, toTransform);
+                profile.checkpoint("bind batch inputs", "toTransform=" + toTransform.size());
+                result = packageRunner.runModuleSource(
+                        normalizedRoot,
+                        buildBatchWrapperSource(normalizedRoot),
+                        "vite_plugin_ovs_transform_batch");
+            }
+            profile.checkpoint("run batch wrapper", "toTransform=" + toTransform.size());
             List<QinOvsCompileResult> decodedResults = decodeBatchResult(result, toTransform.size());
+            profile.checkpoint("decode batch result", "results=" + decodedResults.size());
             for (int i = 0; i < toTransform.size(); i++) {
                 BatchCompileInput input = toTransform.get(i);
                 QinOvsCompileResult decoded = decodedResults.get(i);
@@ -219,15 +271,17 @@ public final class QinOvsCompiler {
                 }
                 results.put(input.moduleFile(), decoded);
             }
+            profile.done("written=" + toTransform.size());
             return results;
         } catch (Exception error) {
-            throw new IllegalStateException("Qin vite-plugin-ovs batch transform failed for " + projectRoot, error);
+            throw new IllegalStateException("Qin ovs-compiler batch transform failed for " + projectRoot, error);
         }
     }
 
     private void bindTransformInputs(Path projectRoot, String source, String id) {
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "source"), source == null ? "" : source);
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "id"), id == null ? "" : id);
+        JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "options"), ovsTransformOptionsValue(projectRoot));
     }
 
     private void bindBatchTransformInputs(Path projectRoot, List<BatchCompileInput> inputs) {
@@ -239,76 +293,27 @@ public final class QinOvsCompiler {
             boundInputs.add(bound);
         }
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "batch_inputs"), boundInputs);
+        JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "options"), ovsTransformOptionsValue(projectRoot));
     }
 
     private String buildWrapperSource(Path projectRoot) {
         String sourceGlobal = ovsTransformGlobalName(projectRoot, "source");
         String idGlobal = ovsTransformGlobalName(projectRoot, "id");
+        String optionsGlobal = ovsTransformGlobalName(projectRoot, "options");
         return """
-                import vitePluginOvs from "vite-plugin-ovs";
                 import { vitePluginOvsTransform } from "ovs-compiler";
                 import { RuntimeStore, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
-                %s
-                function __qinFlattenPlugins(value) {
-                  const out = [];
-                  for (const item of Array.isArray(value) ? value : []) {
-                    if (!item) continue;
-                    if (Array.isArray(item)) out.push(...__qinFlattenPlugins(item));
-                    else out.push(item);
-                  }
-                  return out;
-                }
-                function __qinPluginName(plugin) {
-                  return plugin && typeof plugin.name === "string" ? plugin.name : "";
-                }
-                function __qinResolveMaybePromise(value) {
-                  if (value && value.then) {
-                    let resolved = value;
-                    value.then(next => { resolved = next; });
-                    return resolved;
-                  }
-                  return value;
-                }
-                function __qinCallPluginHook(hook, context, ...args) {
-                  if (!hook) return null;
-                  const result = typeof hook === "function"
-                    ? hook.call(context, ...args)
-                    : hook.handler.call(context, ...args);
-                  return __qinResolveMaybePromise(result);
-                }
-                const __qin_user_config__ = qinUserViteConfig || {};
-                const __qin_plugins__ = __qinFlattenPlugins(__qin_user_config__.plugins);
-                if (!__qin_plugins__.find(plugin => __qinPluginName(plugin) === "vite-plugin-ovs")) {
-                  console.log("[QinOvsCompiler] instantiate vite-plugin-ovs");
-                  __qin_plugins__.push(...__qinFlattenPlugins(vitePluginOvs(%s)));
-                }
-                const __qin_plugin__ = __qin_plugins__.find(plugin => plugin && plugin.name === "vite-plugin-ovs");
-                if (!__qin_plugin__ || !__qin_plugin__.transform) {
-                  throw new Error("vite-plugin-ovs transform hook not found");
-                }
-                const __qin_context__ = {
-                  parse(code) { return {}; },
-                  addWatchFile(file) {},
-                  emitFile(file) { return "qin-ovs-file"; },
-                  warn(message) {},
-                  error(message) { throw new Error(String(message)); }
-                };
                 const __qin_source__ = globalThis.%s;
                 const __qin_id__ = globalThis.%s;
+                const __qin_options__ = globalThis.%s || {};
                 const __qin_shared_styles__ = new Set();
-                let __qin_result__ = vitePluginOvsTransform(__qin_source__, { globalStyles: __qin_shared_styles__ });
+                let __qin_result__ = vitePluginOvsTransform(
+                  __qin_source__,
+                  Object.assign({}, __qin_options__, { globalStyles: __qin_shared_styles__ })
+                );
                 let __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
                 if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
-                  __qin_result__ = __qinCallPluginHook(
-                    __qin_plugin__.transform,
-                    __qin_context__,
-                    __qin_source__,
-                    __qin_id__
-                  );
-                  __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
-                }
-                if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
-                  throw new Error("vite-plugin-ovs transform returned empty code for " + __qin_id__);
+                  throw new Error("ovs-compiler transform returned empty code for " + __qin_id__);
                 }
                 if (__qin_shared_styles__.size > 0 && !__qin_code__.includes("virtual:cssts.css")) {
                   __qin_code__ = "import 'virtual:cssts.css'\\n" + __qin_code__;
@@ -321,83 +326,32 @@ public final class QinOvsCompiler {
                   hasStyles: __qin_code__.includes("virtual:cssts.css") || __qin_css__.length > 0,
                   css: __qin_css__,
                   atomModule: __qin_atom__,
-                  pluginName: __qin_plugin__.name
+                  pluginName: "ovs-compiler"
                 });
                 """.formatted(
-                viteConfigImportSource(projectRoot),
-                ovsPluginOptionsSource(projectRoot),
                 sourceGlobal,
-                idGlobal);
+                idGlobal,
+                optionsGlobal);
     }
 
     private String buildBatchWrapperSource(Path projectRoot) {
         String inputsGlobal = ovsTransformGlobalName(projectRoot, "batch_inputs");
+        String optionsGlobal = ovsTransformGlobalName(projectRoot, "options");
         return """
-                import vitePluginOvs from "vite-plugin-ovs";
                 import { vitePluginOvsTransform } from "ovs-compiler";
                 import { RuntimeStore, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
-                %s
-                function __qinFlattenPlugins(value) {
-                  const out = [];
-                  for (const item of Array.isArray(value) ? value : []) {
-                    if (!item) continue;
-                    if (Array.isArray(item)) out.push(...__qinFlattenPlugins(item));
-                    else out.push(item);
-                  }
-                  return out;
-                }
-                function __qinPluginName(plugin) {
-                  return plugin && typeof plugin.name === "string" ? plugin.name : "";
-                }
-                function __qinResolveMaybePromise(value) {
-                  if (value && value.then) {
-                    let resolved = value;
-                    value.then(next => { resolved = next; });
-                    return resolved;
-                  }
-                  return value;
-                }
-                function __qinCallPluginHook(hook, context, ...args) {
-                  if (!hook) return null;
-                  const result = typeof hook === "function"
-                    ? hook.call(context, ...args)
-                    : hook.handler.call(context, ...args);
-                  return __qinResolveMaybePromise(result);
-                }
-                const __qin_user_config__ = qinUserViteConfig || {};
-                const __qin_plugins__ = __qinFlattenPlugins(__qin_user_config__.plugins);
-                if (!__qin_plugins__.find(plugin => __qinPluginName(plugin) === "vite-plugin-ovs")) {
-                  console.log("[QinOvsCompiler] instantiate vite-plugin-ovs");
-                  __qin_plugins__.push(...__qinFlattenPlugins(vitePluginOvs(%s)));
-                }
-                const __qin_plugin__ = __qin_plugins__.find(plugin => plugin && plugin.name === "vite-plugin-ovs");
-                if (!__qin_plugin__ || !__qin_plugin__.transform) {
-                  throw new Error("vite-plugin-ovs transform hook not found");
-                }
-                const __qin_context__ = {
-                  parse(code) { return {}; },
-                  addWatchFile(file) {},
-                  emitFile(file) { return "qin-ovs-file"; },
-                  warn(message) {},
-                  error(message) { throw new Error(String(message)); }
-                };
+                const __qin_options__ = globalThis.%s || {};
                 function __qinTransformOne(input) {
                   try {
                     RuntimeStore.clearUsedStyles();
                     const __qin_shared_styles__ = new Set();
-                    let __qin_result__ = vitePluginOvsTransform(input.source, { globalStyles: __qin_shared_styles__ });
+                    let __qin_result__ = vitePluginOvsTransform(
+                      input.source,
+                      Object.assign({}, __qin_options__, { globalStyles: __qin_shared_styles__ })
+                    );
                     let __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
                     if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
-                      __qin_result__ = __qinCallPluginHook(
-                        __qin_plugin__.transform,
-                        __qin_context__,
-                        input.source,
-                        input.id
-                      );
-                      __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
-                    }
-                    if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
-                      throw new Error("vite-plugin-ovs transform returned empty code for " + input.id);
+                      throw new Error("ovs-compiler transform returned empty code for " + input.id);
                     }
                     if (__qin_shared_styles__.size > 0 && !__qin_code__.includes("virtual:cssts.css")) {
                       __qin_code__ = "import 'virtual:cssts.css'\\n" + __qin_code__;
@@ -410,18 +364,17 @@ public final class QinOvsCompiler {
                       hasStyles: __qin_code__.includes("virtual:cssts.css") || __qin_css__.length > 0,
                       css: __qin_css__,
                       atomModule: __qin_atom__,
-                      pluginName: __qin_plugin__.name
+                      pluginName: "ovs-compiler"
                     };
                   } catch (error) {
                     const message = error && error.message ? error.message : String(error);
-                    throw new Error("vite-plugin-ovs transform failed for " + input.id + ": " + message);
+                    throw new Error("ovs-compiler transform failed for " + input.id + ": " + message);
                   }
                 }
                 const __qin_inputs__ = globalThis.%s;
                 __qin_inputs__.map(input => __qinTransformOne(input));
                 """.formatted(
-                viteConfigImportSource(projectRoot),
-                ovsPluginOptionsSource(projectRoot),
+                optionsGlobal,
                 inputsGlobal);
     }
 
@@ -446,8 +399,7 @@ public final class QinOvsCompiler {
     }
 
     private String ovsTransformGlobalName(Path projectRoot, String suffix) {
-        String identity = projectRoot.toAbsolutePath().normalize().toString().replace('\\', '/');
-        return "__qin_ovs_transform_" + shortSha256(identity) + "_" + suffix;
+        return "__qin_ovs_transform_" + suffix;
     }
 
     private String shortSha256(String text) {
@@ -504,58 +456,29 @@ public final class QinOvsCompiler {
         return null;
     }
 
-    private String viteConfigImportSource(Path projectRoot) {
-        Path config = findQinConfig(projectRoot);
-        if (!java.nio.file.Files.isRegularFile(config)) {
-            return "const qinUserViteConfig = null;";
-        }
-        try {
-            String text = java.nio.file.Files.readString(config);
-            if (!text.contains("export default")) {
-                return "const qinUserViteConfig = null;";
-            }
-            if (!requiresFullOvsConfigEvaluation(text)) {
-                return "const qinUserViteConfig = null;";
-            }
-        } catch (Exception ignored) {
-            return "const qinUserViteConfig = null;";
-        }
-        Path wrapperDir = projectRoot.toAbsolutePath().normalize()
-                .resolve(".qin")
-                .resolve("runtime")
-                .resolve("npm-host")
-                .normalize();
-        String relative = wrapperDir.relativize(config.toAbsolutePath().normalize()).toString().replace('\\', '/');
-        if (!relative.startsWith(".")) {
-            relative = "./" + relative;
-        }
-        return "import qinUserViteConfig from "
-                + QinJsPackageRunner.renderJsLiteral(relative)
-                + ";";
+    private Map<String, Object> ovsTransformOptionsValue(Path projectRoot) {
+        Map<String, Object> cssts = new LinkedHashMap<>();
+        cssts.put("classPrefix", ovsPluginClassPrefix(projectRoot));
+        Map<String, Object> options = new LinkedHashMap<>();
+        options.put("cssts", cssts);
+        return options;
     }
 
-    private boolean requiresFullOvsConfigEvaluation(String configText) {
-        return configText.contains("vite-plugin-ovs")
-                && configText.contains("transform(");
-    }
-
-    private String ovsPluginOptionsSource(Path projectRoot) {
+    private String ovsPluginClassPrefix(Path projectRoot) {
         Path config = findQinConfig(projectRoot);
         if (!java.nio.file.Files.isRegularFile(config)) {
-            return "{ cssts: { classPrefix: \"cmp-\" } }";
+            return "cmp-";
         }
         try {
             String text = java.nio.file.Files.readString(config);
             Matcher matcher = CLASS_PREFIX_PATTERN.matcher(text);
             if (matcher.find()) {
-                return "{ cssts: { classPrefix: "
-                        + QinJsPackageRunner.renderJsLiteral(matcher.group(2))
-                        + " } }";
+                return matcher.group(2);
             }
         } catch (Exception ignored) {
-            return "{ cssts: { classPrefix: \"cmp-\" } }";
+            return "cmp-";
         }
-        return "{ cssts: { classPrefix: \"cmp-\" } }";
+        return "cmp-";
     }
 
     private Path findQinConfig(Path projectRoot) {
@@ -565,7 +488,7 @@ public final class QinOvsCompiler {
     @SuppressWarnings("unchecked")
     private QinOvsCompileResult decodeResult(Object result) {
         if (!(result instanceof Map<?, ?> rawMap)) {
-            throw new IllegalStateException("vite-plugin-ovs did not return an object payload: " + result);
+            throw new IllegalStateException("ovs-compiler did not return an object payload: " + result);
         }
         Map<String, Object> map = (Map<String, Object>) rawMap;
         Object code = map.get("code");
@@ -573,7 +496,7 @@ public final class QinOvsCompiler {
         Object css = map.get("css");
         Object atomModule = map.get("atomModule");
         if (!(code instanceof String codeText)) {
-            throw new IllegalStateException("vite-plugin-ovs result missing code string: " + result);
+            throw new IllegalStateException("ovs-compiler result missing code string: " + result);
         }
         boolean styles = Boolean.TRUE.equals(hasStyles);
         return new QinOvsCompileResult(
@@ -590,11 +513,11 @@ public final class QinOvsCompiler {
         } else if (result instanceof Object[] array) {
             rawResults = List.of(array);
         } else {
-            throw new IllegalStateException("vite-plugin-ovs batch did not return an array payload: " + result);
+            throw new IllegalStateException("ovs-compiler batch did not return an array payload: " + result);
         }
         if (rawResults.size() != expectedSize) {
             throw new IllegalStateException(
-                    "vite-plugin-ovs batch returned " + rawResults.size() + " result(s), expected " + expectedSize);
+                    "ovs-compiler batch returned " + rawResults.size() + " result(s), expected " + expectedSize);
         }
         List<QinOvsCompileResult> decoded = new java.util.ArrayList<>();
         for (Object rawResult : rawResults) {
@@ -686,7 +609,6 @@ public final class QinOvsCompiler {
         }
         Map<String, Path> packages = new LinkedHashMap<>();
         registerWorkspacePackage(packages, "ovs-compiler", workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-compiler"));
-        registerWorkspacePackage(packages, "vite-plugin-ovs", workspaceRoot.resolve("ovsjs").resolve("vite-plugin-ovs"));
         registerWorkspacePackage(packages, "cssts-compiler", workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler"));
         registerWorkspacePackage(packages, "@qin/generated-qin-parser-ts", workspaceRoot.resolve("qin")
                 .resolve("packages").resolve("qin-language").resolve("generated").resolve("qin-parser-ts"));

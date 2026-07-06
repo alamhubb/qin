@@ -201,6 +201,15 @@ receives the current request data. Add focused smokes that compile two distinct
 sources through the same hot wrapper and prove the second result is fresh, not a
 stale cache hit.
 
+The standard Qin OVS wrapper path is `ovs-compiler`, not a runtime
+`vite-plugin-ovs` fallback. Project options such as CSSTS `classPrefix` must
+enter that standard transform as runtime input, so the wrapper source and module
+graph stay stable while each project still receives its own configuration.
+Toolchain fingerprints must include only packages that affect that standard
+path; unused plugin packages should not invalidate OVS transform cache keys or
+force expensive directory hashing. A focused smoke should prove both the
+configured output and the absence of default-config leakage.
+
 The same rule applies to batch transforms. A `compileAll` or multi-file
 transform wrapper must not embed the source/id array into wrapper source. Bind
 the whole batch through a scoped runtime input boundary and keep the wrapper
@@ -226,6 +235,12 @@ This follows the Vite module-graph lesson: dev-server work should be scoped to
 the modules that can affect the requested transform. Stale or inactive runtime
 packages must not be part of every request's cache key, because that turns one
 old large dependency into global latency.
+
+When a module-class cache hit is already proven but startup is still slow,
+profile the next boundary separately: dependency session setup, entry wrapper
+execution, and per-input transform time. A cache hit that still spends tens of
+seconds inside the transform run is not a cache-key problem; it means the active
+OVS/CSSTS transform execution path needs its own focused probe and optimization.
 
 The same active-scope rule applies one layer earlier: a long-lived dev runner
 should not rebuild the workspace package name index on every package invocation.
