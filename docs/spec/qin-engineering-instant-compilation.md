@@ -433,6 +433,15 @@ fullstack compilation perform their own specific checks. Reintroducing a broad
 external `checkAll()` on this path is a startup regression unless a focused
 profile proves it is the smallest necessary owning boundary.
 
+Bundled/local Qin runtime classpath construction must also avoid broad
+workspace recursion. When a source checkout needs sibling workspace classes,
+the declared discovery boundary is each known sibling root's own
+`build/classes` plus direct child package `build/classes` directories. Do not
+walk into `node_modules`, hidden directories, `dist`, or arbitrary nested trees
+to find runtime classes; those are incidental filesystem shape, not declared
+Qin inputs. `QinCliSiblingWorkspaceClasspathSmokeTestMain` guards this direct
+package-boundary rule.
+
 Profiling is evidence, not a workaround. A slow phase found by `--profile`
 should lead to an owning-layer cache, graph, parser, compiler, or runtime fix
 with focused hit/invalidation coverage. Do not solve a slow phase by hiding

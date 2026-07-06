@@ -1773,19 +1773,28 @@ public class QinCli {
             if (!Files.isDirectory(packageRoot)) {
                 continue;
             }
-            try (var paths = Files.walk(packageRoot, 4)) {
+            addClasspathEntry(entries, packageRoot.resolve("build").resolve("classes"));
+            try (var paths = Files.list(packageRoot)) {
                 paths
-                        .filter(path -> path.getFileName() != null
-                                && "classes".equals(path.getFileName().toString()))
-                        .filter(path -> path.getParent() != null
-                                && path.getParent().getFileName() != null
-                                && "build".equals(path.getParent().getFileName().toString()))
                         .filter(Files::isDirectory)
+                        .filter(QinCli::isSiblingWorkspacePackageDirectory)
+                        .map(path -> path.resolve("build").resolve("classes"))
                         .forEach(path -> addClasspathEntry(entries, path));
             } catch (IOException ignored) {
                 // Missing sibling projects are fine; qin.config.js dependencies may still resolve them remotely.
             }
         }
+    }
+
+    private static boolean isSiblingWorkspacePackageDirectory(Path path) {
+        if (path == null || path.getFileName() == null) {
+            return false;
+        }
+        String name = path.getFileName().toString();
+        return !name.startsWith(".")
+                && !"build".equals(name)
+                && !"dist".equals(name)
+                && !"node_modules".equals(name);
     }
 
     private static boolean isClassAvailableOnClasspath(String classpath, String className) {
