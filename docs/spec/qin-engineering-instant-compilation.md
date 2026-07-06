@@ -556,6 +556,22 @@ predicates/gates, and action boundaries separately from semantic actions. Until
 that exists, deeper lookahead must stay conservative and covered by focused
 smokes that prove both skipped alternatives and unchanged parse results.
 
+The framework cannot honestly promise perfect automatic LL(k) for arbitrary Java
+code inside grammar lambdas. It can be made complete for an analyzable grammar
+subset: terminals, nonterminals, alternatives, options, repetitions,
+nullable/follow sets, explicit predicates or gates, and semantic action
+boundaries. If an alternative depends on arbitrary side effects, contextual host
+code, unbounded lookahead, or unanalyzable predicates, the framework must report
+that choice as dynamic or ambiguous instead of pretending it has a perfect
+prediction. That is a grammar diagnostic, not a fallback parser.
+
+Focused performance probes must measure both structural work avoided and real
+wall-clock time. FIRST-token prediction that only skips cheap token mismatches
+may be slower than ordinary PEG retry because it pays an extra lookahead cost;
+common-prefix LL(2+) prediction can still be much faster when it avoids deeper
+failed branches. Treat skipped-alternative counters as necessary evidence, but
+not sufficient evidence, for parser speed work.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
