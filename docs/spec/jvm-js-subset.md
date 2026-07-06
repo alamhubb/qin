@@ -210,17 +210,18 @@ Do not implement a second parser or AST extraction path that activates when the 
 
 OVS is a JS/TS syntax extension, but `tag(...) { ... }` does not make JS object
 props the canonical surface. The canonical OVS argument body is a
-declaration-list style props syntax:
+class-member-style props syntax:
 
 ```ts
-div(class = "a", style = "color:red", onClick() { console.log(123) }) {
+div(class = "a"; style = "color:red"; onClick() { console.log(123) }) {
   div { 123 }
 }
 ```
 
-The parser/compiler acceptance target must include comma-separated OVS props
+The parser/compiler acceptance target must include semicolon-separated OVS props
 entries such as `name = expression`, boolean shorthand like `disabled`, and
-method-like handler bodies like `onClick() { save() }`. JS object props such as
+method-like handler bodies like `onClick() { save() }`. Commas are not valid
+OVS prop separators. JS object props such as
 `div({ class: "a" }) { ... }` are wrong OVS source syntax, not a second accepted
 form. They must not be used to hide a broken OVS parser, CST-to-AST bridge,
 lowerer, emitter, or runtime path.
