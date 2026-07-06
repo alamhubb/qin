@@ -200,6 +200,12 @@ session can be reused across batches. A correct batch smoke must prove three
 things together: changed batch inputs produce fresh output, the second batch is
 not served from the transform disk cache, and the stable wrapper hits the
 module-class compile cache plus dependency session.
+Production frontend emit must use that same batch boundary for graph OVS
+modules: collect the `.ovs` modules in the frontend graph, prewarm them through
+`QinOvsCompiler.compileAll`, then write each output from the service cache.
+Per-module production transforms are a performance defect unless the graph has
+only one OVS module or the transform cache already proves no transform work is
+needed.
 
 ### Active Dependency Fingerprints
 

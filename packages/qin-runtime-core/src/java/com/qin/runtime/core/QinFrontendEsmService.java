@@ -260,6 +260,17 @@ public final class QinFrontendEsmService {
         Path moduleRoot = staticRoot.resolve("@qin-mod").normalize();
         Files.createDirectories(moduleRoot);
 
+        List<Path> ovsFiles = new ArrayList<>();
+        for (QinModuleSource module : graph.modules()) {
+            Path file = module.file().toAbsolutePath().normalize();
+            if (isFrontendModuleFile(file) && isOvsModuleFile(file)) {
+                ovsFiles.add(file);
+            }
+        }
+        if (!ovsFiles.isEmpty()) {
+            prewarmOvsModules(ovsFiles);
+        }
+
         for (QinModuleSource module : graph.modules()) {
             Path file = module.file().toAbsolutePath().normalize();
             if (!isFrontendModuleFile(file)) {
