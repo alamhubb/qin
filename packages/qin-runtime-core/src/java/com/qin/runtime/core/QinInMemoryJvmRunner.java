@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class QinInMemoryJvmRunner {
     private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
     private static final long DEFAULT_JS_RUN_TIMEOUT_MS = 0L;
-    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 3;
+    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 4;
 
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
@@ -155,51 +155,62 @@ public final class QinInMemoryJvmRunner {
                 source,
                 cacheSalt,
                 stableCacheIdentity);
+        CachedModuleClassCompileResult compileResult = moduleClassCompileCache.get(cacheKey);
+        if (compileResult != null) {
+            logPhase("module-class compile cache hit", startNanos, className);
+            return runCachedModuleClasses(compileResult, startNanos);
+        }
+
         CachedModuleClassCompileResult diskCached = readModuleClassDiskCache(normalizedCacheRoot, cacheKey);
         if (diskCached != null) {
+            moduleClassCompileCache.putIfAbsent(cacheKey, diskCached);
             logPhase("module-class disk cache hit", startNanos, className);
             return runCachedModuleClasses(diskCached, startNanos);
         }
 
-        CachedModuleClassCompileResult compileResult = moduleClassCompileCache.get(cacheKey);
-        if (compileResult == null) {
-            logPhase("module-class compile start", startNanos, sourceFile.toAbsolutePath().toString());
-            QinCfaModuleClassCompileResult compiled = compiler.compileModuleClasses(
-                    QinCfaCompileRequest.forJvm(sourceFile, normalizedProjectRoot, className));
-            CachedModuleClassCompileResult compact = toCachedModuleClassCompileResult(compiled);
-            compiled = null;
-            CachedModuleClassCompileResult existing = moduleClassCompileCache.putIfAbsent(cacheKey, compact);
-            compileResult = existing == null ? compact : existing;
-            logPhase("module-class compile done", startNanos, className);
-            writeModuleClassDiskCache(normalizedCacheRoot, cacheKey, compileResult);
-        } else {
-            logPhase("module-class compile cache hit", startNanos, className);
-        }
+        logPhase("module-class compile start", startNanos, sourceFile.toAbsolutePath().toString());
+        QinCfaModuleClassCompileResult compiled = compiler.compileModuleClasses(
+                QinCfaCompileRequest.forJvm(sourceFile, normalizedProjectRoot, className));
+        CachedModuleClassCompileResult compact = toCachedModuleClassCompileResult(compiled);
+        compiled = null;
+        CachedModuleClassCompileResult existing = moduleClassCompileCache.putIfAbsent(cacheKey, compact);
+        compileResult = existing == null ? compact : existing;
+        logPhase("module-class compile done", startNanos, className);
+        writeModuleClassDiskCache(normalizedCacheRoot, cacheKey, compileResult);
         return runCachedModuleClasses(compileResult, startNanos);
     }
 
     private Object runCachedModuleClasses(CachedModuleClassCompileResult compileResult, long startNanos) throws Exception {
         ByteArrayClassLoader classLoader = new ByteArrayClassLoader(getClass().getClassLoader());
         Object result = null;
+        boolean traceModules = traceModuleClassRuns();
+        int moduleCount = compileResult.moduleClasses.size() + (compileResult.initializerClass == null ? 0 : 1);
+        logPhase("module-class run batch start", startNanos, "modules=" + moduleCount);
         if (compileResult.initializerClass != null) {
-            result = runCachedModuleClass(classLoader, compileResult.initializerClass, startNanos);
+            result = runCachedModuleClass(classLoader, compileResult.initializerClass, startNanos, traceModules);
         }
         for (CachedModuleClassFile moduleClassFile : compileResult.moduleClasses) {
-            result = runCachedModuleClass(classLoader, moduleClassFile, startNanos);
+            result = runCachedModuleClass(classLoader, moduleClassFile, startNanos, traceModules);
         }
+        logPhase("module-class run batch done", startNanos, "modules=" + moduleCount);
         return result;
     }
 
     private Object runCachedModuleClass(
             ByteArrayClassLoader classLoader,
             CachedModuleClassFile moduleClassFile,
-            long startNanos) throws Exception {
+            long startNanos,
+            boolean traceModules) throws Exception {
         bindDeclarationClasses(classLoader.defineAll(moduleClassFile.declarationClassBytes));
         registerFunctionModelArtifacts(moduleClassFile.functionModels);
         Class<?> moduleClass = classLoader.define(moduleClassFile.className, moduleClassFile.classBytes);
-        logPhase("module-class run start", startNanos, moduleClassDetail(moduleClassFile));
+        if (traceModules) {
+            logPhase("module-class run start", startNanos, moduleClassDetail(moduleClassFile));
+        }
         Object result = invokeRunWithRuntimeStack(moduleClass, moduleClassFile.className);
-        logPhase("module-class run done", startNanos, moduleClassDetail(moduleClassFile));
+        if (traceModules) {
+            logPhase("module-class run done", startNanos, moduleClassDetail(moduleClassFile));
+        }
         return result;
     }
 
@@ -276,6 +287,7 @@ public final class QinInMemoryJvmRunner {
     private Object invokeRunWithRuntimeStack(Class<?> generatedClass, String className) throws Exception {
         long stackBytes = Long.getLong("qin.runtime.jsRunStackBytes", DEFAULT_JS_RUN_STACK_BYTES);
         long timeoutMs = Long.getLong("qin.runtime.jsRunTimeoutMs", DEFAULT_JS_RUN_TIMEOUT_MS);
+        long interpretedCallLimit = Long.getLong("qin.runtime.interpretedCallCountLimit", 0L);
         if (stackBytes <= 0) {
             return generatedClass.getMethod("run").invoke(null);
         }
@@ -285,13 +297,21 @@ public final class QinInMemoryJvmRunner {
                 null,
                 () -> {
                     try {
+                        if (interpretedCallLimit > 0L) {
+                            JavaEsmGlobal.setInterpretedCallCountLimit(interpretedCallLimit);
+                        }
                         result[0] = generatedClass.getMethod("run").invoke(null);
                     } catch (Throwable error) {
                         failure[0] = error;
+                    } finally {
+                        if (interpretedCallLimit > 0L) {
+                            JavaEsmGlobal.clearInterpretedCallCountLimit();
+                        }
                     }
                 },
                 "qin-js-runtime-" + className,
                 stackBytes);
+        runThread.setDaemon(true);
         runThread.start();
         if (timeoutMs > 0) {
             runThread.join(timeoutMs);
@@ -419,6 +439,12 @@ public final class QinInMemoryJvmRunner {
         System.out.println("[QinInMemoryJvmRunner] " + phase + " +" + elapsedMs + "ms :: " + detail);
     }
 
+    private static boolean traceModuleClassRuns() {
+        return Boolean.getBoolean("qin.moduleClass.trace")
+                || "1".equals(System.getenv("QIN_MODULE_CLASS_TRACE"))
+                || "true".equalsIgnoreCase(System.getenv("QIN_MODULE_CLASS_TRACE"));
+    }
+
     private String moduleClassDetail(QinCfaModuleClassFile moduleClassFile) {
         return moduleClassFile.className()
                 + " [moduleIndex="
@@ -444,15 +470,16 @@ public final class QinInMemoryJvmRunner {
             String source,
             String cacheSalt,
             String stableCacheIdentity) {
-        String sourceIdentity = stableCacheIdentity == null || stableCacheIdentity.isBlank()
-                ? "path\n"
+        boolean stableIdentity = stableCacheIdentity != null && !stableCacheIdentity.isBlank();
+        String sourceIdentity = stableIdentity
+                ? "stable\n" + stableCacheIdentity.strip()
+                : "path\n"
                 + projectRoot.toAbsolutePath().normalize()
                 + "\n"
-                + sourceFile.toAbsolutePath().normalize()
-                : "stable\n" + stableCacheIdentity.strip();
+                + sourceFile.toAbsolutePath().normalize();
         return sourceIdentity
                 + "\n"
-                + className
+                + (stableIdentity ? "" : className)
                 + "\n"
                 + (cacheSalt == null ? "" : cacheSalt)
                 + "\n"

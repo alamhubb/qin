@@ -161,6 +161,11 @@ Qin should use separate cache layers instead of one coarse cache:
 
 Each layer must have a focused smoke test for hit/miss behavior.
 
+Hot in-process caches are checked before disk caches. Disk caches are the
+cross-process persistence layer; once a dev server has loaded or produced a
+module-class result, the same process should not repeatedly deserialize the
+same large cache artifact for later requests with the same stable identity.
+
 ### Active Dependency Fingerprints
 
 The Qin runtime npm host must fingerprint the active dependency closure for the
@@ -254,10 +259,19 @@ Cache and instant compilation logs should name:
 Required examples:
 
 - `module-class disk cache hit`;
+- `module-class compile cache hit`;
+- `module-class run batch start` / `module-class run batch done`;
 - `frontend transform disk cache hit`;
 - `package materialization fresh`;
 - `dependency fingerprint changed`;
 - `hot module cache invalidated`.
+
+Default dev-server logs should be concise enough not to become a performance
+cost. Per-module module-class run tracing is diagnostic output, not normal
+progress output, and should be enabled only with `QIN_MODULE_CLASS_TRACE=1` or
+`-Dqin.moduleClass.trace=true`. This follows the same principle as Vite-style
+debug logging: keep cache/phase summaries visible, and make very detailed
+module traces opt-in.
 
 If a smoke test uses a temp project root, it must still prove stable cache
 identity or use a stable test root when the test is about cache reuse.
