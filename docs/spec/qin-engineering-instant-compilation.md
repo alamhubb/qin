@@ -149,6 +149,9 @@ Qin should use separate cache layers instead of one coarse cache:
 
 - package materialization cache: copies or shims external/workspace packages
   into the Qin runtime host and records a content-aware stamp;
+- workspace package index cache: discovers monorepo package names once per
+  long-lived runner process, then reuses the name-to-path index while
+  materialization stamps still decide whether package content must be recopied;
 - dependency fingerprint cache: fingerprints manifests, selected entries, lock
   data, and Qin package stamps without walking every dependency file on every
   invocation;
@@ -176,6 +179,12 @@ This follows the Vite module-graph lesson: dev-server work should be scoped to
 the modules that can affect the requested transform. Stale or inactive runtime
 packages must not be part of every request's cache key, because that turns one
 old large dependency into global latency.
+
+The same active-scope rule applies one layer earlier: a long-lived dev runner
+should not rebuild the workspace package name index on every package invocation.
+The index is process-local discovery state. Content freshness still belongs to
+package materialization stamps and active dependency fingerprints, so caching
+the index must not hide changed package source files.
 
 It also follows the Kotlin/Gradle classpath snapshot lesson: dependency cache
 identity should come from stable package metadata and content-aware stamps,
@@ -261,6 +270,7 @@ Required examples:
 - `module-class disk cache hit`;
 - `module-class compile cache hit`;
 - `module-class run batch start` / `module-class run batch done`;
+- `workspace package index built` / `workspace package index cache hit`;
 - `frontend transform disk cache hit`;
 - `package materialization fresh`;
 - `dependency fingerprint changed`;

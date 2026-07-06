@@ -59,6 +59,7 @@ final class QinJsPackageRunner {
 
     private final QinInMemoryJvmRunner runner = new QinInMemoryJvmRunner();
     private final QinNpmDependencyMaterializer npmDependencyMaterializer = new QinNpmDependencyMaterializer();
+    private final Map<Path, Map<String, Path>> workspacePackageIndexCache = new ConcurrentHashMap<>();
 
     Object invokeNamedExport(
             Path projectRoot,
@@ -269,7 +270,7 @@ final class QinJsPackageRunner {
         }
 
         Map<String, Path> packageOverrides = readProjectPackageOverrides(projectRoot);
-        Map<String, Path> workspacePackages = indexWorkspacePackages(workspaceRoot);
+        Map<String, Path> workspacePackages = workspacePackageIndex(workspaceRoot);
         Path runtimeNodeModules = wrapperDir.resolve("node_modules");
         Files.createDirectories(runtimeNodeModules);
 
@@ -2533,6 +2534,27 @@ final class QinJsPackageRunner {
             return workspaceRoot.resolve("qin").toAbsolutePath().normalize();
         }
         return projectRoot.toAbsolutePath().normalize();
+    }
+
+    private Map<String, Path> workspacePackageIndex(Path workspaceRoot) throws IOException {
+        Path normalizedRoot = workspaceRoot.toAbsolutePath().normalize();
+        Map<String, Path> cached = workspacePackageIndexCache.get(normalizedRoot);
+        if (cached != null) {
+            System.out.println("[QinJsPackageRunner] workspace package index cache hit :: " + normalizedRoot);
+            return cached;
+        }
+        Map<String, Path> indexed = Map.copyOf(indexWorkspacePackages(normalizedRoot));
+        Map<String, Path> existing = workspacePackageIndexCache.putIfAbsent(normalizedRoot, indexed);
+        Map<String, Path> result = existing == null ? indexed : existing;
+        if (existing == null) {
+            System.out.println("[QinJsPackageRunner] workspace package index built :: "
+                    + normalizedRoot
+                    + " packages="
+                    + result.size());
+        } else {
+            System.out.println("[QinJsPackageRunner] workspace package index cache hit :: " + normalizedRoot);
+        }
+        return result;
     }
 
     private Map<String, Path> indexWorkspacePackages(Path workspaceRoot) throws IOException {
