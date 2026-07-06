@@ -43,11 +43,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class QinInMemoryJvmRunner {
     private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
     private static final long DEFAULT_JS_RUN_TIMEOUT_MS = 0L;
-    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 4;
+    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 5;
 
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
     private final Map<String, CachedModuleClassCompileResult> moduleClassCompileCache = new ConcurrentHashMap<>();
+    private final Map<String, ModuleClassRuntimeSession> moduleClassRuntimeSessionCache = new ConcurrentHashMap<>();
 
     public QinInMemoryJvmRunner() {
         this(new QinSlimeCfaCompiler());
@@ -158,14 +159,14 @@ public final class QinInMemoryJvmRunner {
         CachedModuleClassCompileResult compileResult = moduleClassCompileCache.get(cacheKey);
         if (compileResult != null) {
             logPhase("module-class compile cache hit", startNanos, className);
-            return runCachedModuleClasses(compileResult, startNanos);
+            return runCachedModuleClasses(cacheKey, compileResult, startNanos);
         }
 
         CachedModuleClassCompileResult diskCached = readModuleClassDiskCache(normalizedCacheRoot, cacheKey);
         if (diskCached != null) {
             moduleClassCompileCache.putIfAbsent(cacheKey, diskCached);
             logPhase("module-class disk cache hit", startNanos, className);
-            return runCachedModuleClasses(diskCached, startNanos);
+            return runCachedModuleClasses(cacheKey, diskCached, startNanos);
         }
 
         logPhase("module-class compile start", startNanos, sourceFile.toAbsolutePath().toString());
@@ -177,23 +178,17 @@ public final class QinInMemoryJvmRunner {
         compileResult = existing == null ? compact : existing;
         logPhase("module-class compile done", startNanos, className);
         writeModuleClassDiskCache(normalizedCacheRoot, cacheKey, compileResult);
-        return runCachedModuleClasses(compileResult, startNanos);
+        return runCachedModuleClasses(cacheKey, compileResult, startNanos);
     }
 
-    private Object runCachedModuleClasses(CachedModuleClassCompileResult compileResult, long startNanos) throws Exception {
-        ByteArrayClassLoader classLoader = new ByteArrayClassLoader(getClass().getClassLoader());
-        Object result = null;
-        boolean traceModules = traceModuleClassRuns();
-        int moduleCount = compileResult.moduleClasses.size() + (compileResult.initializerClass == null ? 0 : 1);
-        logPhase("module-class run batch start", startNanos, "modules=" + moduleCount);
-        if (compileResult.initializerClass != null) {
-            result = runCachedModuleClass(classLoader, compileResult.initializerClass, startNanos, traceModules);
-        }
-        for (CachedModuleClassFile moduleClassFile : compileResult.moduleClasses) {
-            result = runCachedModuleClass(classLoader, moduleClassFile, startNanos, traceModules);
-        }
-        logPhase("module-class run batch done", startNanos, "modules=" + moduleCount);
-        return result;
+    private Object runCachedModuleClasses(
+            String cacheKey,
+            CachedModuleClassCompileResult compileResult,
+            long startNanos) throws Exception {
+        ModuleClassRuntimeSession session = moduleClassRuntimeSessionCache.computeIfAbsent(
+                cacheKey,
+                ignored -> new ModuleClassRuntimeSession(compileResult));
+        return session.run(startNanos);
     }
 
     private Object runCachedModuleClass(
@@ -225,6 +220,7 @@ public final class QinInMemoryJvmRunner {
         }
         return new CachedModuleClassCompileResult(
                 MODULE_CLASS_DISK_CACHE_VERSION,
+                compileResult.sourceFile(),
                 initializerClass,
                 moduleClasses);
     }
@@ -609,16 +605,84 @@ public final class QinInMemoryJvmRunner {
         private static final long serialVersionUID = 1L;
 
         private final int version;
+        private final String sourceFile;
         private final CachedModuleClassFile initializerClass;
         private final List<CachedModuleClassFile> moduleClasses;
 
         private CachedModuleClassCompileResult(
                 int version,
+                Path sourceFile,
                 CachedModuleClassFile initializerClass,
                 List<CachedModuleClassFile> moduleClasses) {
             this.version = version;
+            this.sourceFile = sourceFile == null ? "" : sourceFile.toAbsolutePath().normalize().toString();
             this.initializerClass = initializerClass;
             this.moduleClasses = List.copyOf(moduleClasses);
+        }
+    }
+
+    private final class ModuleClassRuntimeSession {
+        private final CachedModuleClassCompileResult compileResult;
+        private final ByteArrayClassLoader classLoader;
+        private boolean dependencyGraphInitialized;
+
+        private ModuleClassRuntimeSession(CachedModuleClassCompileResult compileResult) {
+            this.compileResult = compileResult;
+            this.classLoader = new ByteArrayClassLoader(QinInMemoryJvmRunner.class.getClassLoader());
+        }
+
+        private synchronized Object run(long startNanos) throws Exception {
+            boolean traceModules = traceModuleClassRuns();
+            CachedModuleClassFile entryModuleClass = entryModuleClass();
+            Object result = null;
+
+            if (!dependencyGraphInitialized) {
+                int dependencyCount = dependencyModuleCount(entryModuleClass);
+                logPhase("module-class dependency session start", startNanos, "modules=" + dependencyCount);
+                if (compileResult.initializerClass != null) {
+                    result = runCachedModuleClass(classLoader, compileResult.initializerClass, startNanos, traceModules);
+                }
+                for (CachedModuleClassFile moduleClassFile : compileResult.moduleClasses) {
+                    if (moduleClassFile == entryModuleClass) {
+                        continue;
+                    }
+                    result = runCachedModuleClass(classLoader, moduleClassFile, startNanos, traceModules);
+                }
+                dependencyGraphInitialized = true;
+                logPhase("module-class dependency session ready", startNanos, "modules=" + dependencyCount);
+            } else {
+                logPhase("module-class dependency session hit", startNanos, "modules=0");
+            }
+
+            if (entryModuleClass != null) {
+                logPhase("module-class run batch start", startNanos, "modules=1");
+                result = runCachedModuleClass(classLoader, entryModuleClass, startNanos, traceModules);
+                logPhase("module-class run batch done", startNanos, "modules=1");
+            }
+            return result;
+        }
+
+        private int dependencyModuleCount(CachedModuleClassFile entryModuleClass) {
+            int count = compileResult.initializerClass == null ? 0 : 1;
+            for (CachedModuleClassFile moduleClassFile : compileResult.moduleClasses) {
+                if (moduleClassFile != entryModuleClass) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private CachedModuleClassFile entryModuleClass() {
+            if (compileResult.moduleClasses.isEmpty()) {
+                return null;
+            }
+            for (int i = compileResult.moduleClasses.size() - 1; i >= 0; i--) {
+                CachedModuleClassFile moduleClassFile = compileResult.moduleClasses.get(i);
+                if (moduleClassFile.sourceFile.equals(compileResult.sourceFile)) {
+                    return moduleClassFile;
+                }
+            }
+            return compileResult.moduleClasses.get(compileResult.moduleClasses.size() - 1);
         }
     }
 

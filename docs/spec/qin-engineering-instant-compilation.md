@@ -169,6 +169,15 @@ cross-process persistence layer; once a dev server has loaded or produced a
 module-class result, the same process should not repeatedly deserialize the
 same large cache artifact for later requests with the same stable identity.
 
+For JVM module-class execution, a hot process should treat the stable
+dependency module graph like an ESM module graph: initializer and dependency
+modules are instantiated once per stable module-class cache identity, while the
+entry wrapper remains the invocation boundary and runs on every call. This is
+not a fallback and it must not skip unproven side effects. Add focused smoke
+coverage that proves dependency side effects run once, entry side effects run
+per invocation, and live exports remain readable before applying the behavior to
+broader OVS/CSSTS/dev-server flows.
+
 ### Active Dependency Fingerprints
 
 The Qin runtime npm host must fingerprint the active dependency closure for the
