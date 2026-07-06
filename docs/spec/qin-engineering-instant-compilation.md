@@ -303,6 +303,10 @@ accepted as the permanent design.
 The Qin dev server should be one orchestrator for frontend and backend work:
 
 - keep a persistent runtime/compiler service for the current project;
+- run ordinary Qin fullstack `dev` and `build` through the CLI process by
+  invoking `QinFullstackMain` in-process; do not add a routine second JVM,
+  Jite wrapper, Node/Vite server, or child-process path for the same standard
+  fullstack boundary;
 - pre-materialize heavy compiler dependencies once per dependency fingerprint;
 - precompile stable tool packages such as generated parser, OVS, CSSTS, and
   Vue compiler shims into reusable module classes;
@@ -313,6 +317,16 @@ The Qin dev server should be one orchestrator for frontend and backend work:
 
 The end-user expectation is "first run may warm caches; subsequent runs should
 be fast without manual cleanup."
+
+The CLI dependency layer is part of startup performance. `.qin/classpath.json`
+should cache not only the classpath but also the resolved local dependency
+project list. When the current project config and cached local project configs
+are unchanged, Qin may use that list directly and avoid a full workspace scan.
+If a cached local project config is newer than the cache, or the cached
+classpath no longer contains the required local class outputs, Qin must return
+to the normal dependency resolver and refresh the cache. Local source freshness
+is still checked by the standard local dependency compilation guard; the cached
+project list is an index, not a stale-output permission.
 
 Dev-server startup should not synchronously compile every OVS module before the
 HTTP listener is available. Like Vite, Qin should start the server after the

@@ -15,11 +15,14 @@ import com.qin.npm.NpmPackageManager;
 import com.qin.utils.QinUtils;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
@@ -1371,6 +1374,12 @@ public class QinCli {
                 resolvePathArg(args, "--static-dir", root),
                 resolveQinFrontendStaticDir(config, root, frontendRoot));
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
+        List<String> jvmArgs = resolveJvmArgs(args);
+        if (!jvmArgs.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "--jvm-args is not supported for Qin fullstack dev/build in-process runtime. "
+                            + "Set JVM options through JAVA_TOOL_OPTIONS or run the runtime main class directly.");
+        }
 
         System.out.println(blue(devMode ? "-> Starting Qin dev runtime..." : "-> Running Qin runtime..."));
         System.out.println(gray("  Backend entry: " + formatRelativeOrGenerated(root, backendSource)));
@@ -1381,50 +1390,37 @@ public class QinCli {
             System.out.println(gray("  Frontend entry: " + root.relativize(frontendEntry)));
         }
 
-        List<String> command = new ArrayList<>();
-        command.add("java");
-        command.addAll(resolveJvmArgs(args));
-        appendDatabaseSystemProperties(command, config);
-        command.add("-cp");
-        command.add(runtimeClasspath);
-        command.add(runtimeMainClass);
+        List<String> runtimeArgs = new ArrayList<>();
         if (devMode) {
-            command.add("--dev");
+            runtimeArgs.add("--dev");
         }
-        command.add("--root");
-        command.add(root.toString());
+        runtimeArgs.add("--root");
+        runtimeArgs.add(root.toString());
         if (backendSource != null) {
-            command.add("--backend-file");
-            command.add(backendSource.toString());
+            runtimeArgs.add("--backend-file");
+            runtimeArgs.add(backendSource.toString());
         }
-        command.add("--port");
-        command.add(String.valueOf(port));
+        runtimeArgs.add("--port");
+        runtimeArgs.add(String.valueOf(port));
         if (hasArg(args, "--build-only")) {
-            command.add("--build-only");
+            runtimeArgs.add("--build-only");
         }
         if (hasArg(args, "--print-ir")) {
-            command.add("--print-ir");
+            runtimeArgs.add("--print-ir");
+        }
+        if (hasArg(args, "--profile")) {
+            runtimeArgs.add("--profile");
         }
         if (frontendStaticDir != null) {
-            command.add("--static-dir");
-            command.add(frontendStaticDir.toString());
+            runtimeArgs.add("--static-dir");
+            runtimeArgs.add(frontendStaticDir.toString());
         }
         if (frontendEntry != null) {
-            command.add("--frontend-file");
-            command.add(frontendEntry.toString());
+            runtimeArgs.add("--frontend-file");
+            runtimeArgs.add(frontendEntry.toString());
         }
 
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.directory(root.toFile());
-        pb.inheritIO();
-        Process process = pb.start();
-        int exitCode = ChildProcessSupport.waitFor(
-                process,
-                runtimeMainClass,
-                () -> {});
-        if (exitCode != 0) {
-            throw new RuntimeException("Qin runtime exited with code " + exitCode + " (main class: " + runtimeMainClass + ")");
-        }
+        invokeQinRuntimeInProcess(runtimeClasspath, runtimeMainClass, root, runtimeArgs, config);
 
         System.out.println(green(devMode ? "[OK] Qin dev runtime stopped" : "[OK] Done!"));
     }
@@ -1530,20 +1526,82 @@ public class QinCli {
     }
 
     private static String resolveQinRuntimeMainClass(String runtimeClasspath, boolean devMode) {
-        if (!devMode) {
-            return QinConstants.FULLSTACK_MAIN_CLASS;
-        }
-
-        if (isClassAvailableOnClasspath(runtimeClasspath, QinConstants.DEV_SERVER_MAIN_CLASS)) {
-            return QinConstants.DEV_SERVER_MAIN_CLASS;
-        }
-
-        if (isClassAvailableOnClasspath(runtimeClasspath, QinConstants.JITE_DEV_MAIN_CLASS)) {
-            return QinConstants.JITE_DEV_MAIN_CLASS;
-        }
-
-        System.out.println(yellow("-> qin-plugin-jite not found in classpath, fallback to built-in dev runtime."));
         return QinConstants.FULLSTACK_MAIN_CLASS;
+    }
+
+    private static void invokeQinRuntimeInProcess(
+            String runtimeClasspath,
+            String runtimeMainClass,
+            Path root,
+            List<String> runtimeArgs,
+            QinConfig config) throws Exception {
+        if (!isClassAvailableOnClasspath(runtimeClasspath, runtimeMainClass)) {
+            throw new IllegalStateException("Qin runtime main class is missing from classpath: " + runtimeMainClass);
+        }
+
+        ClassLoader previousContextLoader = Thread.currentThread().getContextClassLoader();
+        Map<String, String> previousProperties = setDatabaseSystemProperties(config);
+        setSystemProperty(previousProperties, "java.class.path", runtimeClasspath);
+        java.net.URL[] urls = Arrays.stream(runtimeClasspath.split(Pattern.quote(QinConstants.getClasspathSeparator())))
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> {
+                    try {
+                        return Paths.get(value.trim()).toUri().toURL();
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Invalid Qin runtime classpath entry: " + value, e);
+                    }
+                })
+                .toArray(java.net.URL[]::new);
+
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(urls, QinCli.class.getClassLoader())) {
+            Thread.currentThread().setContextClassLoader(loader);
+            Class<?> mainClass = Class.forName(runtimeMainClass, true, loader);
+            Method main = mainClass.getMethod("main", String[].class);
+            main.invoke(null, (Object) runtimeArgs.toArray(String[]::new));
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception exception) {
+                throw exception;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw new RuntimeException(cause);
+        } finally {
+            restoreSystemProperties(previousProperties);
+            Thread.currentThread().setContextClassLoader(previousContextLoader);
+        }
+    }
+
+    private static Map<String, String> setDatabaseSystemProperties(QinConfig config) {
+        Map<String, String> previous = new LinkedHashMap<>();
+        if (config == null || config.database() == null) {
+            return previous;
+        }
+        DatabaseConfig database = config.database();
+        setSystemProperty(previous, "qin.database.url", database.url());
+        setSystemProperty(previous, "qin.database.user", database.user());
+        setSystemProperty(previous, "qin.database.password", database.password());
+        setSystemProperty(previous, "qin.database.passwordEnv", database.passwordEnv());
+        return previous;
+    }
+
+    private static void setSystemProperty(Map<String, String> previous, String key, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        previous.put(key, System.getProperty(key));
+        System.setProperty(key, value);
+    }
+
+    private static void restoreSystemProperties(Map<String, String> previous) {
+        for (Map.Entry<String, String> entry : previous.entrySet()) {
+            if (entry.getValue() == null) {
+                System.clearProperty(entry.getKey());
+            } else {
+                System.setProperty(entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     private static String appendBundledQinRuntimeClasspath(String runtimeClasspath) {
@@ -1858,6 +1916,13 @@ public class QinCli {
         String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
                 ? compileOutputDir
                 : compileOutputDir + separator + dependencyClasspath;
+        runtimeClasspath = appendBundledQinRuntimeClasspath(runtimeClasspath);
+        List<String> jvmArgs = resolveJvmArgs(args);
+        if (!jvmArgs.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "--jvm-args is not supported for Qin fullstack dev/build in-process runtime. "
+                            + "Set JVM options through JAVA_TOOL_OPTIONS or run the runtime main class directly.");
+        }
 
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
         Path backendSource = resolveQinBackendEntry(config, root, qinFile);
@@ -1880,36 +1945,28 @@ public class QinCli {
         }
         System.out.println(gray("  Output root: " + fullstackOutRoot));
 
-        List<String> command = new ArrayList<>();
-        command.add("java");
-        command.add("-cp");
-        command.add(runtimeClasspath);
-        command.add(QinConstants.FULLSTACK_MAIN_CLASS);
-        command.add("--build-only");
-        command.add("--root");
-        command.add(root.toString());
-        command.add("--backend-file");
-        command.add(backendSource.toString());
-        command.add("--class-out");
-        command.add(classOutDir.toString());
-        command.add("--static-dir");
-        command.add(staticOutDir.toString());
+        List<String> runtimeArgs = new ArrayList<>();
+        runtimeArgs.add("--build-only");
+        runtimeArgs.add("--root");
+        runtimeArgs.add(root.toString());
+        runtimeArgs.add("--backend-file");
+        runtimeArgs.add(backendSource.toString());
+        runtimeArgs.add("--class-out");
+        runtimeArgs.add(classOutDir.toString());
+        runtimeArgs.add("--static-dir");
+        runtimeArgs.add(staticOutDir.toString());
         if (frontendEntry != null) {
-            command.add("--frontend-file");
-            command.add(frontendEntry.toString());
+            runtimeArgs.add("--frontend-file");
+            runtimeArgs.add(frontendEntry.toString());
         }
         if (Arrays.asList(args).contains("--print-ir")) {
-            command.add("--print-ir");
+            runtimeArgs.add("--print-ir");
+        }
+        if (Arrays.asList(args).contains("--profile")) {
+            runtimeArgs.add("--profile");
         }
 
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.directory(root.toFile());
-        pb.inheritIO();
-        Process process = pb.start();
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new RuntimeException("Qin fullstack build exited with code " + exitCode);
-        }
+        invokeQinRuntimeInProcess(runtimeClasspath, QinConstants.FULLSTACK_MAIN_CLASS, root, runtimeArgs, config);
 
         System.out.println(green("[OK] Qin build completed"));
         System.out.println(green("  Server classes: " + classOutDir));
@@ -2479,8 +2536,7 @@ public class QinCli {
         // 闂佸湱顭堥ˇ鐢稿储閵堝洨纾炬い鏃€妲掗崢顒勬煟閵娿儱顏х紒鍫曨棑閹秆囧冀椤撴壕鍋撴惔銏″劅闊洦鏌ㄧ粭鎾诲箹?classpath
         classpath = sortClasspathByConfigOrder(classpath, deps);
 
-        String json = buildClasspathJson(classpath);
-        Files.writeString(QinConstants.getProjectClasspathCache(QinConstants.getCwd()), json);
+        writeClasspathCache(classpath, localResult.localProjects);
 
         // 闂佹眹鍨婚崰鎰板垂?IDEA 闁圭厧鐡ㄩ幑鍥储閵堝洨纾炬い鏃囧Г閻庮喖霉閻樹警鍟囩紒?idea/libraries/*.xml闂?
         if (!classpath.isEmpty()) {
@@ -2508,13 +2564,29 @@ public class QinCli {
      */
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
         String cwd = QinConstants.getCwd();
-        LocalProjectResolverEnhanced.ResolutionResult localResolution = inspectLocalDependencies(config);
         ensureNpmDependenciesInstalled(config);
 
         if (CacheValidator.isCacheValid(cwd)) {
             String classpath = CacheValidator.getCachedClasspath(cwd);
+            Path cacheFile = QinConstants.getProjectClasspathCache(cwd);
+            if (classpath != null) {
+                LocalProjectResolverEnhanced.ResolutionResult cachedLocalResolution =
+                        readCachedLocalDependencyResolution(cacheFile);
+                if (cachedLocalResolution != null && cachedLocalProjectsFresh(cacheFile, cachedLocalResolution)) {
+                    ensureLocalDependenciesReady(cachedLocalResolution);
+                    System.out.println(
+                            blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
+                    return classpath;
+                }
+            }
+        }
+
+        LocalProjectResolverEnhanced.ResolutionResult localResolution = inspectLocalDependencies(config);
+        if (CacheValidator.isCacheValid(cwd)) {
+            String classpath = CacheValidator.getCachedClasspath(cwd);
             if (classpath != null && cachedClasspathContainsLocalProjects(classpath, localResolution)) {
-                ensureLocalDependenciesReady(config);
+                ensureLocalDependenciesReady(localResolution);
+                writeClasspathCache(classpath, localResolution.localProjects);
                 System.out.println(
                         blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
                 return classpath;
@@ -2595,6 +2667,12 @@ public class QinCli {
 
         LocalProjectResolverEnhanced resolver = new LocalProjectResolverEnhanced(QinConstants.getCwd());
         return resolver.resolveDependencies(deps);
+    }
+
+    private static LocalProjectResolverEnhanced.ResolutionResult ensureLocalDependenciesReady(
+            LocalProjectResolverEnhanced.ResolutionResult localResolution) {
+        LocalProjectResolverEnhanced resolver = new LocalProjectResolverEnhanced(QinConstants.getCwd());
+        return resolver.ensureResolvedProjectsReady(localResolution);
     }
 
     private static LocalProjectResolverEnhanced.ResolutionResult inspectLocalDependencies(QinConfig config) {
@@ -3009,7 +3087,20 @@ public class QinCli {
     /**
      * 闂佸搫顑呯€氼剛绱?.qin/classpath.json 闂佸搫绉堕崢褏妲?
      */
+    private static void writeClasspathCache(
+            String classpath,
+            List<LocalProjectResolverEnhanced.ProjectInfo> localProjects) throws IOException {
+        Files.writeString(QinConstants.getProjectClasspathCache(QinConstants.getCwd()),
+                buildClasspathJson(classpath, localProjects));
+    }
+
     private static String buildClasspathJson(String classpath) {
+        return buildClasspathJson(classpath, List.of());
+    }
+
+    private static String buildClasspathJson(
+            String classpath,
+            List<LocalProjectResolverEnhanced.ProjectInfo> localProjects) {
         String sep = QinConstants.getClasspathSeparator();
         String[] paths = classpath.split(sep.equals(";") ? ";" : ":");
 
@@ -3023,9 +3114,125 @@ public class QinCli {
             sb.append("\n");
         }
         sb.append("  ],\n");
+        sb.append("  \"localProjects\": [\n");
+        List<LocalProjectResolverEnhanced.ProjectInfo> projects =
+                localProjects == null ? List.of() : localProjects;
+        for (int i = 0; i < projects.size(); i++) {
+            LocalProjectResolverEnhanced.ProjectInfo project = projects.get(i);
+            sb.append("    {")
+                    .append("\"fullName\": \"").append(escapeJson(project.fullName)).append("\", ")
+                    .append("\"projectDir\": \"")
+                    .append(escapeJson(project.projectDir.toAbsolutePath().normalize().toString().replace("\\", "/")))
+                    .append("\", ")
+                    .append("\"buildClassesPath\": \"")
+                    .append(escapeJson(project.buildClassesPath.toAbsolutePath().normalize().toString().replace("\\", "/")))
+                    .append("\"}");
+            if (i < projects.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+        sb.append("  ],\n");
         sb.append("  \"lastUpdated\": \"").append(java.time.Instant.now()).append("\"\n");
         sb.append("}\n");
         return sb.toString();
+    }
+
+    private static String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static LocalProjectResolverEnhanced.ResolutionResult readCachedLocalDependencyResolution(Path cacheFile) {
+        try {
+            if (!Files.isRegularFile(cacheFile)) {
+                return null;
+            }
+            String json = Files.readString(cacheFile);
+            int start = json.indexOf("\"localProjects\"");
+            if (start < 0) {
+                return null;
+            }
+            int arrayStart = json.indexOf('[', start);
+            int arrayEnd = json.indexOf(']', arrayStart);
+            if (arrayStart < 0 || arrayEnd <= arrayStart) {
+                return null;
+            }
+            String array = json.substring(arrayStart + 1, arrayEnd);
+            Pattern objectPattern = Pattern.compile("\\{([^}]*)}");
+            Matcher matcher = objectPattern.matcher(array);
+            List<LocalProjectResolverEnhanced.ProjectInfo> projects = new ArrayList<>();
+            List<String> classpaths = new ArrayList<>();
+            while (matcher.find()) {
+                String object = matcher.group(1);
+                String fullName = jsonStringField(object, "fullName");
+                String projectDirText = jsonStringField(object, "projectDir");
+                String buildClassesPathText = jsonStringField(object, "buildClassesPath");
+                if (fullName == null || projectDirText == null || buildClassesPathText == null) {
+                    return null;
+                }
+                Path projectDir = Paths.get(projectDirText).toAbsolutePath().normalize();
+                Path buildClassesPath = Paths.get(buildClassesPathText).toAbsolutePath().normalize();
+                Path configPath = projectDir.resolve(QinConstants.CONFIG_FILE);
+                if (!Files.isRegularFile(configPath)) {
+                    return null;
+                }
+                QinConfig projectConfig = new ConfigLoader(projectDir.toString()).load();
+                projects.add(new LocalProjectResolverEnhanced.ProjectInfo(
+                        fullName,
+                        projectDir,
+                        buildClassesPath,
+                        projectConfig));
+                classpaths.add(buildClassesPath.toString());
+            }
+            if (projects.isEmpty()) {
+                return null;
+            }
+            return new LocalProjectResolverEnhanced.ResolutionResult(
+                    String.join(QinConstants.getClasspathSeparator(), classpaths),
+                    new LinkedHashMap<>(),
+                    projects.size(),
+                    0,
+                    projects);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static String jsonStringField(String object, String field) {
+        Pattern pattern = Pattern.compile("\"" + Pattern.quote(field) + "\"\\s*:\\s*\"((?:\\\\.|[^\"])*)\"");
+        Matcher matcher = pattern.matcher(object);
+        if (!matcher.find()) {
+            return null;
+        }
+        return unescapeJson(matcher.group(1));
+    }
+
+    private static String unescapeJson(String value) {
+        return value.replace("\\\"", "\"").replace("\\\\", "\\");
+    }
+
+    private static boolean cachedLocalProjectsFresh(
+            Path cacheFile,
+            LocalProjectResolverEnhanced.ResolutionResult localResolution) {
+        try {
+            if (localResolution == null || localResolution.localProjects == null) {
+                return false;
+            }
+            var cacheTime = Files.getLastModifiedTime(cacheFile);
+            for (LocalProjectResolverEnhanced.ProjectInfo project : localResolution.localProjects) {
+                Path configPath = project.projectDir.resolve(QinConstants.CONFIG_FILE);
+                if (!Files.isRegularFile(configPath)
+                        || Files.getLastModifiedTime(configPath).compareTo(cacheTime) > 0) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     /**

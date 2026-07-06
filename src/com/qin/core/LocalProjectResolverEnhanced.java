@@ -121,6 +121,50 @@ public class LocalProjectResolverEnhanced {
                 new ArrayList<>(requiredLocalProjects.values()));
     }
 
+    public ResolutionResult ensureResolvedProjectsReady(ResolutionResult resolved) {
+        if (resolved == null || resolved.localProjects == null || resolved.localProjects.isEmpty()) {
+            return resolved == null
+                    ? new ResolutionResult("", new LinkedHashMap<>(), 0, 0, List.of())
+                    : resolved;
+        }
+
+        Map<String, ProjectInfo> requiredLocalProjects = new LinkedHashMap<>();
+        for (ProjectInfo project : resolved.localProjects) {
+            requiredLocalProjects.put(project.fullName, project);
+        }
+
+        int autoCompiledCount = 0;
+        List<String> localClasspaths = new ArrayList<>();
+        for (ProjectInfo project : orderProjectsForCompilation(requiredLocalProjects)) {
+            if (!providesJvmClasspath(project)) {
+                ensureNonJvmProjectReady(project);
+                continue;
+            }
+            if (!isLocalAutoCompileDisabled() && ensureCompiled(project)) {
+                autoCompiledCount++;
+            }
+            String classesPath = project.buildClassesPath.toString();
+            if (!localClasspaths.contains(classesPath)) {
+                localClasspaths.add(classesPath);
+            }
+        }
+
+        if (autoCompiledCount > 0) {
+            System.out.println("  [ok] Auto-compiled " + autoCompiledCount + " local project(s)");
+        }
+
+        String separator = QinConstants.getClasspathSeparator();
+        String localClasspath = localClasspaths.isEmpty()
+                ? ""
+                : String.join(separator, localClasspaths);
+        return new ResolutionResult(
+                localClasspath,
+                resolved.remoteDependencies,
+                resolved.localCount,
+                autoCompiledCount,
+                resolved.localProjects);
+    }
+
     private List<ProjectInfo> orderProjectsForCompilation(Map<String, ProjectInfo> requiredLocalProjects) {
         List<ProjectInfo> ordered = new ArrayList<>();
         Set<String> visiting = new HashSet<>();
