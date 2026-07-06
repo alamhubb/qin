@@ -538,6 +538,16 @@ The target behavior is:
 - grammar authors should express syntax normally, adding explicit predicates
   only for real language ambiguity that the framework cannot infer safely.
 
+The first implementation step may keep the grammar surface unchanged, including
+calls such as `Alternative.of(() -> ImportDeclaration())`. Subhuti may execute
+those lambdas in a recording mode where rule wrappers do not build CST/cache
+entries and token consumption records the first token then stops. This is only
+valid as a framework prediction pass when the recorded information is complete
+for the whole `Or(...)`. If any alternative needs contextual lookahead, nested
+`Or(...)`, side effects, or otherwise has an unknown first token, that `Or(...)`
+must not be partially pruned. Unknown means "do not optimize this choice yet",
+not "try a second parser path" and not "accept a fallback syntax".
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
