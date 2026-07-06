@@ -164,6 +164,59 @@ public class QinCli {
 
     private record CliInvocation(String command, String[] args, Path root) {}
 
+    private static boolean isCliProfileEnabled(String[] args) {
+        return Boolean.getBoolean("qin.profile")
+                || "1".equals(System.getenv("QIN_PROFILE"))
+                || "true".equalsIgnoreCase(System.getenv("QIN_PROFILE"))
+                || hasArg(args, "--profile");
+    }
+
+    private static final class CliPhaseTimer {
+        private final String scope;
+        private final boolean enabled;
+        private final long startedNanos;
+        private long lastNanos;
+
+        private CliPhaseTimer(String scope, boolean enabled) {
+            this.scope = scope;
+            this.enabled = enabled;
+            this.startedNanos = System.nanoTime();
+            this.lastNanos = startedNanos;
+            if (enabled) {
+                System.out.println("[QinProfile] " + scope + " start");
+            }
+        }
+
+        static CliPhaseTimer start(String scope, String[] args) {
+            return new CliPhaseTimer(scope, isCliProfileEnabled(args));
+        }
+
+        void checkpoint(String phase) {
+            checkpoint(phase, "");
+        }
+
+        void checkpoint(String phase, String detail) {
+            if (!enabled) {
+                return;
+            }
+            long now = System.nanoTime();
+            long phaseMs = (now - lastNanos) / 1_000_000L;
+            long totalMs = (now - startedNanos) / 1_000_000L;
+            lastNanos = now;
+            String suffix = detail == null || detail.isBlank() ? "" : " :: " + detail;
+            System.out.println("[QinProfile] " + scope + " " + phase
+                    + " +" + phaseMs + "ms total=" + totalMs + "ms" + suffix);
+        }
+
+        void done() {
+            done("");
+        }
+
+        void done(String detail) {
+            checkpoint("done", detail);
+        }
+    }
+
     private static void runProject(String[] args) throws Exception {
         System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
@@ -1340,26 +1393,31 @@ public class QinCli {
     }
 
     private static void runQinRuntime(QinConfig config, String qinFile, boolean devMode, String[] args) throws Exception {
-        EnvironmentStatus envStatus = envChecker.checkAll();
-        if (!envStatus.hasJava()) {
+        CliPhaseTimer timer = CliPhaseTimer.start("cli-runtime", args);
+        boolean hasJava = currentJvmRuntimeAvailable();
+        timer.checkpoint("check environment");
+        if (!hasJava) {
             System.err.println(red("Error: java is not installed."));
             System.out.println(envChecker.getInstallGuide("java"));
             System.exit(1);
         }
 
         Map<String, String> deps = collectAllDependencies(config);
+        timer.checkpoint("collect dependencies", "count=" + deps.size());
         if (deps.isEmpty()) {
             throw new IllegalStateException(
                     "Qin runtime dependencies are missing. Add `com.qin:qin-runtime-core` to qin.config.js dependencies.");
         }
 
         String dependencyClasspath = ensureDependenciesSynced(config);
+        timer.checkpoint("ensure dependencies");
         String compileOutputDir = Paths.get(QinConstants.getCwd(), JavaCompileConfig.from(config).outputDir()).toString();
         String separator = QinConstants.getClasspathSeparator();
         String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
                 ? compileOutputDir
                 : compileOutputDir + separator + dependencyClasspath;
         runtimeClasspath = appendBundledQinRuntimeClasspath(runtimeClasspath);
+        timer.checkpoint("build runtime classpath");
 
         int port = resolveQinRuntimePort(config, args);
         Path root = Paths.get(QinConstants.getCwd()).toAbsolutePath().normalize();
@@ -1374,6 +1432,7 @@ public class QinCli {
                 resolvePathArg(args, "--static-dir", root),
                 resolveQinFrontendStaticDir(config, root, frontendRoot));
         String runtimeMainClass = resolveQinRuntimeMainClass(runtimeClasspath, devMode);
+        timer.checkpoint("resolve sources", "main=" + runtimeMainClass + ", port=" + port);
         List<String> jvmArgs = resolveJvmArgs(args);
         if (!jvmArgs.isEmpty()) {
             throw new IllegalArgumentException(
@@ -1420,7 +1479,9 @@ public class QinCli {
             runtimeArgs.add(frontendEntry.toString());
         }
 
+        timer.checkpoint("invoke fullstack", runtimeMainClass);
         invokeQinRuntimeInProcess(runtimeClasspath, runtimeMainClass, root, runtimeArgs, config);
+        timer.done("runtime returned");
 
         System.out.println(green(devMode ? "[OK] Qin dev runtime stopped" : "[OK] Done!"));
     }
@@ -1527,6 +1588,11 @@ public class QinCli {
 
     private static String resolveQinRuntimeMainClass(String runtimeClasspath, boolean devMode) {
         return QinConstants.FULLSTACK_MAIN_CLASS;
+    }
+
+    private static boolean currentJvmRuntimeAvailable() {
+        String javaVersion = System.getProperty("java.version");
+        return javaVersion != null && !javaVersion.isBlank();
     }
 
     private static void invokeQinRuntimeInProcess(
@@ -1823,26 +1889,33 @@ public class QinCli {
     }
 
     private static void buildProject(String[] args) throws Exception {
+        CliPhaseTimer timer = CliPhaseTimer.start("cli-build", args);
         boolean clean = Arrays.asList(args).contains("--clean");
         boolean skipTests = Arrays.asList(args).contains("--skip-tests") ||
                            Arrays.asList(args).contains("-DskipTests");
 
         if (clean) {
             cleanProject();
+            timer.checkpoint("clean");
         }
 
         System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
+        timer.checkpoint("load config");
 
         if (usesScriptBuild(config)) {
+            timer.checkpoint("dispatch script build");
             runProjectScript("build", args);
+            timer.done("script build returned");
             return;
         }
 
         String qinBuildTarget = resolveBuildTargetToQinFile(config, args);
+        timer.checkpoint("resolve qin build target", qinBuildTarget == null ? "java build" : qinBuildTarget);
         if (qinBuildTarget != null) {
             buildQinProject(config, qinBuildTarget, args);
+            timer.done("qin build returned");
             return;
         }
 
@@ -1869,6 +1942,7 @@ public class QinCli {
             if (result.getOutputPath() != null) {
                 System.out.println(green("  Output: " + result.getOutputPath()));
             }
+            timer.done("java build completed");
         } else {
             System.err.println(red("Build failed: ") + result.getError());
             System.exit(1);
@@ -1897,26 +1971,31 @@ public class QinCli {
     }
 
     private static void buildQinProject(QinConfig config, String qinFile, String[] args) throws Exception {
-        EnvironmentStatus envStatus = envChecker.checkAll();
-        if (!envStatus.hasJava()) {
+        CliPhaseTimer timer = CliPhaseTimer.start("cli-runtime", args);
+        boolean hasJava = currentJvmRuntimeAvailable();
+        timer.checkpoint("check environment");
+        if (!hasJava) {
             System.err.println(red("Error: java is not installed."));
             System.out.println(envChecker.getInstallGuide("java"));
             System.exit(1);
         }
 
         Map<String, String> deps = collectAllDependencies(config);
+        timer.checkpoint("collect dependencies", "count=" + deps.size());
         if (deps.isEmpty()) {
             throw new IllegalStateException(
                     "Qin runtime dependencies are missing. Add `com.qin:qin-runtime-core` to qin.config.js dependencies.");
         }
 
         String dependencyClasspath = ensureDependenciesSynced(config);
+        timer.checkpoint("ensure dependencies");
         String compileOutputDir = Paths.get(QinConstants.getCwd(), JavaCompileConfig.from(config).outputDir()).toString();
         String separator = QinConstants.getClasspathSeparator();
         String runtimeClasspath = dependencyClasspath == null || dependencyClasspath.isBlank()
                 ? compileOutputDir
                 : compileOutputDir + separator + dependencyClasspath;
         runtimeClasspath = appendBundledQinRuntimeClasspath(runtimeClasspath);
+        timer.checkpoint("build runtime classpath");
         List<String> jvmArgs = resolveJvmArgs(args);
         if (!jvmArgs.isEmpty()) {
             throw new IllegalArgumentException(
@@ -1934,6 +2013,7 @@ public class QinCli {
         Path fullstackOutRoot = resolveQinBuildOutputRoot(config, args);
         Path classOutDir = fullstackOutRoot.resolve("server-classes").normalize();
         Path staticOutDir = fullstackOutRoot.resolve("web").normalize();
+        timer.checkpoint("resolve sources", "backend=" + backendSource + ", frontend=" + frontendEntry);
 
         System.out.println(blue("-> Building Qin fullstack artifacts..."));
         System.out.println(gray("  Backend entry: " + qinFile));
@@ -1966,7 +2046,9 @@ public class QinCli {
             runtimeArgs.add("--profile");
         }
 
+        timer.checkpoint("invoke fullstack", QinConstants.FULLSTACK_MAIN_CLASS);
         invokeQinRuntimeInProcess(runtimeClasspath, QinConstants.FULLSTACK_MAIN_CLASS, root, runtimeArgs, config);
+        timer.done("runtime returned");
 
         System.out.println(green("[OK] Qin build completed"));
         System.out.println(green("  Server classes: " + classOutDir));
@@ -2127,23 +2209,30 @@ public class QinCli {
     }
 
     private static void devMode(String[] args) throws Exception {
+        CliPhaseTimer timer = CliPhaseTimer.start("cli-dev", args);
         System.out.println(blue("-> Loading configuration..."));
         ConfigLoader configLoader = new ConfigLoader();
         QinConfig config = configLoader.load();
+        timer.checkpoint("load config");
 
         if (config.language() != null
                 && config.scripts() != null
                 && config.scripts().containsKey("dev")) {
+            timer.checkpoint("dispatch language dev script");
             runLanguageScript("dev", args);
+            timer.done("language dev returned");
             return;
         }
 
         if (config.scripts() != null
                 && config.scripts().containsKey("dev")
                 && !isSelfReferentialQinDevScript(config.scripts().get("dev"))) {
+            timer.checkpoint("dispatch project dev script");
             runProjectScript("dev", args);
+            timer.done("project dev returned");
             return;
         }
+        timer.checkpoint("script dispatch checks");
 
         String qinDevEntry = null;
         boolean frontendOnlyOverride = hasArg(args, "--frontend-file");
@@ -2157,6 +2246,8 @@ public class QinCli {
         } else if (!frontendOnlyOverride && !configuredFrontendOnly) {
             qinDevEntry = resolveDefaultQinEntry(config);
         }
+        timer.checkpoint("resolve qin dev entry",
+                qinDevEntry == null ? "frontendOnly=" + (frontendOnlyOverride || configuredFrontendOnly) : qinDevEntry);
         if (qinDevEntry != null || frontendOnlyOverride || configuredFrontendOnly) {
             String[] qinArgs = hasPositionalTarget
                     ? Arrays.copyOfRange(args, 1, args.length)
@@ -2176,7 +2267,9 @@ public class QinCli {
                     qinArgs = adjusted.toArray(String[]::new);
                 }
             }
+            timer.checkpoint("invoke qin runtime");
             runQinRuntime(config, qinDevEntry, true, qinArgs);
+            timer.done("qin runtime returned");
             return;
         }
 

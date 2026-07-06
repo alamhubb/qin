@@ -415,6 +415,24 @@ This follows Kotlin/Gradle build-scan and Vite debug-mode practice: first expose
 the slow boundary with cheap structured timings, then reproduce that boundary
 with a focused smoke or probe before broadening validation.
 
+The CLI layer is part of that standard path. `qin dev --profile` and
+`qin build --profile` must also time the outer CLI phases before the fullstack
+runtime starts: config loading, script dispatch checks, Qin entry/source
+resolution, dependency sync/cache use, runtime classpath construction, and the
+in-process `QinFullstackMain` invocation. If the runtime profile is fast but the
+process still starts slowly, use these CLI timings to choose the smallest owning
+layer instead of guessing from total wall time. Keep
+`QinCliFullstackInProcessProfileSmokeTestMain` as the focused guard for this
+profile surface.
+
+Because fullstack `dev` and `build` now invoke `QinFullstackMain` in the same
+JVM, their CLI environment phase must not run the legacy all-tools check that
+spawns coursier, javac, and java version commands. The in-process fullstack
+path may confirm the current JVM identity, then let dependency sync and
+fullstack compilation perform their own specific checks. Reintroducing a broad
+external `checkAll()` on this path is a startup regression unless a focused
+profile proves it is the smallest necessary owning boundary.
+
 Profiling is evidence, not a workaround. A slow phase found by `--profile`
 should lead to an owning-layer cache, graph, parser, compiler, or runtime fix
 with focused hit/invalidation coverage. Do not solve a slow phase by hiding

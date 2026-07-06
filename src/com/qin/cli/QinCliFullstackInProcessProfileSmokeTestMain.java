@@ -52,6 +52,12 @@ public final class QinCliFullstackInProcessProfileSmokeTestMain {
         try {
             System.setProperty("user.dir", app.toString());
             String output = captureCliDevBuildOnlyProfile();
+            require(output.contains("[QinProfile] cli-dev start"), "CLI dev profile starts");
+            require(output.contains("[QinProfile] cli-dev load config"), "CLI dev profile covers config load");
+            require(output.contains("[QinProfile] cli-runtime ensure dependencies"),
+                    "CLI runtime profile covers dependency sync");
+            require(output.contains("[QinProfile] cli-runtime invoke fullstack"),
+                    "CLI runtime profile covers in-process fullstack invocation");
             require(output.contains("[QinProfile] fullstack-build start"), "CLI forwards --profile to fullstack runtime");
             require(output.contains("Build only mode finished."), "CLI fullstack dev build-only completes");
             require(output.contains("[OK] Qin dev runtime stopped"), "CLI returns from in-process dev runtime");
