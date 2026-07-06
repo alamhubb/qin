@@ -15,6 +15,58 @@ Qin 的 JVM 目标面向强类型、静态分析和稳定 `.class` 输出。这�
 
 ## Core Rules
 
+### ESM-first, `.class`-feasible subset
+
+Qin should prefer ESM-style source syntax, but JVM-targeted support is bounded
+by clean `.class` feasibility. A JS/TS/ESM feature belongs in the Qin JVM
+subset only when it can be represented in Qin AST/IR and emitted to predictable
+JVM classes without a broad dynamic-emulation layer.
+
+This means:
+
+- unsupported features are rejected because they do not have an elegant `.class`
+  lowering path, not because Qin is arbitrarily less JavaScript-like
+- `app/` and `main/` share the same Qin/ESM core rule: admitted syntax must have
+  an elegant `.class` lowering path
+- frontend/browser code may use frontend input surfaces and browser host
+  capabilities, but those do not broaden Qin core semantics
+- MVP shared Qin code should be `.qin` only and must stay inside the
+  JS/JVM portable subset
+- simple pure ESM npm packages are preferred compatibility targets only when
+  their syntax and runtime shape fit the relevant target zone
+
+### Node/browser package boundary
+
+Node/browser dual packages should inform Qin's package resolver, not Qin's
+project `shared/` source rules. Node-style `"exports"` and conditional entries
+choose different files for different consumers such as `import`, `require`,
+`node`, or browser-oriented bundlers. They do not prove that one ordinary
+JavaScript or TypeScript source file is portable across Node, browser, and JVM.
+
+For Qin, copy the entry-selection idea:
+
+- package manifests may expose target-specific entries
+- `app/` may select browser/frontend JS, TS, OVS, Vue, or Qin entries
+- `main/` may select JVM-compatible Qin, JS, TS, or Java entries
+- `shared/` project code remains `.qin` only in the MVP
+
+If a reusable package needs target-specific implementations, keep those
+implementations behind manifest-selected package entries. Do not place ordinary
+`.js` or `.ts` directly under project `shared/` just because Node packages can
+publish multiple conditional entry points.
+
+For Qin projects, the clean MVP rule is stricter than a typical Node package:
+
+- project-local `shared/` is portable source, so it should contain `.qin` only
+- target-specific JS/TS implementations belong in `app/`, `main/`, or a package
+  entry selected by the resolver
+- package-level conditions may choose entries such as `browser`, `jvm`, `qin`,
+  `default`, or future Qin-defined target names
+- a package entry is shared-safe only when the selected entry itself follows
+  Qin portable source rules; having both Node and browser entries is not enough
+- `app/` may host frontend JS/TS because it is a frontend surface, but that does
+  not make ordinary JS/TS valid in `shared/`
+
 Qin JVM JS 子集遵循以下规则：
 
 - 普通代码应保持强类型、静态可分析。
@@ -139,3 +191,36 @@ token.tokenValue  // not mapped to getTokenValue()
 ```
 
 缺失成员必须清晰失败，不能用 property alias、JavaBean 猜测或 Proxy fallback 补齐。
+## ESM Acceptance Standard
+
+Qin frontend and OVS/CSSTS compiler output must be valid standard ECMAScript module syntax. The acceptance target is code a browser module parser and a normal JavaScript parser can read directly:
+
+- Top-level imports and exports are module items.
+- Exported declarations use forms such as `export const SummaryGrid = () => { ... }`, `export function load() { ... }`, or `export default value`.
+- Named export lists use forms such as `export { SummaryGrid }` or `export { SummaryGrid as default }`.
+- Object literals and call arguments preserve standard JavaScript syntax, for example `StatCard({ label: "Root URLs", value: String(count), description: "Healthy probes" })`.
+
+Generated output such as `export {type=Const, value=const}` is leaked AST/token state, not ESM. Dropped object properties or malformed export declarations are compiler/runtime defects and must be fixed in the owning parser, CST-to-AST, normalization, or emitter layer.
+
+When generated Slime/Qin/OVS behavior differs from expectations, compare against the legacy handwritten TypeScript `slime-parser` as a reference for ESM grammar and CST-to-AST behavior. The handwritten parser is a diagnostic oracle only; production fixes belong in the active generated parser/runtime path.
+
+Do not implement a second parser or AST extraction path that activates when the generated result is empty. The standard path is the active generated Java/TypeScript parser, CST-to-AST bridge, OVS compiler, normalizer, and emitter. If that path loses object properties or emits malformed ESM, repair that path and prove it with a focused smoke.
+
+## OVS Canonical Props Syntax
+
+OVS is a JS/TS syntax extension, but `tag(...) { ... }` does not make JS object
+props the canonical surface. The canonical OVS argument body is a
+declaration-list style props syntax:
+
+```ts
+div(class = "a", style = "color:red", onClick() { console.log(123) }) {
+  div { 123 }
+}
+```
+
+The parser/compiler acceptance target must include comma-separated OVS props
+entries such as `name = expression`, boolean shorthand like `disabled`, and
+method-like handler bodies like `onClick() { save() }`. JS object props such as
+`div({ class: "a" }) { ... }` may exist for compatibility or interop, but they
+are not the Qin/OVS default and must not be used to hide a broken OVS parser,
+CST-to-AST bridge, lowerer, emitter, or runtime path.

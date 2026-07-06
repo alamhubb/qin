@@ -15,6 +15,14 @@ These rules capture durable workflow expectations for Codex work on Qin.
   start/stop, status updates, and resumed goal turns.
 - Do not rely on chat memory for this rule; keep it in project docs and relevant
   skills.
+- When a conversation teaches a durable rule, preference, architectural
+  decision, workflow reminder, or engineering standard, update both the local
+  project documentation and the relevant global/project skill documentation in
+  the same turn. Treat this as a required knowledge-capture step, not an
+  optional summary.
+- If the durable rule applies beyond one repository, update the global skill
+  first, then mirror the stricter project-specific wording into Qin docs and
+  relevant Qin skills.
 
 ## Git Hygiene
 
@@ -44,3 +52,24 @@ These rules capture durable workflow expectations for Codex work on Qin.
   `docs/spec/qin-engineering-instant-compilation.md`: stable cache identities,
   layered caches, content-aware package stamps, lightweight dependency
   fingerprints, hot in-process state, and no incidental temp-path invalidation.
+- When evaluating whether Qin's engineering direction is "advanced" or
+  "optimal", use the same standard: correctness, speed, and simplicity must be
+  achieved together. A cache or dev-server path is not acceptable if it is fast
+  but hides stale output, crosses target zones, depends on temp paths, or
+  weakens Qin's `.class`/dual-target language boundaries.
+- Treat modern systems such as Bazel, Gradle/Kotlin, Vite, and esbuild as
+  references for hermetic inputs, incremental graphs, warm compiler state, and
+  fast feedback loops. Do not copy their semantics when those semantics would
+  make Qin a generic JS bundler or weaken `shared/` portability.
+- Also learn from Buck2/Bazel remote execution style explicit action graphs,
+  Turborepo-style declared task inputs/outputs, and Deno/Bun-style cohesive
+  developer tooling where they help Qin stay fast and simple. These references
+  are acceptable only when they preserve Qin's target-aware `.class`, JS, and
+  `shared/` boundaries.
+## Knowledge Capture During Qin Work
+
+- User-stated durable engineering rules, corrections, and preferences are implementation requirements, not chat-only context. Capture them in the relevant global skill, Qin project skill, and Qin repo docs during the same work turn.
+- For Qin/OVS/CSSTS parser, compiler, runtime, and generated-code debugging, standard ESM syntax is the canonical frontend module target. If generated code is not valid browser-parseable ESM, fix the owning compiler/runtime layer instead of changing business files around it.
+- The legacy handwritten TypeScript `slime-parser` may be used as a reference oracle when diagnosing generated parser or CST-to-AST regressions. Compare grammar, CST shape, variable/export handling, call arguments, and object literal conversion against it, then apply the fix to the active generated Java/TypeScript parser or Qin runtime path.
+- Do not add generated-empty fallback or dual parser/AST extraction logic. If the active generated parser, CST-to-AST, normalizer, OVS compiler, or emitter returns an empty/malformed result, that active path is the bug. The old handwritten TypeScript parser is only an oracle for comparison.
+- OVS canonical props syntax is declaration-list style inside `tag(...)`, for example `div(class = "a", style = "color:red", onClick() { console.log(123) }) { div { 123 } }`. Entries may be comma-separated and include `name = expression`, boolean shorthand, and method-like handlers. JS object props are compatibility/interop input, not the default style and not a workaround for OVS parser/compiler defects.
