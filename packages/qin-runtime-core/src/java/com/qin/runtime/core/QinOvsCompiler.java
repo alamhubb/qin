@@ -1,5 +1,7 @@
 package com.qin.runtime.core;
 
+import com.qin.lang.runtime.JavaEsmGlobal;
+
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
@@ -46,6 +48,7 @@ public final class QinOvsCompiler {
         Path normalizedModuleFile = moduleFile == null
                 ? null
                 : moduleFile.toAbsolutePath().normalize();
+        source = source == null ? "" : source;
         String configSource = readConfigSource(normalizedRoot);
         String toolchainFingerprint = transformToolchainFingerprint(normalizedRoot, configSource);
         CacheKey key = new CacheKey(normalizedRoot, normalizedModuleFile, source, toolchainFingerprint);
@@ -79,9 +82,13 @@ public final class QinOvsCompiler {
             return diskCached;
         }
         try {
+            bindTransformInputs(
+                    normalizedRoot,
+                    source,
+                    renderViteId(normalizedRoot, normalizedModuleFile, semanticModule));
             Object result = packageRunner.runModuleSource(
                     normalizedRoot,
-                    buildWrapperSource(normalizedRoot, normalizedModuleFile, semanticModule, source),
+                    buildWrapperSource(normalizedRoot),
                     "vite_plugin_ovs_transform");
             QinOvsCompileResult decoded = decodeResult(result);
             QinFrontendTransformDiskCache.write(transformCacheRoot, normalizedRoot, "ovs", diskKey, encodeDiskCache(decoded));
@@ -182,9 +189,14 @@ public final class QinOvsCompiler {
         }
     }
 
-    private String buildWrapperSource(Path projectRoot, Path moduleFile, String semanticModule, String source) {
-        String sourceLiteral = QinJsPackageRunner.renderJsLiteral(source);
-        String idLiteral = QinJsPackageRunner.renderJsLiteral(renderViteId(projectRoot, moduleFile, semanticModule));
+    private void bindTransformInputs(Path projectRoot, String source, String id) {
+        JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "source"), source == null ? "" : source);
+        JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "id"), id == null ? "" : id);
+    }
+
+    private String buildWrapperSource(Path projectRoot) {
+        String sourceGlobal = ovsTransformGlobalName(projectRoot, "source");
+        String idGlobal = ovsTransformGlobalName(projectRoot, "id");
         return """
                 import vitePluginOvs from "vite-plugin-ovs";
                 import { vitePluginOvsTransform } from "ovs-compiler";
@@ -234,8 +246,8 @@ public final class QinOvsCompiler {
                   warn(message) {},
                   error(message) { throw new Error(String(message)); }
                 };
-                const __qin_source__ = %s;
-                const __qin_id__ = %s;
+                const __qin_source__ = globalThis.%s;
+                const __qin_id__ = globalThis.%s;
                 const __qin_shared_styles__ = new Set();
                 let __qin_result__ = vitePluginOvsTransform(__qin_source__, { globalStyles: __qin_shared_styles__ });
                 let __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
@@ -267,8 +279,8 @@ public final class QinOvsCompiler {
                 """.formatted(
                 viteConfigImportSource(projectRoot),
                 ovsPluginOptionsSource(projectRoot),
-                sourceLiteral,
-                idLiteral);
+                sourceGlobal,
+                idGlobal);
     }
 
     private String buildBatchWrapperSource(Path projectRoot, List<BatchCompileInput> inputs) {
@@ -398,6 +410,16 @@ public final class QinOvsCompiler {
         }
     }
 
+    private String ovsTransformGlobalName(Path projectRoot, String suffix) {
+        String identity = projectRoot.toAbsolutePath().normalize().toString().replace('\\', '/');
+        return "__qin_ovs_transform_" + shortSha256(identity) + "_" + suffix;
+    }
+
+    private String shortSha256(String text) {
+        MessageDigest digest = newSha256Digest();
+        byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+        return HexFormat.of().formatHex(hash, 0, 8);
+    }
     private String semanticModuleFile(Path projectRoot, Path moduleFile) {
         if (moduleFile == null) {
             return "";

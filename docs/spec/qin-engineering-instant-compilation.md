@@ -178,6 +178,16 @@ coverage that proves dependency side effects run once, entry side effects run
 per invocation, and live exports remain readable before applying the behavior to
 broader OVS/CSSTS/dev-server flows.
 
+Request data must not be embedded into stable compiler/tool wrapper source when
+the wrapper's module graph is otherwise identical. OVS/CSSTS/Vite-style
+compiler wrappers should keep plugin/container imports and helper code stable,
+then pass per-request source text, module ids, and options through a scoped hot
+runtime input boundary. This follows the Vite plugin-container lesson: the
+container and dependency graph stay warm while each transform invocation still
+receives the current request data. Add focused smokes that compile two distinct
+sources through the same hot wrapper and prove the second result is fresh, not a
+stale cache hit.
+
 ### Active Dependency Fingerprints
 
 The Qin runtime npm host must fingerprint the active dependency closure for the
