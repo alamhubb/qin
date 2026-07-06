@@ -97,6 +97,7 @@ final class QinJsPackageRunner {
                 String identity = shortSha256(token + "\n" + dependencyFingerprint + "\n" + wrapperSource);
                 Path wrapperFile = wrapperDir.resolve(
                         "invoke-" + token + "-" + identity + ".js");
+                pruneStaleInvocationWrappers(wrapperDir, wrapperFile);
                 Files.writeString(wrapperFile, wrapperSource, StandardCharsets.UTF_8);
                 logPhase("write wrapper source", startNanos, wrapperFile.toString());
 
@@ -117,53 +118,67 @@ final class QinJsPackageRunner {
         }
     }
 
-    private String moduleDependencyFingerprint(Path nodeModules) throws IOException {
+    String moduleDependencyFingerprint(Path nodeModules) throws IOException {
         if (!Files.isDirectory(nodeModules)) {
             return "";
         }
         MessageDigest digest = newSha256Digest();
-        List<Path> files;
-        try (var stream = Files.walk(nodeModules)) {
-            files = stream
-                    .filter(Files::isRegularFile)
-                    .filter(path -> !isIgnoredDependencyFingerprintPath(nodeModules, path))
-                    .sorted()
-                    .toList();
-        }
-        byte[] buffer = new byte[8192];
-        for (Path file : files) {
-            Path relative = nodeModules.relativize(file.toAbsolutePath().normalize());
+        for (Path packageDir : installedPackageDirs(nodeModules)) {
+            Path relative = nodeModules.relativize(packageDir.toAbsolutePath().normalize());
             digest.update(relative.toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));
             digest.update((byte) 0);
-            try (InputStream input = Files.newInputStream(file)) {
-                int read;
-                while ((read = input.read(buffer)) >= 0) {
-                    digest.update(buffer, 0, read);
-                }
-            }
+            updateDependencyFileDigest(digest, packageDir.resolve("package.json"), true);
+            updateDependencyFileDigest(digest, packageDir.resolve(".qin-package-sync.json"), true);
             digest.update((byte) 0);
         }
         return HexFormat.of().formatHex(digest.digest());
     }
 
-    private boolean isIgnoredDependencyFingerprintPath(Path nodeModules, Path path) {
-        Path relative = nodeModules.relativize(path.toAbsolutePath().normalize());
-        if (relative.getFileName() != null
-                && ".qin-package-sync.json".equals(relative.getFileName().toString())) {
-            return true;
-        }
-        for (Path part : relative) {
-            String name = part.toString();
-            if (".git".equals(name)
-                    || ".idea".equals(name)
-                    || ".qin".equals(name)
-                    || "build".equals(name)
-                    || "target".equals(name)
-                    || "out".equals(name)) {
-                return true;
+    private List<Path> installedPackageDirs(Path nodeModules) throws IOException {
+        List<Path> packages = new ArrayList<>();
+        try (var topLevel = Files.list(nodeModules)) {
+            for (Path entry : topLevel.sorted().toList()) {
+                if (!Files.isDirectory(entry)) {
+                    continue;
+                }
+                String name = entry.getFileName() == null ? "" : entry.getFileName().toString();
+                if (name.startsWith("@")) {
+                    try (var scoped = Files.list(entry)) {
+                        scoped
+                                .filter(Files::isDirectory)
+                                .filter(path -> Files.isRegularFile(path.resolve("package.json")))
+                                .sorted()
+                                .forEach(packages::add);
+                    }
+                } else if (Files.isRegularFile(entry.resolve("package.json"))) {
+                    packages.add(entry);
+                }
             }
         }
-        return false;
+        return packages;
+    }
+
+    private void updateDependencyFileDigest(
+            MessageDigest digest,
+            Path file,
+            boolean includeContents) throws IOException {
+        if (!Files.isRegularFile(file)) {
+            digest.update((byte) '-');
+            return;
+        }
+        digest.update(file.getFileName().toString().getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) ':');
+        if (!includeContents) {
+            BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
+            digest.update(Long.toString(attributes.size()).getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) ':');
+            digest.update(Long.toString(attributes.lastModifiedTime().toMillis()).getBytes(StandardCharsets.UTF_8));
+        }
+        if (includeContents) {
+            digest.update((byte) ':');
+            digest.update(Files.readString(file, StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8));
+        }
+        digest.update((byte) ';');
     }
 
     private String stableModuleClassCacheIdentity(String wrapperSource, String token, String dependencyFingerprint) {
@@ -256,6 +271,7 @@ final class QinJsPackageRunner {
                     materialized);
         }
         materializeQinViteShimIfNeeded(bareSpecifiers, runtimeNodeModules);
+        pruneStaleQinMaterializedPackages(runtimeNodeModules, materialized);
     }
 
     private Map<String, Path> readProjectPackageOverrides(Path projectRoot) throws IOException {
@@ -311,6 +327,30 @@ final class QinJsPackageRunner {
         }
         if ("@vue/compiler-sfc".equals(packageName)) {
             materializeQinVueCompilerSfcShim(runtimeNodeModules);
+            return;
+        }
+        if ("subhuti".equals(packageName)) {
+            materializeQinSubhutiShim(runtimeNodeModules);
+            materializeDependency(
+                    "@qin/generated-qin-parser-ts",
+                    "file:" + workspaceRoot.resolve("qin")
+                            .resolve("packages")
+                            .resolve("qin-language")
+                            .resolve("generated")
+                            .resolve("qin-parser-ts")
+                            .toString()
+                            .replace('\\', '/'),
+                    projectRoot,
+                    projectRoot,
+                    runtimeNodeModules,
+                    workspaceRoot,
+                    workspacePackages,
+                    packageOverrides,
+                    materialized);
+            return;
+        }
+        if ("slime-generator".equals(packageName)) {
+            materializeQinSlimeGeneratorShim(runtimeNodeModules);
             return;
         }
 
@@ -369,8 +409,7 @@ final class QinJsPackageRunner {
         }
         for (String importedSpecifier : scanPackageBareModuleSpecifiers(
                 targetPackageDir,
-                sourcePackageDir,
-                workspacePackage || overridePackage)) {
+                sourcePackageDir)) {
             String importedPackage = parseBarePackageName(importedSpecifier);
             if (packageName.equals(importedPackage)) {
                 continue;
@@ -385,6 +424,40 @@ final class QinJsPackageRunner {
                     workspacePackages,
                     packageOverrides,
                     materialized);
+        }
+    }
+
+    private void pruneStaleQinMaterializedPackages(Path runtimeNodeModules, Set<String> activePackages) throws IOException {
+        if (!Files.isDirectory(runtimeNodeModules)) {
+            return;
+        }
+        for (Path packageDir : installedPackageDirs(runtimeNodeModules)) {
+            Path relative = runtimeNodeModules.relativize(packageDir.toAbsolutePath().normalize());
+            String packageName = relative.toString().replace('\\', '/');
+            if (!activePackages.contains(packageName)
+                    && Files.isRegularFile(packageDir.resolve(".qin-package-sync.json"))) {
+                deleteRecursively(packageDir);
+            }
+        }
+    }
+
+    private void pruneStaleInvocationWrappers(Path wrapperDir, Path activeWrapperFile) throws IOException {
+        if (!Files.isDirectory(wrapperDir)) {
+            return;
+        }
+        Path active = activeWrapperFile.toAbsolutePath().normalize();
+        try (var files = Files.list(wrapperDir)) {
+            for (Path file : files.toList()) {
+                if (!Files.isRegularFile(file)) {
+                    continue;
+                }
+                String name = file.getFileName() == null ? "" : file.getFileName().toString();
+                if (name.startsWith("invoke-")
+                        && name.endsWith(".js")
+                        && !file.toAbsolutePath().normalize().equals(active)) {
+                    Files.deleteIfExists(file);
+                }
+            }
         }
     }
 
@@ -728,7 +801,7 @@ final class QinJsPackageRunner {
                 \tvar r = c < 3 ? target : desc === null ? { value: target[key], writable: true, enumerable: false, configurable: true } : desc;
                 \tvar d;
                 \tfor (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-                \tif (c > 3 && r && r.value !== void 0) target[key] = r.value;
+                \tif (c > 3 && r && r.value !== void 0) Object.defineProperty(target, key, r);
                 \treturn r;
                 }
                 """);
@@ -1416,6 +1489,516 @@ final class QinJsPackageRunner {
                 """, StandardCharsets.UTF_8);
     }
 
+    private void materializeQinSubhutiShim(Path runtimeNodeModules) throws IOException {
+        Path shimDir = runtimeNodeModules.resolve("subhuti").normalize();
+        deleteRecursively(shimDir);
+        Files.createDirectories(shimDir);
+        Files.writeString(shimDir.resolve("package.json"), """
+                {
+                  "name": "subhuti",
+                  "version": "0.0.0-qin-generated-shim",
+                  "type": "module",
+                  "exports": {
+                    ".": "./index.ts"
+                  },
+                  "main": "./index.ts",
+                  "module": "./index.ts",
+                  "dependencies": {
+                    "@qin/generated-qin-parser-ts": "file:../../../../../../qin/packages/qin-language/generated/qin-parser-ts"
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(shimDir.resolve("index.ts"), """
+                import { com_subhuti_struct_SubhutiCreateToken as GeneratedSubhutiCreateToken } from "@qin/generated-qin-parser-ts/com/subhuti/struct/SubhutiCreateToken.ts";
+                import { com_subhuti_parser_SubhutiParser as GeneratedSubhutiParser } from "@qin/generated-qin-parser-ts/com/subhuti/parser/SubhutiParser.ts";
+                import { com_subhuti_cache_SubhutiPackratCache as GeneratedSubhutiPackratCache } from "@qin/generated-qin-parser-ts/com/subhuti/cache/SubhutiPackratCache.ts";
+                import { com_subhuti_struct_SubhutiCst as GeneratedSubhutiCst } from "@qin/generated-qin-parser-ts/com/subhuti/struct/SubhutiCst.ts";
+                import { com_subhuti_struct_SubhutiMatchToken as GeneratedSubhutiMatchToken } from "@qin/generated-qin-parser-ts/com/subhuti/struct/SubhutiMatchToken.ts";
+                import { com_subhuti_lookahead_SubhutiTokenConsumer as GeneratedSubhutiTokenConsumer } from "@qin/generated-qin-parser-ts/com/subhuti/lookahead/SubhutiTokenConsumer.ts";
+                import { com_subhuti_lookahead_SubhutiTokenLookahead as GeneratedSubhutiTokenLookahead } from "@qin/generated-qin-parser-ts/com/subhuti/lookahead/SubhutiTokenLookahead.ts";
+                import { com_subhuti_lexer_SubhutiLexer as GeneratedSubhutiLexer } from "@qin/generated-qin-parser-ts/com/subhuti/lexer/SubhutiLexer.ts";
+                export { Alternative } from "@qin/generated-qin-parser-ts";
+
+                export const SubhutiParser = GeneratedSubhutiParser;
+                export default GeneratedSubhutiParser;
+                export const SubhutiCreateToken = GeneratedSubhutiCreateToken;
+                export const SubhutiPackratCache = GeneratedSubhutiPackratCache;
+                export const SubhutiCst = GeneratedSubhutiCst;
+                export const SubhutiMatchToken = GeneratedSubhutiMatchToken;
+                export const SubhutiTokenConsumer = GeneratedSubhutiTokenConsumer;
+                export const SubhutiTokenLookahead = GeneratedSubhutiTokenLookahead;
+                export const SubhutiLexer = GeneratedSubhutiLexer;
+
+                function __qin_regex_source(pattern) {
+                  if (pattern == null) return "";
+                  if (typeof pattern === "string") return pattern;
+                  if (pattern.source != null) return String(pattern.source);
+                  if (typeof pattern.pattern === "function") return pattern.pattern();
+                  return String(pattern);
+                }
+
+                export function createRegToken(name, pattern) {
+                  return GeneratedSubhutiCreateToken.createRegToken(String(name), __qin_regex_source(pattern));
+                }
+
+                export function Subhuti(target) {
+                  return target;
+                }
+
+                function __qin_mark_subhuti_rule(method, ruleName) {
+                  if (!method) return method;
+                  Object.defineProperty(method, "__isSubhutiRule__", {
+                    value: true,
+                    writable: false,
+                    enumerable: false,
+                    configurable: true
+                  });
+                  if (ruleName && !method.__qinSubhutiRuleName) {
+                    Object.defineProperty(method, "__qinSubhutiRuleName", {
+                      value: String(ruleName),
+                      writable: false,
+                      enumerable: false,
+                      configurable: true
+                    });
+                  }
+                  return method;
+                }
+
+                function __qin_wrap_subhuti_rule(method, ruleName) {
+                  if (!method || method.__qinSubhutiRuleWrapped) return __qin_mark_subhuti_rule(method, ruleName);
+                  const original = method;
+                  const wrapped = function (...args) {
+                    if (this && typeof this.executeRuleWrapper === "function") {
+                      return this.executeRuleWrapper(
+                        original,
+                        String(ruleName || original.name || ""),
+                        this.constructor && this.constructor.name ? String(this.constructor.name) : "",
+                        ...args
+                      );
+                    }
+                    return original.call(this, ...args);
+                  };
+                  Object.defineProperty(wrapped, "__qinSubhutiRuleWrapped", {
+                    value: true,
+                    writable: false,
+                    enumerable: false,
+                    configurable: true
+                  });
+                  return __qin_mark_subhuti_rule(wrapped, ruleName || original.name);
+                }
+
+                export function SubhutiRule(targetOrMethod, propertyKeyOrContext, descriptor) {
+                  if (typeof propertyKeyOrContext === "string") {
+                    const actualDescriptor = descriptor || Object.getOwnPropertyDescriptor(targetOrMethod, propertyKeyOrContext);
+                    if (actualDescriptor && actualDescriptor.value) {
+                      actualDescriptor.value = __qin_wrap_subhuti_rule(actualDescriptor.value, propertyKeyOrContext);
+                      return actualDescriptor;
+                    }
+                    if (targetOrMethod && targetOrMethod[propertyKeyOrContext]) {
+                      targetOrMethod[propertyKeyOrContext] = __qin_wrap_subhuti_rule(
+                        targetOrMethod[propertyKeyOrContext],
+                        propertyKeyOrContext
+                      );
+                    }
+                    return descriptor;
+                  }
+                  const ruleName = propertyKeyOrContext && propertyKeyOrContext.name
+                    ? propertyKeyOrContext.name
+                    : targetOrMethod && targetOrMethod.name;
+                  return __qin_wrap_subhuti_rule(targetOrMethod, ruleName);
+                }
+                """, StandardCharsets.UTF_8);
+    }
+
+    private void materializeQinSlimeGeneratorShim(Path runtimeNodeModules) throws IOException {
+        Path shimDir = runtimeNodeModules.resolve("slime-generator").normalize();
+        deleteRecursively(shimDir);
+        Files.createDirectories(shimDir);
+        Files.writeString(shimDir.resolve("package.json"), """
+                {
+                  "name": "slime-generator",
+                  "version": "0.0.0-qin-shim",
+                  "type": "module",
+                  "exports": {
+                    ".": "./index.ts"
+                  },
+                  "main": "./index.ts",
+                  "module": "./index.ts"
+                }
+                """, StandardCharsets.UTF_8);
+        Files.writeString(shimDir.resolve("index.ts"), """
+                export class SlimeCodeLocation {
+                  type = "";
+                  line = 0;
+                  value = "";
+                  column = 0;
+                  length = 0;
+                  synthetic = false;
+                  index = 0;
+                }
+
+                export class SlimeCodeMapping {
+                  source = null;
+                  generate = null;
+                }
+
+                function field(node, name) {
+                  if (node == null) return undefined;
+                  const direct = node[name];
+                  if (direct !== undefined && typeof direct !== "function") return direct;
+                  if (name === "arguments") {
+                    const escapedDirect = node.__qin_arguments;
+                    if (escapedDirect !== undefined && typeof escapedDirect !== "function") return escapedDirect;
+                    if (node.__qin_field___qin_arguments !== undefined) return node.__qin_field___qin_arguments;
+                    if (typeof escapedDirect === "function") return escapedDirect.call(node);
+                  }
+                  const qinName = "__qin_field_" + name;
+                  if (node[qinName] !== undefined) return node[qinName];
+                  if (typeof direct === "function") return direct.call(node);
+                  const getter = "get" + name.slice(0, 1).toUpperCase() + name.slice(1);
+                  if (typeof node[getter] === "function") return node[getter]();
+                  return undefined;
+                }
+
+                function normalizeNodeType(raw) {
+                  const text = String(raw == null ? "" : raw)
+                    .replace(/^SlimeAstTypeName\\./, "")
+                    .replace(/^AstNodeType\\./, "");
+                  if (!/^[A-Z][A-Z0-9_]*$/.test(text)) return text;
+                  const lower = text.toLowerCase();
+                  let result = "";
+                  let upperNext = true;
+                  for (let i = 0; i < lower.length; i++) {
+                    const ch = lower[i];
+                    if (ch === "_") {
+                      upperNext = true;
+                    } else if (upperNext) {
+                      result += ch.toUpperCase();
+                      upperNext = false;
+                    } else {
+                      result += ch;
+                    }
+                  }
+                  return result;
+                }
+
+                function nodeType(node) {
+                  return normalizeNodeType(field(node, "type"));
+                }
+
+                function list(value) {
+                  if (value == null) return [];
+                  if (Array.isArray(value)) return value;
+                  if (typeof value.toArray === "function") return value.toArray();
+                  if (typeof value.size === "function" && typeof value.get === "function") {
+                    const out = [];
+                    for (let i = 0; i < value.size(); i++) out.push(value.get(i));
+                    return out;
+                  }
+                  return [];
+                }
+
+                function literalValue(node) {
+                  const raw = field(node, "raw");
+                  if (raw != null && raw !== "") return String(raw);
+                  const value = field(node, "value");
+                  if (value == null) return "null";
+                  if (typeof value === "string") return JSON.stringify(value);
+                  return String(value);
+                }
+
+                function idName(node) {
+                  const name = field(node, "name");
+                  if (name != null) return String(name);
+                  const value = field(node, "value");
+                  return value == null ? "" : String(value);
+                }
+
+                function join(nodes, separator) {
+                  const values = [];
+                  for (const node of list(nodes)) {
+                    const text = generateNode(node);
+                    if (text !== "") values.push(text);
+                  }
+                  return values.join(separator);
+                }
+
+                function generateKey(node, computed) {
+                  const text = generateNode(node);
+                  return computed ? "[" + text + "]" : text;
+                }
+
+                function generateParams(params) {
+                  const values = [];
+                  for (const param of list(params)) {
+                    const paramNode = field(param, "param");
+                    const argumentNode = field(param, "argument");
+                    values.push(generateNode(paramNode !== undefined ? paramNode : argumentNode !== undefined ? argumentNode : param));
+                  }
+                  return values.join(", ");
+                }
+
+                function generateBlock(node) {
+                  const body = list(field(node, "body"));
+                  const values = [];
+                  for (const item of body) {
+                    const text = generateNode(item);
+                    if (text) values.push(text);
+                  }
+                  return "{\\n" + values.join("\\n") + "\\n}";
+                }
+
+                function joinLocalSpecifiers(specifiers) {
+                  const values = [];
+                  for (const spec of list(specifiers)) {
+                    values.push(generateNode(field(spec, "local")));
+                  }
+                  return values.join(", ");
+                }
+
+                function generateImportDeclaration(node) {
+                  const specifiers = list(field(node, "specifiers"));
+                  const source = generateNode(field(node, "source"));
+                  if (!specifiers.length) return "import " + source + ";";
+                  const named = [];
+                  let defaultImport = "";
+                  let namespaceImport = "";
+                  for (const specifier of specifiers) {
+                    const type = nodeType(specifier);
+                    if (type === "ImportDefaultSpecifier") defaultImport = generateNode(field(specifier, "local"));
+                    else if (type === "ImportNamespaceSpecifier") namespaceImport = "* as " + generateNode(field(specifier, "local"));
+                    else {
+                      const imported = generateNode(field(specifier, "imported"));
+                      const local = generateNode(field(specifier, "local"));
+                      named.push(imported && local && imported !== local ? imported + " as " + local : (imported || local));
+                    }
+                  }
+                  const parts = [];
+                  if (defaultImport) parts.push(defaultImport);
+                  if (namespaceImport) parts.push(namespaceImport);
+                  if (named.length) parts.push("{ " + named.join(", ") + " }");
+                  return "import " + parts.join(", ") + " from " + source + ";";
+                }
+
+                function generateVariableDeclaration(node, forHeader = false) {
+                  const kind = field(node, "kind") || "const";
+                  const code = String(kind) + " " + join(field(node, "declarations"), ", ");
+                  return forHeader ? code : code + ";";
+                }
+
+                function generateNode(node) {
+                  if (node == null) return "";
+                  const type = nodeType(node);
+                  switch (type) {
+                    case "Program":
+                      return join(field(node, "body"), "\\n");
+                    case "Identifier":
+                    case "PrivateIdentifier":
+                      return idName(node);
+                    case "Literal":
+                    case "StringLiteral":
+                    case "NumericLiteral":
+                    case "BooleanLiteral":
+                    case "NullLiteral":
+                      return literalValue(node);
+                    case "ThisExpression":
+                      return "this";
+                    case "Super":
+                      return "super";
+                    case "ImportDeclaration":
+                      return generateImportDeclaration(node);
+                    case "ExportDefaultDeclaration":
+                      return "export default " + generateNode(field(node, "declaration")) + ";";
+                    case "ExportNamedDeclaration": {
+                      const declaration = field(node, "declaration");
+                      if (declaration) return "export " + generateNode(declaration);
+                      const specs = joinLocalSpecifiers(field(node, "specifiers"));
+                      const source = field(node, "source");
+                      return "export { " + specs + " }" + (source ? " from " + generateNode(source) : "") + ";";
+                    }
+                    case "VariableDeclaration":
+                      return generateVariableDeclaration(node);
+                    case "VariableDeclarator": {
+                      const init = field(node, "init");
+                      return generateNode(field(node, "id")) + (init ? " = " + generateNode(init) : "");
+                    }
+                    case "ExpressionStatement":
+                      return generateNode(field(node, "expression")) + ";";
+                    case "BlockStatement":
+                      return generateBlock(node);
+                    case "ReturnStatement": {
+                      const argument = field(node, "argument");
+                      return "return" + (argument ? " " + generateNode(argument) : "") + ";";
+                    }
+                    case "CallExpression":
+                    case "NewExpression": {
+                      const prefix = type === "NewExpression" ? "new " : "";
+                      return prefix + generateNode(field(node, "callee")) + "(" + join(field(node, "arguments"), ", ") + ")";
+                    }
+                    case "MemberExpression": {
+                      const object = generateNode(field(node, "object"));
+                      const property = generateNode(field(node, "property"));
+                      return field(node, "computed") ? object + "[" + property + "]" : object + "." + property;
+                    }
+                    case "ArrayExpression":
+                      return "[" + join(field(node, "elements"), ", ") + "]";
+                    case "ArrayElement":
+                      return generateNode(field(node, "element") !== undefined ? field(node, "element") : field(node, "argument"));
+                    case "ObjectExpression":
+                      return "{ " + join(field(node, "properties"), ", ") + " }";
+                    case "Property": {
+                      const wrappedProperty = field(node, "property");
+                      if (wrappedProperty !== undefined) return generateNode(wrappedProperty);
+                      const key = generateKey(field(node, "key"), field(node, "computed"));
+                      const value = field(node, "value");
+                      if (field(node, "method")) return key + "(" + generateParams(field(value, "params")) + ") " + generateNode(field(value, "body"));
+                      if (field(node, "shorthand")) return key;
+                      return key + ": " + generateNode(value);
+                    }
+                    case "ArrowFunctionExpression": {
+                      const body = field(node, "body");
+                      return "(" + generateParams(field(node, "params")) + ") => " + generateNode(body);
+                    }
+                    case "FunctionDeclaration":
+                    case "FunctionExpression": {
+                      const id = field(node, "id");
+                      return "function" + (id ? " " + generateNode(id) : "") + "(" + generateParams(field(node, "params")) + ") " + generateNode(field(node, "body"));
+                    }
+                    case "BinaryExpression":
+                    case "LogicalExpression":
+                    case "AssignmentExpression":
+                      return generateNode(field(node, "left")) + " " + String(field(node, "operator") || "") + " " + generateNode(field(node, "right"));
+                    case "UnaryExpression":
+                      return String(field(node, "operator") || "") + generateNode(field(node, "argument"));
+                    case "ConditionalExpression":
+                      return generateNode(field(node, "test")) + " ? " + generateNode(field(node, "consequent")) + " : " + generateNode(field(node, "alternate"));
+                    case "TemplateLiteral": {
+                      const quasis = list(field(node, "quasis"));
+                      const expressions = list(field(node, "expressions"));
+                      let out = "`";
+                      for (let i = 0; i < quasis.length; i++) {
+                        const raw = field(quasis[i], "raw");
+                        const valueRaw = field(field(quasis[i], "value"), "raw");
+                        out += raw != null ? raw : valueRaw != null ? valueRaw : "";
+                        if (i < expressions.length) out += "${" + generateNode(expressions[i]) + "}";
+                      }
+                      return out + "`";
+                    }
+                    default:
+                      if (field(node, "property") !== undefined) return generateNode(field(node, "property"));
+                      if (field(node, "element") !== undefined) return generateNode(field(node, "element"));
+                      if (field(node, "argument") !== undefined) return generateNode(field(node, "argument"));
+                      if (field(node, "param") !== undefined) return generateNode(field(node, "param"));
+                      return "";
+                  }
+                }
+
+                export const SlimeGenerator = {
+                  generator(ast, tokens) {
+                    return { code: generateNode(ast), mapping: [] };
+                  },
+                  generate(ast) {
+                    return generateNode(ast);
+                  }
+                };
+
+                export function __qin_smoke_generate() {
+                  return SlimeGenerator.generator({
+                    type: "Program",
+                    body: [{ type: "ExpressionStatement", expression: { type: "Literal", value: "ok" } }]
+                  }, []).code;
+                }
+
+                export function __qin_smoke_generate_java_style_ast() {
+                  const ast = {
+                    type() { return "PROGRAM"; },
+                    body() {
+                      return [{
+                        type() { return "EXPRESSION_STATEMENT"; },
+                        expression() {
+                          return {
+                            type() { return "LITERAL"; },
+                            value() { return "java-style"; }
+                          };
+                        }
+                      }];
+                    }
+                  };
+                  return SlimeGenerator.generator(ast, []).code;
+                }
+
+                export function __qin_smoke_generate_normalized_over_qin_fields() {
+                  const ast = {
+                    __qin_field_type: "PROGRAM",
+                    __qin_field_body: [],
+                    type: "Program",
+                    body: [{
+                      __qin_field_type: "EXPRESSION_STATEMENT",
+                      __qin_field_expression: { __qin_field_type: "LITERAL", __qin_field_value: "stale" },
+                      type: "ExpressionStatement",
+                      expression: { type: "Literal", value: "normalized" }
+                    }]
+                  };
+                  return SlimeGenerator.generator(ast, []).code;
+                }
+
+                export function __qin_smoke_generate_escaped_arguments() {
+                  const ast = {
+                    type() { return "PROGRAM"; },
+                    body() {
+                      return [{
+                        type() { return "EXPRESSION_STATEMENT"; },
+                        expression() {
+                          return {
+                            type() { return "CALL_EXPRESSION"; },
+                            callee() { return { type() { return "IDENTIFIER"; }, name() { return "fn"; } }; },
+                            __qin_arguments() {
+                              return [
+                                { type() { return "LITERAL"; }, value() { return "a"; } },
+                                { type() { return "LITERAL"; }, value() { return "b"; } }
+                              ];
+                            }
+                          };
+                        }
+                      }];
+                    }
+                  };
+                  return SlimeGenerator.generator(ast, []).code;
+                }
+
+                export function __qin_smoke_generate_wrapped_object_array_items() {
+                  const ast = {
+                    type: "Program",
+                    body: [{
+                      type: "ExpressionStatement",
+                      expression: {
+                        type: "CallExpression",
+                        callee: { type: "Identifier", name: "fn" },
+                        arguments: [{
+                          type: "ObjectExpression",
+                          properties: [{
+                            property: {
+                              type: "Property",
+                              key: { type: "Identifier", name: "id" },
+                              value: { type: "Literal", value: "balance-panel" }
+                            }
+                          }]
+                        }, {
+                          type: "ArrayExpression",
+                          elements: [{
+                            element: { type: "Literal", value: "Loading balance monitor..." }
+                          }]
+                        }]
+                      }
+                    }]
+                  };
+                  return SlimeGenerator.generator(ast, []).code;
+                }
+
+                export default SlimeGenerator;
+                """, StandardCharsets.UTF_8);
+    }
+
     private void materializeQinVueCompilerSfcShim(Path runtimeNodeModules) throws IOException {
         Path shimDir = runtimeNodeModules.resolve("@vue").resolve("compiler-sfc").normalize();
         deleteRecursively(shimDir);
@@ -1944,8 +2527,7 @@ final class QinJsPackageRunner {
 
     private Set<String> scanPackageBareModuleSpecifiers(
             Path packageDir,
-            Path sourcePackageDir,
-            boolean scanTypeScriptSources) throws IOException {
+            Path sourcePackageDir) throws IOException {
         if (packageDir == null || !Files.isDirectory(packageDir)) {
             return Set.of();
         }
@@ -1957,31 +2539,7 @@ final class QinJsPackageRunner {
                 collectPackageSourceBareSpecifiers(specifiers, packageDir, entryFile);
             }
         }
-        if (!scanTypeScriptSources) {
-            return specifiers;
-        }
-        try (var paths = Files.walk(packageDir)) {
-            paths
-                    .filter(Files::isRegularFile)
-                    .filter(path -> isScannablePackageSourceFile(path, scanTypeScriptSources))
-                    .forEach(path -> collectPackageSourceBareSpecifiers(specifiers, packageDir, path));
-        }
         return specifiers;
-    }
-
-    private boolean isScannablePackageSourceFile(Path path, boolean includeTypeScript) {
-        String name = path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase();
-        if (name.endsWith(".test.ts")
-                || name.endsWith(".test.tsx")
-                || name.endsWith(".spec.ts")
-                || name.endsWith(".spec.tsx")
-                || name.contains("-debug.")) {
-            return false;
-        }
-        return name.endsWith(".js")
-                || name.endsWith(".mjs")
-                || (includeTypeScript && name.endsWith(".ts"))
-                || (includeTypeScript && name.endsWith(".tsx"));
     }
 
     private void collectPackageSourceBareSpecifiers(Set<String> specifiers, Path packageDir, Path sourceFile) {
@@ -2135,7 +2693,7 @@ final class QinJsPackageRunner {
         return "{"
                 + "\"files\":" + fingerprint.files + ","
                 + "\"bytes\":" + fingerprint.bytes + ","
-                + "\"modifiedMillis\":" + fingerprint.modifiedMillis
+                + "\"sha256\":\"" + fingerprint.sha256 + "\""
                 + "}";
     }
 
@@ -2150,28 +2708,46 @@ final class QinJsPackageRunner {
         }
         Set<String> finalIgnoredDirs = ignoredDirs;
         PackageTreeFingerprint fingerprint = new PackageTreeFingerprint();
-        Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                Path relative = sourceDir.relativize(dir);
-                if (!relative.toString().isEmpty()) {
-                    String name = dir.getFileName() == null ? "" : dir.getFileName().toString();
-                    if (finalIgnoredDirs.contains(name)) {
-                        return FileVisitResult.SKIP_SUBTREE;
-                    }
-                }
-                return FileVisitResult.CONTINUE;
-            }
+        List<Path> files;
+        try (var paths = Files.walk(sourceDir)) {
+            files = paths
+                    .filter(Files::isRegularFile)
+                    .filter(path -> !isIgnoredPackageTreePath(sourceDir, path, finalIgnoredDirs))
+                    .sorted()
+                    .toList();
+        }
+        MessageDigest digest = newSha256Digest();
+        byte[] buffer = new byte[8192];
+        for (Path file : files) {
+            BasicFileAttributes attrs = Files.readAttributes(file, BasicFileAttributes.class);
+            fingerprint.files++;
+            fingerprint.bytes += attrs.size();
+            fingerprint.modifiedMillis = Math.max(fingerprint.modifiedMillis, attrs.lastModifiedTime().toMillis());
 
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                fingerprint.files++;
-                fingerprint.bytes += attrs.size();
-                fingerprint.modifiedMillis = Math.max(fingerprint.modifiedMillis, attrs.lastModifiedTime().toMillis());
-                return FileVisitResult.CONTINUE;
+            Path relative = sourceDir.relativize(file.toAbsolutePath().normalize());
+            digest.update(relative.toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            try (InputStream input = Files.newInputStream(file)) {
+                int read;
+                while ((read = input.read(buffer)) >= 0) {
+                    digest.update(buffer, 0, read);
+                }
             }
-        });
+            digest.update((byte) 0);
+        }
+        fingerprint.sha256 = HexFormat.of().formatHex(digest.digest());
         return fingerprint;
+    }
+
+    private boolean isIgnoredPackageTreePath(Path sourceDir, Path path, Set<String> ignoredDirs) {
+        Path relative = sourceDir.relativize(path.toAbsolutePath().normalize());
+        for (Path part : relative) {
+            String name = part.toString();
+            if (ignoredDirs.contains(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String escapeJson(String value) {
@@ -2399,5 +2975,6 @@ final class QinJsPackageRunner {
         private long files;
         private long bytes;
         private long modifiedMillis;
+        private String sha256;
     }
 }

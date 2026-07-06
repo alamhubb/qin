@@ -380,21 +380,55 @@ public final class QinFrontendEsmService {
 
     private void prewarmCsstsGraphModules() throws IOException {
         boolean hasCsstsGraphModule = false;
+        List<Path> ovsModules = new ArrayList<>();
         for (QinModuleSource module : graph.modules()) {
             Path file = module.file().toAbsolutePath().normalize();
             if (!isFrontendModuleFile(file)) {
                 continue;
             }
             String source = module.source();
-            if (isCsstsModuleFile(file)
-                    || isOvsModuleFile(file)
+            if (isOvsModuleFile(file)) {
+                hasCsstsGraphModule = true;
+                ovsModules.add(file);
+            } else if (isCsstsModuleFile(file)
                     || (isVueModuleFile(file) && requiresQinNativeVueCompiler(source))) {
                 hasCsstsGraphModule = true;
                 transpileModule(file);
             }
         }
+        if (!ovsModules.isEmpty()) {
+            prewarmOvsModules(ovsModules);
+        }
         if (hasCsstsGraphModule || !csstsCssByModule.isEmpty() || !csstsAtomByModule.isEmpty()) {
             refreshCsstsGlobalVirtualModules();
+        }
+    }
+
+    private void prewarmOvsModules(List<Path> files) throws IOException {
+        Map<Path, String> sources = new LinkedHashMap<>();
+        for (Path file : files) {
+            QinModuleSource module = moduleSourceMap.get(file.toAbsolutePath().normalize());
+            if (module != null) {
+                sources.put(file.toAbsolutePath().normalize(), module.source());
+            }
+        }
+        Map<Path, QinOvsCompiler.QinOvsCompileResult> results;
+        try {
+            results = ovsCompiler.compileAll(projectRoot, sources);
+        } catch (Exception error) {
+            throw new IOException("Qin OVS batch compilation failed", error);
+        }
+        for (Path file : files) {
+            Path normalizedFile = file.toAbsolutePath().normalize();
+            QinOvsCompiler.QinOvsCompileResult result = results.get(normalizedFile);
+            if (result == null) {
+                continue;
+            }
+            QinModuleSource module = moduleSourceMap.get(normalizedFile);
+            QinModuleSource sourceModule = module != null
+                    ? module
+                    : new QinModuleSource(normalizedFile, readSource(normalizedFile), List.of());
+            transpiledModuleCache.put(normalizedFile, finishOvsModule(normalizedFile, sourceModule, result));
         }
     }
 
@@ -473,11 +507,18 @@ public final class QinFrontendEsmService {
                 : new QinModuleSource(moduleFile.toAbsolutePath().normalize(), source, List.of());
         QinOvsCompiler.QinOvsCompileResult result;
         try {
-            result = ovsCompiler.compile(projectRoot, source);
+            result = ovsCompiler.compile(projectRoot, moduleFile, source);
         } catch (Exception error) {
             throw new IllegalStateException("Qin OVS compilation failed for " + moduleFile.toAbsolutePath(), error);
         }
 
+        return finishOvsModule(moduleFile, sourceModule, result);
+    }
+
+    private String finishOvsModule(
+            Path moduleFile,
+            QinModuleSource sourceModule,
+            QinOvsCompiler.QinOvsCompileResult result) {
         String compiled = result.code();
         compiled = rewriteSpecifiers(sourceModule, compiled, IMPORT_FROM_PATTERN);
         compiled = rewriteSpecifiers(sourceModule, compiled, EXPORT_FROM_PATTERN);
