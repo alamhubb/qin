@@ -188,6 +188,15 @@ receives the current request data. Add focused smokes that compile two distinct
 sources through the same hot wrapper and prove the second result is fresh, not a
 stale cache hit.
 
+The same rule applies to batch transforms. A `compileAll` or multi-file
+transform wrapper must not embed the source/id array into wrapper source. Bind
+the whole batch through a scoped runtime input boundary and keep the wrapper
+source stable so the hot module-class graph, plugin container, and dependency
+session can be reused across batches. A correct batch smoke must prove three
+things together: changed batch inputs produce fresh output, the second batch is
+not served from the transform disk cache, and the stable wrapper hits the
+module-class compile cache plus dependency session.
+
 ### Active Dependency Fingerprints
 
 The Qin runtime npm host must fingerprint the active dependency closure for the
@@ -288,6 +297,7 @@ Required examples:
 
 - `module-class disk cache hit`;
 - `module-class compile cache hit`;
+- `module-class dependency session hit`;
 - `module-class run batch start` / `module-class run batch done`;
 - `workspace package index built` / `workspace package index cache hit`;
 - `frontend transform disk cache hit`;

@@ -2,11 +2,16 @@ package com.qin.runtime.core;
 
 import com.qin.lang.runtime.JavaEsmGlobal;
 
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.LinkedHashMap;
@@ -21,7 +26,10 @@ public final class QinOvsCompiler {
     private static final List<String> TRANSFORM_TOOLCHAIN_PACKAGES = List.of(
             "ovs-compiler",
             "vite-plugin-ovs",
-            "cssts-compiler");
+            "cssts-compiler",
+            "@qin/generated-qin-parser-ts",
+            "slime-generator",
+            "slime-ast");
     private static final Set<String> IGNORED_TOOLCHAIN_DIRS = Set.of(
             ".git", ".idea", ".qin", "node_modules", "build", "target", "out");
     private static final Pattern CLASS_PREFIX_PATTERN = Pattern.compile(
@@ -41,6 +49,23 @@ public final class QinOvsCompiler {
 
     public QinOvsCompileResult compile(Path projectRoot, String source) throws Exception {
         return compile(projectRoot, null, source);
+    }
+
+    String frontendCacheIdentity(Path projectRoot, Path moduleFile, String source) throws Exception {
+        Path normalizedRoot = projectRoot.toAbsolutePath().normalize();
+        Path normalizedModuleFile = moduleFile == null
+                ? null
+                : moduleFile.toAbsolutePath().normalize();
+        String configSource = readConfigSource(normalizedRoot);
+        String toolchainFingerprint = transformToolchainFingerprint(normalizedRoot, configSource);
+        String semanticRoot = semanticRoot(normalizedRoot);
+        String semanticModule = semanticModuleFile(normalizedRoot, normalizedModuleFile);
+        return QinFrontendTransformDiskCache.keyMaterial(
+                semanticRoot,
+                "module=" + semanticModule
+                        + "\ntoolchain=" + toolchainFingerprint
+                        + "\nsource=" + (source == null ? "" : source),
+                configSource);
     }
 
     public QinOvsCompileResult compile(Path projectRoot, Path moduleFile, String source) throws Exception {
@@ -164,9 +189,10 @@ public final class QinOvsCompiler {
         }
 
         try {
+            bindBatchTransformInputs(normalizedRoot, toTransform);
             Object result = packageRunner.runModuleSource(
                     normalizedRoot,
-                    buildBatchWrapperSource(normalizedRoot, toTransform),
+                    buildBatchWrapperSource(normalizedRoot),
                     "vite_plugin_ovs_transform_batch");
             List<QinOvsCompileResult> decodedResults = decodeBatchResult(result, toTransform.size());
             for (int i = 0; i < toTransform.size(); i++) {
@@ -192,6 +218,17 @@ public final class QinOvsCompiler {
     private void bindTransformInputs(Path projectRoot, String source, String id) {
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "source"), source == null ? "" : source);
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "id"), id == null ? "" : id);
+    }
+
+    private void bindBatchTransformInputs(Path projectRoot, List<BatchCompileInput> inputs) {
+        List<Object> boundInputs = new ArrayList<>();
+        for (BatchCompileInput input : inputs) {
+            Map<String, Object> bound = new LinkedHashMap<>();
+            bound.put("source", input.source() == null ? "" : input.source());
+            bound.put("id", renderViteId(projectRoot, input.moduleFile(), input.semanticModule()));
+            boundInputs.add(bound);
+        }
+        JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "batch_inputs"), boundInputs);
     }
 
     private String buildWrapperSource(Path projectRoot) {
@@ -283,25 +320,8 @@ public final class QinOvsCompiler {
                 idGlobal);
     }
 
-    private String buildBatchWrapperSource(Path projectRoot, List<BatchCompileInput> inputs) {
-        StringBuilder inputSource = new StringBuilder("[\n");
-        for (int i = 0; i < inputs.size(); i++) {
-            BatchCompileInput input = inputs.get(i);
-            inputSource.append("  { source: ")
-                    .append(QinJsPackageRunner.renderJsLiteral(input.source()))
-                    .append(", id: ")
-                    .append(QinJsPackageRunner.renderJsLiteral(renderViteId(
-                            projectRoot,
-                            input.moduleFile(),
-                            input.semanticModule())))
-                    .append(" }");
-            if (i + 1 < inputs.size()) {
-                inputSource.append(",");
-            }
-            inputSource.append("\n");
-        }
-        inputSource.append("]");
-
+    private String buildBatchWrapperSource(Path projectRoot) {
+        String inputsGlobal = ovsTransformGlobalName(projectRoot, "batch_inputs");
         return """
                 import vitePluginOvs from "vite-plugin-ovs";
                 import { vitePluginOvsTransform } from "ovs-compiler";
@@ -352,42 +372,47 @@ public final class QinOvsCompiler {
                   error(message) { throw new Error(String(message)); }
                 };
                 function __qinTransformOne(input) {
-                  RuntimeStore.clearUsedStyles();
-                  const __qin_shared_styles__ = new Set();
-                  let __qin_result__ = vitePluginOvsTransform(input.source, { globalStyles: __qin_shared_styles__ });
-                  let __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
-                  if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
-                    __qin_result__ = __qinCallPluginHook(
-                      __qin_plugin__.transform,
-                      __qin_context__,
-                      input.source,
-                      input.id
-                    );
-                    __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
+                  try {
+                    RuntimeStore.clearUsedStyles();
+                    const __qin_shared_styles__ = new Set();
+                    let __qin_result__ = vitePluginOvsTransform(input.source, { globalStyles: __qin_shared_styles__ });
+                    let __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
+                    if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
+                      __qin_result__ = __qinCallPluginHook(
+                        __qin_plugin__.transform,
+                        __qin_context__,
+                        input.source,
+                        input.id
+                      );
+                      __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
+                    }
+                    if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
+                      throw new Error("vite-plugin-ovs transform returned empty code for " + input.id);
+                    }
+                    if (__qin_shared_styles__.size > 0 && !__qin_code__.includes("virtual:cssts.css")) {
+                      __qin_code__ = "import 'virtual:cssts.css'\\n" + __qin_code__;
+                    }
+                    RuntimeStore.addUsedStyles(__qin_shared_styles__);
+                    const __qin_css__ = __qin_shared_styles__.size > 0 ? generateStylesCss() : "";
+                    const __qin_atom__ = __qin_shared_styles__.size > 0 ? generateCsstsAtomModule() : "";
+                    return {
+                      code: __qin_code__,
+                      hasStyles: __qin_code__.includes("virtual:cssts.css") || __qin_css__.length > 0,
+                      css: __qin_css__,
+                      atomModule: __qin_atom__,
+                      pluginName: __qin_plugin__.name
+                    };
+                  } catch (error) {
+                    const message = error && error.message ? error.message : String(error);
+                    throw new Error("vite-plugin-ovs transform failed for " + input.id + ": " + message);
                   }
-                  if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
-                    throw new Error("vite-plugin-ovs transform returned empty code for " + input.id);
-                  }
-                  if (__qin_shared_styles__.size > 0 && !__qin_code__.includes("virtual:cssts.css")) {
-                    __qin_code__ = "import 'virtual:cssts.css'\\n" + __qin_code__;
-                  }
-                  RuntimeStore.addUsedStyles(__qin_shared_styles__);
-                  const __qin_css__ = __qin_shared_styles__.size > 0 ? generateStylesCss() : "";
-                  const __qin_atom__ = __qin_shared_styles__.size > 0 ? generateCsstsAtomModule() : "";
-                  return {
-                    code: __qin_code__,
-                    hasStyles: __qin_code__.includes("virtual:cssts.css") || __qin_css__.length > 0,
-                    css: __qin_css__,
-                    atomModule: __qin_atom__,
-                    pluginName: __qin_plugin__.name
-                  };
                 }
-                const __qin_inputs__ = %s;
+                const __qin_inputs__ = globalThis.%s;
                 __qin_inputs__.map(input => __qinTransformOne(input));
                 """.formatted(
                 viteConfigImportSource(projectRoot),
                 ovsPluginOptionsSource(projectRoot),
-                inputSource);
+                inputsGlobal);
     }
 
     private String renderViteId(Path projectRoot, Path moduleFile, String semanticModule) {
@@ -420,6 +445,7 @@ public final class QinOvsCompiler {
         byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
         return HexFormat.of().formatHex(hash, 0, 8);
     }
+
     private String semanticModuleFile(Path projectRoot, Path moduleFile) {
         if (moduleFile == null) {
             return "";
@@ -604,6 +630,8 @@ public final class QinOvsCompiler {
         Map<String, Path> overrides = readPackageOverrides(projectRoot, configSource);
         Map<String, Path> workspacePackages = indexWorkspaceToolchainPackages();
         MessageDigest digest = newSha256Digest();
+        updateClassResourceDigest(digest, QinOvsCompiler.class);
+        updateClassResourceDigest(digest, QinJsPackageRunner.class);
         for (String packageName : TRANSFORM_TOOLCHAIN_PACKAGES) {
             digest.update(packageName.getBytes(StandardCharsets.UTF_8));
             digest.update((byte) '=');
@@ -623,6 +651,24 @@ public final class QinOvsCompiler {
         return HexFormat.of().formatHex(digest.digest());
     }
 
+    private void updateClassResourceDigest(MessageDigest digest, Class<?> type) throws Exception {
+        digest.update(("class:" + type.getName()).getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+        String resourceName = "/" + type.getName().replace('.', '/') + ".class";
+        try (InputStream input = type.getResourceAsStream(resourceName)) {
+            if (input == null) {
+                digest.update("missing".getBytes(StandardCharsets.UTF_8));
+            } else {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+        }
+        digest.update((byte) '\n');
+    }
+
     private Map<String, Path> indexWorkspaceToolchainPackages() {
         Path workspaceRoot = locateWorkspaceRoot();
         if (workspaceRoot == null) {
@@ -632,6 +678,10 @@ public final class QinOvsCompiler {
         registerWorkspacePackage(packages, "ovs-compiler", workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-compiler"));
         registerWorkspacePackage(packages, "vite-plugin-ovs", workspaceRoot.resolve("ovsjs").resolve("vite-plugin-ovs"));
         registerWorkspacePackage(packages, "cssts-compiler", workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-compiler"));
+        registerWorkspacePackage(packages, "@qin/generated-qin-parser-ts", workspaceRoot.resolve("qin")
+                .resolve("packages").resolve("qin-language").resolve("generated").resolve("qin-parser-ts"));
+        registerWorkspacePackage(packages, "slime-generator", workspaceRoot.resolve("slime").resolve("slime-generator"));
+        registerWorkspacePackage(packages, "slime-ast", workspaceRoot.resolve("slime").resolve("slime-ast"));
         return packages;
     }
 
@@ -668,14 +718,26 @@ public final class QinOvsCompiler {
     }
 
     private void updateDirectoryDigest(MessageDigest digest, Path root) throws Exception {
-        List<Path> files;
-        try (var paths = Files.walk(root)) {
-            files = paths
-                    .filter(Files::isRegularFile)
-                    .filter(path -> !isIgnoredToolchainPath(root, path))
-                    .sorted()
-                    .toList();
-        }
+        List<Path> files = new ArrayList<>();
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                if (!dir.toAbsolutePath().normalize().equals(root.toAbsolutePath().normalize())
+                        && isIgnoredToolchainPath(root, dir)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                if (attrs.isRegularFile() && !isIgnoredToolchainPath(root, file)) {
+                    files.add(file.toAbsolutePath().normalize());
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        files.sort(Path::compareTo);
         byte[] buffer = new byte[8192];
         for (Path file : files) {
             Path relative = root.relativize(file.toAbsolutePath().normalize());
