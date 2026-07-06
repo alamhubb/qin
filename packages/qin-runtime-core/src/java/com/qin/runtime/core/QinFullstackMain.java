@@ -8,12 +8,15 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -44,6 +47,7 @@ public final class QinFullstackMain {
     private static final Pattern IMPORT_SPECIFIER_PATTERN = Pattern.compile("([\"'])([^\"']+)([\"'])");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
             ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
+    private static final String JAVAC_CACHE_VERSION = "qin-javac-cache-v1";
 
     private QinFullstackMain() {
     }
@@ -462,16 +466,32 @@ public final class QinFullstackMain {
             Path classOutputDir,
             String description) throws Exception {
         QinPhaseTimer profile = QinPhaseTimer.start("javac");
+        List<Path> normalizedSources = sourceFiles.stream()
+                .map(path -> path.toAbsolutePath().normalize())
+                .sorted()
+                .toList();
+        Files.createDirectories(classOutputDir);
+        String classpath = System.getProperty("java.class.path", "");
+        if (classpath == null || classpath.isBlank()) {
+            classpath = classOutputDir.toString();
+        } else {
+            classpath = classOutputDir + java.io.File.pathSeparator + classpath;
+        }
+        String cacheKey = javacCacheKey(root, normalizedSources, classOutputDir, description, classpath);
+        if (tryUseJavacCache(classOutputDir, cacheKey, description, normalizedSources.size())) {
+            profile.done("cache hit, " + description + ", sources=" + normalizedSources.size());
+            return;
+        }
+
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
             throw new IllegalStateException("JDK compiler is required for " + description + ".");
         }
 
-        Files.createDirectories(classOutputDir);
         profile.checkpoint("prepare", description + ", sources=" + sourceFiles.size());
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
-            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sourceFiles);
+            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(normalizedSources);
             List<String> javacOptions = new ArrayList<>();
             javacOptions.add("-encoding");
             javacOptions.add("UTF-8");
@@ -479,11 +499,8 @@ public final class QinFullstackMain {
             javacOptions.add(classOutputDir.toString());
             javacOptions.add("-sourcepath");
             javacOptions.add(root.toString());
-            String classpath = System.getProperty("java.class.path", "");
             javacOptions.add("-classpath");
-            javacOptions.add(classpath == null || classpath.isBlank()
-                    ? classOutputDir.toString()
-                    : classOutputDir + java.io.File.pathSeparator + classpath);
+            javacOptions.add(classpath);
 
             Boolean ok = compiler.getTask(null, fileManager, diagnostics, javacOptions, null, units).call();
             if (!Boolean.TRUE.equals(ok)) {
@@ -501,7 +518,109 @@ public final class QinFullstackMain {
                 throw new IllegalStateException(message.toString());
             }
         }
+        writeJavacCache(classOutputDir, cacheKey);
         profile.done(description + ", sources=" + sourceFiles.size());
+    }
+
+    private static boolean tryUseJavacCache(
+            Path classOutputDir,
+            String cacheKey,
+            String description,
+            int sourceCount) throws IOException {
+        Path stampFile = javacCacheStampFile(classOutputDir, cacheKey);
+        if (!Files.isRegularFile(stampFile)) {
+            return false;
+        }
+        Properties stamp = new Properties();
+        try (var reader = Files.newBufferedReader(stampFile, StandardCharsets.UTF_8)) {
+            stamp.load(reader);
+        }
+        if (!cacheKey.equals(stamp.getProperty("cacheKey"))) {
+            return false;
+        }
+        int outputCount = Integer.parseInt(stamp.getProperty("outputCount", "0"));
+        if (outputCount <= 0) {
+            return false;
+        }
+        for (int i = 0; i < outputCount; i++) {
+            String relative = stamp.getProperty("output." + i);
+            if (relative == null || !Files.isRegularFile(classOutputDir.resolve(relative).normalize())) {
+                return false;
+            }
+        }
+        System.out.println("[QinFullstackMain] javac cache hit :: " + description
+                + ", sources=" + sourceCount);
+        return true;
+    }
+
+    private static void writeJavacCache(Path classOutputDir, String cacheKey) throws IOException {
+        List<Path> outputs = collectClassFiles(classOutputDir);
+        if (outputs.isEmpty()) {
+            return;
+        }
+        Properties stamp = new Properties();
+        stamp.setProperty("version", JAVAC_CACHE_VERSION);
+        stamp.setProperty("cacheKey", cacheKey);
+        stamp.setProperty("outputCount", Integer.toString(outputs.size()));
+        for (int i = 0; i < outputs.size(); i++) {
+            stamp.setProperty("output." + i, classOutputDir.relativize(outputs.get(i)).toString().replace('\\', '/'));
+        }
+        Path stampFile = javacCacheStampFile(classOutputDir, cacheKey);
+        Files.createDirectories(stampFile.getParent());
+        try (var writer = Files.newBufferedWriter(stampFile, StandardCharsets.UTF_8)) {
+            stamp.store(writer, "Qin javac cache stamp");
+        }
+    }
+
+    private static Path javacCacheStampFile(Path classOutputDir, String cacheKey) {
+        String fileName = cacheKey.length() > 32 ? cacheKey.substring(0, 32) : cacheKey;
+        return classOutputDir.resolve(".qin/javac-cache").resolve(fileName + ".properties").normalize();
+    }
+
+    private static String javacCacheKey(
+            Path root,
+            List<Path> sourceFiles,
+            Path classOutputDir,
+            String description,
+            String classpath) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        updateDigest(digest, JAVAC_CACHE_VERSION);
+        updateDigest(digest, System.getProperty("java.version", ""));
+        updateDigest(digest, root.toAbsolutePath().normalize().toString());
+        updateDigest(digest, classOutputDir.toAbsolutePath().normalize().toString());
+        updateDigest(digest, description);
+        updateDigest(digest, classpath);
+        for (Path sourceFile : sourceFiles) {
+            Path normalized = sourceFile.toAbsolutePath().normalize();
+            String identity = normalized.startsWith(root.toAbsolutePath().normalize())
+                    ? root.toAbsolutePath().normalize().relativize(normalized).toString().replace('\\', '/')
+                    : normalized.toString();
+            byte[] bytes = Files.readAllBytes(normalized);
+            updateDigest(digest, identity);
+            updateDigest(digest, Integer.toString(bytes.length));
+            digest.update(bytes);
+            digest.update((byte) 0);
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static void updateDigest(MessageDigest digest, String value) {
+        digest.update(value.getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+    }
+
+    private static List<Path> collectClassFiles(Path classOutputDir) throws IOException {
+        if (!Files.isDirectory(classOutputDir)) {
+            return List.of();
+        }
+        try (var stream = Files.walk(classOutputDir)) {
+            return stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".class"))
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .sorted()
+                    .toList();
+        }
     }
 
     private static Path writeQinBackendAdapterSource(

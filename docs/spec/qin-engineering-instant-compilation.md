@@ -157,6 +157,10 @@ Qin should use separate cache layers instead of one coarse cache:
   invocation;
 - frontend transform cache: stores OVS/Vue/CSSTS transform outputs keyed by
   source, config, module id, target zone, and toolchain version;
+- Java source compile cache: skips repeated `javac` work only when the
+  normalized Java source set, source content, classpath, compiler identity,
+  output directory, and compile options match and the recorded class outputs
+  still exist;
 - module-class cache: stores JVM module-class bytecode keyed by stable source
   identity, dependency fingerprint, compiler version, and target options;
 - in-process hot cache: keeps parsed module graphs, lowered IR, and compiled
@@ -222,6 +226,14 @@ must have `.qin-package-sync.json`; missing stamps are cache-system defects to
 repair in materialization or shim generation, not a reason to silently fall
 back to full tree hashing in the hot path.
 
+Fullstack Java helper/backend compilation should follow the same principle at
+the `javac` boundary. Re-running a dev build with an unchanged Java source set
+must be able to skip `javac` using a content-aware stamp. Any Java source
+content change, source-set change, classpath/options change, compiler identity
+change, output directory change, or missing recorded `.class` output must
+invalidate the stamp and run standard `javac`. This is a strict incremental
+compile cache, not a fallback compiler.
+
 OVS/CSSTS toolchain fingerprints should use the same snapshot principle in a
 long-lived compiler process. The first fingerprint for a tool package computes
 the real content digest; later fingerprints for the same unchanged directory
@@ -252,6 +264,9 @@ Incremental compilation should be graph-based:
 - changing `qin.config.js` should invalidate transforms that read that config;
 - changing generated parser artifacts should invalidate parser consumers;
 - changing backend runtime code should invalidate affected JVM class outputs.
+- unchanged fullstack Java helper/backend sources may skip `javac` only when
+  their content-aware compile stamp and recorded class outputs still match;
+  changed Java source content or classpath/options must invalidate the stamp.
 
 When Qin cannot prove the affected set, it may rebuild conservatively, but that
 case should be observable in logs and covered by an explicit test before it is
@@ -329,6 +344,7 @@ Required examples:
 - `module-class disk cache hit`;
 - `module-class compile cache hit`;
 - `module-class dependency session hit`;
+- `javac cache hit`;
 - `module-class run batch start` / `module-class run batch done`;
 - `workspace package index built` / `workspace package index cache hit`;
 - `frontend transform disk cache hit`;
