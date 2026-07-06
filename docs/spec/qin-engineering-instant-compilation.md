@@ -163,6 +163,11 @@ Qin should use separate cache layers instead of one coarse cache:
   still exist;
 - module-class cache: stores JVM module-class bytecode keyed by stable source
   identity, dependency fingerprint, compiler version, and target options;
+- fullstack backend module cache: skips repeated `.qin`/`.ts`/`.js` backend
+  module-class compilation only when `qin.config.js`, the backend source,
+  `main`/`src/main`, `shared`/`src/shared`, classpath, compiler class
+  resources, output directory, generated backend class name, and recorded
+  `.class` outputs match;
 - in-process hot cache: keeps parsed module graphs, lowered IR, and compiled
   classes warm inside the dev server.
 
@@ -273,6 +278,12 @@ Incremental compilation should be graph-based:
 - unchanged fullstack Java helper/backend sources may skip `javac` only when
   their content-aware compile stamp and recorded class outputs still match;
   changed Java source content or classpath/options must invalidate the stamp.
+- unchanged fullstack Qin/TS/JS backend module-class builds may skip
+  `QinBuildCoordinator` only when their strict backend module stamp and
+  recorded class outputs still match; backend source, config, main/shared
+  source, classpath, compiler class resource, output-directory, or generated
+  class-name changes must invalidate the stamp and run the standard coordinator
+  path.
 
 When Qin cannot prove the affected set, it may rebuild conservatively, but that
 case should be observable in logs and covered by an explicit test before it is

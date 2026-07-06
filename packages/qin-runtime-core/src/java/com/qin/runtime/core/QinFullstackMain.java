@@ -1,6 +1,7 @@
 package com.qin.runtime.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -48,6 +49,7 @@ public final class QinFullstackMain {
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
             ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
     private static final String JAVAC_CACHE_VERSION = "qin-javac-cache-v1";
+    private static final String QIN_BACKEND_MODULE_CACHE_VERSION = "qin-backend-module-cache-v1";
 
     private QinFullstackMain() {
     }
@@ -216,17 +218,26 @@ public final class QinFullstackMain {
 
         backendSource = prepareUnifiedAppBackendSource(root, backendSource);
         compileProjectJavaHelpers(root, classOutputDir);
-        QinBuildRequest backendRequest = new QinBuildRequest(
-                root,
-                backendSource,
-                QinBuildTarget.JVM,
-                options.className,
+        String backendCacheKey = qinBackendModuleCacheKey(root, backendSource, classOutputDir, options.className);
+        Path backendClassFile = tryUseQinBackendModuleCache(
                 classOutputDir,
-                jsOutputFile,
-                options.printIr);
-        QinBuildResult backendResult = withProjectClassLoader(
-                classOutputDir,
-                () -> coordinator.build(backendRequest));
+                backendCacheKey,
+                options.className);
+        if (backendClassFile == null) {
+            QinBuildRequest backendRequest = new QinBuildRequest(
+                    root,
+                    backendSource,
+                    QinBuildTarget.JVM,
+                    options.className,
+                    classOutputDir,
+                    jsOutputFile,
+                    options.printIr);
+            QinBuildResult backendResult = withProjectClassLoader(
+                    classOutputDir,
+                    () -> coordinator.build(backendRequest));
+            backendClassFile = backendResult.classFile();
+            writeQinBackendModuleCache(classOutputDir, backendCacheKey);
+        }
         Path adapterSource = writeQinBackendAdapterSource(
                 root,
                 classOutputDir,
@@ -234,6 +245,145 @@ public final class QinFullstackMain {
                 options.className);
         BackendBuild adapterBuild = compileJavaBackend(root, adapterSource, classOutputDir);
         return new BackendBuild(adapterBuild.classFile(), adapterBuild.runMethod(), adapterBuild.httpAppMethod());
+    }
+
+    private static Path tryUseQinBackendModuleCache(
+            Path classOutputDir,
+            String cacheKey,
+            String backendClassName) throws IOException {
+        Path stampFile = qinBackendModuleCacheStampFile(classOutputDir, cacheKey);
+        if (!Files.isRegularFile(stampFile)) {
+            return null;
+        }
+        Properties stamp = new Properties();
+        try (var reader = Files.newBufferedReader(stampFile, StandardCharsets.UTF_8)) {
+            stamp.load(reader);
+        }
+        if (!cacheKey.equals(stamp.getProperty("cacheKey"))) {
+            return null;
+        }
+        int outputCount = Integer.parseInt(stamp.getProperty("outputCount", "0"));
+        if (outputCount <= 0) {
+            return null;
+        }
+        for (int i = 0; i < outputCount; i++) {
+            String relative = stamp.getProperty("output." + i);
+            if (relative == null || !Files.isRegularFile(classOutputDir.resolve(relative).normalize())) {
+                return null;
+            }
+        }
+        Path backendClassFile = classOutputDir.resolve(backendClassName.replace('.', '/') + ".class").normalize();
+        if (!Files.isRegularFile(backendClassFile)) {
+            return null;
+        }
+        System.out.println("[QinFullstackMain] qin backend module cache hit :: " + backendClassName);
+        return backendClassFile;
+    }
+
+    private static void writeQinBackendModuleCache(Path classOutputDir, String cacheKey) throws IOException {
+        List<Path> outputs = collectClassFiles(classOutputDir);
+        if (outputs.isEmpty()) {
+            return;
+        }
+        Properties stamp = new Properties();
+        stamp.setProperty("version", QIN_BACKEND_MODULE_CACHE_VERSION);
+        stamp.setProperty("cacheKey", cacheKey);
+        stamp.setProperty("outputCount", Integer.toString(outputs.size()));
+        for (int i = 0; i < outputs.size(); i++) {
+            stamp.setProperty("output." + i, classOutputDir.relativize(outputs.get(i)).toString().replace('\\', '/'));
+        }
+        Path stampFile = qinBackendModuleCacheStampFile(classOutputDir, cacheKey);
+        Files.createDirectories(stampFile.getParent());
+        try (var writer = Files.newBufferedWriter(stampFile, StandardCharsets.UTF_8)) {
+            stamp.store(writer, "Qin backend module cache stamp");
+        }
+    }
+
+    private static Path qinBackendModuleCacheStampFile(Path classOutputDir, String cacheKey) {
+        String fileName = cacheKey.length() > 32 ? cacheKey.substring(0, 32) : cacheKey;
+        return classOutputDir.resolve(".qin/qin-backend-module-cache").resolve(fileName + ".properties").normalize();
+    }
+
+    private static String qinBackendModuleCacheKey(
+            Path root,
+            Path backendSource,
+            Path classOutputDir,
+            String backendClassName) throws Exception {
+        Path normalizedRoot = root.toAbsolutePath().normalize();
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        updateDigest(digest, QIN_BACKEND_MODULE_CACHE_VERSION);
+        updateDigest(digest, System.getProperty("java.version", ""));
+        updateDigest(digest, normalizedRoot.toString());
+        updateDigest(digest, classOutputDir.toAbsolutePath().normalize().toString());
+        updateDigest(digest, backendClassName);
+        updateDigest(digest, backendCompilerClasspath(classOutputDir));
+        updateClassResourceDigest(digest, QinFullstackMain.class);
+        updateClassResourceDigest(digest, QinBuildCoordinator.class);
+        updateClassResourceDigest(digest, com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler.class);
+        for (Path input : qinBackendModuleCacheInputs(normalizedRoot, backendSource)) {
+            Path normalized = input.toAbsolutePath().normalize();
+            String identity = normalized.startsWith(normalizedRoot)
+                    ? normalizedRoot.relativize(normalized).toString().replace('\\', '/')
+                    : normalized.toString();
+            byte[] bytes = Files.readAllBytes(normalized);
+            updateDigest(digest, identity);
+            updateDigest(digest, Integer.toString(bytes.length));
+            digest.update(bytes);
+            digest.update((byte) 0);
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static String backendCompilerClasspath(Path classOutputDir) {
+        String classpath = System.getProperty("java.class.path", "");
+        if (classpath == null || classpath.isBlank()) {
+            return classOutputDir.toString();
+        }
+        return classOutputDir + java.io.File.pathSeparator + classpath;
+    }
+
+    private static List<Path> qinBackendModuleCacheInputs(Path root, Path backendSource) throws IOException {
+        List<Path> inputs = new ArrayList<>();
+        addBackendModuleCacheInput(inputs, root.resolve("qin.config.js"));
+        addBackendModuleCacheInput(inputs, backendSource);
+        collectBackendModuleCacheDir(inputs, root.resolve("src/main"));
+        collectBackendModuleCacheDir(inputs, root.resolve("src/shared"));
+        collectBackendModuleCacheDir(inputs, root.resolve("main"));
+        collectBackendModuleCacheDir(inputs, root.resolve("shared"));
+        return inputs.stream()
+                .map(path -> path.toAbsolutePath().normalize())
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    private static void collectBackendModuleCacheDir(List<Path> inputs, Path dir) throws IOException {
+        if (!Files.isDirectory(dir)) {
+            return;
+        }
+        try (var stream = Files.walk(dir)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(QinFullstackMain::isBackendModuleCacheInputFile)
+                    .forEach(path -> addBackendModuleCacheInput(inputs, path));
+        }
+    }
+
+    private static void addBackendModuleCacheInput(List<Path> inputs, Path path) {
+        if (path != null && Files.isRegularFile(path) && isBackendModuleCacheInputFile(path)) {
+            inputs.add(path.toAbsolutePath().normalize());
+        }
+    }
+
+    private static boolean isBackendModuleCacheInputFile(Path path) {
+        String name = path == null || path.getFileName() == null
+                ? ""
+                : path.getFileName().toString().toLowerCase();
+        return name.equals("qin.config.js")
+                || name.endsWith(".qin")
+                || name.endsWith(".java")
+                || name.endsWith(".js")
+                || name.endsWith(".mjs")
+                || name.endsWith(".ts");
     }
 
     private static Path prepareUnifiedAppBackendSource(Path root, Path backendSource) throws IOException {
@@ -606,6 +756,23 @@ public final class QinFullstackMain {
 
     private static void updateDigest(MessageDigest digest, String value) {
         digest.update(value.getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+    }
+
+    private static void updateClassResourceDigest(MessageDigest digest, Class<?> type) throws IOException {
+        updateDigest(digest, "class:" + type.getName());
+        String resourceName = "/" + type.getName().replace('.', '/') + ".class";
+        try (InputStream input = type.getResourceAsStream(resourceName)) {
+            if (input == null) {
+                updateDigest(digest, "missing");
+            } else {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+        }
         digest.update((byte) 0);
     }
 
