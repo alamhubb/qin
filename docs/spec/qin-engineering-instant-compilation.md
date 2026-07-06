@@ -538,15 +538,23 @@ The target behavior is:
 - grammar authors should express syntax normally, adding explicit predicates
   only for real language ambiguity that the framework cannot infer safely.
 
-The first implementation step may keep the grammar surface unchanged, including
+The first implementation steps may keep the grammar surface unchanged, including
 calls such as `Alternative.of(() -> ImportDeclaration())`. Subhuti may execute
 those lambdas in a recording mode where rule wrappers do not build CST/cache
-entries and token consumption records the first token then stops. This is only
-valid as a framework prediction pass when the recorded information is complete
-for the whole `Or(...)`. If any alternative needs contextual lookahead, nested
-`Or(...)`, side effects, or otherwise has an unknown first token, that `Or(...)`
-must not be partially pruned. Unknown means "do not optimize this choice yet",
-not "try a second parser path" and not "accept a fallback syntax".
+entries and token consumption records prediction tokens. The safe progression is
+FIRST(1) first, then conservative LL(2) only for alternatives whose first token
+is duplicated and whose recording data is complete for the whole `Or(...)`.
+If any alternative needs contextual lookahead, nested `Or(...)`, side effects,
+or otherwise has an unknown prediction, that `Or(...)` must not be partially
+pruned. Unknown means "do not optimize this choice yet", not "try a second parser
+path" and not "accept a fallback syntax".
+
+Chevrotain-level LL(k) should be treated as the next architecture step, not as
+"run every alternative on real parser state". Full LL(k) requires a grammar/GAST
+recording model that records terminals, nonterminals, repetitions, options,
+predicates/gates, and action boundaries separately from semantic actions. Until
+that exists, deeper lookahead must stay conservative and covered by focused
+smokes that prove both skipped alternatives and unchanged parse results.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
