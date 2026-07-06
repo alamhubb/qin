@@ -4,6 +4,10 @@
 
 Qin LSP is a Volar language server surface for `.qin` files.
 
+Keep durable LSP rules normalized. Put the complete wording in one canonical
+section and use short pointers elsewhere instead of copying the same rule across
+multiple docs or skills.
+
 - `packages/qin-language/qin-language-server/src/index.ts` starts the Volar server and wires TypeScript language service plugins.
 - `packages/qin-language/qin-language-server/src/QinLanguagePlugin.ts` owns Qin virtual code and source mappings.
 - `packages/qin-language/qin-language-server/src/QinGeneratedParserProbe.ts` loads the Java Qin parser compiled to TypeScript from `@qin/generated-qin-parser-ts`.

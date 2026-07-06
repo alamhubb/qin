@@ -206,22 +206,11 @@ When generated Slime/Qin/OVS behavior differs from expectations, compare against
 
 Do not implement a second parser or AST extraction path that activates when the generated result is empty. The standard path is the active generated Java/TypeScript parser, CST-to-AST bridge, OVS compiler, normalizer, and emitter. If that path loses object properties or emits malformed ESM, repair that path and prove it with a focused smoke.
 
-## OVS Canonical Props Syntax
+## OVS Syntax Pointer
 
-OVS is a JS/TS syntax extension, but `tag(...) { ... }` does not make JS object
-props the canonical surface. The canonical OVS argument body is a
-class-member-style props syntax:
-
-```ts
-div(class = "a"; style = "color:red"; onClick() { console.log(123) }) {
-  div { 123 }
-}
-```
-
-The parser/compiler acceptance target must include semicolon-separated OVS props
-entries such as `name = expression`, boolean shorthand like `disabled`, and
-method-like handler bodies like `onClick() { save() }`. Commas are not valid
-OVS prop separators. JS object props such as
-`div({ class: "a" }) { ... }` are wrong OVS source syntax, not a second accepted
-form. They must not be used to hide a broken OVS parser, CST-to-AST bridge,
-lowerer, emitter, or runtime path.
+OVS grammar details belong in the owning OVS parser document:
+`D:\project\qkyproject\qinall\ovsjs\ovs\ovs-compiler\docs\OvsParser需求文档.md`.
+This JVM subset document should not duplicate the full OVS grammar. The only
+cross-boundary reminder is that Qin/OVS parser, CST-to-AST, lowerer, emitter,
+and runtime fixes must validate against that canonical grammar instead of
+introducing alternate accepted forms.
