@@ -32,7 +32,7 @@ This means:
   capabilities, but those do not broaden Qin core semantics
 - MVP shared Qin code should be `.qin` only and must stay inside the
   JS/JVM portable subset
-- simple pure ESM npm packages are preferred compatibility targets only when
+- simple pure ESM npm packages are candidate supported inputs only when
   their syntax and runtime shape fit the relevant target zone
 
 ### Node/browser package boundary
@@ -221,6 +221,6 @@ div(class = "a", style = "color:red", onClick() { console.log(123) }) {
 The parser/compiler acceptance target must include comma-separated OVS props
 entries such as `name = expression`, boolean shorthand like `disabled`, and
 method-like handler bodies like `onClick() { save() }`. JS object props such as
-`div({ class: "a" }) { ... }` may exist for compatibility or interop, but they
-are not the Qin/OVS default and must not be used to hide a broken OVS parser,
-CST-to-AST bridge, lowerer, emitter, or runtime path.
+`div({ class: "a" }) { ... }` are wrong OVS source syntax, not a second accepted
+form. They must not be used to hide a broken OVS parser, CST-to-AST bridge,
+lowerer, emitter, or runtime path.

@@ -15,6 +15,7 @@ IDEA integration should use a hybrid architecture instead of trying to make LSP 
 
 - LSP/Volar remains the TypeScript-compatible completion, hover, formatting, and diagnostics surface.
 - IDEA Lexer/ParserDefinition/PSI provide native file structure, syntax highlighting, references, and future refactoring support.
+- Do not add compatibility behavior, fallback completion, alternate parser paths, or "also accepted" syntax by default. Qin LSP and IDEA integration should expose one correct language/editor contract and clear errors outside it. Add compatibility only when an external editor/platform boundary makes it unavoidable; first report the reason and ask the user to confirm before implementing or documenting the exception.
 - Java interop navigation resolves through IDEA Java PSI. A Qin expression like `Greeter.greet` imported from `java:demo` should resolve to `demo.Greeter` and its real `PsiMethod` through `JavaPsiFacade`, not to a generated `.d.ts` declaration.
 - IDEA descriptor smoke must verify `com.intellij.modules.java` is declared whenever Qin Java interop uses `JavaPsiFacade`; Java PSI navigation should fail packaging checks if the Java platform dependency is removed.
 - Java interop import tables and member qualifiers in IDEA should be derived from Qin PSI/parser adapter tokens, not regex scanning or raw source character walks. Until full Qin AST-backed PSI is available, a shared token-stream adapter is the acceptable transitional boundary.
