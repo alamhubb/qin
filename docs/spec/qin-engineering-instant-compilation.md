@@ -222,6 +222,15 @@ must have `.qin-package-sync.json`; missing stamps are cache-system defects to
 repair in materialization or shim generation, not a reason to silently fall
 back to full tree hashing in the hot path.
 
+OVS/CSSTS toolchain fingerprints should use the same snapshot principle in a
+long-lived compiler process. The first fingerprint for a tool package computes
+the real content digest; later fingerprints for the same unchanged directory
+may reuse that digest when the sorted file metadata snapshot still matches.
+Source, generated parser, package, config, or override changes must invalidate
+the snapshot and recompute the digest. This is an incremental compiler cache,
+not a fallback path, and focused smokes must prove both cache hit and
+invalidation behavior.
+
 ### Fast Path Is Not Fallback
 
 A fast path is correct only when it preserves the owning semantic model. For

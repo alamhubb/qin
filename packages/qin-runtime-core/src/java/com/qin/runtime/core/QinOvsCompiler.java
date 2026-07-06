@@ -12,12 +12,14 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +48,14 @@ public final class QinOvsCompiler {
             return size() > MAX_CACHE_ENTRIES;
         }
     };
+    private final Map<Path, DirectoryDigestCacheEntry> directoryDigestCache = new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Path, DirectoryDigestCacheEntry> eldest) {
+            return size() > MAX_CACHE_ENTRIES;
+        }
+    };
+    private int directoryDigestCacheHits;
+    private int directoryDigestContentHashes;
 
     public QinOvsCompileResult compile(Path projectRoot, String source) throws Exception {
         return compile(projectRoot, null, source);
@@ -718,7 +728,26 @@ public final class QinOvsCompiler {
     }
 
     private void updateDirectoryDigest(MessageDigest digest, Path root) throws Exception {
-        List<Path> files = new ArrayList<>();
+        digest.update(directoryDigest(root).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private synchronized String directoryDigest(Path root) throws Exception {
+        root = root.toAbsolutePath().normalize();
+        DirectorySnapshot snapshot = directorySnapshot(root);
+        DirectoryDigestCacheEntry cached = directoryDigestCache.get(root);
+        if (cached != null && cached.snapshot().equals(snapshot)) {
+            directoryDigestCacheHits++;
+            return cached.digest();
+        }
+
+        String digest = hashDirectoryContent(root, snapshot);
+        directoryDigestContentHashes++;
+        directoryDigestCache.put(root, new DirectoryDigestCacheEntry(snapshot, digest));
+        return digest;
+    }
+
+    private DirectorySnapshot directorySnapshot(Path root) throws Exception {
+        List<DirectoryFileSnapshot> files = new ArrayList<>();
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
@@ -732,18 +761,27 @@ public final class QinOvsCompiler {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 if (attrs.isRegularFile() && !isIgnoredToolchainPath(root, file)) {
-                    files.add(file.toAbsolutePath().normalize());
+                    Path normalized = file.toAbsolutePath().normalize();
+                    files.add(new DirectoryFileSnapshot(
+                            root.relativize(normalized).toString().replace('\\', '/'),
+                            attrs.size(),
+                            attrs.lastModifiedTime().to(TimeUnit.NANOSECONDS),
+                            Objects.toString(attrs.fileKey(), "")));
                 }
                 return FileVisitResult.CONTINUE;
             }
         });
-        files.sort(Path::compareTo);
+        files.sort(Comparator.comparing(DirectoryFileSnapshot::relativePath));
+        return new DirectorySnapshot(files);
+    }
+
+    private String hashDirectoryContent(Path root, DirectorySnapshot snapshot) throws Exception {
+        MessageDigest digest = newSha256Digest();
         byte[] buffer = new byte[8192];
-        for (Path file : files) {
-            Path relative = root.relativize(file.toAbsolutePath().normalize());
-            digest.update(relative.toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));
+        for (DirectoryFileSnapshot file : snapshot.files()) {
+            digest.update(file.relativePath().getBytes(StandardCharsets.UTF_8));
             digest.update((byte) 0);
-            try (var input = Files.newInputStream(file)) {
+            try (var input = Files.newInputStream(root.resolve(file.relativePath()).normalize())) {
                 int read;
                 while ((read = input.read(buffer)) >= 0) {
                     digest.update(buffer, 0, read);
@@ -751,6 +789,7 @@ public final class QinOvsCompiler {
             }
             digest.update((byte) 0);
         }
+        return HexFormat.of().formatHex(digest.digest());
     }
 
     private boolean isIgnoredToolchainPath(Path root, Path path) {
@@ -792,5 +831,14 @@ public final class QinOvsCompiler {
             Objects.requireNonNull(source, "source cannot be null");
             Objects.requireNonNull(toolchainFingerprint, "toolchainFingerprint cannot be null");
         }
+    }
+
+    private record DirectoryDigestCacheEntry(DirectorySnapshot snapshot, String digest) {
+    }
+
+    private record DirectorySnapshot(List<DirectoryFileSnapshot> files) {
+    }
+
+    private record DirectoryFileSnapshot(String relativePath, long size, long modifiedNanos, String fileKey) {
     }
 }
