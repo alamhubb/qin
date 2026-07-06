@@ -328,6 +328,12 @@ to the normal dependency resolver and refresh the cache. Local source freshness
 is still checked by the standard local dependency compilation guard; the cached
 project list is an index, not a stale-output permission.
 
+CLI startup/cache changes must keep focused regression coverage before moving
+to full apps. Use `QinCliLocalDependencyCacheSmokeTestMain` for local
+dependency metadata cache hit/invalidation, and
+`QinCliFullstackInProcessProfileSmokeTestMain` for the in-process fullstack
+`dev --build-only --profile` path.
+
 Dev-server startup should not synchronously compile every OVS module before the
 HTTP listener is available. Like Vite, Qin should start the server after the
 minimal backend/frontend graph is ready, then transform OVS modules on demand
