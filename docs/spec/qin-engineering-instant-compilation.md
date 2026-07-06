@@ -328,6 +328,13 @@ to the normal dependency resolver and refresh the cache. Local source freshness
 is still checked by the standard local dependency compilation guard; the cached
 project list is an index, not a stale-output permission.
 
+The unchanged classpath cache hit path should read and validate
+`.qin/classpath.json` once per CLI invocation. Re-reading the same JSON to
+separately validate classpath files, parse local project metadata, and fetch the
+cached classpath is startup overhead, not a correctness requirement. Cache
+freshness still depends on `qin.config.js`, cached local project configs,
+classpath entry existence, and the local dependency readiness guard.
+
 CLI startup/cache changes must keep focused regression coverage before moving
 to full apps. Use `QinCliLocalDependencyCacheSmokeTestMain` for local
 dependency metadata cache hit/invalidation, and

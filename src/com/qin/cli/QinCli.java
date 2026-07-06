@@ -164,6 +164,8 @@ public class QinCli {
 
     private record CliInvocation(String command, String[] args, Path root) {}
 
+    private record ClasspathCacheSnapshot(String classpath, String json) {}
+
     private static boolean isCliProfileEnabled(String[] args) {
         return Boolean.getBoolean("qin.profile")
                 || "1".equals(System.getenv("QIN_PROFILE"))
@@ -2667,26 +2669,24 @@ public class QinCli {
     private static String ensureDependenciesSynced(QinConfig config) throws Exception {
         String cwd = QinConstants.getCwd();
         ensureNpmDependenciesInstalled(config);
+        Path cacheFile = QinConstants.getProjectClasspathCache(cwd);
+        ClasspathCacheSnapshot cacheSnapshot = readFreshClasspathCache(cwd, cacheFile);
 
-        if (CacheValidator.isCacheValid(cwd)) {
-            String classpath = CacheValidator.getCachedClasspath(cwd);
-            Path cacheFile = QinConstants.getProjectClasspathCache(cwd);
-            if (classpath != null) {
-                LocalProjectResolverEnhanced.ResolutionResult cachedLocalResolution =
-                        readCachedLocalDependencyResolution(cacheFile);
-                if (cachedLocalResolution != null && cachedLocalProjectsFresh(cacheFile, cachedLocalResolution)) {
-                    ensureLocalDependenciesReady(cachedLocalResolution);
-                    System.out.println(
-                            blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
-                    return classpath;
-                }
+        if (cacheSnapshot != null) {
+            LocalProjectResolverEnhanced.ResolutionResult cachedLocalResolution =
+                    readCachedLocalDependencyResolution(cacheSnapshot.json());
+            if (cachedLocalResolution != null && cachedLocalProjectsFresh(cacheFile, cachedLocalResolution)) {
+                ensureLocalDependenciesReady(cachedLocalResolution);
+                System.out.println(
+                        blue("-> Using cached dependencies (" + QinConstants.CLASSPATH_CACHE_PATH + ")"));
+                return cacheSnapshot.classpath();
             }
         }
 
         LocalProjectResolverEnhanced.ResolutionResult localResolution = inspectLocalDependencies(config);
-        if (CacheValidator.isCacheValid(cwd)) {
-            String classpath = CacheValidator.getCachedClasspath(cwd);
-            if (classpath != null && cachedClasspathContainsLocalProjects(classpath, localResolution)) {
+        if (cacheSnapshot != null) {
+            String classpath = cacheSnapshot.classpath();
+            if (cachedClasspathContainsLocalProjects(classpath, localResolution)) {
                 ensureLocalDependenciesReady(localResolution);
                 writeClasspathCache(classpath, localResolution.localProjects);
                 System.out.println(
@@ -3247,12 +3247,34 @@ public class QinCli {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private static LocalProjectResolverEnhanced.ResolutionResult readCachedLocalDependencyResolution(Path cacheFile) {
+    private static ClasspathCacheSnapshot readFreshClasspathCache(String cwd, Path cacheFile) {
         try {
-            if (!Files.isRegularFile(cacheFile)) {
+            Path configFile = Paths.get(cwd, QinConstants.CONFIG_FILE);
+            if (!Files.isRegularFile(cacheFile) || !Files.isRegularFile(configFile)) {
+                return null;
+            }
+            if (Files.getLastModifiedTime(cacheFile).compareTo(Files.getLastModifiedTime(configFile)) <= 0) {
                 return null;
             }
             String json = Files.readString(cacheFile);
+            if (json.trim().isEmpty() || !json.contains("classpath")) {
+                return null;
+            }
+            String classpath = CacheValidator.parseClasspathFromJson(json);
+            if (classpath.isBlank() || !CacheValidator.validateClasspathFiles(classpath)) {
+                return null;
+            }
+            return new ClasspathCacheSnapshot(classpath, json);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static LocalProjectResolverEnhanced.ResolutionResult readCachedLocalDependencyResolution(String json) {
+        try {
+            if (json == null || json.isBlank()) {
+                return null;
+            }
             int start = json.indexOf("\"localProjects\"");
             if (start < 0) {
                 return null;
