@@ -572,6 +572,21 @@ common-prefix LL(2+) prediction can still be much faster when it avoids deeper
 failed branches. Treat skipped-alternative counters as necessary evidence, but
 not sufficient evidence, for parser speed work.
 
+Runtime pruning must therefore be cost-gated. A recorded `Or(...)` whose
+alternatives are fully analyzable but only differ by a single cheap FIRST(1)
+token should keep the grammar metadata for diagnostics, but should not enter
+the runtime pruning hot path. A recorded `Or(...)` with duplicated prefixes may
+expand conservatively to LL(k) up to the framework limit and enable pruning only
+when the recorded token sequences are complete and non-dynamic. The current
+Subhuti Java prototype uses the unchanged `Alternative.of(...)` surface, records
+lambda callsite identities as the prediction cache key instead of stack traces,
+keeps a hot in-process prediction plan for repeated Or calls, disables pruning
+for cheap FIRST(1)-only choices, and enables pruning for LL(2+)/LL(3+) common
+prefix choices. Focused measurements on 20,000-item probes showed the previous
+FIRST(1) regression shrinking from roughly 30-37% slower to a much smaller
+fixed overhead, while LL(2) and LL(3) common-prefix choices improved by about
+2.9x and reduced wall-clock time by about 66%.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
