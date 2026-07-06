@@ -157,6 +157,10 @@ Qin should use separate cache layers instead of one coarse cache:
   invocation;
 - frontend transform cache: stores OVS/Vue/CSSTS transform outputs keyed by
   source, config, module id, target zone, and toolchain version;
+- frontend semantic cache: stores validated ESM import/export semantic models
+  keyed by frontend graph module sources, resolved imports, entry identity,
+  semantic analyzer/parser/runtime validator class resources, Java version, and
+  project root;
 - Java source compile cache: skips repeated `javac` work only when the
   normalized Java source set, source content, classpath, compiler identity,
   output directory, and compile options match and the recorded class outputs
@@ -275,6 +279,11 @@ Incremental compilation should be graph-based:
 - changing `qin.config.js` should invalidate transforms that read that config;
 - changing generated parser artifacts should invalidate parser consumers;
 - changing backend runtime code should invalidate affected JVM class outputs.
+- unchanged frontend module graphs may skip expensive ESM semantic analysis
+  only when graph sources, resolved imports, parser/semantic validator class
+  resources, Java version, entry identity, and project root still match; any
+  module source or import graph change must invalidate and run the standard
+  semantic analyzer path.
 - unchanged fullstack Java helper/backend sources may skip `javac` only when
   their content-aware compile stamp and recorded class outputs still match;
   changed Java source content or classpath/options must invalidate the stamp.

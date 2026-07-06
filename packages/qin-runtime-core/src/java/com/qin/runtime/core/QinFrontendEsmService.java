@@ -9,21 +9,32 @@ import com.qin.lang.module.resolver.QinModuleGraph;
 import com.qin.lang.module.resolver.QinModuleGraphBuilder;
 import com.qin.lang.module.resolver.QinModuleSource;
 import com.qin.lang.module.resolver.QinResolvedImport;
+import com.qin.lang.sema.esm.QinEsmExportBinding;
+import com.qin.lang.sema.esm.QinEsmExportKind;
+import com.qin.lang.sema.esm.QinEsmImportBinding;
+import com.qin.lang.sema.esm.QinEsmImportKind;
 import com.qin.lang.sema.esm.QinEsmLinkValidator;
+import com.qin.lang.sema.esm.QinEsmModuleSemantic;
 import com.qin.lang.sema.esm.QinEsmRuntimeFeatureValidator;
 import com.qin.lang.sema.esm.QinEsmSemanticAnalyzer;
 import com.qin.lang.sema.esm.QinEsmSemanticModel;
+import com.qin.parser.QinParserFacade;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,6 +66,7 @@ public final class QinFrontendEsmService {
     private static final String CSSTS_ATOM_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/csstsAtom.js";
     private static final String CSSTS_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts-runtime.js";
     private static final String QIN_FRONTEND_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/qin.js";
+    private static final String FRONTEND_SEMANTIC_CACHE_VERSION = "qin-frontend-semantic-cache-v1";
     private static final Set<String> HOT_REFRESH_EXTENSIONS = Set.of(
             ".ovs", ".vue", ".cssts", ".css",
             ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif");
@@ -101,6 +113,7 @@ public final class QinFrontendEsmService {
     }
 
     public static QinFrontendEsmService create(Path projectRoot, Path frontendEntry) throws Exception {
+        QinPhaseTimer profile = QinPhaseTimer.start("frontend-service-create");
         Path root = projectRoot.toAbsolutePath().normalize();
         Path entry = frontendEntry.toAbsolutePath().normalize();
 
@@ -108,7 +121,9 @@ public final class QinFrontendEsmService {
                 (importer, descriptor, resolvedModule, resolvedSource) ->
                         virtualFrontendServerControllerSource(root, importer, resolvedModule, resolvedSource))
                 .build(entry);
+        profile.checkpoint("build module graph", "modules=" + graph.modules().size());
         validatePolicyAndSemantics(root, graph);
+        profile.checkpoint("validate policy and semantics");
 
         Map<Path, QinModuleSource> sourceMap = new LinkedHashMap<>();
         Map<Path, String> urlMap = new LinkedHashMap<>();
@@ -126,6 +141,7 @@ public final class QinFrontendEsmService {
                 }
             }
         }
+        profile.checkpoint("map modules", "frontendModules=" + urlMap.size());
 
         String entryUrl = urlMap.get(entry);
         if (entryUrl == null) {
@@ -134,6 +150,7 @@ public final class QinFrontendEsmService {
         QinVueSfcCompiler vueCompiler = QinViteVuePluginCompiler.isEnabled(root)
                 ? new QinViteVuePluginCompiler()
                 : new QinOfficialVueSfcCompiler();
+        profile.checkpoint("select vue compiler", vueCompiler.getClass().getSimpleName());
         QinFrontendEsmService service = new QinFrontendEsmService(
                 root,
                 entry,
@@ -147,6 +164,7 @@ public final class QinFrontendEsmService {
                 new QinOvsCompiler(),
                 new QinCsstsCompiler());
         service.prewarmCsstsGraphModules();
+        profile.done("entry=" + entry.getFileName());
         return service;
     }
 
@@ -2181,18 +2199,290 @@ public final class QinFrontendEsmService {
         }
     }
 
-    private static void validatePolicyAndSemantics(Path root, QinModuleGraph graph) {
+    private static void validatePolicyAndSemantics(Path root, QinModuleGraph graph) throws Exception {
+        QinPhaseTimer profile = QinPhaseTimer.start("frontend-service-validate");
         List<QinImportDescriptor> imports = new ArrayList<>();
         for (QinModuleSource module : graph.modules()) {
             for (QinResolvedImport resolvedImport : module.imports()) {
                 imports.add(resolvedImport.descriptor());
             }
         }
+        profile.checkpoint("collect imports", "imports=" + imports.size());
 
         new QinImportPolicyChecker().validate(root, imports);
+        profile.checkpoint("import policy");
         QinEsmRuntimeFeatureValidator.forBrowserFrontend().validate(graph);
-        QinEsmSemanticModel model = new QinEsmSemanticAnalyzer().analyze(graph);
+        profile.checkpoint("runtime feature scan");
+        QinEsmSemanticModel model = analyzeFrontendSemanticsWithCache(root, graph);
+        profile.checkpoint("semantic analyze", "modules=" + model.modules().size());
         new QinEsmLinkValidator().validate(model);
+        profile.done("link validate");
+    }
+
+    private static QinEsmSemanticModel analyzeFrontendSemanticsWithCache(Path root, QinModuleGraph graph) throws Exception {
+        String cacheKey = frontendSemanticCacheKey(root, graph);
+        QinEsmSemanticModel cached = tryReadFrontendSemanticCache(root, cacheKey);
+        if (cached != null) {
+            System.out.println("[QinFrontendEsmService] frontend semantic cache hit :: modules="
+                    + cached.modules().size());
+            return cached;
+        }
+        QinEsmSemanticModel model = new QinEsmSemanticAnalyzer().analyze(graph);
+        writeFrontendSemanticCache(root, cacheKey, model);
+        return model;
+    }
+
+    private static QinEsmSemanticModel tryReadFrontendSemanticCache(Path root, String cacheKey) throws IOException {
+        Path stampFile = frontendSemanticCacheStampFile(root, cacheKey);
+        if (!Files.isRegularFile(stampFile)) {
+            return null;
+        }
+        Properties stamp = new Properties();
+        try (var reader = Files.newBufferedReader(stampFile, StandardCharsets.UTF_8)) {
+            stamp.load(reader);
+        }
+        if (!FRONTEND_SEMANTIC_CACHE_VERSION.equals(stamp.getProperty("version"))
+                || !cacheKey.equals(stamp.getProperty("cacheKey"))) {
+            return null;
+        }
+        int moduleCount = parseInt(stamp.getProperty("moduleCount"), -1);
+        if (moduleCount < 0) {
+            return null;
+        }
+        Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
+        for (int moduleIndex = 0; moduleIndex < moduleCount; moduleIndex++) {
+            String prefix = "module." + moduleIndex + ".";
+            Path sourceFile = decodeCachePath(root, stamp.getProperty(prefix + "sourceFile"));
+            if (sourceFile == null) {
+                return null;
+            }
+            int importCount = parseInt(stamp.getProperty(prefix + "importCount"), -1);
+            int exportCount = parseInt(stamp.getProperty(prefix + "exportCount"), -1);
+            if (importCount < 0 || exportCount < 0) {
+                return null;
+            }
+            List<QinEsmImportBinding> imports = new ArrayList<>();
+            for (int importIndex = 0; importIndex < importCount; importIndex++) {
+                QinEsmImportBinding binding = readImportBinding(root, stamp, prefix + "import." + importIndex + ".");
+                if (binding == null) {
+                    return null;
+                }
+                imports.add(binding);
+            }
+            List<QinEsmExportBinding> exports = new ArrayList<>();
+            for (int exportIndex = 0; exportIndex < exportCount; exportIndex++) {
+                QinEsmExportBinding binding = readExportBinding(root, stamp, prefix + "export." + exportIndex + ".");
+                if (binding == null) {
+                    return null;
+                }
+                exports.add(binding);
+            }
+            modules.put(sourceFile, new QinEsmModuleSemantic(sourceFile, imports, exports));
+        }
+        Path entryFile = decodeCachePath(root, stamp.getProperty("entryFile"));
+        if (entryFile == null) {
+            return null;
+        }
+        return new QinEsmSemanticModel(entryFile, modules);
+    }
+
+    private static QinEsmImportBinding readImportBinding(Path root, Properties stamp, String prefix) {
+        Path sourceFile = decodeCachePath(root, stamp.getProperty(prefix + "sourceFile"));
+        String kind = stamp.getProperty(prefix + "kind");
+        if (sourceFile == null || kind == null) {
+            return null;
+        }
+        return new QinEsmImportBinding(
+                sourceFile,
+                stamp.getProperty(prefix + "moduleSpecifier", ""),
+                QinEsmImportKind.valueOf(kind),
+                stamp.getProperty(prefix + "importedName", ""),
+                stamp.getProperty(prefix + "localName", ""),
+                parseInt(stamp.getProperty(prefix + "line"), 1),
+                parseInt(stamp.getProperty(prefix + "column"), 1),
+                decodeCachePath(root, stamp.getProperty(prefix + "resolvedModule")));
+    }
+
+    private static QinEsmExportBinding readExportBinding(Path root, Properties stamp, String prefix) {
+        Path sourceFile = decodeCachePath(root, stamp.getProperty(prefix + "sourceFile"));
+        String kind = stamp.getProperty(prefix + "kind");
+        if (sourceFile == null || kind == null) {
+            return null;
+        }
+        return new QinEsmExportBinding(
+                sourceFile,
+                QinEsmExportKind.valueOf(kind),
+                stamp.getProperty(prefix + "exportName", ""),
+                stamp.getProperty(prefix + "localName", ""),
+                Boolean.parseBoolean(stamp.getProperty(prefix + "typeOnly", "false")),
+                emptyToNull(stamp.getProperty(prefix + "moduleSpecifier", "")),
+                decodeCachePath(root, stamp.getProperty(prefix + "resolvedModule")),
+                parseInt(stamp.getProperty(prefix + "line"), 1),
+                parseInt(stamp.getProperty(prefix + "column"), 1));
+    }
+
+    private static void writeFrontendSemanticCache(
+            Path root,
+            String cacheKey,
+            QinEsmSemanticModel model) throws IOException {
+        Properties stamp = new Properties();
+        stamp.setProperty("version", FRONTEND_SEMANTIC_CACHE_VERSION);
+        stamp.setProperty("cacheKey", cacheKey);
+        stamp.setProperty("entryFile", encodeCachePath(root, model.entryFile()));
+        List<Path> moduleFiles = model.modules().keySet().stream()
+                .sorted(Comparator.comparing(Path::toString))
+                .toList();
+        stamp.setProperty("moduleCount", Integer.toString(moduleFiles.size()));
+        for (int moduleIndex = 0; moduleIndex < moduleFiles.size(); moduleIndex++) {
+            QinEsmModuleSemantic module = model.modules().get(moduleFiles.get(moduleIndex));
+            String prefix = "module." + moduleIndex + ".";
+            stamp.setProperty(prefix + "sourceFile", encodeCachePath(root, module.sourceFile()));
+            stamp.setProperty(prefix + "importCount", Integer.toString(module.imports().size()));
+            stamp.setProperty(prefix + "exportCount", Integer.toString(module.exports().size()));
+            for (int importIndex = 0; importIndex < module.imports().size(); importIndex++) {
+                writeImportBinding(root, stamp, prefix + "import." + importIndex + ".", module.imports().get(importIndex));
+            }
+            for (int exportIndex = 0; exportIndex < module.exports().size(); exportIndex++) {
+                writeExportBinding(root, stamp, prefix + "export." + exportIndex + ".", module.exports().get(exportIndex));
+            }
+        }
+        Path stampFile = frontendSemanticCacheStampFile(root, cacheKey);
+        Files.createDirectories(stampFile.getParent());
+        try (var writer = Files.newBufferedWriter(stampFile, StandardCharsets.UTF_8)) {
+            stamp.store(writer, "Qin frontend semantic cache stamp");
+        }
+    }
+
+    private static void writeImportBinding(
+            Path root,
+            Properties stamp,
+            String prefix,
+            QinEsmImportBinding binding) {
+        stamp.setProperty(prefix + "sourceFile", encodeCachePath(root, binding.sourceFile()));
+        stamp.setProperty(prefix + "moduleSpecifier", binding.moduleSpecifier());
+        stamp.setProperty(prefix + "kind", binding.kind().name());
+        stamp.setProperty(prefix + "importedName", binding.importedName());
+        stamp.setProperty(prefix + "localName", binding.localName());
+        stamp.setProperty(prefix + "line", Integer.toString(binding.line()));
+        stamp.setProperty(prefix + "column", Integer.toString(binding.column()));
+        stamp.setProperty(prefix + "resolvedModule", encodeCachePath(root, binding.resolvedModule()));
+    }
+
+    private static void writeExportBinding(
+            Path root,
+            Properties stamp,
+            String prefix,
+            QinEsmExportBinding binding) {
+        stamp.setProperty(prefix + "sourceFile", encodeCachePath(root, binding.sourceFile()));
+        stamp.setProperty(prefix + "kind", binding.kind().name());
+        stamp.setProperty(prefix + "exportName", binding.exportName());
+        stamp.setProperty(prefix + "localName", binding.localName());
+        stamp.setProperty(prefix + "typeOnly", Boolean.toString(binding.typeOnly()));
+        stamp.setProperty(prefix + "moduleSpecifier", nullToEmpty(binding.moduleSpecifier()));
+        stamp.setProperty(prefix + "resolvedModule", encodeCachePath(root, binding.resolvedModule()));
+        stamp.setProperty(prefix + "line", Integer.toString(binding.line()));
+        stamp.setProperty(prefix + "column", Integer.toString(binding.column()));
+    }
+
+    private static String frontendSemanticCacheKey(Path root, QinModuleGraph graph) throws Exception {
+        Path normalizedRoot = root.toAbsolutePath().normalize();
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        updateDigest(digest, FRONTEND_SEMANTIC_CACHE_VERSION);
+        updateDigest(digest, System.getProperty("java.version", ""));
+        updateDigest(digest, normalizedRoot.toString());
+        updateDigest(digest, encodeCachePath(normalizedRoot, graph.entryFile()));
+        updateClassResourceDigest(digest, QinFrontendEsmService.class);
+        updateClassResourceDigest(digest, QinEsmSemanticAnalyzer.class);
+        updateClassResourceDigest(digest, QinEsmLinkValidator.class);
+        updateClassResourceDigest(digest, QinEsmRuntimeFeatureValidator.class);
+        updateClassResourceDigest(digest, QinParserFacade.class);
+        List<QinModuleSource> modules = graph.modules().stream()
+                .sorted(Comparator.comparing(module -> module.file().toString()))
+                .toList();
+        for (QinModuleSource module : modules) {
+            updateDigest(digest, encodeCachePath(normalizedRoot, module.file()));
+            String source = module.source() == null ? "" : module.source();
+            byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
+            updateDigest(digest, Integer.toString(bytes.length));
+            digest.update(bytes);
+            digest.update((byte) 0);
+            for (QinResolvedImport resolvedImport : module.imports()) {
+                QinImportDescriptor descriptor = resolvedImport.descriptor();
+                updateDigest(digest, descriptor.moduleSpecifier());
+                updateDigest(digest, descriptor.kind().name());
+                updateDigest(digest, Boolean.toString(descriptor.typeOnly()));
+                updateDigest(digest, encodeCachePath(normalizedRoot, resolvedImport.resolvedModule()));
+            }
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static Path frontendSemanticCacheStampFile(Path root, String cacheKey) {
+        String fileName = cacheKey.length() > 32 ? cacheKey.substring(0, 32) : cacheKey;
+        return root.resolve(".qin/frontend-semantic-cache").resolve(fileName + ".properties").normalize();
+    }
+
+    private static void updateDigest(MessageDigest digest, String value) {
+        digest.update((value == null ? "" : value).getBytes(StandardCharsets.UTF_8));
+        digest.update((byte) 0);
+    }
+
+    private static void updateClassResourceDigest(MessageDigest digest, Class<?> type) throws IOException {
+        updateDigest(digest, "class:" + type.getName());
+        String resourceName = "/" + type.getName().replace('.', '/') + ".class";
+        try (InputStream input = type.getResourceAsStream(resourceName)) {
+            if (input == null) {
+                updateDigest(digest, "missing");
+            } else {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+        }
+        digest.update((byte) 0);
+    }
+
+    private static String encodeCachePath(Path root, Path path) {
+        if (path == null) {
+            return "";
+        }
+        Path normalizedRoot = root.toAbsolutePath().normalize();
+        Path normalized = path.toAbsolutePath().normalize();
+        if (normalized.startsWith(normalizedRoot)) {
+            return "root:" + normalizedRoot.relativize(normalized).toString().replace('\\', '/');
+        }
+        return "abs:" + normalized;
+    }
+
+    private static Path decodeCachePath(Path root, String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        if (value.startsWith("root:")) {
+            return root.resolve(value.substring("root:".length())).toAbsolutePath().normalize();
+        }
+        if (value.startsWith("abs:")) {
+            return Path.of(value.substring("abs:".length())).toAbsolutePath().normalize();
+        }
+        return null;
+    }
+
+    private static int parseInt(String value, int fallback) {
+        try {
+            return Integer.parseInt(value);
+        } catch (RuntimeException ignored) {
+            return fallback;
+        }
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static String emptyToNull(String value) {
+        return value == null || value.isEmpty() ? null : value;
     }
 
     private static String toModuleUrl(Path root, Path file) {
