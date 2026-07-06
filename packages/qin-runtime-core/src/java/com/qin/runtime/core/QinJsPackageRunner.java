@@ -89,9 +89,9 @@ final class QinJsPackageRunner {
         Object monitor = NPM_HOST_LOCK_MONITORS.computeIfAbsent(wrapperDir, ignored -> new Object());
         synchronized (monitor) {
             try (NpmHostLock ignored = acquireNpmHostLock(wrapperDir)) {
-                materializeWorkspaceDependencies(root, wrapperDir, wrapperSource);
+                Set<String> activePackages = materializeWorkspaceDependencies(root, wrapperDir, wrapperSource);
                 logPhase("materialize workspace dependencies", startNanos, wrapperDir.resolve("node_modules").toString());
-                String dependencyFingerprint = moduleDependencyFingerprint(wrapperDir.resolve("node_modules"));
+                String dependencyFingerprint = moduleDependencyFingerprint(wrapperDir.resolve("node_modules"), activePackages);
 
                 String token = sanitizeToken(nameHint == null || nameHint.isBlank() ? "module" : nameHint);
                 String identity = shortSha256(token + "\n" + dependencyFingerprint + "\n" + wrapperSource);
@@ -119,16 +119,31 @@ final class QinJsPackageRunner {
     }
 
     String moduleDependencyFingerprint(Path nodeModules) throws IOException {
+        return moduleDependencyFingerprint(nodeModules, null);
+    }
+
+    String moduleDependencyFingerprint(Path nodeModules, Set<String> activePackages) throws IOException {
         if (!Files.isDirectory(nodeModules)) {
             return "";
         }
         MessageDigest digest = newSha256Digest();
         for (Path packageDir : installedPackageDirs(nodeModules)) {
             Path relative = nodeModules.relativize(packageDir.toAbsolutePath().normalize());
+            String packageName = relative.toString().replace('\\', '/');
+            if (activePackages != null && !activePackages.contains(packageName)) {
+                continue;
+            }
             digest.update(relative.toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));
             digest.update((byte) 0);
             updateDependencyFileDigest(digest, packageDir.resolve("package.json"), true);
-            updateDependencyFileDigest(digest, packageDir.resolve(".qin-package-sync.json"), true);
+            Path stamp = packageDir.resolve(".qin-package-sync.json");
+            if (!Files.isRegularFile(stamp)) {
+                if (activePackages != null) {
+                    throw new IOException("Qin runtime package is missing .qin-package-sync.json: " + packageDir);
+                }
+                ensureRuntimePackageStamp(packageDir);
+            }
+            updateDependencyFileDigest(digest, stamp, true);
             digest.update((byte) 0);
         }
         return HexFormat.of().formatHex(digest.digest());
@@ -234,7 +249,8 @@ final class QinJsPackageRunner {
         return new NpmHostLock(channel, lock);
     }
 
-    private void materializeWorkspaceDependencies(Path projectRoot, Path wrapperDir, String wrapperSource) throws IOException {
+    private Set<String> materializeWorkspaceDependencies(Path projectRoot, Path wrapperDir, String wrapperSource)
+            throws IOException {
         Set<String> bareSpecifiers = extractBareModuleSpecifiers(wrapperSource);
         collectLocalImportBareModuleSpecifiers(
                 projectRoot.toAbsolutePath().normalize(),
@@ -244,12 +260,12 @@ final class QinJsPackageRunner {
                 new LinkedHashSet<>(),
                 0);
         if (bareSpecifiers.isEmpty()) {
-            return;
+            return Set.of();
         }
 
         Path workspaceRoot = locateWorkspaceRoot();
         if (workspaceRoot == null) {
-            return;
+            return Set.of();
         }
 
         Map<String, Path> packageOverrides = readProjectPackageOverrides(projectRoot);
@@ -271,7 +287,17 @@ final class QinJsPackageRunner {
                     materialized);
         }
         materializeQinViteShimIfNeeded(bareSpecifiers, runtimeNodeModules);
+        if (bareSpecifiers.contains("vite") || bareSpecifiers.contains("@vitejs/plugin-vue")) {
+            materialized.add("vite");
+        }
+        if (bareSpecifiers.contains("@vue/compiler-sfc") || bareSpecifiers.contains("@vitejs/plugin-vue")) {
+            materialized.add("@vue/compiler-sfc");
+        }
+        if (bareSpecifiers.contains("@vitejs/plugin-vue")) {
+            materialized.add("vue");
+        }
         pruneStaleQinMaterializedPackages(runtimeNodeModules, materialized);
+        return Set.copyOf(materialized);
     }
 
     private Map<String, Path> readProjectPackageOverrides(Path projectRoot) throws IOException {
@@ -370,8 +396,23 @@ final class QinJsPackageRunner {
         if (sourcePackageDir == null || !Files.isDirectory(sourcePackageDir)) {
             if (versionRange != null && !versionRange.isBlank()) {
                 npmDependencyMaterializer.materializePackageDependency(packageName, versionRange, runtimeNodeModules);
-                patchQinJvmHostPackage(packageName, runtimeNodeModules.resolve(
-                        packageName.replace('/', java.io.File.separatorChar)).normalize());
+                Path installedPackageDir = runtimeNodeModules.resolve(
+                        packageName.replace('/', java.io.File.separatorChar)).normalize();
+                patchQinJvmHostPackage(packageName, installedPackageDir);
+                ensureRuntimePackageStamp(installedPackageDir);
+                for (Map.Entry<String, String> dependency : readDependencyVersions(
+                        installedPackageDir.resolve("package.json")).entrySet()) {
+                    materializeDependency(
+                            dependency.getKey(),
+                            dependency.getValue(),
+                            installedPackageDir,
+                            projectRoot,
+                            runtimeNodeModules,
+                            workspaceRoot,
+                            workspacePackages,
+                            packageOverrides,
+                            materialized);
+                }
             }
             return;
         }
@@ -389,10 +430,12 @@ final class QinJsPackageRunner {
             }
         }
         patchQinJvmHostPackage(packageName, targetPackageDir);
+        ensureRuntimePackageStamp(targetPackageDir);
 
         if ((workspacePackage || overridePackage || filePackage)
                 && shouldRewriteWorkspacePackageManifest(packageName, sourcePackageDir, overridePackage)) {
             rewriteWorkspacePackageManifest(targetPackageDir, sourcePackageDir, packageName);
+            writeRuntimePackageStamp(targetPackageDir);
         }
 
         for (Map.Entry<String, String> dependency : readDependencyVersions(sourcePackageDir.resolve("package.json")).entrySet()) {
@@ -1394,6 +1437,7 @@ final class QinJsPackageRunner {
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(shimDir.resolve("index.js"), qinViteShimSource(), StandardCharsets.UTF_8);
+        writeRuntimePackageStamp(shimDir);
     }
 
     private String qinViteShimSource() {
@@ -1487,6 +1531,7 @@ final class QinJsPackageRunner {
                 export const log = Glog.log;
                 export default Glog;
                 """, StandardCharsets.UTF_8);
+        writeRuntimePackageStamp(shimDir);
     }
 
     private void materializeQinSubhutiShim(Path runtimeNodeModules) throws IOException {
@@ -1608,6 +1653,7 @@ final class QinJsPackageRunner {
                   return __qin_wrap_subhuti_rule(targetOrMethod, ruleName);
                 }
                 """, StandardCharsets.UTF_8);
+        writeRuntimePackageStamp(shimDir);
     }
 
     private void materializeQinSlimeGeneratorShim(Path runtimeNodeModules) throws IOException {
@@ -1780,9 +1826,19 @@ final class QinJsPackageRunner {
                   return "import " + parts.join(", ") + " from " + source + ";";
                 }
 
+                function tokenText(value, fallback = "") {
+                  if (value == null) return fallback;
+                  if (typeof value === "string") return value;
+                  const rawValue = field(value, "value");
+                  if (rawValue != null) return tokenText(rawValue, fallback);
+                  const rawName = field(value, "name");
+                  if (rawName != null) return tokenText(rawName, fallback).toLowerCase();
+                  return String(value);
+                }
+
                 function generateVariableDeclaration(node, forHeader = false) {
-                  const kind = field(node, "kind") || "const";
-                  const code = String(kind) + " " + join(field(node, "declarations"), ", ");
+                  const kind = tokenText(field(node, "kind"), "const");
+                  const code = kind + " " + join(field(node, "declarations"), ", ");
                   return forHeader ? code : code + ";";
                 }
 
@@ -1870,6 +1926,8 @@ final class QinJsPackageRunner {
                       return generateNode(field(node, "left")) + " " + String(field(node, "operator") || "") + " " + generateNode(field(node, "right"));
                     case "UnaryExpression":
                       return String(field(node, "operator") || "") + generateNode(field(node, "argument"));
+                    case "ParenthesizedExpression":
+                      return "(" + generateNode(field(node, "expression")) + ")";
                     case "ConditionalExpression":
                       return generateNode(field(node, "test")) + " ? " + generateNode(field(node, "consequent")) + " : " + generateNode(field(node, "alternate"));
                     case "TemplateLiteral": {
@@ -1995,8 +2053,58 @@ final class QinJsPackageRunner {
                   return SlimeGenerator.generator(ast, []).code;
                 }
 
+                export function __qin_smoke_generate_token_kind_export() {
+                  const ast = {
+                    type: "Program",
+                    body: [{
+                      type: "ExportNamedDeclaration",
+                      declaration: {
+                        type: "VariableDeclaration",
+                        kind: { type: "Const", value: "const" },
+                        declarations: [{
+                          type: "VariableDeclarator",
+                          id: { type: "Identifier", name: "SummaryGrid" },
+                          init: {
+                            type: "ArrowFunctionExpression",
+                            params: [],
+                            body: { type: "BlockStatement", body: [] }
+                          }
+                        }]
+                      },
+                      specifiers: [],
+                      source: null
+                    }]
+                  };
+                  return SlimeGenerator.generator(ast, []).code;
+                }
+
+                export function __qin_smoke_generate_parenthesized_conditional() {
+                  const ast = {
+                    type: "Program",
+                    body: [{
+                      type: "ExpressionStatement",
+                      expression: {
+                        type: "ConditionalExpression",
+                        test: { type: "Identifier", name: "ready" },
+                        consequent: {
+                          type: "ParenthesizedExpression",
+                          expression: {
+                            type: "ConditionalExpression",
+                            test: { type: "Identifier", name: "cached" },
+                            consequent: { type: "Literal", value: "cache" },
+                            alternate: { type: "Literal", value: "live" }
+                          }
+                        },
+                        alternate: { type: "Literal", value: "waiting" }
+                      }
+                    }]
+                  };
+                  return SlimeGenerator.generator(ast, []).code;
+                }
+
                 export default SlimeGenerator;
                 """, StandardCharsets.UTF_8);
+        writeRuntimePackageStamp(shimDir);
     }
 
     private void materializeQinVueCompilerSfcShim(Path runtimeNodeModules) throws IOException {
@@ -2016,6 +2124,7 @@ final class QinJsPackageRunner {
                 }
                 """, StandardCharsets.UTF_8);
         Files.writeString(shimDir.resolve("index.js"), qinVueCompilerSfcShimSource(), StandardCharsets.UTF_8);
+        writeRuntimePackageStamp(shimDir);
     }
 
     private String qinVueCompilerSfcShimSource() {
@@ -2068,6 +2177,7 @@ final class QinJsPackageRunner {
                   };
                 }
                 """, StandardCharsets.UTF_8);
+        writeRuntimePackageStamp(shimDir);
     }
 
     private void rewriteWorkspacePackageManifest(Path targetPackageDir, Path sourcePackageDir, String packageName)
@@ -2685,6 +2795,28 @@ final class QinJsPackageRunner {
                 StandardCharsets.UTF_8);
     }
 
+    private void ensureRuntimePackageStamp(Path packageDir) throws IOException {
+        if (!Files.isRegularFile(packageDir.resolve(".qin-package-sync.json"))) {
+            writeRuntimePackageStamp(packageDir);
+        }
+    }
+
+    private void writeRuntimePackageStamp(Path packageDir) throws IOException {
+        Files.writeString(
+                packageDir.resolve(".qin-package-sync.json"),
+                runtimePackageStamp(packageDir),
+                StandardCharsets.UTF_8);
+    }
+
+    private String runtimePackageStamp(Path packageDir) throws IOException {
+        PackageTreeFingerprint fingerprint = fingerprintPackageTree(packageDir, false, false);
+        return "{"
+                + "\"files\":" + fingerprint.files + ","
+                + "\"bytes\":" + fingerprint.bytes + ","
+                + "\"sha256\":\"" + fingerprint.sha256 + "\""
+                + "}";
+    }
+
     private String materializedPackageStamp(
             Path sourceDir,
             boolean workspacePackage,
@@ -2708,14 +2840,30 @@ final class QinJsPackageRunner {
         }
         Set<String> finalIgnoredDirs = ignoredDirs;
         PackageTreeFingerprint fingerprint = new PackageTreeFingerprint();
-        List<Path> files;
-        try (var paths = Files.walk(sourceDir)) {
-            files = paths
-                    .filter(Files::isRegularFile)
-                    .filter(path -> !isIgnoredPackageTreePath(sourceDir, path, finalIgnoredDirs))
-                    .sorted()
-                    .toList();
-        }
+        List<Path> files = new ArrayList<>();
+        Files.walkFileTree(sourceDir, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                Path relative = sourceDir.relativize(dir.toAbsolutePath().normalize());
+                if (!relative.toString().isEmpty()) {
+                    String name = dir.getFileName() == null ? "" : dir.getFileName().toString();
+                    if (finalIgnoredDirs.contains(name)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                if (".qin-package-sync.json".equals(file.getFileName() == null ? "" : file.getFileName().toString())) {
+                    return FileVisitResult.CONTINUE;
+                }
+                files.add(file.toAbsolutePath().normalize());
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        files.sort(Path::compareTo);
         MessageDigest digest = newSha256Digest();
         byte[] buffer = new byte[8192];
         for (Path file : files) {
@@ -2737,17 +2885,6 @@ final class QinJsPackageRunner {
         }
         fingerprint.sha256 = HexFormat.of().formatHex(digest.digest());
         return fingerprint;
-    }
-
-    private boolean isIgnoredPackageTreePath(Path sourceDir, Path path, Set<String> ignoredDirs) {
-        Path relative = sourceDir.relativize(path.toAbsolutePath().normalize());
-        for (Path part : relative) {
-            String name = part.toString();
-            if (ignoredDirs.contains(name)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private String escapeJson(String value) {

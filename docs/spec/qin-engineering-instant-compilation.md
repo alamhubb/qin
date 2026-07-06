@@ -17,16 +17,108 @@ The best current design is to combine proven ideas from modern toolchains:
   incidental temp paths, timestamps, or local machine layout.
 - Bazel/Gradle-style build cache: expensive compiler outputs should be reused
   locally first and later be eligible for remote reuse when inputs match.
+- Buck2/Bazel-style action graphs: compiler work should be represented as
+  explicit, target-partitioned actions whose inputs and outputs can be reasoned
+  about, cached, and invalidated independently.
 - Kotlin/Gradle-style incremental compilation: classpath and source changes
   should invalidate only affected work, not the entire graph.
+- Turborepo-style declared task boundaries: cacheable work must name the inputs
+  and outputs it actually owns, including logs where they are useful for
+  replaying or debugging a cached result.
 - Vite-style dev ergonomics: cold start should precompute heavy dependencies,
   and hot updates should touch only changed application modules.
 - esbuild-style persistent rebuild context: long-lived dev processes should
   keep parser/compiler/module graph state warm instead of rebuilding from
   scratch on every request.
+- Deno/Bun-style integrated tooling: dependency locking, local dependency
+  caching, transpilation, test, and run loops should feel cohesive to users,
+  while Qin still keeps stricter source portability and JVM `.class` rules.
 
 These are design influences, not permission to copy another tool's semantics.
 Qin must keep its own language and target-zone boundaries.
+
+## Design Maturity Assessment
+
+Qin's engineering direction is reasonable, modern, and ambitious if it is
+implemented as a compiler/build-system architecture rather than as a generic
+JavaScript dev-server wrapper. The strongest version of the design is:
+
+- compiler-first: parse, lower, type, transform, and emit through Qin-owned
+  layers before any runtime shortcut is considered;
+- target-aware: every cache and transform is partitioned by `app/`, `main/`,
+  `shared/`, frontend JS, backend JVM, and dual-target output constraints;
+- content-addressed: reusable work is keyed by stable content, config,
+  dependency, compiler-version, and target identity, not by incidental paths or
+  wall-clock state;
+- hot-stateful: long-running dev processes keep parser, dependency graph,
+  materialized package, and module-class state warm across edits;
+- observable: every cache hit, miss, invalidation, and conservative rebuild is
+  visible enough to debug without deleting caches;
+- strict: fast paths must preserve language semantics and may not become
+  fallback paths that hide parser, compiler, runtime, or resolver defects.
+
+This is the right modern direction for Qin because it combines the best ideas
+from hermetic build systems, incremental JVM compilers, and fast frontend dev
+servers while keeping Qin's own source and `.class` constraints. It should be
+treated as a high-standard product architecture, not a temporary performance
+patch.
+
+The design should be described as "frontier-quality for Qin" only when it is
+more than a copy of mainstream tools. Qin should borrow their proven mechanics
+but specialize them around Qin's language promise: ESM-style source, JVM
+`.class` output, JS output, and `.qin`-only shared source in the MVP. A design
+that is excellent for a generic JavaScript monorepo is not automatically
+excellent for Qin.
+
+The design is not "most advanced" merely because it is fast. It becomes
+advanced only when it gives developers all three properties at once:
+
+- correctness: stale output, wrong target reuse, and hidden fallback success are
+  considered bugs;
+- speed: unchanged parser/runtime/package/compiler work is reused aggressively;
+- simplicity: project authors do not manage cache directories, generated
+  packages, or rebuild knobs during normal development.
+
+## Qin-Specific Engineering Standard
+
+Qin should prefer a unified compiler service model:
+
+- frontend transforms, backend `.class` emission, OVS/CSSTS compilation, npm
+  materialization, generated parser execution, and shared-module compilation
+  should be coordinated by one Qin dev/build service;
+- external tools may be used as implementation references, but Qin must own the
+  target-zone decision, cache key, invalidation, and error surface;
+- app-level changes should be cheap, while toolchain-level changes should
+  invalidate only the packages and compiler outputs that actually depend on
+  them;
+- `shared/` reuse must be proven by portable Qin source rules, not by the fact
+  that a package or file happens to run in both Node and the browser.
+
+The ideal developer experience is:
+
+1. first run warms stable compiler and package caches;
+2. subsequent runs reuse generated parser, OVS, CSSTS, Vue, npm, and JVM module
+   outputs by stable fingerprint;
+3. editing one application file recompiles only the affected frontend/backend
+   module and any directly dependent output;
+4. broken cache invalidation is fixed in the owning cache/compiler layer instead
+   of being hidden by `clean`, timeout increases, broad rebuilds, or source
+   rewrites.
+
+## Decision Checklist
+
+Before accepting a new instant-compilation or cache behavior, verify:
+
+- Is the cache key based on declared Qin inputs and target identity?
+- Does the behavior preserve `app/`, `main/`, and `shared/` boundaries?
+- Can stale output be reproduced by a focused smoke test?
+- Does a source/config/dependency change invalidate the smallest correct unit?
+- Does a generated parser/package/runtime update invalidate its consumers?
+- Are cache hits and misses observable in logs?
+- Does the fast path preserve the same semantics as the slow path?
+- Would the system still work without manual cache deletion?
+
+If any answer is no, the design is not yet Qin-quality.
 
 ## Core Principles
 
@@ -69,6 +161,25 @@ Qin should use separate cache layers instead of one coarse cache:
 
 Each layer must have a focused smoke test for hit/miss behavior.
 
+### Active Dependency Fingerprints
+
+The Qin runtime npm host must fingerprint the active dependency closure for the
+current wrapper/module graph, not every directory that happens to remain under
+`.qin/runtime/npm-host/node_modules`.
+
+This follows the Vite module-graph lesson: dev-server work should be scoped to
+the modules that can affect the requested transform. Stale or inactive runtime
+packages must not be part of every request's cache key, because that turns one
+old large dependency into global latency.
+
+It also follows the Kotlin/Gradle classpath snapshot lesson: dependency cache
+identity should come from stable package metadata and content-aware stamps,
+similar to classpath/ABI snapshots, rather than scanning every implementation
+file on every compile request. A package that is active in the runtime host
+must have `.qin-package-sync.json`; missing stamps are cache-system defects to
+repair in materialization or shim generation, not a reason to silently fall
+back to full tree hashing in the hot path.
+
 ### Fast Path Is Not Fallback
 
 A fast path is correct only when it preserves the owning semantic model. For
@@ -110,6 +221,12 @@ The Qin dev server should be one orchestrator for frontend and backend work:
 
 The end-user expectation is "first run may warm caches; subsequent runs should
 be fast without manual cleanup."
+
+Dev-server startup should not synchronously compile every OVS module before the
+HTTP listener is available. Like Vite, Qin should start the server after the
+minimal backend/frontend graph is ready, then transform OVS modules on demand
+as the browser requests them. Optional warming is acceptable only when it does
+not block the listener and uses the same standard transform/cache path.
 
 ## Target Zones
 
@@ -173,3 +290,10 @@ For MVP, Qin should aim for:
 This is the engineering equivalent of Qin's language design rule: elegant
 source, explicit boundaries, predictable output, and fast feedback from a
 toolchain that understands its own model.
+## Parser And ESM Parity Rule
+
+Instant compilation caches are only correct when they preserve the active language semantics. Qin/OVS/CSSTS frontend transforms must emit valid ESM, and cache hits must not preserve malformed AST debug output, stale token objects, or dropped properties.
+
+When a parser/compiler cache hit exposes malformed ESM, reproduce the failing module boundary and compare the active generated parser/CST-to-AST/emitter path with the legacy handwritten TypeScript `slime-parser` for the same syntax. Use that comparison to repair the owning active layer and add a focused smoke for both fresh compile and cache-hit reuse.
+
+Do not make cache reuse, parser conversion, or emitter normalization depend on a fallback that reads the legacy handwritten TS `slime-parser` CST shape when the generated result is empty. That creates two semantic paths and can cache a masked defect. The only acceptable permanent fix is a single active generated/parser/compiler path that emits standard ESM for both fresh and cached transforms.

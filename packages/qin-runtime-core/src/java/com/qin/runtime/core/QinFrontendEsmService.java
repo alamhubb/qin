@@ -42,6 +42,10 @@ public final class QinFrontendEsmService {
             "@(?:Get|Post|Delete)Mapping\\s*\\([^)]*\\)\\s*(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\(");
     private static final Pattern QIN_APP_OBJECT_START_PATTERN = Pattern.compile(
             "(?s)@WebRoot\\s*\\([^)]*\\)\\s*export\\s+object\\s+App\\s*\\{");
+    private static final Pattern QIN_PACKAGE_OVERRIDES_BLOCK = Pattern.compile(
+            "packageOverrides\\s*:\\s*\\{([^}]*)\\}",
+            Pattern.DOTALL);
+    private static final Pattern QIN_STRING_FIELD = Pattern.compile("[\"']([^\"']+)[\"']\\s*:\\s*[\"']([^\"']*)[\"']");
     private static final Pattern CSSTS_MERGE_PATTERN = Pattern.compile("cssts\\.merge\\(([^)]*)\\)");
     private static final String CSSTS_STYLE_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts.css.js";
     private static final String CSSTS_ATOM_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/csstsAtom.js";
@@ -56,6 +60,7 @@ public final class QinFrontendEsmService {
     private final Map<String, Path> requestPathMap;
     private final Map<String, String> virtualModuleContentMap;
     private final Map<Path, String> transpiledModuleCache = new LinkedHashMap<>();
+    private final Map<Path, CachedOvsModule> ovsTranspiledModuleCache = new LinkedHashMap<>();
     private final String entryModuleUrl;
     private final QinVueSfcCompiler vueSfcCompiler;
     private final QinOvsCompiler ovsCompiler;
@@ -171,16 +176,8 @@ public final class QinFrontendEsmService {
         if (normalizedRequestPath == null || normalizedRequestPath.isBlank()) {
             return null;
         }
-        int queryIndex = normalizedRequestPath.indexOf('?');
-        String pathOnly = queryIndex < 0 ? normalizedRequestPath : normalizedRequestPath.substring(0, queryIndex);
-        if (!pathOnly.startsWith("/")) {
-            return null;
-        }
-        Path moduleFile = projectRoot.resolve(pathOnly.substring(1)).toAbsolutePath().normalize();
-        if (!moduleFile.startsWith(projectRoot) || !moduleSourceMap.containsKey(moduleFile)) {
-            return null;
-        }
-        if (!isBrowserScriptModuleFile(moduleFile)) {
+        Path moduleFile = resolvePublicRequestToModuleFile(normalizedRequestPath);
+        if (moduleFile == null) {
             return null;
         }
         String moduleUrl = moduleUrlMap.get(moduleFile);
@@ -188,6 +185,26 @@ public final class QinFrontendEsmService {
             return null;
         }
         return injectQinHmrPrelude(moduleUrl, moduleFile, transpileModule(moduleFile));
+    }
+
+    private Path resolvePublicRequestToModuleFile(String normalizedRequestPath) {
+        int queryIndex = normalizedRequestPath.indexOf('?');
+        String pathOnly = queryIndex < 0 ? normalizedRequestPath : normalizedRequestPath.substring(0, queryIndex);
+        if (!pathOnly.startsWith("/")) {
+            return null;
+        }
+        Path directModuleFile = projectRoot.resolve(pathOnly.substring(1)).toAbsolutePath().normalize();
+        if (directModuleFile.startsWith(projectRoot)
+                && moduleSourceMap.containsKey(directModuleFile)
+                && isBrowserScriptModuleFile(directModuleFile)) {
+            return directModuleFile;
+        }
+
+        Path mappedModuleFile = requestPathMap.get("/@qin-mod" + pathOnly);
+        if (mappedModuleFile != null && isBrowserScriptModuleFile(mappedModuleFile)) {
+            return mappedModuleFile;
+        }
+        return null;
     }
 
     private String injectQinHmrPrelude(String requestPath, Path moduleFile, String transpiled) {
@@ -232,16 +249,20 @@ public final class QinFrontendEsmService {
 
     private synchronized String transpileModule(Path moduleFile) throws IOException {
         Path normalizedModuleFile = moduleFile.toAbsolutePath().normalize();
-        String cached = transpiledModuleCache.get(normalizedModuleFile);
-        if (cached != null) {
-            return cached;
-        }
         QinModuleSource module = moduleSourceMap.get(moduleFile.toAbsolutePath().normalize());
         if (module == null) {
             throw new IllegalArgumentException("Unknown frontend module: " + moduleFile.toAbsolutePath());
         }
 
         String source = module.source();
+        boolean cacheable = !isOvsModuleFile(normalizedModuleFile);
+        if (cacheable) {
+            String cached = transpiledModuleCache.get(normalizedModuleFile);
+            if (cached != null) {
+                return cached;
+            }
+        }
+
         String transpiled;
         if (isServerControllerModule(moduleFile, readSource(moduleFile))) {
             transpiled = renderQinWebRpcControllerClient(readSource(moduleFile));
@@ -264,7 +285,9 @@ public final class QinFrontendEsmService {
             source = rewriteSpecifiers(module, source, IMPORT_SIDE_EFFECT_PATTERN);
             transpiled = source;
         }
-        transpiledModuleCache.put(normalizedModuleFile, transpiled);
+        if (cacheable) {
+            transpiledModuleCache.put(normalizedModuleFile, transpiled);
+        }
         return transpiled;
     }
 
@@ -380,7 +403,6 @@ public final class QinFrontendEsmService {
 
     private void prewarmCsstsGraphModules() throws IOException {
         boolean hasCsstsGraphModule = false;
-        List<Path> ovsModules = new ArrayList<>();
         for (QinModuleSource module : graph.modules()) {
             Path file = module.file().toAbsolutePath().normalize();
             if (!isFrontendModuleFile(file)) {
@@ -389,15 +411,11 @@ public final class QinFrontendEsmService {
             String source = module.source();
             if (isOvsModuleFile(file)) {
                 hasCsstsGraphModule = true;
-                ovsModules.add(file);
             } else if (isCsstsModuleFile(file)
                     || (isVueModuleFile(file) && requiresQinNativeVueCompiler(source))) {
                 hasCsstsGraphModule = true;
                 transpileModule(file);
             }
-        }
-        if (!ovsModules.isEmpty()) {
-            prewarmOvsModules(ovsModules);
         }
         if (hasCsstsGraphModule || !csstsCssByModule.isEmpty() || !csstsAtomByModule.isEmpty()) {
             refreshCsstsGlobalVirtualModules();
@@ -428,7 +446,18 @@ public final class QinFrontendEsmService {
             QinModuleSource sourceModule = module != null
                     ? module
                     : new QinModuleSource(normalizedFile, readSource(normalizedFile), List.of());
-            transpiledModuleCache.put(normalizedFile, finishOvsModule(normalizedFile, sourceModule, result));
+            String source = sources.getOrDefault(normalizedFile, sourceModule.source());
+            String transpiled = finishOvsModule(normalizedFile, sourceModule, result);
+            try {
+                ovsTranspiledModuleCache.put(
+                        normalizedFile,
+                        new CachedOvsModule(
+                                source == null ? "" : source,
+                                ovsCompiler.frontendCacheIdentity(projectRoot, normalizedFile, source),
+                                transpiled));
+            } catch (Exception error) {
+                throw new IOException("Failed to build OVS frontend cache identity for " + normalizedFile, error);
+            }
         }
     }
 
@@ -501,18 +530,40 @@ public final class QinFrontendEsmService {
     }
 
     private String transpileOvsModule(Path moduleFile, String source) {
-        QinModuleSource module = moduleSourceMap.get(moduleFile.toAbsolutePath().normalize());
+        Path normalizedModuleFile = moduleFile.toAbsolutePath().normalize();
+        String cacheSource = source == null ? "" : source;
+        String cacheIdentity;
+        try {
+            cacheIdentity = ovsCompiler.frontendCacheIdentity(projectRoot, normalizedModuleFile, cacheSource);
+        } catch (Exception error) {
+            throw new IllegalStateException("Failed to build OVS frontend cache identity for " + normalizedModuleFile, error);
+        }
+        CachedOvsModule cached = ovsTranspiledModuleCache.get(normalizedModuleFile);
+        if (cached != null
+                && cacheSource.equals(cached.source())
+                && cacheIdentity.equals(cached.cacheIdentity())) {
+            return cached.transpiled();
+        }
+
+        QinModuleSource module = moduleSourceMap.get(normalizedModuleFile);
         QinModuleSource sourceModule = module != null
                 ? module
-                : new QinModuleSource(moduleFile.toAbsolutePath().normalize(), source, List.of());
+                : new QinModuleSource(normalizedModuleFile, source, List.of());
         QinOvsCompiler.QinOvsCompileResult result;
         try {
-            result = ovsCompiler.compile(projectRoot, moduleFile, source);
+            result = ovsCompiler.compile(projectRoot, normalizedModuleFile, cacheSource);
         } catch (Exception error) {
             throw new IllegalStateException("Qin OVS compilation failed for " + moduleFile.toAbsolutePath(), error);
         }
 
-        return finishOvsModule(moduleFile, sourceModule, result);
+        String transpiled = finishOvsModule(normalizedModuleFile, sourceModule, result);
+        ovsTranspiledModuleCache.put(
+                normalizedModuleFile,
+                new CachedOvsModule(
+                        cacheSource,
+                        cacheIdentity,
+                        transpiled));
+        return transpiled;
     }
 
     private String finishOvsModule(
@@ -582,16 +633,48 @@ public final class QinFrontendEsmService {
     }
 
     private String mountCsstsModule(String source) {
-        return """
-                import * as cssts from "%s";
-                import { csstsAtom } from "%s";
-                import "%s";
-                %s
-                """.formatted(
-                CSSTS_RUNTIME_VIRTUAL_MODULE_URL,
-                CSSTS_ATOM_VIRTUAL_MODULE_URL,
-                CSSTS_STYLE_VIRTUAL_MODULE_URL,
-                source == null ? "" : source);
+        String body = source == null ? "" : source;
+        StringBuilder prelude = new StringBuilder();
+        if (!importsCsstsRuntimeBinding(body)) {
+            prelude.append("import { cssts } from \"")
+                    .append(CSSTS_RUNTIME_VIRTUAL_MODULE_URL)
+                    .append("\";\n");
+        }
+        if (!importsCsstsAtomBinding(body)) {
+            prelude.append("import { csstsAtom } from \"")
+                    .append(CSSTS_ATOM_VIRTUAL_MODULE_URL)
+                    .append("\";\n");
+        }
+        if (!importsCsstsStyleModule(body)) {
+            prelude.append("import \"")
+                    .append(CSSTS_STYLE_VIRTUAL_MODULE_URL)
+                    .append("\";\n");
+        }
+        return prelude.append(body).toString();
+    }
+
+    private boolean importsCsstsRuntimeBinding(String source) {
+        return Pattern.compile("(?m)^\\s*import\\s+(?:\\*\\s+as\\s+cssts|\\{[^}\\n]*\\bcssts\\b[^}\\n]*})\\s+from\\s*[\"']"
+                        + Pattern.quote(CSSTS_RUNTIME_VIRTUAL_MODULE_URL)
+                        + "[\"']")
+                .matcher(source == null ? "" : source)
+                .find();
+    }
+
+    private boolean importsCsstsAtomBinding(String source) {
+        return Pattern.compile("(?m)^\\s*import\\s+\\{[^}\\n]*\\bcsstsAtom\\b[^}\\n]*}\\s+from\\s*[\"']"
+                        + Pattern.quote(CSSTS_ATOM_VIRTUAL_MODULE_URL)
+                        + "[\"']")
+                .matcher(source == null ? "" : source)
+                .find();
+    }
+
+    private boolean importsCsstsStyleModule(String source) {
+        return Pattern.compile("(?m)^\\s*import\\s*[\"']"
+                        + Pattern.quote(CSSTS_STYLE_VIRTUAL_MODULE_URL)
+                        + "[\"']")
+                .matcher(source == null ? "" : source)
+                .find();
     }
 
     private String joinScriptBlocks(Object scriptBlock, Object scriptSetupBlock) {
@@ -991,12 +1074,8 @@ public final class QinFrontendEsmService {
         String atomRequestPath = base + "?qin-vue-cssts=atom";
         String runtimeRequestPath = base + "?qin-vue-cssts=runtime";
 
-        if (css != null && !css.isBlank()) {
-            virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(css));
-        }
-        if (atom != null && !atom.isBlank()) {
-            virtualModuleContentMap.put(atomRequestPath, atom);
-        }
+        virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(css == null ? "" : css));
+        virtualModuleContentMap.put(atomRequestPath, isBlank(atom) ? emptyCsstsAtomModule() : atom);
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
         registerCsstsGlobalVirtualModules(moduleFile, css, atom);
     }
@@ -1009,12 +1088,10 @@ public final class QinFrontendEsmService {
         String ovsRuntimeRequestPath = base + "?qin-ovs=runtime";
         String vueRuntimeRequestPath = "/@qin-mod/qin-vue-runtime.js?qin-vue=runtime";
 
-        if (result.css() != null && !result.css().isBlank()) {
-            virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(result.css()));
-        }
-        if (result.atomModule() != null && !result.atomModule().isBlank()) {
-            virtualModuleContentMap.put(atomRequestPath, result.atomModule());
-        }
+        virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(result.css() == null ? "" : result.css()));
+        virtualModuleContentMap.put(
+                atomRequestPath,
+                isBlank(result.atomModule()) ? emptyCsstsAtomModule() : result.atomModule());
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
         virtualModuleContentMap.put(ovsRuntimeRequestPath, readOvsRuntimeModule(vueRuntimeRequestPath));
         registerVueRuntimeVirtualModules(vueRuntimeRequestPath);
@@ -1026,12 +1103,10 @@ public final class QinFrontendEsmService {
         String cssRequestPath = base + "?qin-vue-cssts=style";
         String atomRequestPath = base + "?qin-vue-cssts=atom";
         String runtimeRequestPath = base + "?qin-vue-cssts=runtime";
-        if (result.css() != null && !result.css().isBlank()) {
-            virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(result.css()));
-        }
-        if (result.atomModule() != null && !result.atomModule().isBlank()) {
-            virtualModuleContentMap.put(atomRequestPath, result.atomModule());
-        }
+        virtualModuleContentMap.put(cssRequestPath, renderCssInjectionModule(result.css() == null ? "" : result.css()));
+        virtualModuleContentMap.put(
+                atomRequestPath,
+                isBlank(result.atomModule()) ? emptyCsstsAtomModule() : result.atomModule());
         virtualModuleContentMap.put(runtimeRequestPath, readCsstsRuntimeModule());
         registerCsstsGlobalVirtualModules(moduleFile, result.css(), result.atomModule());
     }
@@ -1569,26 +1644,10 @@ public final class QinFrontendEsmService {
     }
 
     private Path resolveOvsRuntimeModule() {
-        List<Path> candidates = List.of(
-                projectRoot.resolve(".qin").resolve("runtime").resolve("npm-host").resolve("node_modules"),
-                projectRoot.resolve("node_modules"));
-        for (Path nodeModules : candidates) {
-            Path runtimeModule = nodeModules
-                    .resolve("ovsjs")
-                    .resolve("dist")
-                    .resolve("index.mjs")
-                    .toAbsolutePath()
-                    .normalize();
-            if (Files.exists(runtimeModule) && Files.isRegularFile(runtimeModule)) {
-                return runtimeModule;
-            }
-        }
-        return candidates.get(candidates.size() - 1)
-                .resolve("ovsjs")
-                .resolve("dist")
-                .resolve("index.mjs")
-                .toAbsolutePath()
-                .normalize();
+        return resolvePackageRuntimeModule(
+                "ovsjs",
+                List.of("dist/index.mjs", "src/index.js", "src/index.ts"),
+                "dist/index.mjs");
     }
 
     private String readVueBrowserRuntimeModule() {
@@ -1745,27 +1804,110 @@ public final class QinFrontendEsmService {
     }
 
     private Path resolveCsstsRuntimeModule() {
-        List<Path> candidates = List.of(
-                projectRoot.resolve("node_modules"),
-                projectRoot.resolve(".qin").resolve("runtime").resolve("npm-host").resolve("node_modules"));
-        for (Path nodeModules : candidates) {
-            for (String entry : List.of("dist/index.mjs", "src/index.js", "src/index.ts")) {
-                Path runtimeModule = nodeModules
-                        .resolve("cssts-ts")
-                        .resolve(entry)
-                        .toAbsolutePath()
-                        .normalize();
+        return resolvePackageRuntimeModule(
+                "cssts-ts",
+                List.of("dist/index.mjs", "src/index.js", "src/index.ts"),
+                "src/index.ts");
+    }
+
+    private Path resolvePackageRuntimeModule(
+            String packageName,
+            List<String> entries,
+            String fallbackEntry) {
+        List<Path> packageDirs = runtimePackageCandidateDirs(packageName);
+        for (Path packageDir : packageDirs) {
+            for (String entry : entries) {
+                Path runtimeModule = packageDir.resolve(entry).toAbsolutePath().normalize();
                 if (Files.exists(runtimeModule) && Files.isRegularFile(runtimeModule)) {
                     return runtimeModule;
                 }
             }
         }
-        return candidates.get(candidates.size() - 1)
-                .resolve("cssts-ts")
-                .resolve("src")
-                .resolve("index.ts")
-                .toAbsolutePath()
-                .normalize();
+        Path fallbackPackageDir = packageDirs.isEmpty()
+                ? projectRoot.resolve(".qin").resolve("runtime").resolve("npm-host").resolve("node_modules")
+                        .resolve(packageName.replace('/', java.io.File.separatorChar))
+                : packageDirs.get(packageDirs.size() - 1);
+        return fallbackPackageDir.resolve(fallbackEntry).toAbsolutePath().normalize();
+    }
+
+    private List<Path> runtimePackageCandidateDirs(String packageName) {
+        List<Path> candidates = new ArrayList<>();
+        Path override = readProjectPackageOverrides().get(packageName);
+        addPackageDirCandidate(candidates, override);
+        addPackageDirCandidate(
+                candidates,
+                projectRoot.resolve(".qin").resolve("runtime").resolve("npm-host").resolve("node_modules")
+                        .resolve(packageName.replace('/', java.io.File.separatorChar)));
+        addPackageDirCandidate(
+                candidates,
+                projectRoot.resolve("node_modules")
+                        .resolve(packageName.replace('/', java.io.File.separatorChar)));
+
+        Path workspaceRoot = locateWorkspaceRoot();
+        if (workspaceRoot != null) {
+            if ("cssts-ts".equals(packageName)) {
+                addPackageDirCandidate(candidates, workspaceRoot.resolve("cssts").resolve("cssts").resolve("cssts-runtime"));
+            } else if ("ovsjs".equals(packageName)) {
+                addPackageDirCandidate(candidates, workspaceRoot.resolve("ovsjs").resolve("ovs").resolve("ovs-runtime"));
+            }
+            addPackageDirCandidate(
+                    candidates,
+                    workspaceRoot.resolve("node_modules")
+                            .resolve(packageName.replace('/', java.io.File.separatorChar)));
+        }
+        return candidates;
+    }
+
+    private void addPackageDirCandidate(List<Path> candidates, Path packageDir) {
+        if (packageDir == null) {
+            return;
+        }
+        Path normalized = packageDir.toAbsolutePath().normalize();
+        if (Files.isDirectory(normalized) && !candidates.contains(normalized)) {
+            candidates.add(normalized);
+        }
+    }
+
+    private Map<String, Path> readProjectPackageOverrides() {
+        Path configFile = projectRoot.resolve("qin.config.js");
+        if (!Files.isRegularFile(configFile)) {
+            return Map.of();
+        }
+        try {
+            String configSource = Files.readString(configFile, StandardCharsets.UTF_8);
+            Matcher blockMatcher = QIN_PACKAGE_OVERRIDES_BLOCK.matcher(configSource);
+            if (!blockMatcher.find()) {
+                return Map.of();
+            }
+            Map<String, Path> overrides = new LinkedHashMap<>();
+            Matcher fieldMatcher = QIN_STRING_FIELD.matcher(blockMatcher.group(1));
+            while (fieldMatcher.find()) {
+                String packageName = fieldMatcher.group(1);
+                String pathText = fieldMatcher.group(2);
+                if (packageName == null || packageName.isBlank() || pathText == null || pathText.isBlank()) {
+                    continue;
+                }
+                Path overridePath = projectRoot.resolve(pathText).toAbsolutePath().normalize();
+                if (Files.isDirectory(overridePath)) {
+                    overrides.put(packageName, overridePath);
+                }
+            }
+            return overrides;
+        } catch (IOException error) {
+            throw new IllegalStateException("Failed to read Qin package overrides: " + configFile, error);
+        }
+    }
+
+    private Path locateWorkspaceRoot() {
+        Path current = Path.of("").toAbsolutePath().normalize();
+        while (current != null) {
+            if (Files.isDirectory(current.resolve("qin"))
+                    && Files.isDirectory(current.resolve("slime"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return null;
     }
 
     private static String transpileTypescriptRuntimeModule(String source) {
@@ -1875,8 +2017,22 @@ public final class QinFrontendEsmService {
                 """.formatted(escaped);
     }
 
+    private static String emptyCsstsAtomModule() {
+        return """
+                export const csstsAtom = {}
+                export default csstsAtom
+                """;
+    }
+
+    private static boolean isBlank(String text) {
+        return text == null || text.isBlank();
+    }
+
     private String renderAssetUrlModule(Path moduleFile) {
         return "export default \"" + escapeJsStringLiteral(toPublicUrl(projectRoot, moduleFile)) + "\";\n";
+    }
+
+    private record CachedOvsModule(String source, String cacheIdentity, String transpiled) {
     }
 
     private static String escapeJsStringLiteral(String text) {

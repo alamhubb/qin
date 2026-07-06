@@ -5144,14 +5144,21 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
 
     private static final class AstJsonEncoder {
         private static final int MAX_DEPTH = 128;
+        private static final int MAX_OUTPUT_CHARS = 2_000_000;
+        private static final int MAX_COLLECTION_ITEMS = 10_000;
+        private static final int MAX_WRAPPED_LIST_ITEMS = 2_000;
+        private static final int MAX_TOKEN_SEARCH_SPAN = 512;
+        private static final int MAX_REFLECTIVE_FIELDS = 128;
         private static final Pattern REGEX_LITERAL_PATTERN = Pattern.compile("^/(.*)/([a-z]*)$");
 
         private final IdentityHashMap<Object, Boolean> seen = new IdentityHashMap<>();
         private final StringBuilder out = new StringBuilder();
         private final String sourceText;
+        private final int[] lineStartIndexes;
 
         private AstJsonEncoder(String sourceText) {
             this.sourceText = sourceText == null ? "" : sourceText;
+            this.lineStartIndexes = computeLineStartIndexes(this.sourceText);
         }
 
         private static String toJson(Object value, String sourceText) {
@@ -5164,6 +5171,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         }
 
         private void writeValue(Object value, int depth) {
+            if (out.length() > MAX_OUTPUT_CHARS) {
+                out.append("\"<max-output>\"");
+                return;
+            }
             if (depth > MAX_DEPTH) {
                 out.append("\"<max-depth>\"");
                 return;
@@ -5186,6 +5197,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             }
             if (value instanceof Class<?> c) {
                 writeString(c.getName());
+                return;
+            }
+            if (isRuntimeReflectionObject(value)) {
+                writeString("<" + value.getClass().getName() + ">");
                 return;
             }
             if (value instanceof Collection<?> collection) {
@@ -5214,12 +5229,21 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         private void writeCollection(Collection<?> collection, int depth) {
             out.append('[');
             boolean first = true;
+            int index = 0;
             for (Object item : collection) {
+                if (index >= MAX_COLLECTION_ITEMS) {
+                    if (!first) {
+                        out.append(',');
+                    }
+                    writeString("<truncated:" + (collection.size() - index) + ">");
+                    break;
+                }
                 if (!first) {
                     out.append(',');
                 }
                 first = false;
                 writeValue(item, depth);
+                index++;
             }
             out.append(']');
         }
@@ -5227,7 +5251,17 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         private void writeMap(Map<?, ?> map, int depth) {
             out.append('{');
             boolean first = true;
+            int index = 0;
             for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (index >= MAX_COLLECTION_ITEMS) {
+                    if (!first) {
+                        out.append(',');
+                    }
+                    writeString("<truncated>");
+                    out.append(':');
+                    writeValue(map.size() - index, depth);
+                    break;
+                }
                 if (!first) {
                     out.append(',');
                 }
@@ -5235,6 +5269,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 writeString(String.valueOf(entry.getKey()));
                 out.append(':');
                 writeValue(entry.getValue(), depth);
+                index++;
             }
             out.append('}');
         }
@@ -5293,6 +5328,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
 
             Set<String> visitedNames = new java.util.HashSet<>();
             Class<?> current = type;
+            int reflectiveFieldCount = 0;
             while (current != null && current != Object.class) {
                 java.lang.reflect.Field[] declared = current.getDeclaredFields();
                 for (java.lang.reflect.Field field : declared) {
@@ -5304,6 +5340,10 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                     if (!visitedNames.add(normalizedName)) {
                         continue;
                     }
+                    if (!(value instanceof com.slime.ast.AstNode) && reflectiveFieldCount >= MAX_REFLECTIVE_FIELDS) {
+                        putFieldIfVisible(fields, "<truncatedFields>", true);
+                        return fields;
+                    }
                     try {
                         field.setAccessible(true);
                         Object rawFieldValue = field.get(value);
@@ -5311,10 +5351,24 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                     } catch (Exception e) {
                         putFieldIfVisible(fields, normalizedName, "<error:" + e.getClass().getSimpleName() + ">");
                     }
+                    reflectiveFieldCount++;
                 }
                 current = current.getSuperclass();
             }
             return fields;
+        }
+
+        private boolean isRuntimeReflectionObject(Object value) {
+            String name = value.getClass().getName();
+            return name.startsWith("java.lang.reflect.")
+                    || name.startsWith("jdk.")
+                    || name.startsWith("sun.")
+                    || value instanceof ClassLoader
+                    || value instanceof Module
+                    || value instanceof Package
+                    || value instanceof Method
+                    || value instanceof java.lang.reflect.Field
+                    || value instanceof RecordComponent;
         }
 
         private void putFieldIfVisible(LinkedHashMap<String, Object> fields, String fieldName, Object value) {
@@ -6349,6 +6403,9 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             if (normalizedTo < normalizedFrom) {
                 return null;
             }
+            if (normalizedTo - normalizedFrom > MAX_TOKEN_SEARCH_SPAN) {
+                return null;
+            }
             int tokenIndex = preferLast
                     ? findLastTokenIndex(tokenValue, normalizedFrom, normalizedTo)
                     : findTokenIndex(tokenValue, normalizedFrom, normalizedTo);
@@ -6363,7 +6420,8 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
             if (items == null) {
                 return tokens;
             }
-            for (int index = 0; index + 1 < items.size(); index++) {
+            int limit = Math.min(items.size() - 1, MAX_WRAPPED_LIST_ITEMS);
+            for (int index = 0; index < limit; index++) {
                 Map<String, Object> commaToken = createCommaToken(items.get(index), items.get(index + 1));
                 if (commaToken != null) {
                     tokens.add(commaToken);
@@ -6730,7 +6788,8 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
 
         private List<Map<String, Object>> wrapListItems(List<?> list, String key) {
             List<Map<String, Object>> wrapped = new ArrayList<>();
-            for (int index = 0; index < list.size(); index++) {
+            int limit = Math.min(list.size(), MAX_WRAPPED_LIST_ITEMS);
+            for (int index = 0; index < limit; index++) {
                 Object item = list.get(index);
                 LinkedHashMap<String, Object> itemObject = new LinkedHashMap<>();
                 itemObject.put(key, item);
@@ -6742,12 +6801,18 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 }
                 wrapped.add(itemObject);
             }
+            if (list.size() > limit) {
+                LinkedHashMap<String, Object> truncated = new LinkedHashMap<>();
+                truncated.put(key, "<truncated:" + (list.size() - limit) + ">");
+                wrapped.add(truncated);
+            }
             return wrapped;
         }
 
         private List<Object> wrapArgumentListItems(List<?> list) {
             List<Object> wrapped = new ArrayList<>();
-            for (int index = 0; index < list.size(); index++) {
+            int limit = Math.min(list.size(), MAX_WRAPPED_LIST_ITEMS);
+            for (int index = 0; index < limit; index++) {
                 Object item = list.get(index);
                 if ("SpreadElement".equals(simpleName(item))) {
                     LinkedHashMap<String, Object> spread = new LinkedHashMap<>(extractSpreadElementFields(item));
@@ -6769,6 +6834,9 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                     }
                 }
                 wrapped.add(itemObject);
+            }
+            if (list.size() > limit) {
+                wrapped.add("<truncated:" + (list.size() - limit) + ">");
             }
             return wrapped;
         }
@@ -7059,26 +7127,40 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
                 return new PositionInfo(fallbackLine, fallbackColumn);
             }
             int safeIndex = Math.min(index, sourceText.length());
-            int line = 1;
-            int column = 1;
+            int lineIndex = Arrays.binarySearch(lineStartIndexes, safeIndex);
+            if (lineIndex < 0) {
+                lineIndex = -lineIndex - 2;
+            }
+            if (lineIndex < 0) {
+                lineIndex = 0;
+            }
+            return new PositionInfo(lineIndex + 1, safeIndex - lineStartIndexes[lineIndex] + 1);
+        }
+
+        private static int[] computeLineStartIndexes(String sourceText) {
+            if (sourceText == null || sourceText.isEmpty()) {
+                return new int[] { 0 };
+            }
+            ArrayList<Integer> starts = new ArrayList<>();
+            starts.add(0);
             int i = 0;
-            while (i < safeIndex) {
+            while (i < sourceText.length()) {
                 char ch = sourceText.charAt(i);
                 if (ch == '\r') {
-                    if (i + 1 < safeIndex && sourceText.charAt(i + 1) == '\n') {
+                    if (i + 1 < sourceText.length() && sourceText.charAt(i + 1) == '\n') {
                         i++;
                     }
-                    line++;
-                    column = 1;
+                    starts.add(i + 1);
                 } else if (ch == '\n' || ch == '\u2028' || ch == '\u2029') {
-                    line++;
-                    column = 1;
-                } else {
-                    column++;
+                    starts.add(i + 1);
                 }
                 i++;
             }
-            return new PositionInfo(line, column);
+            int[] indexes = new int[starts.size()];
+            for (int j = 0; j < starts.size(); j++) {
+                indexes[j] = starts.get(j);
+            }
+            return indexes;
         }
 
         private record PositionInfo(int line, int column) {
