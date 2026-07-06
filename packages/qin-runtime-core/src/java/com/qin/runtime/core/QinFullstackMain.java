@@ -716,6 +716,11 @@ public final class QinFullstackMain {
                         continue;
                     }
                     lastSnapshot = currentSnapshot;
+                    if (artifacts.applyFrontendHotRefresh(changedFiles)) {
+                        System.out.println("[dev] frontend source change applied without full rebuild (version "
+                                + artifacts.version() + ")");
+                        continue;
+                    }
                     System.out.println("[dev] source change detected, rebuilding...");
                     BuildArtifacts rebuilt = build(options);
                     artifacts.updateFrom(rebuilt, changedFiles);
@@ -985,6 +990,19 @@ public final class QinFullstackMain {
                 this.hmrMessagesRef.set(List.of());
             }
             this.version.incrementAndGet();
+        }
+
+        boolean applyFrontendHotRefresh(List<Path> changedFiles) throws Exception {
+            QinFrontendEsmService frontend = frontendEsmServiceRef.get();
+            if (frontend == null || changedFiles == null || changedFiles.isEmpty()) {
+                return false;
+            }
+            if (!frontend.refreshChangedFrontendModules(changedFiles)) {
+                return false;
+            }
+            this.hmrMessagesRef.set(frontend.collectViteHotUpdateMessages(changedFiles));
+            this.version.incrementAndGet();
+            return true;
         }
     }
 

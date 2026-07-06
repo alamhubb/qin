@@ -1,7 +1,10 @@
 package com.qin.runtime.core;
 
 import com.qin.lang.module.policy.QinImportDescriptor;
+import com.qin.lang.module.policy.QinImportKind;
+import com.qin.lang.module.policy.QinImportParser;
 import com.qin.lang.module.policy.QinImportPolicyChecker;
+import com.qin.lang.module.resolver.QinEsmSpecifierResolver;
 import com.qin.lang.module.resolver.QinModuleGraph;
 import com.qin.lang.module.resolver.QinModuleGraphBuilder;
 import com.qin.lang.module.resolver.QinModuleSource;
@@ -20,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,6 +55,9 @@ public final class QinFrontendEsmService {
     private static final String CSSTS_ATOM_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/csstsAtom.js";
     private static final String CSSTS_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/cssts-runtime.js";
     private static final String QIN_FRONTEND_RUNTIME_VIRTUAL_MODULE_URL = "/@qin-mod/__virtual/qin.js";
+    private static final Set<String> HOT_REFRESH_EXTENSIONS = Set.of(
+            ".ovs", ".vue", ".cssts", ".css",
+            ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".avif");
 
     private final Path projectRoot;
     private final Path entryFile;
@@ -152,6 +159,35 @@ public final class QinFrontendEsmService {
             return List.of();
         }
         return compiler.collectHotUpdateMessages(projectRoot, changedFiles);
+    }
+
+    synchronized boolean refreshChangedFrontendModules(List<Path> changedFiles) throws IOException {
+        if (changedFiles == null || changedFiles.isEmpty()) {
+            return false;
+        }
+        Map<Path, QinModuleSource> refreshed = new LinkedHashMap<>();
+        for (Path changedFile : changedFiles) {
+            Path normalized = changedFile == null ? null : changedFile.toAbsolutePath().normalize();
+            if (normalized == null
+                    || !Files.isRegularFile(normalized)
+                    || normalized.equals(entryFile)
+                    || !moduleSourceMap.containsKey(normalized)
+                    || !isHotRefreshModuleFile(normalized)) {
+                return false;
+            }
+            QinModuleSource previous = moduleSourceMap.get(normalized);
+            String source = readSource(normalized);
+            List<QinResolvedImport> imports = resolveImportsForRefresh(normalized, source);
+            if (!sameImportGraph(previous.imports(), imports)) {
+                return false;
+            }
+            refreshed.put(normalized, new QinModuleSource(normalized, source, imports));
+        }
+        refreshed.forEach((file, module) -> {
+            moduleSourceMap.put(file, module);
+            invalidateFrontendModule(file);
+        });
+        return true;
     }
 
     public String transpileByRequestPath(String requestPath) throws IOException {
@@ -291,6 +327,55 @@ public final class QinFrontendEsmService {
         return transpiled;
     }
 
+    private List<QinResolvedImport> resolveImportsForRefresh(Path sourceFile, String source) {
+        QinImportParser importParser = new QinImportParser();
+        QinEsmSpecifierResolver specifierResolver = new QinEsmSpecifierResolver();
+        List<QinResolvedImport> imports = new ArrayList<>();
+        for (QinImportDescriptor descriptor : importParser.parse(sourceFile, source)) {
+            Path resolvedModule = null;
+            if (!descriptor.typeOnly()
+                    && (descriptor.kind() == QinImportKind.LOCAL || descriptor.kind() == QinImportKind.JS)) {
+                resolvedModule = specifierResolver.resolveModule(sourceFile, descriptor.moduleSpecifier());
+            }
+            imports.add(new QinResolvedImport(descriptor, resolvedModule));
+        }
+        return imports;
+    }
+
+    private boolean sameImportGraph(List<QinResolvedImport> previous, List<QinResolvedImport> next) {
+        if (previous.size() != next.size()) {
+            return false;
+        }
+        for (int i = 0; i < previous.size(); i++) {
+            QinResolvedImport left = previous.get(i);
+            QinResolvedImport right = next.get(i);
+            QinImportDescriptor leftDescriptor = left.descriptor();
+            QinImportDescriptor rightDescriptor = right.descriptor();
+            if (!leftDescriptor.moduleSpecifier().equals(rightDescriptor.moduleSpecifier())
+                    || leftDescriptor.kind() != rightDescriptor.kind()
+                    || leftDescriptor.typeOnly() != rightDescriptor.typeOnly()
+                    || !Objects.equals(left.resolvedModule(), right.resolvedModule())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void invalidateFrontendModule(Path moduleFile) {
+        Path normalized = moduleFile.toAbsolutePath().normalize();
+        transpiledModuleCache.remove(normalized);
+        ovsTranspiledModuleCache.remove(normalized);
+        clearVirtualModulesForModule(normalized);
+        csstsCssByModule.remove(normalized);
+        csstsAtomByModule.remove(normalized);
+        refreshCsstsGlobalVirtualModules();
+    }
+
+    private void clearVirtualModulesForModule(Path moduleFile) {
+        String base = toModuleUrl(projectRoot, moduleFile);
+        virtualModuleContentMap.keySet().removeIf(key -> key != null && key.startsWith(base + "?"));
+    }
+
     private static String virtualFrontendServerControllerSource(
             Path projectRoot,
             Path importer,
@@ -320,6 +405,18 @@ public final class QinFrontendEsmService {
         }
         String normalized = moduleFile.toAbsolutePath().normalize().toString().replace('\\', '/');
         return normalized.contains("/main/controllers/") && isServerControllerSource(source);
+    }
+
+    private static boolean isHotRefreshModuleFile(Path file) {
+        String name = file == null || file.getFileName() == null
+                ? ""
+                : file.getFileName().toString().toLowerCase();
+        for (String extension : HOT_REFRESH_EXTENSIONS) {
+            if (name.endsWith(extension)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isFrontendSourceFile(Path root, Path file) {

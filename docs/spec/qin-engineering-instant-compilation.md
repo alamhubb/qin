@@ -279,6 +279,28 @@ minimal backend/frontend graph is ready, then transform OVS modules on demand
 as the browser requests them. Optional warming is acceptable only when it does
 not block the listener and uses the same standard transform/cache path.
 
+Dev-server file changes should first try the smallest correct update. If a
+changed file is already in the current frontend graph, belongs to the pure
+frontend transform surface such as OVS, Vue, CSSTS, CSS, or assets, and keeps
+the same resolved import graph, Qin should refresh that module inside the
+existing `QinFrontendEsmService`, invalidate only that module's transform and
+virtual modules, bump the dev version, and let HMR/client requests fetch the
+new output. This preserves the long-lived OVS/Vue/CSSTS compiler state in the
+same way Vite keeps the plugin/module graph warm and esbuild keeps a rebuild
+context alive.
+
+If the changed file is a backend source, unified `src/app.qin`, config file,
+entry file, new/deleted graph module, or a frontend edit that changes resolved
+imports, Qin must use the standard full rebuild path. That is not a fallback or
+compatibility mode; it is the conservative invalidation boundary when the
+current hot frontend graph can no longer prove correctness.
+
+Hot refresh must decline only for structural ineligibility such as graph,
+target, entry, deletion, or import-set changes. Parser, compiler, transform,
+runtime, or HMR-message errors are defects to surface through the normal dev
+error path; they must not be hidden by automatically converting the edit into a
+successful full rebuild.
+
 ## Target Zones
 
 The engineering cache model must respect Qin zones:
