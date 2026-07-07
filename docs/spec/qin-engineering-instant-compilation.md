@@ -580,12 +580,15 @@ expand conservatively to LL(k) up to the framework limit and enable pruning only
 when the recorded token sequences are complete and non-dynamic. The current
 Subhuti Java prototype uses the unchanged `Alternative.of(...)` surface, records
 lambda callsite identities as the prediction cache key instead of stack traces,
-keeps a hot in-process prediction plan for repeated Or calls, disables pruning
-for cheap FIRST(1)-only choices, and enables pruning for LL(2+)/LL(3+) common
-prefix choices. Focused measurements on 20,000-item probes showed the previous
-FIRST(1) regression shrinking from roughly 30-37% slower to a much smaller
-fixed overhead, while LL(2) and LL(3) common-prefix choices improved by about
-2.9x and reduced wall-clock time by about 66%.
+keeps a hot in-process prediction plan for repeated `Or` calls, disables
+pruning for cheap FIRST(1)-only choices, and enables pruning for LL(2+)/LL(3+)
+common-prefix choices. Analysis-only FIRST(1) decisions may record grammar
+metadata and diagnostics, but repeated hot calls should skip repeated
+recording/planning work and stay on the normal PEG execution path. Focused
+measurements on 20,000-item probes showed FIRST(1)-distinct staying outside
+runtime pruning with only about a 3% analysis overhead, while LL(2) and LL(3)
+common-prefix choices improved by about 3x and reduced wall-clock time by about
+66%.
 
 The runtime LL(k) matcher should be plan-like, not alternative-retry-like. When
 all predicted alternatives share the same lexer-mode sequence for the relevant
@@ -596,13 +599,14 @@ the selected grammar branch. Mixed lexer-mode predictions still use exact
 mode-aware matching for each recorded sequence, but this remains the same active
 parser semantics; it is not a compatibility path or alternate syntax.
 
-After the shared-lookahead matcher change, the 20,000-item focused benchmark
-measured `LL2_COMMON_PREFIX` at `1293.699ms` with prediction vs `3759.244ms`
-without prediction, or about `2.91x` faster and `65.6%` less wall-clock time.
-`LL3_COMMON_PREFIX` measured `2981.918ms` vs `8650.722ms`, or about `2.90x`
-faster and `65.5%` less wall-clock time. The FIRST(1)-distinct case remained
-outside runtime pruning and measured `0.99x`, meaning the cheap path no longer
-has a meaningful regression in the focused probe.
+After the shared-lookahead matcher and analysis-only hot-call skip changes, the
+20,000-item focused benchmark measured `FIRST1_DISTINCT` at `302.759ms` with
+prediction enabled vs `294.010ms` without prediction, so it remained outside
+runtime pruning with `0.97x` speed and a `3.0%` analysis cost. The same run
+measured `LL2_COMMON_PREFIX` at `1251.176ms` with prediction vs `3752.675ms`
+without prediction, or about `3.00x` faster and `66.7%` less wall-clock time.
+`LL3_COMMON_PREFIX` measured `2925.806ms` vs `8540.298ms`, or about `2.92x`
+faster and `65.7%` less wall-clock time.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
