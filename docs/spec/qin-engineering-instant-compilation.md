@@ -587,6 +587,23 @@ FIRST(1) regression shrinking from roughly 30-37% slower to a much smaller
 fixed overhead, while LL(2) and LL(3) common-prefix choices improved by about
 2.9x and reduced wall-clock time by about 66%.
 
+The runtime LL(k) matcher should be plan-like, not alternative-retry-like. When
+all predicted alternatives share the same lexer-mode sequence for the relevant
+lookahead depth, Subhuti reads the current token sequence once and matches
+alternatives against that in-memory sequence. This is the Chevrotain-style
+direction: prediction does cheap lookahead and branch selection before running
+the selected grammar branch. Mixed lexer-mode predictions still use exact
+mode-aware matching for each recorded sequence, but this remains the same active
+parser semantics; it is not a compatibility path or alternate syntax.
+
+After the shared-lookahead matcher change, the 20,000-item focused benchmark
+measured `LL2_COMMON_PREFIX` at `1293.699ms` with prediction vs `3759.244ms`
+without prediction, or about `2.91x` faster and `65.6%` less wall-clock time.
+`LL3_COMMON_PREFIX` measured `2981.918ms` vs `8650.722ms`, or about `2.90x`
+faster and `65.5%` less wall-clock time. The FIRST(1)-distinct case remained
+outside runtime pruning and measured `0.99x`, meaning the cheap path no longer
+has a meaningful regression in the focused probe.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
