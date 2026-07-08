@@ -2544,10 +2544,13 @@ public final class QinParserStaticEnhanced extends QinParser {
         return executeRuleWrapper(() -> super.parse(), "parse", "QinParser", "");
     }
 
-    private static String cacheKeyExtra(Object[] args) {
+    private static Object cacheKeyExtra(Object[] args) {
         if (args == null || args.length == 0) {
             return "";
         }
-        return Arrays.deepToString(args);
+        if (args.length == 1) {
+            return args[0];
+        }
+        return Arrays.asList(args);
     }
 }

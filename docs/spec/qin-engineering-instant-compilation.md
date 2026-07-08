@@ -625,6 +625,18 @@ predicates/gates, and action boundaries separately from semantic actions. Until
 that exists, deeper lookahead must stay conservative and covered by focused
 smokes that prove both skipped alternatives and unchanged parse results.
 
+A simplified grammar tree is useful because it turns "guess a first token by
+executing lambdas" into analyzable parser structure. A node such as
+`Alternative -> NonTerminal ImportDeclaration -> Terminal ImportTok` lets
+Subhuti compute FIRST, nullable, follow, and LL(k) lookahead facts once per
+parser class/callsite, cache the resulting branch-selection plan across parser
+instances, and diagnose dynamic or ambiguous choices before runtime. Recording
+only a first token can skip a few branches, but it cannot explain where the
+token came from, compute deeper common-prefix lookahead reliably, or report why
+an `A` versus `A B` choice must stay PEG-ordered. The tree is therefore the
+framework-layer bridge toward Chevrotain-style self-analysis, not a second
+parser path and not compatibility behavior.
+
 The framework cannot honestly promise perfect automatic LL(k) for arbitrary Java
 code inside grammar lambdas. It can be made complete for an analyzable grammar
 subset: terminals, nonterminals, alternatives, options, repetitions,
@@ -773,6 +785,17 @@ measured `FIRST1_DISTINCT` as analysis-only (`0.85x` in that run, so still not
 runtime-pruned), `LL2_COMMON_PREFIX` at `79.384ms` versus `223.805ms`
 (`2.82x`, `64.5%` wall-clock reduction), and `LL3_COMMON_PREFIX` at
 `187.142ms` versus `508.727ms` (`2.72x`, `63.2%` reduction).
+
+2026-07-09 Qin parser-only measurements on the same Windows machine compared
+the static enhanced Qin/Subhuti parser with the Chevrotain structural parser
+benchmark. Chevrotain measured `OvsConsumer.ts` at about `0.534ms` warm average
+and `OvsParser.ts` at about `17.985ms`. The current Qin/Subhuti static CST-only
+path, with a larger packrat cache and structured rule cache keys, measured
+`OvsConsumer.ts` at about `6.309ms` and `OvsParser.ts` at about `525.116ms`.
+A temporary FIRST(1)-all-runtime-pruning experiment measured about `5.894ms`
+and `510.967ms`, so it was only a small OVS improvement and does not close the
+architecture gap. Treat this as evidence that the next real step is grammar-tree
+and callsite-plan self-analysis, not more isolated FIRST-token micro-tuning.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
