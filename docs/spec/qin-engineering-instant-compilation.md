@@ -840,6 +840,15 @@ fallback parser behavior. The focused acceptance smoke is
 `orPredictionCandidateAlternatives=0`, `orPredictionSkippedAlternatives=1`, and
 `runtimePruningEnabled=true` for a two-rule choice, meaning Subhuti selected the
 branch from the graph plan instead of running grammar lambdas to discover FIRST.
+The first real Slime parser rule connected to this path is
+`SlimeModuleParser.ModuleExportName`, expressed as
+`Alternative.rule("IdentifierName", this::IdentifierName)` versus
+`Alternative.rule("StringLiteral", this::StringLiteral)`. The focused
+`SlimeModuleGraphLookaheadSmokeTestMain` proves the same counters on a real
+parser rule. This is still a narrow structural milestone: `OvsConsumer.ts`
+parser-only measurements may show skipped alternatives from this rule, but the
+overall OVS/TypeScript gap remains until larger callsites such as `ModuleItem`
+and declaration/expression choices can expose complete graph facts.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
