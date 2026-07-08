@@ -128,6 +128,12 @@ Qin JVM 子集不支持 JS `Proxy`。
 - 明确 typed FFI 边界
 - Qin-owned runtime SDK 对象，但只在显式 dynamic 边界使用
 
+装饰器的 canonical 规则在 `packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md`
+的 "Decorator Compile-Time Lowering Rule"。简短地说，Qin-owned decorator 是
+编译期 lowering 输入：可以生成 wrapper、metadata、initializer、JVM annotation
+或固定 rule table；不能依赖 ByteBuddy、反射、prototype mutation 或完整 JS
+descriptor 语义作为标准运行路径。
+
 示例：
 
 ```ts

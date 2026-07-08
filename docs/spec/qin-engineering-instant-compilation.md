@@ -544,6 +544,13 @@ eagerly initialize heavyweight logging frameworks just to emit rare diagnostics;
 diagnostics that only apply to non-standard raw parser construction should stay
 on a lightweight path so the standard static parser can start quickly.
 
+Decorator handling follows the canonical Qin JS compatibility rule in
+`packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md`: Qin-owned decorators
+are lowered at compile time into static `.class` wrappers, metadata,
+initializer calls, JVM annotations, or rule tables. Runtime ByteBuddy,
+reflection, or JavaScript descriptor emulation must not become the standard
+fallback for a missing decorator lowerer.
+
 Subhuti should learn from mature parser frameworks by recording enough grammar
 metadata to predict alternatives before executing them. The framework should
 prefer first-set and lookahead based alternative selection, ambiguity reporting,

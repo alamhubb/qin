@@ -114,6 +114,52 @@ Lowering rule:
 - Fixed fields and fixed methods use normal field/method access, not map lookup.
 - Parser/compiler parameter bags and similar fixed-shape data should be modeled as classes/records/interfaces, not downgraded to maps.
 
+### 1.4 Decorator Compile-Time Lowering Rule
+
+Decorators are supported only when Qin can lower them through a static,
+Qin-owned compile-time path. Qin should learn from TypeScript, Babel, SWC, and
+similar lowerers by treating decorator syntax as source metadata plus a
+compile-time rewrite, not as a requirement that the target runtime natively
+understand decorators.
+
+Accepted Qin-owned decorator forms:
+
+- decorators whose target is statically known, such as a class, method, field,
+  parameter, or parser rule
+- decorators whose implementation is a Qin-known compiler hook, metadata
+  mapping, wrapper generation rule, initializer rule, or JVM annotation emit
+  rule
+- decorators whose lowered `.class` output preserves the admitted source API
+  shape and clear error behavior
+
+For example, a parser source method annotated with `@SubhutiRule` should compile
+to a static `.class` wrapper, rule metadata, or rule table that preserves the
+same rule-wrapper semantics. Runtime ByteBuddy enhancement may be useful for
+development diagnostics, but it is not the standard production path and must not
+become a fallback for a missing static lowerer.
+
+Java annotations can express metadata on emitted `.class` files, but they do
+not by themselves replace TypeScript decorator behavior such as wrapping a
+method, replacing a descriptor, registering a parser rule, or scheduling an
+initializer. If a Qin-owned decorator needs behavior, the Qin compiler must emit
+that behavior explicitly as generated wrapper methods, metadata tables,
+initializer calls, JVM annotations plus processors, or another fixed target
+structure.
+
+Rejected decorator forms:
+
+- decorators whose result depends on unknown runtime object shapes
+- decorators that replace classes or methods through arbitrary JavaScript
+  descriptor mutation
+- decorators that require prototype mutation, prototype walking, `Reflect`
+  full-surface semantics, `Proxy`, `eval`, or `new Function`
+- third-party decorator libraries whose semantics require a JavaScript engine
+  compatibility layer instead of a Qin-owned static lowering contract
+
+Unsupported decorator forms should fail early with a clear diagnostic. Do not
+repair them with runtime reflection, ByteBuddy fallback generation, broad
+dynamic helper calls, or source rewrites that hide the missing lowerer.
+
 ## 2. Supported-by-Design Surface
 
 The following categories are part of Qin's intended mainline compatibility target.
