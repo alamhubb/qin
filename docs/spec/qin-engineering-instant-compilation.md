@@ -955,6 +955,25 @@ state is therefore framework gate support only; `AssignmentExpression` still
 needs a stronger structural solution, likely a common-prefix or Pratt-style
 expression strategy, not repeated deep token scanning.
 
+The next accepted Chevrotain-alignment step is parser-class self-analysis for
+declared graph alternations. `SubhutiGrammarGraph` now carries declared
+`ruleScope -> alternative rule names` metadata, and
+`SubhutiGrammarSelfAnalysis` prebuilds `SubhutiOrPrediction` entries for those
+callsites once per parser class before the first runtime `Or(...)` needs them.
+This moves graph plan construction from lazy runtime recording toward
+Chevrotain's `performSelfAnalysis()` shape while preserving the same active PEG
+execution path for dynamic or undeclared callsites. The focused
+`SlimeModuleGraphLookaheadSmokeTestMain` proves `orPredictionCacheBuilds=0`,
+`orPredictionGlobalCacheHits=1`, and `orPredictionSelfAnalysisHits=1` for
+declared callsites such as `ModuleExportName`, `ModuleItem`, `ImportClause`,
+`StatementListItem`, `Declaration`, and `PrimaryExpression`. Same-day Qin
+parser-only probes measured `OvsConsumer.ts` at about `9.475ms` warm average
+and `OvsParser.ts` at about `551.531ms`; this confirms the self-analysis step
+does not repeat the rejected deep-recording regression, but it is an
+architecture milestone rather than the final speed closer. The remaining
+Chevrotain gap is still dominated by expression/common-prefix structure,
+packrat key/object churn, rule wrapper count, and CST allocation.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
