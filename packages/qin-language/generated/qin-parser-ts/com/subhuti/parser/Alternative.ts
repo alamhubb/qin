@@ -6,6 +6,24 @@ function __qin_structural_object__(value) {
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
 const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
+function __qin_subhuti_alternative_execute__() {
+  const supplier = this.__qin_field_supplier;
+  return typeof supplier === "function" ? supplier() : supplier.get();
+}
+function __qin_subhuti_alternative_prediction_identity__() {
+  const supplier = this.__qin_field_supplier;
+  if (supplier != null && typeof supplier.getClass === "function") {
+    return supplier.getClass().getName();
+  }
+  return supplier?.name ?? "Function";
+}
+function __qin_subhuti_alternative_prediction_identity_class__() {
+  const supplier = this.__qin_field_supplier;
+  if (supplier != null && typeof supplier.getClass === "function") {
+    return supplier.getClass();
+  }
+  return __qin_java_class_info__(supplier?.constructor ?? Object);
+}
 class com_subhuti_parser_Alternative {
   __qin_field_supplier: any = null as any;
   constructor(...__qin_args: any[]) {
@@ -23,11 +41,16 @@ class com_subhuti_parser_Alternative {
     this.__qin_field_supplier = supplier;
   }
   static of(supplier: any): any {
-    supplier = __qin_java_functional(supplier);
     if (__qin_binary__("==", supplier, null)) {
       throw new __QinJavaLangIllegalArgumentException("supplier cannot be null");
     }
-    return new com_subhuti_parser_Alternative(supplier);
+    return {
+      __qinSubhutiAlternative: true,
+      __qin_field_supplier: supplier,
+      execute: __qin_subhuti_alternative_execute__,
+      predictionIdentity: __qin_subhuti_alternative_prediction_identity__,
+      predictionIdentityClass: __qin_subhuti_alternative_prediction_identity_class__
+    };
   }
   execute(): any {
     return this.__qin_field_supplier.get();

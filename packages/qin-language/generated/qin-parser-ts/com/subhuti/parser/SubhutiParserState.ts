@@ -56,9 +56,11 @@ class com_subhuti_parser_SubhutiParserState extends com_subhuti_lookahead_Subhut
   __qin_field_firstTokenRecordingMaxTokens: number | null = null as any;
   __qin_field_orFirstTokenPredictionCache: any = null as any;
   __qin_field_orPredictionCacheBuilds: number | null = null as any;
+  __qin_field_orPredictionGlobalCacheHits: number | null = null as any;
   __qin_field_orPredictionSkippedAlternatives: number | null = null as any;
   __qin_field_orPredictionUnknownAlternatives: number | null = null as any;
   __qin_field_orPredictionCandidateAlternatives: number | null = null as any;
+  __qin_field_analysisOnlyOrPredictionStreak: number | null = null as any;
   __qin_field_lastOrPredictionDebug: string | null = null as any;
   __qin_field_lastOrPredictionGrammar: com_subhuti_parser_SubhutiGrammarNode | null = null as any;
   __qin_field_lastOrPredictionAmbiguityDiagnostics: any = null as any;
@@ -117,9 +119,11 @@ class com_subhuti_parser_SubhutiParserState extends com_subhuti_lookahead_Subhut
     this.__qin_field_firstTokenRecordingMaxTokens = 1.0;
     this.__qin_field_orFirstTokenPredictionCache = new __QinJavaUtilHashMap();
     this.__qin_field_orPredictionCacheBuilds = 0.0;
+    this.__qin_field_orPredictionGlobalCacheHits = 0.0;
     this.__qin_field_orPredictionSkippedAlternatives = 0.0;
     this.__qin_field_orPredictionUnknownAlternatives = 0.0;
     this.__qin_field_orPredictionCandidateAlternatives = 0.0;
+    this.__qin_field_analysisOnlyOrPredictionStreak = 0.0;
     this.__qin_field_lastOrPredictionDebug = "";
     this.__qin_field_lastOrPredictionGrammar = null;
     this.__qin_field_lastOrPredictionAmbiguityDiagnostics = __QinJavaUtilList.of();
@@ -291,7 +295,7 @@ class com_subhuti_parser_SubhutiParserState extends com_subhuti_lookahead_Subhut
     return this.__qin_field_sourceCode;
   }
   isAtEnd(): any {
-    return __qin_binary__(">=", this.__qin_field_currentIndex, this.__qin_field_sourceCode.length());
+    return __qin_binary__(">=", this.__qin_field_currentIndex, __QinJavaLangString.length(this.__qin_field_sourceCode));
   }
   setSyncTokens(...tokens: string[]): any {
     this.__qin_field_syncTokens.clear();

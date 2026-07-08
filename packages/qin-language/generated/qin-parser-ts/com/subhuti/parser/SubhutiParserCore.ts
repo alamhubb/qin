@@ -1,4 +1,5 @@
 import { com_subhuti_lookahead_SubhutiTokenConsumer, com_subhuti_lookahead_SubhutiTokenConsumer as SubhutiTokenConsumer } from "../lookahead/SubhutiTokenConsumer.ts";
+import { com_subhuti_lookahead_SubhutiTokenMatchParser, com_subhuti_lookahead_SubhutiTokenMatchParser as SubhutiTokenMatchParser } from "../lookahead/SubhutiTokenMatchParser.ts";
 import { com_subhuti_lexer_TokenCacheEntry, com_subhuti_lexer_TokenCacheEntry as TokenCacheEntry } from "../lexer/TokenCacheEntry.ts";
 import { com_subhuti_cache_SubhutiPackratCacheResult, com_subhuti_cache_SubhutiPackratCacheResult as SubhutiPackratCacheResult } from "../cache/SubhutiPackratCacheResult.ts";
 import { com_subhuti_debug_SubhutiTraceDebugger, com_subhuti_debug_SubhutiTraceDebugger as SubhutiTraceDebugger } from "../debug/SubhutiTraceDebugger.ts";
@@ -62,9 +63,10 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     })());
   }
   _getOrParseToken(index: number, line: number, column: number, mode: com_subhuti_struct_LexerMode): any {
+    let entry: any = this._getOrParseTokenEntry(index, line, column, mode);
     return (() => {
-      if (__qin_binary__("!=", this._getOrParseTokenEntry(index, line, column, mode), null)) {
-        return this._getOrParseTokenEntry(index, line, column, mode).getToken();
+      if (__qin_binary__("!=", entry, null)) {
+        return entry.getToken();
       }
       return null;
     })();
@@ -115,7 +117,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
         return true;
       }
       return (() => {
-      if (token.tokenName().equals(tokenName)) {
+      if (__QinJavaLangString.equals(token.tokenName(), tokenName)) {
         return false;
       }
       return true;
@@ -193,7 +195,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
       currentCst.addChild(cst);
     }
     this.__qin_field_currentIndex += consumedChars;
-    this.__qin_field_currentPosition = this.__qin_field_currentPosition.advance(this.__qin_field_sourceCode.substring(__qin_binary__("-", this.__qin_field_currentIndex, consumedChars), this.__qin_field_currentIndex));
+    this.__qin_field_currentPosition = this.__qin_field_currentPosition.advance(__QinJavaLangString.substring(this.__qin_field_sourceCode, __qin_binary__("-", this.__qin_field_currentIndex, consumedChars), this.__qin_field_currentIndex));
     this.__qin_field_lastTokenName = tokenName;
     this.__qin_field_parsedTokens.add(partialToken);
     this.recordConsumedToken(partialToken);
@@ -220,7 +222,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
         return true;
       }
       return (() => {
-      if (token.tokenName().equals(tokenName)) {
+      if (__QinJavaLangString.equals(token.tokenName(), tokenName)) {
         return false;
       }
       return true;
@@ -265,7 +267,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     tokenNode.setEndTokenIndex(tokenEndIndex);
     let currentRecord: any = this.__qin_field_parseRecordStack.get(__qin_binary__("-", this.__qin_field_parseRecordStack.size(), 1.0));
     currentRecord.getChildren().add(tokenNode);
-    for (let i: any = __qin_binary__("-", this.__qin_field_parseRecordStack.size(), 1.0); __qin_binary__(">=", i, 0.0); i = __qin_binary__("-", i, 1.0)) {
+    for (let i: any = __qin_binary__("-", this.__qin_field_parseRecordStack.size(), 1.0); __qin_binary__(">=", i, 0.0); i--) {
       let ancestor: any = this.__qin_field_parseRecordStack.get(i);
       if (__qin_binary__(">", tokenEndIndex, ancestor.getEndTokenIndex())) {
         ancestor.setEndTokenIndex(tokenEndIndex);
@@ -322,7 +324,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
       return null;
     }
     let tokenIndex: any = this.currentTokenIndex();
-    let key: any = new com_subhuti_parser_SubhutiRuleCacheKey(ruleName, cacheKeyExtra, tokenIndex, this.__qin_field_currentMode, this.__qin_field_lastTokenName);
+    let key: any = this.ruleCacheKey(ruleName, cacheKeyExtra, tokenIndex, this.__qin_field_currentMode, this.__qin_field_lastTokenName);
     let loopKey: any = key;
     if (this.__qin_field_loopDetectionSet.contains(loopKey)) {
       this.setParseFail();
@@ -368,7 +370,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
               if (__qin_binary__("!=", recordParent, null)) {
                 recordParent.getChildren().add(recordNode);
               }
-              for (let i: any = __qin_binary__("-", this.__qin_field_parseRecordStack.size(), 1.0); __qin_binary__(">=", i, 0.0); i = __qin_binary__("-", i, 1.0)) {
+              for (let i: any = __qin_binary__("-", this.__qin_field_parseRecordStack.size(), 1.0); __qin_binary__(">=", i, 0.0); i--) {
                 let ancestor: any = this.__qin_field_parseRecordStack.get(i);
                 if (__qin_binary__(">", cacheResult.__qin_field_endTokenIndex, ancestor.getEndTokenIndex())) {
                   ancestor.setEndTokenIndex(cacheResult.__qin_field_endTokenIndex);
@@ -505,6 +507,9 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     }
     return null;
   }
+  ruleCacheKey(ruleName: string, cacheKeyExtra: string, tokenIndex: number, mode: com_subhuti_struct_LexerMode, lastTokenName: string): any {
+    return `${ruleName}\u0000${cacheKeyExtra == null ? "" : cacheKeyExtra}\u0000${tokenIndex}\u0000${mode}\u0000${lastTokenName == null ? "" : lastTokenName}`;
+  }
   executeRuleCore(ruleName: string, targetFun: any): any {
     targetFun = __qin_java_functional(targetFun);
     let cst: any = com_subhuti_struct_SubhutiCst.builder().name(ruleName).build();
@@ -517,15 +522,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
         this.setLocation(finalCst);
         let parentCst: any = this.getCurCst();
         if (__qin_binary__("!=", parentCst, null)) {
-          let newParent: any = com_subhuti_struct_SubhutiCst.builder().from(parentCst).addChild(finalCst).build();
-          if ((() => {
-      if (this.__qin_field_cstStack.isEmpty()) {
-        return false;
-      }
-      return true;
-    })()) {
-            this.__qin_field_cstStack.set(__qin_binary__("-", this.__qin_field_cstStack.size(), 1.0), newParent);
-          }
+          parentCst.addChild(finalCst);
         } else {
           this.__qin_field_rootCst = finalCst;
         }
@@ -673,10 +670,19 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     return new __QinJavaUtilArrayList(this.__qin_field_parsedTokens.subList(Math.max(0.0, __qin_binary__("-", this.__qin_field_parsedTokens.size(), contextSize)), this.__qin_field_parsedTokens.size()));
   }
   isEof(): any {
-    if (__qin_binary__(">=", this.__qin_field_currentIndex, this.__qin_field_sourceCode.length())) {
+    if (__qin_binary__(">=", this.__qin_field_currentIndex, __QinJavaLangString.length(this.__qin_field_sourceCode))) {
       return true;
     }
-    let token: any = this.LA(1.0);
+    if (this.__qin_field_firstTokenRecording) {
+      throw new com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException();
+    }
+    let entry: any = this._getOrParseTokenEntry(this.__qin_field_currentIndex, this.__qin_field_currentPosition.line(), this.__qin_field_currentPosition.column(), this.__qin_field_currentMode);
+    let token: any = (() => {
+      if (__qin_binary__("!=", entry, null)) {
+        return entry.getToken();
+      }
+      return null;
+    })();
     return (() => {
       if (__qin_binary__("==", token, null)) {
         return true;
@@ -693,7 +699,25 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     if (this.__qin_field_firstTokenRecording) {
       throw new com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException();
     }
-    return this.LA(offset, __QinJavaUtilList.of(this.__qin_field_currentMode));
+    if (offset < 1) {
+      throw new __QinJavaLangIllegalArgumentException("offset must be >= 1");
+    }
+    let index: any = this.__qin_field_currentIndex;
+    let pos: any = this.__qin_field_currentPosition;
+    for (let i: any = 0.0; i < offset; i++) {
+      let entry: any = this._getOrParseTokenEntry(index, pos.line(), pos.column(), this.__qin_field_currentMode);
+      let token: any = entry != null ? entry.getToken() : null;
+      if (token == null || token.isEof()) {
+        return token;
+      }
+      if (i < offset - 1) {
+        index = entry.getNextCodeIndex();
+        pos = com_subhuti_struct_SubhutiPosition.of(entry.getNextLine(), entry.getNextColumn(), entry.getNextCodeIndex());
+      } else {
+        return token;
+      }
+    }
+    return null;
   }
   __qin_overload_LA_2_1(offset: number, modes: any): any {
     if (this.__qin_field_firstTokenRecording) {
@@ -704,7 +728,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     }
     let index: any = this.__qin_field_currentIndex;
     let pos: any = this.__qin_field_currentPosition;
-    for (let i: any = 0.0; __qin_binary__("<", i, offset); i = __qin_binary__("+", i, 1.0)) {
+    for (let i: any = 0.0; __qin_binary__("<", i, offset); i++) {
       let entry: any = null;
       let token: any = null;
       for (const mode of modes) {
@@ -948,6 +972,7 @@ class com_subhuti_parser_SubhutiParserCore extends com_subhuti_parser_SubhutiPar
     return errorNodeBuilder.build();
   }
 }
+com_subhuti_parser_SubhutiParserCore.__qin_java_interfaces = ["com.subhuti.lookahead.SubhutiTokenMatchParser"];
 const SubhutiParserCore = com_subhuti_parser_SubhutiParserCore;
 class com_subhuti_parser_SubhutiParserCore$RuleExecutionResult {
   __qin_field_ruleResult: any = null as any;
