@@ -811,6 +811,20 @@ tree work should build an explicit bounded GAST/callsite analysis pass with
 cycle detection and a cost budget, not recursively execute arbitrary grammar
 lambdas deeper and deeper during ordinary parsing.
 
+The recommended implementation path is Java-native Subhuti GAST, not embedding
+Chevrotain or replacing Subhuti with ANTLR/JavaCC/Parboiled. Mature parser
+projects are references for architecture: Chevrotain's `@chevrotain/gast`,
+`performSelfAnalysis()`, and lookahead strategy show the desired layering, but
+Qin needs a small JVM-owned model that preserves Subhuti's existing grammar
+surface. The first accepted step is explicit rule-reference metadata such as
+`Alternative.rule("ImportDeclaration", this::ImportDeclaration)` plus a
+`SubhutiGrammarGraph` that resolves `RULE_REF` nodes with a visited set. This
+proves the key distinction from failed deep recording: analyze a graph of rule
+references with cycle detection, do not recursively expand arbitrary grammar
+lambdas. Rule references remain dynamic for runtime pruning until a callsite
+plan is built and validated, so this foundation must not be counted as a parser
+speedup by itself.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
