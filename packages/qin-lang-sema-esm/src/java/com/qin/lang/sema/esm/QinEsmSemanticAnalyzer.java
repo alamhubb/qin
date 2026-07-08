@@ -19,7 +19,7 @@ public final class QinEsmSemanticAnalyzer {
     private static final Pattern COMMONJS_EXPORT_PATTERN = Pattern.compile(
             "\\bmodule\\s*\\.\\s*exports\\b|\\bexports\\s*\\.");
     private static final boolean PROFILE = Boolean.getBoolean("qin.esm.sema.profile");
-    private final QinEsmAstBindingCollector astBindingCollector = new QinEsmAstBindingCollector();
+    private final QinEsmStaticBindingCollector staticBindingCollector = new QinEsmStaticBindingCollector();
 
     public QinEsmSemanticModel analyze(QinModuleGraph graph) {
         Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
@@ -31,9 +31,9 @@ public final class QinEsmSemanticAnalyzer {
                         + " chars=" + module.source().length()
                         + " file=" + module.file());
             }
-            QinEsmAstBindingCollector.Result astBindings = collectAstBindings(module);
-            List<QinEsmImportBinding> imports = astBindings.imports();
-            List<QinEsmExportBinding> exports = finalizeExports(module, astBindings.exports());
+            QinEsmStaticBindingCollector.Result staticBindings = collectStaticBindings(module);
+            List<QinEsmImportBinding> imports = staticBindings.imports();
+            List<QinEsmExportBinding> exports = finalizeExports(module, staticBindings.exports());
             modules.put(
                     module.file(),
                     new QinEsmModuleSemantic(module.file(), imports, exports));
@@ -50,15 +50,15 @@ public final class QinEsmSemanticAnalyzer {
         return new QinEsmSemanticModel(graph.entryFile(), modules);
     }
 
-    private QinEsmAstBindingCollector.Result collectAstBindings(QinModuleSource module) {
+    private QinEsmStaticBindingCollector.Result collectStaticBindings(QinModuleSource module) {
         if (!shouldCollectAstBindings(module)) {
-            return new QinEsmAstBindingCollector.Result(List.of(), List.of());
+            return new QinEsmStaticBindingCollector.Result(List.of(), List.of());
         }
         try {
-            return astBindingCollector.collect(module);
+            return staticBindingCollector.collect(module);
         } catch (RuntimeException error) {
             throw new IllegalArgumentException(
-                    "Failed to collect ESM AST bindings for module: " + module.file(),
+                    "Failed to collect ESM static bindings for module: " + module.file(),
                     error);
         }
     }

@@ -291,6 +291,40 @@ Do not add degraded parser/runtime/compiler shortcuts that silently accept
 wrong behavior to make startup look faster. Performance work must preserve
 strict semantics.
 
+### Lightweight Module Binding Semantics
+
+ESM module binding discovery is an early, frequently executed compiler phase.
+Qin should follow the mainstream layering used by TypeScript, esbuild, SWC,
+oxc, Vite, and similar toolchains: only pay for the information required by the
+current phase.
+
+For Qin module graph and ESM link validation, the required facts are top-level
+`import`/`export` bindings, resolved specifiers, and source locations. The
+standard semantic path should collect those facts with a lightweight static ESM
+binding scanner. It should not build the full Qin/Slime CST/AST or run lowering
+just to validate module linkage. Full parser, CST/AST, IR, type/lowering, and
+`.class` work belong to later phases that actually need those artifacts.
+
+This is not fallback behavior. The lightweight scanner is the standard module
+binding path. If a Qin-standard ESM or TypeScript-like import/export form is
+missing, repair the scanner and add focused smoke coverage. Non-standard forms
+should fail visibly instead of falling through to a second parser path.
+
+The CSSTS toolchain benchmark on 2026-07-08 compared the same 272-module,
+about 2.92MB source graph against mainstream tools:
+
+- TypeScript `createSourceFile`: about `554ms`;
+- Babel parser: about `480ms`;
+- esbuild transform: about `397ms`;
+- SWC parser: about `467ms`;
+- oxc parser: about `416ms`;
+- old Qin AST-first ESM semantic binding: about `26515ms`;
+- Qin lightweight ESM static binding: about `474ms`.
+
+Treat this as the target pattern for future early compiler phases: match the
+cost model of the information being collected, then cache or precompile stable
+toolchain work at later boundaries.
+
 ### Incremental Compilation Contract
 
 Incremental compilation should be graph-based:
