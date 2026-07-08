@@ -891,6 +891,22 @@ the larger OVS probes. After this change, the 2026-07-09 parser-only probe
 measured `OvsConsumer.ts` at about `7.696ms` over 100 warm rounds and
 `OvsParser.ts` at about `499.887ms` over 10 warm rounds, with
 `orPredictionSkippedAlternatives` rising to 40 and 622 respectively.
+The next accepted expression-layer step connected `PrimaryExpression` to the
+same graph path. Clear tokens such as `Class`, `This`, `Function`, `LBracket`,
+`LBrace`, `LParen`, literal tokens, and template starts can now skip the other
+primary-expression alternatives. Soft-keyword `async` remains represented by
+`IdentifierName`, so the graph keeps the PEG-ordered candidate list
+`AsyncGeneratorExpression`, `AsyncFunctionExpression`, and
+`IdentifierReference` instead of choosing a single branch. The focused smoke
+proves `class` skips 12 alternatives, while `foo` preserves the three
+IdentifierName candidates and skips 10 unrelated branches. The 2026-07-09
+parser-only probe then measured `OvsConsumer.ts` at about `7.729ms` over 100
+warm rounds and `OvsParser.ts` at about `491.578ms` over 10 warm rounds, with
+`orPredictionSkippedAlternatives` rising to 204 and 13352 respectively. The
+large skip increase but small wall-clock change is evidence that the remaining
+gap is no longer only FIRST(1) retry; the next bottleneck investigation should
+look at packrat key/object churn, CST construction, and Java method/lambda
+dispatch costs.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
