@@ -1,6 +1,5 @@
 package com.qin.lang.pipeline.cfa;
 
-import com.qin.lang.frontend.adapter.QinFrontendLowerer;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.module.resolver.QinLinkedModuleSection;
 import com.qin.lang.module.resolver.QinLinkedModuleSource;
@@ -14,6 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -112,21 +116,13 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
             logPhase("module-class initializer done", startNanos, initializerClass.className());
         }
 
-        List<QinCfaModuleClassFile> moduleClasses = new ArrayList<>();
         Map<String, String> declarationClassExportSlots = buildDeclarationClassExportSlots(linkedSource);
-        for (QinLinkedModuleSection section : linkedSource.moduleSections()) {
-            String className = request.className() + "$QinModule" + section.index();
-            logPhase("module-class emit start", startNanos, className + " :: " + section.file());
-            QinCfaModuleClassFile moduleClass = compileModuleClassSource(
-                    semanticStageResult,
-                    section.file(),
-                    section.index(),
-                    className,
-                    section.classSource(),
-                    declarationClassExportSlots);
-            moduleClasses.add(moduleClass);
-            logPhase("module-class emit done", startNanos, className);
-        }
+        List<QinCfaModuleClassFile> moduleClasses = compileModuleSections(
+                request,
+                semanticStageResult,
+                linkedSource.moduleSections(),
+                declarationClassExportSlots,
+                startNanos);
 
         return new QinCfaModuleClassCompileResult(
                 projectRoot,
@@ -135,6 +131,113 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
                 semanticStageResult.semanticModel(),
                 initializerClass,
                 moduleClasses);
+    }
+
+    private List<QinCfaModuleClassFile> compileModuleSections(
+            QinCfaCompileRequest request,
+            QinCfaSemanticStageResult semanticStageResult,
+            List<QinLinkedModuleSection> sections,
+            Map<String, String> declarationClassExportSlots,
+            long startNanos) throws Exception {
+        if (sections == null || sections.isEmpty()) {
+            return List.of();
+        }
+        int parallelism = moduleClassParallelism(sections.size());
+        if (parallelism <= 1) {
+            List<QinCfaModuleClassFile> moduleClasses = new ArrayList<>();
+            for (QinLinkedModuleSection section : sections) {
+                moduleClasses.add(compileOneModuleSection(
+                        request,
+                        semanticStageResult,
+                        section,
+                        declarationClassExportSlots,
+                        startNanos));
+            }
+            return moduleClasses;
+        }
+
+        logPhase("module-class parallel emit start", startNanos,
+                "modules=" + sections.size() + ", parallelism=" + parallelism);
+        ExecutorService executor = Executors.newFixedThreadPool(
+                parallelism,
+                new ModuleClassThreadFactory());
+        try {
+            List<Future<QinCfaModuleClassFile>> futures = new ArrayList<>();
+            for (QinLinkedModuleSection section : sections) {
+                futures.add(executor.submit(() -> compileOneModuleSection(
+                        request,
+                        semanticStageResult,
+                        section,
+                        declarationClassExportSlots,
+                        startNanos)));
+            }
+            List<QinCfaModuleClassFile> moduleClasses = new ArrayList<>(futures.size());
+            for (Future<QinCfaModuleClassFile> future : futures) {
+                moduleClasses.add(awaitModuleClass(future));
+            }
+            logPhase("module-class parallel emit done", startNanos,
+                    "modules=" + moduleClasses.size());
+            return moduleClasses;
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private QinCfaModuleClassFile compileOneModuleSection(
+            QinCfaCompileRequest request,
+            QinCfaSemanticStageResult semanticStageResult,
+            QinLinkedModuleSection section,
+            Map<String, String> declarationClassExportSlots,
+            long startNanos) {
+        String className = request.className() + "$QinModule" + section.index();
+        logPhase("module-class emit start", startNanos, className + " :: " + section.file());
+        try {
+            QinCfaModuleClassFile moduleClass = compileModuleClassSource(
+                    semanticStageResult,
+                    section.file(),
+                    section.index(),
+                    className,
+                    section.classSource(),
+                    declarationClassExportSlots);
+            logPhase("module-class emit done", startNanos, className);
+            return moduleClass;
+        } catch (RuntimeException error) {
+            throw new IllegalArgumentException(
+                    "Failed to compile module class " + className
+                            + " for " + section.file()
+                            + " (moduleIndex=" + section.index() + ")",
+                    error);
+        }
+    }
+
+    private QinCfaModuleClassFile awaitModuleClass(Future<QinCfaModuleClassFile> future) throws Exception {
+        try {
+            return future.get();
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while compiling Qin module classes", error);
+        } catch (ExecutionException error) {
+            Throwable cause = error.getCause();
+            if (cause instanceof Exception exception) {
+                throw exception;
+            }
+            if (cause instanceof Error fatal) {
+                throw fatal;
+            }
+            throw new IllegalStateException("Failed to compile Qin module class", cause);
+        }
+    }
+
+    private int moduleClassParallelism(int moduleCount) {
+        if (moduleCount <= 1 || Boolean.getBoolean("qin.moduleClass.sequential")) {
+            return 1;
+        }
+        int configured = Integer.getInteger("qin.moduleClass.parallelism", 0);
+        if (configured > 0) {
+            return Math.max(1, Math.min(moduleCount, configured));
+        }
+        int processors = Runtime.getRuntime().availableProcessors();
+        return Math.max(1, Math.min(moduleCount, Math.min(processors, 8)));
     }
 
     private QinCfaModuleClassFile compileModuleClassSource(
@@ -168,10 +271,10 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
                 List.of(),
                 originalLinkedSource.imports(),
                 originalLinkedSource.moduleGraph());
-        QinCfaIrStageResult irStageResult = irStage.execute(
+        QinCfaIrStageResult irStageResult = new QinCfaIrStage().execute(
                 new QinCfaSemanticStageResult(classLinkedSource, originalResult.semanticModel()),
                 declarationClassExportSlots);
-        byte[] classBytes = emitStage.emit(irStageResult, className);
+        byte[] classBytes = new QinCfaEmitStage().emit(irStageResult, className);
         return new QinCfaModuleClassFile(
                 sourceFile,
                 moduleIndex,
@@ -188,13 +291,12 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
         if (linkedSource == null || linkedSource.moduleSections().isEmpty()) {
             return Map.of();
         }
-        QinFrontendLowerer frontendLowerer = new QinFrontendLowerer();
         for (QinLinkedModuleSection section : linkedSource.moduleSections()) {
             String source = section.classSource();
             if (source == null || source.isBlank()) {
                 continue;
             }
-            Set<String> classNames = collectDeclarationClassNames(frontendLowerer, source);
+            Set<String> classNames = collectClassDeclarationNames(source);
             Matcher matcher = EXPORT_INIT_PATTERN.matcher(source);
             while (matcher.find()) {
                 String slotName = matcher.group(1);
@@ -206,19 +308,6 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
             }
         }
         return exportSlots.isEmpty() ? Map.of() : Map.copyOf(exportSlots);
-    }
-
-    private Set<String> collectDeclarationClassNames(QinFrontendLowerer frontendLowerer, String source) {
-        try {
-            QinIrProgram program = frontendLowerer.lowerSource(source, Map.of());
-            Set<String> names = new java.util.LinkedHashSet<>();
-            for (var declaration : program.classDeclarations()) {
-                names.add(declaration.simpleName());
-            }
-            return Set.copyOf(names);
-        } catch (RuntimeException error) {
-            return Set.of();
-        }
     }
 
     private Set<String> collectClassDeclarationNames(String source) {
@@ -233,6 +322,17 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
     private void logPhase(String phase, long startNanos, String detail) {
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
         System.out.println("[QinSlimeCfaCompiler] " + phase + " +" + elapsedMs + "ms :: " + detail);
+    }
+
+    private static final class ModuleClassThreadFactory implements ThreadFactory {
+        private int nextIndex = 1;
+
+        @Override
+        public synchronized Thread newThread(Runnable task) {
+            Thread thread = new Thread(task, "qin-module-class-emit-" + nextIndex++);
+            thread.setDaemon(true);
+            return thread;
+        }
     }
 
     private void validateLinkedClassBoundary(
