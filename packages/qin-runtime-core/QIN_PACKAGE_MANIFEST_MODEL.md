@@ -50,6 +50,24 @@ Current manifest responsibilities are:
   - `output`
   - `port`
 
+Future package-resolution responsibilities may include target conditions similar to Node package conditional exports:
+
+- frontend/browser entry selection
+- backend/JVM entry selection
+- portable/shared entry selection
+- package-specific compatibility declarations
+
+This belongs in the manifest/resolver layer. It must not loosen the Qin language rule that `shared/` MVP source is `.qin` only and must stay inside the JS/JVM portable subset.
+
+The Node-style lesson to copy is target-aware entry selection. The lesson not to copy is using conditional package entries as evidence that arbitrary `.js` or `.ts` source is portable Qin `shared/` code. Qin packages may eventually declare `app`, `main`, and `shared` entries, but `shared` entries still have to be Qin-portable source or Qin-approved generated output.
+
+For project-local source, this gives Qin a deliberately stricter rule than many Node/browser dual packages:
+
+- `src/shared/` remains `.qin` only in the MVP.
+- `qin.config.js` may later choose different target entries for a package or workspace, similar to Node conditional exports.
+- The selected shared/portable entry is a package boundary decision, not permission to put ordinary JS/TS in project `shared/`.
+- JS/TS that needs bundler conditions, host shims, or platform replacement belongs in `app`, `main`, or a manifest-selected package entry.
+
 This means `qin.config.js` is where package-management policy and module-system policy begin to meet.
 
 ## 3. Entry Model
@@ -139,6 +157,7 @@ That makes it the root descriptor for:
 - local package linking
 - dependency alias resolution
 - future workspace-level module graph coordination
+- future target-condition entry selection for packages that provide separate frontend, backend, and portable surfaces
 
 ## 6. Relationship To The Language Model
 

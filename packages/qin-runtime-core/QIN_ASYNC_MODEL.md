@@ -29,6 +29,7 @@ Instead:
 - ordinary Qin code stays synchronous by default
 - async work is an explicit language feature
 - concurrency is opt-in, not ambient
+- async does not propagate through call chains by default
 
 ## 2. Default Language Rule
 
@@ -39,6 +40,8 @@ The default Qin execution model is:
 - backend controller/service code is synchronous unless explicitly made async
 - frontend code is also synchronous by default unless explicitly made async
 - Java interop calls are synchronous unless explicitly wrapped
+- a caller remains synchronous unless its own signature or return surface explicitly exposes `Task<T>` or another Qin async surface
+- an implementation may use internal async work and join it before returning without making its caller async
 
 Example:
 
@@ -131,6 +134,10 @@ This keeps the model:
 
 `await` is not the primary model in this direction.
 
+If Qin supports `await` for frontend authoring or JavaScript interop, it must be
+defined as a target/interop convenience over Qin's `Task<T>` boundary. It must
+not redefine the core language into JavaScript-style async contagion.
+
 ## 6. Why Qin Does Not Use Promise-First Semantics
 
 Promise-first semantics are a poor default for Qin because they tend to:
@@ -144,6 +151,14 @@ Qin wants the opposite default:
 
 - write straightforward backend code first
 - introduce concurrency only where it is valuable
+
+The normative Qin rule is therefore:
+
+- `async` marks the exact task boundary
+- `Task<T>` marks the exact async value boundary
+- ordinary callers do not become async automatically
+- a sync function that blocks, joins, or adapts internal async work still has a sync surface
+- Qin does not require every upstream caller to become `async` merely to consume one async implementation detail
 
 ## 7. JVM Host Strategy
 
@@ -205,6 +220,8 @@ When implementing Qin async support, the rules should be:
 4. Both forms lower to the same IR/runtime concept.
 5. `Task<T>` is the Qin-facing abstraction.
 6. Java host async primitives remain implementation details or interop adapters.
+7. Async does not propagate through ordinary call chains by default.
+8. `await`, when supported, is not the normative contagion model.
 
 ## 10. Non-Goals
 

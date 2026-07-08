@@ -32,6 +32,16 @@ So the correct product statement is:
 
 - Qin supports Qin-compatible npm packages
 - Qin does not promise blind npm ecosystem parity
+- Qin should support as many simple pure ESM npm packages as practical, filtered by target zone
+- Qin must not weaken the JVM `.class` subset merely to accept packages that depend on hard dynamic JS semantics
+
+Target-zone clarification:
+
+- `app/` may use frontend npm packages where Qin's frontend pipeline can serve or emit them as JS, but this does not broaden Qin core syntax.
+- `main/` may use npm package code only where it compiles cleanly to JVM `.class` or is mediated by explicit Qin host adapters.
+- `shared/` MVP should not directly depend on npm packages; reusable cross-target package behavior should be exposed through portable Qin stdlib wrappers or generated `.qin` code.
+- Node/browser dual packages often use conditional `exports` to choose different files for different hosts. Qin can borrow that resolver idea, but package conditions are not proof that ordinary `.js` or `.ts` belongs in `shared/`.
+- For Qin, the useful Node lesson is "choose the right target entry"; the non-goal is "make any JS/TS file shared-safe because a package can publish both Node and browser builds."
 
 ## 2. Compatibility Classes
 
@@ -48,6 +58,7 @@ Typical properties:
 - no native addon dependency
 - no reliance on Promise/microtask edge-case semantics
 - mostly syntax, AST, text, data, or compile-time logic
+- cleanly lowerable to Qin IR and, for backend/shared use, predictable JVM `.class`
 
 Examples of package categories:
 
@@ -82,6 +93,7 @@ Policy:
 - support is allowed
 - but it should be driven by explicit Qin host adapters
 - not by redefining Qin as Node
+- adapters must declare whether they are frontend-only, JVM-only, or dual-target-safe
 
 ### Class C: Not In Scope For Stage 1
 
@@ -103,6 +115,7 @@ Examples of package categories:
 - N-API or `.node` addons
 - packages whose correctness assumes full V8/Node semantics
 - packages that depend heavily on prototype tricks, `Proxy`, `eval`, or event-loop fidelity
+- packages whose useful semantics cannot be compiled to JVM `.class` without an ugly dynamic emulation layer
 
 ## 3. Package Intake Rule
 
@@ -113,8 +126,17 @@ When a new npm package is evaluated, the decision order should be:
 3. Does it require Node host APIs?
 4. If yes, are those APIs inside Qin's host-capability roadmap?
 5. If no, can the package still run as a Class A or Class B package?
+6. Which zone wants the package: `app/`, `main/`, or `shared/`?
+7. For `main/` or `shared/`, does it compile simply and predictably to JVM `.class`?
+8. For `shared/`, can the dependency be represented as portable `.qin` or an approved Qin stdlib wrapper instead of a direct npm import?
+9. If the package offers conditional Node/browser entries, is Qin selecting an entry that satisfies the active zone instead of assuming every condition is portable?
 
 This keeps package support intentional.
+
+Do not reintroduce legacy handwritten TypeScript parser packages to make npm
+compatibility look better. Parser authority remains the Java Slime/Qin sources
+compiled to TypeScript packages, with legacy TS parser references isolated to
+explicit legacy tests, migration comparisons, or old demos.
 
 ## 4. What Qin Should Prioritize First
 

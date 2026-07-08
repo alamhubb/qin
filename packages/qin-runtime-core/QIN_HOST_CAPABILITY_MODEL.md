@@ -35,6 +35,7 @@ In current architecture:
 - JVM is the primary backend host
 - browser/JS output is the primary frontend host
 - Node may appear as an optional compatibility reference point, not as the normative platform
+- ESM source syntax is target-filtered by host capability and `.class` feasibility
 
 ## 2. Host Layers
 
@@ -78,6 +79,12 @@ These are target-specific implementations:
 
 `shared/` should use only portable Qin capabilities.
 
+MVP source rule:
+
+- `.qin` only
+- no ordinary `.js` or `.ts`
+- future `.java` only as a Qin-managed portable Java subset
+
 Allowed direction:
 
 - Qin core language
@@ -88,6 +95,7 @@ Not allowed as normative dependency:
 - `java:`
 - browser-only globals
 - Node-only globals
+- bare npm package capabilities unless they are explicitly dual-target-safe or wrapped by portable Qin stdlib
 
 ### `main/`
 
@@ -99,6 +107,7 @@ Allowed direction:
 - Qin builtin/stdlib surface
 - `java:` interop
 - JVM ecosystem libraries
+- ESM-style source that compiles cleanly to JVM `.class`
 
 Not required:
 
@@ -114,6 +123,8 @@ Allowed direction:
 - Qin core language
 - browser/web-capable Qin output
 - frontend-target libraries
+- frontend input surfaces such as `.js`, `.ts`, `.vue`, and `.ovs`
+- browser host capabilities, kept out of `shared/`
 
 Not allowed:
 
@@ -168,6 +179,8 @@ That means:
 - JVM host may use Java 25 concurrency
 - JS host may use target-side async machinery
 - Node microtask semantics are not the normative definition
+- async does not propagate through ordinary Qin call chains by default
+- `await`, where supported for frontend or interop, must not redefine Qin core async semantics
 
 ## 7. Design Rule For New Capabilities
 
