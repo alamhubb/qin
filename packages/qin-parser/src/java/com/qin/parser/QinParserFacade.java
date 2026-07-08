@@ -3,7 +3,6 @@ package com.qin.parser;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJsImport;
 import com.slime.ast.nodes.misc.Program;
-import com.subhuti.parser.SubhutiParser;
 import com.subhuti.struct.SubhutiCst;
 
 import java.io.IOException;
@@ -57,7 +56,7 @@ public final class QinParserFacade {
     }
 
     SubhutiCst createProgramCst(String source) {
-        QinParser parser = SubhutiParser.create(QinParser.class, source);
+        QinParser parser = QinParserStaticEnhanced.create(source);
         parser.cache(true);
         SubhutiCst cst = parser.Program(QinParser.SourceType.MODULE);
         if (cst == null) {

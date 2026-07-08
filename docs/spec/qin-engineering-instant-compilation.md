@@ -532,6 +532,15 @@ Grammar-local first-token dispatch may be used as a focused diagnostic or a
 temporary proof of the slow boundary, but the durable Qin direction is a
 framework-level prediction layer.
 
+Qin parser cold-start work follows the same rule. Runtime ByteBuddy generation
+is useful as a development mechanism, but the Qin-owned parser path should use a
+static enhanced parser `.class` when the source grammar is known. A valid
+static enhanced parser preserves the same `@SubhutiRule` wrapper semantics,
+packrat keys, CST shape, AST output, and error behavior as the dynamic enhanced
+class; it is not a raw-parser fallback. Parser construction must also avoid
+framework-level repeated work such as recompiling token regexes that are already
+matched with `Matcher.region(...).lookingAt()`.
+
 Subhuti should learn from mature parser frameworks by recording enough grammar
 metadata to predict alternatives before executing them. The framework should
 prefer first-set and lookahead based alternative selection, ambiguity reporting,
