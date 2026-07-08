@@ -41,10 +41,10 @@ public final class QinLinkedModuleSourceEmitter {
     private static final Pattern DEFAULT_EXPR_CLASS_NAMED_PATTERN = Pattern.compile(
             "^(?:abstract\\s+)?class\\s+([A-Za-z_$][\\w$]*)\\b");
     private static final Pattern EXPORT_NAMED_PATTERN = Pattern.compile(
-            "(?:^|[;\\n])\\s*export\\s*\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?",
+            "(^|;|\\R)\\s*export\\s*\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?",
             Pattern.MULTILINE);
     private static final Pattern EXPORT_TYPE_NAMED_PATTERN = Pattern.compile(
-            "(?:^|[;\\n])\\s*export\\s+type\\s*\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?",
+            "(^|;|\\R)\\s*export\\s+type\\s*\\{([^}]*)}\\s*(?:from\\s*[\"']([^\"']+)[\"'])?\\s*;?",
             Pattern.MULTILINE);
     private static final Pattern EXPORT_ALL_PATTERN = Pattern.compile(
             "(?m)^\\s*export\\s*\\*\\s*(?:as\\s+([A-Za-z_$][\\w$]*)\\s*)?from\\s*[\"']([^\"']+)[\"']\\s*;?\\s*$");
@@ -62,10 +62,10 @@ public final class QinLinkedModuleSourceEmitter {
             Pattern.MULTILINE);
 
     private static final Pattern EXPORT_NAMED_LOCAL_PATTERN = Pattern.compile(
-            "(?:^|[;\\n])\\s*export\\s*\\{[^}\\n]*}\\s*;?",
+            "(^|;|\\R)\\s*export\\s*\\{[^}\\n]*}\\s*;?",
             Pattern.MULTILINE);
     private static final Pattern EXPORT_TYPE_NAMED_LOCAL_PATTERN = Pattern.compile(
-            "(?:^|[;\\n])\\s*export\\s+type\\s*\\{[^}\\n]*}\\s*;?",
+            "(^|;|\\R)\\s*export\\s+type\\s*\\{[^}\\n]*}\\s*;?",
             Pattern.MULTILINE);
     private static final Pattern IMPORT_TYPE_LOCAL_PATTERN = Pattern.compile(
             "^\\s*import\\s+type\\s+[\\s\\S]*?\\s+from\\s*[\"'][^\"']+[\"']\\s*;?\\s*$",
@@ -181,8 +181,8 @@ public final class QinLinkedModuleSourceEmitter {
         String stripped = IMPORT_TYPE_FROM_PATTERN.matcher(source).replaceAll("");
         stripped = IMPORT_FROM_PATTERN.matcher(stripped).replaceAll("");
         stripped = IMPORT_SIDE_EFFECT_PATTERN.matcher(stripped).replaceAll("");
-        stripped = EXPORT_TYPE_NAMED_PATTERN.matcher(stripped).replaceAll("");
-        stripped = EXPORT_NAMED_PATTERN.matcher(stripped).replaceAll("");
+        stripped = stripBoundaryPrefixedStatement(EXPORT_TYPE_NAMED_PATTERN, stripped);
+        stripped = stripBoundaryPrefixedStatement(EXPORT_NAMED_PATTERN, stripped);
         stripped = EXPORT_ALL_PATTERN.matcher(stripped).replaceAll("");
         stripped = stripLeadingModuleComments(stripped);
         return stripTopLevelTypeOnlyDeclarations(stripped);
@@ -226,8 +226,15 @@ public final class QinLinkedModuleSourceEmitter {
         rewritten = appendInlineExportInitializers(rewritten, moduleFile, moduleIndex, parsedExports);
         // Local `export { ... }` has no runtime effect for flattened source.
         rewritten = IMPORT_TYPE_LOCAL_PATTERN.matcher(rewritten).replaceAll("");
-        rewritten = EXPORT_TYPE_NAMED_LOCAL_PATTERN.matcher(rewritten).replaceAll("");
-        return EXPORT_NAMED_LOCAL_PATTERN.matcher(rewritten).replaceAll("");
+        rewritten = stripBoundaryPrefixedStatement(EXPORT_TYPE_NAMED_LOCAL_PATTERN, rewritten);
+        return stripBoundaryPrefixedStatement(EXPORT_NAMED_LOCAL_PATTERN, rewritten);
+    }
+
+    private String stripBoundaryPrefixedStatement(Pattern pattern, String source) {
+        if (source == null || source.isEmpty()) {
+            return source;
+        }
+        return pattern.matcher(source).replaceAll("$1");
     }
 
     private String stripTypeOnlyAbstractClassMembers(String source) {
@@ -395,19 +402,124 @@ public final class QinLinkedModuleSourceEmitter {
             TypeOnlyDeclarationKind kind) {
         Matcher matcher = pattern.matcher(source);
         matcher.region(Math.max(0, fromIndex), source.length());
-        if (!matcher.find()) {
-            return null;
+        while (matcher.find()) {
+            int start = matcher.start();
+            if (!isTopLevelSourcePosition(source, start)) {
+                continue;
+            }
+            int end = switch (kind) {
+                case TYPE_ALIAS -> findTypeAliasDeclarationEnd(source, matcher.end());
+                case INTERFACE -> findInterfaceDeclarationEnd(source, matcher.end());
+                case DECLARE -> findDeclareDeclarationEnd(source, matcher.end());
+            };
+            if (end <= start) {
+                continue;
+            }
+            return new TypeOnlyDeclarationMatch(kind, start, end);
         }
-        int start = matcher.start();
-        int end = switch (kind) {
-            case TYPE_ALIAS -> findTypeAliasDeclarationEnd(source, matcher.end());
-            case INTERFACE -> findInterfaceDeclarationEnd(source, matcher.end());
-            case DECLARE -> findDeclareDeclarationEnd(source, matcher.end());
-        };
-        if (end <= start) {
-            return null;
+        return null;
+    }
+
+    private boolean isTopLevelSourcePosition(String source, int index) {
+        int braceDepth = 0;
+        boolean inSingle = false;
+        boolean inDouble = false;
+        boolean inTemplate = false;
+        boolean escaping = false;
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+
+        for (int i = 0; i < index && i < source.length(); i++) {
+            char ch = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (ch == '\n' || ch == '\r') {
+                    inLineComment = false;
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (ch == '*' && next == '/') {
+                    inBlockComment = false;
+                    i++;
+                }
+                continue;
+            }
+            if (inSingle) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '\'') {
+                    inSingle = false;
+                }
+                continue;
+            }
+            if (inDouble) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '"') {
+                    inDouble = false;
+                }
+                continue;
+            }
+            if (inTemplate) {
+                if (escaping) {
+                    escaping = false;
+                    continue;
+                }
+                if (ch == '\\') {
+                    escaping = true;
+                    continue;
+                }
+                if (ch == '`') {
+                    inTemplate = false;
+                }
+                continue;
+            }
+
+            if (ch == '/' && next == '/') {
+                inLineComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '/' && next == '*') {
+                inBlockComment = true;
+                i++;
+                continue;
+            }
+            if (ch == '\'') {
+                inSingle = true;
+                continue;
+            }
+            if (ch == '"') {
+                inDouble = true;
+                continue;
+            }
+            if (ch == '`') {
+                inTemplate = true;
+                continue;
+            }
+            if (ch == '{') {
+                braceDepth++;
+                continue;
+            }
+            if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+            }
         }
-        return new TypeOnlyDeclarationMatch(kind, start, end);
+        return braceDepth == 0;
     }
 
     private int findInterfaceDeclarationEnd(String source, int afterHeaderIndex) {
@@ -2167,7 +2279,7 @@ public final class QinLinkedModuleSourceEmitter {
             String body,
             List<String> exportAliases) {
         StringBuilder out = new StringBuilder();
-        appendLines(out, slotAccesses);
+        appendLines(out, filterModuleClassSlotAccesses(slotAccesses, importAliases, body, exportAliases));
         String moduleBody = joinModuleSection(importAliases, body, exportAliases);
         if (!moduleBody.isBlank()) {
             if (out.length() > 0) {
@@ -2176,6 +2288,76 @@ public final class QinLinkedModuleSourceEmitter {
             out.append(moduleBody);
         }
         return out.toString();
+    }
+
+    private List<String> filterModuleClassSlotAccesses(
+            List<String> slotAccesses,
+            List<String> importAliases,
+            String body,
+            List<String> exportAliases) {
+        if (slotAccesses == null || slotAccesses.isEmpty()) {
+            return List.of();
+        }
+        String moduleLinkage = joinModuleSection(importAliases, body == null ? "" : body, exportAliases);
+        if (moduleLinkage.isBlank()) {
+            return List.of();
+        }
+        List<String> filtered = new ArrayList<>();
+        for (String access : slotAccesses) {
+            String slot = parseConstBindingName(access);
+            if (slot != null && containsIdentifier(moduleLinkage, slot)) {
+                filtered.add(access);
+            }
+        }
+        return filtered;
+    }
+
+    private String parseConstBindingName(String source) {
+        if (source == null) {
+            return null;
+        }
+        String text = source.stripLeading();
+        if (!text.startsWith("const ")) {
+            return null;
+        }
+        int start = "const ".length();
+        int index = start;
+        while (index < text.length()) {
+            char ch = text.charAt(index);
+            if (!(Character.isLetterOrDigit(ch) || ch == '_' || ch == '$')) {
+                break;
+            }
+            index++;
+        }
+        if (index == start) {
+            return null;
+        }
+        return text.substring(start, index);
+    }
+
+    private boolean containsIdentifier(String source, String identifier) {
+        if (source == null || identifier == null || identifier.isBlank()) {
+            return false;
+        }
+        int from = 0;
+        while (from < source.length()) {
+            int index = source.indexOf(identifier, from);
+            if (index < 0) {
+                return false;
+            }
+            int before = index - 1;
+            int after = index + identifier.length();
+            if ((before < 0 || !isIdentifierPart(source.charAt(before)))
+                    && (after >= source.length() || !isIdentifierPart(source.charAt(after)))) {
+                return true;
+            }
+            from = index + identifier.length();
+        }
+        return false;
+    }
+
+    private boolean isIdentifierPart(char ch) {
+        return Character.isLetterOrDigit(ch) || ch == '_' || ch == '$';
     }
 
     private String joinLines(List<String> lines) {
@@ -2433,16 +2615,16 @@ public final class QinLinkedModuleSourceEmitter {
 
         Matcher namedMatcher = EXPORT_NAMED_PATTERN.matcher(source);
         while (namedMatcher.find()) {
-            String block = namedMatcher.group(1);
-            String moduleSpecifier = namedMatcher.group(2) == null ? null : namedMatcher.group(2).trim();
+            String block = namedMatcher.group(2);
+            String moduleSpecifier = namedMatcher.group(3) == null ? null : namedMatcher.group(3).trim();
             Path resolvedModule = moduleSpecifier == null ? null : resolveTargetModule(module, moduleSpecifier);
             parseNamedExportBlock(block, resolvedModule, false, exports);
         }
 
         Matcher typeNamedMatcher = EXPORT_TYPE_NAMED_PATTERN.matcher(source);
         while (typeNamedMatcher.find()) {
-            String block = typeNamedMatcher.group(1);
-            String moduleSpecifier = typeNamedMatcher.group(2) == null ? null : typeNamedMatcher.group(2).trim();
+            String block = typeNamedMatcher.group(2);
+            String moduleSpecifier = typeNamedMatcher.group(3) == null ? null : typeNamedMatcher.group(3).trim();
             Path resolvedModule = moduleSpecifier == null ? null : resolveTargetModule(module, moduleSpecifier);
             parseNamedExportBlock(block, resolvedModule, true, exports);
         }

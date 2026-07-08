@@ -70,10 +70,28 @@ public final class QinOvsParserPipelineProbeMain {
                 import { SlimeGenerator } from "slime-generator";
 
                 const source = %s;
-                const parser = new OvsParser(source);
-                const cst = parser.OvsProgram();
-                const program = normalizeGeneratedAst(OvsCstToSlimeAstUtils.toFileAst(cst));
-                const generated = SlimeGenerator.generator(program, parser.parsedTokens).code;
+                let parser = null;
+                let cst = null;
+                let parseFailure = null;
+                try {
+                  parser = new OvsParser(source);
+                  cst = parser.OvsProgram();
+                } catch (error) {
+                  parseFailure = {
+                    parseOk: false,
+                    currentTokenIndex: parser == null ? -1 : parser.currentTokenIndex(),
+                    afterEof: parser == null ? false : parser.isEof(),
+                    nextToken: parser == null ? null : tokenSummary(parser.LA(1)),
+                    nextToken2: parser == null ? null : tokenSummary(parser.LA(2))
+                  };
+                }
+
+                let program = null;
+                let generated = "";
+                if (parseFailure == null) {
+                  program = normalizeGeneratedAst(OvsCstToSlimeAstUtils.toFileAst(cst));
+                  generated = SlimeGenerator.generator(program, parser.parsedTokens).code;
+                }
 
                 function arrayOf(value) {
                   if (!value) return [];
@@ -238,17 +256,18 @@ public final class QinOvsParserPipelineProbeMain {
                   return summary;
                 }
 
-                const arrow = findArrowWithParam(program, "value");
+                const arrow = parseFailure == null ? findArrowWithParam(program, "value") : null;
                 const arrowBody = bodyOf(arrow);
-                const methodProp = findProperty(program, "onClick");
+                const methodProp = parseFailure == null ? findProperty(program, "onClick") : null;
                 const methodValue = methodProp ? methodProp.value : null;
                 const methodBody = bodyOf(methodValue);
-                const tokens = arrayOf(parser.parsedTokens).slice(0, 120).map(tokenSummary);
-                ({
+                const tokens = parseFailure == null ? arrayOf(parser.parsedTokens).slice(0, 120).map(tokenSummary) : [];
+                const successResult = parseFailure == null ? {
+                  parseOk: true,
                   sourceLength: source.length,
-                  afterEof: parser.isEof(),
-                  currentTokenIndex: parser.currentTokenIndex(),
-                  nextToken: tokenSummary(parser.LA(1)),
+                  afterEof: parser == null ? false : parser.isEof(),
+                  currentTokenIndex: parser == null ? -1 : parser.currentTokenIndex(),
+                  nextToken: parser == null ? null : tokenSummary(parser.LA(1)),
                   tokenCount: arrayOf(parser.parsedTokens).length,
                   tokens,
                   cstDump: dumpInterestingCst(cst).join("\\n"),
@@ -263,7 +282,8 @@ public final class QinOvsParserPipelineProbeMain {
                   methodBodyLength: arrayOf(methodBody && methodBody.body).length,
                   methodBodyStatements: arrayOf(methodBody && methodBody.body).map(summarizeStatement),
                   generated
-                });
+                } : null;
+                parseFailure == null ? successResult : parseFailure;
                 """.formatted(QinJsPackageRunner.renderJsLiteral(source)), "ovs_parser_pipeline_probe");
 
         if (!(result instanceof Map<?, ?> map)) {

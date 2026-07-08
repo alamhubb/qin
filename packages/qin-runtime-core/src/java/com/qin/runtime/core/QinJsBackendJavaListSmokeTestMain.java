@@ -76,6 +76,16 @@ public final class QinJsBackendJavaListSmokeTestMain {
             throw new IllegalStateException("Expected ArrayList copy/addAll/set/subList/indexOf result alpha:gamma:3:alpha:1:true:beta:delta:2:-1, got: "
                     + copyResult);
         }
+        Object capacityResult = new QinJsPackageRunner().runModuleSource(
+                root,
+                generated
+                        + "\nconst capacityOnly = new __QinJavaUtilArrayList(10000);\n"
+                        + "capacityOnly.size() + \":\" + capacityOnly.isEmpty();\n",
+                "js_backend_array_list_capacity");
+        if (!"0:true".equals(capacityResult)) {
+            throw new IllegalStateException("Expected ArrayList capacity constructor result 0:true, got: "
+                    + capacityResult);
+        }
         Object arrayLikeResult = new QinJsPackageRunner().runModuleSource(
                 root,
                 generated

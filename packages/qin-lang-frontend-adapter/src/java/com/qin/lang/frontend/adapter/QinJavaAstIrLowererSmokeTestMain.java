@@ -5,12 +5,15 @@ import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrIdentifierReference;
 import com.qin.lang.ir.QinIrIfExpression;
 import com.qin.lang.ir.QinIrInstanceMethodCallExpression;
+import com.qin.lang.ir.QinIrFunctionLiteral;
 import com.qin.lang.ir.QinIrJavaNewExpression;
+import com.qin.lang.ir.QinIrMemberAccessExpression;
 import com.qin.lang.ir.QinIrMethodDeclaration;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrPropertyAccessExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
+import com.qin.lang.ir.QinIrSwitchExpression;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrTypeKind;
 
@@ -18,9 +21,11 @@ public class QinJavaAstIrLowererSmokeTestMain {
     public static void main(String[] args) {
         String source = """
                 package com.example;
+                import com.qin.runtime.core.QinBuildTarget;
                 import java.util.ArrayList;
                 import java.util.List;
                 import java.util.Objects;
+                import java.util.function.Supplier;
                 class Person {
                     String name;
                     List items;
@@ -34,6 +39,13 @@ public class QinJavaAstIrLowererSmokeTestMain {
                     String safe(String name) { return Objects.toString(name); }
                     String choose(boolean flag) { return flag ? "yes" : "no"; }
                     Class[] copy(Class[] params) { return params.clone(); }
+                    String chooseTarget(QinBuildTarget target) {
+                        return switch (target) {
+                            case DEV -> "dev";
+                            default -> "other";
+                        };
+                    }
+                    Supplier<String> displaySupplier(Person other) { return other::display; }
                 }
                 """;
 
@@ -50,7 +62,7 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require(person.fields().get(1).type().kind() == QinIrTypeKind.CLASS, "imported field type kind");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field binary name");
 
-        require(person.methods().size() == 10, "method count");
+        require(person.methods().size() == 12, "method count");
         QinIrMethodDeclaration add = person.methods().get(0);
         require("add".equals(add.name()), "method name");
         require(add.returnType().kind() == QinIrTypeKind.INT, "method return type");
@@ -153,6 +165,17 @@ public class QinJavaAstIrLowererSmokeTestMain {
         require("params".equals(((QinIrIdentifierReference) cloneCall.receiver()).name()), "copy receiver name");
         require("clone".equals(cloneCall.methodName()), "copy method call name");
         require(cloneCall.arguments().isEmpty(), "copy argument count");
+        QinIrMethodDeclaration chooseTarget = person.methods().get(10);
+        require("chooseTarget".equals(chooseTarget.name()), "chooseTarget method name");
+        require(chooseTarget.returnExpression() instanceof QinIrSwitchExpression, "chooseTarget return expression");
+        QinIrSwitchExpression targetSwitch = (QinIrSwitchExpression) chooseTarget.returnExpression();
+        require(targetSwitch.cases().get(0).test() instanceof QinIrMemberAccessExpression, "chooseTarget enum case");
+        QinIrMemberAccessExpression enumCase = (QinIrMemberAccessExpression) targetSwitch.cases().get(0).test();
+        require("com.qin.runtime.core.QinBuildTarget".equals(enumCase.objectName()), "chooseTarget enum owner");
+        require("DEV".equals(enumCase.propertyName()), "chooseTarget enum property");
+        QinIrMethodDeclaration displaySupplier = person.methods().get(11);
+        require("displaySupplier".equals(displaySupplier.name()), "displaySupplier method name");
+        require(displaySupplier.returnExpression() instanceof QinIrFunctionLiteral, "displaySupplier function literal");
 
         System.out.println("QinJavaAstIrLowererSmokeTestMain OK");
     }

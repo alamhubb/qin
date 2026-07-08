@@ -9,6 +9,7 @@ import com.qin.lang.pipeline.cfa.QinSlimeCfaCompiler;
 import com.qin.lang.backend.jvm.QinJvmDeclarationClassEmitter;
 import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrBooleanLiteral;
+import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrFunctionLiteral;
 import com.qin.lang.ir.QinIrFunctionModelArtifact;
@@ -43,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class QinInMemoryJvmRunner {
     private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
     private static final long DEFAULT_JS_RUN_TIMEOUT_MS = 0L;
-    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 5;
+    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 6;
 
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
@@ -211,12 +212,13 @@ public final class QinInMemoryJvmRunner {
 
     private CachedModuleClassCompileResult toCachedModuleClassCompileResult(
             QinCfaModuleClassCompileResult compileResult) {
+        Map<String, QinIrClassDeclaration> declarationIndex = collectModuleDeclarationIndex(compileResult);
         CachedModuleClassFile initializerClass = compileResult.initializerClass() == null
                 ? null
-                : toCachedModuleClassFile(compileResult.initializerClass());
+                : toCachedModuleClassFile(compileResult.initializerClass(), declarationIndex);
         List<CachedModuleClassFile> moduleClasses = new ArrayList<>();
         for (QinCfaModuleClassFile moduleClassFile : compileResult.moduleClasses()) {
-            moduleClasses.add(toCachedModuleClassFile(moduleClassFile));
+            moduleClasses.add(toCachedModuleClassFile(moduleClassFile, declarationIndex));
         }
         return new CachedModuleClassCompileResult(
                 MODULE_CLASS_DISK_CACHE_VERSION,
@@ -226,12 +228,18 @@ public final class QinInMemoryJvmRunner {
     }
 
     private CachedModuleClassFile toCachedModuleClassFile(QinCfaModuleClassFile moduleClassFile) {
+        return toCachedModuleClassFile(moduleClassFile, Map.of());
+    }
+
+    private CachedModuleClassFile toCachedModuleClassFile(
+            QinCfaModuleClassFile moduleClassFile,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
         return new CachedModuleClassFile(
                 moduleClassFile.sourceFile(),
                 moduleClassFile.moduleIndex(),
                 moduleClassFile.className(),
                 moduleClassFile.classBytes(),
-                compileDeclarationClassBytes(moduleClassFile),
+                compileDeclarationClassBytes(moduleClassFile, declarationIndex),
                 functionModelArtifacts(moduleClassFile.loweredProgram().functionModelArtifacts()));
     }
 
@@ -264,20 +272,63 @@ public final class QinInMemoryJvmRunner {
     private void bindModuleDeclarationClasses(
             ByteArrayClassLoader classLoader,
             QinCfaModuleClassCompileResult compileResult) {
+        Map<String, QinIrClassDeclaration> declarationIndex = collectModuleDeclarationIndex(compileResult);
         QinCfaModuleClassFile initializerClassFile = compileResult.initializerClass();
         if (initializerClassFile != null) {
-            bindDeclarationClasses(classLoader.defineAll(compileDeclarationClassBytes(initializerClassFile)));
+            bindDeclarationClasses(classLoader.defineAll(compileDeclarationClassBytes(
+                    initializerClassFile,
+                    declarationIndex)));
         }
         for (QinCfaModuleClassFile moduleClassFile : compileResult.moduleClasses()) {
-            bindDeclarationClasses(classLoader.defineAll(compileDeclarationClassBytes(moduleClassFile)));
+            bindDeclarationClasses(classLoader.defineAll(compileDeclarationClassBytes(
+                    moduleClassFile,
+                    declarationIndex)));
         }
     }
 
     private Map<String, byte[]> compileDeclarationClassBytes(QinCfaModuleClassFile moduleClassFile) {
+        return compileDeclarationClassBytes(moduleClassFile, Map.of());
+    }
+
+    private Map<String, byte[]> compileDeclarationClassBytes(
+            QinCfaModuleClassFile moduleClassFile,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
         if (moduleClassFile.loweredProgram().classDeclarations().isEmpty()) {
             return Map.of();
         }
-        return new QinJvmDeclarationClassEmitter().compileAllClasses(moduleClassFile.loweredProgram());
+        return new QinJvmDeclarationClassEmitter().compileAllClasses(
+                moduleClassFile.loweredProgram(),
+                declarationIndex);
+    }
+
+    private Map<String, QinIrClassDeclaration> collectModuleDeclarationIndex(
+            QinCfaModuleClassCompileResult compileResult) {
+        if (compileResult == null) {
+            return Map.of();
+        }
+        Map<String, QinIrClassDeclaration> index = new LinkedHashMap<>();
+        if (compileResult.initializerClass() != null) {
+            addDeclarationClasses(index, compileResult.initializerClass());
+        }
+        for (QinCfaModuleClassFile moduleClassFile : compileResult.moduleClasses()) {
+            addDeclarationClasses(index, moduleClassFile);
+        }
+        return index.isEmpty() ? Map.of() : Map.copyOf(index);
+    }
+
+    private void addDeclarationClasses(
+            Map<String, QinIrClassDeclaration> index,
+            QinCfaModuleClassFile moduleClassFile) {
+        if (moduleClassFile == null || moduleClassFile.loweredProgram().classDeclarations().isEmpty()) {
+            return;
+        }
+        for (QinIrClassDeclaration declaration : moduleClassFile.loweredProgram().classDeclarations()) {
+            String binaryName = declaration.binaryName();
+            if (binaryName == null || binaryName.isBlank()) {
+                continue;
+            }
+            index.put(binaryName, declaration);
+        }
     }
 
     private Object invokeRunWithRuntimeStack(Class<?> generatedClass, String className) throws Exception {

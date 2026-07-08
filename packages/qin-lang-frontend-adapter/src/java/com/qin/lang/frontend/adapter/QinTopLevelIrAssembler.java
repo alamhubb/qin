@@ -42,6 +42,7 @@ final class QinTopLevelIrAssembler {
             Program programAst,
             List<QinIrJavaImport> preImports,
             List<QinIrJsImport> preJsImports,
+            Map<String, String> declarationClassExportSlots,
             int sourceLength) {
         int functionModelBudget = legacyLowerer.computeFunctionModelBudget(sourceLength);
         legacyLowerer.resetFunctionModelArtifacts();
@@ -56,7 +57,8 @@ final class QinTopLevelIrAssembler {
         MutableProgramAssembly assembly = new MutableProgramAssembly();
         Map<String, String> javaImportLookup = new HashMap<>();
         Map<String, QinIrExpression> declarationLookup = new HashMap<>();
-        Set<String> localDeclarationNames = legacyLowerer.collectTopLevelClassNames(body);
+        Set<String> localDeclarationNames = new LinkedHashSet<>(legacyLowerer.collectTopLevelClassNames(body));
+        Map<String, String> jsDeclarationClassLookup = new LinkedHashMap<>();
         Map<String, QinIrClassDeclaration> localJvmDeclarations = new LinkedHashMap<>();
         boolean enableGlobalBinding = sourceLength <= 200_000;
         legacyLowerer.predeclareTopLevelBindings(body, declarationLookup);
@@ -72,7 +74,13 @@ final class QinTopLevelIrAssembler {
         if (preJsImports != null) {
             assembly.jsImports().addAll(preJsImports);
             registerJsImportBindings(preJsImports, declarationLookup);
+            registerJsImportNames(preJsImports, localDeclarationNames);
         }
+        registerModuleClassExportSlotImports(
+                body,
+                declarationClassExportSlots == null ? Map.of() : declarationClassExportSlots,
+                jsDeclarationClassLookup,
+                localDeclarationNames);
         Set<AstNode> hoistedFunctionDeclarations = hoistTopLevelFunctionDeclarations(
                 body,
                 assembly,
@@ -93,6 +101,7 @@ final class QinTopLevelIrAssembler {
                     legacyLowerer.registerJavaImportLookup(javaImportLookup, javaImport);
                 }
                 registerJsImportBindings(loweredImports.jsImports(), declarationLookup);
+                registerJsImportNames(loweredImports.jsImports(), localDeclarationNames);
                 continue;
             }
             if (statement instanceof VariableDeclaration variableDeclaration) {
@@ -137,7 +146,9 @@ final class QinTopLevelIrAssembler {
                 QinIrClassDeclaration loweredClass = legacyLowerer.lowerClassDeclarationOrNull(
                         classDeclaration,
                         javaImportLookup,
+                        jsDeclarationClassLookup,
                         localDeclarationNames,
+                        declarationLookup,
                         localJvmDeclarations);
                 if (loweredClass != null) {
                     assembly.classDeclarations().add(loweredClass);
@@ -358,6 +369,68 @@ final class QinTopLevelIrAssembler {
             }
             declarationLookup.putIfAbsent(localName, new com.qin.lang.ir.QinIrIdentifierReference(localName));
         }
+    }
+
+    private static void registerJsImportNames(
+            List<QinIrJsImport> jsImports,
+            Set<String> localDeclarationNames) {
+        // JS imports are module values, not local declaration classes. Direct class lowering
+        // admits imported superclasses only through registerModuleClassExportSlotImports().
+    }
+
+    private static void registerModuleClassExportSlotImports(
+            List<AstNode> body,
+            Map<String, String> declarationClassExportSlots,
+            Map<String, String> jsDeclarationClassLookup,
+            Set<String> localDeclarationNames) {
+        if (body == null || body.isEmpty() || declarationClassExportSlots == null
+                || declarationClassExportSlots.isEmpty()) {
+            return;
+        }
+        for (AstNode statement : body) {
+            if (!(statement instanceof VariableDeclaration variableDeclaration)
+                    || variableDeclaration.declarations() == null) {
+                continue;
+            }
+            for (Object declarator : variableDeclaration.declarations()) {
+                Object id = QinSlimeFrontendAdapter.invokeByName(declarator, "id");
+                if (!(id instanceof com.slime.ast.nodes.expressions.Identifier identifier)) {
+                    continue;
+                }
+                String exportSlot = moduleExportGetSlotName(
+                        QinSlimeFrontendAdapter.invokeByName(declarator, "init"));
+                if (exportSlot == null) {
+                    continue;
+                }
+                String declarationClassName = declarationClassExportSlots.get(exportSlot);
+                if (declarationClassName == null || declarationClassName.isBlank()) {
+                    continue;
+                }
+                jsDeclarationClassLookup.putIfAbsent(identifier.name(), declarationClassName);
+                if (localDeclarationNames != null) {
+                    localDeclarationNames.add(identifier.name());
+                }
+            }
+        }
+    }
+
+    private static String moduleExportGetSlotName(Object init) {
+        if (init == null || !"CallExpression".equals(QinSlimeFrontendAdapter.simpleName(init))) {
+            return null;
+        }
+        Object callee = QinSlimeFrontendAdapter.invokeByName(init, "callee");
+        if (!(callee instanceof com.slime.ast.nodes.expressions.Identifier identifier)
+                || !"__qin_export_get__".equals(identifier.name())) {
+            return null;
+        }
+        List<?> arguments = QinSlimeFrontendAdapter.asListStatic(
+                QinSlimeFrontendAdapter.invokeByName(init, "arguments"),
+                "CallExpression.arguments");
+        if (arguments.size() != 1
+                || !(arguments.get(0) instanceof com.slime.ast.nodes.expressions.Identifier slotIdentifier)) {
+            return null;
+        }
+        return slotIdentifier.name();
     }
 
     record LoweredStatement(

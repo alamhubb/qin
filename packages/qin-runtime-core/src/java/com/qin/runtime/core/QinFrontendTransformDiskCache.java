@@ -15,13 +15,21 @@ import java.util.Optional;
 import java.util.Properties;
 
 final class QinFrontendTransformDiskCache {
-    private static final String CACHE_VERSION = "v2";
+    private static final String CACHE_VERSION = "v3";
 
     private QinFrontendTransformDiskCache() {
     }
 
     static Optional<Map<String, String>> read(Path projectRoot, String namespace, String keyMaterial) {
-        Path file = cacheFile(projectRoot, namespace, keyMaterial);
+        return read(projectRoot, projectRoot, namespace, keyMaterial);
+    }
+
+    static Optional<Map<String, String>> read(
+            Path cacheRoot,
+            Path semanticRoot,
+            String namespace,
+            String keyMaterial) {
+        Path file = cacheFile(cacheRoot, namespace, keyMaterial);
         if (!Files.isRegularFile(file)) {
             return Optional.empty();
         }
@@ -43,7 +51,16 @@ final class QinFrontendTransformDiskCache {
     }
 
     static void write(Path projectRoot, String namespace, String keyMaterial, Map<String, String> values) {
-        Path file = cacheFile(projectRoot, namespace, keyMaterial);
+        write(projectRoot, projectRoot, namespace, keyMaterial, values);
+    }
+
+    static void write(
+            Path cacheRoot,
+            Path semanticRoot,
+            String namespace,
+            String keyMaterial,
+            Map<String, String> values) {
+        Path file = cacheFile(cacheRoot, namespace, keyMaterial);
         Properties properties = new Properties();
         for (Map.Entry<String, String> entry : values.entrySet()) {
             properties.setProperty("value." + entry.getKey(), encode(entry.getValue()));
@@ -61,6 +78,13 @@ final class QinFrontendTransformDiskCache {
     static String keyMaterial(Path projectRoot, String source, String configSource) {
         return CACHE_VERSION
                 + "\nroot=" + projectRoot.toAbsolutePath().normalize()
+                + "\nconfig=" + (configSource == null ? "" : configSource)
+                + "\nsource=" + (source == null ? "" : source);
+    }
+
+    static String keyMaterial(String semanticRoot, String source, String configSource) {
+        return CACHE_VERSION
+                + "\nroot=" + (semanticRoot == null ? "" : semanticRoot)
                 + "\nconfig=" + (configSource == null ? "" : configSource)
                 + "\nsource=" + (source == null ? "" : source);
     }

@@ -163,11 +163,11 @@ public final class JavaEsmObject {
             return target;
         }
         if (descriptorMap.containsKey("value")) {
-            JavaEsmGlobal.__qin_member_set__(target, key, descriptorMap.get("value"));
+            JavaEsmGlobal.__qin_define_own_property__(target, key, descriptorMap.get("value"));
             return target;
         }
         if (descriptorMap.containsKey("get")) {
-            JavaEsmGlobal.__qin_member_set__(target, key, accessorDescriptor(descriptorMap));
+            JavaEsmGlobal.__qin_define_own_property__(target, key, accessorDescriptor(descriptorMap));
         }
         return target;
     }
@@ -185,11 +185,34 @@ public final class JavaEsmObject {
     }
 
     static Object resolveStoredPropertyValue(Object value) {
+        return resolveStoredPropertyValue(value, null);
+    }
+
+    static Object resolveStoredPropertyValue(Object value, Object receiver) {
         if (!isAccessorDescriptor(value)) {
             return value;
         }
         Object getter = castMap(value).get("get");
-        return getter == null ? null : JavaEsmGlobal.callRuntimeCallable(getter);
+        if (getter == null) {
+            return null;
+        }
+        Object callable = receiver == null
+                ? getter
+                : JavaEsmGlobal.bindRuntimeCallableThis(getter, receiver);
+        return JavaEsmGlobal.callRuntimeCallable(callable);
+    }
+
+    static boolean writeStoredPropertyValue(Object existing, Object receiver, Object value) {
+        if (!isAccessorDescriptor(existing)) {
+            return false;
+        }
+        Object setter = castMap(existing).get("set");
+        if (setter != null) {
+            JavaEsmGlobal.callRuntimeCallable(
+                    receiver == null ? setter : JavaEsmGlobal.bindRuntimeCallableThis(setter, receiver),
+                    value);
+        }
+        return true;
     }
 
     private static Map<String, Object> accessorDescriptor(Map<?, ?> descriptorMap) {
@@ -215,7 +238,7 @@ public final class JavaEsmObject {
         return descriptor;
     }
 
-    private static boolean isAccessorDescriptor(Object value) {
+    static boolean isAccessorDescriptor(Object value) {
         return value instanceof Map<?, ?> map && Boolean.TRUE.equals(map.get(ACCESSOR_DESCRIPTOR_MARKER));
     }
 

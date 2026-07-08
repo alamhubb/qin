@@ -17,7 +17,10 @@ import com.slime.parser.cstToAst.typescript.SlimeTSDecoratorCstToAst;
 import com.subhuti.struct.SubhutiCst;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 final class QinProgramCstToAst {
     private static final String OBJECT_INTERNAL_PREFIX = "__QinObject_";
@@ -28,15 +31,15 @@ final class QinProgramCstToAst {
 
     Program createProgramAst(SubhutiCst cst) {
         List<AstNode> body = new ArrayList<>();
-        collectBody(cst, body);
+        collectBody(cst, body, identitySet());
         return SlimeAstCreateUtils.createProgram(
                 body.toArray(new AstNode[0]),
                 "module",
                 SlimeAstCreateUtils.resolveSubhutiLocation(cst));
     }
 
-    private void collectBody(SubhutiCst cst, List<AstNode> body) {
-        if (cst == null) {
+    private void collectBody(SubhutiCst cst, List<AstNode> body, Set<SubhutiCst> visited) {
+        if (cst == null || !visited.add(cst)) {
             return;
         }
         String name = cst.getName();
@@ -48,7 +51,7 @@ final class QinProgramCstToAst {
             return;
         }
         for (SubhutiCst child : safeChildren(cst)) {
-            collectBody(child, body);
+            collectBody(child, body, visited);
         }
     }
 
@@ -161,11 +164,14 @@ final class QinProgramCstToAst {
 
     private Identifier firstIdentifierAfterObjectKeyword(SubhutiCst cst) {
         boolean[] seenObjectKeyword = new boolean[] { false };
-        return firstIdentifierAfterObjectKeyword(cst, seenObjectKeyword);
+        return firstIdentifierAfterObjectKeyword(cst, seenObjectKeyword, identitySet());
     }
 
-    private Identifier firstIdentifierAfterObjectKeyword(SubhutiCst cst, boolean[] seenObjectKeyword) {
-        if (cst == null) {
+    private Identifier firstIdentifierAfterObjectKeyword(
+            SubhutiCst cst,
+            boolean[] seenObjectKeyword,
+            Set<SubhutiCst> visited) {
+        if (cst == null || !visited.add(cst)) {
             return null;
         }
         if ("IdentifierName".equals(cst.getName()) && "object".equals(cst.getValue())) {
@@ -177,7 +183,7 @@ final class QinProgramCstToAst {
             return slimeTransformer.createIdentifierAst(identifier == null ? cst : identifier);
         }
         for (SubhutiCst child : safeChildren(cst)) {
-            Identifier found = firstIdentifierAfterObjectKeyword(child, seenObjectKeyword);
+            Identifier found = firstIdentifierAfterObjectKeyword(child, seenObjectKeyword, visited);
             if (found != null) {
                 return found;
             }
@@ -186,14 +192,18 @@ final class QinProgramCstToAst {
     }
 
     private static boolean containsName(SubhutiCst cst, String name) {
-        if (cst == null) {
+        return containsName(cst, name, identitySet());
+    }
+
+    private static boolean containsName(SubhutiCst cst, String name, Set<SubhutiCst> visited) {
+        if (cst == null || !visited.add(cst)) {
             return false;
         }
         if (name.equals(cst.getName())) {
             return true;
         }
         for (SubhutiCst child : safeChildren(cst)) {
-            if (containsName(child, name)) {
+            if (containsName(child, name, visited)) {
                 return true;
             }
         }
@@ -219,14 +229,21 @@ final class QinProgramCstToAst {
     }
 
     private static SubhutiCst findFirstByName(SubhutiCst cst, String name) {
+        return findFirstByName(cst, name, identitySet());
+    }
+
+    private static SubhutiCst findFirstByName(SubhutiCst cst, String name, Set<SubhutiCst> visited) {
         if (cst == null || name == null) {
+            return null;
+        }
+        if (!visited.add(cst)) {
             return null;
         }
         if (name.equals(cst.getName())) {
             return cst;
         }
         for (SubhutiCst child : safeChildren(cst)) {
-            SubhutiCst found = findFirstByName(child, name);
+            SubhutiCst found = findFirstByName(child, name, visited);
             if (found != null) {
                 return found;
             }
@@ -241,6 +258,10 @@ final class QinProgramCstToAst {
     private static List<SubhutiCst> safeChildren(SubhutiCst cst) {
         List<SubhutiCst> children = cst == null ? null : cst.getChildren();
         return children == null ? List.of() : children;
+    }
+
+    private static Set<SubhutiCst> identitySet() {
+        return Collections.newSetFromMap(new IdentityHashMap<>());
     }
 
     private record ObjectParts(

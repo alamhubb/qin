@@ -1,5 +1,6 @@
 package com.qin.lang.pipeline.cfa;
 
+import com.qin.lang.frontend.adapter.QinFrontendLowerer;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.module.resolver.QinLinkedModuleSection;
 import com.qin.lang.module.resolver.QinLinkedModuleSource;
@@ -8,8 +9,13 @@ import com.qin.lang.pipeline.cfa.ir.QinCfaProgram;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Unified compiler facade:
@@ -19,6 +25,10 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
     private static final int LARGE_LINKED_CLASS_SOURCE_LIMIT = 2_000_000;
     private static final boolean ALLOW_LARGE_LINKED_CLASS =
             Boolean.getBoolean("qin.allowLargeLinkedClass");
+    private static final Pattern CLASS_DECLARATION_PATTERN = Pattern.compile(
+            "\\bclass\\s+([A-Za-z_$][\\w$]*)\\b");
+    private static final Pattern EXPORT_INIT_PATTERN = Pattern.compile(
+            "__qin_export_init__\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*,\\s*([A-Za-z_$][\\w$]*)\\s*\\)");
 
     private final QinCfaSemanticStage semanticStage;
     private final QinCfaIrStage irStage;
@@ -103,6 +113,7 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
         }
 
         List<QinCfaModuleClassFile> moduleClasses = new ArrayList<>();
+        Map<String, String> declarationClassExportSlots = buildDeclarationClassExportSlots(linkedSource);
         for (QinLinkedModuleSection section : linkedSource.moduleSections()) {
             String className = request.className() + "$QinModule" + section.index();
             logPhase("module-class emit start", startNanos, className + " :: " + section.file());
@@ -111,7 +122,8 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
                     section.file(),
                     section.index(),
                     className,
-                    section.classSource());
+                    section.classSource(),
+                    declarationClassExportSlots);
             moduleClasses.add(moduleClass);
             logPhase("module-class emit done", startNanos, className);
         }
@@ -131,6 +143,22 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
             int moduleIndex,
             String className,
             String source) {
+        return compileModuleClassSource(
+                originalResult,
+                sourceFile,
+                moduleIndex,
+                className,
+                source,
+                Map.of());
+    }
+
+    private QinCfaModuleClassFile compileModuleClassSource(
+            QinCfaSemanticStageResult originalResult,
+            Path sourceFile,
+            int moduleIndex,
+            String className,
+            String source,
+            Map<String, String> declarationClassExportSlots) {
         QinLinkedModuleSource originalLinkedSource = originalResult.linkedSource();
         QinLinkedModuleSource classLinkedSource = new QinLinkedModuleSource(
                 originalLinkedSource.entryFile(),
@@ -141,7 +169,8 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
                 originalLinkedSource.imports(),
                 originalLinkedSource.moduleGraph());
         QinCfaIrStageResult irStageResult = irStage.execute(
-                new QinCfaSemanticStageResult(classLinkedSource, originalResult.semanticModel()));
+                new QinCfaSemanticStageResult(classLinkedSource, originalResult.semanticModel()),
+                declarationClassExportSlots);
         byte[] classBytes = emitStage.emit(irStageResult, className);
         return new QinCfaModuleClassFile(
                 sourceFile,
@@ -152,6 +181,53 @@ public final class QinSlimeCfaCompiler implements QinCfaPipeline {
                 irStageResult.cfaProgram(),
                 irStageResult.astText(),
                 classBytes);
+    }
+
+    private Map<String, String> buildDeclarationClassExportSlots(QinLinkedModuleSource linkedSource) {
+        Map<String, String> exportSlots = new LinkedHashMap<>();
+        if (linkedSource == null || linkedSource.moduleSections().isEmpty()) {
+            return Map.of();
+        }
+        QinFrontendLowerer frontendLowerer = new QinFrontendLowerer();
+        for (QinLinkedModuleSection section : linkedSource.moduleSections()) {
+            String source = section.classSource();
+            if (source == null || source.isBlank()) {
+                continue;
+            }
+            Set<String> classNames = collectDeclarationClassNames(frontendLowerer, source);
+            Matcher matcher = EXPORT_INIT_PATTERN.matcher(source);
+            while (matcher.find()) {
+                String slotName = matcher.group(1);
+                String localName = matcher.group(2);
+                if (!classNames.contains(localName)) {
+                    continue;
+                }
+                exportSlots.put(slotName, localName);
+            }
+        }
+        return exportSlots.isEmpty() ? Map.of() : Map.copyOf(exportSlots);
+    }
+
+    private Set<String> collectDeclarationClassNames(QinFrontendLowerer frontendLowerer, String source) {
+        try {
+            QinIrProgram program = frontendLowerer.lowerSource(source, Map.of());
+            Set<String> names = new java.util.LinkedHashSet<>();
+            for (var declaration : program.classDeclarations()) {
+                names.add(declaration.simpleName());
+            }
+            return Set.copyOf(names);
+        } catch (RuntimeException error) {
+            return Set.of();
+        }
+    }
+
+    private Set<String> collectClassDeclarationNames(String source) {
+        Set<String> names = new java.util.LinkedHashSet<>();
+        Matcher matcher = CLASS_DECLARATION_PATTERN.matcher(source);
+        while (matcher.find()) {
+            names.add(matcher.group(1));
+        }
+        return Set.copyOf(names);
     }
 
     private void logPhase(String phase, long startNanos, String detail) {

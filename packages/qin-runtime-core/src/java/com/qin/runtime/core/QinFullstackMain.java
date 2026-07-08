@@ -7,8 +7,11 @@ import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,7 +50,7 @@ public final class QinFullstackMain {
             "(?s)@WebRoot\\s*\\([^)]*\\)\\s*export\\s+object\\s+App\\s*\\{");
     private static final Pattern IMPORT_SPECIFIER_PATTERN = Pattern.compile("([\"'])([^\"']+)([\"'])");
     private static final List<String> DEV_WATCH_IGNORED_DIRS = List.of(
-            ".git", ".qin", "@qin-mod", "build", "dist", "target", "node_modules", "out");
+            ".git", ".qin", "@qin-mod", "build", "dist", "logs", "target", "node_modules", "out");
     private static final String JAVAC_CACHE_VERSION = "qin-javac-cache-v1";
     private static final String QIN_BACKEND_MODULE_CACHE_VERSION = "qin-backend-module-cache-v1";
 
@@ -1042,13 +1045,26 @@ public final class QinFullstackMain {
 
     private static Map<Path, FileSnapshot> snapshotDevSourceFiles(Path root) {
         Map<Path, FileSnapshot> snapshots = new LinkedHashMap<>();
-        try (var stream = Files.walk(root)) {
-            List<Path> files = stream
-                    .filter(Files::isRegularFile)
-                    .filter(path -> isDevSourceFile(root, path))
-                    .sorted(Comparator.comparing(Path::toString))
-                    .toList();
+        List<Path> files = new ArrayList<>();
+        try {
+            Files.walkFileTree(root, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (isDevWatchIgnoredPath(root, dir)) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
 
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (attrs != null && attrs.isRegularFile() && isDevSourceFile(root, file)) {
+                        files.add(file);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            files.sort(Comparator.comparing(Path::toString));
             for (Path file : files) {
                 snapshots.put(
                         file.toAbsolutePath().normalize(),
@@ -1058,6 +1074,22 @@ public final class QinFullstackMain {
             // ignore and keep current snapshot
         }
         return snapshots;
+    }
+
+    private static boolean isDevWatchIgnoredPath(Path root, Path path) {
+        Path normalizedRoot = root.toAbsolutePath().normalize();
+        Path normalizedPath = path.toAbsolutePath().normalize();
+        if (normalizedRoot.equals(normalizedPath)) {
+            return false;
+        }
+        String rel = normalizedRoot.relativize(normalizedPath).toString().replace('\\', '/');
+        for (String ignored : DEV_WATCH_IGNORED_DIRS) {
+            if (rel.equals(ignored) || rel.startsWith(ignored + "/") || rel.contains("/" + ignored + "/")) {
+                return true;
+            }
+        }
+        Path fileName = normalizedPath.getFileName();
+        return fileName != null && fileName.toString().startsWith("tmp-");
     }
 
     private static List<Path> diffChangedFiles(Map<Path, FileSnapshot> previous, Map<Path, FileSnapshot> current) {

@@ -895,6 +895,14 @@ public final class QinCfaJvmClassFileBackend {
             code.getstatic(generatedClassDesc, binding.fieldName(), OBJECT_DESC);
             return;
         }
+        if (expression instanceof QinCfaProgram.JavaClassLiteralExpression classLiteralExpression) {
+            String binaryName = classLiteralExpression.binaryName() == null
+                    ? classLiteralExpression.typeName()
+                    : classLiteralExpression.binaryName();
+            code.ldc(binaryName);
+            code.invokestatic(CLASS_DESC, "forName", CLASS_FOR_NAME_SIGNATURE);
+            return;
+        }
         if (expression instanceof QinCfaProgram.BuiltinCallExpression builtinCallExpression) {
             emitBuiltinCallAsObject(code, generatedClassDesc, bindings, localBindings, nextLocalSlot, builtinCallExpression);
             return;

@@ -15,15 +15,12 @@ final class QinOvsCsstsDemoPaths {
     static Path generatedTsSlimeDemoRoot() {
         Path cwd = Path.of("").toAbsolutePath().normalize();
         List<Path> candidates = new ArrayList<>();
-        candidates.add(cwd.resolve(DEMO_PATH));
-        candidates.add(cwd.resolve("qin").resolve(DEMO_PATH));
-        Path parent = cwd.getParent();
-        if (parent != null) {
-            candidates.add(parent.resolve("qin").resolve(DEMO_PATH));
-            candidates.add(parent.resolve(DEMO_PATH));
-            candidates.add(parent.resolve(LEGACY_DEMO_DIR));
+        for (Path current = cwd; current != null; current = current.getParent()) {
+            candidates.add(current.resolve(DEMO_PATH));
+            candidates.add(current.resolve("qin").resolve(DEMO_PATH));
+            candidates.add(current.resolve("examples").resolve("ovs-cssts-demos").resolve(LEGACY_DEMO_DIR));
+            candidates.add(current.resolve(LEGACY_DEMO_DIR));
         }
-        candidates.add(cwd.resolve(LEGACY_DEMO_DIR));
 
         for (Path candidate : candidates) {
             Path normalized = candidate.toAbsolutePath().normalize();

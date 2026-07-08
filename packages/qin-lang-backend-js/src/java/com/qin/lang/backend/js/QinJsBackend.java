@@ -67,6 +67,7 @@ import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrTryStatement;
 import com.qin.lang.ir.QinIrTypeKind;
 import com.qin.lang.ir.QinIrTypeRef;
+import com.qin.lang.ir.QinIrUpdateExpression;
 import com.qin.lang.ir.QinIrWhileExpression;
 import com.qin.lang.ir.QinIrWhileStatementNode;
 
@@ -104,6 +105,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__QinJavaLangReflectiveOperationException",
             "__QinJavaLangClassNotFoundException",
             "__QinJavaLangNoSuchMethodException",
+            "__QinJavaLangReflectInvocationTargetException",
             "__QinJavaLangError",
             "__QinJavaLangStackOverflowError",
             "__QinJavaLangIllegalArgumentException",
@@ -137,6 +139,8 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__QinJavaUtilUnmodifiableMap",
             "__QinJavaUtilCollections",
             "__QinJavaUtilHashMap",
+            "__QinJavaUtilIdentityHashMap",
+            "__QinJavaUtilMapBackedSet",
             "__QinJavaUtilObjects",
             "__QinJavaUtilOptionalValue",
             "__QinJavaUtilOptional",
@@ -152,6 +156,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__qin_java_functional",
             "__qin_java_class_info__",
             "__qin_java_implements",
+            "__qin_instanceof__",
             "__qin_binary__",
             "__qin_logical__",
             "__qin_subhuti_rule_cache_key",
@@ -754,6 +759,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                     emitJavaAliasBinding(js, aliasName, "__QinJavaLangString");
                 }
             }
+            case "java.lang.Class" -> {
+                requireExternalJavaSdkRuntime("__qin_java_class_info__");
+                if (aliasName != null) {
+                    js.append("const ")
+                            .append(aliasName)
+                            .append(" = __qin_java_class_info__(Object, { name: \"java.lang.Class\" });\n");
+                }
+            }
             case "java.lang.Boolean" -> {
                 emitJavaLangBooleanRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangBoolean");
@@ -797,6 +810,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.NoSuchMethodException" -> {
                 emitJavaLangExceptionRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangNoSuchMethodException");
+            }
+            case "java.lang.reflect.InvocationTargetException" -> {
+                emitJavaLangExceptionRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangReflectInvocationTargetException");
             }
             case "java.lang.NumberFormatException" -> {
                 emitJavaLangExceptionRuntime(js);
@@ -895,6 +912,10 @@ public class QinJsBackend implements QinIrCodeBackend {
                 emitJavaUtilHashMapRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHashMap");
             }
+            case "java.util.IdentityHashMap" -> {
+                emitJavaUtilIdentityHashMapRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilIdentityHashMap");
+            }
             case "java.util.Objects" -> {
                 emitJavaUtilObjectsRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilObjects");
@@ -971,7 +992,9 @@ public class QinJsBackend implements QinIrCodeBackend {
             if ("__QinJavaUtilHashSet".equals(name) || "__QinJavaUtilSet".equals(name)) {
                 externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableSet");
             }
-            if ("__QinJavaUtilHashMap".equals(name) || "__QinJavaUtilCollections".equals(name)) {
+            if ("__QinJavaUtilHashMap".equals(name)
+                    || "__QinJavaUtilIdentityHashMap".equals(name)
+                    || "__QinJavaUtilCollections".equals(name)) {
                 externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableMap");
             }
         }
@@ -1314,8 +1337,11 @@ public class QinJsBackend implements QinIrCodeBackend {
                     if (value == null) {
                       throw new Error("NullPointerException: " + methodName + "()");
                     }
+                    if (typeof value !== "object" && typeof value !== "function") {
+                      return null;
+                    }
                     const method = value[methodName];
-                    if ((typeof value === "object" || typeof value === "function") && typeof method === "function") {
+                    if (typeof method === "function") {
                       return method.bind(value);
                     }
                     return null;
@@ -1553,6 +1579,8 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         js.append("""
                 class __QinJavaLangEnum {
+                  __qinEnumName = null;
+                  __qinEnumOrdinal = null;
                   constructor() {
                   }
                   name() {
@@ -1577,6 +1605,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     "__QinJavaLangReflectiveOperationException",
                     "__QinJavaLangClassNotFoundException",
                     "__QinJavaLangNoSuchMethodException",
+                    "__QinJavaLangReflectInvocationTargetException",
                     "__QinJavaLangError",
                     "__QinJavaLangStackOverflowError",
                     "__QinJavaLangIllegalArgumentException",
@@ -1617,6 +1646,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                 class __QinJavaLangClassNotFoundException extends __QinJavaLangException {
                 }
                 class __QinJavaLangNoSuchMethodException extends __QinJavaLangReflectiveOperationException {
+                }
+                class __QinJavaLangReflectInvocationTargetException extends __QinJavaLangReflectiveOperationException {
                 }
                 class __QinJavaLangError extends __QinJavaLangThrowable {
                 }
@@ -2453,6 +2484,37 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                   return __qin_java_hash_identity_ids__.get(value);
                 }
+                function __qin_java_number_hash_code__(value) {
+                  return value == null ? 0 : value;
+                }
+                function __qin_java_structural_hash_code__(value) {
+                  if (value == null || typeof value !== "object") {
+                    return null;
+                  }
+                  if (Object.prototype.hasOwnProperty.call(value, "__qin_field_ruleName")
+                      && Object.prototype.hasOwnProperty.call(value, "__qin_field_cacheKeyExtra")
+                      && Object.prototype.hasOwnProperty.call(value, "__qin_field_tokenIndex")
+                      && Object.prototype.hasOwnProperty.call(value, "__qin_field_mode")
+                      && Object.prototype.hasOwnProperty.call(value, "__qin_field_lastTokenName")
+                      && Object.prototype.hasOwnProperty.call(value, "__qin_field_hashCode")) {
+                    let result = 1;
+                    result = result * 31 + __qin_java_value_hash_code__(value.__qin_field_ruleName);
+                    result = result * 31 + __qin_java_value_hash_code__(value.__qin_field_cacheKeyExtra);
+                    result = result * 31 + __qin_java_number_hash_code__(value.__qin_field_tokenIndex);
+                    result = result * 31 + __qin_java_value_hash_code__(value.__qin_field_mode);
+                    result = result * 31 + __qin_java_value_hash_code__(value.__qin_field_lastTokenName);
+                    return result;
+                  }
+                  if (Object.prototype.hasOwnProperty.call(value, "__qin_field_name")
+                      && typeof value.isDefault === "function"
+                      && typeof value.equals === "function"
+                      && typeof value.hashCode === "function") {
+                    let result = 1;
+                    result = result * 31 + __qin_java_value_hash_code__(value.__qin_field_name);
+                    return result;
+                  }
+                  return null;
+                }
                 function __qin_java_value_hash_code__(value) {
                   if (value == null) {
                     return 0;
@@ -2468,6 +2530,10 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return value;
                   }
                   if (valueType === "object" || valueType === "function") {
+                    const structuralHash = __qin_java_structural_hash_code__(value);
+                    if (structuralHash != null) {
+                      return structuralHash;
+                    }
                     if (typeof value.hashCode === "function") {
                       return value.hashCode();
                     }
@@ -2475,12 +2541,50 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                   return __qin_java_string_hash_code__(String(value));
                 }
+                function __qin_java_structural_values_equal__(left, right) {
+                  if (left == null || right == null || typeof left !== "object" || typeof right !== "object") {
+                    return null;
+                  }
+                  if (Object.prototype.hasOwnProperty.call(left, "__qin_field_ruleName")
+                      && Object.prototype.hasOwnProperty.call(right, "__qin_field_ruleName")
+                      && Object.prototype.hasOwnProperty.call(left, "__qin_field_cacheKeyExtra")
+                      && Object.prototype.hasOwnProperty.call(right, "__qin_field_cacheKeyExtra")
+                      && Object.prototype.hasOwnProperty.call(left, "__qin_field_tokenIndex")
+                      && Object.prototype.hasOwnProperty.call(right, "__qin_field_tokenIndex")
+                      && Object.prototype.hasOwnProperty.call(left, "__qin_field_mode")
+                      && Object.prototype.hasOwnProperty.call(right, "__qin_field_mode")
+                      && Object.prototype.hasOwnProperty.call(left, "__qin_field_lastTokenName")
+                      && Object.prototype.hasOwnProperty.call(right, "__qin_field_lastTokenName")
+                      && Object.prototype.hasOwnProperty.call(left, "__qin_field_hashCode")
+                      && Object.prototype.hasOwnProperty.call(right, "__qin_field_hashCode")) {
+                    return left.__qin_field_tokenIndex === right.__qin_field_tokenIndex
+                      && __qin_java_values_equal__(left.__qin_field_ruleName, right.__qin_field_ruleName)
+                      && __qin_java_values_equal__(left.__qin_field_cacheKeyExtra, right.__qin_field_cacheKeyExtra)
+                      && left.__qin_field_mode === right.__qin_field_mode
+                      && __qin_java_values_equal__(left.__qin_field_lastTokenName, right.__qin_field_lastTokenName);
+                  }
+                  if (Object.prototype.hasOwnProperty.call(left, "__qin_field_name")
+                      && Object.prototype.hasOwnProperty.call(right, "__qin_field_name")
+                      && typeof left.isDefault === "function"
+                      && typeof right.isDefault === "function"
+                      && typeof left.equals === "function"
+                      && typeof right.equals === "function"
+                      && typeof left.hashCode === "function"
+                      && typeof right.hashCode === "function") {
+                    return __qin_java_values_equal__(left.__qin_field_name, right.__qin_field_name);
+                  }
+                  return null;
+                }
                 function __qin_java_values_equal__(left, right) {
                   if (left === right || (left !== left && right !== right)) {
                     return true;
                   }
                   if (left == null || right == null) {
                     return false;
+                  }
+                  const structuralEqual = __qin_java_structural_values_equal__(left, right);
+                  if (structuralEqual != null) {
+                    return structuralEqual === true;
                   }
                   if ((typeof left === "object" || typeof left === "function")
                       && typeof left.equals === "function") {
@@ -2597,6 +2701,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitJavaUtilArrayListRuntime(js);
         emitJavaUtilHashSetRuntime(js);
         emitJavaUtilHashMapRuntime(js);
+        emitJavaUtilIdentityHashMapRuntime(js);
         js.append("""
                 class __QinJavaUtilUnmodifiableMap {
                   constructor(source) {
@@ -2620,14 +2725,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   get(key) {
-                    if (this.__source instanceof __QinJavaUtilHashMap) {
+                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
                       return this.__source.get(key);
                     }
                     const entries = this.__values();
                     return entries.has(key) ? entries.get(key) : null;
                   }
                   getOrDefault(key, defaultValue) {
-                    if (this.__source instanceof __QinJavaUtilHashMap) {
+                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
                       return this.__source.getOrDefault(key, defaultValue);
                     }
                     const entries = this.__values();
@@ -2637,7 +2742,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   values() {
-                    if (this.__source instanceof __QinJavaUtilHashMap) {
+                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
                       return new __QinJavaUtilUnmodifiableList(this.__source.values());
                     }
                     return new __QinJavaUtilUnmodifiableList(Array.from(this.__values().values()));
@@ -2649,7 +2754,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   containsKey(key) {
-                    if (this.__source instanceof __QinJavaUtilHashMap) {
+                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
                       return this.__source.containsKey(key);
                     }
                     return this.__values().has(key);
@@ -2658,13 +2763,13 @@ public class QinJsBackend implements QinIrCodeBackend {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   size() {
-                    if (this.__source instanceof __QinJavaUtilHashMap) {
+                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
                       return this.__source.size();
                     }
                     return this.__values().size;
                   }
                   isEmpty() {
-                    if (this.__source instanceof __QinJavaUtilHashMap) {
+                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
                       return this.__source.isEmpty();
                     }
                     return this.__values().size === 0;
@@ -2685,6 +2790,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                   },
                   unmodifiableMap(value) {
                     return new __QinJavaUtilUnmodifiableMap(value);
+                  },
+                  newSetFromMap(value) {
+                    return new __QinJavaUtilMapBackedSet(value);
                   }
                 };
                 """);
@@ -2775,6 +2883,15 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     return new __QinJavaUtilArrayList(values);
                   }
+                  keys() {
+                    const keys = [];
+                    for (const bucket of this.__buckets.values()) {
+                      for (const entry of bucket) {
+                        keys.push(entry.key);
+                      }
+                    }
+                    return new __QinJavaUtilArrayList(keys);
+                  }
                   computeIfAbsent(key, mappingFunction) {
                     const found = this.__findEntry(key);
                     if (found == null || found.entry.value == null) {
@@ -2831,6 +2948,172 @@ public class QinJsBackend implements QinIrCodeBackend {
                   clear() {
                     this.__buckets.clear();
                     this.__size = 0;
+                  }
+                }
+                """);
+    }
+
+    private void emitJavaUtilIdentityHashMapRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
+        if (js.indexOf("class __QinJavaUtilIdentityHashMap") >= 0) {
+            return;
+        }
+        emitJavaUtilArrayListRuntime(js);
+        emitJavaHashRuntimeHelpers(js);
+        js.append("""
+                class __QinJavaUtilIdentityHashMap {
+                  constructor(initialEntries) {
+                    const __QinJsMap = __qin_builtin_constructor__("Map");
+                    this.__entries = new __QinJsMap();
+                    if (initialEntries != null) {
+                      for (const entry of initialEntries) {
+                        this.put(entry[0], entry[1]);
+                      }
+                    }
+                  }
+                  put(key, value) {
+                    const hadKey = this.__entries.has(key);
+                    const previous = hadKey ? this.__entries.get(key) : null;
+                    this.__entries.set(key, value);
+                    return hadKey ? previous : null;
+                  }
+                  get(key) {
+                    return this.__entries.has(key) ? this.__entries.get(key) : null;
+                  }
+                  getOrDefault(key, defaultValue) {
+                    return this.__entries.has(key) ? this.__entries.get(key) : defaultValue;
+                  }
+                  putIfAbsent(key, value) {
+                    if (!this.__entries.has(key)) {
+                      this.__entries.set(key, value);
+                      return null;
+                    }
+                    const previous = this.__entries.get(key);
+                    if (previous == null) {
+                      this.__entries.set(key, value);
+                    }
+                    return previous;
+                  }
+                  values() {
+                    return new __QinJavaUtilArrayList(Array.from(this.__entries.values()));
+                  }
+                  keys() {
+                    return new __QinJavaUtilArrayList(Array.from(this.__entries.keys()));
+                  }
+                  computeIfAbsent(key, mappingFunction) {
+                    if (!this.__entries.has(key) || this.__entries.get(key) == null) {
+                      const value = mappingFunction(key);
+                      this.__entries.set(key, value);
+                      return value;
+                    }
+                    return this.__entries.get(key);
+                  }
+                  merge(key, value, remappingFunction) {
+                    if (!this.__entries.has(key)) {
+                      this.__entries.set(key, value);
+                      return value;
+                    }
+                    const previous = this.__entries.get(key);
+                    if (previous == null) {
+                      this.__entries.set(key, value);
+                      return value;
+                    }
+                    const nextValue = remappingFunction(previous, value);
+                    if (nextValue == null) {
+                      this.__entries.delete(key);
+                      return null;
+                    }
+                    this.__entries.set(key, nextValue);
+                    return nextValue;
+                  }
+                  containsKey(key) {
+                    return this.__entries.has(key);
+                  }
+                  remove(key) {
+                    if (!this.__entries.has(key)) {
+                      return null;
+                    }
+                    const previous = this.__entries.get(key);
+                    this.__entries.delete(key);
+                    return previous;
+                  }
+                  size() {
+                    return this.__entries.size;
+                  }
+                  isEmpty() {
+                    return this.__entries.size === 0;
+                  }
+                  clear() {
+                    this.__entries.clear();
+                  }
+                }
+                class __QinJavaUtilMapBackedSet {
+                  constructor(sourceMap) {
+                    if (sourceMap == null || typeof sourceMap.put !== "function" || typeof sourceMap.containsKey !== "function") {
+                      throw new TypeError("Collections.newSetFromMap requires a mutable map");
+                    }
+                    if (typeof sourceMap.size === "function" && sourceMap.size() !== 0) {
+                      throw new TypeError("Collections.newSetFromMap requires an empty map");
+                    }
+                    this.__map = sourceMap;
+                  }
+                  add(value) {
+                    const hadValue = this.__map.containsKey(value);
+                    this.__map.put(value, true);
+                    return !hadValue;
+                  }
+                  addAll(values) {
+                    let changed = false;
+                    for (const value of values ?? []) {
+                      changed = this.add(value) || changed;
+                    }
+                    return changed;
+                  }
+                  retainAll(values) {
+                    const contains = values != null && typeof values.contains === "function"
+                      ? (value) => values.contains(value)
+                      : (value) => {
+                          for (const candidate of values ?? []) {
+                            if (__qin_java_hash_key_equals__(candidate, value)) return true;
+                          }
+                          return false;
+                        };
+                    let changed = false;
+                    for (const value of this.toArray()) {
+                      if (!contains(value)) {
+                        this.remove(value);
+                        changed = true;
+                      }
+                    }
+                    return changed;
+                  }
+                  contains(value) {
+                    return this.__map.containsKey(value);
+                  }
+                  remove(value) {
+                    if (!this.__map.containsKey(value)) {
+                      return false;
+                    }
+                    this.__map.remove(value);
+                    return true;
+                  }
+                  size() {
+                    return this.__map.size();
+                  }
+                  isEmpty() {
+                    return this.__map.isEmpty();
+                  }
+                  clear() {
+                    this.__map.clear();
+                  }
+                  toArray() {
+                    return Array.from(this.__map.keys());
+                  }
+                  [Symbol.iterator]() {
+                    return this.toArray()[Symbol.iterator]();
                   }
                 }
                 """);
@@ -3040,6 +3323,11 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                 };
                 class __QinCaffeineCache {
+                  __maximumSize = null;
+                  __removalListener = null;
+                  __buckets = null;
+                  __order = null;
+                  __size = null;
                   constructor(maximumSize, removalListener) {
                     this.__maximumSize = maximumSize == null ? Infinity : maximumSize;
                     this.__removalListener = removalListener;
@@ -3141,6 +3429,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                 }
                 class __QinCaffeineBuilder {
+                  __maximumSize = null;
+                  __removalListener = null;
                   constructor() {
                     this.__maximumSize = Infinity;
                     this.__removalListener = null;
@@ -3420,6 +3710,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     "__qin_java_functional",
                     "__qin_java_class_info__",
                     "__qin_binary__",
+                    "__qin_instanceof__",
                     "__qin_logical__");
             emitStructuralObjectHelper(js);
             return;
@@ -3462,6 +3753,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                   return fn;
                 }
                 function __qin_java_class_info__(ctor, meta = null) {
+                  if (ctor != null && typeof ctor.isInstance === "function" && typeof ctor.getName === "function") {
+                    return ctor;
+                  }
                   const className = meta && meta.name ? meta.name : (ctor && ctor.name ? ctor.name : "Object");
                   const simpleName = className.split(".").pop().split("_").pop() || className;
                   let hash = 0;
@@ -3493,7 +3787,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                       if (value == null) return false;
                       if (meta && meta.interfaceName) return __qin_java_implements(value, meta.interfaceName);
                       if (ctor == null || ctor === Object) return typeof value === "object" || typeof value === "function";
-                      if (value instanceof ctor) return true;
+                      if (typeof ctor === "function" && value instanceof ctor) return true;
                       const targetRecord = ctor.__qinJavaRecordClass;
                       if (targetRecord != null && value.__qinJavaRecordClass === targetRecord) return true;
                       const interfaces = ctor.__qin_java_interfaces || [];
@@ -3557,6 +3851,43 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                   return false;
                 }
+                function __qin_instanceof__(value, ctor) {
+                  if (ctor == null) {
+                    throw new TypeError("Right-hand side of 'instanceof' is not callable");
+                  }
+                  if (__qin_native_mirror_instanceof__(value, ctor)) {
+                    return true;
+                  }
+                  if (typeof ctor.isInstance === "function") {
+                    return !!ctor.isInstance(value);
+                  }
+                  if (typeof ctor.getName === "function" || typeof ctor.getSimpleName === "function") {
+                    return false;
+                  }
+                  if (typeof ctor[Symbol.hasInstance] === "function") {
+                    return !!ctor[Symbol.hasInstance](value);
+                  }
+                  if (typeof ctor !== "function") {
+                    throw new TypeError("Right-hand side of 'instanceof' is not callable");
+                  }
+                  return value instanceof ctor;
+                }
+                function __qin_native_mirror_instanceof__(value, ctor) {
+                  if (value == null || ctor == null) return false;
+                  const ctorName = typeof ctor.name === "string"
+                    ? ctor.name
+                    : (typeof ctor.getName === "function"
+                      ? ctor.getName()
+                      : (typeof ctor.getSimpleName === "function" ? ctor.getSimpleName() : ""));
+                  if (ctorName === "com_subhuti_struct_SubhutiPosition"
+                      || ctorName === "SubhutiPosition"
+                      || ctorName.endsWith(".SubhutiPosition")) {
+                    return (typeof value.getLine === "function" || typeof value.line === "function")
+                      && (typeof value.getColumn === "function" || typeof value.column === "function")
+                      && (typeof value.getIndex === "function" || typeof value.index === "function");
+                  }
+                  return false;
+                }
                 """);
         boolean usesBinary = program == null || usesBuiltin(program, "__qin_binary__");
         boolean usesLogical = program == null || usesBuiltin(program, "__qin_logical__");
@@ -3580,7 +3911,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                         case "<=": return left <= right;
                         case ">": return left > right;
                         case ">=": return left >= right;
-                        case "instanceof": return left instanceof right;
+                        case "instanceof": return __qin_instanceof__(left, right);
                         case "&&": return left && right;
                         case "||": return left || right;
                         default: throw new Error("Unsupported Qin binary operator: " + operator);
@@ -4308,9 +4639,10 @@ public class QinJsBackend implements QinIrCodeBackend {
         String classReference = jsClassReference(classDeclaration.binaryName());
         Set<String> instanceMethods = instanceMethodNames(classDeclaration);
         if (!instanceMethods.contains("equals")) {
+            requireExternalJavaSdkRuntime("__qin_instanceof__");
             js.append("  equals(other) {\n")
                     .append("    if (this === other) return true;\n")
-                    .append("    if (!(other instanceof ").append(classReference).append(")) return false;\n");
+                    .append("    if (!__qin_instanceof__(other, ").append(classReference).append(")) return false;\n");
             if (components.isEmpty()) {
                 js.append("    return true;\n");
             } else {
@@ -4807,7 +5139,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitAnyTypeAnnotation(js);
         js.append(" {\n");
         emitSubhutiExecuteRuleWrapperExternalArgsDispatch(js, methodName, overloads);
-        for (int i = 0; i < overloads.size(); i++) {
+        for (int i : overloadDispatchOrder(overloads, false)) {
             QinIrMethodDeclaration overload = overloads.get(i);
             if (isVarargsMethod(overload)) {
                 continue;
@@ -4823,7 +5155,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     .append(overloadDispatchArguments(overload))
                     .append(");\n");
         }
-        for (int i = 0; i < overloads.size(); i++) {
+        for (int i : overloadDispatchOrder(overloads, true)) {
             QinIrMethodDeclaration overload = overloads.get(i);
             if (!isVarargsMethod(overload)) {
                 continue;
@@ -4841,6 +5173,48 @@ public class QinJsBackend implements QinIrCodeBackend {
                 .append(escapeJs(methodName))
                 .append("/\" + __qin_args.length);\n");
         js.append("  }\n");
+    }
+
+    private List<Integer> overloadDispatchOrder(List<QinIrMethodDeclaration> overloads, boolean varargs) {
+        List<Integer> indexes = new java.util.ArrayList<>();
+        for (int i = 0; i < overloads.size(); i++) {
+            if (isVarargsMethod(overloads.get(i)) == varargs) {
+                indexes.add(i);
+            }
+        }
+        indexes.sort((left, right) -> {
+            QinIrMethodDeclaration leftMethod = overloads.get(left);
+            QinIrMethodDeclaration rightMethod = overloads.get(right);
+            int priority = Integer.compare(
+                    overloadDispatchPriority(rightMethod),
+                    overloadDispatchPriority(leftMethod));
+            if (priority != 0) {
+                return priority;
+            }
+            return Integer.compare(left, right);
+        });
+        return indexes;
+    }
+
+    private int overloadDispatchPriority(QinIrMethodDeclaration overload) {
+        int score = 0;
+        if (hasJavaFunctionalParameter(overload)) {
+            score += 10;
+            if (overload.returnType().kind() != QinIrTypeKind.VOID) {
+                score += 100;
+            }
+        }
+        return score;
+    }
+
+    private boolean hasJavaFunctionalParameter(QinIrMethodDeclaration overload) {
+        for (QinIrParameter parameter : overload.parameters()) {
+            if (parameter.type().kind() == QinIrTypeKind.CLASS
+                    && isJavaFunctionalInterface(parameter.type().binaryName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void emitSubhutiExecuteRuleWrapperExternalArgsDispatch(
@@ -5062,8 +5436,9 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (isSlimeParserParamsClass(binaryName)) {
             String ownerReference = javaOwnerReference(binaryName, simpleClassName(binaryName));
             if (ownerReference != null && isJsIdentifier(ownerReference)) {
+                requireExternalJavaSdkRuntime("__qin_instanceof__");
                 return "(" + argumentExpression + " === null"
-                        + " || " + argumentExpression + " instanceof " + ownerReference
+                        + " || __qin_instanceof__(" + argumentExpression + ", " + ownerReference + ")"
                         + " || __qin_structural_object__(" + argumentExpression + "))";
             }
         }
@@ -5086,12 +5461,18 @@ public class QinJsBackend implements QinIrCodeBackend {
                         + "\"))";
             }
             if (loadJavaOwner(binaryName).isRecord()) {
+                requireExternalJavaSdkRuntime("__qin_instanceof__");
                 return "(" + argumentExpression + " === null"
-                        + " || " + argumentExpression + " instanceof " + ownerReference
+                        + " || __qin_instanceof__(" + argumentExpression + ", " + ownerReference + ")"
                         + " || " + argumentExpression + ".__qinJavaRecordClass === " + ownerReference
                         + ".__qinJavaRecordClass)";
             }
-            return "(" + argumentExpression + " === null || " + argumentExpression + " instanceof " + ownerReference + ")";
+            requireExternalJavaSdkRuntime("__qin_instanceof__");
+            return "(" + argumentExpression + " === null || __qin_instanceof__("
+                    + argumentExpression
+                    + ", "
+                    + ownerReference
+                    + "))";
         }
         return "true";
     }
@@ -5918,6 +6299,16 @@ public class QinJsBackend implements QinIrCodeBackend {
             emitExpression(js, assignmentExpression.value());
             return;
         }
+        if (expression instanceof QinIrUpdateExpression updateExpression) {
+            if (updateExpression.prefix()) {
+                js.append(updateExpression.operator());
+                emitExpression(js, updateExpression.target());
+            } else {
+                emitExpression(js, updateExpression.target());
+                js.append(updateExpression.operator());
+            }
+            return;
+        }
         if (expression instanceof QinIrLocalDeclarationExpression localDeclarationExpression) {
             js.append("let ")
                     .append(declareBindingName(localDeclarationExpression.name()));
@@ -5985,7 +6376,9 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrInstanceMethodCallExpression instanceMethodCallExpression) {
-            if (emitJavaLangStringInstanceMethodCall(js, instanceMethodCallExpression)) {
+            if ((isKnownJavaLangStringReceiver(instanceMethodCallExpression.receiver())
+                    || "java.lang.String".equals(instanceMethodCallExpression.ownerBinaryName()))
+                    && emitJavaLangStringInstanceMethodCall(js, instanceMethodCallExpression)) {
                 return;
             }
             String superSubhutiRawMethodName = isSuperReference(instanceMethodCallExpression.receiver())
@@ -6207,7 +6600,8 @@ public class QinJsBackend implements QinIrCodeBackend {
             throw new IllegalArgumentException(
                     "JS backend cannot emit Java instanceof owner reference: " + ownerBinaryName);
         }
-        js.append(valueExpression).append(" instanceof ").append(ownerReference);
+        requireExternalJavaSdkRuntime("__qin_instanceof__");
+        js.append("__qin_instanceof__(").append(valueExpression).append(", ").append(ownerReference).append(")");
     }
 
     private void emitLetExpression(StringBuilder js, QinIrLetExpression letExpression) {
@@ -6421,6 +6815,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.util.HashSet".equals(ownerBinaryName)
                 || "java.util.LinkedHashSet".equals(ownerBinaryName)
                 || "java.util.HashMap".equals(ownerBinaryName)
+                || "java.util.IdentityHashMap".equals(ownerBinaryName)
                 || "java.util.LinkedHashMap".equals(ownerBinaryName)
                 || "java.util.concurrent.ConcurrentHashMap".equals(ownerBinaryName)
                 || "java.util.concurrent.ConcurrentMap".equals(ownerBinaryName)
@@ -6428,6 +6823,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.util.Optional".equals(ownerBinaryName)
                 || "java.util.stream.Collectors".equals(ownerBinaryName)
                 || "java.lang.String".equals(ownerBinaryName)
+                || "java.lang.Class".equals(ownerBinaryName)
                 || "java.lang.Boolean".equals(ownerBinaryName)
                 || "java.lang.StringBuilder".equals(ownerBinaryName)
                 || "java.lang.Integer".equals(ownerBinaryName)
@@ -6439,6 +6835,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.lang.ReflectiveOperationException".equals(ownerBinaryName)
                 || "java.lang.ClassNotFoundException".equals(ownerBinaryName)
                 || "java.lang.NoSuchMethodException".equals(ownerBinaryName)
+                || "java.lang.reflect.InvocationTargetException".equals(ownerBinaryName)
                 || "java.lang.NumberFormatException".equals(ownerBinaryName)
                 || "java.lang.UnsupportedOperationException".equals(ownerBinaryName)
                 || "java.lang.Error".equals(ownerBinaryName)
@@ -6532,6 +6929,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.ReflectiveOperationException" -> "__QinJavaLangReflectiveOperationException";
             case "java.lang.ClassNotFoundException" -> "__QinJavaLangClassNotFoundException";
             case "java.lang.NoSuchMethodException" -> "__QinJavaLangNoSuchMethodException";
+            case "java.lang.reflect.InvocationTargetException" -> "__QinJavaLangReflectInvocationTargetException";
             case "java.lang.NumberFormatException" -> "__QinJavaLangNumberFormatException";
             case "java.lang.UnsupportedOperationException" -> "__QinJavaLangUnsupportedOperationException";
             case "java.lang.Error" -> "__QinJavaLangError";
@@ -6558,6 +6956,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.util.HashMap", "java.util.LinkedHashMap",
                     "java.util.concurrent.ConcurrentHashMap", "java.util.concurrent.ConcurrentMap" ->
                     "__QinJavaUtilHashMap";
+            case "java.util.IdentityHashMap" -> "__QinJavaUtilIdentityHashMap";
             case "java.util.Objects" -> "__QinJavaUtilObjects";
             case "java.util.Optional" -> "__QinJavaUtilOptional";
             case "java.util.stream.Collectors" -> "__QinJavaUtilStreamCollectors";
@@ -6685,6 +7084,24 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         js.append(")");
         return true;
+    }
+
+    private boolean isKnownJavaLangStringReceiver(QinIrExpression expression) {
+        if (expression instanceof QinIrStringLiteral) {
+            return true;
+        }
+        if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
+            return "java.lang.String".equals(staticMethodCallExpression.ownerBinaryName());
+        }
+        if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
+            return "java.lang.String".equals(javaNewExpression.ownerBinaryName());
+        }
+        if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
+            return "String".equals(builtinCallExpression.receiverName())
+                    || ("globalThis".equals(builtinCallExpression.receiverName())
+                    && "String".equals(builtinCallExpression.methodName()));
+        }
+        return false;
     }
 
     private boolean isSuperReference(QinIrExpression expression) {

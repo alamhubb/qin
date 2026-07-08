@@ -16,6 +16,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -25,8 +26,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Minimal JS-like global runtime used by JVM-emitted Qin programs.
@@ -39,6 +43,7 @@ public final class JavaEsmGlobal {
     private static final String PROTOTYPE_PARENT_KEY = RUNTIME_HIDDEN_KEY_PREFIX + "prototype_parent__";
     private static final Map<String, Object> GLOBAL_BINDINGS = new NullFriendlyConcurrentMap();
     private static final Map<String, Object> GLOBAL_OBJECT = new NullFriendlyConcurrentMap();
+    private static final Map<Class<?>, Map<String, Object>> CLASS_EXPANDO_PROPERTIES = new ConcurrentHashMap<>();
     private static final Object FIELD_LOOKUP_MISS = new Object();
     private static final Map<FieldLookupKey, Object> FIELD_LOOKUP_CACHE = new ConcurrentHashMap<>();
     private static final Object METHOD_LOOKUP_MISS = new Object();
@@ -48,6 +53,8 @@ public final class JavaEsmGlobal {
     private static final Map<TypedMethodLookupKey, Object> TYPED_METHOD_LOOKUP_CACHE = new ConcurrentHashMap<>();
     private static final Map<Class<?>, JavaRecordInfo> JAVA_RECORD_INFO_CACHE = new ConcurrentHashMap<>();
     private static final Object UNRESOLVED_MODULE_REF = new Object();
+    private static final String GENERATED_REGEX_COMPILED_PATTERN_KEY =
+            RUNTIME_HIDDEN_KEY_PREFIX + "java_regex_pattern__";
     private static final Set<String> ERROR_CONSTRUCTORS =
             Set.of("Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError");
     private static final Map<String, List<ModuleFieldRef>> MODULE_REFS = new ConcurrentHashMap<>();
@@ -80,6 +87,8 @@ public final class JavaEsmGlobal {
                 methodHandle(JavaEsmGlobal.class, "__qin_builtin_constructor__", Object.class));
         GLOBAL_OBJECT.put("__qin_java_pattern_regexp__",
                 methodHandle(JavaEsmGlobal.class, "__qin_java_pattern_regexp__", Object.class, Object.class));
+        GLOBAL_OBJECT.put("__qin_instanceof__",
+                methodHandle(JavaEsmGlobal.class, "__qin_instanceof__", Object.class, Object.class));
         for (String constructor : List.of(
                 "Array", "Object", "Map", "Set", "WeakMap", "WeakSet", "Proxy", "Promise", "Symbol",
                 "Date", "String", "Boolean", "Number",
@@ -606,8 +615,13 @@ public final class JavaEsmGlobal {
         };
     }
 
+    public static Object __qin_instanceof__(Object value, Object constructor) {
+        return jsInstanceOf(value, constructor);
+    }
+
     private static boolean jsInstanceOf(Object value, Object constructor) {
         if (constructor == null) {
+            traceInstanceOfFailure(value, constructor);
             throw new IllegalArgumentException("Right-hand side of 'instanceof' is not callable");
         }
         constructor = unwrapExportSlotValue(constructor);
@@ -618,6 +632,10 @@ public final class JavaEsmGlobal {
             if (value instanceof JavaRuntimeThrowable throwable) {
                 return throwable.isInstanceOf(interpretedFunction.classDebugName());
             }
+            if (value instanceof QinRuntimeObject runtimeObject
+                    && runtimeObject.isGeneratedClassInstance(interpretedFunction.classDebugName())) {
+                return true;
+            }
             Object prototype = interpretedFunction.get("prototype");
             return value instanceof InterpretedInstance instance && instance.hasPrototypeObject(prototype);
         }
@@ -627,8 +645,20 @@ public final class JavaEsmGlobal {
         if (constructor instanceof NativeFunction || constructor instanceof QinCallable || constructor instanceof Method) {
             return false;
         }
+        traceInstanceOfFailure(value, constructor);
         throw new IllegalArgumentException("Right-hand side of 'instanceof' is not callable: "
                 + simpleName(constructor));
+    }
+
+    private static void traceInstanceOfFailure(Object value, Object constructor) {
+        if (!Boolean.getBoolean("qin.instanceof.trace")) {
+            return;
+        }
+        System.err.println("[JavaEsmGlobal] instanceof RHS is not callable"
+                + " value=" + summarizeRuntimeValue(value)
+                + " constructor=" + summarizeRuntimeValue(constructor)
+                + " constructorType=" + simpleName(constructor)
+                + " stack=" + runtimeStackHint());
     }
 
     private static boolean jsBuiltinInstanceOf(Object value, String builtinName) {
@@ -805,7 +835,7 @@ public final class JavaEsmGlobal {
             String key = propertyKey(property);
             Map<String, Object> cast = castMap(map);
             if (cast.containsKey(key) && !isRuntimeHiddenObjectKey(key)) {
-                return normalizeRuntimeMemberValue(JavaEsmObject.resolveStoredPropertyValue(cast.get(key)));
+                return normalizeRuntimeMemberValue(JavaEsmObject.resolveStoredPropertyValue(cast.get(key), target));
             }
             Object prototypeValue = mapPrototypeChainValue(cast, key);
             if (prototypeValue != BUILTIN_MISS) {
@@ -820,6 +850,16 @@ public final class JavaEsmGlobal {
                 return objectPrototypeValue;
             }
             return null;
+        }
+        if (target instanceof Class<?> clazz) {
+            Object classMirrorMember = classMirrorMember(clazz, propertyKey(property));
+            if (classMirrorMember != BUILTIN_MISS) {
+                return classMirrorMember;
+            }
+            Map<String, Object> properties = CLASS_EXPANDO_PROPERTIES.get(clazz);
+            if (properties != null && properties.containsKey(propertyKey(property))) {
+                return properties.get(propertyKey(property));
+            }
         }
         if (target instanceof JavaEsmArrayObject arrayObject) {
             return arrayObject.memberGet(property);
@@ -843,6 +883,18 @@ public final class JavaEsmGlobal {
         return tryReadField(target, name);
     }
 
+    private static Object classMirrorMember(Class<?> clazz, String name) {
+        return switch (name) {
+            case "name", "simpleName" -> clazz.getSimpleName();
+            case "getName" -> new NativeFunction("Class.getName", args -> clazz.getName());
+            case "getSimpleName" -> new NativeFunction("Class.getSimpleName", args -> clazz.getSimpleName());
+            case "isInstance" -> new NativeFunction("Class.isInstance", args ->
+                    args.length > 0 && args[0] != null && clazz.isInstance(args[0]));
+            case "toString" -> new NativeFunction("Class.toString", args -> clazz.toString());
+            default -> BUILTIN_MISS;
+        };
+    }
+
     private static Object normalizeRuntimeMemberValue(Object value) {
         if (isFunctionDefinition(value)) {
             return new InterpretedFunction(castMap((Map<?, ?>) value));
@@ -859,7 +911,18 @@ public final class JavaEsmGlobal {
             return regexp.memberSet(property, value);
         }
         if (target instanceof Map<?, ?> map) {
-            castMap(map).put(propertyKey(property), value);
+            Map<String, Object> cast = castMap(map);
+            String key = propertyKey(property);
+            if (cast.containsKey(key) && JavaEsmObject.writeStoredPropertyValue(cast.get(key), target, value)) {
+                return value;
+            }
+            cast.put(key, value);
+            return value;
+        }
+        if (target instanceof Class<?> clazz) {
+            CLASS_EXPANDO_PROPERTIES
+                    .computeIfAbsent(clazz, ignored -> new NullFriendlyConcurrentMap())
+                    .put(propertyKey(property), value);
             return value;
         }
         if (target instanceof JavaEsmTypedArray typedArray) {
@@ -878,6 +941,19 @@ public final class JavaEsmGlobal {
             return value;
         }
         throw new IllegalArgumentException("Unsupported member set target: " + simpleName(target));
+    }
+
+    static Object __qin_define_own_property__(Object target, Object property, Object value) {
+        target = unwrapExportSlotValue(target);
+        if (target instanceof InterpretedInstance interpretedInstance) {
+            interpretedInstance.putOwnField(propertyKey(property), value);
+            return value;
+        }
+        if (target instanceof Map<?, ?> map) {
+            castMap(map).put(propertyKey(property), value);
+            return value;
+        }
+        return __qin_member_set__(target, property, value);
     }
 
     public static Object __qin_delete_member__(Object target, Object property) {
@@ -1015,7 +1091,12 @@ public final class JavaEsmGlobal {
     }
 
     static boolean isRuntimeCallable(Object value) {
-        return value instanceof QinCallable || value instanceof Method || isFunctionDefinition(value);
+        value = unwrapExportSlotValue(value);
+        return value instanceof QinCallable
+                || value instanceof Method
+                || isFunctionDefinition(value)
+                || isBuiltinCallableName(value)
+                || isJavaBooleanCompanion(value);
     }
 
     private static boolean isRuntimeCallableValue(Object value) {
@@ -1068,6 +1149,9 @@ public final class JavaEsmGlobal {
                 return result;
             }
         }
+        if (isJavaBooleanCompanion(callable)) {
+            return args != null && args.length != 0 && truthy(args[0]);
+        }
         if (callable instanceof Method method) {
             return invokeMethodCallable(null, method, args);
         }
@@ -1084,14 +1168,14 @@ public final class JavaEsmGlobal {
             return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
         }
         return switch (name) {
-            case "contains" -> args.length == 1 && args[0] instanceof CharSequence
-                    ? generatedJavaHashSetContains(interpretedInstance, String.valueOf(args[0]))
+            case "contains" -> args.length == 1
+                    ? generatedJavaHashSetContains(interpretedInstance, args[0])
                     : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
-            case "add" -> args.length == 1 && args[0] instanceof CharSequence
-                    ? generatedJavaHashSetAdd(interpretedInstance, String.valueOf(args[0]))
+            case "add" -> args.length == 1
+                    ? generatedJavaHashSetAdd(interpretedInstance, args[0])
                     : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
-            case "remove" -> args.length == 1 && args[0] instanceof CharSequence
-                    ? generatedJavaHashSetRemove(interpretedInstance, String.valueOf(args[0]))
+            case "remove" -> args.length == 1
+                    ? generatedJavaHashSetRemove(interpretedInstance, args[0])
                     : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
             case "size" -> args.length == 0 ? generatedJavaHashSetSize(interpretedInstance) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
             case "isEmpty" -> args.length == 0 ? generatedJavaHashSetSize(interpretedInstance) == 0.0d : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
@@ -1099,8 +1183,11 @@ public final class JavaEsmGlobal {
                 if (args.length != 0) {
                     yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
                 }
-                generatedJavaHashSetBuckets(interpretedInstance).clear();
-                interpretedInstance.fields.put("__size", 0.0d);
+                JavaEsmMapObject buckets = generatedJavaHashSetBuckets(interpretedInstance);
+                if (buckets != null) {
+                    buckets.clear();
+                }
+                generatedJavaHashSetPutSize(interpretedInstance, 0.0d);
                 yield null;
             }
             case "toArray" -> args.length == 0 ? generatedJavaHashSetToArray(interpretedInstance) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
@@ -1109,8 +1196,8 @@ public final class JavaEsmGlobal {
     }
 
     private static boolean isGeneratedJavaHashSetShape(InterpretedInstance interpretedInstance) {
-        return interpretedInstance.fields.get("__buckets") instanceof JavaEsmMapObject
-                && interpretedInstance.fields.containsKey("__size")
+        return generatedJavaHashSetBuckets(interpretedInstance) != null
+                && generatedJavaHashSetSizeValue(interpretedInstance) != null
                 && interpretedInstance.methods.containsKey("__bucket")
                 && interpretedInstance.methods.containsKey("__findEntry")
                 && interpretedInstance.methods.containsKey("contains")
@@ -1135,22 +1222,1206 @@ public final class JavaEsmGlobal {
         });
     }
 
+    private static Object tryCallGeneratedJavaHashMapFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedJavaHashMapShape(interpretedInstance)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "put" -> args.length == 2
+                    ? generatedJavaHashMapPut(interpretedInstance, args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "get" -> args.length == 1
+                    ? generatedJavaHashMapGet(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getOrDefault" -> args.length == 2
+                    ? generatedJavaHashMapGetOrDefault(interpretedInstance, args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "putIfAbsent" -> args.length == 2
+                    ? generatedJavaHashMapPutIfAbsent(interpretedInstance, args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "computeIfAbsent" -> args.length == 2
+                    ? generatedJavaHashMapComputeIfAbsent(interpretedInstance, args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "merge" -> args.length == 3
+                    ? generatedJavaHashMapMerge(interpretedInstance, args[0], args[1], args[2])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "containsKey" -> args.length == 1
+                    ? generatedJavaHashMapFindEntry(interpretedInstance, args[0]) != null
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "remove" -> args.length == 1
+                    ? generatedJavaHashMapRemove(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "values" -> args.length == 0
+                    ? generatedJavaArrayList(generatedJavaHashMapValues(interpretedInstance))
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "size" -> args.length == 0 ? generatedJavaHashSetSize(interpretedInstance) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "isEmpty" -> args.length == 0 ? generatedJavaHashSetSize(interpretedInstance) == 0.0d : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "clear" -> {
+                if (args.length != 0) {
+                    yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                }
+                JavaEsmMapObject buckets = generatedJavaHashSetBuckets(interpretedInstance);
+                if (buckets != null) {
+                    buckets.clear();
+                }
+                generatedJavaHashSetPutSize(interpretedInstance, 0.0d);
+                yield null;
+            }
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean isGeneratedJavaHashMapShape(InterpretedInstance interpretedInstance) {
+        return generatedJavaHashSetBuckets(interpretedInstance) != null
+                && generatedJavaHashSetSizeValue(interpretedInstance) != null
+                && interpretedInstance.methods.containsKey("__bucket")
+                && interpretedInstance.methods.containsKey("__findEntry")
+                && interpretedInstance.methods.containsKey("put")
+                && interpretedInstance.methods.containsKey("containsKey");
+    }
+
+    private static Object generatedJavaHashMapNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedJavaHashMapShape(interpretedInstance)
+                || !Set.of(
+                        "put",
+                        "get",
+                        "getOrDefault",
+                        "putIfAbsent",
+                        "computeIfAbsent",
+                        "merge",
+                        "containsKey",
+                        "remove",
+                        "values",
+                        "size",
+                        "isEmpty",
+                        "clear").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("__QinJavaUtilHashMap." + name, args -> {
+            Object result = tryCallGeneratedJavaHashMapFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated HashMap method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static boolean isGeneratedCaffeineCacheShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.hasOwnField("__maximumSize")
+                && interpretedInstance.hasOwnField("__removalListener")
+                && interpretedInstance.hasOwnField("__buckets")
+                && interpretedInstance.hasOwnField("__order")
+                && interpretedInstance.hasOwnField("__size")
+                && interpretedInstance.methods.containsKey("getIfPresent")
+                && interpretedInstance.methods.containsKey("put")
+                && interpretedInstance.methods.containsKey("invalidate");
+    }
+
+    private static Object tryCallGeneratedCaffeineCacheFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedCaffeineCacheShape(interpretedInstance)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "getIfPresent" -> args.length == 1
+                    ? generatedCaffeineCacheGetIfPresent(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "put" -> args.length == 2
+                    ? generatedCaffeineCachePut(interpretedInstance, args[0], args[1])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "invalidate" -> args.length == 1
+                    ? generatedCaffeineCacheInvalidate(interpretedInstance, args[0], true)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "invalidateAll" -> args.length == 0
+                    ? generatedCaffeineCacheInvalidateAll(interpretedInstance)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "estimatedSize" -> args.length == 0
+                    ? generatedJavaHashSetSize(interpretedInstance)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "stats" -> args.length == 0
+                    ? new LinkedHashMap<String, Object>()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static Object generatedCaffeineCacheNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedCaffeineCacheShape(interpretedInstance)
+                || !Set.of(
+                        "getIfPresent",
+                        "put",
+                        "invalidate",
+                        "invalidateAll",
+                        "estimatedSize",
+                        "stats").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("__QinCaffeineCache." + name, args -> {
+            Object result = tryCallGeneratedCaffeineCacheFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated Caffeine cache method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static Object tryCallGeneratedSubhutiCreateTokenFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedSubhutiCreateTokenShape(interpretedInstance) || args.length != 0) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "getName" -> generatedJavaHashSetField(interpretedInstance, "name");
+            case "getType" -> generatedJavaHashSetField(interpretedInstance, "type");
+            case "getPattern" -> generatedJavaHashSetField(interpretedInstance, "pattern");
+            case "isKeyword" -> Boolean.TRUE.equals(generatedJavaHashSetField(interpretedInstance, "isKeyword"));
+            case "isSkip" -> Boolean.TRUE.equals(generatedJavaHashSetField(interpretedInstance, "skip"));
+            case "getValue" -> generatedJavaHashSetField(interpretedInstance, "value");
+            case "getLookaheadAfter" -> generatedJavaHashSetField(interpretedInstance, "lookaheadAfter");
+            case "getContextConstraint" -> generatedJavaHashSetField(interpretedInstance, "contextConstraint");
+            case "getMode" -> generatedJavaHashSetField(interpretedInstance, "mode");
+            case "getEffectiveMode" -> {
+                Object mode = generatedJavaHashSetField(interpretedInstance, "mode");
+                yield mode != null ? mode : null;
+            }
+            case "hasLookaheadAfter" -> generatedJavaHashSetField(interpretedInstance, "lookaheadAfter") != null;
+            case "hasContextConstraint" -> generatedJavaHashSetField(interpretedInstance, "contextConstraint") != null;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean isGeneratedSubhutiCreateTokenShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.fields.containsKey("__qin_field_name")
+                && interpretedInstance.fields.containsKey("__qin_field_type")
+                && interpretedInstance.fields.containsKey("__qin_field_pattern")
+                && interpretedInstance.fields.containsKey("__qin_field_value")
+                && interpretedInstance.fields.containsKey("__qin_field_mode")
+                && interpretedInstance.methods.containsKey("getName")
+                && interpretedInstance.methods.containsKey("getPattern")
+                && interpretedInstance.methods.containsKey("isSkip");
+    }
+
+    private static Object generatedSubhutiCreateTokenNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedSubhutiCreateTokenShape(interpretedInstance)
+                || !Set.of(
+                        "getName",
+                        "getType",
+                        "getPattern",
+                        "isKeyword",
+                        "isSkip",
+                        "getValue",
+                        "getLookaheadAfter",
+                        "getContextConstraint",
+                        "getMode",
+                        "getEffectiveMode",
+                        "hasLookaheadAfter",
+                        "hasContextConstraint").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("SubhutiCreateToken." + name, args -> {
+            Object result = tryCallGeneratedSubhutiCreateTokenFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated SubhutiCreateToken method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static Object tryCallGeneratedSubhutiMatchTokenFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedSubhutiMatchTokenShape(interpretedInstance) || args.length != 0) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "getTokenName", "tokenName" -> generatedJavaHashSetField(interpretedInstance, "tokenName");
+            case "getTokenValue", "tokenValue", "value" -> generatedJavaHashSetField(interpretedInstance, "tokenValue");
+            case "getRowNum", "rowNum" -> generatedJavaHashSetField(interpretedInstance, "rowNum");
+            case "getColumnStartNum", "columnStartNum" -> generatedJavaHashSetField(interpretedInstance, "columnStartNum");
+            case "getColumnEndNum", "columnEndNum" -> generatedJavaHashSetField(interpretedInstance, "columnEndNum");
+            case "getIndex", "index" -> generatedJavaHashSetField(interpretedInstance, "index");
+            case "getHasLineBreakBefore", "hasLineBreakBefore" ->
+                    Boolean.TRUE.equals(generatedJavaHashSetField(interpretedInstance, "hasLineBreakBefore"));
+            case "getLength" -> {
+                Object tokenValue = generatedJavaHashSetField(interpretedInstance, "tokenValue");
+                yield tokenValue == null ? 0.0d : (double) String.valueOf(tokenValue).length();
+            }
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean isGeneratedSubhutiMatchTokenShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.fields.containsKey("__qin_field_tokenName")
+                && interpretedInstance.fields.containsKey("__qin_field_tokenValue")
+                && interpretedInstance.fields.containsKey("__qin_field_index")
+                && interpretedInstance.fields.containsKey("__qin_field_hasLineBreakBefore")
+                && interpretedInstance.methods.containsKey("tokenName")
+                && interpretedInstance.methods.containsKey("value")
+                && interpretedInstance.methods.containsKey("getTokenName");
+    }
+
+    private static Object generatedSubhutiMatchTokenNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedSubhutiMatchTokenShape(interpretedInstance)
+                || !Set.of(
+                        "getTokenName",
+                        "getTokenValue",
+                        "getRowNum",
+                        "getColumnStartNum",
+                        "getColumnEndNum",
+                        "getIndex",
+                        "getHasLineBreakBefore",
+                        "hasLineBreakBefore",
+                        "getLength",
+                        "tokenName",
+                        "tokenValue",
+                        "value",
+                        "index",
+                        "rowNum",
+                        "columnStartNum",
+                        "columnEndNum").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("SubhutiMatchToken." + name, args -> {
+            Object result = tryCallGeneratedSubhutiMatchTokenFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated SubhutiMatchToken method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static Object tryCallGeneratedTokenCacheEntryFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedTokenCacheEntryShape(interpretedInstance) || args.length != 0) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "getToken" -> generatedJavaHashSetField(interpretedInstance, "token");
+            case "getNextCodeIndex" -> generatedJavaHashSetField(interpretedInstance, "nextCodeIndex");
+            case "getNextLine" -> generatedJavaHashSetField(interpretedInstance, "nextLine");
+            case "getNextColumn" -> generatedJavaHashSetField(interpretedInstance, "nextColumn");
+            case "getLastTokenName" -> generatedJavaHashSetField(interpretedInstance, "lastTokenName");
+            case "getTokenEndCodeIndex" -> generatedJavaHashSetField(interpretedInstance, "tokenEndCodeIndex");
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean isGeneratedTokenCacheEntryShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.fields.containsKey("__qin_field_token")
+                && interpretedInstance.fields.containsKey("__qin_field_nextCodeIndex")
+                && interpretedInstance.fields.containsKey("__qin_field_nextLine")
+                && interpretedInstance.fields.containsKey("__qin_field_nextColumn")
+                && interpretedInstance.fields.containsKey("__qin_field_lastTokenName")
+                && interpretedInstance.methods.containsKey("getToken")
+                && interpretedInstance.methods.containsKey("getNextCodeIndex");
+    }
+
+    private static Object generatedTokenCacheEntryNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedTokenCacheEntryShape(interpretedInstance)
+                || !Set.of(
+                        "getToken",
+                        "getNextCodeIndex",
+                        "getNextLine",
+                        "getNextColumn",
+                        "getLastTokenName",
+                        "getTokenEndCodeIndex").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("TokenCacheEntry." + name, args -> {
+            Object result = tryCallGeneratedTokenCacheEntryFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated TokenCacheEntry method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static Object tryCallGeneratedJavaUtilRegexPatternFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedJavaUtilRegexPatternShape(interpretedInstance)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "matcher" -> args.length == 1
+                    ? new JavaUtilRegexMatcherObject(
+                            generatedJavaUtilRegexCompiledPattern(interpretedInstance),
+                            String.valueOf(args[0]))
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "pattern" -> args.length == 0
+                    ? generatedJavaUtilRegexPatternSource(interpretedInstance)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "flags" -> args.length == 0
+                    ? generatedJavaUtilRegexPatternFlagsValue(interpretedInstance)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "__jsFlags" -> args.length <= 1
+                    ? generatedJavaUtilRegexJsFlags(
+                            generatedJavaUtilRegexPatternFlags(interpretedInstance),
+                            args.length == 0 ? "" : args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "__regexp" -> args.length <= 1
+                    ? JavaEsmRegExp.fromJavaPattern(
+                            generatedJavaUtilRegexPatternSource(interpretedInstance),
+                            generatedJavaUtilRegexJsFlags(
+                                    generatedJavaUtilRegexPatternFlags(interpretedInstance),
+                                    args.length == 0 ? "" : args[0]))
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean isGeneratedJavaUtilRegexPatternShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.fields.containsKey("__source")
+                && interpretedInstance.fields.containsKey("__flags")
+                && interpretedInstance.methods.containsKey("matcher")
+                && interpretedInstance.methods.containsKey("pattern")
+                && interpretedInstance.methods.containsKey("flags");
+    }
+
+    private static Object generatedJavaUtilRegexPatternNativeMethod(
+            InterpretedInstance interpretedInstance,
+            String name) {
+        if (!isGeneratedJavaUtilRegexPatternShape(interpretedInstance)
+                || !Set.of("matcher", "pattern", "flags", "__jsFlags", "__regexp").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("__QinJavaUtilRegexPattern." + name, args -> {
+            Object result = tryCallGeneratedJavaUtilRegexPatternFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated regex Pattern method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static Object tryCallGeneratedSubhutiLexerFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedSubhutiLexerShape(interpretedInstance)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "readTokenAt", "__qin_overload_readTokenAt_6_1" -> args.length == 6
+                    ? generatedSubhutiLexerReadTokenAt(
+                            interpretedInstance,
+                            String.valueOf(args[0]),
+                            toInt32(args[1]),
+                            toInt32(args[2]),
+                            toInt32(args[3]),
+                            args[4],
+                            args[5] == null ? null : String.valueOf(args[5]))
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "__qin_overload_readTokenAt_5_0" -> args.length == 5
+                    ? generatedSubhutiLexerReadTokenOnlyAt(
+                            interpretedInstance,
+                            String.valueOf(args[0]),
+                            toInt32(args[1]),
+                            toInt32(args[2]),
+                            toInt32(args[3]),
+                            args[4])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "_matchTokenWithMode" -> args.length == 7
+                    ? generatedSubhutiLexerMatchTokenWithMode(
+                            interpretedInstance,
+                            String.valueOf(args[0]),
+                            toInt32(args[1]),
+                            toInt32(args[2]),
+                            toInt32(args[3]),
+                            args[4] == null ? null : String.valueOf(args[4]),
+                            toInt32(args[5]),
+                            args[6])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "safeLookingAt" -> args.length == 5
+                    ? callMethod(args[0], "lookingAt")
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean isGeneratedSubhutiLexerShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.fields.containsKey("__qin_field__allTokens")
+                && interpretedInstance.fields.containsKey("__qin_field__lastRowNum")
+                && interpretedInstance.methods.containsKey("_matchTokenWithMode")
+                && interpretedInstance.methods.containsKey("readTokenAt")
+                && interpretedInstance.methods.containsKey("safeLookingAt");
+    }
+
+    private static Object generatedSubhutiLexerNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedSubhutiLexerShape(interpretedInstance)
+                || !Set.of(
+                        "readTokenAt",
+                        "__qin_overload_readTokenAt_5_0",
+                        "__qin_overload_readTokenAt_6_1",
+                        "_matchTokenWithMode",
+                        "safeLookingAt").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("SubhutiLexer." + name, args -> {
+            Object result = tryCallGeneratedSubhutiLexerFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated SubhutiLexer method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static Object generatedSubhutiLexerReadTokenOnlyAt(
+            InterpretedInstance lexer,
+            String code,
+            int codeIndex,
+            int line,
+            int column,
+            Object mode) {
+        Object entry = generatedSubhutiLexerReadTokenAt(lexer, code, codeIndex, line, column, mode, null);
+        return entry instanceof TokenCacheEntryObject tokenEntry ? tokenEntry.token : null;
+    }
+
+    private static Object generatedSubhutiLexerReadTokenAt(
+            InterpretedInstance lexer,
+            String code,
+            int codeIndex,
+            int line,
+            int column,
+            Object mode,
+            String lastTokenName) {
+        int pos = codeIndex;
+        int rowNum = line;
+        int columnNum = column;
+        int lastRowNum = line;
+        while (pos < code.length()) {
+            Object matched = generatedSubhutiLexerMatchTokenWithMode(
+                    lexer,
+                    code,
+                    pos,
+                    rowNum,
+                    columnNum,
+                    lastTokenName,
+                    lastRowNum,
+                    mode);
+            if (!(matched instanceof MatchedTokenInfoObject match)) {
+                char errorChar = code.charAt(pos);
+                throw new IllegalArgumentException("Unexpected character \""
+                        + errorChar
+                        + "\" at position "
+                        + pos
+                        + " (line "
+                        + rowNum
+                        + ", column "
+                        + columnNum
+                        + ")");
+            }
+            String tokenValue = match.token.value;
+            int valueLength = tokenValue.length();
+            int nextPos = pos + valueLength;
+            int nextRowNum = rowNum;
+            int nextColumnNum = columnNum;
+            int lineBreaks = countLineBreaks(tokenValue);
+            if (lineBreaks > 0) {
+                nextRowNum += lineBreaks;
+                int lastBreakIndex = tokenValue.lastIndexOf('\n');
+                if (lastBreakIndex == -1) {
+                    lastBreakIndex = tokenValue.lastIndexOf('\r');
+                }
+                nextColumnNum = tokenValue.length() - lastBreakIndex;
+            } else {
+                nextColumnNum += valueLength;
+            }
+            if (match.skip) {
+                pos = nextPos;
+                rowNum = nextRowNum;
+                columnNum = nextColumnNum;
+                continue;
+            }
+            MatchTokenObject token = new MatchTokenObject(
+                    match.token.name,
+                    tokenValue,
+                    rowNum,
+                    columnNum,
+                    columnNum + valueLength - 1,
+                    pos,
+                    rowNum > lastRowNum);
+            return new TokenCacheEntryObject(token, nextPos, nextRowNum, nextColumnNum, token.name, pos + valueLength);
+        }
+        return null;
+    }
+
+    private static Object generatedSubhutiLexerMatchTokenWithMode(
+            InterpretedInstance lexer,
+            String code,
+            int index,
+            int rowNum,
+            int columnNum,
+            String lastTokenName,
+            int lastRowNum,
+            Object mode) {
+        List<Object> tokens = generatedJavaMutableListValues(generatedJavaHashSetField(lexer, "_allTokens"));
+        if (tokens == null) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        String modeName = generatedLexerModeName(mode);
+        for (Object token : tokens) {
+            Object tokenMode = generatedJavaHashSetField((InterpretedInstance) token, "mode");
+            if (tokenMode != null && !Objects.equals(generatedLexerModeName(tokenMode), modeName)) {
+                continue;
+            }
+            String tokenName = String.valueOf(generatedJavaHashSetField((InterpretedInstance) token, "name"));
+            MatchedTokenInfoObject stringLiteral = generatedSubhutiLexerTryMatchStringLiteral(
+                    token,
+                    tokenName,
+                    code,
+                    index,
+                    rowNum,
+                    columnNum,
+                    lastRowNum);
+            if (stringLiteral != null) {
+                return stringLiteral;
+            }
+            if ("StringLiteral".equals(tokenName)) {
+                continue;
+            }
+            Object patternObject = generatedJavaHashSetField((InterpretedInstance) token, "pattern");
+            if (!(patternObject instanceof InterpretedInstance patternInstance)
+                    || !isGeneratedJavaUtilRegexPatternShape(patternInstance)) {
+                continue;
+            }
+            Matcher matcher = generatedJavaUtilRegexCompiledPattern(patternInstance).matcher(code);
+            matcher.region(index, code.length());
+            if (!matcher.lookingAt()) {
+                continue;
+            }
+            String matchedText = matcher.group();
+            if (!generatedSubhutiLexerCheckContextConstraint(token, index, rowNum, lastRowNum, lastTokenName)) {
+                continue;
+            }
+            if (!generatedSubhutiLexerCheckLookahead(token, code, index + matchedText.length())) {
+                continue;
+            }
+            MatchTokenObject matchToken = new MatchTokenObject(
+                    tokenName,
+                    matchedText,
+                    rowNum,
+                    columnNum,
+                    columnNum + matchedText.length() - 1,
+                    index,
+                    rowNum > lastRowNum);
+            return new MatchedTokenInfoObject(matchToken, Boolean.TRUE.equals(generatedJavaHashSetField((InterpretedInstance) token, "skip")));
+        }
+        return null;
+    }
+
+    private static MatchedTokenInfoObject generatedSubhutiLexerTryMatchStringLiteral(
+            Object token,
+            String tokenName,
+            String code,
+            int index,
+            int rowNum,
+            int columnNum,
+            int lastRowNum) {
+        if (!"StringLiteral".equals(tokenName) || index >= code.length()) {
+            return null;
+        }
+        char quote = code.charAt(index);
+        if (quote != '"' && quote != '\'') {
+            return null;
+        }
+        int cursor = index + 1;
+        while (cursor < code.length()) {
+            char ch = code.charAt(cursor);
+            if (ch == quote) {
+                String value = code.substring(index, cursor + 1);
+                MatchTokenObject matchToken = new MatchTokenObject(
+                        tokenName,
+                        value,
+                        rowNum,
+                        columnNum,
+                        columnNum + value.length() - 1,
+                        index,
+                        rowNum > lastRowNum);
+                return new MatchedTokenInfoObject(
+                        matchToken,
+                        token instanceof InterpretedInstance tokenInstance
+                                && Boolean.TRUE.equals(generatedJavaHashSetField(tokenInstance, "skip")));
+            }
+            if (ch == '\n' || ch == '\r') {
+                return null;
+            }
+            if (ch == '\\') {
+                cursor++;
+                if (cursor >= code.length()) {
+                    return null;
+                }
+                if (code.charAt(cursor) == '\r' && cursor + 1 < code.length() && code.charAt(cursor + 1) == '\n') {
+                    cursor += 2;
+                } else {
+                    cursor++;
+                }
+                continue;
+            }
+            cursor++;
+        }
+        return null;
+    }
+
+    private static boolean generatedSubhutiLexerCheckContextConstraint(
+            Object token,
+            int index,
+            int rowNum,
+            int lastRowNum,
+            String lastTokenName) {
+        if (!(token instanceof InterpretedInstance tokenInstance)) {
+            return true;
+        }
+        Object constraint = generatedJavaHashSetField(tokenInstance, "contextConstraint");
+        if (!(constraint instanceof InterpretedInstance constraintInstance)) {
+            return true;
+        }
+        if (Boolean.TRUE.equals(generatedJavaHashSetField(constraintInstance, "onlyAtStart")) && index != 0) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(generatedJavaHashSetField(constraintInstance, "onlyAtLineStart")) && rowNum <= lastRowNum) {
+            return false;
+        }
+        Object onlyAfter = generatedJavaHashSetField(constraintInstance, "onlyAfter");
+        if (onlyAfter != null && (lastTokenName == null || !generatedSubhutiContainsString(onlyAfter, lastTokenName))) {
+            return false;
+        }
+        Object notAfter = generatedJavaHashSetField(constraintInstance, "notAfter");
+        return notAfter == null || lastTokenName == null || !generatedSubhutiContainsString(notAfter, lastTokenName);
+    }
+
+    private static boolean generatedSubhutiLexerCheckLookahead(Object token, String code, int nextIndex) {
+        if (!(token instanceof InterpretedInstance tokenInstance)) {
+            return true;
+        }
+        Object lookahead = generatedJavaHashSetField(tokenInstance, "lookaheadAfter");
+        if (!(lookahead instanceof InterpretedInstance lookaheadInstance)) {
+            return true;
+        }
+        int regionStart = Math.min(nextIndex, code.length());
+        Object not = generatedJavaHashSetField(lookaheadInstance, "not");
+        if (generatedSubhutiPatternLookingAt(not, code, regionStart)) {
+            return false;
+        }
+        Object is = generatedJavaHashSetField(lookaheadInstance, "is");
+        if (is != null && !generatedSubhutiPatternLookingAt(is, code, regionStart)) {
+            return false;
+        }
+        Object in = generatedJavaHashSetField(lookaheadInstance, "__qin_in");
+        if (in != null && !generatedJavaListValues(in).isEmpty()) {
+            boolean matchesAny = false;
+            for (Object pattern : generatedJavaListValues(in)) {
+                if (generatedSubhutiPatternLookingAt(pattern, code, regionStart)) {
+                    matchesAny = true;
+                    break;
+                }
+            }
+            if (!matchesAny) {
+                return false;
+            }
+        }
+        Object notIn = generatedJavaHashSetField(lookaheadInstance, "notIn");
+        if (notIn != null && !generatedJavaListValues(notIn).isEmpty()) {
+            for (Object pattern : generatedJavaListValues(notIn)) {
+                if (generatedSubhutiPatternLookingAt(pattern, code, regionStart)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static boolean generatedSubhutiPatternLookingAt(Object patternObject, String code, int regionStart) {
+        if (!(patternObject instanceof InterpretedInstance patternInstance)
+                || !isGeneratedJavaUtilRegexPatternShape(patternInstance)) {
+            return false;
+        }
+        Matcher matcher = generatedJavaUtilRegexCompiledPattern(patternInstance).matcher(code);
+        matcher.region(regionStart, code.length());
+        return matcher.lookingAt();
+    }
+
+    private static boolean generatedSubhutiContainsString(Object values, String value) {
+        for (Object item : generatedJavaListValues(values)) {
+            if (Objects.equals(String.valueOf(item), value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String generatedLexerModeName(Object mode) {
+        if (mode instanceof InterpretedInstance modeInstance) {
+            Object name = generatedJavaHashSetField(modeInstance, "name");
+            return name == null ? "" : String.valueOf(name);
+        }
+        return mode == null ? "" : String.valueOf(mode);
+    }
+
+    private static int countLineBreaks(String text) {
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '\n' || ch == '\u2028' || ch == '\u2029') {
+                count++;
+            } else if (ch == '\r') {
+                count++;
+                if (i + 1 < text.length() && text.charAt(i + 1) == '\n') {
+                    i++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private static String generatedJavaUtilRegexPatternSource(InterpretedInstance interpretedInstance) {
+        Object source = generatedJavaHashSetField(interpretedInstance, "__source");
+        return source == null ? "" : String.valueOf(source);
+    }
+
+    private static Object generatedJavaUtilRegexPatternFlagsValue(InterpretedInstance interpretedInstance) {
+        Object flags = generatedJavaHashSetField(interpretedInstance, "__flags");
+        return flags == null ? 0.0d : flags;
+    }
+
+    private static int generatedJavaUtilRegexPatternFlags(InterpretedInstance interpretedInstance) {
+        Object flags = generatedJavaUtilRegexPatternFlagsValue(interpretedInstance);
+        return flags instanceof Number number ? number.intValue() : toInt32(flags);
+    }
+
+    private static Pattern generatedJavaUtilRegexCompiledPattern(InterpretedInstance interpretedInstance) {
+        Object cached = interpretedInstance.fields.get(GENERATED_REGEX_COMPILED_PATTERN_KEY);
+        if (cached instanceof Pattern pattern) {
+            return pattern;
+        }
+        Pattern pattern = Pattern.compile(
+                generatedJavaUtilRegexPatternSource(interpretedInstance),
+                generatedJavaUtilRegexPatternFlags(interpretedInstance));
+        interpretedInstance.fields.put(GENERATED_REGEX_COMPILED_PATTERN_KEY, pattern);
+        return pattern;
+    }
+
+    private static String generatedJavaUtilRegexJsFlags(int javaFlags, Object extraFlags) {
+        StringBuilder flags = new StringBuilder();
+        if ((javaFlags & Pattern.CASE_INSENSITIVE) != 0) {
+            flags.append('i');
+        }
+        if ((javaFlags & Pattern.MULTILINE) != 0) {
+            flags.append('m');
+        }
+        if ((javaFlags & Pattern.DOTALL) != 0) {
+            flags.append('s');
+        }
+        String extra = extraFlags == null ? "" : String.valueOf(extraFlags);
+        for (int i = 0; i < extra.length(); i++) {
+            char ch = extra.charAt(i);
+            if (flags.indexOf(String.valueOf(ch)) < 0) {
+                flags.append(ch);
+            }
+        }
+        return flags.toString();
+    }
+
+    private static Object tryCallGeneratedSubhutiCstFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        if (!isGeneratedSubhutiCstShape(interpretedInstance)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return switch (name) {
+            case "getName" -> args.length == 0
+                    ? generatedSubhutiCstField(interpretedInstance, "name")
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "setName" -> args.length == 1
+                    ? generatedSubhutiCstSetField(interpretedInstance, "name", args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getChildren" -> {
+                if (args.length == 0) {
+                    yield generatedSubhutiCstField(interpretedInstance, "children");
+                }
+                if (args.length == 1) {
+                    yield generatedSubhutiCstChildrenByName(interpretedInstance, args[0]);
+                }
+                yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            case "__qin_overload_getChildren_0_0" -> args.length == 0
+                    ? generatedSubhutiCstField(interpretedInstance, "children")
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "__qin_overload_getChildren_1_1" -> args.length == 1
+                    ? generatedSubhutiCstChildrenByName(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "setChildren" -> args.length == 1
+                    ? generatedSubhutiCstSetChildren(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getLoc", "getLocation" -> args.length == 0
+                    ? generatedSubhutiCstField(interpretedInstance, "loc")
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "setLoc", "setLocation" -> args.length == 1
+                    ? generatedSubhutiCstSetField(interpretedInstance, "loc", args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getValue" -> args.length == 0
+                    ? generatedSubhutiCstField(interpretedInstance, "value")
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "setValue" -> args.length == 1
+                    ? generatedSubhutiCstSetField(interpretedInstance, "value", args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getChild" -> {
+                if (args.length == 1) {
+                    yield generatedSubhutiCstChild(interpretedInstance, args[0], 0);
+                }
+                if (args.length == 2) {
+                    yield generatedSubhutiCstChild(interpretedInstance, args[0], toIndex(args[1]));
+                }
+                yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            case "__qin_overload_getChild_1_1" -> args.length == 1
+                    ? generatedSubhutiCstChild(interpretedInstance, args[0], 0)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "__qin_overload_getChild_2_0" -> args.length == 2
+                    ? generatedSubhutiCstChild(interpretedInstance, args[0], toIndex(args[1]))
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getToken" -> args.length == 1
+                    ? generatedSubhutiCstToken(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "hasChild" -> args.length == 1
+                    ? generatedSubhutiCstChild(interpretedInstance, args[0], 0) != null
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "getChildCount" -> args.length == 0
+                    ? (double) generatedSubhutiCstChildren(interpretedInstance).size()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "isToken" -> args.length == 0
+                    ? generatedSubhutiCstField(interpretedInstance, "value") != null
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "isEmpty" -> args.length == 0
+                    ? generatedSubhutiCstChildren(interpretedInstance).isEmpty()
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "addChild" -> args.length == 1
+                    ? generatedSubhutiCstAddChild(interpretedInstance, args[0])
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "initChildren" -> args.length == 0
+                    ? generatedSubhutiCstInitChildren(interpretedInstance)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "clearEmptyChildren" -> args.length == 0
+                    ? generatedSubhutiCstClearEmptyChildren(interpretedInstance)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "toString" -> args.length == 0
+                    ? generatedSubhutiCstToString(interpretedInstance)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "toTreeString" -> {
+                if (args.length == 0) {
+                    yield generatedSubhutiCstToTreeString(interpretedInstance, 0);
+                }
+                if (args.length == 1) {
+                    yield generatedSubhutiCstToTreeString(interpretedInstance, toIndex(args[0]));
+                }
+                yield INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            case "__qin_overload_toTreeString_0_0" -> args.length == 0
+                    ? generatedSubhutiCstToTreeString(interpretedInstance, 0)
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            case "__qin_overload_toTreeString_1_1" -> args.length == 1
+                    ? generatedSubhutiCstToTreeString(interpretedInstance, toIndex(args[0]))
+                    : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        };
+    }
+
+    private static boolean isGeneratedSubhutiCstShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.fields.containsKey("__qin_field_name")
+                && interpretedInstance.fields.containsKey("__qin_field_children")
+                && interpretedInstance.fields.containsKey("__qin_field_loc")
+                && interpretedInstance.fields.containsKey("__qin_field_value")
+                && interpretedInstance.methods.containsKey("getName")
+                && interpretedInstance.methods.containsKey("getChildren")
+                && interpretedInstance.methods.containsKey("addChild");
+    }
+
+    private static Object generatedSubhutiCstNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (!isGeneratedSubhutiCstShape(interpretedInstance)
+                || !Set.of(
+                        "getName",
+                        "setName",
+                        "getChildren",
+                        "__qin_overload_getChildren_0_0",
+                        "__qin_overload_getChildren_1_1",
+                        "setChildren",
+                        "getLoc",
+                        "setLoc",
+                        "getLocation",
+                        "setLocation",
+                        "getValue",
+                        "setValue",
+                        "getChild",
+                        "__qin_overload_getChild_2_0",
+                        "__qin_overload_getChild_1_1",
+                        "getToken",
+                        "hasChild",
+                        "getChildCount",
+                        "isToken",
+                        "isEmpty",
+                        "addChild",
+                        "initChildren",
+                        "clearEmptyChildren",
+                        "toString",
+                        "toTreeString",
+                        "__qin_overload_toTreeString_0_0",
+                        "__qin_overload_toTreeString_1_1").contains(name)) {
+            return null;
+        }
+        return new NativeFunction("SubhutiCst." + name, args -> {
+            Object result = tryCallGeneratedSubhutiCstFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            InterpretedFunction method = interpretedInstance.methods.get(name);
+            if (method == null) {
+                throw new IllegalArgumentException("Unknown generated SubhutiCst method: " + name);
+            }
+            return method.bindThis(interpretedInstance).call(args);
+        });
+    }
+
+    private static Object generatedSubhutiCstField(InterpretedInstance interpretedInstance, String name) {
+        return JavaEsmObject.resolveStoredPropertyValue(
+                interpretedInstance.fields.get("__qin_field_" + name),
+                interpretedInstance);
+    }
+
+    private static Object generatedSubhutiCstSetField(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object value) {
+        interpretedInstance.fields.put("__qin_field_" + name, value);
+        return null;
+    }
+
+    private static Object generatedSubhutiCstSetChildren(InterpretedInstance interpretedInstance, Object children) {
+        interpretedInstance.fields.put(
+                "__qin_field_children",
+                children == null ? null : generatedJavaArrayList(generatedJavaListValues(children)));
+        return null;
+    }
+
+    private static Object generatedSubhutiCstAddChild(InterpretedInstance interpretedInstance, Object child) {
+        if (child != null) {
+            generatedSubhutiCstMutableChildren(interpretedInstance).add(child);
+        }
+        return null;
+    }
+
+    private static Object generatedSubhutiCstInitChildren(InterpretedInstance interpretedInstance) {
+        generatedSubhutiCstMutableChildren(interpretedInstance);
+        return null;
+    }
+
+    private static Object generatedSubhutiCstClearEmptyChildren(InterpretedInstance interpretedInstance) {
+        if (generatedSubhutiCstChildren(interpretedInstance).isEmpty()) {
+            interpretedInstance.fields.put("__qin_field_children", null);
+        }
+        return null;
+    }
+
+    private static Object generatedSubhutiCstChildrenByName(InterpretedInstance interpretedInstance, Object name) {
+        List<Object> matches = new ArrayList<>();
+        for (Object child : generatedSubhutiCstChildren(interpretedInstance)) {
+            if (Objects.equals(String.valueOf(name), generatedSubhutiCstNodeName(child))) {
+                matches.add(child);
+            }
+        }
+        return generatedJavaArrayList(matches);
+    }
+
+    private static Object generatedSubhutiCstChild(InterpretedInstance interpretedInstance, Object name, int index) {
+        if (index < 0) {
+            return null;
+        }
+        int seen = 0;
+        for (Object child : generatedSubhutiCstChildren(interpretedInstance)) {
+            if (Objects.equals(String.valueOf(name), generatedSubhutiCstNodeName(child))) {
+                if (seen == index) {
+                    return child;
+                }
+                seen++;
+            }
+        }
+        return null;
+    }
+
+    private static Object generatedSubhutiCstToken(InterpretedInstance interpretedInstance, Object tokenName) {
+        for (Object child : generatedSubhutiCstChildren(interpretedInstance)) {
+            if (Objects.equals(String.valueOf(tokenName), generatedSubhutiCstNodeName(child))
+                    && generatedSubhutiCstNodeValue(child) != null) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private static String generatedSubhutiCstNodeName(Object node) {
+        Object value = node instanceof InterpretedInstance interpretedInstance
+                ? generatedSubhutiCstField(interpretedInstance, "name")
+                : __qin_member_get__(node, "__qin_field_name");
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private static Object generatedSubhutiCstNodeValue(Object node) {
+        return node instanceof InterpretedInstance interpretedInstance
+                ? generatedSubhutiCstField(interpretedInstance, "value")
+                : __qin_member_get__(node, "__qin_field_value");
+    }
+
+    private static List<Object> generatedSubhutiCstChildren(InterpretedInstance interpretedInstance) {
+        Object children = generatedSubhutiCstField(interpretedInstance, "children");
+        if (children == null) {
+            return List.of();
+        }
+        return generatedJavaListValues(children);
+    }
+
+    private static List<Object> generatedSubhutiCstMutableChildren(InterpretedInstance interpretedInstance) {
+        Object children = generatedSubhutiCstField(interpretedInstance, "children");
+        List<Object> values = generatedJavaMutableListValues(children);
+        if (values != null) {
+            return values;
+        }
+        InterpretedInstance list = generatedJavaArrayList(List.of());
+        interpretedInstance.fields.put("__qin_field_children", list);
+        return list.interpretedJavaListItems();
+    }
+
+    private static String generatedSubhutiCstToString(InterpretedInstance interpretedInstance) {
+        String name = String.valueOf(generatedSubhutiCstField(interpretedInstance, "name"));
+        Object value = generatedSubhutiCstField(interpretedInstance, "value");
+        if (value != null) {
+            String displayValue = String.valueOf(value);
+            if (displayValue.length() > 10) {
+                displayValue = displayValue.substring(0, 7) + "...";
+            }
+            displayValue = displayValue.replace("\n", "\\n").replace("\r", "\\r");
+            return "CST(" + name + ", value=\"" + displayValue + "\")";
+        }
+        return "CST(" + name + ", children=" + generatedSubhutiCstChildren(interpretedInstance).size() + ")";
+    }
+
+    private static String generatedSubhutiCstToTreeString(InterpretedInstance interpretedInstance, int depth) {
+        StringBuilder builder = new StringBuilder();
+        generatedSubhutiCstAppendTreeString(builder, interpretedInstance, Math.max(0, depth));
+        return builder.toString();
+    }
+
+    private static void generatedSubhutiCstAppendTreeString(
+            StringBuilder builder,
+            InterpretedInstance interpretedInstance,
+            int depth) {
+        builder.append("  ".repeat(Math.max(0, depth))).append("- ")
+                .append(generatedSubhutiCstField(interpretedInstance, "name"));
+        Object value = generatedSubhutiCstField(interpretedInstance, "value");
+        if (value != null) {
+            String displayValue = String.valueOf(value);
+            if (displayValue.length() > 20) {
+                displayValue = displayValue.substring(0, 17) + "...";
+            }
+            displayValue = displayValue.replace("\n", "\\n").replace("\r", "\\r");
+            builder.append(": \"").append(displayValue).append("\"");
+        }
+        builder.append("\n");
+        for (Object child : generatedSubhutiCstChildren(interpretedInstance)) {
+            if (child instanceof InterpretedInstance childInstance && isGeneratedSubhutiCstShape(childInstance)) {
+                generatedSubhutiCstAppendTreeString(builder, childInstance, depth + 1);
+            }
+        }
+    }
+
     private static JavaEsmMapObject generatedJavaHashSetBuckets(InterpretedInstance interpretedInstance) {
-        return (JavaEsmMapObject) interpretedInstance.fields.get("__buckets");
+        Object buckets = generatedJavaHashSetField(interpretedInstance, "__buckets");
+        return buckets instanceof JavaEsmMapObject mapObject ? mapObject : null;
     }
 
     private static double generatedJavaHashSetSize(InterpretedInstance interpretedInstance) {
-        Object size = interpretedInstance.fields.get("__size");
+        Object size = generatedJavaHashSetSizeValue(interpretedInstance);
         return size instanceof Number number ? number.doubleValue() : 0.0d;
+    }
+
+    private static Object generatedJavaHashSetSizeValue(InterpretedInstance interpretedInstance) {
+        return generatedJavaHashSetField(interpretedInstance, "__size");
+    }
+
+    private static Object generatedJavaHashSetField(InterpretedInstance interpretedInstance, String name) {
+        if (interpretedInstance.fields.containsKey(name)) {
+            return interpretedInstance.fields.get(name);
+        }
+        String qinFieldName = "__qin_field_" + name;
+        if (interpretedInstance.fields.containsKey(qinFieldName)) {
+            return interpretedInstance.fields.get(qinFieldName);
+        }
+        return null;
+    }
+
+    private static void generatedJavaHashSetPutSize(InterpretedInstance interpretedInstance, double size) {
+        boolean wrote = false;
+        if (interpretedInstance.fields.containsKey("__size")) {
+            interpretedInstance.fields.put("__size", size);
+            wrote = true;
+        }
+        if (interpretedInstance.fields.containsKey("__qin_field___size")) {
+            interpretedInstance.fields.put("__qin_field___size", size);
+            wrote = true;
+        }
+        if (!wrote) {
+            interpretedInstance.fields.put("__size", size);
+        }
     }
 
     @SuppressWarnings("unchecked")
     private static List<Object> generatedJavaHashSetBucket(
             InterpretedInstance interpretedInstance,
-            String value,
+            Object value,
             boolean create) {
         JavaEsmMapObject buckets = generatedJavaHashSetBuckets(interpretedInstance);
-        String hash = "hash:" + javaStringHashCode(value);
+        if (buckets == null) {
+            return null;
+        }
+        String hash = generatedJavaHashSetKey(value);
         Object bucket = buckets.get(hash);
         if (bucket == null && create) {
             bucket = new ArrayList<Object>();
@@ -1162,20 +2433,20 @@ public final class JavaEsmGlobal {
         return null;
     }
 
-    private static boolean generatedJavaHashSetContains(InterpretedInstance interpretedInstance, String value) {
+    private static boolean generatedJavaHashSetContains(InterpretedInstance interpretedInstance, Object value) {
         List<Object> bucket = generatedJavaHashSetBucket(interpretedInstance, value, false);
         if (bucket == null) {
             return false;
         }
         for (Object entry : bucket) {
-            if (String.valueOf(entry).equals(value)) {
+            if (generatedJavaHashSetKeyEquals(entry, value)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean generatedJavaHashSetAdd(InterpretedInstance interpretedInstance, String value) {
+    private static boolean generatedJavaHashSetAdd(InterpretedInstance interpretedInstance, Object value) {
         if (generatedJavaHashSetContains(interpretedInstance, value)) {
             return false;
         }
@@ -1184,19 +2455,21 @@ public final class JavaEsmGlobal {
             return false;
         }
         bucket.add(value);
-        interpretedInstance.fields.put("__size", generatedJavaHashSetSize(interpretedInstance) + 1.0d);
+        generatedJavaHashSetPutSize(interpretedInstance, generatedJavaHashSetSize(interpretedInstance) + 1.0d);
         return true;
     }
 
-    private static boolean generatedJavaHashSetRemove(InterpretedInstance interpretedInstance, String value) {
+    private static boolean generatedJavaHashSetRemove(InterpretedInstance interpretedInstance, Object value) {
         List<Object> bucket = generatedJavaHashSetBucket(interpretedInstance, value, false);
         if (bucket == null) {
             return false;
         }
         for (int index = 0; index < bucket.size(); index++) {
-            if (String.valueOf(bucket.get(index)).equals(value)) {
+            if (generatedJavaHashSetKeyEquals(bucket.get(index), value)) {
                 bucket.remove(index);
-                interpretedInstance.fields.put("__size", Math.max(0.0d, generatedJavaHashSetSize(interpretedInstance) - 1.0d));
+                generatedJavaHashSetPutSize(
+                        interpretedInstance,
+                        Math.max(0.0d, generatedJavaHashSetSize(interpretedInstance) - 1.0d));
                 return true;
             }
         }
@@ -1205,12 +2478,547 @@ public final class JavaEsmGlobal {
 
     private static List<Object> generatedJavaHashSetToArray(InterpretedInstance interpretedInstance) {
         List<Object> values = new ArrayList<>();
-        for (Object bucket : generatedJavaHashSetBuckets(interpretedInstance).values()) {
+        JavaEsmMapObject buckets = generatedJavaHashSetBuckets(interpretedInstance);
+        if (buckets == null) {
+            return values;
+        }
+        for (Object bucket : buckets.values()) {
             if (bucket instanceof List<?> list) {
                 values.addAll(list);
             }
         }
         return values;
+    }
+
+    private static List<Object> generatedJavaHashMapBucket(
+            InterpretedInstance interpretedInstance,
+            Object key,
+            boolean create) {
+        return generatedJavaHashSetBucket(interpretedInstance, key, create);
+    }
+
+    private static HashMapEntryRef generatedJavaHashMapFindEntry(InterpretedInstance interpretedInstance, Object key) {
+        List<Object> bucket = generatedJavaHashMapBucket(interpretedInstance, key, false);
+        if (bucket == null) {
+            return null;
+        }
+        for (int index = 0; index < bucket.size(); index++) {
+            Object entry = bucket.get(index);
+            if (generatedJavaHashSetKeyEquals(generatedJavaHashMapEntryKey(entry), key)) {
+                return new HashMapEntryRef(bucket, index, entry);
+            }
+        }
+        return null;
+    }
+
+    private static Object generatedJavaHashMapPut(InterpretedInstance interpretedInstance, Object key, Object value) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found != null) {
+            Object previous = generatedJavaHashMapEntryValue(found.entry);
+            generatedJavaHashMapPutEntryValue(found.entry, value);
+            return previous;
+        }
+        List<Object> bucket = generatedJavaHashMapBucket(interpretedInstance, key, true);
+        if (bucket == null) {
+            return null;
+        }
+        bucket.add(generatedJavaHashMapEntry(key, value));
+        generatedJavaHashSetPutSize(interpretedInstance, generatedJavaHashSetSize(interpretedInstance) + 1.0d);
+        return null;
+    }
+
+    private static Object generatedJavaHashMapGet(InterpretedInstance interpretedInstance, Object key) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        return found == null ? null : generatedJavaHashMapEntryValue(found.entry);
+    }
+
+    private static Object generatedJavaHashMapGetOrDefault(
+            InterpretedInstance interpretedInstance,
+            Object key,
+            Object defaultValue) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        return found == null ? defaultValue : generatedJavaHashMapEntryValue(found.entry);
+    }
+
+    private static Object generatedJavaHashMapPutIfAbsent(
+            InterpretedInstance interpretedInstance,
+            Object key,
+            Object value) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found == null) {
+            List<Object> bucket = generatedJavaHashMapBucket(interpretedInstance, key, true);
+            if (bucket != null) {
+                bucket.add(generatedJavaHashMapEntry(key, value));
+                generatedJavaHashSetPutSize(interpretedInstance, generatedJavaHashSetSize(interpretedInstance) + 1.0d);
+            }
+            return null;
+        }
+        Object previous = generatedJavaHashMapEntryValue(found.entry);
+        if (previous == null) {
+            generatedJavaHashMapPutEntryValue(found.entry, value);
+        }
+        return previous;
+    }
+
+    private static Object generatedJavaHashMapComputeIfAbsent(
+            InterpretedInstance interpretedInstance,
+            Object key,
+            Object mappingFunction) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found == null || generatedJavaHashMapEntryValue(found.entry) == null) {
+            Object value = callAny(mappingFunction, key);
+            if (found == null) {
+                List<Object> bucket = generatedJavaHashMapBucket(interpretedInstance, key, true);
+                if (bucket != null) {
+                    bucket.add(generatedJavaHashMapEntry(key, value));
+                    generatedJavaHashSetPutSize(interpretedInstance, generatedJavaHashSetSize(interpretedInstance) + 1.0d);
+                }
+            } else {
+                generatedJavaHashMapPutEntryValue(found.entry, value);
+            }
+            return value;
+        }
+        return generatedJavaHashMapEntryValue(found.entry);
+    }
+
+    private static Object generatedJavaHashMapMerge(
+            InterpretedInstance interpretedInstance,
+            Object key,
+            Object value,
+            Object remappingFunction) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found == null) {
+            List<Object> bucket = generatedJavaHashMapBucket(interpretedInstance, key, true);
+            if (bucket != null) {
+                bucket.add(generatedJavaHashMapEntry(key, value));
+                generatedJavaHashSetPutSize(interpretedInstance, generatedJavaHashSetSize(interpretedInstance) + 1.0d);
+            }
+            return value;
+        }
+        Object previous = generatedJavaHashMapEntryValue(found.entry);
+        if (previous == null) {
+            generatedJavaHashMapPutEntryValue(found.entry, value);
+            return value;
+        }
+        Object nextValue = callAny(remappingFunction, previous, value);
+        if (nextValue == null) {
+            found.bucket.remove(found.index);
+            generatedJavaHashSetPutSize(
+                    interpretedInstance,
+                    Math.max(0.0d, generatedJavaHashSetSize(interpretedInstance) - 1.0d));
+            return null;
+        }
+        generatedJavaHashMapPutEntryValue(found.entry, nextValue);
+        return nextValue;
+    }
+
+    private static Object generatedJavaHashMapRemove(InterpretedInstance interpretedInstance, Object key) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found == null) {
+            return null;
+        }
+        Object previous = generatedJavaHashMapEntryValue(found.entry);
+        found.bucket.remove(found.index);
+        generatedJavaHashSetPutSize(
+                interpretedInstance,
+                Math.max(0.0d, generatedJavaHashSetSize(interpretedInstance) - 1.0d));
+        return previous;
+    }
+
+    private static Object generatedCaffeineCacheGetIfPresent(InterpretedInstance interpretedInstance, Object key) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found == null) {
+            return null;
+        }
+        generatedCaffeineCacheTouch(interpretedInstance, found.entry);
+        return generatedJavaHashMapEntryValue(found.entry);
+    }
+
+    private static Object generatedCaffeineCachePut(InterpretedInstance interpretedInstance, Object key, Object value) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found != null) {
+            generatedJavaHashMapPutEntryValue(found.entry, value);
+            generatedCaffeineCacheTouch(interpretedInstance, found.entry);
+        } else {
+            List<Object> bucket = generatedJavaHashMapBucket(interpretedInstance, key, true);
+            if (bucket == null) {
+                return null;
+            }
+            Map<String, Object> entry = generatedJavaHashMapEntry(key, value);
+            bucket.add(entry);
+            generatedCaffeineOrder(interpretedInstance).add(entry);
+            generatedJavaHashSetPutSize(interpretedInstance, generatedJavaHashSetSize(interpretedInstance) + 1.0d);
+        }
+        generatedCaffeineCacheEvictOverflow(interpretedInstance);
+        return null;
+    }
+
+    private static Object generatedCaffeineCacheInvalidate(
+            InterpretedInstance interpretedInstance,
+            Object key,
+            boolean notifyRemovalListener) {
+        HashMapEntryRef found = generatedJavaHashMapFindEntry(interpretedInstance, key);
+        if (found == null) {
+            return null;
+        }
+        generatedCaffeineCacheRemoveEntry(interpretedInstance, found, notifyRemovalListener);
+        return null;
+    }
+
+    private static Object generatedCaffeineCacheInvalidateAll(InterpretedInstance interpretedInstance) {
+        List<Object> order = generatedCaffeineOrder(interpretedInstance);
+        Object removalListener = generatedJavaHashSetField(interpretedInstance, "__removalListener");
+        if (removalListener != null) {
+            for (Object entry : new ArrayList<>(order)) {
+                callAny(
+                        removalListener,
+                        generatedJavaHashMapEntryKey(entry),
+                        generatedJavaHashMapEntryValue(entry),
+                        generatedCaffeineRemovalCause(false));
+            }
+        }
+        JavaEsmMapObject buckets = generatedJavaHashSetBuckets(interpretedInstance);
+        if (buckets != null) {
+            buckets.clear();
+        }
+        order.clear();
+        generatedJavaHashSetPutSize(interpretedInstance, 0.0d);
+        return null;
+    }
+
+    private static void generatedCaffeineCacheTouch(InterpretedInstance interpretedInstance, Object entry) {
+        List<Object> order = generatedCaffeineOrder(interpretedInstance);
+        order.remove(entry);
+        order.add(entry);
+    }
+
+    private static void generatedCaffeineCacheEvictOverflow(InterpretedInstance interpretedInstance) {
+        double maximumSize = generatedCaffeineMaximumSize(interpretedInstance);
+        List<Object> order = generatedCaffeineOrder(interpretedInstance);
+        while (generatedJavaHashSetSize(interpretedInstance) > maximumSize && !order.isEmpty()) {
+            Object oldest = order.get(0);
+            HashMapEntryRef found = generatedJavaHashMapFindEntry(
+                    interpretedInstance,
+                    generatedJavaHashMapEntryKey(oldest));
+            if (found == null) {
+                order.remove(0);
+            } else {
+                generatedCaffeineCacheRemoveEntry(interpretedInstance, found, true);
+            }
+        }
+    }
+
+    private static void generatedCaffeineCacheRemoveEntry(
+            InterpretedInstance interpretedInstance,
+            HashMapEntryRef found,
+            boolean notifyRemovalListener) {
+        found.bucket.remove(found.index);
+        generatedCaffeineOrder(interpretedInstance).remove(found.entry);
+        generatedJavaHashSetPutSize(
+                interpretedInstance,
+                Math.max(0.0d, generatedJavaHashSetSize(interpretedInstance) - 1.0d));
+        Object removalListener = generatedJavaHashSetField(interpretedInstance, "__removalListener");
+        if (notifyRemovalListener && removalListener != null) {
+            callAny(
+                    removalListener,
+                    generatedJavaHashMapEntryKey(found.entry),
+                    generatedJavaHashMapEntryValue(found.entry),
+                    generatedCaffeineRemovalCause(false));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> generatedCaffeineOrder(InterpretedInstance interpretedInstance) {
+        Object order = generatedJavaHashSetField(interpretedInstance, "__order");
+        if (order instanceof List<?> list) {
+            return (List<Object>) list;
+        }
+        if (order instanceof InterpretedInstance orderInstance) {
+            List<Object> items = orderInstance.interpretedJavaListItems();
+            if (items != null) {
+                return items;
+            }
+        }
+        List<Object> items = new ArrayList<>();
+        interpretedInstance.fields.put("__order", items);
+        return items;
+    }
+
+    private static double generatedCaffeineMaximumSize(InterpretedInstance interpretedInstance) {
+        Object maximumSize = generatedJavaHashSetField(interpretedInstance, "__maximumSize");
+        if (maximumSize instanceof Number number) {
+            return number.doubleValue();
+        }
+        return Double.POSITIVE_INFINITY;
+    }
+
+    private static Map<String, Object> generatedCaffeineRemovalCause(boolean evicted) {
+        Map<String, Object> cause = new LinkedHashMap<>();
+        cause.put("wasEvicted", new NativeFunction("__QinCaffeineRemovalCause.wasEvicted", args -> evicted));
+        return cause;
+    }
+
+    private static List<Object> generatedJavaHashMapValues(InterpretedInstance interpretedInstance) {
+        List<Object> values = new ArrayList<>();
+        JavaEsmMapObject buckets = generatedJavaHashSetBuckets(interpretedInstance);
+        if (buckets == null) {
+            return values;
+        }
+        for (Object bucket : buckets.values()) {
+            if (!(bucket instanceof List<?> list)) {
+                continue;
+            }
+            for (Object entry : list) {
+                values.add(generatedJavaHashMapEntryValue(entry));
+            }
+        }
+        return values;
+    }
+
+    private static InterpretedInstance generatedJavaArrayList(List<Object> values) {
+        InterpretedInstance list = new InterpretedInstance(Map.of(), Map.of());
+        list.fields.put("__items", new ArrayList<>(values));
+        return list;
+    }
+
+    private static List<Object> generatedJavaListValues(Object value) {
+        List<Object> mutable = generatedJavaMutableListValues(value);
+        if (mutable != null) {
+            return mutable;
+        }
+        Object arrayLike = JavaEsmArray.from(value);
+        if (arrayLike instanceof List<?> list) {
+            return new ArrayList<>(list);
+        }
+        return List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> generatedJavaMutableListValues(Object value) {
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            return interpretedInstance.interpretedJavaListItems();
+        }
+        if (value instanceof List<?> list) {
+            return (List<Object>) list;
+        }
+        return null;
+    }
+
+    private static Object tryCallGeneratedJavaListFastPath(
+            InterpretedInstance interpretedInstance,
+            String name,
+            Object[] args) {
+        List<Object> items = interpretedInstance.interpretedJavaListItems();
+        if (items == null || !JavaEsmArray.supports(name)) {
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        return JavaEsmArray.invoke(items, name, args);
+    }
+
+    private static Object generatedJavaListNativeMethod(InterpretedInstance interpretedInstance, String name) {
+        if (interpretedInstance.interpretedJavaListItems() == null || !JavaEsmArray.supports(name)) {
+            return null;
+        }
+        return new NativeFunction("__QinJavaUtilList." + name, args -> {
+            Object result = tryCallGeneratedJavaListFastPath(interpretedInstance, name, args);
+            if (result != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return result;
+            }
+            throw new IllegalArgumentException("Unsupported generated Java List method: " + name);
+        });
+    }
+
+    private static Map<String, Object> generatedJavaHashMapEntry(Object key, Object value) {
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("key", key);
+        entry.put("value", value);
+        return entry;
+    }
+
+    private static Object generatedJavaHashMapEntryKey(Object entry) {
+        if (entry instanceof Map<?, ?> map) {
+            return castMap(map).get("key");
+        }
+        return __qin_member_get__(entry, "key");
+    }
+
+    private static Object generatedJavaHashMapEntryValue(Object entry) {
+        if (entry instanceof Map<?, ?> map) {
+            return castMap(map).get("value");
+        }
+        return __qin_member_get__(entry, "value");
+    }
+
+    private static void generatedJavaHashMapPutEntryValue(Object entry, Object value) {
+        if (entry instanceof Map<?, ?> map) {
+            castMap(map).put("value", value);
+            return;
+        }
+        __qin_member_set__(entry, "value", value);
+    }
+
+    private record HashMapEntryRef(List<Object> bucket, int index, Object entry) {
+    }
+
+    private static String generatedJavaHashSetKey(Object value) {
+        return "hash:" + javaValueHashCode(value);
+    }
+
+    private static boolean generatedJavaHashSetKeyEquals(Object left, Object right) {
+        return javaValuesEqual(left, right);
+    }
+
+    private static Object javaValueHashCode(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        Object generatedHash = generatedJavaStructuralHashCode(value);
+        if (generatedHash != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return generatedHash;
+        }
+        if (value instanceof CharSequence text) {
+            return javaStringHashCode(text.toString());
+        }
+        if (value instanceof Boolean bool) {
+            return bool ? 1231 : 1237;
+        }
+        if (value instanceof Number number) {
+            return number;
+        }
+        Object hashCode = tryCallJavaLikeMethod(value, "hashCode");
+        if (hashCode != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return hashCode;
+        }
+        return System.identityHashCode(value);
+    }
+
+    private static boolean javaValuesEqual(Object left, Object right) {
+        if (left == right) {
+            return true;
+        }
+        if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+            return Double.compare(leftNumber.doubleValue(), rightNumber.doubleValue()) == 0
+                    || Double.isNaN(leftNumber.doubleValue()) && Double.isNaN(rightNumber.doubleValue());
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        if (left instanceof CharSequence || right instanceof CharSequence
+                || left instanceof Boolean || right instanceof Boolean) {
+            return Objects.equals(left, right);
+        }
+        Object generatedEqual = generatedJavaStructuralEquals(left, right);
+        if (generatedEqual != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return Boolean.TRUE.equals(generatedEqual);
+        }
+        Object equal = tryCallJavaLikeMethod(left, "equals", right);
+        if (equal != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+            return Boolean.TRUE.equals(equal);
+        }
+        return false;
+    }
+
+    private static Object generatedJavaStructuralHashCode(Object value) {
+        if (value instanceof InterpretedInstance interpretedInstance
+                && isGeneratedSubhutiRuleCacheKeyShape(interpretedInstance)) {
+            Object storedHash = generatedJavaHashSetField(interpretedInstance, "hashCode");
+            if (storedHash instanceof Number) {
+                return storedHash;
+            }
+            return javaObjectsHash(
+                    generatedJavaHashSetField(interpretedInstance, "ruleName"),
+                    generatedJavaHashSetField(interpretedInstance, "cacheKeyExtra"),
+                    generatedJavaHashSetField(interpretedInstance, "tokenIndex"),
+                    generatedJavaHashSetField(interpretedInstance, "mode"),
+                    generatedJavaHashSetField(interpretedInstance, "lastTokenName"));
+        }
+        if (value instanceof InterpretedInstance interpretedInstance
+                && isGeneratedLexerModeShape(interpretedInstance)) {
+            return javaObjectsHash(generatedJavaHashSetField(interpretedInstance, "name"));
+        }
+        return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+    }
+
+    private static Object generatedJavaStructuralEquals(Object left, Object right) {
+        if (left instanceof InterpretedInstance leftInstance
+                && right instanceof InterpretedInstance rightInstance
+                && isGeneratedSubhutiRuleCacheKeyShape(leftInstance)
+                && isGeneratedSubhutiRuleCacheKeyShape(rightInstance)) {
+            return numericInt(generatedJavaHashSetField(leftInstance, "tokenIndex"))
+                    == numericInt(generatedJavaHashSetField(rightInstance, "tokenIndex"))
+                    && Objects.equals(
+                    generatedJavaHashSetField(leftInstance, "ruleName"),
+                    generatedJavaHashSetField(rightInstance, "ruleName"))
+                    && Objects.equals(
+                    generatedJavaHashSetField(leftInstance, "cacheKeyExtra"),
+                    generatedJavaHashSetField(rightInstance, "cacheKeyExtra"))
+                    && generatedJavaHashSetField(leftInstance, "mode") == generatedJavaHashSetField(rightInstance, "mode")
+                    && Objects.equals(
+                    generatedJavaHashSetField(leftInstance, "lastTokenName"),
+                    generatedJavaHashSetField(rightInstance, "lastTokenName"));
+        }
+        if (left instanceof InterpretedInstance leftInstance
+                && right instanceof InterpretedInstance rightInstance
+                && isGeneratedLexerModeShape(leftInstance)
+                && isGeneratedLexerModeShape(rightInstance)) {
+            return Objects.equals(
+                    generatedJavaHashSetField(leftInstance, "name"),
+                    generatedJavaHashSetField(rightInstance, "name"));
+        }
+        return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+    }
+
+    private static boolean isGeneratedSubhutiRuleCacheKeyShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.hasOwnField("ruleName")
+                && interpretedInstance.hasOwnField("cacheKeyExtra")
+                && interpretedInstance.hasOwnField("tokenIndex")
+                && interpretedInstance.hasOwnField("mode")
+                && interpretedInstance.hasOwnField("lastTokenName")
+                && interpretedInstance.hasOwnField("hashCode")
+                && interpretedInstance.methods.containsKey("hashCode")
+                && interpretedInstance.methods.containsKey("equals");
+    }
+
+    private static boolean isGeneratedLexerModeShape(InterpretedInstance interpretedInstance) {
+        return interpretedInstance.hasOwnField("name")
+                && interpretedInstance.methods.containsKey("isDefault")
+                && interpretedInstance.methods.containsKey("hashCode")
+                && interpretedInstance.methods.containsKey("equals");
+    }
+
+    private static int numericInt(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
+    }
+
+    private static double javaObjectsHash(Object... values) {
+        double result = 1.0d;
+        for (Object value : values) {
+            Object hash = javaValueHashCode(value);
+            result = result * 31.0d + (hash instanceof Number number
+                    ? number.doubleValue()
+                    : javaStringHashCode(String.valueOf(hash)));
+        }
+        return result;
+    }
+
+    private static Object tryCallJavaLikeMethod(Object target, String name, Object... args) {
+        target = unwrapExportSlotValue(target);
+        if (target instanceof InterpretedInstance interpretedInstance) {
+            Object method = interpretedInstance.getMethod(name);
+            if (method != null) {
+                return callAny(method, args);
+            }
+            Object value = interpretedInstance.get(name);
+            if (isRuntimeCallableValue(value)) {
+                return callAny(value, args);
+            }
+            return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+        }
+        Object value = __qin_member_get__(target, name);
+        if (isRuntimeCallableValue(value)) {
+            return callAny(bindRuntimeCallableThis(value, target), args);
+        }
+        return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
     }
 
     private static int javaStringHashCode(String value) {
@@ -1388,6 +3196,75 @@ public final class JavaEsmGlobal {
                     + interpretedCallStackSnapshot());
         }
         String name = String.valueOf(methodName);
+        if (target instanceof InterpretedInstance interpretedInstance) {
+            Object generatedCaffeineResult = tryCallGeneratedCaffeineCacheFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedCaffeineResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedCaffeineResult;
+            }
+            Object generatedHashSetResult = tryCallGeneratedJavaHashSetFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedHashSetResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedHashSetResult;
+            }
+            Object generatedHashMapResult = tryCallGeneratedJavaHashMapFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedHashMapResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedHashMapResult;
+            }
+            Object generatedSubhutiCstResult = tryCallGeneratedSubhutiCstFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedSubhutiCstResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedSubhutiCstResult;
+            }
+            Object generatedSubhutiCreateTokenResult = tryCallGeneratedSubhutiCreateTokenFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedSubhutiCreateTokenResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedSubhutiCreateTokenResult;
+            }
+            Object generatedSubhutiMatchTokenResult = tryCallGeneratedSubhutiMatchTokenFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedSubhutiMatchTokenResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedSubhutiMatchTokenResult;
+            }
+            Object generatedTokenCacheEntryResult = tryCallGeneratedTokenCacheEntryFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedTokenCacheEntryResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedTokenCacheEntryResult;
+            }
+            Object generatedRegexPatternResult = tryCallGeneratedJavaUtilRegexPatternFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedRegexPatternResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedRegexPatternResult;
+            }
+            Object generatedSubhutiLexerResult = tryCallGeneratedSubhutiLexerFastPath(
+                    interpretedInstance,
+                    name,
+                    args);
+            if (generatedSubhutiLexerResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedSubhutiLexerResult;
+            }
+            Object generatedJavaListResult = tryCallGeneratedJavaListFastPath(interpretedInstance, name, args);
+            if (generatedJavaListResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                return generatedJavaListResult;
+            }
+        }
         Object builtinResult = tryCallBuiltinNamespace(target, name, args);
         if (builtinResult != BUILTIN_MISS) {
             return builtinResult;
@@ -1421,12 +3298,72 @@ public final class JavaEsmGlobal {
         }
         if (target instanceof QinRuntimeObject runtimeObject) {
             if (target instanceof InterpretedInstance interpretedInstance) {
+                Object generatedCaffeineResult = tryCallGeneratedCaffeineCacheFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedCaffeineResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedCaffeineResult;
+                }
                 Object generatedHashSetResult = tryCallGeneratedJavaHashSetFastPath(
                         interpretedInstance,
                         name,
                         args);
                 if (generatedHashSetResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
                     return generatedHashSetResult;
+                }
+                Object generatedHashMapResult = tryCallGeneratedJavaHashMapFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedHashMapResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedHashMapResult;
+                }
+                Object generatedSubhutiCstResult = tryCallGeneratedSubhutiCstFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedSubhutiCstResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedSubhutiCstResult;
+                }
+                Object generatedSubhutiCreateTokenResult = tryCallGeneratedSubhutiCreateTokenFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedSubhutiCreateTokenResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedSubhutiCreateTokenResult;
+                }
+                Object generatedSubhutiMatchTokenResult = tryCallGeneratedSubhutiMatchTokenFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedSubhutiMatchTokenResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedSubhutiMatchTokenResult;
+                }
+                Object generatedTokenCacheEntryResult = tryCallGeneratedTokenCacheEntryFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedTokenCacheEntryResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedTokenCacheEntryResult;
+                }
+                Object generatedRegexPatternResult = tryCallGeneratedJavaUtilRegexPatternFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedRegexPatternResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedRegexPatternResult;
+                }
+                Object generatedSubhutiLexerResult = tryCallGeneratedSubhutiLexerFastPath(
+                        interpretedInstance,
+                        name,
+                        args);
+                if (generatedSubhutiLexerResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedSubhutiLexerResult;
+                }
+                Object generatedJavaListResult = tryCallGeneratedJavaListFastPath(interpretedInstance, name, args);
+                if (generatedJavaListResult != INTERPRETED_INSTANCE_COMPATIBILITY_MISS) {
+                    return generatedJavaListResult;
                 }
                 Object compatibilityResult = tryCallInterpretedInstanceCompatibilityMethod(
                         interpretedInstance,
@@ -1504,6 +3441,14 @@ public final class JavaEsmGlobal {
                     return recoveredReceiverResult;
                 }
             }
+            Object javaUtilObjectsResult = tryCallJavaUtilObjectsMapMethod(map, name, args);
+            if (javaUtilObjectsResult != BUILTIN_MISS) {
+                return javaUtilObjectsResult;
+            }
+            Object javaLangStringResult = tryCallJavaLangStringMapMethod(map, name, args);
+            if (javaLangStringResult != BUILTIN_MISS) {
+                return javaLangStringResult;
+            }
             Object value = JavaEsmObject.resolveStoredPropertyValue(castMap(map).get(propertyKey(methodName)));
             if (value != null) {
                 return callRuntimeMethodValue(target, value, args);
@@ -1524,6 +3469,12 @@ public final class JavaEsmGlobal {
             Object recoveredReceiverResult = tryCallRecoveredInstanceReceiver(name, args);
             if (recoveredReceiverResult != RECOVERED_RECEIVER_MISS) {
                 return recoveredReceiverResult;
+            }
+        }
+        if (target instanceof Class<?> clazz) {
+            Object classMethodResult = tryCallJavaClassInstanceMethod(clazz, name, args);
+            if (classMethodResult != BUILTIN_MISS) {
+                return classMethodResult;
             }
         }
         Class<?> ownerClass = target instanceof Class<?> clazz ? clazz : target.getClass();
@@ -1553,6 +3504,26 @@ public final class JavaEsmGlobal {
         }
     }
 
+    private static Object tryCallJavaClassInstanceMethod(Class<?> clazz, String name, Object[] args) {
+        if (args.length == 0) {
+            return switch (name) {
+                case "getName" -> clazz.getName();
+                case "getSimpleName" -> clazz.getSimpleName();
+                case "getSuperclass" -> clazz.getSuperclass();
+                case "toString" -> clazz.toString();
+                default -> BUILTIN_MISS;
+            };
+        }
+        if (args.length == 1) {
+            return switch (name) {
+                case "isInstance" -> clazz.isInstance(args[0]);
+                case "cast" -> clazz.cast(args[0]);
+                default -> BUILTIN_MISS;
+            };
+        }
+        return BUILTIN_MISS;
+    }
+
     private static Object tryCallInterpretedInstanceFieldAccessor(
             InterpretedInstance interpretedInstance,
             String name,
@@ -1579,6 +3550,232 @@ public final class JavaEsmGlobal {
         return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
     }
 
+    private static Object tryCallJavaUtilObjectsMapMethod(Map<?, ?> rawMap, String name, Object[] args) {
+        Map<String, Object> map = castMap(rawMap);
+        if (!map.containsKey("hash")
+                || !map.containsKey("hashCode")
+                || !map.containsKey("equals")) {
+            return BUILTIN_MISS;
+        }
+        return switch (name) {
+            case "equals" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                yield javaValuesEqual(args[0], args[1]);
+            }
+            case "hash" -> javaObjectsHash(args);
+            case "hashCode" -> {
+                if (args.length != 1) {
+                    yield BUILTIN_MISS;
+                }
+                yield javaValueHashCode(args[0]);
+            }
+            case "requireNonNull" -> {
+                if (args.length < 1 || args.length > 2) {
+                    yield BUILTIN_MISS;
+                }
+                if (args[0] == null) {
+                    throw new IllegalArgumentException(args.length == 2 && args[1] != null
+                            ? String.valueOf(args[1])
+                            : "null");
+                }
+                yield args[0];
+            }
+            case "requireNonNullElse" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                if (args[0] != null) {
+                    yield args[0];
+                }
+                if (args[1] == null) {
+                    throw new IllegalArgumentException("defaultObj");
+                }
+                yield args[1];
+            }
+            case "toString" -> {
+                if (args.length == 1) {
+                    yield String.valueOf(args[0]);
+                }
+                if (args.length == 2) {
+                    yield args[0] == null ? args[1] : String.valueOf(args[0]);
+                }
+                yield BUILTIN_MISS;
+            }
+            default -> BUILTIN_MISS;
+        };
+    }
+
+    private static Object tryCallJavaLangStringMapMethod(Map<?, ?> rawMap, String name, Object[] args) {
+        Map<String, Object> map = castMap(rawMap);
+        if (!map.containsKey("__hashCode")
+                || !map.containsKey("__objectMethod")
+                || !map.containsKey("length")
+                || !map.containsKey("equals")
+                || !map.containsKey("isEmpty")) {
+            return BUILTIN_MISS;
+        }
+        return switch (name) {
+            case "length" -> {
+                if (args.length != 1) {
+                    yield BUILTIN_MISS;
+                }
+                if (args[0] == null) {
+                    throw new IllegalArgumentException("NullPointerException: length()");
+                }
+                yield stringLength(args[0]);
+            }
+            case "equals" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                yield Objects.equals(String.valueOf(args[0]), String.valueOf(args[1]));
+            }
+            case "contains" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                yield String.valueOf(args[0]).contains(String.valueOf(args[1]));
+            }
+            case "isEmpty" -> {
+                if (args.length != 1) {
+                    yield BUILTIN_MISS;
+                }
+                yield String.valueOf(args[0]).isEmpty();
+            }
+            case "isBlank" -> {
+                if (args.length != 1) {
+                    yield BUILTIN_MISS;
+                }
+                yield String.valueOf(args[0]).isBlank();
+            }
+            case "hashCode", "__hashCode" -> {
+                if (args.length != 1) {
+                    yield BUILTIN_MISS;
+                }
+                yield String.valueOf(args[0]).hashCode();
+            }
+            case "startsWith" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                yield String.valueOf(args[0]).startsWith(String.valueOf(args[1]));
+            }
+            case "endsWith" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                yield String.valueOf(args[0]).endsWith(String.valueOf(args[1]));
+            }
+            case "charAt" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                String text = String.valueOf(args[0]);
+                int index = toInt(args[1]);
+                yield index < 0 || index >= text.length() ? "" : String.valueOf(text.charAt(index));
+            }
+            case "substring" -> {
+                if (args.length < 2 || args.length > 3) {
+                    yield BUILTIN_MISS;
+                }
+                String text = String.valueOf(args[0]);
+                int start = Math.min(Math.max(toInt(args[1]), 0), text.length());
+                if (args.length == 3 && args[2] != null) {
+                    int end = Math.min(Math.max(toInt(args[2]), 0), text.length());
+                    if (start > end) {
+                        int tmp = start;
+                        start = end;
+                        end = tmp;
+                    }
+                    yield text.substring(start, end);
+                }
+                yield text.substring(start);
+            }
+            case "join" -> {
+                if (args.length != 2) {
+                    yield BUILTIN_MISS;
+                }
+                StringJoiner joiner = new StringJoiner(String.valueOf(args[0]));
+                for (Object item : asIterableForOf(args[1])) {
+                    joiner.add(String.valueOf(item));
+                }
+                yield joiner.toString();
+            }
+            case "format" -> {
+                if (args.length < 1) {
+                    yield BUILTIN_MISS;
+                }
+                yield javaStringFormat(String.valueOf(args[0]), Arrays.copyOfRange(args, 1, args.length));
+            }
+            default -> BUILTIN_MISS;
+        };
+    }
+
+    private static int stringLength(Object value) {
+        if (value instanceof CharSequence text) {
+            return text.length();
+        }
+        if (value instanceof List<?> list) {
+            return list.size();
+        }
+        return String.valueOf(value).length();
+    }
+
+    private static int toInt(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return Integer.parseInt(String.valueOf(value));
+    }
+
+    private static String javaStringFormat(String formatText, Object[] values) {
+        Matcher matcher = Pattern.compile("%([csd])").matcher(formatText);
+        StringBuilder out = new StringBuilder();
+        int valueIndex = 0;
+        while (matcher.find()) {
+            Object value = valueIndex < values.length ? values[valueIndex++] : null;
+            String replacement = switch (matcher.group(1)) {
+                case "c" -> {
+                    if (value instanceof Number number) {
+                        yield String.valueOf((char) number.intValue());
+                    }
+                    String text = String.valueOf(value);
+                    yield text.isEmpty() ? "" : text.substring(0, 1);
+                }
+                case "d" -> String.valueOf(value instanceof Number number
+                        ? number.longValue()
+                        : Long.parseLong(String.valueOf(value)));
+                default -> String.valueOf(value);
+            };
+            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(out);
+        return out.toString();
+    }
+
+    private static boolean isBuiltinCallableName(Object value) {
+        if (!(value instanceof String text)) {
+            return false;
+        }
+        return switch (text) {
+            case "String", "Number", "Boolean", "Symbol", "Array", "Object", "RegExp", "Date",
+                    "Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError" -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isJavaBooleanCompanion(Object value) {
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            return false;
+        }
+        Map<String, Object> map = castMap(rawMap);
+        return map.containsKey("TRUE")
+                && map.containsKey("FALSE")
+                && (isRuntimeCallableValue(map.get("valueOf")) || isRuntimeCallableValue(map.get("parseBoolean")));
+    }
+
     private static String decapitalizeJavaBeanName(String name) {
         if (name == null || name.isEmpty()) {
             return "";
@@ -1597,9 +3794,9 @@ public final class JavaEsmGlobal {
         Map<String, Object> map = castMap(rawMap);
         if (args.length == 0) {
             return switch (name) {
-                case "in" -> readStructuralParam(map, true, "In", "in", "__qin_in");
-                case "yield" -> readStructuralParam(map, false, "Yield", "yield", "__qin_yield");
-                case "await" -> readStructuralParam(map, false, "Await", "await", "__qin_await");
+                case "in", "__qin_in" -> readStructuralParam(map, true, "In", "in", "__qin_in");
+                case "yield", "__qin_yield" -> readStructuralParam(map, false, "Yield", "yield", "__qin_yield");
+                case "await", "__qin_await" -> readStructuralParam(map, false, "Await", "await", "__qin_await");
                 case "tagged" -> readStructuralParam(map, false, "Tagged", "tagged");
                 case "returnAllowed" -> readStructuralParam(map, false, "Return", "ReturnAllowed", "returnAllowed");
                 case "isDefault" -> readStructuralParam(map, false, "Default", "IsDefault", "isDefault", "default");
@@ -1889,6 +4086,10 @@ public final class JavaEsmGlobal {
                 }
                 methods.add(method);
             }
+            methods.sort(Comparator
+                    .comparingInt((Method method) -> methodArityDistance(method, key.argCount()))
+                    .thenComparing(Method::getName)
+                    .thenComparing(method -> Arrays.toString(method.getParameterTypes())));
             return List.copyOf(methods);
         });
     }
@@ -1922,12 +4123,13 @@ public final class JavaEsmGlobal {
     }
 
     private static Object[] coerceArguments(Object[] args, Class<?>[] parameterTypes, Type[] genericParameterTypes) {
-        Object[] coerced = Arrays.copyOf(args, args.length);
+        Object[] coerced = new Object[parameterTypes.length];
         for (int i = 0; i < coerced.length; i++) {
             Type genericParameterType = genericParameterTypes == null || i >= genericParameterTypes.length
                     ? parameterTypes[i]
                     : genericParameterTypes[i];
-            coerced[i] = coerceArgument(coerced[i], parameterTypes[i], genericParameterType);
+            Object value = args != null && i < args.length ? args[i] : null;
+            coerced[i] = coerceArgument(value, parameterTypes[i], genericParameterType);
         }
         return coerced;
     }
@@ -2304,17 +4506,42 @@ public final class JavaEsmGlobal {
             };
         }
         if (callee instanceof Class<?> ownerClass) {
+            List<String> constructorFailures = new ArrayList<>();
             for (Constructor<?> constructor : ownerClass.getConstructors()) {
-                if (constructor.getParameterCount() != args.length) {
+                if (!constructor.isVarArgs() && constructor.getParameterCount() != args.length) {
+                    continue;
+                }
+                if (constructor.isVarArgs() && args.length < constructor.getParameterCount() - 1) {
                     continue;
                 }
                 try {
-                    return constructor.newInstance(coerceArguments(args, constructor.getParameterTypes()));
-                } catch (ReflectiveOperationException ignored) {
-                    // Try next constructor.
+                    Object[] adaptedArgs = constructor.isVarArgs()
+                            ? adaptVarArgs(args, constructor.getParameterTypes(), constructor.getGenericParameterTypes())
+                            : coerceArguments(args, constructor.getParameterTypes());
+                    return constructor.newInstance(adaptedArgs);
+                } catch (ReflectiveOperationException | IllegalArgumentException error) {
+                    constructorFailures.add(describeConstructorFailure(constructor, error));
                 }
             }
-            throw new IllegalArgumentException("No compatible constructor: " + ownerClass.getName() + "/" + args.length);
+            if (isGeneratedJsClass(ownerClass)) {
+                for (Constructor<?> constructor : ownerClass.getConstructors()) {
+                    if (constructor.isVarArgs()
+                            || constructor.getParameterCount() < args.length) {
+                        continue;
+                    }
+                    try {
+                        Object[] paddedArgs = Arrays.copyOf(args, constructor.getParameterCount());
+                        return constructor.newInstance(coerceArguments(paddedArgs, constructor.getParameterTypes()));
+                    } catch (ReflectiveOperationException | IllegalArgumentException error) {
+                        constructorFailures.add(describeConstructorFailure(constructor, error));
+                    }
+                }
+            }
+            throw new IllegalArgumentException("No compatible constructor: "
+                    + ownerClass.getName()
+                    + "/"
+                    + args.length
+                    + (constructorFailures.isEmpty() ? "" : "; failures=" + constructorFailures));
         }
         if (isFunctionDefinition(callee)) {
             return new InterpretedFunction(castMap((Map<?, ?>) callee)).construct(args);
@@ -2339,6 +4566,30 @@ public final class JavaEsmGlobal {
             throw new IllegalArgumentException("Proxy constructor expects target and handler");
         }
         return new ProxyObject(args[0], args[1]);
+    }
+
+    private static boolean isGeneratedJsClass(Class<?> ownerClass) {
+        if (ownerClass == null) {
+            return false;
+        }
+        String name = ownerClass.getName();
+        String simpleName = ownerClass.getSimpleName();
+        return name.startsWith("__Qin")
+                || name.startsWith("com_")
+                || simpleName.startsWith("__Qin")
+                || simpleName.startsWith("com_");
+    }
+
+    private static String describeConstructorFailure(Constructor<?> constructor, Exception error) {
+        Throwable cause = error instanceof InvocationTargetException invocationTargetException
+                && invocationTargetException.getCause() != null
+                ? invocationTargetException.getCause()
+                : error;
+        return constructor
+                + " -> "
+                + cause.getClass().getSimpleName()
+                + ": "
+                + String.valueOf(cause.getMessage());
     }
 
     private static Object tryReadField(Object target, String name) {
@@ -2451,6 +4702,22 @@ public final class JavaEsmGlobal {
     private static int toIndex(Object value) {
         Double number = asNumber(value);
         return number == null ? -1 : number.intValue();
+    }
+
+    private static int arrayIndexOrMinusOne(String value) {
+        if (value == null || value.isEmpty()) {
+            return -1;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            if (!isAsciiDigit(value.charAt(i))) {
+                return -1;
+            }
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 
     private static int toInt32(Object value) {
@@ -2636,6 +4903,12 @@ public final class JavaEsmGlobal {
         }
         if (value instanceof Iterable<?> iterable) {
             return iterable;
+        }
+        if (value instanceof InterpretedInstance interpretedInstance) {
+            List<Object> javaListItems = interpretedInstance.interpretedJavaListItems();
+            if (javaListItems != null) {
+                return javaListItems;
+            }
         }
         if (value instanceof CharSequence text) {
             List<String> chars = new ArrayList<>(text.length());
@@ -3151,16 +5424,42 @@ public final class JavaEsmGlobal {
 
     private static boolean isCompatibleArity(Method method, int argCount) {
         if (!method.isVarArgs()) {
-            return method.getParameterCount() == argCount;
+            return argCount <= method.getParameterCount()
+                    && missingTrailingParametersCanBeNull(method, argCount);
         }
-        return argCount >= method.getParameterCount() - 1;
+        int fixedCount = method.getParameterCount() - 1;
+        return argCount >= fixedCount
+                || missingTrailingParametersCanBeNull(method, argCount);
+    }
+
+    private static int methodArityDistance(Method method, int argCount) {
+        if (method.isVarArgs()) {
+            int fixedCount = method.getParameterCount() - 1;
+            return argCount >= fixedCount ? 10_000 + Math.max(0, argCount - fixedCount) : fixedCount - argCount;
+        }
+        return method.getParameterCount() - argCount;
+    }
+
+    private static boolean missingTrailingParametersCanBeNull(Method method, int argCount) {
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        int lastFixedParameter = method.isVarArgs() ? parameterTypes.length - 1 : parameterTypes.length;
+        if (argCount > lastFixedParameter) {
+            return method.isVarArgs();
+        }
+        for (int i = Math.max(0, argCount); i < lastFixedParameter; i++) {
+            if (parameterTypes[i].isPrimitive()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean areCompatibleArguments(Object[] args, Method method) {
         Class<?>[] parameterTypes = method.getParameterTypes();
         Type[] genericParameterTypes = method.getGenericParameterTypes();
         if (!method.isVarArgs()) {
-            if (args.length != parameterTypes.length) {
+            if (args.length > parameterTypes.length
+                    || !missingTrailingParametersCanBeNull(method, args.length)) {
                 return false;
             }
             for (int i = 0; i < args.length; i++) {
@@ -3174,10 +5473,10 @@ public final class JavaEsmGlobal {
             return true;
         }
         int fixedCount = parameterTypes.length - 1;
-        if (args.length < fixedCount) {
+        if (args.length < fixedCount && !missingTrailingParametersCanBeNull(method, args.length)) {
             return false;
         }
-        for (int i = 0; i < fixedCount; i++) {
+        for (int i = 0; i < Math.min(args.length, fixedCount); i++) {
             Type genericParameterType = genericParameterTypes == null || i >= genericParameterTypes.length
                     ? parameterTypes[i]
                     : genericParameterTypes[i];
@@ -3386,6 +5685,10 @@ public final class JavaEsmGlobal {
         Object set(Object property, Object value);
 
         boolean has(Object property);
+
+        default boolean isGeneratedClassInstance(String className) {
+            return false;
+        }
     }
 
     static boolean isRuntimeHiddenObjectKey(String key) {
@@ -3991,6 +6294,430 @@ public final class JavaEsmGlobal {
         }
     }
 
+    private static final class JavaUtilRegexMatcherObject implements QinRuntimeObject {
+        private final Pattern pattern;
+        private final String input;
+        private int regionStart;
+        private int regionEnd;
+        private int searchIndex;
+        private int appendPosition;
+        private Matcher lastMatch;
+
+        private JavaUtilRegexMatcherObject(Pattern pattern, String input) {
+            this.pattern = pattern;
+            this.input = input == null ? "null" : input;
+            this.regionStart = 0;
+            this.regionEnd = this.input.length();
+            this.searchIndex = 0;
+            this.appendPosition = 0;
+        }
+
+        @Override
+        public Object get(Object property) {
+            String name = propertyKey(property);
+            if (!Set.of(
+                    "region",
+                    "lookingAt",
+                    "matches",
+                    "find",
+                    "group",
+                    "groupCount",
+                    "start",
+                    "end",
+                    "replaceAll",
+                    "appendReplacement",
+                    "appendTail").contains(name)) {
+                return null;
+            }
+            return new NativeFunction("__QinJavaUtilRegexMatcher." + name, args -> invoke(name, args));
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            String name = propertyKey(property);
+            switch (name) {
+                case "__regionStart" -> regionStart = clampIndex(toInt32(value), 0, input.length());
+                case "__regionEnd" -> regionEnd = clampIndex(toInt32(value), regionStart, input.length());
+                case "__searchIndex" -> searchIndex = clampIndex(toInt32(value), regionStart, regionEnd);
+                case "__appendPosition" -> appendPosition = clampIndex(toInt32(value), 0, input.length());
+                default -> {
+                    // Native matcher state is intentionally closed over by methods above.
+                }
+            }
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+
+        private Object invoke(String name, Object[] args) {
+            return switch (name) {
+                case "region" -> region(args);
+                case "lookingAt" -> args.length == 0 ? matchAtRegionStart(false) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                case "matches" -> args.length == 0 ? matchAtRegionStart(true) : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                case "find" -> find(args);
+                case "group" -> group(args);
+                case "groupCount" -> args.length == 0 ? groupCount() : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                case "start" -> args.length == 0 ? (double) requireLastMatch().start() : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                case "end" -> args.length == 0 ? (double) requireLastMatch().end() : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                case "replaceAll" -> args.length == 1
+                        ? pattern.matcher(input).replaceAll(String.valueOf(args[0]))
+                        : INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+                case "appendReplacement" -> appendReplacement(args);
+                case "appendTail" -> appendTail(args);
+                default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            };
+        }
+
+        private Object region(Object[] args) {
+            if (args.length != 2) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            regionStart = Math.max(0, toInt32(args[0]));
+            regionEnd = Math.min(input.length(), Math.max(regionStart, toInt32(args[1])));
+            searchIndex = regionStart;
+            lastMatch = null;
+            return this;
+        }
+
+        private Object matchAtRegionStart(boolean requireFullRegion) {
+            Matcher matcher = pattern.matcher(input);
+            matcher.region(regionStart, regionEnd);
+            if (!matcher.lookingAt()) {
+                lastMatch = null;
+                return false;
+            }
+            lastMatch = matcher;
+            return !requireFullRegion || matcher.end() == regionEnd;
+        }
+
+        private Object find(Object[] args) {
+            if (args.length > 1) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            int from = args.length == 0 ? searchIndex : Math.max(regionStart, toInt32(args[0]));
+            int boundedFrom = clampIndex(from, regionStart, regionEnd);
+            Matcher matcher = pattern.matcher(input);
+            matcher.region(boundedFrom, regionEnd);
+            if (!matcher.find()) {
+                lastMatch = null;
+                searchIndex = regionEnd;
+                return false;
+            }
+            lastMatch = matcher;
+            searchIndex = matcher.end() == matcher.start()
+                    ? Math.min(matcher.end() + 1, regionEnd)
+                    : matcher.end();
+            return true;
+        }
+
+        private Object group(Object[] args) {
+            if (args.length > 1) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            int index = args.length == 0 ? 0 : toInt32(args[0]);
+            String value = requireLastMatch().group(index);
+            return value == null ? null : value;
+        }
+
+        private Object groupCount() {
+            return lastMatch == null ? 0.0d : (double) Math.max(0, lastMatch.groupCount());
+        }
+
+        private Object appendReplacement(Object[] args) {
+            if (args.length != 2) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            Matcher matcher = requireLastMatch();
+            String text = input.substring(appendPosition, matcher.start()) + String.valueOf(args[1]);
+            callMethod(args[0], "append", text);
+            appendPosition = matcher.end();
+            return this;
+        }
+
+        private Object appendTail(Object[] args) {
+            if (args.length != 1) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            callMethod(args[0], "append", input.substring(appendPosition));
+            appendPosition = input.length();
+            return args[0];
+        }
+
+        private Matcher requireLastMatch() {
+            if (lastMatch == null) {
+                throw new IllegalStateException("No match available");
+            }
+            return lastMatch;
+        }
+
+        private static int clampIndex(int value, int min, int max) {
+            return Math.min(Math.max(value, min), max);
+        }
+    }
+
+    private static final class MatchedTokenInfoObject implements QinRuntimeObject {
+        private final MatchTokenObject token;
+        private final boolean skip;
+
+        private MatchedTokenInfoObject(MatchTokenObject token, boolean skip) {
+            this.token = token;
+            this.skip = skip;
+        }
+
+        @Override
+        public Object get(Object property) {
+            return switch (propertyKey(property)) {
+                case "__qin_field_token", "token" -> token;
+                case "__qin_field_skip", "skip" -> skip;
+                default -> null;
+            };
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+    }
+
+    private static final class TokenCacheEntryObject implements QinRuntimeObject {
+        private final Object token;
+        private final int nextCodeIndex;
+        private final int nextLine;
+        private final int nextColumn;
+        private final String lastTokenName;
+        private final int tokenEndCodeIndex;
+
+        private TokenCacheEntryObject(
+                Object token,
+                int nextCodeIndex,
+                int nextLine,
+                int nextColumn,
+                String lastTokenName,
+                int tokenEndCodeIndex) {
+            this.token = token;
+            this.nextCodeIndex = nextCodeIndex;
+            this.nextLine = nextLine;
+            this.nextColumn = nextColumn;
+            this.lastTokenName = lastTokenName;
+            this.tokenEndCodeIndex = tokenEndCodeIndex;
+        }
+
+        @Override
+        public Object get(Object property) {
+            String name = propertyKey(property);
+            return switch (name) {
+                case "__qin_field_token", "token" -> token;
+                case "__qin_field_nextCodeIndex", "nextCodeIndex" -> (double) nextCodeIndex;
+                case "__qin_field_nextLine", "nextLine" -> (double) nextLine;
+                case "__qin_field_nextColumn", "nextColumn" -> (double) nextColumn;
+                case "__qin_field_lastTokenName", "lastTokenName" -> lastTokenName;
+                case "__qin_field_tokenEndCodeIndex", "tokenEndCodeIndex" -> (double) tokenEndCodeIndex;
+                case "getToken" -> new NativeFunction("TokenCacheEntry.getToken", args -> token);
+                case "getNextCodeIndex" -> new NativeFunction("TokenCacheEntry.getNextCodeIndex", args -> (double) nextCodeIndex);
+                case "getNextLine" -> new NativeFunction("TokenCacheEntry.getNextLine", args -> (double) nextLine);
+                case "getNextColumn" -> new NativeFunction("TokenCacheEntry.getNextColumn", args -> (double) nextColumn);
+                case "getLastTokenName" -> new NativeFunction("TokenCacheEntry.getLastTokenName", args -> lastTokenName);
+                case "getTokenEndCodeIndex" -> new NativeFunction("TokenCacheEntry.getTokenEndCodeIndex", args -> (double) tokenEndCodeIndex);
+                default -> null;
+            };
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+    }
+
+    private static final class MatchTokenObject implements QinRuntimeObject {
+        private final String name;
+        private final String value;
+        private final int rowNum;
+        private final int columnStartNum;
+        private final int columnEndNum;
+        private final int index;
+        private final boolean hasLineBreakBefore;
+
+        private MatchTokenObject(
+                String name,
+                String value,
+                int rowNum,
+                int columnStartNum,
+                int columnEndNum,
+                int index,
+                boolean hasLineBreakBefore) {
+            this.name = name;
+            this.value = value;
+            this.rowNum = rowNum;
+            this.columnStartNum = columnStartNum;
+            this.columnEndNum = columnEndNum;
+            this.index = index;
+            this.hasLineBreakBefore = hasLineBreakBefore;
+        }
+
+        @Override
+        public Object get(Object property) {
+            String name = propertyKey(property);
+            if (Set.of(
+                    "getTokenName",
+                    "getTokenValue",
+                    "getRowNum",
+                    "getColumnStartNum",
+                    "getColumnEndNum",
+                    "getIndex",
+                    "getHasLineBreakBefore",
+                    "getLength",
+                    "tokenName",
+                    "tokenValue",
+                    "value",
+                    "index",
+                    "rowNum",
+                    "columnStartNum",
+                    "columnEndNum",
+                    "hasLineBreakBefore",
+                    "isEof",
+                    "endOffset",
+                    "startPosition",
+                    "endPosition",
+                    "toString").contains(name)) {
+                return new NativeFunction("SubhutiMatchToken." + name, args -> invoke(name, args));
+            }
+            Object value = switch (name) {
+                case "__qin_field_tokenName" -> this.name;
+                case "__qin_field_tokenValue" -> this.value;
+                case "__qin_field_rowNum" -> (double) rowNum;
+                case "__qin_field_columnStartNum" -> (double) columnStartNum;
+                case "__qin_field_columnEndNum" -> (double) columnEndNum;
+                case "__qin_field_index" -> (double) index;
+                case "__qin_field_hasLineBreakBefore" -> hasLineBreakBefore;
+                default -> null;
+            };
+            if (value != null || switch (name) {
+                case "__qin_field_tokenName", "__qin_field_tokenValue", "__qin_field_rowNum",
+                        "__qin_field_columnStartNum", "__qin_field_columnEndNum", "__qin_field_index",
+                        "__qin_field_hasLineBreakBefore" -> true;
+                default -> false;
+            }) {
+                return value;
+            }
+            return null;
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+
+        @Override
+        public boolean isGeneratedClassInstance(String className) {
+            return "com_subhuti_struct_SubhutiPosition".equals(className)
+                    || "com.subhuti.struct.SubhutiPosition".equals(className)
+                    || "SubhutiPosition".equals(className);
+        }
+
+        private Object invoke(String name, Object[] args) {
+            if (args.length != 0) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            return switch (name) {
+                case "getTokenName", "tokenName" -> this.name;
+                case "getTokenValue", "tokenValue", "value" -> this.value;
+                case "getRowNum", "rowNum" -> (double) rowNum;
+                case "getColumnStartNum", "columnStartNum" -> (double) columnStartNum;
+                case "getColumnEndNum", "columnEndNum" -> (double) columnEndNum;
+                case "getIndex", "index" -> (double) index;
+                case "getHasLineBreakBefore", "hasLineBreakBefore" -> hasLineBreakBefore;
+                case "getLength" -> (double) value.length();
+                case "isEof" -> "EOF".equals(this.name);
+                case "endOffset" -> (double) (index + value.length());
+                case "startPosition" -> new PositionObject(rowNum, columnStartNum, index);
+                case "endPosition" -> new PositionObject(rowNum, columnEndNum, index + value.length());
+                case "toString" -> this.name + "(\"" + this.value + "\")";
+                default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            };
+        }
+    }
+
+    private static final class PositionObject implements QinRuntimeObject {
+        private final int line;
+        private final int column;
+        private final int index;
+
+        private PositionObject(int line, int column, int index) {
+            this.line = line;
+            this.column = column;
+            this.index = index;
+        }
+
+        @Override
+        public Object get(Object property) {
+            String name = propertyKey(property);
+            Object value = switch (name) {
+                case "__qin_field_line" -> (double) line;
+                case "__qin_field_column" -> (double) column;
+                case "__qin_field_index" -> (double) index;
+                default -> null;
+            };
+            if (value != null || switch (name) {
+                case "__qin_field_line", "__qin_field_column", "__qin_field_index" -> true;
+                default -> false;
+            }) {
+                return value;
+            }
+            if (Set.of("getLine", "getColumn", "getIndex", "line", "column", "index", "toString").contains(name)) {
+                return new NativeFunction("SubhutiPosition." + name, args -> invoke(name, args));
+            }
+            return null;
+        }
+
+        @Override
+        public Object set(Object property, Object value) {
+            return value;
+        }
+
+        @Override
+        public boolean has(Object property) {
+            return get(property) != null;
+        }
+
+        @Override
+        public boolean isGeneratedClassInstance(String className) {
+            return "com_subhuti_struct_SubhutiPosition".equals(className)
+                    || "com.subhuti.struct.SubhutiPosition".equals(className)
+                    || "SubhutiPosition".equals(className);
+        }
+
+        private Object invoke(String name, Object[] args) {
+            if (args.length != 0) {
+                return INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            }
+            return switch (name) {
+                case "getLine", "line" -> (double) line;
+                case "getColumn", "column" -> (double) column;
+                case "getIndex", "index" -> (double) index;
+                case "toString" -> line + ":" + column;
+                default -> INTERPRETED_INSTANCE_COMPATIBILITY_MISS;
+            };
+        }
+    }
+
     private static final class InterpretedInstance implements QinRuntimeObject {
         private final Map<String, Object> fields = new LinkedHashMap<>();
         private final Map<String, InterpretedFunction> methods;
@@ -4061,17 +6788,17 @@ public final class JavaEsmGlobal {
                 if ("length".equals(name)) {
                     return (double) javaListItems.size();
                 }
-                int index = toIndex(name);
+                int index = arrayIndexOrMinusOne(name);
                 if (index >= 0 && index < javaListItems.size()) {
                     return javaListItems.get(index);
                 }
             }
             if (fields.containsKey(name)) {
-                return fields.get(name);
+                return JavaEsmObject.resolveStoredPropertyValue(fields.get(name), this);
             }
             String javaFieldName = javaFieldAliasName(name);
             if (fields.containsKey(javaFieldName)) {
-                return fields.get(javaFieldName);
+                return JavaEsmObject.resolveStoredPropertyValue(fields.get(javaFieldName), this);
             }
             AccessorProperty accessor = accessors.get(name);
             if (accessor != null && accessor.getter != null) {
@@ -4096,9 +6823,45 @@ public final class JavaEsmGlobal {
             if ("_markParseFail".equals(name) && methods.containsKey("setParseFail")) {
                 return methods.get("setParseFail").bindThis(this);
             }
+            Object generatedCaffeineMethod = generatedCaffeineCacheNativeMethod(this, name);
+            if (generatedCaffeineMethod != null) {
+                return generatedCaffeineMethod;
+            }
             Object generatedJavaHashSetMethod = generatedJavaHashSetNativeMethod(this, name);
             if (generatedJavaHashSetMethod != null) {
                 return generatedJavaHashSetMethod;
+            }
+            Object generatedJavaHashMapMethod = generatedJavaHashMapNativeMethod(this, name);
+            if (generatedJavaHashMapMethod != null) {
+                return generatedJavaHashMapMethod;
+            }
+            Object generatedSubhutiCstMethod = generatedSubhutiCstNativeMethod(this, name);
+            if (generatedSubhutiCstMethod != null) {
+                return generatedSubhutiCstMethod;
+            }
+            Object generatedSubhutiCreateTokenMethod = generatedSubhutiCreateTokenNativeMethod(this, name);
+            if (generatedSubhutiCreateTokenMethod != null) {
+                return generatedSubhutiCreateTokenMethod;
+            }
+            Object generatedSubhutiMatchTokenMethod = generatedSubhutiMatchTokenNativeMethod(this, name);
+            if (generatedSubhutiMatchTokenMethod != null) {
+                return generatedSubhutiMatchTokenMethod;
+            }
+            Object generatedTokenCacheEntryMethod = generatedTokenCacheEntryNativeMethod(this, name);
+            if (generatedTokenCacheEntryMethod != null) {
+                return generatedTokenCacheEntryMethod;
+            }
+            Object generatedRegexPatternMethod = generatedJavaUtilRegexPatternNativeMethod(this, name);
+            if (generatedRegexPatternMethod != null) {
+                return generatedRegexPatternMethod;
+            }
+            Object generatedSubhutiLexerMethod = generatedSubhutiLexerNativeMethod(this, name);
+            if (generatedSubhutiLexerMethod != null) {
+                return generatedSubhutiLexerMethod;
+            }
+            Object generatedJavaListMethod = generatedJavaListNativeMethod(this, name);
+            if (generatedJavaListMethod != null) {
+                return generatedJavaListMethod;
             }
             InterpretedFunction method = methods.get(name);
             if (method != null) {
@@ -4129,7 +6892,7 @@ public final class JavaEsmGlobal {
             String name = propertyKey(property);
             List<Object> javaListItems = interpretedJavaListItems();
             if (javaListItems != null) {
-                int index = toIndex(name);
+                int index = arrayIndexOrMinusOne(name);
                 if (index >= 0) {
                     while (javaListItems.size() <= index) {
                         javaListItems.add(null);
@@ -4139,6 +6902,14 @@ public final class JavaEsmGlobal {
                 }
             }
             String storageName = fields.containsKey(name) ? name : javaFieldAliasName(name);
+            if (fields.containsKey(name) && JavaEsmObject.writeStoredPropertyValue(fields.get(name), this, value)) {
+                return value;
+            }
+            if (!fields.containsKey(name)
+                    && fields.containsKey(storageName)
+                    && JavaEsmObject.writeStoredPropertyValue(fields.get(storageName), this, value)) {
+                return value;
+            }
             if (!fields.containsKey(name) && !fields.containsKey(storageName)) {
                 AccessorProperty accessor = accessors.get(name);
                 if (accessor != null && accessor.setter != null) {
@@ -4241,13 +7012,17 @@ public final class JavaEsmGlobal {
 
         private Object getOwnField(String name) {
             if (fields.containsKey(name)) {
-                return fields.get(name);
+                return JavaEsmObject.resolveStoredPropertyValue(fields.get(name), this);
             }
             String javaFieldName = javaFieldAliasName(name);
             if (fields.containsKey(javaFieldName)) {
-                return fields.get(javaFieldName);
+                return JavaEsmObject.resolveStoredPropertyValue(fields.get(javaFieldName), this);
             }
             return null;
+        }
+
+        private void putOwnField(String name, Object value) {
+            fields.put(name, value);
         }
 
         private boolean hasOwnField(String name) {
@@ -4272,6 +7047,26 @@ public final class JavaEsmGlobal {
         }
 
         private Object getMethod(String name) {
+            Object generatedCaffeineMethod = generatedCaffeineCacheNativeMethod(this, name);
+            if (generatedCaffeineMethod != null) {
+                return generatedCaffeineMethod;
+            }
+            Object generatedJavaHashSetMethod = generatedJavaHashSetNativeMethod(this, name);
+            if (generatedJavaHashSetMethod != null) {
+                return generatedJavaHashSetMethod;
+            }
+            Object generatedJavaHashMapMethod = generatedJavaHashMapNativeMethod(this, name);
+            if (generatedJavaHashMapMethod != null) {
+                return generatedJavaHashMapMethod;
+            }
+            Object generatedSubhutiCstMethod = generatedSubhutiCstNativeMethod(this, name);
+            if (generatedSubhutiCstMethod != null) {
+                return generatedSubhutiCstMethod;
+            }
+            Object generatedJavaListMethod = generatedJavaListNativeMethod(this, name);
+            if (generatedJavaListMethod != null) {
+                return generatedJavaListMethod;
+            }
             InterpretedFunction method = methods.get(name);
             if (method != null) {
                 return method.bindThis(this);
@@ -6688,11 +9483,15 @@ public final class JavaEsmGlobal {
                     }
                     throw new IllegalArgumentException("Object spread expects a map-like value");
                 }
+                boolean computed = Boolean.TRUE.equals(property.get("computed"));
+                Object propertyKey = computed
+                        ? evalNode(property.get("key"), env)
+                        : extractPropertyName(property.get("key"));
                 object.put(
-                        extractPropertyName(property.get("key")),
+                        String.valueOf(propertyKey),
                         property.containsKey("value")
                                 ? evalNode(property.get("value"), env)
-                                : resolveIdentifier(extractPropertyName(property.get("key")), env));
+                                : resolveIdentifier(String.valueOf(propertyKey), env));
             }
             return object;
         }

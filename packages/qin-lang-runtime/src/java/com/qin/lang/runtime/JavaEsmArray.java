@@ -143,6 +143,18 @@ public final class JavaEsmArray {
         return result;
     }
 
+    public static Object from(Object value, Object mapFn) {
+        if (!JavaEsmGlobal.isRuntimeCallable(mapFn)) {
+            throw new IllegalArgumentException("Array.from expects a callable map function");
+        }
+        List<Object> source = runtimeListValues(value);
+        List<Object> result = new ArrayList<>(source.size());
+        for (int i = 0; i < source.size(); i++) {
+            result.add(JavaEsmGlobal.callRuntimeCallable(mapFn, source.get(i), (double) i));
+        }
+        return result;
+    }
+
     public static boolean isArray(Object value) {
         return value instanceof List<?> || (value != null && value.getClass().isArray());
     }
@@ -358,7 +370,7 @@ public final class JavaEsmArray {
 
     private static Object reduce(List<Object> list, Object[] args) {
         requireArgRange("Array.reduce", args, 1, 2);
-        Object callback = args[0];
+        Object callback = requireCallback("Array.reduce", args);
         if (list.isEmpty() && args.length < 2) {
             throw new IllegalArgumentException("Array.reduce of empty array with no initial value");
         }
@@ -470,7 +482,7 @@ public final class JavaEsmArray {
             list.sort((left, right) -> String.valueOf(left).compareTo(String.valueOf(right)));
             return list;
         }
-        Object callback = args[0];
+        Object callback = requireCallback("Array.sort", args);
         list.sort((left, right) -> {
             Object result = JavaEsmGlobal.callRuntimeCallable(callback, left, right);
             if (result instanceof Number number) {
@@ -565,7 +577,11 @@ public final class JavaEsmArray {
 
     private static Object requireCallback(String methodName, Object[] args) {
         requireArgRange(methodName, args, 1, 2);
-        return args[0];
+        Object callback = args[0];
+        if (!JavaEsmGlobal.isRuntimeCallable(callback)) {
+            throw new IllegalArgumentException(methodName + " expects a callable callback");
+        }
+        return callback;
     }
 
     private static Object bindCallbackThis(Object callback, Object[] args) {

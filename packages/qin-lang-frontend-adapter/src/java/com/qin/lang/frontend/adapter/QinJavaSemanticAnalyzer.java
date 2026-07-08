@@ -510,6 +510,9 @@ public final class QinJavaSemanticAnalyzer {
                     classBinaryName);
         }
         if (expression instanceof JavaAstMethodReferenceExpression methodReference) {
+            if (locals.containsKey(methodReference.ownerName()) || fieldTypes.containsKey(methodReference.ownerName())) {
+                return QinIrTypeRef.classType(LAMBDA_BINARY_NAME);
+            }
             resolveType(methodReference.ownerName(), packageName, importedTypes);
             return QinIrTypeRef.classType(LAMBDA_BINARY_NAME);
         }
@@ -804,7 +807,7 @@ public final class QinJavaSemanticAnalyzer {
             Map<String, QinIrTypeRef> fieldTypes,
             Map<String, QinIrTypeRef> methodReturnTypes,
             String classBinaryName) {
-        expressionType(
+        QinIrTypeRef discriminantType = expressionType(
                 switchExpression.discriminant(),
                 packageName,
                 importedTypes,
@@ -814,8 +817,9 @@ public final class QinJavaSemanticAnalyzer {
                 classBinaryName);
         QinIrTypeRef resultType = null;
         for (JavaAstSwitchCase switchCase : switchExpression.cases()) {
-            expressionType(
+            switchCaseTestType(
                     switchCase.test(),
+                    discriminantType,
                     packageName,
                     importedTypes,
                     locals,
@@ -833,6 +837,53 @@ public final class QinJavaSemanticAnalyzer {
             resultType = resultType == null ? caseType : conditionalExpressionType(resultType, caseType);
         }
         return resultType == null ? QinIrTypeRef.voidType() : resultType;
+    }
+
+    private QinIrTypeRef switchCaseTestType(
+            JavaAstExpression test,
+            QinIrTypeRef discriminantType,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (test == null) {
+            return QinIrTypeRef.voidType();
+        }
+        if (test instanceof JavaAstIdentifierExpression && isEnumType(discriminantType)) {
+            return discriminantType;
+        }
+        try {
+            return expressionType(
+                    test,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Could not analyze switch case test " + test + " for discriminant type " + discriminantType,
+                    e);
+        }
+    }
+
+    private boolean isEnumType(QinIrTypeRef type) {
+        if (type == null || type.binaryName() == null) {
+            return false;
+        }
+        JavaAstClassDeclaration sourceClass = sourceClassesByBinaryName.get(type.binaryName());
+        if (sourceClass != null) {
+            return "java.lang.Enum".equals(sourceClass.superTypeName())
+                    || "Enum".equals(sourceClass.superTypeName());
+        }
+        try {
+            return Class.forName(type.binaryName()).isEnum();
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     private QinIrTypeRef switchCaseResultType(
@@ -999,6 +1050,9 @@ public final class QinJavaSemanticAnalyzer {
             return targetParameterType == null ? QinIrTypeRef.classType(LAMBDA_BINARY_NAME) : targetParameterType;
         }
         if (expression instanceof JavaAstMethodReferenceExpression methodReference) {
+            if (locals.containsKey(methodReference.ownerName()) || fieldTypes.containsKey(methodReference.ownerName())) {
+                return targetParameterType == null ? QinIrTypeRef.classType(LAMBDA_BINARY_NAME) : targetParameterType;
+            }
             resolveType(methodReference.ownerName(), packageName, importedTypes);
             return targetParameterType == null ? QinIrTypeRef.classType(LAMBDA_BINARY_NAME) : targetParameterType;
         }
@@ -2103,6 +2157,9 @@ public final class QinJavaSemanticAnalyzer {
             List<QinIrTypeRef> argumentTypes) {
         String ownerBinaryName = ownerType.binaryName();
         int argumentCount = argumentTypes.size();
+        if ("getClass".equals(methodName) && argumentTypes.isEmpty()) {
+            return QinIrTypeRef.classType(Class.class.getName());
+        }
         try {
             Class<?> ownerClass = Class.forName(ownerBinaryName);
             Method matched = null;

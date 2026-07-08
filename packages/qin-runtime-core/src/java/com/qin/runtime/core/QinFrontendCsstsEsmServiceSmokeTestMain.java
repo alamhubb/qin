@@ -28,7 +28,13 @@ public final class QinFrontendCsstsEsmServiceSmokeTestMain {
                 export const ok = true;
                 """, StandardCharsets.UTF_8);
         Files.writeString(appDir.resolve("theme.cssts"), """
-                export const bannerStyle = css { displayFlex, colorBlue, padding16px };
+                const bannerStyle = css {
+                  displayFlex,
+                  colorBlue,
+                  padding16px
+                }
+
+                export default bannerStyle
                 """, StandardCharsets.UTF_8);
 
         QinFrontendEsmService service = QinFrontendEsmService.create(root, mainFile);
@@ -43,6 +49,12 @@ public final class QinFrontendCsstsEsmServiceSmokeTestMain {
                 || !csstsModule.contains("/@qin-mod/__virtual/csstsAtom.js")
                 || !csstsModule.contains("/@qin-mod/__virtual/cssts-runtime.js")) {
             throw new IllegalStateException("CSSTS module missing virtual module wiring:\n" + csstsModule);
+        }
+        if (csstsModule.contains("import * as cssts")
+                || occurrences(csstsModule, "from \"/@qin-mod/__virtual/cssts-runtime.js\"") != 1
+                || occurrences(csstsModule, "from \"/@qin-mod/__virtual/csstsAtom.js\"") != 1
+                || occurrences(csstsModule, "import \"/@qin-mod/__virtual/cssts.css.js\"") != 1) {
+            throw new IllegalStateException("CSSTS module must not duplicate runtime/atom/style imports:\n" + csstsModule);
         }
 
         String cssModule = service.transpileByRequestPath("/@qin-mod/__virtual/cssts.css.js");
@@ -66,5 +78,19 @@ public final class QinFrontendCsstsEsmServiceSmokeTestMain {
         }
 
         System.out.println("QinFrontendCsstsEsmServiceSmokeTestMain passed.");
+    }
+
+    private static int occurrences(String text, String needle) {
+        int count = 0;
+        int index = 0;
+        while (text != null && needle != null && !needle.isEmpty()) {
+            index = text.indexOf(needle, index);
+            if (index < 0) {
+                return count;
+            }
+            count++;
+            index += needle.length();
+        }
+        return count;
     }
 }

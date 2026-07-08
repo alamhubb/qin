@@ -39,6 +39,7 @@ import com.slime.java.ast.JavaAstParameter;
 import com.slime.java.ast.JavaAstProgram;
 import com.slime.java.ast.JavaAstReturnStatement;
 import com.slime.java.ast.JavaAstStatement;
+import com.slime.java.ast.JavaAstSynchronizedStatement;
 import com.slime.java.ast.JavaAstSwitchCase;
 import com.slime.java.ast.JavaAstSwitchExpression;
 import com.slime.java.ast.JavaAstSwitchStatement;
@@ -1561,6 +1562,12 @@ public final class QinJavaProjectJsCompiler {
             }
             case JavaAstReturnStatement returnStatement ->
                     collectExpressionReferences(returnStatement.expression(), resolver, sourceBinaryNames, referenced);
+            case JavaAstSynchronizedStatement synchronizedStatement -> {
+                collectExpressionReferences(synchronizedStatement.lockExpression(), resolver, sourceBinaryNames, referenced);
+                for (JavaAstStatement bodyStatement : synchronizedStatement.bodyStatements()) {
+                    collectStatementReferences(bodyStatement, resolver, sourceBinaryNames, referenced);
+                }
+            }
             case JavaAstThrowStatement throwStatement ->
                     collectExpressionReferences(throwStatement.expression(), resolver, sourceBinaryNames, referenced);
             case JavaAstYieldStatement yieldStatement ->

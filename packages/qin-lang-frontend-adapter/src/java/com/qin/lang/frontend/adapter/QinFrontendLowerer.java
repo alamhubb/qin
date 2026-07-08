@@ -4,6 +4,8 @@ import com.qin.lang.ir.QinIrProgram;
 import com.qin.parser.QinParsedSource;
 import com.qin.parser.QinParserFacade;
 
+import java.util.Map;
+
 /**
  * New semantic frontend/lowering entry.
  *
@@ -15,12 +17,16 @@ public final class QinFrontendLowerer {
     private final QinIrLowerer irLowerer = new QinIrLowerer();
 
     public QinIrProgram lowerSource(String source) {
+        return lowerSource(source, Map.of());
+    }
+
+    public QinIrProgram lowerSource(String source, Map<String, String> declarationClassExportSlots) {
         long startNanos = System.nanoTime();
         logPhase("parse start", startNanos, "chars=" + (source == null ? 0 : source.length()));
         QinParsedSource parsed = parserFacade.parseSource(source);
         logPhase("parse done", startNanos, "hasProgram=" + parsed.hasProgram());
         logPhase("ir lower start", startNanos, "chars=" + (source == null ? 0 : source.length()));
-        QinIrProgram program = irLowerer.lowerParsedSource(parsed);
+        QinIrProgram program = irLowerer.lowerParsedSource(parsed, declarationClassExportSlots);
         logPhase("ir lower done", startNanos, "chars=" + (source == null ? 0 : source.length()));
         return program;
     }

@@ -40,7 +40,7 @@ public final class QinOvsCompilerSmokeTestMain {
 
                 export const ImportedGrid = () => {
                   const count = ref(1)
-                  return section({ class: "summary-grid" }) {
+                  return section(class = "summary-grid") {
                     span { String(count.value) }
                   }
                 }

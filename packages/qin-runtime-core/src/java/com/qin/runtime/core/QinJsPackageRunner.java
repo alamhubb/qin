@@ -2346,14 +2346,19 @@ final class QinJsPackageRunner {
         if (Files.isRegularFile(candidate)) {
             return candidate;
         }
-        for (String extension : List.of(".js", ".mjs", ".cjs")) {
+        for (String extension : List.of(".js", ".mjs", ".cjs", ".ts", ".qin", ".vue", ".ovs", ".cssts")) {
             Path withExtension = importerDir.resolve(specifier + extension).normalize();
             if (Files.isRegularFile(withExtension)) {
                 return withExtension;
             }
         }
-        Path index = candidate.resolve("index.js").normalize();
-        return Files.isRegularFile(index) ? index : null;
+        for (String indexName : List.of("index.js", "index.mjs", "index.ts", "index.qin", "index.vue", "index.ovs", "index.cssts")) {
+            Path index = candidate.resolve(indexName).normalize();
+            if (Files.isRegularFile(index)) {
+                return index;
+            }
+        }
+        return null;
     }
 
     private void collectBareSpecifiers(Set<String> specifiers, boolean[] code, Matcher matcher) {
@@ -2666,7 +2671,7 @@ final class QinJsPackageRunner {
             return Set.of();
         }
         Set<String> specifiers = new LinkedHashSet<>();
-        String entry = readResolvableManifestEntry(sourcePackageDir);
+        String entry = readScannablePackageEntry(sourcePackageDir);
         if (entry != null) {
             Path entryFile = packageDir.resolve(entry).normalize();
             if (Files.isRegularFile(entryFile)) {
@@ -2674,6 +2679,18 @@ final class QinJsPackageRunner {
             }
         }
         return specifiers;
+    }
+
+    private String readScannablePackageEntry(Path sourcePackageDir) throws IOException {
+        String declaredSourceEntry = readDeclaredWorkspaceSourceEntry(sourcePackageDir);
+        if (declaredSourceEntry != null && Files.isRegularFile(sourcePackageDir.resolve(declaredSourceEntry).normalize())) {
+            return declaredSourceEntry;
+        }
+        String manifestEntry = readResolvableManifestEntry(sourcePackageDir);
+        if (manifestEntry != null) {
+            return manifestEntry;
+        }
+        return detectWorkspaceSourceEntry(sourcePackageDir);
     }
 
     private void collectPackageSourceBareSpecifiers(Set<String> specifiers, Path packageDir, Path sourceFile) {

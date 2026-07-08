@@ -28,6 +28,27 @@ public final class QinEsmRuntimeFeatureParserScanSmokeTestMain {
                 /* import.meta.url */
                 export const ok = text;
                 """);
+        expectNoDiagnostic("""
+                class Box {}
+                export const supported = Box[Symbol.hasInstance];
+                """);
+        expectNoDiagnostic("""
+                export class PluginCompiler {
+                    transform(source) {
+                        return /import\\(not-code\\)/.test(source)
+                            ? `ignored ${source}`
+                            : source;
+                    }
+                }
+
+                const Worker = class {
+                    run() {
+                        return "import.meta.url";
+                    }
+                };
+
+                export const worker = new Worker();
+                """);
         System.out.println("QinEsmRuntimeFeatureParserScanSmokeTestMain passed.");
     }
 

@@ -17,6 +17,14 @@ public final class QinJavaAstJsBackendFunctionalOverloadGuardSmokeTestMain {
                 import java.util.function.Supplier;
 
                 class FunctionalOverloadBox {
+                    String rule(String label, Supplier supplier) {
+                        return label + ":" + supplier.get();
+                    }
+
+                    void rule(String label, Runnable runnable) {
+                        runnable.run();
+                    }
+
                     String route(String label, Supplier supplier) {
                         return label + ":" + supplier.get();
                     }
@@ -42,12 +50,13 @@ public final class QinJavaAstJsBackendFunctionalOverloadGuardSmokeTestMain {
                 generated
                         + "\nlet marker = \"cold\";"
                         + "const box = new FunctionalOverloadBox();"
+                        + "const ruleResult = box.rule(\"rule\", __qin_java_functional(() => \"ok\"));"
                         + "const supplierResult = box.route(\"supplier\", __qin_java_functional(() => \"ok\"));"
                         + "const runnableResult = box.route(7, __qin_java_functional(() => { marker = \"hot\"; }));"
-                        + "supplierResult + \":\" + runnableResult + \":\" + marker;\n",
+                        + "ruleResult + \":\" + supplierResult + \":\" + runnableResult + \":\" + marker;\n",
                 "java_ast_js_backend_functional_overload_guard");
-        if (!"supplier:ok:run:7:hot".equals(result)) {
-            throw new IllegalStateException("Expected functional overload result supplier:ok:run:7:hot, got: " + result);
+        if (!"rule:ok:supplier:ok:run:7:hot".equals(result)) {
+            throw new IllegalStateException("Expected functional overload result rule:ok:supplier:ok:run:7:hot, got: " + result);
         }
         System.out.println("QinJavaAstJsBackendFunctionalOverloadGuardSmokeTestMain OK");
     }

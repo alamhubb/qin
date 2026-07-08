@@ -124,6 +124,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
                         }
                         return person.display();
                     }
+                    Class<?> runnableClass(Runnable runnable) { return runnable.getClass(); }
                 }
                 """;
 
@@ -134,7 +135,7 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(person.fields().size() == 2, "field count");
         require(person.fields().get(0).type().kind() == QinIrTypeKind.STRING, "String field type");
         require("java.util.List".equals(person.fields().get(1).type().binaryName()), "imported field type");
-        require(person.methods().size() == 33, "method count");
+        require(person.methods().size() == 34, "method count");
         QinJavaSemanticMethod add = person.methods().get(0);
         require(add.returnType().kind() == QinIrTypeKind.INT, "declared return type");
         require(add.returnExpressionType().kind() == QinIrTypeKind.INT, "return expression type");
@@ -189,6 +190,10 @@ public class QinJavaSemanticAnalyzerSmokeTestMain {
         require(grouped.returnExpressionType().typeArguments().size() == 1, "grouped return generic count");
         require(grouped.returnExpressionType().typeArguments().get(0).kind() == QinIrTypeKind.STRING,
                 "grouped return generic type");
+        QinJavaSemanticMethod runnableClass = person.methods().get(person.methods().size() - 1);
+        require("java.lang.Class".equals(runnableClass.returnType().binaryName()), "runnableClass declared binary name");
+        require("java.lang.Class".equals(runnableClass.returnExpressionType().binaryName()),
+                "runnableClass expression binary name");
         QinJavaSemanticMethod entry = person.methods().get(13);
         require("java.util.Map$Entry".equals(entry.returnType().binaryName()), "nested return binary name");
         require("java.util.Map$Entry".equals(entry.returnExpressionType().binaryName()), "nested expression binary name");

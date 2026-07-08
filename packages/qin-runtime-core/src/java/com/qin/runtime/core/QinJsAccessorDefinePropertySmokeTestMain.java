@@ -22,13 +22,31 @@ public final class QinJsAccessorDefinePropertySmokeTestMain {
                   }
                 });
                 const wrapped = a.deprecate(function(value) { return value + 1; }, "old");
-                wrapped(41);
+                class Box {
+                  constructor(value) {
+                    this.raw = value;
+                  }
+                  getRaw() {
+                    return this.raw;
+                  }
+                }
+                const box = new Box(41);
+                Object.defineProperties(box, {
+                  computed: {
+                    enumerable: true,
+                    configurable: true,
+                    get: function() {
+                      return this.getRaw() + 1;
+                    }
+                  }
+                });
+                wrapped(41) + box.computed;
                 """;
         Path root = Files.createTempDirectory("qin-js-accessor-define-property-");
         Files.writeString(root.resolve("qin.config.js"), "{ \"name\": \"qin-js-accessor-define-property\" }\n", StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "accessor_define_property");
-        if (!Double.valueOf(42.0d).equals(result)) {
-            throw new IllegalStateException("Expected 42, got: " + result);
+        if (!Double.valueOf(84.0d).equals(result)) {
+            throw new IllegalStateException("Expected 84, got: " + result);
         }
         System.out.println("QinJsAccessorDefinePropertySmokeTestMain OK");
     }

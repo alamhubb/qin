@@ -566,9 +566,12 @@ public final class QinFrontendEsmService {
     private void prewarmOvsModules(List<Path> files) throws IOException {
         Map<Path, String> sources = new LinkedHashMap<>();
         for (Path file : files) {
-            QinModuleSource module = moduleSourceMap.get(file.toAbsolutePath().normalize());
+            Path normalizedFile = file.toAbsolutePath().normalize();
+            QinModuleSource module = moduleSourceMap.get(normalizedFile);
             if (module != null) {
-                sources.put(file.toAbsolutePath().normalize(), module.source());
+                sources.put(normalizedFile, module.source());
+            } else {
+                sources.put(normalizedFile, readSource(normalizedFile));
             }
         }
         Map<Path, QinOvsCompiler.QinOvsCompileResult> results;
@@ -668,38 +671,38 @@ public final class QinFrontendEsmService {
                 : result.moduleCode();
     }
 
-    private String transpileOvsModule(Path moduleFile, String source) {
+    private synchronized String transpileOvsModule(Path moduleFile, String source) {
         Path normalizedModuleFile = moduleFile.toAbsolutePath().normalize();
         String cacheSource = source == null ? "" : source;
         CachedOvsModule cached = ovsTranspiledModuleCache.get(normalizedModuleFile);
         if (cached != null && cacheSource.equals(cached.source())) {
             return cached.transpiled();
         }
-        String cacheIdentity;
+
         try {
-            cacheIdentity = ovsCompiler.frontendCacheIdentity(projectRoot, normalizedModuleFile, cacheSource);
-        } catch (Exception error) {
-            throw new IllegalStateException("Failed to build OVS frontend cache identity for " + normalizedModuleFile, error);
-        }
-        QinModuleSource module = moduleSourceMap.get(normalizedModuleFile);
-        QinModuleSource sourceModule = module != null
-                ? module
-                : new QinModuleSource(normalizedModuleFile, source, List.of());
-        QinOvsCompiler.QinOvsCompileResult result;
-        try {
-            result = ovsCompiler.compile(projectRoot, normalizedModuleFile, cacheSource);
+            prewarmOvsModules(ovsGraphFilesForOnDemandBatch(normalizedModuleFile));
         } catch (Exception error) {
             throw new IllegalStateException("Qin OVS compilation failed for " + moduleFile.toAbsolutePath(), error);
         }
 
-        String transpiled = finishOvsModule(normalizedModuleFile, sourceModule, result);
-        ovsTranspiledModuleCache.put(
-                normalizedModuleFile,
-                new CachedOvsModule(
-                        cacheSource,
-                        cacheIdentity,
-                        transpiled));
-        return transpiled;
+        cached = ovsTranspiledModuleCache.get(normalizedModuleFile);
+        if (cached == null || !cacheSource.equals(cached.source())) {
+            throw new IllegalStateException("Qin OVS batch compilation did not produce requested module: "
+                    + moduleFile.toAbsolutePath());
+        }
+        return cached.transpiled();
+    }
+
+    private List<Path> ovsGraphFilesForOnDemandBatch(Path requestedModuleFile) {
+        LinkedHashSet<Path> files = new LinkedHashSet<>();
+        for (QinModuleSource module : graph.modules()) {
+            Path file = module.file().toAbsolutePath().normalize();
+            if (isFrontendModuleFile(file) && isOvsModuleFile(file)) {
+                files.add(file);
+            }
+        }
+        files.add(requestedModuleFile.toAbsolutePath().normalize());
+        return new ArrayList<>(files);
     }
 
     private String finishOvsModule(

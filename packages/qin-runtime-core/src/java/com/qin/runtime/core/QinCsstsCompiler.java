@@ -1,6 +1,7 @@
 package com.qin.runtime.core;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -31,8 +32,14 @@ public final class QinCsstsCompiler {
                 return cached;
             }
         }
-        String diskKey = QinFrontendTransformDiskCache.keyMaterial(normalizedRoot, source, readConfigSource(normalizedRoot));
-        QinCsstsCompileResult diskCached = QinFrontendTransformDiskCache.read(normalizedRoot, "cssts", diskKey)
+        String configSource = readConfigSource(normalizedRoot);
+        Path transformCacheRoot = transformCacheRoot(normalizedRoot);
+        String diskKey = QinFrontendTransformDiskCache.keyMaterial(semanticRoot(normalizedRoot), source, configSource);
+        QinCsstsCompileResult diskCached = QinFrontendTransformDiskCache.read(
+                        transformCacheRoot,
+                        normalizedRoot,
+                        "cssts",
+                        diskKey)
                 .map(this::decodeDiskCache)
                 .orElse(null);
         if (diskCached != null) {
@@ -47,7 +54,7 @@ public final class QinCsstsCompiler {
                 buildWrapperSource(source),
                 "cssts_compiler");
         QinCsstsCompileResult decoded = decodeResult(result);
-        QinFrontendTransformDiskCache.write(normalizedRoot, "cssts", diskKey, encodeDiskCache(decoded));
+        QinFrontendTransformDiskCache.write(transformCacheRoot, normalizedRoot, "cssts", diskKey, encodeDiskCache(decoded));
         synchronized (cache) {
             cache.put(key, decoded);
         }
@@ -135,6 +142,39 @@ public final class QinCsstsCompiler {
         } catch (Exception ignored) {
             return "";
         }
+    }
+
+    private Path transformCacheRoot(Path projectRoot) {
+        Path workspaceRoot = locateWorkspaceRoot();
+        if (workspaceRoot != null) {
+            return workspaceRoot.resolve("qin").toAbsolutePath().normalize();
+        }
+        return projectRoot.toAbsolutePath().normalize();
+    }
+
+    private String semanticRoot(Path projectRoot) {
+        Path root = projectRoot.toAbsolutePath().normalize();
+        if (isTempQinSmokeRoot(root)) {
+            return "qin-runtime-core-smoke";
+        }
+        return root.toString();
+    }
+
+    private boolean isTempQinSmokeRoot(Path root) {
+        Path fileName = root.getFileName();
+        return fileName != null && fileName.toString().startsWith("qin-");
+    }
+
+    private Path locateWorkspaceRoot() {
+        Path current = Path.of("").toAbsolutePath().normalize();
+        while (current != null) {
+            if (Files.isDirectory(current.resolve("qin"))
+                    && Files.isDirectory(current.resolve("slime"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return null;
     }
 
     private String normalizeCsstsAtomReferences(String code, Set<String> atomNames) {

@@ -282,6 +282,7 @@ public final class QinOvsCompiler {
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "source"), source == null ? "" : source);
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "id"), id == null ? "" : id);
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "options"), ovsTransformOptionsValue(projectRoot));
+        JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "profile"), QinPhaseTimer.isEnabled());
     }
 
     private void bindBatchTransformInputs(Path projectRoot, List<BatchCompileInput> inputs) {
@@ -294,23 +295,36 @@ public final class QinOvsCompiler {
         }
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "batch_inputs"), boundInputs);
         JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "options"), ovsTransformOptionsValue(projectRoot));
+        JavaEsmGlobal.__qin_bind_global__(ovsTransformGlobalName(projectRoot, "profile"), QinPhaseTimer.isEnabled());
     }
 
     private String buildWrapperSource(Path projectRoot) {
         String sourceGlobal = ovsTransformGlobalName(projectRoot, "source");
         String idGlobal = ovsTransformGlobalName(projectRoot, "id");
         String optionsGlobal = ovsTransformGlobalName(projectRoot, "options");
+        String profileGlobal = ovsTransformGlobalName(projectRoot, "profile");
         return """
                 import { vitePluginOvsTransform } from "ovs-compiler";
                 import { RuntimeStore, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
                 const __qin_source__ = globalThis.%s;
                 const __qin_id__ = globalThis.%s;
                 const __qin_options__ = globalThis.%s || {};
+                const __qin_profile__ = !!globalThis.%s;
+                function __qinNow() { return Date.now(); }
+                function __qinProfile(phase, started, detail) {
+                  if (__qin_profile__) {
+                    const suffix = detail ? " :: " + detail : "";
+                    console.log("[QinProfile] ovs-transform " + phase + " +" + (Date.now() - started) + "ms" + suffix);
+                  }
+                }
+                const __qin_total_start__ = __qinNow();
                 const __qin_shared_styles__ = new Set();
+                const __qin_transform_start__ = __qinNow();
                 let __qin_result__ = vitePluginOvsTransform(
                   __qin_source__,
-                  Object.assign({}, __qin_options__, { globalStyles: __qin_shared_styles__ })
+                  Object.assign({}, __qin_options__, { globalStyles: __qin_shared_styles__, profile: __qin_profile__ })
                 );
+                __qinProfile("core", __qin_transform_start__, __qin_id__);
                 let __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
                 if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
                   throw new Error("ovs-compiler transform returned empty code for " + __qin_id__);
@@ -319,8 +333,13 @@ public final class QinOvsCompiler {
                   __qin_code__ = "import 'virtual:cssts.css'\\n" + __qin_code__;
                 }
                 RuntimeStore.addUsedStyles(__qin_shared_styles__);
+                const __qin_css_start__ = __qinNow();
                 const __qin_css__ = __qin_shared_styles__.size > 0 ? generateStylesCss() : "";
+                __qinProfile("css", __qin_css_start__, "styles=" + __qin_shared_styles__.size);
+                const __qin_atom_start__ = __qinNow();
                 const __qin_atom__ = __qin_shared_styles__.size > 0 ? generateCsstsAtomModule() : "";
+                __qinProfile("atom", __qin_atom_start__, "styles=" + __qin_shared_styles__.size);
+                __qinProfile("total", __qin_total_start__, __qin_id__ + ", chars=" + __qin_source__.length);
                 ({
                   code: __qin_code__,
                   hasStyles: __qin_code__.includes("virtual:cssts.css") || __qin_css__.length > 0,
@@ -331,24 +350,37 @@ public final class QinOvsCompiler {
                 """.formatted(
                 sourceGlobal,
                 idGlobal,
-                optionsGlobal);
+                optionsGlobal,
+                profileGlobal);
     }
 
     private String buildBatchWrapperSource(Path projectRoot) {
         String inputsGlobal = ovsTransformGlobalName(projectRoot, "batch_inputs");
         String optionsGlobal = ovsTransformGlobalName(projectRoot, "options");
+        String profileGlobal = ovsTransformGlobalName(projectRoot, "profile");
         return """
                 import { vitePluginOvsTransform } from "ovs-compiler";
                 import { RuntimeStore, generateStylesCss, generateCsstsAtomModule } from "cssts-compiler";
                 const __qin_options__ = globalThis.%s || {};
+                const __qin_profile__ = !!globalThis.%s;
+                function __qinNow() { return Date.now(); }
+                function __qinProfile(input, phase, started, detail) {
+                  if (__qin_profile__) {
+                    const suffix = detail ? " :: " + detail : "";
+                    console.log("[QinProfile] ovs-transform-batch " + phase + " +" + (Date.now() - started) + "ms :: " + input.id + suffix);
+                  }
+                }
                 function __qinTransformOne(input) {
                   try {
+                    const __qin_total_start__ = __qinNow();
                     RuntimeStore.clearUsedStyles();
                     const __qin_shared_styles__ = new Set();
+                    const __qin_transform_start__ = __qinNow();
                     let __qin_result__ = vitePluginOvsTransform(
                       input.source,
-                      Object.assign({}, __qin_options__, { globalStyles: __qin_shared_styles__ })
+                      Object.assign({}, __qin_options__, { globalStyles: __qin_shared_styles__, profile: __qin_profile__ })
                     );
+                    __qinProfile(input, "core", __qin_transform_start__, "");
                     let __qin_code__ = typeof __qin_result__ === "string" ? __qin_result__ : __qin_result__ && __qin_result__.code;
                     if (typeof __qin_code__ !== "string" || __qin_code__.length === 0) {
                       throw new Error("ovs-compiler transform returned empty code for " + input.id);
@@ -357,8 +389,13 @@ public final class QinOvsCompiler {
                       __qin_code__ = "import 'virtual:cssts.css'\\n" + __qin_code__;
                     }
                     RuntimeStore.addUsedStyles(__qin_shared_styles__);
+                    const __qin_css_start__ = __qinNow();
                     const __qin_css__ = __qin_shared_styles__.size > 0 ? generateStylesCss() : "";
+                    __qinProfile(input, "css", __qin_css_start__, "styles=" + __qin_shared_styles__.size);
+                    const __qin_atom_start__ = __qinNow();
                     const __qin_atom__ = __qin_shared_styles__.size > 0 ? generateCsstsAtomModule() : "";
+                    __qinProfile(input, "atom", __qin_atom_start__, "styles=" + __qin_shared_styles__.size);
+                    __qinProfile(input, "total", __qin_total_start__, "chars=" + input.source.length);
                     return {
                       code: __qin_code__,
                       hasStyles: __qin_code__.includes("virtual:cssts.css") || __qin_css__.length > 0,
@@ -375,6 +412,7 @@ public final class QinOvsCompiler {
                 __qin_inputs__.map(input => __qinTransformOne(input));
                 """.formatted(
                 optionsGlobal,
+                profileGlobal,
                 inputsGlobal);
     }
 

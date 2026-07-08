@@ -12,6 +12,7 @@ import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrFunctionLiteral;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrJavaClassLiteralExpression;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
@@ -163,6 +164,11 @@ public final class QinIrToCfaIrLowerer {
         }
         if (expression instanceof QinIrIdentifierReference identifierReference) {
             return new QinCfaProgram.IdentifierReference(identifierReference.name());
+        }
+        if (expression instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
+            return new QinCfaProgram.JavaClassLiteralExpression(
+                    classLiteralExpression.typeName(),
+                    classLiteralExpression.binaryName());
         }
         if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
             return new QinCfaProgram.JavaNewExpression(

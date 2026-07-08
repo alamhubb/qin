@@ -4,6 +4,7 @@ import com.qin.lang.ir.QinIrProgram;
 import com.qin.parser.QinParsedSource;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -17,6 +18,10 @@ public final class QinIrLowerer extends QinSlimeIrLoweringSupport {
     private final QinTopLevelIrAssembler topLevelIrAssembler = new QinTopLevelIrAssembler(legacyLowerer);
 
     public QinIrProgram lowerParsedSource(QinParsedSource parsed) {
+        return lowerParsedSource(parsed, Map.of());
+    }
+
+    public QinIrProgram lowerParsedSource(QinParsedSource parsed, Map<String, String> declarationClassExportSlots) {
         Objects.requireNonNull(parsed, "parsed cannot be null");
         long startNanos = System.nanoTime();
         if (!parsed.hasProgram()) {
@@ -30,6 +35,7 @@ public final class QinIrLowerer extends QinSlimeIrLoweringSupport {
                 parsed.requireProgram(),
                 parsed.javaImports(),
                 parsed.jsImports(),
+                declarationClassExportSlots,
                 currentSourceLength);
         logPhase("top level assemble done", startNanos, "chars=" + currentSourceLength);
         return program;

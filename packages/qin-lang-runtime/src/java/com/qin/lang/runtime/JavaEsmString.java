@@ -299,8 +299,18 @@ final class JavaEsmString {
             return number.intValue();
         }
         if (value instanceof String text) {
+            String trimmed = text.trim();
+            if (trimmed.isEmpty()) {
+                return -1;
+            }
+            for (int i = 0; i < trimmed.length(); i++) {
+                char ch = trimmed.charAt(i);
+                if (ch < '0' || ch > '9') {
+                    return -1;
+                }
+            }
             try {
-                return (int) Double.parseDouble(text.trim());
+                return Integer.parseInt(trimmed);
             } catch (NumberFormatException ignored) {
                 return -1;
             }

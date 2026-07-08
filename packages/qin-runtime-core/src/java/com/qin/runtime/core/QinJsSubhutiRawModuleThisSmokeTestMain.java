@@ -466,6 +466,75 @@ public final class QinJsSubhutiRawModuleThisSmokeTestMain {
                     "Expected inherited super raw rule with intermediate CA, got: "
                             + inheritedSuperRawRuleSkipsIntermediateResult);
         }
+
+        Object programModuleBodyOverrideResult = new QinJsPackageRunner().runModuleSource(root, """
+                function __qin_java_functional(fn) {
+                  if (fn == null || fn.__qinJavaFunctional) return fn;
+                  Object.defineProperty(fn, "__qinJavaFunctional", { value: true });
+                  fn.get = () => fn();
+                  fn.run = () => fn();
+                  fn.execute = () => fn();
+                  fn.apply = (...args) => fn(...args);
+                  return fn;
+                }
+
+                function SubhutiRuleDist(target, key, descriptor) {
+                  const originalMethod = descriptor.value;
+                  const wrappedFunction = function (...args) {
+                    return this.executeRuleWrapper(originalMethod, key, this.constructor.name, ...args);
+                  };
+                  descriptor.value = wrappedFunction;
+                  return descriptor;
+                }
+
+                class GeneratedModuleParser {
+                  constructor() {
+                    this.trace = "";
+                  }
+
+                  executeRuleWrapper(targetFun, ruleName, className, ...args) {
+                    return this.executeRuleCore(ruleName, __qin_java_functional(targetFun), ...args);
+                  }
+
+                  executeRuleCore(ruleName, targetFun, ...args) {
+                    targetFun.get();
+                    return this.trace;
+                  }
+
+                  @SubhutiRuleDist
+                  Program() {
+                    this.ModuleBody();
+                    return this.trace;
+                  }
+
+                  @SubhutiRuleDist
+                  ModuleBody() {
+                    this.ModuleItemList();
+                    return this.trace;
+                  }
+
+                  @SubhutiRuleDist
+                  ModuleItemList() {
+                    this.trace += "base";
+                    return this.trace;
+                  }
+                }
+
+                class OvsLikeParser extends GeneratedModuleParser {
+                  @SubhutiRuleDist
+                  ModuleItemList() {
+                    this.trace += "ovs";
+                    return this.trace;
+                  }
+                }
+
+                new OvsLikeParser().Program();
+                """, "js_subhuti_program_module_body_override");
+        if (!"ovs".equals(programModuleBodyOverrideResult)) {
+            throw new IllegalStateException(
+                    "Expected Program -> ModuleBody to dispatch to subclass ModuleItemList, got: "
+                            + programModuleBodyOverrideResult);
+        }
         System.out.println("QinJsSubhutiRawModuleThisSmokeTestMain OK");
     }
 }

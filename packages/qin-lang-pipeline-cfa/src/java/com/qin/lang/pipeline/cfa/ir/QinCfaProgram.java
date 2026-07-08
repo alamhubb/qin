@@ -130,6 +130,7 @@ public record QinCfaProgram(
             BuiltinCallExpression,
             FunctionLiteral,
             IdentifierReference,
+            JavaClassLiteralExpression,
             JavaNewExpression,
             LetExpression,
             MemberAccessExpression,
@@ -258,6 +259,19 @@ public record QinCfaProgram(
             Objects.requireNonNull(name, "name cannot be null");
             if (name.isBlank()) {
                 throw new IllegalArgumentException("name cannot be blank");
+            }
+        }
+    }
+
+    public record JavaClassLiteralExpression(String typeName, String binaryName) implements Expression {
+        public JavaClassLiteralExpression {
+            Objects.requireNonNull(typeName, "typeName cannot be null");
+            if (typeName.isBlank()) {
+                throw new IllegalArgumentException("typeName cannot be blank");
+            }
+            typeName = typeName.trim();
+            if (binaryName != null && binaryName.isBlank()) {
+                binaryName = null;
             }
         }
     }

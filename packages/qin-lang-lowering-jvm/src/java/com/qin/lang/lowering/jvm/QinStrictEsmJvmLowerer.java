@@ -74,7 +74,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
         String moduleUrl = context.entryFile().toAbsolutePath().normalize().toUri().toString();
         Map<Path, Integer> moduleIndex = buildModuleIndex(context.orderedModules());
         Map<String, QinIrExpression> declarationLookup = new LinkedHashMap<>();
-        Set<String> liveImportAliases = new LinkedHashSet<>();
+        Map<String, String> liveImportAliasSlots = new LinkedHashMap<>();
 
         List<QinIrConstDeclaration> rewrittenDeclarations = new ArrayList<>(
                 Collections.nCopies(program.declarations().size(), null));
@@ -94,7 +94,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases);
+                        liveImportAliasSlots);
                 case EXPRESSION_STATEMENT -> rewriteExpressionStatementAt(
                         step.index(),
                         program,
@@ -104,7 +104,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases);
+                        liveImportAliasSlots);
                 case CONSOLE_VALUE -> rewriteConsoleValueAt(
                         step.index(),
                         program,
@@ -114,7 +114,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases);
+                        liveImportAliasSlots);
                 case CONSOLE_OBJECT, JAVA_STATIC_CONSOLE, JAVA_INSTANCE_CALL, JAVA_INSTANCE_CONSOLE -> {
                     // These buckets currently do not carry target-neutral expressions that this pass rewrites.
                 }
@@ -130,7 +130,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                 moduleIndex,
                 moduleUrl,
                 declarationLookup,
-                liveImportAliases);
+                liveImportAliasSlots);
 
         // Preserve non-expression IR buckets as-is for now.
         List<QinIrConsoleLogStatement> consoleLogs = program.consoleLogs();
@@ -165,7 +165,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
             Map<Path, Integer> moduleIndex,
             String moduleUrl,
             Map<String, QinIrExpression> declarationLookup,
-            Set<String> liveImportAliases) {
+            Map<String, String> liveImportAliasSlots) {
         for (int i = 0; i < rewrittenDeclarations.size(); i++) {
             if (rewrittenDeclarations.get(i) == null) {
                 rewriteDeclarationAt(
@@ -177,7 +177,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases);
+                        liveImportAliasSlots);
             }
         }
         for (int i = 0; i < rewrittenExpressionStatements.size(); i++) {
@@ -191,7 +191,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases);
+                        liveImportAliasSlots);
             }
         }
         for (int i = 0; i < rewrittenConsoleValueLogs.size(); i++) {
@@ -205,7 +205,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases);
+                        liveImportAliasSlots);
             }
         }
     }
@@ -219,7 +219,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
             Map<Path, Integer> moduleIndex,
             String moduleUrl,
             Map<String, QinIrExpression> declarationLookup,
-            Set<String> liveImportAliases) {
+            Map<String, String> liveImportAliasSlots) {
         if (index < 0 || index >= program.declarations().size() || rewrittenDeclarations.get(index) != null) {
             return;
         }
@@ -228,9 +228,9 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
         QinIrIdentifierReference liveAliasSlot = extractLiveImportAliasSlot(rewrittenInitializer);
         if (liveAliasSlot != null) {
             rewrittenInitializer = liveAliasSlot;
-            liveImportAliases.add(declaration.name());
+            liveImportAliasSlots.put(declaration.name(), liveAliasSlot.name());
         } else {
-            liveImportAliases.remove(declaration.name());
+            liveImportAliasSlots.remove(declaration.name());
             rewrittenInitializer = rewriteExpression(
                     declaration.initializer(),
                     semanticModel,
@@ -238,7 +238,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                     moduleIndex,
                     moduleUrl,
                     declarationLookup,
-                    liveImportAliases);
+                    liveImportAliasSlots);
         }
         rewrittenDeclarations.set(index, new QinIrConstDeclaration(declaration.name(), rewrittenInitializer));
         declarationLookup.put(declaration.name(), rewrittenInitializer);
@@ -253,7 +253,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
             Map<Path, Integer> moduleIndex,
             String moduleUrl,
             Map<String, QinIrExpression> declarationLookup,
-            Set<String> liveImportAliases) {
+            Map<String, String> liveImportAliasSlots) {
         if (index < 0 || index >= program.expressionStatements().size()
                 || rewrittenExpressionStatements.get(index) != null) {
             return;
@@ -267,7 +267,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases)));
+                        liveImportAliasSlots)));
     }
 
     private void rewriteConsoleValueAt(
@@ -279,7 +279,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
             Map<Path, Integer> moduleIndex,
             String moduleUrl,
             Map<String, QinIrExpression> declarationLookup,
-            Set<String> liveImportAliases) {
+            Map<String, String> liveImportAliasSlots) {
         if (index < 0 || index >= program.consoleValueLogs().size()
                 || rewrittenConsoleValueLogs.get(index) != null) {
             return;
@@ -293,7 +293,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases)));
+                        liveImportAliasSlots)));
     }
 
     private Map<Path, Integer> buildModuleIndex(List<Path> orderedModules) {
@@ -311,7 +311,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
             Map<Path, Integer> moduleIndex,
             String moduleUrl,
             Map<String, QinIrExpression> declarationLookup,
-            Set<String> liveImportAliases) {
+            Map<String, String> liveImportAliasSlots) {
         if (expression instanceof QinIrStringLiteral stringLiteral) {
             if (IMPORT_META_SENTINEL.equals(stringLiteral.value())) {
                 return new QinIrObjectLiteral(List.of(
@@ -332,7 +332,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
                         moduleIndex,
                         moduleUrl,
                         declarationLookup,
-                        liveImportAliases));
+                        liveImportAliasSlots));
             }
 
             if ("Global".equals(builtinCall.receiverName())
@@ -358,21 +358,29 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
         if (expression instanceof QinIrObjectLiteral objectLiteral) {
             List<QinIrObjectProperty> rewrittenProperties = new ArrayList<>();
             for (QinIrObjectProperty property : objectLiteral.properties()) {
+                QinIrExpression propertyValue = property.value();
+                if ("__qin_ref_name".equals(property.key())
+                        && propertyValue instanceof QinIrStringLiteral stringLiteral) {
+                    String slotName = liveImportAliasSlots.get(stringLiteral.value());
+                    if (slotName != null && !slotName.isBlank()) {
+                        propertyValue = new QinIrStringLiteral(slotName);
+                    }
+                }
                 rewrittenProperties.add(new QinIrObjectProperty(
                         property.key(),
                         rewriteExpression(
-                                property.value(),
+                                propertyValue,
                                 semanticModel,
                                 context,
                                 moduleIndex,
                                 moduleUrl,
                                 declarationLookup,
-                                liveImportAliases)));
+                                liveImportAliasSlots)));
             }
             return new QinIrObjectLiteral(rewrittenProperties);
         }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {
-            if (liveImportAliases.contains(memberAccessExpression.objectName())) {
+            if (liveImportAliasSlots.containsKey(memberAccessExpression.objectName())) {
                 return new QinIrBuiltinCallExpression(
                         "Global",
                         "__qin_member_get__",
@@ -386,7 +394,7 @@ public final class QinStrictEsmJvmLowerer implements QinEsmJvmLowerer {
             return memberAccessExpression;
         }
         if (expression instanceof QinIrIdentifierReference identifierReference) {
-            if (liveImportAliases.contains(identifierReference.name())) {
+            if (liveImportAliasSlots.containsKey(identifierReference.name())) {
                 return new QinIrBuiltinCallExpression(
                         "Global",
                         "__qin_export_get__",

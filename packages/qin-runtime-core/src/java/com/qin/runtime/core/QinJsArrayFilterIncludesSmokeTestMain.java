@@ -13,7 +13,12 @@ public final class QinJsArrayFilterIncludesSmokeTestMain {
                 const categories = ["pixel", "physical", "fontRelative"];
                 const excluded = ["physical"];
                 const filtered = categories.filter(c => !excluded.includes(c));
-                filtered.join(",");
+                const astName = "IDENTIFIER".split("_").filter(Boolean).map(part => {
+                  const lower = part.toLowerCase();
+                  return lower.slice(0, 1).toUpperCase() + lower.slice(1);
+                }).join("");
+                const fromMapped = Array.from({ length: 3 }, (_, i) => i + 1).join(",");
+                filtered.join(",") + "|" + astName + "|" + fromMapped;
                 """;
         Path root = Files.createTempDirectory("qin-js-array-filter-includes-");
         Files.writeString(
@@ -21,8 +26,8 @@ public final class QinJsArrayFilterIncludesSmokeTestMain {
                 "{ \"name\": \"qin-js-array-filter-includes\" }\n",
                 StandardCharsets.UTF_8);
         Object result = new QinJsPackageRunner().runModuleSource(root, source, "array_filter_includes");
-        if (!"pixel,fontRelative".equals(result)) {
-            throw new IllegalStateException("Expected pixel,fontRelative, got: " + result);
+        if (!"pixel,fontRelative|Identifier|1.0,2.0,3.0".equals(result)) {
+            throw new IllegalStateException("Expected pixel,fontRelative|Identifier|1.0,2.0,3.0, got: " + result);
         }
         System.out.println("QinJsArrayFilterIncludesSmokeTestMain OK");
     }

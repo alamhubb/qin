@@ -1,5 +1,6 @@
 package com.qin.lang.module.resolver;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -93,6 +94,43 @@ public final class QinLinkedModuleSectionsSmokeTestMain {
         if (returnIndex < 0 || defaultAssignIndex < returnIndex) {
             throw new IllegalStateException("Default function export initializer was inserted inside the body/header:\n"
                     + pluginClassSource);
+        }
+
+        Path crlfRoot = Files.createTempDirectory("qin-linked-crlf-reexport-function-");
+        Path crlfDep = crlfRoot.resolve("dep.ts");
+        Path crlfTarget = crlfRoot.resolve("target.ts");
+        Path crlfTypes = crlfRoot.resolve("types.ts");
+        Path crlfEntry = crlfRoot.resolve("entry.ts");
+        Files.writeString(crlfTarget, "export const marker = 1;\r\n", StandardCharsets.UTF_8);
+        Files.writeString(crlfTypes, "export type SubhutiCst = { name: string };\r\n", StandardCharsets.UTF_8);
+        Files.writeString(crlfDep, String.join("\r\n",
+                "// Re-export all from the new architecture",
+                "export { marker } from './target.ts'",
+                "",
+                "import type { SubhutiCst } from './types.ts'",
+                "",
+                "export function checkCstName(cst: SubhutiCst, cstName: string) {",
+                "    const actualName = cstName",
+                "    return actualName",
+                "}",
+                ""), StandardCharsets.UTF_8);
+        Files.writeString(crlfEntry, "import { checkCstName } from './dep.ts';\r\nconst fn = checkCstName;\r\n",
+                StandardCharsets.UTF_8);
+
+        QinLinkedModuleSource crlfLinked = new QinLinkedModuleSourceEmitter()
+                .emit(new QinModuleGraphBuilder().build(crlfEntry));
+        QinLinkedModuleSection crlfDepSection = crlfLinked.moduleSections().stream()
+                .filter(section -> section.file().equals(crlfDep.toAbsolutePath().normalize()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Missing CRLF dep section"));
+        String crlfClassSource = crlfDepSection.classSource();
+        if (!crlfClassSource.contains("function checkCstName(cst: SubhutiCst, cstName: string) {")) {
+            throw new IllegalStateException("CRLF re-export stripping corrupted exported function header:\n"
+                    + crlfClassSource);
+        }
+        if (crlfClassSource.contains("// Re-export all from the new architecture\rfunction checkCstName")) {
+            throw new IllegalStateException("CRLF export stripping left a stray carriage return after a line comment:\n"
+                    + crlfClassSource);
         }
 
         System.out.println("QinLinkedModuleSectionsSmokeTestMain OK");
