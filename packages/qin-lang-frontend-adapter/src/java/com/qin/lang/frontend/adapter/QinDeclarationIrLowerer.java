@@ -143,6 +143,9 @@ final class QinDeclarationIrLowerer {
                             declarationLookup,
                             localJvmDeclarations);
                 } catch (IllegalArgumentException error) {
+                    if (isUnsupportedDecoratorError(error)) {
+                        throw error;
+                    }
                     if (isDeclarationSubsetError(error)) {
                         traceDeclarationClassReject(classDeclaration, "runtime-backed lowering error " + error.getMessage());
                         return null;
@@ -160,6 +163,9 @@ final class QinDeclarationIrLowerer {
                     localDeclarationNames,
                     declarationLookup);
         } catch (IllegalArgumentException error) {
+            if (isUnsupportedDecoratorError(error)) {
+                throw error;
+            }
             if (isDeclarationSubsetError(error)) {
                 traceDeclarationClassReject(classDeclaration, "lowering error " + error.getMessage());
                 if (jvmSuperclass) {
@@ -172,6 +178,9 @@ final class QinDeclarationIrLowerer {
                                 declarationLookup,
                                 localJvmDeclarations);
                     } catch (IllegalArgumentException runtimeBackedError) {
+                        if (isUnsupportedDecoratorError(runtimeBackedError)) {
+                            throw runtimeBackedError;
+                        }
                         if (!isDeclarationSubsetError(runtimeBackedError)) {
                             throw runtimeBackedError;
                         }
@@ -635,9 +644,39 @@ final class QinDeclarationIrLowerer {
                     classDeclaration.id().name(),
                     new QinIrJavaClassLiteralExpression(classDeclaration.id().name(), classDeclaration.id().name()));
         }
+        if (hasDecorators(classDeclaration)) {
+            throw qjsError(
+                    "QJS2013",
+                    "Decorated classes must lower through the static declaration subset; dynamic decorator runtime fallback is not supported");
+        }
         return new QinIrConstDeclaration(
                 classDeclaration.id().name(),
                 adapter.lowerClassDeclarationRuntimeValue(classDeclaration, javaImportLookup, declarationLookup));
+    }
+
+    private boolean hasDecorators(ClassDeclaration classDeclaration) {
+        if (classDeclaration == null) {
+            return false;
+        }
+        if (classDeclaration.decorators() != null && !classDeclaration.decorators().isEmpty()) {
+            return true;
+        }
+        if (classDeclaration.body() == null || classDeclaration.body().body() == null) {
+            return false;
+        }
+        for (AstNode member : classDeclaration.body().body()) {
+            if (member instanceof MethodDefinition methodDefinition
+                    && methodDefinition.decorators() != null
+                    && !methodDefinition.decorators().isEmpty()) {
+                return true;
+            }
+            if (member instanceof PropertyDefinition propertyDefinition
+                    && propertyDefinition.decorators() != null
+                    && !propertyDefinition.decorators().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean isDeclarationCompatibleClass(
@@ -972,6 +1011,12 @@ final class QinDeclarationIrLowerer {
             }
         }
         return false;
+    }
+
+    private boolean isUnsupportedDecoratorError(IllegalArgumentException error) {
+        return error != null
+                && error.getMessage() != null
+                && error.getMessage().startsWith("QJS2013 Unsupported decorator");
     }
 
     private boolean isDeclarationSubsetError(IllegalArgumentException error) {
@@ -2870,9 +2915,12 @@ final class QinDeclarationIrLowerer {
         List<QinIrAnnotation> annotations = new ArrayList<>();
         for (Decorator decorator : decorators) {
             QinIrAnnotation annotation = lowerAnnotationOrNull(decorator, javaImportLookup);
-            if (annotation != null) {
-                annotations.add(annotation);
+            if (annotation == null) {
+                throw qjsError(
+                        "QJS2013",
+                        "Unsupported decorator in declaration subset; import a Java annotation or add a Qin-owned static decorator lowerer");
             }
+            annotations.add(annotation);
         }
         return List.copyOf(annotations);
     }
@@ -2888,7 +2936,7 @@ final class QinDeclarationIrLowerer {
         if (expression instanceof Identifier identifier) {
             String binaryName = javaImportLookup.get(identifier.name());
             if (binaryName == null) {
-                return null;
+                throw unsupportedDecorator(identifier.name());
             }
             return new QinIrAnnotation(binaryName, List.of());
         }
@@ -2896,7 +2944,7 @@ final class QinDeclarationIrLowerer {
         if (expression instanceof CallExpression callExpression && callExpression.callee() instanceof Identifier identifier) {
             String binaryName = javaImportLookup.get(identifier.name());
             if (binaryName == null) {
-                return null;
+                throw unsupportedDecorator(identifier.name());
             }
 
             List<QinIrAnnotationArgument> arguments = new ArrayList<>();
@@ -2917,6 +2965,13 @@ final class QinDeclarationIrLowerer {
         }
 
         return null;
+    }
+
+    private IllegalArgumentException unsupportedDecorator(String name) {
+        return qjsError(
+                "QJS2013",
+                "Unsupported decorator `" + name
+                        + "` in declaration subset; import a Java annotation or add a Qin-owned static decorator lowerer");
     }
 
     private QinIrExpression lowerAnnotationLiteralExpression(Expression expression) {

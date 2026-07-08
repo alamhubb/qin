@@ -1344,9 +1344,12 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         List<QinIrAnnotation> annotations = new ArrayList<>();
         for (Decorator decorator : decorators) {
             QinIrAnnotation annotation = lowerAnnotationOrNull(decorator, javaImportLookup);
-            if (annotation != null) {
-                annotations.add(annotation);
+            if (annotation == null) {
+                throw qjsError(
+                        "QJS2013",
+                        "Unsupported decorator in declaration subset; import a Java annotation or add a Qin-owned static decorator lowerer");
             }
+            annotations.add(annotation);
         }
         return List.copyOf(annotations);
     }
@@ -1362,7 +1365,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         if (expression instanceof Identifier identifier) {
             String binaryName = javaImportLookup.get(identifier.name());
             if (binaryName == null) {
-                return null;
+                throw unsupportedDecorator(identifier.name());
             }
             return new QinIrAnnotation(binaryName, List.of());
         }
@@ -1370,7 +1373,7 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         if (expression instanceof CallExpression callExpression && callExpression.callee() instanceof Identifier identifier) {
             String binaryName = javaImportLookup.get(identifier.name());
             if (binaryName == null) {
-                return null;
+                throw unsupportedDecorator(identifier.name());
             }
 
             List<QinIrAnnotationArgument> arguments = new ArrayList<>();
@@ -1391,6 +1394,13 @@ public final class QinSlimeFrontendAdapter extends QinSlimeIrLoweringSupport {
         }
 
         return null;
+    }
+
+    private IllegalArgumentException unsupportedDecorator(String name) {
+        return qjsError(
+                "QJS2013",
+                "Unsupported decorator `" + name
+                        + "` in declaration subset; import a Java annotation or add a Qin-owned static decorator lowerer");
     }
 
     private QinIrExpression lowerAnnotationLiteralExpression(Expression expression) {
