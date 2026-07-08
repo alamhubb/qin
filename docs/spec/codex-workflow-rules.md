@@ -38,6 +38,33 @@ These rules capture durable workflow expectations for Codex work on Qin.
 - If validation is blocked or a push fails, keep the local commit when safe and
   report the exact blocker.
 
+## Encoding Discipline
+
+- Qin work uses UTF-8 without BOM for source, docs, configs, tests, fixtures,
+  generated text artifacts, skills, Java argfiles, and validation artifacts.
+- Do not rely on Windows ANSI code pages such as GBK for reading, writing,
+  validating, or generating project text. If a command depends on the current
+  locale, the result is not a valid Qin validation result.
+- Do not use GBK, ANSI, OEM, `-Encoding Default`, `encoding="gbk"`, `cp936`,
+  `chcp 936`, or locale-default decoding as a repair path, validation path, or
+  way to make tooling pass. Fix the owning command or script so it reads and
+  writes UTF-8 without BOM.
+- If an external legacy input is truly not UTF-8, decode it explicitly at the
+  boundary, convert the tracked/working artifact to UTF-8 without BOM, and keep
+  that legacy encoding out of skills, repo docs, source, generated files, and
+  validation commands.
+- Python scripts must use explicit `encoding="utf-8"` for text file IO. When
+  running Python tools from Windows or another locale-sensitive shell, set
+  `PYTHONUTF8=1` or use `python -X utf8`.
+- PowerShell writes to tracked text must use UTF-8 without BOM. Avoid
+  `Out-File` defaults, `Set-Content`/`Add-Content` without explicit UTF-8
+  behavior, `-Encoding Default`, and other implicit encodings.
+- Java/Javac text validation should pass `-encoding UTF-8` and runtime UTF-8
+  properties where applicable.
+- If a tool exposes a GBK/default-locale failure, fix the owning script or
+  command rule so future runs force UTF-8 instead of treating the failure as a
+  content problem. Do not report a GBK-based rerun as successful validation.
+
 ## Cache And Instant Compilation
 
 - If Qin cache behavior, module-class disk cache, dependency classpath refresh,
