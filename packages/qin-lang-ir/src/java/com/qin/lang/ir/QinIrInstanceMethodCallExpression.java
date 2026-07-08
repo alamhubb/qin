@@ -8,12 +8,23 @@ import java.util.Objects;
  */
 public record QinIrInstanceMethodCallExpression(
         QinIrExpression receiver,
+        String ownerBinaryName,
         String methodName,
         List<QinIrExpression> arguments) implements QinIrExpression {
+    public QinIrInstanceMethodCallExpression(
+            QinIrExpression receiver,
+            String methodName,
+            List<QinIrExpression> arguments) {
+        this(receiver, null, methodName, arguments);
+    }
+
     public QinIrInstanceMethodCallExpression {
         Objects.requireNonNull(receiver, "receiver cannot be null");
         Objects.requireNonNull(methodName, "methodName cannot be null");
         Objects.requireNonNull(arguments, "arguments cannot be null");
+        if (ownerBinaryName != null && ownerBinaryName.isBlank()) {
+            ownerBinaryName = null;
+        }
         if (methodName.isBlank()) {
             throw new IllegalArgumentException("methodName cannot be blank");
         }

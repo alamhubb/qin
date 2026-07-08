@@ -36,5 +36,6 @@ public sealed interface QinIrExpression permits
         QinIrThrowExpression,
         QinIrThisExpression,
         QinIrStringLiteral,
+        QinIrUpdateExpression,
         QinIrWhileExpression {
 }

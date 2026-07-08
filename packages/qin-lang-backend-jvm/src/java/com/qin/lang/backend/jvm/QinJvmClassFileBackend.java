@@ -199,6 +199,7 @@ public final class QinJvmClassFileBackend {
             code.ldc(javaImport.localName());
             code.ldc(javaImport.ownerBinaryName());
             code.invokestatic(CLASS_DESC, "forName", CLASS_FOR_NAME_SIGNATURE);
+            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmClassFileBackend", "__qin_bind_global__");
             code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_bind_global__", BIND_GLOBAL_SIGNATURE);
             code.pop();
         }
@@ -207,6 +208,7 @@ public final class QinJvmClassFileBackend {
     private void syncGlobalBindingsToLocals(CodeBuilder code, Map<String, DeclarationBinding> bindings) {
         for (Map.Entry<String, DeclarationBinding> entry : bindings.entrySet()) {
             code.ldc(entry.getKey());
+            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmClassFileBackend", "__qin_global__");
             code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
             code.astore(entry.getValue().slot());
         }
@@ -458,6 +460,7 @@ public final class QinJvmClassFileBackend {
     }
 
     private void emitRuntimeValueUnwrap(CodeBuilder code) {
+        QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmClassFileBackend", "__qin_value__");
         code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_value__", VALUE_SIGNATURE);
     }
 
@@ -473,6 +476,7 @@ public final class QinJvmClassFileBackend {
                     + memberAccessExpression.objectName());
         }
         code.ldc(memberAccessExpression.propertyName());
+        QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmClassFileBackend", "__qin_member_get__");
         code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_member_get__", MEMBER_GET_SIGNATURE);
     }
 
@@ -519,6 +523,7 @@ public final class QinJvmClassFileBackend {
                 || "performance".equals(name)
                 || "this".equals(name)) {
             code.ldc(name);
+            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmClassFileBackend", "__qin_global__");
             code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
             return true;
         }
