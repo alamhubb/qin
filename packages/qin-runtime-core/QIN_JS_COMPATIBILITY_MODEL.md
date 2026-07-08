@@ -71,7 +71,21 @@ Unsupported means:
 
 `as any` is not itself a dynamic runtime feature because TypeScript erases it. It becomes relevant only when it hides runtime dynamic behavior such as `obj[key]` on an unknown shape, `fn.call/apply/bind`, optional dynamic method calls, prototype walking, or multi-shape adapters. If the member is a real fixed class method or field, fix the Qin type/interface model so the compiler can see it statically instead of treating the call as dynamic JavaScript.
 
-### 1.2 Dynamic Indexing And Map/Dict Rule
+### 1.2 Source-Shape Preservation Rule
+
+When Qin accepts a TypeScript/JavaScript source form, the JVM `.class` path should preserve the same public source-level call and member shape wherever the semantics are static and Qin-owned.
+
+For example, if source code validly calls `SlimeAstCreateUtils.createCallExpression(callee, args, loc)`, the correct long-term model is for the Qin-visible Java/class API, generated facade, overload, or lowering rule to support that same source-level call shape. Qin should not force Qin-owned TS/JS authors to rewrite a valid static source call into a different low-level Java constructor shape such as adding internal-only flags or implementation parameters, unless Qin deliberately changes the source API itself and updates all callers as one standard.
+
+This rule keeps `.class` output aligned with source semantics:
+
+- supported syntax and APIs should compile to fixed fields, fixed methods, overloads, default arguments, generated facades, or typed helper APIs that preserve the admitted source meaning
+- internal Java implementation details may differ, but they must stay behind the compiler/runtime boundary
+- if the target class API cannot represent an admitted static source call, fix the Qin-visible API, generated facade, overload/default-argument lowering, or static type model
+- do not repair such mismatches by adding fallback call paths, broad dynamic reflection, null-return-on-miss behavior, or caller-side rewrites that only avoid the failing call
+- wrong method names, unsupported arity, unsupported types, or ambiguous overloads must fail clearly at compile time when possible, otherwise at the exact runtime bridge boundary
+
+### 1.3 Dynamic Indexing And Map/Dict Rule
 
 `object[name]` is supported only when the compiler can prove the base value is an indexable collection shape.
 
