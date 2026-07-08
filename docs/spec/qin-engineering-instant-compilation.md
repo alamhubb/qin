@@ -1005,6 +1005,17 @@ because terminal/rule choices can enter graph lookahead directly. The same
 current OVS files; the value is removing another lambda-recording dependency
 before broader expression/operator graph coverage.
 
+`AssignmentOperator` then entered the Slime grammar graph so the mixed
+`AssignmentOperatorAny` choice is fully analyzable for compound assignment
+tokens such as `+=`. The focused smoke asserts `orPredictionSkippedAlternatives=4`
+and `orPredictionUnknownAlternatives=0` for `+=`. On the same OVS parser probe,
+`OvsParser.ts` skipped alternatives rose modestly from about `13352` to `13412`
+while rule wrapper/cache counts stayed unchanged (`ruleWrapperCalls=189613`,
+`ruleCacheKeyBuilds=108576`). This is a useful graph-coverage increment, but
+not a wall-clock improvement; the next speed work should keep moving toward
+larger expression structure rather than treating operator token choices as the
+main bottleneck.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
