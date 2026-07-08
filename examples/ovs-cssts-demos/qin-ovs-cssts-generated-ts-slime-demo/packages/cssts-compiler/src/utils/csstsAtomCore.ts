@@ -6,7 +6,7 @@
 
 import { ConfigLookup } from '../config/ConfigLookup'
 import { RuntimeStore } from '../store/RuntimeStore'
-import { CSSTS_CONFIG, camelToKebab } from './cssClassName.ts'
+import { CSSTS_CONFIG, camelToKebab, ensureRuntimeAtomData } from './cssClassName.ts'
 import Glog from 'glogjs'
 
 // 版本号
@@ -40,7 +40,7 @@ export function generateCsstsAtomEntries(
         }
 
         // 从初始化的 Map 中获取数据
-        const data = RuntimeStore.getRuntimeData(name)
+        const data = RuntimeStore.getRuntimeData(name) ?? ensureRuntimeAtomData(name)
 
         Glog.info(`执行了判断 ${name}`)
 

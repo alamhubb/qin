@@ -55,6 +55,10 @@ export class CsstsInit {
             RuntimeStore.setUsedStyles(config.usedStyles)
         }
 
+        if (config?.dts === false) {
+            return
+        }
+
         // 2. 生成完整数据（临时变量，用完即丢）
         const fullAtoms = generateAtoms()
         const fullGroups = generateGroupAtoms()

@@ -1,5 +1,6 @@
 // Parser
 export { CssTsParser, CssTsTokenConsumer, cssTsTokens, CssTsContextualKeywordTypes } from './parser'
+export { normalizeGeneratedAst, normalizeGeneratedCst, normalizeGeneratedToken, normalizeGeneratedTokens } from './parser/generated-runtime-adapter.ts'
 
 // 统一初始化
 export { CsstsInit, type RuntimeAtomData } from './init/CsstsInit'

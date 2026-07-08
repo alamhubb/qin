@@ -4,10 +4,10 @@
  * 提供原子类名到 CSS 类名的转换
  */
 
-import { CsstsInit } from "../init/CsstsInit"
-import { generateAtoms, type AtomDefinition } from "../dts/atom-generator"
 import { ConfigLookup } from "../config/ConfigLookup"
+import { RuntimeStore, type RuntimeAtomData } from "../store/RuntimeStore"
 import { CSSTS_CONFIG } from "cssts-ts"
+import { CSS_PROPERTY_NAME_MAP } from "../data/cssPropertyNameMapping"
 
 // 重新导出分隔符配置（供其他模块使用）
 export { CSSTS_CONFIG }
@@ -15,6 +15,25 @@ export { CSSTS_CONFIG }
 // 从生成器获取 properties 映射（懒加载）
 let _properties: Record<string, string> | null = null
 let _sortedPropertyNames: string[] | null = null
+
+const KEYWORD_VALUES = new Set([
+  'auto',
+  'block',
+  'blue',
+  'bold',
+  'center',
+  'column',
+  'flex',
+  'grid',
+  'hidden',
+  'inline',
+  'none',
+  'normal',
+  'red',
+  'relative',
+  'solid',
+  'white'
+])
 
 /**
  * 判断标识符是否是内置原子类
@@ -26,26 +45,26 @@ let _sortedPropertyNames: string[] | null = null
  * isBuiltinAtom('myVariable') // false
  */
 export function isBuiltinAtom(name: string): boolean {
-  return CsstsInit.isValidAtomName(name)
+  return RuntimeStore.isValidAtomName(name) || parseTsAtomName(name) !== null
 }
 
-function generatePropertiesJson(atoms: AtomDefinition[]): Record<string, string> {
-  const properties = new Set<string>();
-  for (const atom of atoms) {
-    properties.add(atom.property);
+export function ensureRuntimeAtomData(name: string): RuntimeAtomData | undefined {
+  const existing = RuntimeStore.getRuntimeData(name)
+  if (existing) return existing
+  const parsed = parseTsAtomName(name)
+  if (!parsed) return undefined
+  const data: RuntimeAtomData = {
+    group: 'atom',
+    property: parsed.property,
+    value: parsed.value
   }
-  const result: Record<string, string> = {};
-  for (const prop of [...properties].sort()) {
-    const camelName = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    result[camelName] = prop;
-  }
-  return result;
+  RuntimeStore.setRuntimeData(name, data)
+  return data
 }
 
 function getProperties(): Record<string, string> {
   if (!_properties) {
-    const atoms = generateAtoms()
-    _properties = generatePropertiesJson(atoms)
+    _properties = { ...CSS_PROPERTY_NAME_MAP } as Record<string, string>
   }
   return _properties
 }
@@ -106,7 +125,16 @@ export function parseTsAtomName(tsName: string): { property: string; value: stri
     if (tsName.startsWith(propName) && tsName.length > propName.length) {
       const valuePart = tsName.slice(propName.length)
       if (/^[A-Z0-9]/.test(valuePart) || /^N[0-9]/.test(valuePart)) {
-        return { property: properties[propName], value: tsValueToCSS(valuePart) }
+        const value = tsValueToCSS(valuePart)
+        if (
+          /^[+-]?\d/.test(value)
+          || KEYWORD_VALUES.has(value)
+          || value.includes('-')
+          || value.includes('%')
+          || value.includes('/')
+        ) {
+          return { property: properties[propName], value }
+        }
       }
     }
   }

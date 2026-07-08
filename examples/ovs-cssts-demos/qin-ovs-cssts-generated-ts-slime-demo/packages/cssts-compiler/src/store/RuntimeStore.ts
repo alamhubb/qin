@@ -42,6 +42,13 @@ export class RuntimeStore {
         this._runtimeMap = map
     }
 
+    static setRuntimeData(name: string, data: RuntimeAtomData): void {
+        if (!this._runtimeMap) {
+            this._runtimeMap = new Map()
+        }
+        this._runtimeMap.set(name, data)
+    }
+
     /**
      * 获取运行时数据
      */

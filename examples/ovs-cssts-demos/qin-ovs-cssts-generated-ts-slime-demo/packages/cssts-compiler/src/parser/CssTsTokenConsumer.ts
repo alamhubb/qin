@@ -1,7 +1,5 @@
 import { createRegToken } from 'subhuti'
-import { SlimeTokensObj } from "slime-parser"
-import { SlimeTokenType } from "slime-token"
-import { SlimeTokenConsumer } from "slime-parser"
+import { SlimeTokensObj, SlimeTokenConsumer, SlimeTokenType } from "@qin/generated-qin-parser-ts"
 
 export const cssTsTokenName = {
   ...SlimeTokenType,

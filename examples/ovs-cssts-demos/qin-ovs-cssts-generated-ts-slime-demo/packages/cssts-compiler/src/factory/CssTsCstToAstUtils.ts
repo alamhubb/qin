@@ -1,4 +1,4 @@
-import { SlimeCstToAst, registerSlimeCstToAstUtil } from "slime-parser"
+import { SlimeCstToAst, registerSlimeCstToAstUtil } from "@qin/generated-qin-parser-ts/SlimeCstToAstBridge"
 import { SubhutiCst } from "subhuti"
 import CssTsParser from "../parser/CssTsParser.js"
 import {

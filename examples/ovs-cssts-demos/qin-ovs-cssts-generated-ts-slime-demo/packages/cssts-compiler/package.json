@@ -34,6 +34,7 @@
   "dependencies": {
     "cssts-ts": "^0.2.87",
     "glogjs": "file:../../../../../../glogjs",
+    "@qin/generated-qin-parser-ts": "file:../../../packages/qin-language/generated/qin-parser-ts",
     "slime-ast": "^0.2.7",
     "slime-generator": "^0.2.7",
     "slime-parser": "^0.2.7",
