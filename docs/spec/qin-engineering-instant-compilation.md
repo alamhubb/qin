@@ -974,6 +974,24 @@ architecture milestone rather than the final speed closer. The remaining
 Chevrotain gap is still dominated by expression/common-prefix structure,
 packrat key/object churn, rule wrapper count, and CST allocation.
 
+The next accepted expression-layer step is the first common-prefix factoring in
+`AssignmentExpression`. Instead of parsing `LeftHandSideExpression` separately
+for `=`, compound assignment, `&&=`, `||=`, and `??=`, Slime now parses one
+shared `LeftHandSideExpression` prefix followed by a unified
+`AssignmentOperatorAny` tail. This follows the Chevrotain direction of
+factoring common grammar structure instead of retrying one branch per operator;
+it is still normal parser grammar, not a fallback. The focused
+`SlimeAssignmentExpressionCommonPrefixSmokeTestMain` covers plain identifiers,
+`x = y`, `x += y`, `x &&= y`, `new Set([...items])`, and `(x) => x`, including
+AST operator assertions for `+=` and `&&=`. The same-day Qin parser-only probes
+measured `OvsConsumer.ts` between about `7-10ms` over 300 warm rounds and
+`OvsParser.ts` between about `514-548ms` over 20 warm rounds. Structural counters
+improved from the prior same-machine measurement:
+`OvsParser.ts` `ruleWrapperCalls` moved from about `200447` to `189613`, and
+`ruleCacheKeyBuilds` moved from about `113798` to `108576`. This is an accepted
+incremental move toward a Pratt/common-prefix expression strategy; it does not
+close the full Chevrotain gap by itself.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
