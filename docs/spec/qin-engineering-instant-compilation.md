@@ -849,6 +849,18 @@ parser rule. This is still a narrow structural milestone: `OvsConsumer.ts`
 parser-only measurements may show skipped alternatives from this rule, but the
 overall OVS/TypeScript gap remains until larger callsites such as `ModuleItem`
 and declaration/expression choices can expose complete graph facts.
+The following step extended graph plans to support multiple FIRST tokens for
+one alternative. `SubhutiOrPrediction` may now receive an explicit candidate
+map, so a rule such as `ModuleItem` can map `Import -> alt0`, `Export -> alt1`,
+and many statement-start tokens such as `Class`, `Function`, `IdentifierName`,
+`LParen`, or `StringLiteral` to the same statement alternative. The focused
+`SlimeModuleGraphLookaheadSmokeTestMain` proves `ModuleItem` skips import and
+export for a `class` input with `orPredictionSkippedAlternatives=2` and
+`orPredictionCandidateAlternatives=0`. This is still a structural milestone:
+on 2026-07-09 the `OvsConsumer.ts` parser-only probe measured about `7.572ms`
+warm average with `orPredictionSkippedAlternatives=20`, while `OvsParser.ts`
+measured about `607ms` over 10 rounds. The skip count improved, but larger
+declaration/expression callsites still dominate the Chevrotain gap.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
