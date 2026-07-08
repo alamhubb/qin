@@ -1,4 +1,6 @@
 export class __QinJavaLangEnum {
+  __qinEnumName = null;
+  __qinEnumOrdinal = null;
   constructor() {
   }
   name() {

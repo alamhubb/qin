@@ -12,6 +12,9 @@ export class __QinJavaLangStringBuilder {
   length() {
     return this.__text.length;
   }
+  isEmpty() {
+    return this.__text.length === 0;
+  }
   charAt(index) {
     return this.__text.charAt(index);
   }

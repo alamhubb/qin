@@ -28,8 +28,11 @@ export const __QinJavaLangString = {
     if (value == null) {
       throw new Error("NullPointerException: " + methodName + "()");
     }
+    if (typeof value !== "object" && typeof value !== "function") {
+      return null;
+    }
     const method = value[methodName];
-    if ((typeof value === "object" || typeof value === "function") && typeof method === "function") {
+    if (typeof method === "function") {
       return method.bind(value);
     }
     return null;
@@ -93,6 +96,15 @@ export const __QinJavaLangString = {
   substring(value, start, end) {
     return String(value).substring(Number(start), end == null ? undefined : Number(end));
   },
+  join(delimiter, elements) {
+    const separator = String(delimiter);
+    const values = elements == null
+      ? []
+      : (typeof elements[Symbol.iterator] === "function"
+        ? Array.from(elements)
+        : Array.from(elements.__items || elements));
+    return values.map((value) => String(value)).join(separator);
+  },
   format(formatText, ...values) {
     let valueIndex = 0;
     return ("" + formatText).replace(/%([csd])/g, (_match, kind) => {
@@ -112,21 +124,25 @@ export const __QinJavaLangString = {
 };
 export function __qin_java_functional(fn) {
   if (fn == null || fn.__qinJavaFunctional) return fn;
-  Object.defineProperty(fn, "__qinJavaFunctional", { value: true });
-  fn.get = () => fn();
-  fn.run = () => fn();
-  fn.execute = () => fn();
-  fn.apply = (...args) => fn(...args);
-  fn.accept = (...args) => {
+  const functional = (...args) => fn(...args);
+  Object.defineProperty(functional, "__qinJavaFunctional", { value: true });
+  functional.get = () => fn();
+  functional.run = () => fn();
+  functional.execute = () => fn();
+  functional.apply = (...args) => fn(...args);
+  functional.accept = (...args) => {
     fn(...args);
     return null;
   };
-  fn.test = (...args) => !!fn(...args);
-  fn.compare = (...args) => fn(...args);
-  return fn;
+  functional.test = (...args) => !!fn(...args);
+  functional.compare = (...args) => fn(...args);
+  return functional;
 }
-export function __qin_java_class_info__(ctor) {
-  const className = ctor && ctor.name ? ctor.name : "Object";
+export function __qin_java_class_info__(ctor, meta = null) {
+  if (ctor != null && typeof ctor.isInstance === "function" && typeof ctor.getName === "function") {
+    return ctor;
+  }
+  const className = meta && meta.name ? meta.name : (ctor && ctor.name ? ctor.name : "Object");
   const simpleName = className.split(".").pop().split("_").pop() || className;
   let hash = 0;
   for (let index = 0; index < className.length; index++) {
@@ -153,6 +169,23 @@ export function __qin_java_class_info__(ctor) {
   return {
     getName() { return className; },
     getSimpleName() { return simpleName; },
+    isInstance(value) {
+      if (value == null) return false;
+      if (meta && meta.interfaceName) return __qin_java_implements(value, meta.interfaceName);
+      if (ctor == null || ctor === Object) return typeof value === "object" || typeof value === "function";
+      if (typeof ctor === "function" && value instanceof ctor) return true;
+      const targetRecord = ctor.__qinJavaRecordClass;
+      if (targetRecord != null && value.__qinJavaRecordClass === targetRecord) return true;
+      const interfaces = ctor.__qin_java_interfaces || [];
+      for (const interfaceName of interfaces) {
+        if (__qin_java_implements(value, interfaceName)) return true;
+      }
+      return false;
+    },
+    cast(value) {
+      if (value == null || this.isInstance(value)) return value;
+      throw new Error("ClassCastException: cannot cast to " + className);
+    },
     getDeclaredConstructor(...__qin_types) {
       const __qin_ctor = ctor == null ? Object : ctor;
       return {
@@ -187,11 +220,103 @@ export function __qin_java_class_info__(ctor) {
     toString() { return "class " + className; }
   };
 }
+export function __qin_java_implements(value, interfaceName) {
+  if (value == null || interfaceName == null) return false;
+  let ctor = value.constructor;
+  while (ctor != null && ctor !== Object) {
+    const interfaces = ctor.__qin_java_interfaces || [];
+    if (interfaces.includes(interfaceName)) return true;
+    const prototype = ctor.prototype == null ? null : Object.getPrototypeOf(ctor.prototype);
+    ctor = prototype == null ? null : prototype.constructor;
+  }
+  return false;
+}
+export function __qin_instanceof__(value, ctor) {
+  if (ctor == null) {
+    throw new TypeError("Right-hand side of 'instanceof' is not callable");
+  }
+  if (__qin_native_mirror_instanceof__(value, ctor)) {
+    return true;
+  }
+  if (typeof ctor === "string") {
+    return __qin_builtin_instanceof__(value, ctor);
+  }
+  if (typeof ctor.isInstance === "function") {
+    return !!ctor.isInstance(value);
+  }
+  if (typeof ctor.getName === "function" || typeof ctor.getSimpleName === "function") {
+    return false;
+  }
+  if (typeof ctor[Symbol.hasInstance] === "function") {
+    return !!ctor[Symbol.hasInstance](value);
+  }
+  if (typeof ctor !== "function") {
+    throw new TypeError("Right-hand side of 'instanceof' is not callable");
+  }
+  return value instanceof ctor;
+}
+function __qin_builtin_instanceof__(value, ctorName) {
+  switch (ctorName) {
+    case "Object":
+      return value !== null && (typeof value === "object" || typeof value === "function");
+    case "Array":
+      return Array.isArray(value);
+    case "Map":
+    case "WeakMap":
+      return value instanceof Map || value instanceof WeakMap;
+    case "Set":
+    case "WeakSet":
+      return value instanceof Set || value instanceof WeakSet;
+    case "RegExp":
+      return value instanceof RegExp;
+    case "Date":
+      return value instanceof Date;
+    case "URLSearchParams":
+      return typeof URLSearchParams !== "undefined" && value instanceof URLSearchParams;
+    case "Uint8Array":
+    case "Uint16Array":
+    case "Uint32Array":
+      return typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView(value);
+    case "Error":
+    case "TypeError":
+    case "RangeError":
+    case "ReferenceError":
+    case "SyntaxError":
+      return value instanceof Error
+        && (ctorName === "Error" || (value.name === ctorName || value.constructor?.name === ctorName));
+    default:
+      return false;
+  }
+}
+function __qin_native_mirror_instanceof__(value, ctor) {
+  if (value == null || ctor == null) return false;
+  const ctorName = typeof ctor.name === "string"
+    ? ctor.name
+    : (typeof ctor.getName === "function"
+      ? ctor.getName()
+      : (typeof ctor.getSimpleName === "function" ? ctor.getSimpleName() : ""));
+  if (ctorName === "com_subhuti_struct_SubhutiPosition"
+      || ctorName === "SubhutiPosition"
+      || ctorName.endsWith(".SubhutiPosition")) {
+    return (typeof value.getLine === "function" || typeof value.line === "function")
+      && (typeof value.getColumn === "function" || typeof value.column === "function")
+      && (typeof value.getIndex === "function" || typeof value.index === "function");
+  }
+  return false;
+}
 if (Object.prototype.getClass == null) {
   Object.defineProperty(Object.prototype, "getClass", {
     value() { return __qin_java_class_info__(this == null ? Object : this.constructor); },
     configurable: true
   });
+}
+export class __QinJavaMathBigInteger {
+  constructor(value, radix = 10) {
+    this.__value = BigInt(Number.parseInt(String(value), Number(radix)));
+  }
+  doubleValue() {
+    return Number(this.__value);
+  }
 }
 export function __qin_binary__(operator, left, right) {
   switch (operator) {
@@ -208,7 +333,7 @@ export function __qin_binary__(operator, left, right) {
     case "<=": return left <= right;
     case ">": return left > right;
     case ">=": return left >= right;
-    case "instanceof": return left instanceof right;
+    case "instanceof": return __qin_instanceof__(left, right);
     case "&&": return left && right;
     case "||": return left || right;
     default: throw new Error("Unsupported Qin binary operator: " + operator);

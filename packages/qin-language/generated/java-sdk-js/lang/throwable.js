@@ -26,6 +26,8 @@ export class __QinJavaLangClassNotFoundException extends __QinJavaLangException 
 }
 export class __QinJavaLangNoSuchMethodException extends __QinJavaLangReflectiveOperationException {
 }
+export class __QinJavaLangReflectInvocationTargetException extends __QinJavaLangReflectiveOperationException {
+}
 export class __QinJavaLangError extends __QinJavaLangThrowable {
 }
 export class __QinJavaLangStackOverflowError extends __QinJavaLangError {

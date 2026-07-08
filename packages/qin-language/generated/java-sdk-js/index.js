@@ -12,6 +12,7 @@ export {
   __qin_java_functional,
   __qin_java_class_info__,
   __qin_java_implements,
+  __qin_instanceof__,
   __qin_binary__,
   __qin_logical__
 } from "./core/runtime.js";
@@ -34,6 +35,7 @@ export {
   __QinJavaLangReflectiveOperationException,
   __QinJavaLangClassNotFoundException,
   __QinJavaLangNoSuchMethodException,
+  __QinJavaLangReflectInvocationTargetException,
   __QinJavaLangError,
   __QinJavaLangStackOverflowError,
   __QinJavaLangIllegalArgumentException,
@@ -69,6 +71,8 @@ export {
   __QinJavaUtilUnmodifiableMap,
   __QinJavaUtilCollections,
   __QinJavaUtilHashMap,
+  __QinJavaUtilIdentityHashMap,
+  __QinJavaUtilMapBackedSet,
   __QinJavaUtilObjects
 } from "./util/collections.js";
 export {

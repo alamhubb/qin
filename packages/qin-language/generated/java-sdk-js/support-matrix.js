@@ -14,6 +14,7 @@ export const qinJavaSdkCompatibility = {
     "java.util.ArrayList": "partial",
     "java.util.HashSet": "partial",
     "java.util.HashMap": "partial",
+    "java.util.IdentityHashMap": "partial",
     "java.util.Arrays": "partial",
     "java.util.Collections": "partial",
     "java.util.Objects": "partial",

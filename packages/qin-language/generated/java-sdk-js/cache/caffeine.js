@@ -13,6 +13,11 @@ export const __QinCaffeineRemovalCause = {
   }
 };
 export class __QinCaffeineCache {
+  __maximumSize = null;
+  __removalListener = null;
+  __buckets = null;
+  __order = null;
+  __size = null;
   constructor(maximumSize, removalListener) {
     this.__maximumSize = maximumSize == null ? Infinity : maximumSize;
     this.__removalListener = removalListener;
@@ -114,6 +119,8 @@ export class __QinCaffeineCache {
   }
 }
 export class __QinCaffeineBuilder {
+  __maximumSize = null;
+  __removalListener = null;
   constructor() {
     this.__maximumSize = Infinity;
     this.__removalListener = null;

@@ -11,6 +11,9 @@ export class __QinJavaUtilArrayList {
   constructor(initialValues) {
     this.__items = [];
     if (initialValues != null) {
+      if (typeof initialValues === "number") {
+        return;
+      }
       const values = initialValues instanceof __QinJavaUtilArrayList
         ? initialValues.__items
         : initialValues;
@@ -51,6 +54,9 @@ export class __QinJavaUtilArrayList {
       if (__qin_java_hash_key_equals__(this.__items[index], value)) return index;
     }
     return -1;
+  }
+  contains(value) {
+    return this.indexOf(value) >= 0;
   }
   isEmpty() {
     return this.__items.length === 0;
@@ -188,6 +194,11 @@ export class __QinJavaUtilUnmodifiableList {
 export const __QinJavaUtilList = {
   of(...values) {
     return new __QinJavaUtilUnmodifiableList(values);
+  },
+  copyOf(values) {
+    return new __QinJavaUtilUnmodifiableList(
+      values instanceof __QinJavaUtilArrayList ? values.__items.slice() : Array.from(values ?? [])
+    );
   }
 };
 export class __QinJavaUtilHashSet {
@@ -229,6 +240,31 @@ export class __QinJavaUtilHashSet {
     this.__bucket(value, true).push(value);
     this.__size++;
     return true;
+  }
+  addAll(values) {
+    let changed = false;
+    for (const value of values ?? []) {
+      changed = this.add(value) || changed;
+    }
+    return changed;
+  }
+  retainAll(values) {
+    const contains = values != null && typeof values.contains === "function"
+      ? (value) => values.contains(value)
+      : (value) => {
+          for (const candidate of values ?? []) {
+            if (__qin_java_hash_key_equals__(candidate, value)) return true;
+          }
+          return false;
+        };
+    let changed = false;
+    for (const value of this.toArray()) {
+      if (!contains(value)) {
+        this.remove(value);
+        changed = true;
+      }
+    }
+    return changed;
   }
   contains(value) {
     return this.__findEntry(value) != null;
@@ -277,6 +313,12 @@ export class __QinJavaUtilUnmodifiableSet {
     return new __QinJsSet(this.__source);
   }
   add() {
+    throw new TypeError("java.util.Set is unmodifiable");
+  }
+  addAll() {
+    throw new TypeError("java.util.Set is unmodifiable");
+  }
+  retainAll() {
     throw new TypeError("java.util.Set is unmodifiable");
   }
   contains(value) {
@@ -618,6 +660,34 @@ export const __QinJavaUtilCollections = {
   }
 };
 export const __QinJavaUtilObjects = {
+  equals(left, right) {
+    return __qin_java_values_equal__(left, right);
+  },
+  hash(...values) {
+    let result = 1;
+    for (const value of values) {
+      result = result * 31 + __qin_java_value_hash_code__(value);
+    }
+    return result;
+  },
+  hashCode(value) {
+    return __qin_java_value_hash_code__(value);
+  },
+  requireNonNull(value, message) {
+    if (value == null) {
+      throw new TypeError(message == null ? "null" : String(message));
+    }
+    return value;
+  },
+  requireNonNullElse(value, defaultValue) {
+    if (value != null) {
+      return value;
+    }
+    if (defaultValue == null) {
+      throw new TypeError("defaultObj");
+    }
+    return defaultValue;
+  },
   toString(value, nullDefault) {
     if (value == null) {
       return arguments.length >= 2 ? nullDefault : "null";

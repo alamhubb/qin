@@ -11,6 +11,9 @@ export class __QinJavaUtilArrayList {
   constructor(initialValues) {
     this.__items = [];
     if (initialValues != null) {
+      if (typeof initialValues === "number") {
+        return;
+      }
       const values = initialValues instanceof __QinJavaUtilArrayList
         ? initialValues.__items
         : initialValues;
@@ -51,6 +54,9 @@ export class __QinJavaUtilArrayList {
       if (__qin_java_hash_key_equals__(this.__items[index], value)) return index;
     }
     return -1;
+  }
+  contains(value) {
+    return this.indexOf(value) >= 0;
   }
   isEmpty() {
     return this.__items.length === 0;
@@ -180,6 +186,31 @@ export class __QinJavaUtilHashSet {
     this.__size++;
     return true;
   }
+  addAll(values) {
+    let changed = false;
+    for (const value of values ?? []) {
+      changed = this.add(value) || changed;
+    }
+    return changed;
+  }
+  retainAll(values) {
+    const contains = values != null && typeof values.contains === "function"
+      ? (value) => values.contains(value)
+      : (value) => {
+          for (const candidate of values ?? []) {
+            if (__qin_java_hash_key_equals__(candidate, value)) return true;
+          }
+          return false;
+        };
+    let changed = false;
+    for (const value of this.toArray()) {
+      if (!contains(value)) {
+        this.remove(value);
+        changed = true;
+      }
+    }
+    return changed;
+  }
   contains(value) {
     return this.__findEntry(value) != null;
   }
@@ -227,6 +258,12 @@ export class __QinJavaUtilUnmodifiableSet {
     return new __QinJsSet(this.__source);
   }
   add() {
+    throw new TypeError("java.util.Set is unmodifiable");
+  }
+  addAll() {
+    throw new TypeError("java.util.Set is unmodifiable");
+  }
+  retainAll() {
     throw new TypeError("java.util.Set is unmodifiable");
   }
   contains(value) {
@@ -420,6 +457,15 @@ export class __QinJavaUtilHashMap {
     }
     return new __QinJavaUtilArrayList(values);
   }
+  keys() {
+    const keys = [];
+    for (const bucket of this.__buckets.values()) {
+      for (const entry of bucket) {
+        keys.push(entry.key);
+      }
+    }
+    return new __QinJavaUtilArrayList(keys);
+  }
   computeIfAbsent(key, mappingFunction) {
     const found = this.__findEntry(key);
     if (found == null || found.entry.value == null) {
@@ -478,6 +524,158 @@ export class __QinJavaUtilHashMap {
     this.__size = 0;
   }
 }
+export class __QinJavaUtilIdentityHashMap {
+  constructor(initialEntries) {
+    const __QinJsMap = __qin_builtin_constructor__("Map");
+    this.__entries = new __QinJsMap();
+    if (initialEntries != null) {
+      for (const entry of initialEntries) {
+        this.put(entry[0], entry[1]);
+      }
+    }
+  }
+  put(key, value) {
+    const hadKey = this.__entries.has(key);
+    const previous = hadKey ? this.__entries.get(key) : null;
+    this.__entries.set(key, value);
+    return hadKey ? previous : null;
+  }
+  get(key) {
+    return this.__entries.has(key) ? this.__entries.get(key) : null;
+  }
+  getOrDefault(key, defaultValue) {
+    return this.__entries.has(key) ? this.__entries.get(key) : defaultValue;
+  }
+  putIfAbsent(key, value) {
+    if (!this.__entries.has(key)) {
+      this.__entries.set(key, value);
+      return null;
+    }
+    const previous = this.__entries.get(key);
+    if (previous == null) {
+      this.__entries.set(key, value);
+    }
+    return previous;
+  }
+  values() {
+    return new __QinJavaUtilArrayList(Array.from(this.__entries.values()));
+  }
+  keys() {
+    return new __QinJavaUtilArrayList(Array.from(this.__entries.keys()));
+  }
+  computeIfAbsent(key, mappingFunction) {
+    if (!this.__entries.has(key) || this.__entries.get(key) == null) {
+      const value = mappingFunction(key);
+      this.__entries.set(key, value);
+      return value;
+    }
+    return this.__entries.get(key);
+  }
+  merge(key, value, remappingFunction) {
+    if (!this.__entries.has(key)) {
+      this.__entries.set(key, value);
+      return value;
+    }
+    const previous = this.__entries.get(key);
+    if (previous == null) {
+      this.__entries.set(key, value);
+      return value;
+    }
+    const nextValue = remappingFunction(previous, value);
+    if (nextValue == null) {
+      this.__entries.delete(key);
+      return null;
+    }
+    this.__entries.set(key, nextValue);
+    return nextValue;
+  }
+  containsKey(key) {
+    return this.__entries.has(key);
+  }
+  remove(key) {
+    if (!this.__entries.has(key)) {
+      return null;
+    }
+    const previous = this.__entries.get(key);
+    this.__entries.delete(key);
+    return previous;
+  }
+  size() {
+    return this.__entries.size;
+  }
+  isEmpty() {
+    return this.__entries.size === 0;
+  }
+  clear() {
+    this.__entries.clear();
+  }
+}
+export class __QinJavaUtilMapBackedSet {
+  constructor(sourceMap) {
+    if (sourceMap == null || typeof sourceMap.put !== "function" || typeof sourceMap.containsKey !== "function") {
+      throw new TypeError("Collections.newSetFromMap requires a mutable map");
+    }
+    if (typeof sourceMap.size === "function" && sourceMap.size() !== 0) {
+      throw new TypeError("Collections.newSetFromMap requires an empty map");
+    }
+    this.__map = sourceMap;
+  }
+  add(value) {
+    const hadValue = this.__map.containsKey(value);
+    this.__map.put(value, true);
+    return !hadValue;
+  }
+  addAll(values) {
+    let changed = false;
+    for (const value of values ?? []) {
+      changed = this.add(value) || changed;
+    }
+    return changed;
+  }
+  retainAll(values) {
+    const contains = values != null && typeof values.contains === "function"
+      ? (value) => values.contains(value)
+      : (value) => {
+          for (const candidate of values ?? []) {
+            if (__qin_java_hash_key_equals__(candidate, value)) return true;
+          }
+          return false;
+        };
+    let changed = false;
+    for (const value of this.toArray()) {
+      if (!contains(value)) {
+        this.remove(value);
+        changed = true;
+      }
+    }
+    return changed;
+  }
+  contains(value) {
+    return this.__map.containsKey(value);
+  }
+  remove(value) {
+    if (!this.__map.containsKey(value)) {
+      return false;
+    }
+    this.__map.remove(value);
+    return true;
+  }
+  size() {
+    return this.__map.size();
+  }
+  isEmpty() {
+    return this.__map.isEmpty();
+  }
+  clear() {
+    this.__map.clear();
+  }
+  toArray() {
+    return Array.from(this.__map.keys());
+  }
+  [Symbol.iterator]() {
+    return this.toArray()[Symbol.iterator]();
+  }
+}
 export class __QinJavaUtilUnmodifiableMap {
   constructor(source) {
     const __QinJsMap = __qin_builtin_constructor__("Map");
@@ -500,14 +698,14 @@ export class __QinJavaUtilUnmodifiableMap {
     throw new TypeError("java.util.Map is unmodifiable");
   }
   get(key) {
-    if (this.__source instanceof __QinJavaUtilHashMap) {
+    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
       return this.__source.get(key);
     }
     const entries = this.__values();
     return entries.has(key) ? entries.get(key) : null;
   }
   getOrDefault(key, defaultValue) {
-    if (this.__source instanceof __QinJavaUtilHashMap) {
+    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
       return this.__source.getOrDefault(key, defaultValue);
     }
     const entries = this.__values();
@@ -517,7 +715,7 @@ export class __QinJavaUtilUnmodifiableMap {
     throw new TypeError("java.util.Map is unmodifiable");
   }
   values() {
-    if (this.__source instanceof __QinJavaUtilHashMap) {
+    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
       return new __QinJavaUtilUnmodifiableList(this.__source.values());
     }
     return new __QinJavaUtilUnmodifiableList(Array.from(this.__values().values()));
@@ -529,7 +727,7 @@ export class __QinJavaUtilUnmodifiableMap {
     throw new TypeError("java.util.Map is unmodifiable");
   }
   containsKey(key) {
-    if (this.__source instanceof __QinJavaUtilHashMap) {
+    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
       return this.__source.containsKey(key);
     }
     return this.__values().has(key);
@@ -538,13 +736,13 @@ export class __QinJavaUtilUnmodifiableMap {
     throw new TypeError("java.util.Map is unmodifiable");
   }
   size() {
-    if (this.__source instanceof __QinJavaUtilHashMap) {
+    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
       return this.__source.size();
     }
     return this.__values().size;
   }
   isEmpty() {
-    if (this.__source instanceof __QinJavaUtilHashMap) {
+    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
       return this.__source.isEmpty();
     }
     return this.__values().size === 0;
@@ -565,6 +763,9 @@ export const __QinJavaUtilCollections = {
   },
   unmodifiableMap(value) {
     return new __QinJavaUtilUnmodifiableMap(value);
+  },
+  newSetFromMap(value) {
+    return new __QinJavaUtilMapBackedSet(value);
   }
 };
 export const __QinJavaUtilObjects = {
