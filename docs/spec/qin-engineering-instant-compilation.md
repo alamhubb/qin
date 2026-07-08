@@ -935,6 +935,26 @@ change because it removes more lambda-shape dependency and broadens GAST
 coverage; continue with the remaining bottleneck at `LeftHandSideExpression`,
 `AssignmentExpression`, packrat key churn, and CST/object allocation.
 
+The next accepted framework primitive is a Chevrotain-style alternative gate:
+`Alternative.rule(ruleName, gate, body)`. Subhuti evaluates the gate before
+executing the alternative body, so a false gate does not enter the Java lambda,
+does not run rule wrappers, and does not mutate parser state. This is not
+fallback behavior; it is explicit grammar metadata equivalent to Chevrotain's
+`GATE` predicate. `SubhutiGraphLookaheadRuntimeSmokeTestMain` proves two
+same-FIRST alternatives can be selected by graph lookahead, then the first
+alternative can be skipped by a false gate while the second succeeds, with
+`orPredictionGateSkippedAlternatives=1`.
+
+A direct attempt to use that gate by restoring bounded top-level assignment
+operator scanning in `AssignmentExpression` was rejected. On `OvsConsumer.ts`
+it reduced wrapper counts (`LeftHandSideExpression` 203 -> 123 and
+`AssignmentExpression` 191 -> 111), but after the correctness bug around
+`new Set([...])` was fixed, `OvsParser.ts` slowed to about `1483ms` warm
+average because the bounded scan forced too much token lookahead. The accepted
+state is therefore framework gate support only; `AssignmentExpression` still
+needs a stronger structural solution, likely a common-prefix or Pratt-style
+expression strategy, not repeated deep token scanning.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
