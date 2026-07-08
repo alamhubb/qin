@@ -119,6 +119,58 @@ final class QinJsPackageRunner {
         }
     }
 
+    PreparedModuleHost prepareModuleSourceForDiagnostics(
+            Path projectRoot,
+            String wrapperSource,
+            String nameHint) throws Exception {
+        Objects.requireNonNull(projectRoot, "projectRoot cannot be null");
+        Objects.requireNonNull(wrapperSource, "wrapperSource cannot be null");
+
+        long startNanos = System.nanoTime();
+        Path root = projectRoot.toAbsolutePath().normalize();
+        Path wrapperDir = root.resolve(".qin").resolve("runtime").resolve("npm-host").normalize();
+        Files.createDirectories(wrapperDir);
+
+        Object monitor = NPM_HOST_LOCK_MONITORS.computeIfAbsent(wrapperDir, ignored -> new Object());
+        synchronized (monitor) {
+            try (NpmHostLock ignored = acquireNpmHostLock(wrapperDir)) {
+                long materializeStarted = System.nanoTime();
+                Set<String> activePackages = materializeWorkspaceDependencies(root, wrapperDir, wrapperSource);
+                long materializeMs = elapsedMs(materializeStarted);
+
+                long fingerprintStarted = System.nanoTime();
+                String dependencyFingerprint = moduleDependencyFingerprint(
+                        wrapperDir.resolve("node_modules"),
+                        activePackages);
+                long fingerprintMs = elapsedMs(fingerprintStarted);
+
+                long writeStarted = System.nanoTime();
+                String token = sanitizeToken(nameHint == null || nameHint.isBlank() ? "module" : nameHint);
+                String identity = shortSha256(token + "\n" + dependencyFingerprint + "\n" + wrapperSource);
+                Path wrapperFile = wrapperDir.resolve("invoke-" + token + "-" + identity + ".js");
+                pruneStaleInvocationWrappers(wrapperDir, wrapperFile);
+                Files.writeString(wrapperFile, wrapperSource, StandardCharsets.UTF_8);
+                long writeMs = elapsedMs(writeStarted);
+
+                return new PreparedModuleHost(
+                        root,
+                        wrapperDir,
+                        wrapperFile,
+                        wrapperDir.resolve("node_modules"),
+                        activePackages,
+                        dependencyFingerprint,
+                        materializeMs,
+                        fingerprintMs,
+                        writeMs,
+                        elapsedMs(startNanos));
+            }
+        }
+    }
+
+    private static long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
+    }
+
     String moduleDependencyFingerprint(Path nodeModules) throws IOException {
         return moduleDependencyFingerprint(nodeModules, null);
     }
