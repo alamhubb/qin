@@ -107,6 +107,8 @@ import java.lang.reflect.Method;
  * expression/literal behavior where that logic has not been migrated yet.
  */
 final class QinDeclarationIrLowerer {
+    private static final String SUBHUTI_RULE_ANNOTATION = "com.subhuti.parser.SubhutiRule";
+
     private final QinSlimeFrontendAdapter adapter;
 
     QinDeclarationIrLowerer(QinSlimeFrontendAdapter adapter) {
@@ -499,9 +501,9 @@ final class QinDeclarationIrLowerer {
     private List<QinIrAnnotation> withSubhutiRuleAnnotation(List<QinIrAnnotation> annotations) {
         List<QinIrAnnotation> result = new ArrayList<>(annotations == null ? List.of() : annotations);
         boolean hasRule = result.stream()
-                .anyMatch(annotation -> "com.subhuti.parser.SubhutiRule".equals(annotation.ownerBinaryName()));
+                .anyMatch(annotation -> SUBHUTI_RULE_ANNOTATION.equals(annotation.ownerBinaryName()));
         if (!hasRule) {
-            result.add(new QinIrAnnotation("com.subhuti.parser.SubhutiRule", List.of()));
+            result.add(new QinIrAnnotation(SUBHUTI_RULE_ANNOTATION, List.of()));
         }
         return List.copyOf(result);
     }
@@ -2914,6 +2916,9 @@ final class QinDeclarationIrLowerer {
 
         List<QinIrAnnotation> annotations = new ArrayList<>();
         for (Decorator decorator : decorators) {
+            if (isQinOwnedCompileTimeOnlyDecorator(decorator)) {
+                continue;
+            }
             QinIrAnnotation annotation = lowerAnnotationOrNull(decorator, javaImportLookup);
             if (annotation == null) {
                 throw qjsError(
@@ -2934,6 +2939,10 @@ final class QinDeclarationIrLowerer {
 
         Expression expression = decorator.expression();
         if (expression instanceof Identifier identifier) {
+            QinIrAnnotation qinOwned = lowerQinOwnedStaticDecoratorOrNull(identifier.name());
+            if (qinOwned != null) {
+                return qinOwned;
+            }
             String binaryName = javaImportLookup.get(identifier.name());
             if (binaryName == null) {
                 throw unsupportedDecorator(identifier.name());
@@ -2964,6 +2973,19 @@ final class QinDeclarationIrLowerer {
             return new QinIrAnnotation(binaryName, arguments);
         }
 
+        return null;
+    }
+
+    private boolean isQinOwnedCompileTimeOnlyDecorator(Decorator decorator) {
+        return decorator != null
+                && decorator.expression() instanceof Identifier identifier
+                && "Subhuti".equals(identifier.name());
+    }
+
+    private QinIrAnnotation lowerQinOwnedStaticDecoratorOrNull(String name) {
+        if ("SubhutiRule".equals(name)) {
+            return new QinIrAnnotation(SUBHUTI_RULE_ANNOTATION, List.of());
+        }
         return null;
     }
 
