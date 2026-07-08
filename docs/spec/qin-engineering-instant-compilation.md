@@ -879,6 +879,18 @@ then measured `OvsConsumer.ts` at about `8.225ms` over 100 warm rounds and
 valid framework capability and a modest large-file improvement, not the final
 Chevrotain-level solution; remaining work is still declaration/expression graph
 coverage plus packrat/CST cost reduction.
+The next accepted Slime integration connected `StatementListItem` and
+`Declaration` to the same graph path. `StatementListItem` may now skip
+declaration parsing for clear statement-start tokens such as `Return`, while
+`Declaration` may skip hoistable/class branches for `Const`. Because JavaScript
+`let` is a soft keyword represented as `IdentifierName` in this lexer, lexical
+declaration FIRST must include both `Const`/`Let` and `IdentifierName`; otherwise
+class bodies containing `let hash = 17` can incorrectly fail after graph
+pruning. The focused smoke covers `return`, `const`, and `let` separately before
+the larger OVS probes. After this change, the 2026-07-09 parser-only probe
+measured `OvsConsumer.ts` at about `7.696ms` over 100 warm rounds and
+`OvsParser.ts` at about `499.887ms` over 10 warm rounds, with
+`orPredictionSkippedAlternatives` rising to 40 and 622 respectively.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
