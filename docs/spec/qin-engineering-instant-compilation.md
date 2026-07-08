@@ -797,6 +797,20 @@ and `510.967ms`, so it was only a small OVS improvement and does not close the
 architecture gap. Treat this as evidence that the next real step is grammar-tree
 and callsite-plan self-analysis, not more isolated FIRST-token micro-tuning.
 
+The same-day nested grammar-tree experiment showed why this step must be
+bounded. Letting recording mode recursively expand nested `Or(...)` nodes can
+prove a small smoke such as an outer alternative whose first rule contains
+`A | B`, but real TypeScript expression grammar recursion made cold analysis
+too expensive and at depth 8 caused stack overflow before a depth guard was
+added. Depth 2 produced occasional warm improvements but the averages were not
+stable enough to accept as a performance fix. The accepted small correction is
+to keep analysis-only `SubhutiOrPrediction` objects available for diagnostics
+and grammar recording instead of returning `null`; runtime pruning still stays
+limited to already-proven LL(2+)/LL(3+) token-sequence plans. Future grammar
+tree work should build an explicit bounded GAST/callsite analysis pass with
+cycle detection and a cost budget, not recursively execute arbitrary grammar
+lambdas deeper and deeper during ordinary parsing.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
