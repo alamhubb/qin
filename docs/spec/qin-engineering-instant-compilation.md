@@ -828,12 +828,16 @@ speedup by itself.
 The next accepted step is an explicit callsite lookahead plan. When a parser
 opts in by exposing a `SubhutiGrammarGraph`, and every `Or(...)` alternative is
 an `Alternative.rule(...)` reference that resolves to non-nullable,
-non-dynamic, non-overlapping FIRST tokens, Subhuti may build a
+non-dynamic FIRST tokens, Subhuti may build a
 `SubhutiOrLookaheadPlan` without executing the alternatives in recording mode.
-That plan maps current token names directly to alternative indexes and is then
-wrapped in the normal `SubhutiOrPrediction` runtime pruning path. Recursive
-rules, missing rule definitions, nullable alternatives, ambiguous FIRST sets,
-or alternatives that are not explicit rule references must keep the callsite
+That plan maps current token names to PEG-ordered candidate alternative indexes
+and is then wrapped in the normal `SubhutiOrPrediction` runtime pruning path.
+When FIRST tokens are distinct, the candidate list has one alternative. When
+FIRST tokens overlap, the plan may still prune alternatives whose FIRST set
+cannot match the current token, but it must keep every overlapping candidate in
+the original PEG order and report the ambiguity diagnostic. Recursive rules,
+missing rule definitions, nullable alternatives, empty FIRST sets, or
+alternatives that are not explicit rule references must keep the callsite
 analysis-only or return to the normal PEG path; they are diagnostics, not
 fallback parser behavior. The focused acceptance smoke is
 `SubhutiGraphLookaheadRuntimeSmokeTestMain`: it proves
@@ -861,6 +865,20 @@ on 2026-07-09 the `OvsConsumer.ts` parser-only probe measured about `7.572ms`
 warm average with `orPredictionSkippedAlternatives=20`, while `OvsParser.ts`
 measured about `607ms` over 10 rounds. The skip count improved, but larger
 declaration/expression callsites still dominate the Chevrotain gap.
+The next focused step kept overlapping FIRST tokens useful instead of disabling
+the whole graph plan. `SubhutiOrLookaheadPlan` now stores token -> candidate
+list mappings, so a choice such as `ImportClause` can map `IdentifierName` to
+the three default-import alternatives while mapping `Asterisk` directly to the
+namespace alternative and `LBrace` directly to named imports. The focused
+`SlimeModuleGraphLookaheadSmokeTestMain` proves `ImportClause` skips 4 branches
+for `*` and skips 2 impossible branches for `IdentifierName`, with
+`orPredictionCandidateAlternatives=0`. The same 2026-07-09 parser-only probe
+then measured `OvsConsumer.ts` at about `8.225ms` over 100 warm rounds and
+`OvsParser.ts` at about `573ms` over 10 warm rounds, with
+`orPredictionSkippedAlternatives` rising to 32 and 95 respectively. This is a
+valid framework capability and a modest large-file improvement, not the final
+Chevrotain-level solution; remaining work is still declaration/expression graph
+coverage plus packrat/CST cost reduction.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
