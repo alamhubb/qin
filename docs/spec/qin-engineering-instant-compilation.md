@@ -908,6 +908,33 @@ gap is no longer only FIRST(1) retry; the next bottleneck investigation should
 look at packrat key/object churn, CST construction, and Java method/lambda
 dispatch costs.
 
+The next framework-alignment step changed explicit graph alternatives to use
+the rule reference name, not the Java lambda class name, as their prediction
+identity. This moves Subhuti cache keys closer to Chevrotain's structural
+callsite model: two `Alternative.rule("A", ...) | Alternative.rule("B", ...)`
+sites under the same parser class and rule scope reuse the same graph
+lookahead plan even when their lambda bodies are different Java callsites. The
+focused `SubhutiGraphLookaheadRuntimeSmokeTestMain` now proves the second
+callsite receives `orPredictionGlobalCacheHits=1` and still skips the
+impossible branch. This is correctness/architecture progress, not a large speed
+claim by itself; the 2026-07-09 OVS probes still showed the same packrat/core
+counts (`OvsParser.ts` around 90k rule core executions).
+
+The same unit began expression hotspot graph migration by connecting
+`UnaryExpression` and `MemberExpression` top-level choices to explicit
+`Alternative.rule(...)` entries and adding the required graph FIRST summaries
+for `PrimaryExpression`, `LeftHandSideExpression`, unary operator expressions,
+`SuperProperty`, `MetaProperty`, and `NewMemberExpression`. The focused
+`SlimeModuleGraphLookaheadSmokeTestMain` proves `super.x` now reaches
+`MemberExpression` through graph pruning and skips three non-`Super`
+alternatives. The broader `OvsConsumer.ts` and `OvsParser.ts` probes remained
+near the previous wall-clock/counter range (`OvsConsumer.ts` about `10.139ms`,
+`OvsParser.ts` about `578.067ms` in that run), which means these callsites are
+valid graph coverage but not yet the main Chevrotain gap closer. Keep the
+change because it removes more lambda-shape dependency and broadens GAST
+coverage; continue with the remaining bottleneck at `LeftHandSideExpression`,
+`AssignmentExpression`, packrat key churn, and CST/object allocation.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
