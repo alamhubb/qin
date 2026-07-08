@@ -825,6 +825,22 @@ lambdas. Rule references remain dynamic for runtime pruning until a callsite
 plan is built and validated, so this foundation must not be counted as a parser
 speedup by itself.
 
+The next accepted step is an explicit callsite lookahead plan. When a parser
+opts in by exposing a `SubhutiGrammarGraph`, and every `Or(...)` alternative is
+an `Alternative.rule(...)` reference that resolves to non-nullable,
+non-dynamic, non-overlapping FIRST tokens, Subhuti may build a
+`SubhutiOrLookaheadPlan` without executing the alternatives in recording mode.
+That plan maps current token names directly to alternative indexes and is then
+wrapped in the normal `SubhutiOrPrediction` runtime pruning path. Recursive
+rules, missing rule definitions, nullable alternatives, ambiguous FIRST sets,
+or alternatives that are not explicit rule references must keep the callsite
+analysis-only or return to the normal PEG path; they are diagnostics, not
+fallback parser behavior. The focused acceptance smoke is
+`SubhutiGraphLookaheadRuntimeSmokeTestMain`: it proves
+`orPredictionCandidateAlternatives=0`, `orPredictionSkippedAlternatives=1`, and
+`runtimePruningEnabled=true` for a two-rule choice, meaning Subhuti selected the
+branch from the graph plan instead of running grammar lambdas to discover FIRST.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
