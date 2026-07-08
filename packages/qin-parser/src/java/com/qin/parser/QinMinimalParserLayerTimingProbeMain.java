@@ -36,6 +36,8 @@ public final class QinMinimalParserLayerTimingProbeMain {
         List<Double> cstMs = new ArrayList<>();
         String stats = "";
         String cacheStats = "";
+        String coreStats = "";
+        String coreHotRules = "";
         int tokenCount = 0;
 
         for (int i = 0; i < rounds; i++) {
@@ -44,6 +46,8 @@ public final class QinMinimalParserLayerTimingProbeMain {
             cstMs.add(result.cstMs);
             stats = result.orPredictionStats;
             cacheStats = result.cacheStats;
+            coreStats = result.coreStats;
+            coreHotRules = result.coreHotRules;
             tokenCount = result.tokenCount;
         }
 
@@ -63,6 +67,8 @@ public final class QinMinimalParserLayerTimingProbeMain {
                 + " cstColdMs=" + format(cst.cold));
         System.out.println("orPredictionStats=" + stats);
         System.out.println("packratStats=" + cacheStats);
+        System.out.println("coreStats=" + coreStats);
+        System.out.println("coreHotRules=" + coreHotRules);
     }
 
     private static void runRound(String mode, String label, String source, boolean includeAst) {
@@ -117,7 +123,9 @@ public final class QinMinimalParserLayerTimingProbeMain {
                 cstMs,
                 parser.getParsedTokens().size(),
                 parser.getOrPredictionStats(),
-                parser.getCacheStats());
+                parser.getCacheStats(),
+                parser.getCoreProfileStats(),
+                parser.getCoreHotRuleStats(12));
     }
 
     private static QinParser createParser(String mode, String source) {
@@ -159,7 +167,14 @@ public final class QinMinimalParserLayerTimingProbeMain {
         return String.format(java.util.Locale.ROOT, "%.3f", value);
     }
 
-    private record RoundResult(double createMs, double cstMs, int tokenCount, String orPredictionStats, String cacheStats) {
+    private record RoundResult(
+            double createMs,
+            double cstMs,
+            int tokenCount,
+            String orPredictionStats,
+            String cacheStats,
+            String coreStats,
+            String coreHotRules) {
     }
 
     private record Stats(double cold, double avg, double best) {
