@@ -111,6 +111,9 @@ public final class QinParserFacade {
         if (parser.isParserFail()) {
             throw new IllegalArgumentException("Qin parser failed: " + parser.getErrorInfo());
         }
+        if (parser.parserFailOrIsEof()) {
+            return;
+        }
         SubhutiMatchToken token = parser.getCurToken();
         if (token == null) {
             String remaining = parser.getSourceCode().substring(parser.getCurrentIndex());
