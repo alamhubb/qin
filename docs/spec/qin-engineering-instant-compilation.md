@@ -539,7 +539,10 @@ static enhanced parser preserves the same `@SubhutiRule` wrapper semantics,
 packrat keys, CST shape, AST output, and error behavior as the dynamic enhanced
 class; it is not a raw-parser fallback. Parser construction must also avoid
 framework-level repeated work such as recompiling token regexes that are already
-matched with `Matcher.region(...).lookingAt()`.
+matched with `Matcher.region(...).lookingAt()`. Parser hot classes must not
+eagerly initialize heavyweight logging frameworks just to emit rare diagnostics;
+diagnostics that only apply to non-standard raw parser construction should stay
+on a lightweight path so the standard static parser can start quickly.
 
 Subhuti should learn from mature parser frameworks by recording enough grammar
 metadata to predict alternatives before executing them. The framework should
