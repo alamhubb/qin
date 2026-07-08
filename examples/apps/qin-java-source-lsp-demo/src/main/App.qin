@@ -1,6 +1,6 @@
 import { Greeter } from "java:demo"
 
-const message = Greeter.gr
-const total = Greeter.c
+const message = Greeter.greet
+const total = Greeter.count
 
 export { message, total }

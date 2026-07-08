@@ -2,7 +2,10 @@ export object Counter {
   value = 41;
 
   next() {
-    return this.value + 1;
+    return this.value + 1
   }
 }
+
+
+Counter.value
 
