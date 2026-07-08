@@ -4,6 +4,7 @@ import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJsImport;
 import com.slime.ast.nodes.misc.Program;
 import com.subhuti.struct.SubhutiCst;
+import com.subhuti.struct.SubhutiMatchToken;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,24 +52,25 @@ public final class QinParserFacade {
         }
     }
 
-    Program createProgramAst(String source) {
+    public Program createProgramAst(String source) {
         return createProgramAst(createProgramCst(source));
     }
 
-    SubhutiCst createProgramCst(String source) {
+    public SubhutiCst createProgramCst(String source) {
         QinParser parser = QinParserStaticEnhanced.create(source);
         parser.cache(true);
         SubhutiCst cst = parser.Program(QinParser.SourceType.MODULE);
         if (cst == null) {
             cst = parser.getCst();
         }
+        ensureParserFinished(parser);
         if (cst == null) {
             throw new IllegalArgumentException("Qin parser returned null CST");
         }
         return cst;
     }
 
-    Program createProgramAst(SubhutiCst cst) {
+    public Program createProgramAst(SubhutiCst cst) {
         Program programAst = new QinProgramCstToAst().createProgramAst(cst);
         if (programAst == null) {
             throw new IllegalArgumentException("Slime CST->AST returned null Program");
@@ -103,6 +105,31 @@ public final class QinParserFacade {
             return source;
         }
         return source.substring(1);
+    }
+
+    private void ensureParserFinished(QinParser parser) {
+        if (parser.isParserFail()) {
+            throw new IllegalArgumentException("Qin parser failed: " + parser.getErrorInfo());
+        }
+        SubhutiMatchToken token = parser.getCurToken();
+        if (token == null) {
+            String remaining = parser.getSourceCode().substring(parser.getCurrentIndex());
+            if (remaining.isBlank()) {
+                return;
+            }
+            throw new IllegalArgumentException(
+                    "Qin parser left unconsumed source at position "
+                            + parser.getCurrentIndex());
+        }
+        if (!token.isEof()) {
+            throw new IllegalArgumentException(
+                    "Qin parser left unconsumed source. Next token: "
+                            + token.value()
+                            + " ("
+                            + token.tokenName()
+                            + ") at position "
+                            + token.index());
+        }
     }
 
     private static String safeMessage(Throwable throwable) {
