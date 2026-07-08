@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class QinInMemoryJvmRunner {
     private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
-    private static final long DEFAULT_JS_RUN_TIMEOUT_MS = 0L;
+    private static final long DEFAULT_JS_RUN_TIMEOUT_MS = 30_000L;
     private static final int MODULE_CLASS_DISK_CACHE_VERSION = 6;
 
     private final QinCfaPipeline cfaPipeline;
