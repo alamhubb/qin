@@ -992,6 +992,19 @@ improved from the prior same-machine measurement:
 incremental move toward a Pratt/common-prefix expression strategy; it does not
 close the full Chevrotain gap by itself.
 
+The next framework-level GAST step is explicit terminal alternatives.
+`Alternative.token("Assign", ...)` lets a Subhuti `Or(...)` expose a Chevrotain-
+style `Terminal` grammar node without executing the alternative body in
+recording mode. `SubhutiGraphLookaheadRuntimeSmokeTestMain` proves a token-only
+choice can runtime-prune and skip the impossible branch, and
+`AssignmentOperatorAny` now uses mixed `Alternative.token(...)` and
+`Alternative.rule(...)` entries. This is accepted as architecture alignment
+because terminal/rule choices can enter graph lookahead directly. The same
+`OvsConsumer.ts` and `OvsParser.ts` probes stayed near `9.132ms` and
+`548.908ms`, so this particular connection is performance-neutral for the
+current OVS files; the value is removing another lambda-recording dependency
+before broader expression/operator graph coverage.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
