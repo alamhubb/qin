@@ -1,4 +1,4 @@
-﻿# Qin Language Target Model
+# Qin Language Target Model
 
 This document defines the normative language/target layering model for Qin.
 
@@ -35,6 +35,14 @@ The most accurate short definition is:
 
 - Qin is a fullstack language with ESM-style source syntax and target-specific backends.
 
+ESM support is target-filtered, not all-zone-universal:
+
+- Qin should support ESM-style syntax as far as it can lower cleanly into Qin IR and the active target.
+- `app/` and `main/` use the same Qin/ESM core language rule: syntax is admitted when it can compile simply and predictably to JVM `.class`.
+- `app/` may accept additional frontend input surfaces such as `.ts`, `.js`, `.vue`, and `.ovs`, but that does not make Qin core semantics broader than the `.class`-feasible ESM subset.
+- For `shared/`, the MVP legal source surface is `.qin` only. Future `.java` support in `shared/` must be an explicit Qin-managed portable Java subset, not arbitrary JVM Java.
+- The canonical static/dynamic support boundary lives in `QIN_JS_COMPATIBILITY_MODEL.md`: static `.class`-lowerable semantics are supported; hard dynamic JavaScript engine semantics are unsupported unless Qin later defines a specific explicit subset.
+
 Product-direction clarification:
 
 - the current target/zoning model is normative architecture
@@ -62,16 +70,45 @@ They differ in:
 
 ## 2.5 Source File Surface
 
-Qin accepts three Qin-language source suffixes in the same workspace and compilation flow:
+Qin accepts multiple source suffixes in the same workspace and compilation flow, but zone policy controls where they are legal:
 
 - `.ts`: ESM-style source authored in TypeScript-like Qin syntax
 - `.js`: ESM-style source authored in JavaScript-like Qin syntax
 - `.qin`: Qin-native source
 
-Java source has two distinct roles:
+These suffixes are input surfaces, not a promise of complete TypeScript or JavaScript engine semantics. Static `.ts`/`.js` that satisfies Qin's `.class`-lowerable ESM subset is supported; dynamic TS/JS semantics are rejected unless Qin defines a specific explicit subset.
+
+For computed indexing such as `object[name]`, use the canonical rule in `QIN_JS_COMPATIBILITY_MODEL.md`: Qin lowers it to `Map`/`Dict` `get`/`set` only when the base value has a Qin-visible map/dictionary type or contextual dictionary literal type. Unknown variables are not automatically treated as maps.
+
+Stage-1 source-surface rule:
+
+- `app/` may use `.qin`, `.ts`, `.js`, `.vue`, and `.ovs`.
+- `main/` may use `.qin`, host `.java`, and controlled `.ts/.js` migration inputs that satisfy the `.class`-feasible Qin/ESM subset.
+- `shared/` MVP should use `.qin` only.
+- Future `shared/` `.java` requires a Qin-owned portable Java subset that can emit both JS and JVM `.class`.
+- `shared/` should not accept ordinary `.js` or `.ts` files.
+
+Node-style dual-target packages are a useful packaging reference, but not a shared-source rule:
+
+- Node packages can expose different entry files through conditional `exports` such as `import`, `node`, `browser`, or custom conditions.
+- Qin may use the same idea at the package/manifest resolver layer to select frontend, backend, or portable entries.
+- The Qin equivalent of the Node model is target/source-set entry selection, not treating a Node-compatible `.js` file as portable source.
+- Conditional entry selection does not mean one arbitrary `.js` or `.ts` file is portable Qin shared code.
+- `shared/` portability is still proven by Qin language rules and target lowering, not by a package claiming both Node and browser entry points.
+- Therefore the practical MVP rule remains simple: author reusable cross-target project code in `shared/` as `.qin`; put target-specific JS/TS in `app/` or `main/`, or expose it through explicit manifest-selected entries.
+
+Design decision:
+
+- Project-local `shared/` should stay `.qin` only for the MVP. This is the cleanest rule because it makes shared code portable by construction instead of relying on per-package host-condition guesses.
+- Qin can still learn from Node's conditional export model by letting packages or workspace manifests declare separate `app`, `main`, and portable entries.
+- The portable entry selected for shared use must itself be Qin-portable source or Qin-approved generated output. It should not be ordinary JS/TS merely because another toolchain can bundle it for both Node and the browser.
+- If a piece of JS/TS works in both Node and browsers through bundler replacement, polyfills, or conditional entry choice, it belongs behind the resolver/package boundary. It does not change the legality of files placed directly under project `shared/`.
+
+Java source has distinct roles:
 
 - backend `.java` is host/JVM code that may coexist in a backend project
 - frontend `.java` is a future Stage 3 Qin-managed source surface, limited to a Java 8 subset
+- shared `.java`, when introduced, must be a portable Java subset with no JVM-only APIs such as reflection, threads, file IO, ClassLoader, native calls, or arbitrary JDK surface
 - Qin backend code may import Java ecosystem types and frameworks through `java:`
 - frontend code may not import JVM host modules through `java:`
 
@@ -114,10 +151,14 @@ For Qin language source, the file suffix is an input surface, not a product boun
 Rules:
 
 - intended to compile to both JVM and JS
-- may contain `.ts`, `.js`, and `.qin` Qin source
+- MVP source files should be `.qin` only
+- future `.java` support must be an explicit Qin-managed portable Java subset
+- may not contain ordinary `.js` or `.ts` source files
 - may use Qin core syntax and portable Qin stdlib only
+- must stay inside the JS/JVM target intersection
 - may not directly depend on `java:`
 - may not directly depend on browser/web-specific modules
+- may not depend on Node-only or bare npm host capabilities unless they are wrapped by a portable Qin stdlib API
 
 This is the portability boundary for code that should survive cross-target compilation.
 
@@ -133,6 +174,7 @@ Rules:
 - may use `java:` interop
 - may integrate directly with JVM ecosystem libraries and frameworks
 - is the natural home for Spring, JDK, and `.class`-ecosystem code
+- may use ESM-style source syntax only where it maps cleanly to JVM `.class`
 
 This is where Qin expresses backend business code and framework integration.
 
@@ -147,6 +189,8 @@ Rules:
 - Stage 3 may add `.java` inputs through a Java 8 subset parser/lowering path
 - may use browser/web capabilities
 - may not use `java:`
+- Qin/ESM core syntax follows the same `.class`-feasible rule as `main/`
+- frontend-only JS/TS/browser package behavior belongs in `app/` and must not leak into `shared/`
 
 This is where Qin expresses frontend/browser behavior.
 
@@ -219,6 +263,11 @@ So async is:
 
 - Qin-owned at the language level
 - target-specific at the runtime/backend implementation level
+- not contagious through ordinary call chains
+- introduced only at the exact explicit `async` or `Task<T>` boundary
+
+A caller does not become async merely because a callee performs internal async work and joins it before returning.
+Qin must not import JavaScript's "mark every caller async so it can await" model as a core language rule.
 
 ## 7. Backend Neutrality Rule
 

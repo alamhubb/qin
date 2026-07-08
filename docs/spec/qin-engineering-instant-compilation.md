@@ -201,6 +201,14 @@ receives the current request data. Add focused smokes that compile two distinct
 sources through the same hot wrapper and prove the second result is fresh, not a
 stale cache hit.
 
+Java JIT and module-class caching only remove wrapper/module graph compilation,
+class loading, and dependency-session setup from the hot path. They must not be
+treated as proof that per-request OVS source work is free or skipped: each fresh
+OVS input still runs the standard parser/transform path unless a strict
+transform cache proves the same input/config/dependency identity. Use focused
+hot-session probes to separate these timings: wrapper compile hit, dependency
+session hit, entry run time, and inner parser/transform elapsed time.
+
 The standard Qin OVS wrapper path is `ovs-compiler`, not a runtime
 `vite-plugin-ovs` fallback. Project options such as CSSTS `classPrefix` must
 enter that standard transform as runtime input, so the wrapper source and module
@@ -361,6 +369,14 @@ HTTP listener is available. Like Vite, Qin should start the server after the
 minimal backend/frontend graph is ready, then transform OVS modules on demand
 as the browser requests them. Optional warming is acceptable only when it does
 not block the listener and uses the same standard transform/cache path.
+
+The first dev-server OVS request may compile the current frontend graph's OVS
+modules as one on-demand batch through `QinOvsCompiler.compileAll`. This keeps
+startup non-blocking while avoiding one heavy OVS/CSSTS toolchain dependency
+session per browser module request. The batch path is the standard compiler
+path: it must use the same transform disk cache, module-class cache, runtime
+input boundary, and error surface as individual transforms. It is not a
+fallback and must not hide parser/compiler/runtime failures.
 
 Dev-server file changes should first try the smallest correct update. If a
 changed file is already in the current frontend graph, belongs to the pure
@@ -599,6 +615,14 @@ the selected grammar branch. Mixed lexer-mode predictions still use exact
 mode-aware matching for each recorded sequence, but this remains the same active
 parser semantics; it is not a compatibility path or alternate syntax.
 
+LL(k) pruning must preserve PEG branch order. If one alternative prediction is
+a strict prefix of another, such as `A` versus `A B`, the choice is not safely
+LL(k)-selectable because the shorter earlier branch may be the correct PEG
+result. Subhuti must keep that callsite analysis-only, report the ambiguity
+through stats/diagnostics, and execute the normal grammar path. This is not a
+fallback; it is the single standard parser semantics refusing an unsafe
+optimization.
+
 After the shared-lookahead matcher and analysis-only hot-call skip changes, the
 20,000-item focused benchmark measured `FIRST1_DISTINCT` at `302.759ms` with
 prediction enabled vs `294.010ms` without prediction, so it remained outside
@@ -608,10 +632,120 @@ without prediction, or about `3.00x` faster and `66.7%` less wall-clock time.
 `LL3_COMMON_PREFIX` measured `2925.806ms` vs `8540.298ms`, or about `2.92x`
 faster and `65.7%` less wall-clock time.
 
+The next framework step is parser-class/callsite prediction-plan reuse, closer
+to Chevrotain self-analysis than per-instance probing. Subhuti keeps the
+`Alternative.of(...)` grammar surface, records an analyzable plan once, stores
+it in a parser-class scoped global prediction cache, and lets later parser
+instances reuse that plan. Focused 5,000-item measurements on the Java runtime
+showed the intended shape: `FIRST1_DISTINCT` remains analysis-only and near
+parity (`25.822ms` vs `25.726ms`, `1.00x`) because pure token mismatches are
+too cheap to prune; `LL2_COMMON_PREFIX` uses runtime pruning with a global plan
+hit and measured `72.996ms` vs `202.965ms`, or `2.78x` faster; and
+`LL3_COMMON_PREFIX` measured `168.838ms` vs `502.695ms`, or `2.98x` faster.
+The global cache hit must be observable in stats such as
+`orPredictionGlobalCacheHits=1`, while dynamic or incomplete choices remain
+analysis-only rather than falling back to another parser path.
+
+When comparing `parser-source-snapshot` with the current Qin/OVS stack, treat
+the Node snapshot parser as a behavior oracle and a performance reference, not
+as a runtime fallback. The two stacks share the PEG/Subhuti design goal, so token
+streams, CST/AST shape, emitted ESM, and parser profiling counters should be
+compared on the same smallest input and then widened to package and app flows.
+If the current Java-generated TypeScript or Qin JVM path is materially slower
+than the Node snapshot, first identify whether the extra cost is grammar-local
+branch retry, generated Java-to-TS runtime overhead, missing framework cache
+reuse, or Qin JS interpreter overhead. Fix the owning active layer directly.
+For example, a generated TypeScript method that loses Java `synchronized` block
+contents and turns the Subhuti global prediction cache into `return null` is a
+Java CST/AST/lowering/generator defect; restore the single generated parser path
+so `orPredictionGlobalCacheHits` proves cross-instance plan reuse.
+
+Focused OVS measurements on `BalanceRow.ovs` and the 9-file balance-monitoring
+fixture showed that current generated Java-to-TypeScript parser overhead is
+dominated by generated runtime calls, not by a different OVS grammar. The Node
+snapshot stayed around tens of milliseconds for the same single file, while the
+current generated path remained hundreds of milliseconds after correctness fixes.
+Framework-level fixes that proved useful were single-mode `LA(offset)` execution
+that avoids constructing a one-item Java list for every ordinary lookahead, and
+direct CST child appends instead of rebuilding parent CST nodes through builders
+on every successful rule. A later focused probe also proved that packrat keys
+should stay semantic but be cheap in the generated TypeScript runtime: the active
+key still contains `ruleName`, `cacheKeyExtra`, `tokenIndex`, `currentMode`, and
+`lastTokenName`, but the generated path should avoid allocating a Java-style key
+object and re-entering Java `hashCode`/`equals` shims for every rule invocation
+when a stable lightweight key preserves the same cache identity. After this
+change, `BalanceRow.ovs` hot parsing moved into roughly the `199-231ms` range,
+and the 9-file balance fixture measured around `526-567ms` on the default path
+after warmup. A speculative last-token-entry microcache was rejected after
+focused measurement because the generated TypeScript property checks added more
+cost than the repeated map hit saved. Keep this as the pattern: compare with the
+snapshot, change one active framework layer at a time, measure wall-clock and
+profile counters, and discard negative optimizations instead of documenting them
+as architecture.
+
+2026-07-07 parser-only correction: the accepted comparison boundary is the same
+`.ovs` source set at `new OvsParser(source) + Program/OvsProgram()`, with OVS
+transform disk cache excluded and the Qin JVM toolchain/module classes warmed
+before judging parser speed. On the balance-monitoring 9-file fixture, the Node
+TypeScript snapshot measured about `125ms` warm parser-only while the current
+Qin JVM active path measured about `26s` warm parser-only. Disabling Subhuti
+OR prediction did not materially change the 9-file result, and focused probes
+showed millions of `JavaEsmGlobal.__qin_binary__` calls per run. Small runtime
+micro-optimizations to binary helpers, runtime function-definition caching, or
+bound-this caching did not materially close the gap and should not be treated
+as the solution. The owning bottleneck is that generated parser methods are
+still executing through Qin's JavaScript runtime/interpreter path rather than
+compiled JVM method bodies. The next durable fix should move an analyzable
+generated parser method subset into direct JVM lowering, starting with the
+Subhuti/OVS hot method shapes proven by the smallest parser-only probes.
+
+2026-07-08 follow-up: the first direct-class probe proved a local single-file
+subset with constructor, class field, `this.field = value`, and `extends` can be
+lowered to JVM classes without using a fallback parser. The broader
+`CssTsParser -> QinParser -> SubhutiParser` and `OvsParser -> CssTsParser`
+chains still do not direct-lower because the module-class source rewrites
+cross-module imports into local `__qin_export_get__` aliases, while declaration
+class lowering only understands local same-module class names or `java:` class
+imports. The owning fix is a cross-module JS/TS declaration-class index that
+maps imported class values such as `QinParser` and `CssTsParser` to the emitted
+JVM declaration binary names, then lets constructor and superclass emission use
+that index. Do not treat Node `parser-source-snapshot`, legacy handwritten TS
+parsers, or interpreted Qin JS class execution as a fallback for this gap; keep
+them as oracle/profile inputs and repair the active Java/Qin lowering path.
+
+After adding the prefix-ambiguity guard, the focused smoke
+`SubhutiOrFirstTokenPredictionSmokeTestMain` proves `A | A B` remains
+analysis-only and keeps PEG order. A 5,000-item benchmark on the same path
+measured `FIRST1_DISTINCT` as analysis-only (`0.85x` in that run, so still not
+runtime-pruned), `LL2_COMMON_PREFIX` at `79.384ms` versus `223.805ms`
+(`2.82x`, `64.5%` wall-clock reduction), and `LL3_COMMON_PREFIX` at
+`187.142ms` versus `508.727ms` (`2.72x`, `63.2%` reduction).
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
 reducing unnecessary rule execution.
+
+On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
+generation probe succeeded after adding standard `java.util.IdentityHashMap`
+and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
+backend. The probe generated 266 files in `16559ms`, so parser package
+generation was not the current OVS fresh-transform bottleneck.
+
+The same-day balance-monitoring comparison measured the old Node TypeScript
+snapshot at best `118.19ms` and warm average `124.74ms` for the 9 OVS files.
+The current Qin JVM path with transform disk-cache hits measured `292ms`, but a
+fresh 9-file transform with profiling enabled measured `133025ms`: about `85s`
+was module-class compilation of the 286-module OVS/CSSTS/generated-parser
+toolchain, about `1.1s` was dependency-session setup, and about `43.4s` was
+runtime transform execution. Inside the runtime transform, parser `parse+cst`
+accounted for about `33.6s`, CST-to-AST for about `9.8s`, and code generation
+only for tens of milliseconds. A tiny hot-session parse of
+`export const X = () => { return div { "x" } }` measured `633ms` on the second
+Qin JVM run, while the Node snapshot measured about `3.7-5.1ms` after warmup
+for the same 14-token input. Treat this as a current active-path performance
+regression to narrow at the generated Java-to-TS/Subhuti runtime layer; do not
+replace it with the Node snapshot or another fallback parser.
 
 ## Pipeline Probe Artifact Reuse
 
@@ -620,3 +754,11 @@ Five-stage parser/compiler probes are diagnostic accelerators. They should expos
 When a probe has already produced active tokens, CST, and AST for a source, the emitted ESM stage should reuse those exact artifacts and call the active emitter directly. It should not call a second full transform that reparses the same source and reruns CST-to-AST just to get generated code.
 
 This is not fallback behavior. The probe still uses the single active parser, CST-to-AST, and emitter path. It only avoids duplicate diagnostic work inside one probe. If the goal is specifically to compare the public full-transform API with the staged artifacts, add that as an explicit parity smoke instead of making every ordinary probe pay that cost.
+
+## Dev Launcher And Watcher Memory
+
+Qin launchers must not hard-code a tiny JVM heap for `qin dev` or other compiler-heavy flows. The launcher should expose `QIN_JAVA_OPTS` as the standard override surface and keep the default heap large enough for OVS/CSSTS/parser package compilation. A command-line `-Xmx128m` default is invalid for modern Qin dev because OVS batch compilation and generated parser toolchains can legitimately need far more memory.
+
+The dev watcher must prune ignored directories while walking the tree, not after collecting every file. Directories such as `.git`, `.qin`, `@qin-mod`, `build`, `dist`, `logs`, `node_modules`, `out`, `target`, and temporary `tmp-*` directories should be skipped before descending. Traversing generated packages, caches, logs, and temp trees competes with OVS/CSSTS compilation for heap and can turn a valid focused compile into a dev-server `OutOfMemoryError`.
+
+When diagnosing dev-server memory failures, first separate the boundaries: run the focused OVS/CSSTS/compiler probe with the same heap, then run the dev server with browser requests paused. If the focused probe passes but the dev server fails, repair the launcher, watcher, concurrency, or cache/session owning layer rather than changing application syntax or deleting caches as the fix.
