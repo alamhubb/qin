@@ -28,6 +28,9 @@ These rules capture durable workflow expectations for Codex work on Qin.
 
 - Treat every coherent code, test, documentation, config, or skill update as a
   commit unit.
+- Keep git cleanliness as an active gate before continuing work. Before
+  starting, resuming, or switching to another coherent unit, inspect the
+  relevant repository status and clean the current unit first.
 - After the unit is implemented and practical validation has run, inspect the
   diff, stage only the intended files, commit, and push when the configured
   remote is usable.
@@ -35,6 +38,13 @@ These rules capture durable workflow expectations for Codex work on Qin.
   uncommitted.
 - Keep unrelated dirty files out of the commit. Assume they are user work unless
   explicitly told otherwise.
+- If a repository is already dirty, classify dirty paths before editing:
+  current-agent completed work to commit, current-agent in-progress work to
+  finish, unrelated user/historical work to leave untouched, or irrelevant
+  generated/cache output. Do not use `git add .` to hide that distinction.
+- Clean worktree means clean for the paths Codex owns in the current unit. When
+  unrelated dirty files already exist, leave them untouched, keep current-unit
+  paths committed/pushed, and report the remaining unrelated status.
 - If validation is blocked or a push fails, keep the local commit when safe and
   report the exact blocker.
 
