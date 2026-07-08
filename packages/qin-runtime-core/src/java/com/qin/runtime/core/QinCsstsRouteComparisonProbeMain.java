@@ -3,6 +3,7 @@ package com.qin.runtime.core;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -107,15 +108,19 @@ public final class QinCsstsRouteComparisonProbeMain {
         Path sourceFile = root.resolve(input.name() + ".cssts");
         Files.writeString(sourceFile, input.source(), StandardCharsets.UTF_8);
 
-        ProcessBuilder builder = new ProcessBuilder(
-                javaCommand(),
-                "-cp",
-                System.getProperty("java.class.path"),
-                QinCsstsRouteComparisonProbeMain.class.getName(),
-                childMode,
-                input.name(),
-                sourceFile.toString(),
-                workspaceRoot.toString());
+        List<String> command = new ArrayList<>();
+        command.add(javaCommand());
+        if ("--qin-compiler-child".equals(childMode)) {
+            command.add("-Dqin.esm.sema.profile=true");
+        }
+        command.add("-cp");
+        command.add(System.getProperty("java.class.path"));
+        command.add(QinCsstsRouteComparisonProbeMain.class.getName());
+        command.add(childMode);
+        command.add(input.name());
+        command.add(sourceFile.toString());
+        command.add(workspaceRoot.toString());
+        ProcessBuilder builder = new ProcessBuilder(command);
         builder.redirectErrorStream(true);
         Path outputFile = Files.createTempFile("qin-cssts-child-", ".log");
         builder.redirectOutput(outputFile.toFile());
@@ -125,9 +130,11 @@ public final class QinCsstsRouteComparisonProbeMain {
             if (!finished) {
                 process.destroyForcibly();
                 process.waitFor(5, TimeUnit.SECONDS);
+                List<String> lines = readLinesIfExists(outputFile);
                 System.out.println("case=" + input.name()
                         + " route=" + route
-                        + " status=timeout timeoutSeconds=" + TIMEOUT_SECONDS);
+                        + " status=timeout timeoutSeconds=" + TIMEOUT_SECONDS
+                        + " detail=" + quoteDetail(tail(lines, 8)));
                 return;
             }
             List<String> lines = readLinesIfExists(outputFile);
@@ -237,6 +244,14 @@ public final class QinCsstsRouteComparisonProbeMain {
             return List.of();
         }
         return Files.readAllLines(file, StandardCharsets.UTF_8);
+    }
+
+    private static String tail(List<String> lines, int maxLines) {
+        if (lines == null || lines.isEmpty()) {
+            return "";
+        }
+        int start = Math.max(0, lines.size() - maxLines);
+        return String.join(" | ", lines.subList(start, lines.size()));
     }
 
     private static void deleteIfExistsQuietly(Path file) {

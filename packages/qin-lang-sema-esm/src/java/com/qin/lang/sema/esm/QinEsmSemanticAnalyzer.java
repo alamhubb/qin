@@ -18,17 +18,34 @@ import java.util.regex.Pattern;
 public final class QinEsmSemanticAnalyzer {
     private static final Pattern COMMONJS_EXPORT_PATTERN = Pattern.compile(
             "\\bmodule\\s*\\.\\s*exports\\b|\\bexports\\s*\\.");
+    private static final boolean PROFILE = Boolean.getBoolean("qin.esm.sema.profile");
     private final QinEsmAstBindingCollector astBindingCollector = new QinEsmAstBindingCollector();
 
     public QinEsmSemanticModel analyze(QinModuleGraph graph) {
         Map<Path, QinEsmModuleSemantic> modules = new LinkedHashMap<>();
+        int index = 0;
         for (QinModuleSource module : graph.modules()) {
+            long started = System.nanoTime();
+            if (PROFILE) {
+                System.out.println("[QinEsmSemanticAnalyzer] module start index=" + index
+                        + " chars=" + module.source().length()
+                        + " file=" + module.file());
+            }
             QinEsmAstBindingCollector.Result astBindings = collectAstBindings(module);
             List<QinEsmImportBinding> imports = astBindings.imports();
             List<QinEsmExportBinding> exports = finalizeExports(module, astBindings.exports());
             modules.put(
                     module.file(),
                     new QinEsmModuleSemantic(module.file(), imports, exports));
+            if (PROFILE) {
+                long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+                System.out.println("[QinEsmSemanticAnalyzer] module done index=" + index
+                        + " elapsedMs=" + elapsedMs
+                        + " imports=" + imports.size()
+                        + " exports=" + exports.size()
+                        + " file=" + module.file());
+            }
+            index++;
         }
         return new QinEsmSemanticModel(graph.entryFile(), modules);
     }
