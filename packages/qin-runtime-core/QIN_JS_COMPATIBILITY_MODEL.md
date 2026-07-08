@@ -77,6 +77,8 @@ When Qin accepts a TypeScript/JavaScript source form, the JVM `.class` path shou
 
 For example, if source code validly calls `SlimeAstCreateUtils.createCallExpression(callee, args, loc)`, the correct long-term model is for the Qin-visible Java/class API, generated facade, overload, or lowering rule to support that same source-level call shape. Qin should not force Qin-owned TS/JS authors to rewrite a valid static source call into a different low-level Java constructor shape such as adding internal-only flags or implementation parameters, unless Qin deliberately changes the source API itself and updates all callers as one standard.
 
+Same source-level shape means the supported source-visible API and the Qin-visible `.class` API stay isomorphic: the same import/export surface, member or method name, argument order, admitted arity, and default-argument meaning. The emitted `.class` implementation may use helper overloads, bridge classes, or internal constructors, but those are implementation details hidden behind the Qin-visible facade. Source code that is already inside Qin's supported static subset should not be rewritten just to match an internal Java signature.
+
 This rule keeps `.class` output aligned with source semantics:
 
 - supported syntax and APIs should compile to fixed fields, fixed methods, overloads, default arguments, generated facades, or typed helper APIs that preserve the admitted source meaning
