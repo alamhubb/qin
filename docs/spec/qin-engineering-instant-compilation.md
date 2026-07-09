@@ -1710,6 +1710,19 @@ source of truth for parser position. It does not remove packrat itself; wrapper
 calls, rule-core executions, and cache-key creation remain the next measured
 successful-path costs.
 
+Performance work must be measured after each coherent local state advance. Do
+not pile several parser optimizations together and infer their effect afterward.
+For the CST/token-list recognizer work, `SubhutiRecognizerPerformanceProbeMain`
+uses a focused 10-rule successful chain and clears rule cache on each round so it
+measures real successful-path execution instead of top-level cache hits. On
+2026-07-09, 50,000 rounds measured default CST at `totalMs=318.178`,
+`avgUs=6.364`, and recognizer mode at `totalMs=188.310`, `avgUs=3.766`, about a
+40.8% local improvement. Structural counters stayed equal for wrapper/core/cache
+work (`ruleWrapperCalls=11`, `ruleCoreExecutions=11`,
+`ruleCacheKeyBuilds=11`, `ruleCachePuts=11`), proving that the accepted change
+only removed CST/token-history overhead and that rule-cache/wrapper overhead is
+the next target.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
