@@ -567,8 +567,9 @@ temporary proof of the slow boundary, but the durable Qin direction is a
 framework-level prediction layer.
 
 Qin parser cold-start work follows the same rule. Runtime ByteBuddy generation
-is useful as a development mechanism, but the Qin-owned parser path should use a
-static enhanced parser `.class` when the source grammar is known. A valid
+is a historical Java-only diagnostic/reference mechanism, not a current Qin
+standard path. The Qin-owned parser path should use a static enhanced parser
+`.class` when the source grammar is known. A valid
 static enhanced parser preserves the same `@SubhutiRule` wrapper semantics,
 packrat keys, CST shape, AST output, and error behavior as the dynamic enhanced
 class; it is not a raw-parser fallback. Parser construction must also avoid

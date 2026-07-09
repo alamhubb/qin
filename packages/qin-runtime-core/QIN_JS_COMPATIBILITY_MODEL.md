@@ -134,9 +134,9 @@ Accepted Qin-owned decorator forms:
 
 For example, a parser source method annotated with `@SubhutiRule` should compile
 to a static `.class` wrapper, rule metadata, or rule table that preserves the
-same rule-wrapper semantics. Runtime ByteBuddy enhancement may be useful for
-development diagnostics, but it is not the standard production path and must not
-become a fallback for a missing static lowerer.
+same rule-wrapper semantics. Runtime ByteBuddy enhancement is a historical
+Java-only diagnostic/reference mechanism, not a current Qin standard path, and
+must not become a fallback for a missing static lowerer.
 
 Java annotations can express metadata on emitted `.class` files, but they do
 not by themselves replace TypeScript decorator behavior such as wrapping a
