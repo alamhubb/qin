@@ -577,6 +577,12 @@ matched with `Matcher.region(...).lookingAt()`. Parser hot classes must not
 eagerly initialize heavyweight logging frameworks just to emit rare diagnostics;
 diagnostics that only apply to non-standard raw parser construction should stay
 on a lightweight path so the standard static parser can start quickly.
+Focused parser performance probes must measure that same standard static path.
+Do not use `SubhutiParser.create(...)`, `ByteBuddyParserFactory.createRaw(...)`,
+or another runtime ByteBuddy route as the main Qin parser benchmark path. Those
+routes are historical or diagnostic references only, and any performance fix
+must be proven on the static enhanced `.class` wrapper and its `cst(false)`
+recognizer mode when parser-only timing is required.
 
 Decorator handling follows the canonical Qin JS compatibility rule in
 `packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md`: Qin-owned decorators

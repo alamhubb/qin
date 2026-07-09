@@ -1,8 +1,6 @@
 package com.qin.parser;
 
 import com.slime.ast.nodes.misc.Program;
-import com.subhuti.aop.ByteBuddyParserFactory;
-import com.subhuti.parser.SubhutiParser;
 import com.subhuti.struct.SubhutiCst;
 
 import java.nio.charset.StandardCharsets;
@@ -18,15 +16,16 @@ public final class QinMinimalParserLayerTimingProbeMain {
     }
 
     public static void main(String[] args) throws Exception {
-        String mode = args.length == 0 ? "enhanced" : args[0];
+        String mode = args.length == 0 ? "static" : args[0];
         if (args.length >= 2) {
             Path file = Path.of(args[1]).toAbsolutePath().normalize();
             int rounds = args.length >= 3 ? Integer.parseInt(args[2]) : 30;
             runFileBenchmark(mode, file, rounds);
             return;
         }
-        runRound(mode, "cold", SOURCE, true);
-        runRound(mode, "warm", SOURCE, true);
+        boolean includeAst = !"recognizer".equals(mode);
+        runRound(mode, "cold", SOURCE, includeAst);
+        runRound(mode, "warm", SOURCE, includeAst);
         System.out.println("QinMinimalParserLayerTimingProbeMain OK");
     }
 
@@ -76,6 +75,9 @@ public final class QinMinimalParserLayerTimingProbeMain {
         long createStarted = System.nanoTime();
         QinParser parser = createParser(mode, source);
         parser.cache(true);
+        if ("recognizer".equals(mode)) {
+            parser.cst(false);
+        }
         long createMs = elapsedMs(createStarted);
 
         long cstStarted = System.nanoTime();
@@ -84,7 +86,7 @@ public final class QinMinimalParserLayerTimingProbeMain {
             cst = parser.getCst();
         }
         long cstMs = elapsedMs(cstStarted);
-        if (cst == null) {
+        if (includeAst && cst == null) {
             throw new IllegalStateException("Expected CST for " + label);
         }
 
@@ -135,17 +137,11 @@ public final class QinMinimalParserLayerTimingProbeMain {
     }
 
     private static QinParser createParser(String mode, String source) {
-        if ("raw".equals(mode)) {
-            return ByteBuddyParserFactory.createRaw(QinParser.class, source);
-        }
         if ("static".equals(mode)) {
             return QinParserStaticEnhanced.create(source);
         }
         if ("recognizer".equals(mode)) {
             return QinParserStaticEnhanced.create(source);
-        }
-        if ("enhanced".equals(mode)) {
-            return SubhutiParser.create(QinParser.class, source);
         }
         throw new IllegalArgumentException("Unsupported mode: " + mode);
     }
