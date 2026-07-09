@@ -1947,6 +1947,19 @@ specific: improve value-aware token/category prediction and common-prefix
 lookahead for these successful-path hotspots, then prove the result with the
 same generated Slime TS parser-only probes before widening to OVS or CSSTS.
 
+The first `IdentifierName` experiment proved what not to do: expanding the
+`IdentifierName` graph rule into every hard keyword token made upper grammar
+plans noisier and broke `SlimeModuleGraphLookaheadSmokeTestMain`. The
+Chevrotain-style model is token categories, not graph expansion. Subhuti should
+grow a framework-level token category concept: token definitions may declare
+that a concrete token such as `Class`, `Const`, or `Await` belongs to the
+`IdentifierName` category; `SubhutiMatchToken` and prediction matching should
+expose both the concrete token and category keys. Grammar graph rules can then
+refer to the category without losing concrete-token precision or inflating
+alternatives. This is the correct next architecture step for `IdentifierName`
+and keyword-like prediction; do not replace it with local parser special cases
+or a larger hand-written graph.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
