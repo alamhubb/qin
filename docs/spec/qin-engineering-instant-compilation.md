@@ -1315,6 +1315,23 @@ calls dropping from `5249` to `4983`. This is still not a complete Chevrotain
 self-analysis model, but it converts another hot opaque OR into named grammar
 data and reduces failure-driven runtime work.
 
+The next retained optional-tail step connects more `TSTypeParameterInstantiation`
+sites to the same analyzable graph path. `NewMemberExpression`, `ClassHeritage`,
+`TSImportType`, `TSExpressionWithTypeArguments`, and the cover call head now use
+`Option(Alternative.rule("TSTypeParameterInstantiation", ...))`; the cover call
+head is no longer expressed as an OR that tries `typeArguments + Arguments` and
+then retries plain `Arguments`. Focused smokes prove `fn()` skips the optional
+type-argument rule while `fn<T>()` executes it exactly once. On 2026-07-09, the
+same OVS parser-only probe measured `OvsParser.ts cstWarmAvgMs=354.020`,
+`cstBestMs=293.250`, with structural counters down to
+`ruleWrapperCalls=70886`, `ruleCoreExecutions=46143`, and
+`ruleCacheKeyBuilds=49690`; `OvsConsumer.ts` measured `cstWarmAvgMs=5.842`,
+`cstBestMs=2.682`, with `ruleWrapperCalls=1237`, `ruleCoreExecutions=728`, and
+`ruleCacheKeyBuilds=825`. The profile confirms the intended effect:
+`TSType` wrapper calls dropped to `2855`, `Arguments` wrappers dropped to `1992`,
+and `CoverCallExpressionAndAsyncArrowHead` remains a successful single standard
+path instead of a fallback parse.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
