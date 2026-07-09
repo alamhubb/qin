@@ -1505,6 +1505,21 @@ to `345.675ms`. The failure hot list moved to TypeScript and statement probes,
 so the next Chevrotain-style target should be another measured failed core
 cluster, not further call-expression micro-tuning.
 
+The next retained step applies the same principle to `PrimaryExpression`'s
+contextual async function branches. `async function` and `async function *`
+share the `IdentifierName` first token with ordinary identifiers, so pure
+FIRST(1) graph pruning must keep all three candidates. Subhuti now adds
+explicit gates for `AsyncFunctionExpression` and `AsyncGeneratorExpression`
+that inspect only the shallow standard shape: `async` followed without a line
+terminator by `function`, and then optionally `*` for generators. This keeps
+legal async function expressions on the standard path while preventing ordinary
+identifiers from entering both async function rules just to fail. Focused
+smokes prove plain `foo` skips the async candidates, while `async function(){}`
+and `async function*(){}` still parse fully. On `OvsParser.ts`, this moved
+`ruleCoreExecutions=41600` to `40470`, `ruleCacheKeyBuilds=43769` to `42639`,
+and removed `AsyncFunctionExpression` / `AsyncGeneratorExpression` from the
+failure hot list.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
