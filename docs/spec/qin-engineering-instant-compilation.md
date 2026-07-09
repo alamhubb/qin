@@ -1767,6 +1767,18 @@ recognizer path. The remaining gap is now mostly the two still-real rule
 executions plus parser-state bookkeeping, not OR prediction or packrat key
 allocation on this focused chain.
 
+The next boundary probe split that remaining recognizer cost into reset, raw
+token consumption, top-level rule execution, and pass-through chain execution.
+On 2026-07-09, the 1,000,000-round focused probe showed reset at about
+`0.023us`, raw recognizer token consumption at about `0.218us`, top leaf rule
+execution at about `0.198us`, and the 10-rule pass-through chain recognizer at
+about `0.445us`. The accepted code change keeps `_consumeTokenMatch` on the
+same standard path but avoids calling CST and parse-record helpers when CST
+output and error recovery are both disabled. This is a parser-only hot-path
+guard, not a second parser. A separate experiment that precomputed a combined
+recognizer non-cache rule set was not retained because the focused wall-clock
+result was not stable enough across boundary probes.
+
 On 2026-07-09, `readonly string[]` exposed a correctness bug in Subhuti's hot
 `Or` prediction shortcut: matching only Java lambda classes can confuse different
 `Alternative.rule(..., Runnable)` callsites that have the same arity and wrapper
