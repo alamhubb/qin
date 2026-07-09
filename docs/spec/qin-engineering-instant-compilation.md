@@ -1752,6 +1752,16 @@ stack overhead. The optimization is still analysis-gated: CST output, error
 recovery, top-level parse setup/EOF checks, debug tracing, and non-pass-through
 rules stay on the standard wrapper path.
 
+On 2026-07-09, `readonly string[]` exposed a correctness bug in Subhuti's hot
+`Or` prediction shortcut: matching only Java lambda classes can confuse different
+`Alternative.rule(..., Runnable)` callsites that have the same arity and wrapper
+class shape. Hot alternative predictions must match both the supplier class and
+the structural prediction identity such as `rule:TSTypeOperator` or
+`rule:TSPrimaryType`. This keeps the optimization Chevrotain-like: a reused
+lookahead plan is tied to grammar identity, not incidental JVM lambda class
+shape. The focused Slime smoke now proves that top-level `TSType` and nested
+`TSPrefixTypeOrPrimary` no longer share an incompatible hot prediction.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
