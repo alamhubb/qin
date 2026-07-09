@@ -1041,6 +1041,20 @@ still Chevrotain-like performance within roughly a 5-10x range, so the next
 work should attack remaining `AssignmentExpression`, `TSType`, operator
 precedence chain, packrat key churn, and CST allocation costs.
 
+The following focused expression cleanup factored `ConditionalExpression` in the
+same common-prefix direction. Slime now parses one shared
+`ShortCircuitExpression` prefix and then an optional `? AssignmentExpression :
+AssignmentExpression` tail, instead of trying a conditional branch and then
+re-parsing the same short-circuit expression for the non-conditional case. The
+focused `SlimeAssignmentExpressionCommonPrefixSmokeTestMain` covers
+`flag ? yes : no` in addition to assignment-operator cases. The 2026-07-09
+parser-only probes measured `OvsConsumer.ts` at about `9.665ms` warm average
+over 100 rounds and `OvsParser.ts` at about `420.105ms` warm average over 10
+rounds, with `OvsParser.ts` structural counters at `ruleWrapperCalls=116422`,
+`ruleCoreExecutions=63301`, and `ruleCacheKeyBuilds=69893`. This is a valid
+small Chevrotain-aligned cleanup, but the remaining gap is still dominated by
+large-scale rule wrapper/cache/CST cost and expression/type grammar structure.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
