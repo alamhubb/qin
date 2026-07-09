@@ -1697,6 +1697,19 @@ allocation versus wrapper/cache overhead; follow-up work should next reduce
 wrapper/cache cost or add analysis-proven CST pass-through for CST-producing
 paths.
 
+The next accepted recognizer-path reduction removes parsed-token list storage
+from ordinary `cst(false)` parsing. Subhuti now keeps an independent
+`parsedTokenCount` for rule-cache keys, loop detection, state save/restore, and
+cache-hit recovery, while storing `parsedTokens` only when CST/debug/error
+recovery paths need concrete token objects. The focused
+`SubhutiCstOutputModeSmokeTestMain` proves default CST parsing still reports
+`parsedTokenCount=1` and `parsedTokenListSize=1`, while recognizer mode reports
+`parsedTokenCount=1` and `parsedTokenListSize=0`. This is another Chevrotain-like
+separation: recognizer execution no longer treats token history objects as the
+source of truth for parser position. It does not remove packrat itself; wrapper
+calls, rule-core executions, and cache-key creation remain the next measured
+successful-path costs.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
