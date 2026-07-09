@@ -1730,6 +1730,17 @@ packrat enabled measured `totalMs=171.206`, `avgUs=3.424`, while
 packrat key/result/map overhead is a major remaining cost, but disabling cache
 globally is not the standard fix. The framework should only use a Chevrotain-like
 light path when grammar analysis proves the callsite can avoid packrat safely.
+The first attempt to check pass-through rules by querying the grammar graph from
+each rule wrapper reduced cache counters but regressed wall-clock time, so it was
+discarded. The accepted direction is a precomputed parser-class grammar plan:
+when a rule is proven to be a non-recursive single-rule pass-through, parser-only
+`cst(false)` mode may skip that parent rule's packrat cache while still executing
+the standard child rule. On 2026-07-09, the 200,000-round focused probe showed
+plan-off recognizer at `avgUs=2.476` and plan-on recognizer at `avgUs=2.285`
+while reducing `ruleCacheKeyBuilds` and `ruleCachePuts` from 11 to 1
+(`ruleCachePassThroughSkips=10`). This is a valid Chevrotain-style initialization
+plan step, but the remaining gap is still wrapper/core rule execution, not OR
+prediction or CST allocation alone.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
