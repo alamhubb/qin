@@ -1752,6 +1752,21 @@ stack overhead. The optimization is still analysis-gated: CST output, error
 recovery, top-level parse setup/EOF checks, debug tracing, and non-pass-through
 rules stay on the standard wrapper path.
 
+The follow-up successful-path cache policy removes two more unnecessary packrat
+costs without changing the grammar path. Top-level rules no longer build or
+write packrat entries, because there is no parent callsite that can reuse that
+entry. In parser-only `cst(false)` mode, grammar-graph-proven terminal leaf
+rules also skip packrat cache while still executing their normal rule body. The
+focused smoke suite proves CST mode, recognizer mode, grammar graph terminal
+leaf discovery, and nested cached rules separately. On 2026-07-09, the
+100,000-round focused probe measured `default-cst avgUs=3.232`, recognizer
+`avgUs=0.926`, and diagnostic `recognizer-no-cache avgUs=0.642`, with
+`ruleCacheKeyBuilds=0`, `ruleCachePuts=0`,
+`ruleCacheTerminalLeafSkips=1`, and `ruleWrapperPassThroughSkips=9` on the
+recognizer path. The remaining gap is now mostly the two still-real rule
+executions plus parser-state bookkeeping, not OR prediction or packrat key
+allocation on this focused chain.
+
 On 2026-07-09, `readonly string[]` exposed a correctness bug in Subhuti's hot
 `Or` prediction shortcut: matching only Java lambda classes can confuse different
 `Alternative.rule(..., Runnable)` callsites that have the same arity and wrapper
