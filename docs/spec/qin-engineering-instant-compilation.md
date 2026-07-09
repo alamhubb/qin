@@ -1868,6 +1868,19 @@ without pruning and LL(3) at about `183ms` vs `285ms` without pruning. This is
 not fallback behavior; it is the standard predicted `Or` path avoiding a
 PEG-era state copy that Chevrotain-style lookahead has already made unnecessary.
 
+On 2026-07-10, Subhuti also narrowed the recognizer-mode state snapshot cost.
+When `cst(false)` is active and the parsed-token object list is empty, `saveState`
+and `restoreState` no longer inspect the CST stack or trim the parsed-token list;
+they restore only the cursor, source position, last token name, and token count.
+This preserves the same PEG backtracking state but removes CST/token-list work
+from parser-only probes. `SubhutiCstOutputModeSmokeTestMain` still proves CST
+mode unchanged. On the focused generated Slime TypeScript corpus,
+`SlimeParser.ts` measured about `388ms` warm recognizer average,
+`SlimeAstCreateUtils.ts` about `819ms`, and
+`SlimePrimaryExpressionCstToAst.ts` about `151ms`, with structural counters
+unchanged. Treat this as a successful-path state-cost cleanup, not an OR
+prediction or grammar-local syntax change.
+
 On 2026-07-09, `readonly string[]` exposed a correctness bug in Subhuti's hot
 `Or` prediction shortcut: matching only Java lambda classes can confuse different
 `Alternative.rule(..., Runnable)` callsites that have the same arity and wrapper
