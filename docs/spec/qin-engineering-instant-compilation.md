@@ -1114,6 +1114,22 @@ alignment step, but it is still a partial bridge: the remaining Chevrotain gap i
 dominated by expression/common-prefix structure and contextual-token choices that
 still need fuller GAST coverage.
 
+The follow-up retained step extends the same `Alternative.token(s)` discipline to
+expression punctuation tails that were still executed as ordinary lambda bodies:
+the conditional `? :` tail, comma expression tails, argument-list comma tails,
+and optional-chain suffix repetitions. The parser now checks `Question`,
+`Comma`, `QuestionDot`, or the optional-chain suffix start set before entering
+those bodies. On 2026-07-09, after the binary-tail change above, the focused
+`OvsParser.ts` profile probe moved from `ruleWrapperCalls=95311` to
+`ruleWrapperCalls=93037`, with `AssignmentExpression` wrapper calls dropping
+from `7519` to `5249`; `ruleCoreExecutions` stayed at `55628`, which is expected
+because the optimization avoids wrapper/body entry on skipped optional/repeated
+tails rather than changing successful core rules. The non-profile 10-round probe
+measured `OvsParser.ts` at `cstWarmAvgMs=391.470`, `cstBestMs=330.935`, while
+`OvsConsumer.ts` remained essentially flat at `cstWarmAvgMs=9.024`,
+`cstBestMs=3.304`. This is another accepted small Chevrotain-style step, not the
+main remaining gap closer.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
