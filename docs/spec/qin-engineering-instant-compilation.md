@@ -1075,6 +1075,26 @@ token types or categories; future framework work may need value-aware terminals
 or a stricter token model to prune those choices without hand-coded grammar
 special cases.
 
+The next framework step begins Chevrotain-style optional-production prediction.
+Subhuti now has an `Option(Alternative.rule/token(...))` and
+`Many(Alternative.rule/token(...))` overload that can inspect an analyzable
+FIRST set before executing the optional/repeated body. When the current token
+cannot start the alternative, the parser skips the optional body without
+entering a rule wrapper, building a packrat key, or relying on failure and
+restore. The overload is strict: if the parser is already in a failed state it
+returns without changing that state, so an optional fast path cannot mask a
+failed outer alternative. `TSTypeAnnotation` is the first production connected
+to this path through a conservative `Colon` FIRST set and the
+`OptionalTSTypeAnnotation()` helper. The focused smokes include arrow-function
+cases to prove that failed alternatives remain visible. On 2026-07-09,
+`OvsParser.ts` parser-only counters moved from `ruleWrapperCalls=110991`,
+`ruleCoreExecutions=59757`, and `ruleCacheKeyBuilds=66322` to
+`ruleWrapperCalls=110460`, `ruleCoreExecutions=59537`, and
+`ruleCacheKeyBuilds=66011`; `TSType` wrappers dropped from `5585` to `5365`.
+This is a small but important architecture step because Chevrotain optimizes
+`OPTION`/`MANY` as well as `OR`; further gains require connecting more optional
+hotspots and making contextual keyword lookahead more precise.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
