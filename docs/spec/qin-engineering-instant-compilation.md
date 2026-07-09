@@ -1235,6 +1235,25 @@ paths still need more non-prefix LL(k) graph coverage, expression/type
 structure factoring, and CST/allocation reductions to approach the 5-10x
 target.
 
+The next retained Slime grammar step moves more TypeScript expression hot paths
+from runnable PEG branches into analyzable graph facts. `TSTypeAssertion` is
+now a real grammar graph rule starting with `<` and is part of the
+`UnaryExpression` alternation, so ordinary identifiers no longer enter the
+type-assertion branch just to fail. The `as` and `satisfies` expression tails
+are also value-aware `IdentifierName` graph terminals, and the repeated tail
+checks skip the body unless an identifier token can start one of those
+standard tails. Focused smokes prove that identifier unary expressions skip
+`TSTypeAssertion`, while bare, `as`, and `satisfies` assignment expressions
+execute only the needed tail. On 2026-07-09, the same OVS parser-only probes
+measured `OvsParser.ts cstWarmAvgMs=382.150`, `cstBestMs=302.177`, with
+structural counters down to `ruleWrapperCalls=83489`, `ruleCoreExecutions=51815`,
+and `ruleCacheKeyBuilds=56706`; `TSType` wrappers dropped to `4014`, and
+`TSTypeAssertion` was no longer a top core hot rule. `OvsConsumer.ts` measured
+`cstWarmAvgMs=8.833`, `cstBestMs=2.888`, with `ruleWrapperCalls=1359`,
+`ruleCoreExecutions=759`, and `ruleCacheKeyBuilds=876`. Keep this direction:
+contextual TypeScript syntax should enter the GAST/lookahead model as precise
+token or token-value facts instead of remaining opaque runtime lambda probes.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
