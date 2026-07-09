@@ -1905,6 +1905,16 @@ and generated Slime TS parser-only probes. On the same machine,
 `SlimeParser.ts` moved from about `357ms` to `282ms` warm recognizer average,
 and `SlimeAstCreateUtils.ts` from about `796ms` to `744ms`.
 
+The same parser-only pass then removed string concatenation from Subhuti token
+cache keys. `_getOrParseTokenEntry(...)` now uses a structured key containing
+the source index, lexer mode, and previous token name instead of building
+`"index:mode:lastToken"` strings for every lookahead read. This keeps the same
+lexer dependency on `lastTokenName` while reducing allocation, string hashing,
+and `StringBuilder` samples seen in JFR. Focused Subhuti smokes stayed green;
+with the mixed-mode lookahead reuse plus structured token keys, `SlimeParser.ts`
+measured about `259ms` warm recognizer average in a 12-round probe and
+`SlimeAstCreateUtils.ts` about `680ms` in an 8-round probe.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
