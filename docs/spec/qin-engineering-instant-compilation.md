@@ -1254,6 +1254,25 @@ and `ruleCacheKeyBuilds=56706`; `TSType` wrappers dropped to `4014`, and
 contextual TypeScript syntax should enter the GAST/lookahead model as precise
 token or token-value facts instead of remaining opaque runtime lambda probes.
 
+The next retained common-prefix step factors `Arguments` from three `(`-prefixed
+alternatives into one prefix plus analyzable optional `ArgumentList` and optional
+trailing `Comma`. Subhuti's optional start prediction also now preserves
+per-FIRST-token lexer modes instead of disabling prediction whenever the FIRST
+set mixes default-mode and regexp-mode tokens. This matters because
+`ArgumentList` can start with normal expression tokens or a
+`RegularExpressionLiteral` in `LexerMode.REGEXP`; empty `()` arguments should be
+skipped by lookahead instead of executing `ArgumentList` once to fail. Focused
+smokes prove `()` does not call `ArgumentList`, while `(value)` and `(value,)`
+call it exactly once. On 2026-07-09, the same parser-only probes measured
+`OvsParser.ts cstWarmAvgMs=360.993`, `cstBestMs=301.649`, with structural
+counters at `ruleWrapperCalls=81647`, `ruleCoreExecutions=51815`, and
+`ruleCacheKeyBuilds=56432`; `OvsConsumer.ts` measured
+`cstWarmAvgMs=5.943`, `cstBestMs=2.621`, with `ruleWrapperCalls=1331`,
+`ruleCoreExecutions=759`, and `ruleCacheKeyBuilds=872`. This is a small but
+real Chevrotain-style improvement: it removes another failure-driven optional
+parse and keeps lexer-mode-aware prediction in the framework rather than in a
+grammar-local workaround.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
