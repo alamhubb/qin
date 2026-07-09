@@ -1520,6 +1520,23 @@ and `async function*(){}` still parse fully. On `OvsParser.ts`, this moved
 and removed `AsyncFunctionExpression` / `AsyncGeneratorExpression` from the
 failure hot list.
 
+The next Chevrotain-alignment step moves `Statement` from opaque runnable
+branches to explicit `Alternative.rule(...)` branches backed by grammar-graph
+FIRST summaries. Clear statement starts such as `{`, `var`, `;`, `if`, loops,
+`continue`, `break`, `throw`, `try`, `debugger`, and `with` can now reach only
+their owning statement branch. Contextual gates preserve the standard semantics:
+`return` is skipped before execution when `Return` is not allowed, and
+`foo:;` gates `ExpressionStatement` so `LabelledStatement` owns the label form.
+Focused `SlimeModuleGraphLookaheadSmokeTestMain` cases cover expression,
+labelled, block, variable, empty, and return-disallowed statements. On the same
+`OvsParser.ts` parser-only probe, this moved the counters to
+`ruleWrapperCalls=39236`, `ruleCoreExecutions=37068`, and
+`ruleCacheKeyBuilds=39237`, with `orPredictionSkippedAlternatives=61520` and
+`orPredictionGateSkippedAlternatives=3786`. The 20-round warm average measured
+`378.992ms`, so this is retained as a real rule-core reduction while the
+remaining wall-clock gap still points at expression/type precedence work,
+packrat/cache-key cost, CST allocation, and Java dispatch overhead.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
