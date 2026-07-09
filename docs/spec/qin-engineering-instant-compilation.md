@@ -1741,6 +1741,16 @@ while reducing `ruleCacheKeyBuilds` and `ruleCachePuts` from 11 to 1
 (`ruleCachePassThroughSkips=10`). This is a valid Chevrotain-style initialization
 plan step, but the remaining gap is still wrapper/core rule execution, not OR
 prediction or CST allocation alone.
+The next accepted step is pass-through wrapper/core fusion for the same proven
+rules: in parser-only mode, a non-top-level non-recursive pass-through rule may
+execute its child directly without creating a rule wrapper/cache boundary. On the
+same 200,000-round probe, recognizer mode measured `avgUs=1.175` with
+`ruleWrapperCalls=2`, `ruleCoreExecutions=2`, `ruleCacheKeyBuilds=1`, and
+`ruleWrapperPassThroughSkips=9`; `recognizer-no-cache` measured `avgUs=0.884`.
+This confirms the main remaining Subhuti/Chevrotain gap was successful-path rule
+stack overhead. The optimization is still analysis-gated: CST output, error
+recovery, top-level parse setup/EOF checks, debug tracing, and non-pass-through
+rules stay on the standard wrapper path.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
