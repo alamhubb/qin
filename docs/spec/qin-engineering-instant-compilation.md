@@ -1213,6 +1213,28 @@ in the top 12 core execution list. This is still a small GAST coverage step,
 but it is aligned with the desired self-analysis direction because it removes
 failure-driven optional parsing from a real hot path.
 
+The next retained framework step adds bounded LL(k) path analysis to
+`SubhutiOrLookaheadPlan`. Subhuti can now expand analyzable grammar graph
+sequences such as `IdentifierName LParen` versus `IdentifierName LBracket`
+without executing alternatives in recording mode, matching Chevrotain's
+practice of deriving lookahead paths from GAST rather than from failed runtime
+branches. Prefix ambiguity remains conservative: if one alternative path is a
+strict prefix of another, Subhuti keeps PEG-ordered first-token candidates
+instead of pruning to the longer path. `SubhutiOrLookaheadPlanSmokeTestMain`
+and `SubhutiGraphLookaheadRuntimeSmokeTestMain` prove both sides: non-prefix
+common-first alternatives prune to the matching deeper path, while incomplete
+rule graphs fall back to the standard recording diagnostic path rather than
+pretending to have a complete plan. On 2026-07-09, focused smokes and
+slime-parser smokes passed. The OVS parser-only probes measured
+`OvsParser.ts cstWarmAvgMs=357.536`, `cstBestMs=290.502`, with unchanged
+structural counters at `ruleWrapperCalls=90765`, `ruleCoreExecutions=54040`,
+and `ruleCacheKeyBuilds=60513`; `OvsConsumer.ts` measured
+`cstWarmAvgMs=5.945`, `cstBestMs=2.665`. Treat this as a necessary
+Chevrotain-alignment capability, not a completed speed closer: current OVS hot
+paths still need more non-prefix LL(k) graph coverage, expression/type
+structure factoring, and CST/allocation reductions to approach the 5-10x
+target.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
