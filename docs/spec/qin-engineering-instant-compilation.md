@@ -1130,6 +1130,30 @@ measured `OvsParser.ts` at `cstWarmAvgMs=391.470`, `cstBestMs=330.935`, while
 `cstBestMs=3.304`. This is another accepted small Chevrotain-style step, not the
 main remaining gap closer.
 
+The next retained framework step adds value-aware terminals for contextual
+keywords represented by the lexer as `IdentifierName`. Chevrotain-style grammars
+often use distinct keyword token types or token categories; Subhuti now exposes
+the same information in its graph model through `SubhutiGrammarNode.terminalValue`
+and the standard `Alternative.tokenValue(tokenName, tokenValue, body)` API. This
+is not a second parser path: it is the single active graph/lookahead path learning
+that `IdentifierName("number")`, `IdentifierName("readonly")`, and a generic
+`IdentifierName` are different prediction facts. Focused smoke coverage proves
+`TSKeywordType` parses `number` by executing only the number branch, preserves
+custom type references through the standard `TSTypeReference` path, and proves
+`TSTypeOperator` can skip non-`readonly` operator branches through
+`Alternative.tokenValue`.
+
+On 2026-07-09, after value-aware terminal support, the `OvsParser.ts` parser-only
+probe improved structural counters from the previous expression-punctuation
+step's `ruleWrapperCalls=93037`, `ruleCoreExecutions=55628` to
+`ruleWrapperCalls=90957`, `ruleCoreExecutions=54136`, with skipped alternatives
+at `51088`. The 10-round wall-clock probe measured `cstWarmAvgMs=432.037`,
+`cstBestMs=361.166` for `OvsParser.ts`, and `cstWarmAvgMs=15.304`,
+`cstBestMs=4.830` for `OvsConsumer.ts`. The counter improvement is real, but the
+wall-clock gap to Chevrotain remains; the next work should reduce prediction/key
+overhead and continue moving high-frequency expression/type callsites into
+complete analyzable graph plans.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
