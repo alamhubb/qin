@@ -1409,6 +1409,34 @@ dropped from `2855` to `1700`. Wall-clock remained noisy on this small run
 (`OvsParser.ts cstWarmAvgMs=352.721`, `cstBestMs=304.850`), so keep judging
 this step primarily by the structural counters and hotspot removal.
 
+The next retained framework/cache step hydrates parser-class global
+`SubhutiOrPrediction` entries into each new parser instance once per parser
+class. This moves reused graph/lookahead plans closer to Chevrotain's
+parser-class self-analysis model: later parser instances no longer repeatedly
+probe the global cache for every callsite; they preload the known prediction
+keys for that parser class into the instance cache. The focused
+`SubhutiGraphLookaheadRuntimeSmokeTestMain` now accepts either the old direct
+`orPredictionGlobalCacheHits=1` proof or the stronger
+`orPredictionGlobalHydratedPredictions=1` proof for duplicate callsites.
+
+The same retained grammar cleanup converts pure binary and assignment operator
+choices from opaque token-consumer lambdas into explicit
+`Alternative.token(...)` terminals. This does not change the accepted grammar;
+it makes those `OR` sites visible as terminal alternatives to the Subhuti graph
+model. The focused `SlimeAssignmentExpressionCommonPrefixSmokeTestMain` now
+proves `AssignmentOperatorAny` on `+=` skips four impossible top-level
+alternatives plus eleven impossible `AssignmentOperator` token alternatives,
+for `orPredictionSkippedAlternatives=15`. On 2026-07-09, the same
+`OvsParser.ts` 20-round parser-only probe measured
+`cstWarmAvgMs=371.768`, `cstBestMs=293.831`, and `cstColdMs=1835.130`, with
+`orPredictionGlobalHydratedPredictions=4971`,
+`orPredictionSkippedAlternatives=54820`, `ruleWrapperCalls=65839`,
+`ruleCoreExecutions=44500`, and `ruleCacheKeyBuilds=47251`. Compared with the
+prior same-path result, this adds small structural skip coverage but does not
+move wall-clock outside normal probe noise. Keep it as Chevrotain-alignment and
+cache-hydration groundwork; the remaining 5-10x target still requires broader
+expression/common-prefix GAST coverage plus packrat/CST allocation reduction.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
