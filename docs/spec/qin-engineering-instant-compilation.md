@@ -1184,6 +1184,17 @@ small architecture cleanup rather than the main speed closer; the dominant
 remaining gap is still expression/type structure, packrat key churn, and CST
 allocation after branch selection.
 
+The follow-up retained packrat-key cleanup replaced `Objects.hash(...)` in
+`SubhutiRuleCacheKey` with a manual stable hash calculation. This preserves the
+same equality fields and cache semantics while avoiding a varargs/object-array
+allocation on every rule cache key construction. The 2026-07-09 focused smokes
+still passed, and the same OVS parser-only probes measured
+`OvsParser.ts cstWarmAvgMs=395.500`, `cstBestMs=319.977`, while structural
+counters stayed unchanged (`ruleCacheKeyBuilds=60609`). Treat this as a real
+framework overhead reduction: it does not make the grammar more Chevrotain-like
+by itself, but it reduces the packrat machinery cost that remains while
+Subhuti still needs packrat during the migration to stronger GAST/lookahead.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
