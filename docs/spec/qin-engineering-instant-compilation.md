@@ -1537,6 +1537,24 @@ labelled, block, variable, empty, and return-disallowed statements. On the same
 remaining wall-clock gap still points at expression/type precedence work,
 packrat/cache-key cost, CST allocation, and Java dispatch overhead.
 
+The follow-up type-focused step adds shallow grammar gates and tighter graph
+FIRST data for TypeScript type prefixes. `TSType` now gates
+`TSTypePredicate`, `TSFunctionType`, and `TSConstructorType` before entering
+their rule wrappers; `TSPrefixTypeOrPrimary` similarly gates `TSTypeQuery`,
+`TSTypeOperator`, and `TSInferType`. The grammar graph records predicate forms
+such as `asserts`, `this is`, and `IdentifierName is`, and constructor type
+starts as `new` or `abstract new`, instead of treating every `IdentifierName`
+as a possible predicate or constructor. Focused smokes prove plain `Custom`
+types skip predicate/constructor/query/operator/infer, while `value is Custom`,
+`abstract new () => Custom`, `keyof Custom`, and `infer T` still route to their
+own standard branches. On `OvsParser.ts`, this moved the counters to
+`ruleWrapperCalls=37492`, `ruleCoreExecutions=35416`, and
+`ruleCacheKeyBuilds=37493`, with `orPredictionGateSkippedAlternatives=4380`
+and a 20-round warm average of `332.764ms`. The previous type failure cluster
+(`TSInferType`, `TSTypeOperator`, `TSTypeQuery`, `TSTypePredicate`, and
+`TSConstructorType`) disappeared from the failure hot list; the next hot
+avoidable cluster is now decorators and call-expression probes.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
