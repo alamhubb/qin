@@ -1583,6 +1583,25 @@ call-expression failure cluster (`Arguments`,
 `CoverCallExpressionAndAsyncArrowHead`, `CallExpression`, `ImportCall`, and
 `SuperCall`) disappeared from the failure hot list.
 
+The next retained TS declaration graph step moves `SlimeParser.Declaration`
+from opaque TS declaration lambdas to explicit `Alternative.rule(...)`
+branches for `TSInterfaceDeclaration`, `TSTypeAliasDeclaration`,
+`TSEnumDeclaration`, `TSModuleDeclaration`, `TSDeclareStatement`, and a
+`StandardDeclaration` rule reference. The grammar graph now records those
+declaration starts directly, so declaration choices can use parser-class
+self-analysis instead of runtime branch probing. Focused smokes prove standard
+`const` skips all TS declaration branches, `interface` and `declare` route only
+to their owning TS declarations, and class method bodies still accept
+contextual `let` declarations. The contextual `let` case is important: the
+gate must match the existing `LexicalDeclaration` grammar (`Let` token or
+`IdentifierName("let")`) instead of pruning a valid standard declaration. On
+2026-07-09, the same `OvsParser.ts` 20-round parser-only probe measured
+`cstWarmAvgMs=302.425`, `cstBestMs=245.709`, and `cstColdMs=1732.191`, with
+`ruleWrapperCalls=35951`, `ruleCoreExecutions=33994`, and
+`ruleCacheKeyBuilds=35952`. Compared with the previous call-expression gate
+baseline, this reduces another small declaration failure cluster while keeping
+the single standard parser path.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
