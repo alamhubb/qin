@@ -1273,6 +1273,25 @@ real Chevrotain-style improvement: it removes another failure-driven optional
 parse and keeps lexer-mode-aware prediction in the framework rather than in a
 grammar-local workaround.
 
+The 2026-07-09 follow-up makes `ArgumentList` itself more GAST-shaped without
+changing accepted syntax: `ArgumentListItem` is now an explicit rule whose
+alternatives are `SpreadArgument` and `AssignmentExpression`, and
+`SubhutiGrammarGraph` declares that alternation. This removes one remaining
+opaque runnable `OR` inside call arguments and increases parser-class
+self-analysis coverage from 16 to 17 declared alternations. Focused smokes show
+the intended structural effect on trailing-comma arguments: the inner
+`ArgumentListItem` choice no longer needs runtime candidate/unknown recording
+for the `value,` case. The larger `OvsParser.ts` parser-only counters stayed
+flat (`ruleWrapperCalls=65861`, `ruleCoreExecutions=44511`,
+`ruleCacheKeyBuilds=47262`), so this is retained as a small correctness-neutral
+Chevrotain-alignment step, not claimed as a main performance closer. Two broader
+framework experiments were rejected in the same session: generic
+`Many(Runnable)` start prediction and rule-wrapper-level graph start prediction
+both broke the focused `<number>foo` TypeScript assertion smoke. Until
+`SubhutiGrammarGraph` is complete enough to be trusted as full GAST, such global
+pruning must remain experimental and be discarded when focused syntax smokes
+show legal paths are pruned.
+
 A tiny follow-up applies the same `MANY` start-prediction rule to `TSTypeName`
 dotted suffixes: `Identifier ('.' Identifier)*` now checks `Dot` before entering
 the repeated body. On 2026-07-09 this moved `OvsParser.ts` wrapper calls from
