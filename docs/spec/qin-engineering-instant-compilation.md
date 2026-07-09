@@ -1282,6 +1282,25 @@ wall-clock remained within probe noise (`cstWarmAvgMs=365.241`,
 gap is still dominated by expression-chain wrappers, `TSType`, and CST/packrat
 costs.
 
+The next retained expression factoring step changes `ExponentiationExpression`
+from a failure-driven `UpdateExpression '**' ExponentiationExpression |
+UnaryExpression` `OR` into a shared `UpdateExpression` prefix with an optional
+`**` tail, falling through to `UnaryExpression` only when the update-expression
+prefix cannot start. This is the same common-prefix transformation Chevrotain's
+GAST/lookahead model rewards: ordinary identifiers no longer parse
+`UpdateExpression`, fail on missing `**`, restore, then parse `UnaryExpression`
+which re-enters `UpdateExpression`. The graph also records
+`ExponentiationExpression` as an analyzable alternation, and focused smokes prove
+`value` enters `UpdateExpression` once while `value ** other` accounts for the
+right-hand side separately. On 2026-07-09, `OvsParser.ts` moved to
+`cstWarmAvgMs=354.336`, `cstBestMs=270.783`, with `ruleWrapperCalls=78068`,
+`ruleCoreExecutions=50746`, and `ruleCacheKeyBuilds=54294`; `OvsConsumer.ts`
+measured `cstWarmAvgMs=5.351`, `cstBestMs=2.538`, with
+`ruleWrapperCalls=1286`, `ruleCoreExecutions=744`, and `ruleCacheKeyBuilds=842`.
+The profile shows the intended structural effect: `UnaryExpression` wrapper
+calls dropped from `2563` to `1494`, and `UpdateExpression` cache hits dropped
+out of the top hot list because the duplicate failure path was removed.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
