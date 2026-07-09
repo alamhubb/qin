@@ -1660,6 +1660,27 @@ session) is now dominated by successful expression/type precedence chains,
 packrat/cache-key work, and CST allocation rather than this all-or-nothing
 lookahead defect.
 
+The 2026-07-09 follow-up focused probes confirmed that diagnosis more directly.
+Minimal expression files such as `foo;`, `foo.bar;`, `foo();`, and `foo + bar;`
+each have only 2-4 tokens, but still execute roughly 30-40 parser rules and
+build one CST rule node for almost every successful expression-precedence layer.
+For the real `OvsParser.ts` probe, `orPredictionUnknownAlternatives=0` and
+`orPredictionSkippedAlternatives=64479`, while `ruleWrapperCalls=34830`,
+`ruleCoreExecutions=32876`, and `ruleCacheKeyBuilds=34831` remain. That means
+the important remaining Chevrotain gap is no longer missing FIRST-token pruning;
+it is Subhuti's executable-rule stack still building rule wrappers, packrat
+entries, and CST nodes for deterministic successful pass-through rules.
+
+A tested but rejected framework experiment was to skip packrat writes for all
+rules executed inside a lookahead-unique `OR` candidate. The focused smoke showed
+cache-key count falling on tiny inputs, but real `OvsParser.ts` exceeded the
+30-second focused-probe timeout because large files lost useful packrat reuse
+inside the selected branch. Do not revive this broad skip. The next viable
+Chevrotain-style step must be more precise: either CST pass-through for
+analysis-proven transparent rules, grammar-graph level precedence factoring, or
+another optimization that reduces successful rule/CST overhead without removing
+packrat reuse from nested ambiguous work.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
