@@ -1273,6 +1273,15 @@ real Chevrotain-style improvement: it removes another failure-driven optional
 parse and keeps lexer-mode-aware prediction in the framework rather than in a
 grammar-local workaround.
 
+A tiny follow-up applies the same `MANY` start-prediction rule to `TSTypeName`
+dotted suffixes: `Identifier ('.' Identifier)*` now checks `Dot` before entering
+the repeated body. On 2026-07-09 this moved `OvsParser.ts` wrapper calls from
+`81647` to `81550` and `Identifier` wrapper calls from `2051` to `1954`, while
+wall-clock remained within probe noise (`cstWarmAvgMs=365.241`,
+`cstBestMs=285.029`). Keep it only as a minor structural cleanup; the remaining
+gap is still dominated by expression-chain wrappers, `TSType`, and CST/packrat
+costs.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
