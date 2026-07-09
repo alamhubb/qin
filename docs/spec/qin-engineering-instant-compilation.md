@@ -1301,6 +1301,20 @@ The profile shows the intended structural effect: `UnaryExpression` wrapper
 calls dropped from `2563` to `1494`, and `UpdateExpression` cache hits dropped
 out of the top hot list because the duplicate failure path was removed.
 
+The follow-up retained step migrates `AssignmentExpression` from opaque runnable
+alternatives to explicit `Alternative.rule(...)` entries for arrow, async arrow,
+yield, assignment-tail, and conditional branches. The branch order and gates stay
+unchanged, but the framework can now see the alternatives as grammar data and
+record `AssignmentExpression` in self-analysis. On 2026-07-09 the OVS
+parser-only probe measured `OvsParser.ts cstWarmAvgMs=347.819`,
+`cstBestMs=287.513`, with `ruleWrapperCalls=74358`,
+`ruleCoreExecutions=47303`, and `ruleCacheKeyBuilds=50850`; `OvsConsumer.ts`
+stayed structurally flat at `ruleWrapperCalls=1286`, `ruleCoreExecutions=744`,
+and `ruleCacheKeyBuilds=842`. The profile showed `AssignmentExpression` wrapper
+calls dropping from `5249` to `4983`. This is still not a complete Chevrotain
+self-analysis model, but it converts another hot opaque OR into named grammar
+data and reduces failure-driven runtime work.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
