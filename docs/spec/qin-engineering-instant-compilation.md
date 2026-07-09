@@ -1055,6 +1055,26 @@ rounds, with `OvsParser.ts` structural counters at `ruleWrapperCalls=116422`,
 small Chevrotain-aligned cleanup, but the remaining gap is still dominated by
 large-scale rule wrapper/cache/CST cost and expression/type grammar structure.
 
+The next retained GAST migration connected TypeScript type grammar hotspots to
+explicit `Alternative.rule(...)` metadata. `TSType`, `TSPrimaryType`,
+`TSPrefixTypeOrPrimary`, and `TSKeywordType` now expose rule references, and
+the Slime grammar graph carries their conservative FIRST sets. This is
+Chevrotain-aligned because the parser framework can analyze the type choices as
+grammar data instead of recording opaque Java lambdas at runtime. A focused
+`SlimeModuleGraphLookaheadSmokeTestMain` case proves `TSPrimaryType` can choose
+the `this` type through graph pruning. On 2026-07-09, `OvsParser.ts`
+parser-only structural counters improved from `ruleWrapperCalls=116422`,
+`ruleCoreExecutions=63301`, and `ruleCacheKeyBuilds=69893` to
+`ruleWrapperCalls=110991`, `ruleCoreExecutions=59757`, and
+`ruleCacheKeyBuilds=66322`; `TSType` wrapper calls dropped from `6688` to
+`5585`. Wall-clock timings remained noisy, so treat this as a real structural
+improvement but not the final speed closer. A key remaining architecture gap is
+that many TypeScript contextual keywords still share the lexer token
+`IdentifierName`, while Chevrotain-style grammars often use distinct keyword
+token types or categories; future framework work may need value-aware terminals
+or a stricter token model to prune those choices without hand-coded grammar
+special cases.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
