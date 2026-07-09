@@ -146,6 +146,14 @@ that behavior explicitly as generated wrapper methods, metadata tables,
 initializer calls, JVM annotations plus processors, or another fixed target
 structure.
 
+For Qin-owned static `.class` emission, the implementation preference is JDK
+Class-File API first when it supports the needed bytecode feature. ASM is a
+mature external bytecode toolkit and can be used as a design reference or gap
+evaluation point, but the standard Qin route should stay on the current
+Class-File API path instead of switching bytecode libraries without a concrete
+missing capability. Runtime ByteBuddy generation is not part of this static
+emission model.
+
 Rejected decorator forms:
 
 - decorators whose result depends on unknown runtime object shapes

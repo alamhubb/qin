@@ -592,6 +592,14 @@ initializer calls, JVM annotations, or rule tables. Runtime ByteBuddy,
 reflection, or JavaScript descriptor emulation must not become the standard
 fallback for a missing decorator lowerer.
 
+When Qin emits or transforms JVM bytecode directly, prefer the JDK Class-File
+API as the standard implementation path when it covers the required classfile
+features. ASM is a mature third-party bytecode engineering reference and may be
+studied or evaluated for gaps, but it should not replace the current Qin
+Class-File API route merely because it is popular. ByteBuddy remains outside
+the standard static `.class` path; it is not the mechanism for parser wrappers,
+decorator lowering, or Qin-owned source-to-class compilation.
+
 Subhuti should learn from mature parser frameworks by recording enough grammar
 metadata to predict alternatives before executing them. The framework should
 prefer first-set and lookahead based alternative selection, ambiguity reporting,
