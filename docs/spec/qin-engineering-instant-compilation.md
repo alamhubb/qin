@@ -1568,6 +1568,21 @@ failure hot list and `TSDecorator` failures dropped from `204` to `112`. The
 20-round warm average was noisy at `346.379ms`, so keep this step for structural
 Chevrotain alignment rather than as a wall-clock claim.
 
+The next call-expression gate step tightens the existing shallow
+`hasCallExpressionPostfixAhead()` predicate for simple primary heads. Instead
+of treating every member suffix as proof that a `CallExpression` should run, it
+scans a bounded simple member chain and enters the call branch only when it sees
+real call/type-argument-call syntax such as `foo.bar()` or `foo[bar]()`.
+Unknown complex shapes remain conservative. Focused smokes prove `foo.bar` and
+`foo[bar]` parse as left-hand-side expressions without entering
+`CallExpression`, while `foo.bar()` and `foo[bar]()` still execute the standard
+call branch. On `OvsParser.ts`, this moved `ruleCoreExecutions=35255` to
+`34670`, `ruleCacheKeyBuilds=37331` to `36628`, `ruleWrapperCalls=37330` to
+`36627`, and the 20-round warm average to `304.294ms`. The previous
+call-expression failure cluster (`Arguments`,
+`CoverCallExpressionAndAsyncArrowHead`, `CallExpression`, `ImportCall`, and
+`SuperCall`) disappeared from the failure hot list.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
