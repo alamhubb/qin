@@ -1166,6 +1166,24 @@ improved to `OvsParser.ts cstWarmAvgMs=411.762`, `cstBestMs=333.247`, and
 stayed flat while time improved is evidence that the bottleneck at this step was
 prediction runtime cost, not additional grammar coverage.
 
+The next retained framework step caches `Option(Alternative...)` and
+`Many(Alternative...)` start predictions at the parser-class level. This moves
+those optional/repetition checks closer to Chevrotain's precomputed
+OPTION/MANY lookahead shape: analyzable graph terminals or rule references are
+analyzed once, then later parser instances reuse the same start-token plan
+instead of calling `grammarGraph().analyze(...)` on every hot optional or
+repetition check. `SubhutiAlternativeStartPredictionSmokeTestMain` proves a
+first parser builds one start prediction, a second parser reuses it through
+`alternativeStartPredictionGlobalCacheHits=1`, and an impossible optional body
+is skipped before execution. The 2026-07-09 OVS probes measured
+`OvsConsumer.ts cstWarmAvgMs=9.100`, `cstBestMs=3.408`, and
+`OvsParser.ts cstWarmAvgMs=424.816`, `cstBestMs=330.498`, with unchanged
+`OvsParser.ts` structural counters (`ruleWrapperCalls=90957`,
+`ruleCoreExecutions=54136`, `ruleCacheKeyBuilds=60609`). Treat this as a
+small architecture cleanup rather than the main speed closer; the dominant
+remaining gap is still expression/type structure, packrat key churn, and CST
+allocation after branch selection.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
