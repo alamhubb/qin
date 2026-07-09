@@ -1347,6 +1347,28 @@ On 2026-07-09, `OvsParser.ts` moved from `ruleWrapperCalls=70886`,
 `ruleWrapperCalls=1229`, `ruleCoreExecutions=725`, and
 `ruleCacheKeyBuilds=820`.
 
+The next retained TypeScript class-member step applies the same graph-aware
+start prediction to decorators and class modifiers. `TSDecorators`,
+`TSAbstractModifier`, and `TSAccessibilityModifier` are now represented in the
+grammar graph by `At` or value-aware `IdentifierName` terminals, and the class
+member optional/repeated modifier sites use `Alternative.rule(...)` rather than
+opaque lambdas. `TSAccessibilityModifier` itself also uses
+`Alternative.tokenValue(...)` branches for `public`, `private`, `protected`,
+`readonly`, `override`, `declare`, and `accessor`, so a matching modifier does
+not retry the other contextual keyword branches. Focused smoke coverage proves
+plain class member identifiers skip decorator/abstract/accessibility starts,
+decorator input executes `TSDecorators` once, and a matching accessibility
+modifier executes the modifier rule once. On 2026-07-09, the same parser-only
+probes moved `OvsParser.ts` to `ruleWrapperCalls=69326`,
+`ruleCoreExecutions=45666`, and `ruleCacheKeyBuilds=48417`, with
+`cstWarmAvgMs=346.729` and `cstBestMs=279.116`. `OvsConsumer.ts` moved to
+`ruleWrapperCalls=1188`, `ruleCoreExecutions=716`, and
+`ruleCacheKeyBuilds=782`, with `cstWarmAvgMs=5.443` and `cstBestMs=2.550`.
+The profile run showed `TSAccessibilityModifier` cache hits down to `146` and
+`TSDecorators` at `47`; the remaining dominant gap is still expression-chain
+wrappers, `TSType`, packrat key churn, and CST allocation rather than this
+modifier/decorator entry path.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
