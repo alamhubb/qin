@@ -1779,6 +1779,17 @@ guard, not a second parser. A separate experiment that precomputed a combined
 recognizer non-cache rule set was not retained because the focused wall-clock
 result was not stable enough across boundary probes.
 
+The same probe then exposed token cache key construction as a cost on
+recognizer paths that have no prior lookahead. Subhuti now lets
+`_consumeTokenMatch` read the current token directly only when CST output is
+disabled, error recovery is disabled, and the token cache is empty. If a prior
+`LA(1)` populated the cache, the standard cache path is still used. The focused
+probe covers both `raw-consume` and `lookahead-consume`; on the retained run,
+the 10-rule recognizer chain measured about `0.455us` versus the earlier
+post-cache-policy baseline of about `0.531us`, while `recognizer-no-cache`
+measured about `0.318us`. The remaining gap is now dominated by pass-through
+method/lambda dispatch and the terminal rule's memoization-policy check.
+
 On 2026-07-09, `readonly string[]` exposed a correctness bug in Subhuti's hot
 `Or` prediction shortcut: matching only Java lambda classes can confuse different
 `Alternative.rule(..., Runnable)` callsites that have the same arity and wrapper
