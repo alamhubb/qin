@@ -1923,6 +1923,18 @@ allocation on cache hits. Focused Subhuti smokes stayed green. On generated
 Slime TS parser-only probes, `SlimeParser.ts` measured about `265ms` warm
 recognizer average and `SlimeAstCreateUtils.ts` about `587ms`.
 
+The next Chevrotain-style step reused Subhuti's graph-aware
+`SubhutiOrLookaheadPlan` from ordinary recording-mode `Or(...)` prediction when
+a parser exposes `grammarGraph()`. This lets explicit `Alternative.rule(...)`
+references and recorded grammar nodes move from analysis-only metadata to
+runtime pruning without changing grammar source syntax. Focused smokes prove
+that explicit rule references skip the non-matching branch at runtime. In
+generated Slime TS parser-only probes, the change reduced `SlimeParser.ts`
+`orPredictionStateSaves` from about `13,661` to `11,877`, and
+`SlimeAstCreateUtils.ts` from about `34,965` to `28,153`; wall-clock stayed
+roughly comparable, with `SlimeParser.ts` slightly faster and the larger file
+near baseline variance.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
