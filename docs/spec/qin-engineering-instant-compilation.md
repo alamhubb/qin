@@ -1722,6 +1722,14 @@ work (`ruleWrapperCalls=11`, `ruleCoreExecutions=11`,
 `ruleCacheKeyBuilds=11`, `ruleCachePuts=11`), proving that the accepted change
 only removed CST/token-history overhead and that rule-cache/wrapper overhead is
 the next target.
+The same probe also runs `recognizer-no-cache` as a diagnostic comparison, not
+as a production fallback. On the same 50,000-round run, recognizer mode with
+packrat enabled measured `totalMs=171.206`, `avgUs=3.424`, while
+`recognizer-no-cache` measured `totalMs=86.813`, `avgUs=1.736` with
+`ruleCacheKeyBuilds=0` and `ruleCachePuts=0`. This confirms that successful-path
+packrat key/result/map overhead is a major remaining cost, but disabling cache
+globally is not the standard fix. The framework should only use a Chevrotain-like
+light path when grammar analysis proves the callsite can avoid packrat safely.
 
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
