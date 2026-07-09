@@ -668,23 +668,20 @@ common-prefix LL(2+) prediction can still be much faster when it avoids deeper
 failed branches. Treat skipped-alternative counters as necessary evidence, but
 not sufficient evidence, for parser speed work.
 
-Runtime pruning must therefore be cost-gated. A recorded `Or(...)` whose
-alternatives are fully analyzable but only differ by a single cheap FIRST(1)
-token should keep the grammar metadata for diagnostics, but should not enter
-the runtime pruning hot path. A recorded `Or(...)` with duplicated prefixes may
-expand conservatively to LL(k) up to the framework limit and enable pruning only
-when the recorded token sequences are complete and non-dynamic. The current
-Subhuti Java prototype uses the unchanged `Alternative.of(...)` surface, records
-lambda callsite identities as the prediction cache key instead of stack traces,
-keeps a hot in-process prediction plan for repeated `Or` calls, disables
-pruning for cheap FIRST(1)-only choices, and enables pruning for LL(2+)/LL(3+)
-common-prefix choices. Analysis-only FIRST(1) decisions may record grammar
-metadata and diagnostics, but repeated hot calls should skip repeated
-recording/planning work and stay on the normal PEG execution path. Focused
-measurements on 20,000-item probes showed FIRST(1)-distinct staying outside
-runtime pruning with only about a 3% analysis overhead, while LL(2) and LL(3)
-common-prefix choices improved by about 3x and reduced wall-clock time by about
-66%.
+Runtime pruning must therefore be cost-gated by evidence, not by a permanent
+ban on FIRST(1). A recorded `Or(...)` whose alternatives are complete,
+non-dynamic, non-duplicated, and not a strict prefix conflict may enter the
+runtime pruning hot path even when the decisive lookahead is a single token.
+If focused probes show that a particular FIRST(1) callsite is slower than
+ordinary PEG retry, keep that callsite analysis-only or optimize its plan cost;
+do not turn the whole parser back into branch retry. A recorded `Or(...)` with
+duplicated prefixes may expand conservatively to LL(k) up to the framework
+limit and enable pruning only when the recorded token sequences are complete and
+non-dynamic. The current Subhuti Java prototype uses the unchanged
+`Alternative.of(...)` surface, records lambda callsite identities as the
+prediction cache key instead of stack traces, keeps a hot in-process prediction
+plan for repeated `Or` calls, and enables pruning for unambiguous LL(1) through
+LL(k) choices while preserving PEG prefix ambiguity.
 
 The runtime LL(k) matcher should be plan-like, not alternative-retry-like. When
 all predicted alternatives share the same lexer-mode sequence for the relevant
@@ -704,24 +701,27 @@ fallback; it is the single standard parser semantics refusing an unsafe
 optimization.
 
 After the shared-lookahead matcher and analysis-only hot-call skip changes, the
-20,000-item focused benchmark measured `FIRST1_DISTINCT` at `302.759ms` with
-prediction enabled vs `294.010ms` without prediction, so it remained outside
-runtime pruning with `0.97x` speed and a `3.0%` analysis cost. The same run
-measured `LL2_COMMON_PREFIX` at `1251.176ms` with prediction vs `3752.675ms`
-without prediction, or about `3.00x` faster and `66.7%` less wall-clock time.
-`LL3_COMMON_PREFIX` measured `2925.806ms` vs `8540.298ms`, or about `2.92x`
-faster and `65.7%` less wall-clock time.
+older 20,000-item focused benchmark measured `FIRST1_DISTINCT` as slightly
+slower when pruned. On 2026-07-10, the generated Slime TypeScript corpus
+changed the accepted evidence: enabling unambiguous FIRST(1) runtime pruning
+reduced `SlimeParser.ts` recognizer warm average from about `751.835ms` to
+`611.999ms`, and reduced `SlimeAstCreateUtils.ts` rule core executions from
+`30517` to `30338` while increasing skipped alternatives from `366997` to
+`367199`. Keep the rule corpus-driven: measure the target generated parser
+files, structural counters, and wall-clock together before retaining or
+reverting a pruning policy.
 
 The next framework step is parser-class/callsite prediction-plan reuse, closer
 to Chevrotain self-analysis than per-instance probing. Subhuti keeps the
 `Alternative.of(...)` grammar surface, records an analyzable plan once, stores
 it in a parser-class scoped global prediction cache, and lets later parser
 instances reuse that plan. Focused 5,000-item measurements on the Java runtime
-showed the intended shape: `FIRST1_DISTINCT` remains analysis-only and near
-parity (`25.822ms` vs `25.726ms`, `1.00x`) because pure token mismatches are
-too cheap to prune; `LL2_COMMON_PREFIX` uses runtime pruning with a global plan
-hit and measured `72.996ms` vs `202.965ms`, or `2.78x` faster; and
-`LL3_COMMON_PREFIX` measured `168.838ms` vs `502.695ms`, or `2.98x` faster.
+showed the intended shape for common-prefix plans: `LL2_COMMON_PREFIX` uses
+runtime pruning with a global plan hit and measured `72.996ms` vs `202.965ms`,
+or `2.78x` faster; and `LL3_COMMON_PREFIX` measured `168.838ms` vs
+`502.695ms`, or `2.98x` faster. FIRST(1) plans are no longer globally excluded:
+they may prune when duplicate/prefix checks prove the choice safe and focused
+corpus measurements prove the plan cost is worthwhile.
 The global cache hit must be observable in stats such as
 `orPredictionGlobalCacheHits=1`, while dynamic or incomplete choices remain
 analysis-only rather than falling back to another parser path.
@@ -811,6 +811,11 @@ A temporary FIRST(1)-all-runtime-pruning experiment measured about `5.894ms`
 and `510.967ms`, so it was only a small OVS improvement and does not close the
 architecture gap. Treat this as evidence that the next real step is grammar-tree
 and callsite-plan self-analysis, not more isolated FIRST-token micro-tuning.
+This OVS result is not a ban on FIRST(1) pruning. The 2026-07-10 generated
+Slime TypeScript parser-only corpus showed a measurable positive result after
+safe LL(1) pruning was enabled, so FIRST(1) pruning remains an accepted
+Chevrotain-alignment primitive when it is protected by duplicate/prefix checks
+and proven on the target corpus.
 
 The same-day nested grammar-tree experiment showed why this step must be
 bounded. Letting recording mode recursively expand nested `Or(...)` nodes can
