@@ -1154,6 +1154,18 @@ wall-clock gap to Chevrotain remains; the next work should reduce prediction/key
 overhead and continue moving high-frequency expression/type callsites into
 complete analyzable graph plans.
 
+The immediate follow-up removed avoidable allocation from the value-aware
+FIRST(1) prediction path. Most contextual-keyword graph choices only need the
+current token, so Subhuti now queries `candidateIndexesForFirstToken(tokenName,
+tokenValue)` directly instead of building a two-dimensional token-key matrix and
+merging combinations. This keeps the same branch-selection semantics while
+reducing prediction overhead. On the same 2026-07-09 probes, structural counters
+remained `ruleWrapperCalls=90957`, `ruleCoreExecutions=54136`, but wall-clock
+improved to `OvsParser.ts cstWarmAvgMs=411.762`, `cstBestMs=333.247`, and
+`OvsConsumer.ts cstWarmAvgMs=12.907`, `cstBestMs=5.317`. The fact that counters
+stayed flat while time improved is evidence that the bottleneck at this step was
+prediction runtime cost, not additional grammar coverage.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
