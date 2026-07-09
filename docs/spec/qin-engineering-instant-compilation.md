@@ -1487,6 +1487,24 @@ the same noisy band. Treat this as a valid framework overhead reduction and a
 diagnostic milestone: the remaining gap is dominated by real expression/type
 rule-core executions, CST allocation, and packrat/cache-key work.
 
+The next profiling step splits rule-core counts into success and failure hot
+lists when `-Dsubhuti.profile.rules=true` is enabled. This is diagnostic-only
+instrumentation: normal parsing behavior is unchanged, but OVS parser probes
+can now distinguish unavoidable successful precedence rules from failed PEG
+probes that should become lookahead/factoring targets. The first use of that
+failure profile showed the hottest avoidable chain was
+`CallExpression -> CoverCallExpressionAndAsyncArrowHead -> Arguments` on plain
+left-hand-side expressions. `hasCallExpressionPostfixAhead()` now performs a
+shallow, conservative token gate for simple primary heads: it skips the
+`CallExpression` branch only when the next token cannot start call, type
+argument, member, optional-chain, or tagged-template suffix syntax. Focused
+smokes prove both `foo` and `foo()` still parse as `LeftHandSideExpression`.
+On `OvsParser.ts`, this reduced real work from `ruleCoreExecutions=44500` to
+`41600`, `ruleCacheKeyBuilds=47251` to `43769`, and the 20-round warm average
+to `345.675ms`. The failure hot list moved to TypeScript and statement probes,
+so the next Chevrotain-style target should be another measured failed core
+cluster, not further call-expression micro-tuning.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
