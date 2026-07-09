@@ -1891,6 +1891,20 @@ lookahead plan is tied to grammar identity, not incidental JVM lambda class
 shape. The focused Slime smoke now proves that top-level `TSType` and nested
 `TSPrefixTypeOrPrimary` no longer share an incompatible hot prediction.
 
+On 2026-07-10, JFR sampling on the generated Slime TypeScript parser-only
+benchmark showed `predictionSequenceMatchesCurrent(...)` and lexer regex
+matching as hot methods. Subhuti now caches current lookahead token keys by
+lexer-mode sequence within one mixed-mode `Or(...)` prediction, so alternatives
+with the same mode sequence reuse the same lookahead instead of reparsing it per
+candidate. This is a Chevrotain-alignment step: a callsite reads lookahead once
+per required mode sequence, then matches alternatives against that in-memory
+view. It is not fallback behavior and it does not change branch order, CST
+shape, packrat keys, or parse errors. Focused validation covered
+`SubhutiCstOutputModeSmokeTestMain`, `SubhutiGraphLookaheadRuntimeSmokeTestMain`,
+and generated Slime TS parser-only probes. On the same machine,
+`SlimeParser.ts` moved from about `357ms` to `282ms` warm recognizer average,
+and `SlimeAstCreateUtils.ts` from about `796ms` to `744ms`.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
