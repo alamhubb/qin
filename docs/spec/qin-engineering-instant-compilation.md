@@ -1195,6 +1195,24 @@ framework overhead reduction: it does not make the grammar more Chevrotain-like
 by itself, but it reduces the packrat machinery cost that remains while
 Subhuti still needs packrat during the migration to stronger GAST/lookahead.
 
+The next retained grammar-graph connection converts `TSTypeReference`'s
+optional type-argument tail from `Option(() -> TSTypeParameterInstantiation())`
+to `Option(Alternative.rule("TSTypeParameterInstantiation", ...))`, with
+`TSTypeParameterInstantiation` declared in the graph as starting with `Less`.
+This is the Chevrotain-style OPTION path applied to a hot TypeScript rule:
+when a bare type reference such as `Custom` has no `<`, Subhuti can skip the
+type-argument rule before entering its wrapper or building a packrat key.
+`SlimeModuleGraphLookaheadSmokeTestMain` now proves the no-`<` path does not
+execute `TSTypeParameterInstantiation` and uses an alternative start
+prediction. On 2026-07-09, the `OvsParser.ts` 20-round parser-only probe
+measured `cstWarmAvgMs=361.610`, `cstBestMs=310.156`, with structural counters
+at `ruleWrapperCalls=90765`, `ruleCoreExecutions=54040`, and
+`ruleCacheKeyBuilds=60513`. A profile run showed `TSType` wrapper calls moving
+from `5365` to `5269`, and `TSTypeParameterInstantiation` no longer appeared
+in the top 12 core execution list. This is still a small GAST coverage step,
+but it is aligned with the desired self-analysis direction because it removes
+failure-driven optional parsing from a real hot path.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
