@@ -1460,6 +1460,33 @@ shortcut; future `new` optimization needs a faithful common-prefix or lookahead
 plan that preserves the existing successful `MemberExpression`/`NewExpression`
 boundary on full files.
 
+The 2026-07-09 framework follow-up adds multi-alternative
+`Many(Alternative...)` and `Option(Alternative...)` containers to Subhuti. This
+keeps repeated or optional suffix choices visible as grammar data instead of
+forcing grammar authors back into `Many(() -> Or(...))` / `Option(() -> Or(...))`
+opaque lambdas. Focused smokes prove member suffixes and optional postfix tails
+skip impossible alternatives through graph runtime pruning. On the same
+`OvsParser.ts` parser-only probe, this increased pruning visibility
+(`orPredictionSkippedAlternatives=57532`) but did not reduce true rule work
+(`ruleCoreExecutions=44500`, `ruleCacheKeyBuilds=47251`), so it is retained as
+Chevrotain-style grammar-shape groundwork rather than claimed as a wall-clock
+closer. A follow-up candidate-direct-execution experiment was rejected: it kept
+the same structural counters and worsened the 20-round warm average in probe
+noise, proving that the next real optimization must reduce rule-core entry, not
+micro-adjust already selected suffix candidates.
+
+The same session retained a parser-core fail-fast fix: in normal parsing,
+`executeRuleWrapper` now returns immediately when `parseSuccess` is already
+false, before wrapper profiling, top-level checks, loop keys, or cache work.
+This matches the Chevrotain-style direction where once a sequence element fails,
+the following rule calls in that failed branch should not pay wrapper overhead.
+Focused Subhuti and Slime smokes passed. The `OvsParser.ts` parser-only probe
+moved `ruleWrapperCalls` from `65839` to `47250` while leaving
+`ruleCoreExecutions=44500` and `ruleCacheKeyBuilds=47251`; wall-clock stayed in
+the same noisy band. Treat this as a valid framework overhead reduction and a
+diagnostic milestone: the remaining gap is dominated by real expression/type
+rule-core executions, CST allocation, and packrat/cache-key work.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
