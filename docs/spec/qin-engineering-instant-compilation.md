@@ -1555,6 +1555,19 @@ and a 20-round warm average of `332.764ms`. The previous type failure cluster
 `TSConstructorType`) disappeared from the failure hot list; the next hot
 avoidable cluster is now decorators and call-expression probes.
 
+The next retained decorator cleanup removes the remaining opaque decorator
+entry points from `FormalParameter`, `ClassDeclaration`, and repeated
+decorator tails. Those sites now use `OptionalTSDecorators()` or
+`Many(Alternative.rule("TSDecorator", ...))`, and the grammar graph records
+`TSDecorator` as starting with `At`. Focused smokes prove ordinary parameters
+and undecorated class declarations skip `TSDecorators`, while decorated input
+still enters the standard decorator branch. On `OvsParser.ts`, this moved
+`ruleCoreExecutions=35416` to `35255`, `ruleCacheKeyBuilds=37493` to `37331`,
+and `ruleWrapperCalls=37492` to `37330`; `TSDecorators` disappeared from the
+failure hot list and `TSDecorator` failures dropped from `204` to `112`. The
+20-round warm average was noisy at `346.379ms`, so keep this step for structural
+Chevrotain alignment rather than as a wall-clock claim.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
