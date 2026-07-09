@@ -1790,6 +1790,20 @@ post-cache-policy baseline of about `0.531us`, while `recognizer-no-cache`
 measured about `0.318us`. The remaining gap is now dominated by pass-through
 method/lambda dispatch and the terminal rule's memoization-policy check.
 
+The next retained Chevrotain-alignment step applies the same idea to `Or(...)`:
+after lookahead/runtime pruning has selected a single candidate, Subhuti no
+longer saves the full parser state before executing that branch. State snapshots
+are still required for multi-candidate PEG fallback, gates that may skip all
+candidates, and error-recovery/tolerant collection. The structural proof is the
+`orPredictionStateSaves` / `orPredictionStateSaveSkips` pair in
+`getOrPredictionStats()`. On the focused `SubhutiOrPredictionBenchmarkMain`
+run with `-Dsubhuti.benchmark.items=100000`, the LL(2) and LL(3) runtime-pruned
+scenarios both showed `orPredictionStateSaves=0` and
+`orPredictionStateSaveSkips=100000`, with LL(2) at about `157ms` vs `191ms`
+without pruning and LL(3) at about `183ms` vs `285ms` without pruning. This is
+not fallback behavior; it is the standard predicted `Or` path avoiding a
+PEG-era state copy that Chevrotain-style lookahead has already made unnecessary.
+
 On 2026-07-09, `readonly string[]` exposed a correctness bug in Subhuti's hot
 `Or` prediction shortcut: matching only Java lambda classes can confuse different
 `Alternative.rule(..., Runnable)` callsites that have the same arity and wrapper
