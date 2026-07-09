@@ -1437,6 +1437,29 @@ move wall-clock outside normal probe noise. Keep it as Chevrotain-alignment and
 cache-hydration groundwork; the remaining 5-10x target still requires broader
 expression/common-prefix GAST coverage plus packrat/CST allocation reduction.
 
+The next retained TypeScript tail cleanup converts `TSAsExpressionTail` from an
+opaque runnable `OR` into `Alternative.token("Const", ...)` versus
+`Alternative.rule("TSType", ...)`. Focused smoke coverage proves both
+`as const` and `as number`: the `as const` path stays analysis-only because
+`const` can overlap with TypeScript type syntax, while the `as number` path can
+runtime-prune impossible branches and still executes `TSType` exactly once. The
+same `OvsParser.ts` 20-round parser-only probe measured
+`cstWarmAvgMs=361.064`, `cstBestMs=305.066`, and `cstColdMs=2000.663`, with
+the same broad structural counters as the previous run
+(`ruleWrapperCalls=65839`, `ruleCoreExecutions=44500`,
+`ruleCacheKeyBuilds=47251`). Keep this as a safe GAST visibility step, not a
+wall-clock closer.
+
+A rejected experiment in the same area tried to make `NewExpression` parse the
+`new` branch before `MemberExpression` and to wrap its optional arguments in a
+graph-aware `Option(Alternative.rule("Arguments", ...))`. A focused
+`new Target` smoke passed, but the real `OvsParser.ts` probe failed with
+unconsumed input at a later `const`, proving the branch order changed real
+expression consumption. That shape must not be retained as a performance
+shortcut; future `new` optimization needs a faithful common-prefix or lookahead
+plan that preserves the existing successful `MemberExpression`/`NewExpression`
+boundary on full files.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
