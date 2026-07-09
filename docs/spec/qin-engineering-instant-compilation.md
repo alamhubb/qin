@@ -1638,6 +1638,28 @@ still needed an explicit gate in a hydrated prediction plan to avoid one failed
 runtime branch, so Subhuti terminal-only plans should be tightened at the
 framework layer rather than relying on grammar authors to add redundant gates.
 
+The follow-up framework step fixes that issue at the Subhuti layer. Graph
+lookahead is no longer all-or-nothing when an `OR` mixes analyzable terminal or
+rule alternatives with unknown/dynamic alternatives. Dynamic alternatives stay
+in the candidate set to preserve PEG order and correctness, while known
+alternatives whose lookahead does not match the current token are skipped. This
+is not fallback behavior; it is the standard callsite lookahead plan becoming
+closer to Chevrotain's self-analysis model while still accepting partially
+modeled Subhuti grammar. Focused `SubhutiGraphLookaheadRuntimeSmokeTestMain`
+coverage proves a known `Asterisk` branch is skipped on `IdentifierName` even
+when another dynamic branch remains. The broader
+`SlimeModuleGraphLookaheadSmokeTestMain` also proves the redundant
+`GeneratorMethod` gate can be removed from `SlimeParser.MethodDefinition`.
+On `OvsParser.ts`, the same 20-round parser-only probe measured
+`ruleWrapperCalls=34830`, `ruleCoreExecutions=32876`,
+`ruleCacheKeyBuilds=34831`, `orPredictionSkippedAlternatives=64479`,
+and `cstWarmAvgMs=299.156`. This is a small but real framework-level
+reduction from the prior `32932` core executions; the remaining gap to the
+Chevrotain-test baseline (`warmAvg=5.67ms` for the 9 OVS fixtures in the same
+session) is now dominated by successful expression/type precedence chains,
+packrat/cache-key work, and CST allocation rather than this all-or-nothing
+lookahead defect.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
