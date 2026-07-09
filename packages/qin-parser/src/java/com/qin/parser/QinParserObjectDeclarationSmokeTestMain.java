@@ -19,6 +19,7 @@ public final class QinParserObjectDeclarationSmokeTestMain {
         parsesNamedExportObjectDeclaration();
         parsesDefaultExportObjectDeclaration();
         keepsTypeKeywordObjectUntouched();
+        keepsStandardClassDeclarationUntouched();
         System.out.println("QinParserObjectDeclarationSmokeTestMain passed.");
     }
 
@@ -109,6 +110,19 @@ public final class QinParserObjectDeclarationSmokeTestMain {
         require(parsed.hasProgram(), "object type keyword should keep parsing");
         require(!containsNode(parsed.cst(), "QinObjectDeclarationBody"),
                 "TypeScript object keyword and string content must not parse as Qin object declaration");
+    }
+
+    private static void keepsStandardClassDeclarationUntouched() {
+        QinParsedSource parsed = new QinParserFacade().parseSource("""
+                class Plain {
+                    m() {
+                        return 1;
+                    }
+                }
+                """);
+        require(parsed.hasProgram(), "standard class declaration should parse");
+        require(!containsNode(parsed.cst(), "QinObjectDeclarationBody"),
+                "Standard class declarations must not parse through Qin object declaration");
     }
 
     private static void requireContainsQinObjectCst(QinParsedSource parsed) {

@@ -1,6 +1,7 @@
 package com.qin.parser;
 
 import com.slime.parser.SlimeParser;
+import com.subhuti.parser.Alternative;
 import com.subhuti.parser.SubhutiRule;
 
 /**
@@ -41,9 +42,22 @@ public class QinParser extends SlimeParser {
     @Override
     @SubhutiRule public void Declaration(DeclarationParams params) {
         Or(
-                () -> QinObjectDeclaration(params),
-                () -> super.Declaration(params)
+                Alternative.tokens("QinObjectDeclaration", this::canStartQinObjectDeclaration, () -> QinObjectDeclaration(params), "IdentifierName", "At"),
+                Alternative.rule("StandardDeclaration", this::canStartNonQinDeclaration, () -> super.Declaration(params))
         );
+    }
+
+    protected boolean canStartQinObjectDeclaration() {
+        return matchIdentifierValue("object") || match("At");
+    }
+
+    protected boolean canStartNonQinDeclaration() {
+        return canStartStandardDeclaration()
+                || canStartTSInterfaceDeclaration()
+                || canStartTSTypeAliasDeclaration()
+                || canStartTSEnumDeclaration()
+                || canStartTSModuleDeclaration()
+                || canStartTSDeclareStatement();
     }
 
     @Override

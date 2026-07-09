@@ -1602,6 +1602,22 @@ gate must match the existing `LexicalDeclaration` grammar (`Let` token or
 baseline, this reduces another small declaration failure cluster while keeping
 the single standard parser path.
 
+The follow-up QinParser override step applies the same principle to Qin's
+`object` declaration extension. `QinParser.Declaration` no longer uses opaque
+two-branch lambdas for `QinObjectDeclaration` versus the inherited Slime
+declaration path. The Qin object branch now exposes its start tokens explicitly
+(`IdentifierName` for contextual `object`, plus `At` for decorated objects),
+while the non-Qin branch gates through the inherited Slime/TypeScript
+declaration starts. A focused `QinParserDeclarationGateProbeMain` proves
+`const` and `type` route through the non-Qin standard path, while `object`
+routes through the Qin object branch. The existing
+`QinParserObjectDeclarationSmokeTestMain` still proves object declarations,
+decorated object declarations, exports, type-keyword `object`, and ordinary
+class declarations. On the same `OvsParser.ts` parser-only probe, this moved
+`ruleWrapperCalls=35951` to `35503`, `ruleCoreExecutions=33994` to `33546`,
+and `ruleCacheKeyBuilds=35952` to `35504`, with `cstWarmAvgMs=289.051` and
+`cstBestMs=253.218`.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
