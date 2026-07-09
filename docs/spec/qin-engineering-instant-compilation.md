@@ -711,6 +711,18 @@ reduced `SlimeParser.ts` recognizer warm average from about `751.835ms` to
 files, structural counters, and wall-clock together before retaining or
 reverting a pruning policy.
 
+The follow-up Chevrotain-style LL(1) cleanup keeps those same semantics but
+uses a cheaper dispatch path for non-value-aware single-token plans. Instead of
+building a `CurrentTokenNames` array for a plan whose lookahead depth is one,
+Subhuti reads the current token once and looks up the candidate through the
+same first-token plan table. This does not change branch selection, duplicate
+checks, prefix ambiguity handling, or parser errors. On the same generated
+Slime TypeScript corpus, `SlimeParser.ts` recognizer warm average moved from
+about `611.999ms` to `460.789ms`, and `SlimeAstCreateUtils.ts` measured about
+`927.578ms` with unchanged structural counters. Treat this as an accepted
+hot-path implementation detail for LL(1) plans: it lowers dispatch overhead, but
+it is still subordinate to the broader GAST/self-analysis goal.
+
 The next framework step is parser-class/callsite prediction-plan reuse, closer
 to Chevrotain self-analysis than per-instance probing. Subhuti keeps the
 `Alternative.of(...)` grammar surface, records an analyzable plan once, stores
