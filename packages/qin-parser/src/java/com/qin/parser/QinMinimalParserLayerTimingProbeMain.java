@@ -34,6 +34,7 @@ public final class QinMinimalParserLayerTimingProbeMain {
         String source = Files.readString(file, StandardCharsets.UTF_8);
         List<Double> createMs = new ArrayList<>();
         List<Double> cstMs = new ArrayList<>();
+        String route = routeName(mode);
         String stats = "";
         String cacheStats = "";
         String coreStats = "";
@@ -56,7 +57,7 @@ public final class QinMinimalParserLayerTimingProbeMain {
         System.out.println("QinMinimalParserLayerTimingProbeMain"
                 + " file=" + file.getFileName()
                 + " mode=" + mode
-                + " route=qin-parser-cst-only"
+                + " route=" + route
                 + " chars=" + source.length()
                 + " tokens=" + tokenCount
                 + " createWarmAvgMs=" + format(create.avg)
@@ -107,6 +108,10 @@ public final class QinMinimalParserLayerTimingProbeMain {
         long createStarted = System.nanoTime();
         QinParser parser = createParser(mode, source);
         parser.cache(true);
+        boolean recognizer = "recognizer".equals(mode);
+        if (recognizer) {
+            parser.cst(false);
+        }
         double createMs = elapsedDoubleMs(createStarted);
 
         long cstStarted = System.nanoTime();
@@ -115,16 +120,17 @@ public final class QinMinimalParserLayerTimingProbeMain {
             cst = parser.getCst();
         }
         double cstMs = elapsedDoubleMs(cstStarted);
-        if (cst == null) {
+        if (!recognizer && cst == null) {
             throw new IllegalStateException("Expected CST for benchmark");
         }
+        String coreStats = parser.getCoreProfileStats();
         return new RoundResult(
                 createMs,
                 cstMs,
-                parser.getParsedTokens().size(),
+                parsedTokenCount(coreStats, parser.getParsedTokens().size()),
                 parser.getOrPredictionStats(),
                 parser.getCacheStats(),
-                parser.getCoreProfileStats(),
+                coreStats,
                 parser.getCoreHotRuleStats(12));
     }
 
@@ -135,10 +141,34 @@ public final class QinMinimalParserLayerTimingProbeMain {
         if ("static".equals(mode)) {
             return QinParserStaticEnhanced.create(source);
         }
+        if ("recognizer".equals(mode)) {
+            return QinParserStaticEnhanced.create(source);
+        }
         if ("enhanced".equals(mode)) {
             return SubhutiParser.create(QinParser.class, source);
         }
         throw new IllegalArgumentException("Unsupported mode: " + mode);
+    }
+
+    private static String routeName(String mode) {
+        if ("recognizer".equals(mode)) {
+            return "qin-parser-recognizer-only";
+        }
+        return "qin-parser-cst-only";
+    }
+
+    private static int parsedTokenCount(String coreStats, int fallback) {
+        String key = "parsedTokenCount=";
+        int start = coreStats.indexOf(key);
+        if (start < 0) {
+            return fallback;
+        }
+        start += key.length();
+        int end = start;
+        while (end < coreStats.length() && Character.isDigit(coreStats.charAt(end))) {
+            end++;
+        }
+        return Integer.parseInt(coreStats.substring(start, end));
     }
 
     private static long elapsedMs(long started) {
