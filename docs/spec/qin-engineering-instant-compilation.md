@@ -1681,6 +1681,22 @@ analysis-proven transparent rules, grammar-graph level precedence factoring, or
 another optimization that reduces successful rule/CST overhead without removing
 packrat reuse from nested ambiguous work.
 
+The first accepted Chevrotain-style successful-path primitive is explicit CST
+output control in Subhuti. `SubhutiParserCore.cst(false)` turns a parser instance
+into a recognizer/parser-only mode: token consumption, rule wrappers, loop
+detection, packrat behavior, and parse errors remain active, but token/rule CST
+nodes are not allocated. This is not a fallback parser and it does not change the
+grammar. It separates parser execution depth from the CST stack through
+`ruleExecutionDepth`, because a Chevrotain-like parser cannot use CST construction
+as the source of truth for nested rule execution. The focused
+`SubhutiCstOutputModeSmokeTestMain` proves the boundary: the same three-rule
+successful chain stays at `ruleWrapperCalls=3`, `ruleCoreExecutions=3`, and
+`ruleCacheKeyBuilds=3`, while CST work drops from `ruleCstNodes=3` and
+`tokenCstNodes=1` to zero. This confirms the remaining gap is separable into CST
+allocation versus wrapper/cache overhead; follow-up work should next reduce
+wrapper/cache cost or add analysis-proven CST pass-through for CST-producing
+paths.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
