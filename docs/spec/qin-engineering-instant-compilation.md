@@ -1790,6 +1790,20 @@ post-cache-policy baseline of about `0.531us`, while `recognizer-no-cache`
 measured about `0.318us`. The remaining gap is now dominated by pass-through
 method/lambda dispatch and the terminal rule's memoization-policy check.
 
+On 2026-07-10, Subhuti removed that terminal-leaf memoization-policy check from
+the recognizer successful path when the grammar graph proves a non-top-level rule
+is a terminal leaf. In parser-only `cst(false)` mode, and only when debugger and
+error recovery are disabled, a terminal leaf rule is now inlined the same way as
+a graph-proven pass-through rule. The focused `SubhutiCstOutputModeSmokeTestMain`
+proves CST mode is unchanged while graph recognizer mode drops to only the top
+rule wrapper. On the 200,000-round `SubhutiRecognizerPerformanceProbeMain`,
+`recognizer` moved from `avgUs=0.984` to `avgUs=0.803`; on
+`SubhutiRecognizerBoundaryProbeMain`, `chain-top` moved from `avgUs=1.077` to
+`avgUs=0.757`, with `ruleWrapperCalls=1`, `ruleCoreExecutions=1`, and
+`ruleWrapperPassThroughSkips=10`. This is a Chevrotain-style self-analysis step:
+the framework executes the pre-analyzed terminal leaf directly instead of paying
+the full rule wrapper on the successful path.
+
 The next retained Chevrotain-alignment step applies the same idea to `Or(...)`:
 after lookahead/runtime pruning has selected a single candidate, Subhuti no
 longer saves the full parser state before executing that branch. State snapshots
