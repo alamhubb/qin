@@ -1915,6 +1915,14 @@ with the mixed-mode lookahead reuse plus structured token keys, `SlimeParser.ts`
 measured about `259ms` warm recognizer average in a 12-round probe and
 `SlimeAstCreateUtils.ts` about `680ms` in an 8-round probe.
 
+The follow-up kept that structured cache identity but made lookup allocation
+lighter: a parser instance reuses a mutable lookup key for `HashMap.get(...)`
+and creates the immutable `SubhutiTokenCacheKey` only on cache miss before
+`put(...)`. This preserves the stored cache key contract while avoiding key
+allocation on cache hits. Focused Subhuti smokes stayed green. On generated
+Slime TS parser-only probes, `SlimeParser.ts` measured about `265ms` warm
+recognizer average and `SlimeAstCreateUtils.ts` about `587ms`.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
