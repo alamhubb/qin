@@ -1618,6 +1618,26 @@ class declarations. On the same `OvsParser.ts` parser-only probe, this moved
 and `ruleCacheKeyBuilds=35952` to `35504`, with `cstWarmAvgMs=289.051` and
 `cstBestMs=253.218`.
 
+The next retained grammar-visibility step keeps moving failed class/member
+and literal probes into analyzable alternatives. `UpdateExpression` now parses
+prefix `++`/`--` through token alternatives and shares one
+`LeftHandSideExpression` prefix for postfix and bare forms. `Literal`,
+`BooleanLiteral`, `TSLiteralType`, and `BindingPattern` expose their token or
+rule starts directly. `SlimeParser.MethodDefinition` now gates
+`AsyncGeneratorMethod`, `AsyncMethod`, `GeneratorMethod`, getter, setter, and
+plain class-element-name branches instead of forcing ordinary methods through
+async/generator failures. Focused smokes prove bare/postfix/prefix update
+expressions plus `value(){}`, `async value(){}`, `async(){}`, and `*value(){}`
+stay on the standard parser path. The same `OvsParser.ts` 20-round
+parser-only probe moved `ruleWrapperCalls=35158` to `34886`,
+`ruleCoreExecutions=33201` to `32932`, `ruleCacheKeyBuilds=35159` to `34887`,
+and `orPredictionGateSkippedAlternatives=4616` to `5062`; the async/generator
+method failure cluster disappeared from the hot failure list. The probe also
+exposed a framework follow-up: a pure terminal alternative such as `Asterisk`
+still needed an explicit gate in a hydrated prediction plan to avoid one failed
+runtime branch, so Subhuti terminal-only plans should be tightened at the
+framework layer rather than relying on grammar authors to add redundant gates.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
