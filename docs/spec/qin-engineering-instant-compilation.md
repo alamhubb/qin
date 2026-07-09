@@ -1369,6 +1369,27 @@ The profile run showed `TSAccessibilityModifier` cache hits down to `146` and
 wrappers, `TSType`, packrat key churn, and CST allocation rather than this
 modifier/decorator entry path.
 
+The next retained expression step removes another failure-driven TypeScript
+branch from `PrimaryExpression`. The Slime TypeScript override now models the
+choice as `Alternative.rule("TSTypeAssertion", ...)` versus the standard
+`Alternative.rule("PrimaryExpression", ...)` path. Because the graph already
+knows `TSTypeAssertion` starts with `<` while the standard primary expression
+starts with normal expression tokens, ordinary identifiers and literals no
+longer execute the type-assertion rule just to fail. Focused smoke coverage
+proves `foo` skips `TSTypeAssertion`, while `<number>foo` still executes the
+type assertion once and consumes the input. On 2026-07-09, the parser-only
+probes moved `OvsParser.ts` from `ruleWrapperCalls=69326`,
+`ruleCoreExecutions=45666`, and `ruleCacheKeyBuilds=48417` to
+`ruleWrapperCalls=65861`, `ruleCoreExecutions=44511`, and
+`ruleCacheKeyBuilds=47262`; `OvsConsumer.ts` moved from
+`ruleWrapperCalls=1188`, `ruleCoreExecutions=716`, and
+`ruleCacheKeyBuilds=782` to `ruleWrapperCalls=1140`,
+`ruleCoreExecutions=700`, and `ruleCacheKeyBuilds=766`. The profile confirmed
+`TSTypeAssertion` left the top core/cache-put hot list and `TSType` wrappers
+dropped from `2855` to `1700`. Wall-clock remained noisy on this small run
+(`OvsParser.ts cstWarmAvgMs=352.721`, `cstBestMs=304.850`), so keep judging
+this step primarily by the structural counters and hotspot removal.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
