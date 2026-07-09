@@ -1935,6 +1935,18 @@ generated Slime TS parser-only probes, the change reduced `SlimeParser.ts`
 roughly comparable, with `SlimeParser.ts` slightly faster and the larger file
 near baseline variance.
 
+The follow-up observability step profiles candidate counts after Subhuti OR
+prediction. This is diagnostic data, not a grammar change. It confirms that the
+remaining Chevrotain gap is concentrated in a few analyzable call shapes rather
+than in unknown alternatives: generated Slime TS parser-only probes reported
+`unknownAlternatives=0` while `IdentifierName` still averaged `5.00`
+candidates, `FormalParameters` averaged `4.00`, and
+`CoverParenthesizedExpressionAndArrowParameterList` averaged `8.00` on
+`SlimeAstCreateUtils.ts`. This makes the next useful framework work more
+specific: improve value-aware token/category prediction and common-prefix
+lookahead for these successful-path hotspots, then prove the result with the
+same generated Slime TS parser-only probes before widening to OVS or CSSTS.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
