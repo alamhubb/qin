@@ -1016,6 +1016,31 @@ not a wall-clock improvement; the next speed work should keep moving toward
 larger expression structure rather than treating operator token choices as the
 main bottleneck.
 
+The next accepted Chevrotain-alignment unit adds negative lookahead pruning and
+lexer-mode-aware graph terminals. When a complete `SubhutiOrPrediction` has no
+candidate for the current token, Subhuti may now fail the `Or(...)` immediately
+instead of executing every branch once just to prove failure. This required
+carrying `LexerMode` on grammar terminals and preserving the mapping from
+multiple FIRST tokens back to their owning alternative, matching Chevrotain's
+GAST alternative identity model. `RegularExpressionLiteral` is now recorded
+with `LexerMode.REGEXP`; the focused `SlimeRegexGraphLookaheadSmokeTestMain`
+covers `export const x = /#/` so default-mode `/` cannot be mistaken for a
+missing candidate. The same unit moved the active monolithic `SlimeParser`
+`MemberExpression` and `CallExpression` suffix choices to explicit
+`Alternative.rule(...)` graph nodes, added decorator `At` to module/declaration
+FIRST sets, and factored `UpdateExpression` so ordinary expressions parse one
+`LeftHandSideExpression` prefix before postfix/TypeScript tail selection. The
+2026-07-09 probes measured `OvsConsumer.ts` at about `9.263ms` warm average
+over 300 rounds and `OvsParser.ts` at about `475.471ms` warm average over 10
+rounds without rule profiling. Structural counters improved materially:
+`OvsParser.ts` `ruleWrapperCalls` moved to `118034`, `ruleCoreExecutions` to
+`63301`, and `ruleCacheKeyBuilds` to `71051`; `LeftHandSideExpression` wrapper
+calls dropped from about `9773` to `2738` after the `UpdateExpression`
+common-prefix step. This is accepted progress but not completion: the target is
+still Chevrotain-like performance within roughly a 5-10x range, so the next
+work should attack remaining `AssignmentExpression`, `TSType`, operator
+precedence chain, packrat key churn, and CST allocation costs.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
