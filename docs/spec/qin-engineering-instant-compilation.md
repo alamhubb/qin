@@ -1095,6 +1095,25 @@ This is a small but important architecture step because Chevrotain optimizes
 `OPTION`/`MANY` as well as `OR`; further gains require connecting more optional
 hotspots and making contextual keyword lookahead more precise.
 
+The next retained `OPTION`/`MANY` step adds `Alternative.tokens(...)` for a
+single grammar body that may start with one of several terminals. This matches
+Chevrotain's repetition lookahead shape for operator tails such as additive,
+shift, equality, and logical expression continuations: the parser checks whether
+the current token can start the repeated body before entering the body, instead
+of executing the body once just to fail and restore. `SlimeBinaryExpressionParser`
+now uses this path for binary operator repetitions and the short-circuit tail.
+On 2026-07-09, the same `OvsParser.ts` parser-only profile probe moved from
+`cstWarmAvgMs=591.323`, `ruleWrapperCalls=110460`,
+`ruleCoreExecutions=59537`, and `ruleCacheKeyBuilds=66011` to
+`cstWarmAvgMs=512.586`, `ruleWrapperCalls=95311`,
+`ruleCoreExecutions=55628`, and `ruleCacheKeyBuilds=62102`. A 10-round
+non-profile probe after the change measured `OvsParser.ts` at
+`cstWarmAvgMs=425.222`, `cstBestMs=329.173`, and `OvsConsumer.ts` at
+`cstWarmAvgMs=9.076`, `cstBestMs=3.193`. This is accepted as a real framework
+alignment step, but it is still a partial bridge: the remaining Chevrotain gap is
+dominated by expression/common-prefix structure and contextual-token choices that
+still need fuller GAST coverage.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
