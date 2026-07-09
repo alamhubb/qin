@@ -1811,6 +1811,24 @@ rule wrapper. On the 200,000-round `SubhutiRecognizerPerformanceProbeMain`,
 the framework executes the pre-analyzed terminal leaf directly instead of paying
 the full rule wrapper on the successful path.
 
+On 2026-07-10, Subhuti widened the recognizer-only inline plan from
+single-rule pass-through and terminal leaves to grammar-graph-proven
+non-recursive rules. In `cst(false)` mode, with debugger and error recovery
+disabled, a non-top-level rule whose grammar graph cannot reach itself may skip
+the outer rule wrapper and execute the standard rule body directly. Packrat
+memoization is also restricted to speculative `Or` branches that may be
+backtracked; deterministic recognizer rule calls do not write cache entries just
+in case. This remains analysis-gated, not a grammar-local shortcut: CST output
+and recovery modes keep the normal wrapper/cache path. The parser-only proof
+used the generated slime parser TypeScript files as the benchmark corpus: all
+61 files under `generated/qin-parser-ts/com/slime/parser` parsed successfully in
+Qin recognizer mode, while `SlimeParser.ts` moved to about `336ms` warm average
+and `SlimeAstCreateUtils.ts` to about `842ms`. Structural counters showed the
+intended direction: `SlimeParser.ts` dropped from roughly 54k wrapper calls to
+42k, and `SlimeAstCreateUtils.ts` from roughly 176k to 129k. Chevrotain remains
+faster on the same two files, so the next target is still the remaining
+successful-path rule execution cost, not OVS-specific grammar patches.
+
 The next retained Chevrotain-alignment step applies the same idea to `Or(...)`:
 after lookahead/runtime pruning has selected a single candidate, Subhuti no
 longer saves the full parser state before executing that branch. State snapshots
