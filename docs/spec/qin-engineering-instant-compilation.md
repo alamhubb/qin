@@ -1332,6 +1332,21 @@ same OVS parser-only probe measured `OvsParser.ts cstWarmAvgMs=354.020`,
 and `CoverCallExpressionAndAsyncArrowHead` remains a successful single standard
 path instead of a fallback parse.
 
+The next retained TypeScript optional-rule step applies the same graph start
+prediction to `TSTypeParameterDeclaration`. A standard
+`OptionalTSTypeParameterDeclaration()` helper now wraps
+`Option(Alternative.rule("TSTypeParameterDeclaration", ...))`, and the grammar
+graph records `TSTypeParameterDeclaration` as starting with `Less`. This removes
+failure-driven entry into generic parameter declarations at class, function,
+method, interface, and TS signature sites when the source is not generic. The
+focused smoke proves ordinary input skips the rule and `<T>` executes it once.
+On 2026-07-09, `OvsParser.ts` moved from `ruleWrapperCalls=70886`,
+`ruleCoreExecutions=46143`, and `ruleCacheKeyBuilds=49690` to
+`ruleWrapperCalls=70357`, `ruleCoreExecutions=45920`, and
+`ruleCacheKeyBuilds=49384`; `OvsConsumer.ts` moved to
+`ruleWrapperCalls=1229`, `ruleCoreExecutions=725`, and
+`ruleCacheKeyBuilds=820`.
+
 Framework optimization must be proven with focused parser probes before it is
 trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
