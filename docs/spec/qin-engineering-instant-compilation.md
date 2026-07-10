@@ -2951,6 +2951,23 @@ characters are trailing whitespace. This is one parser path: dynamic candidates
 are part of the same immutable plan and ordinary PEG execution, not a fallback
 parser or compatibility grammar.
 
+An exact GAST rule must describe the complete consumable rule body, not only its
+FIRST tokens. On 2026-07-11, `TemplateLiteral` had been declared as the terminal
+choice `TemplateHead | NoSubstitutionTemplate`; that shape was sufficient for
+lookahead but falsely authorized recognizer direct execution. The direct plan
+consumed `TemplateHead` and skipped the embedded expression and template tail,
+so a minimal ``function f(token: any) { return `${token}` }`` stopped before the
+function in `cst(false)` mode while CST mode remained correct. The declaration
+now models `TemplateHead` followed by a dynamic substitution tail, or the full
+no-substitution token. This preserves FIRST/lookahead planning and prevents a
+direct recognizer plan until the complete substitution grammar is structurally
+known. A focused recognizer smoke and the full 40,500-character `OvsParser.ts`
+benchmark pass in both modes; five measured source-mode rounds reported CST
+`avgMs=226.421 bestMs=207.314` and recognizer
+`avgMs=188.141 bestMs=174.988`. Treat every similar terminal-only summary as
+Graph/FIRST data or as a GAST prefix with an explicit dynamic tail, never as an
+exact executable GAST body.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
