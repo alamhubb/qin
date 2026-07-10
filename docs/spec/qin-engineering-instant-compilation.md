@@ -2622,6 +2622,14 @@ from the sequence path. The pre-tokenized case in
   `tokenCacheGets=0`, `tokenStreamGets=0`, and
   `ruleWrapperDirectRecognizerPlanSkips=1`.
 
+  A local OR execution experiment that reused the first token entry between
+  branch selection and first-terminal consumption was rejected on 2026-07-11. It
+  produced an unstable source-path result and regressed the pre-tokenized cursor
+  path from the retained `avgUs=0.234` range to about `avgUs=0.427` in the same
+  focused probe. Do not pursue ad hoc OR-entry reuse as the main Chevrotain
+  alignment path; the durable direction is a unified token-array/parser-input
+  model plus exact-GAST runtime plans.
+
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
