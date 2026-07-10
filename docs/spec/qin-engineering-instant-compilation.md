@@ -2495,6 +2495,23 @@ cache experiment was rejected because focused wall-clock results were unstable;
 future work should continue through generated or parser-class runtime plans, not
 per-instance micro-caches.
 
+The next retained exact-GAST successful-path step extends that rule from one
+terminal to a terminal sequence. When exact GAST proves that a void rule body is
+only a sequence of terminals or rule references that resolve to terminal
+sequences, and none of those terminals require token-value matching, the runtime
+plan records a direct terminal-sequence plan. In `cst(false)` mode, with recovery
+and debugger disabled, the wrapper may consume the whole sequence directly. This
+is still exact-GAST-only execution: `SubhutiGrammarGraph` FIRST facts do not
+authorize it, `OPTION`/`MANY`/`OR`/dynamic nodes are not direct sequences, and a
+token mismatch remains the normal parser failure instead of a fallback. The
+focused `SubhutiDirectTerminalSequenceSmokeTestMain` proves success, visible
+failure after a partial sequence, and an `Or(...)` branch selected by GAST
+self-analysis executing the chosen sequence directly. On the 2026-07-10 focused
+probe, a 10-token exact-GAST sequence ran with `ruleWrapperCalls=0`,
+`ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`,
+`ruleWrapperDirectTerminalSequenceSkips=1`, and about `avgUs=2.124` over
+200,000 rounds.
+
 The follow-up retained token-consume cleanup shares the existing recognizer
 direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
