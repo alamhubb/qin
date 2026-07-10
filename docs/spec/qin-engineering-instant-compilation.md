@@ -2840,6 +2840,27 @@ The structural counters moved in the intended direction: for `SlimeParser.ts`,
 `174010`, `ruleCoreExecutions` from about `172935` to `169996`, and
 `ruleWrapperPassThroughSkips` rose from about `2042` to `4981`.
 
+The next retained successful-path framework change replaces the global
+`HashSet<SubhutiRuleCacheKey>` loop detector with reusable active-invocation
+stacks partitioned by rule name. Each rule bucket keeps the same semantic
+identity as before: cache-key extra/parameters, token index, lexer mode, and
+previous token name. It scans only concurrently active invocations of that same
+rule, which is normally zero or one, and reuses primitive/reference arrays
+instead of allocating a temporary loop key and hashing it through a global set
+for every wrapper call. This is not a weaker recursion check: the focused
+`SubhutiRuleInvocationLoopDetectionSmokeTestMain` proves that an identical
+zero-consumption recursive invocation still fails before its body runs again,
+while the same rule at the same token with a different argument remains a
+distinct valid invocation. On 2026-07-11, the unchanged pre-tokenized
+`SlimeAstCreateUtils.ts` recognizer benchmark moved from the clean five-round
+baseline `avgMs=243.604 bestMs=234.070` to a ten-round retained result of
+`avgMs=196.173 bestMs=171.178`, about a 19.5% average improvement. Grammar,
+wrapper/core counts, packrat counts, and token counts stayed unchanged, which
+isolates the gain to successful-path loop-detection overhead. The broader
+Chevrotain target remains full GAST and immutable runtime plans; this change
+removes a proven cost from rules that still need the ordinary wrapper while
+that coverage expands.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
