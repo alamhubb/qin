@@ -46,33 +46,15 @@ class com_subhuti_parser_SubhutiParser extends com_subhuti_parser_SubhutiParserF
     }
   }
   __qin_constructor_com_subhuti_parser_SubhutiParser_3(sourceCode: string, tokenConsumerClass: any, tokens: any): void {
-    if ((() => {
-      if (__QinJavaLangString.contains(this.getClass().getName(), "$ByteBuddy$")) {
-        return false;
-      }
-      return true;
-    })()) {
-      com_subhuti_parser_SubhutiParser.__qin_field_log.warn("⚠️ {} 未使用 AOP 增强。建议使用: SubhutiParser.create({}.class, ...) 否则 @SubhutiRule 注解的方法不会被 Packrat 缓存，性能会大幅下降。", this.getClass().getSimpleName(), this.getClass().getSimpleName());
-    }
+    null;
   }
   static create(parserClass: any, ...args: any[]): any {
-    try {
-      if ((() => {
-      if (com_subhuti_parser_SubhutiParser.__qin_field_factoryInitialized) {
-        return false;
-      }
-      return true;
-    })()) {
-      }
-      let parser: any = (com_subhuti_parser_SubhutiParser.__qin_field_cachedCreateMethod.invoke(null, parserClass, ...args));
-      return parser;
-    } catch (e) {
-      if (!(e instanceof __QinJavaLangClassNotFoundException)) {
-        throw e;
-      }
-      throw new __QinJavaLangRuntimeException("ByteBuddy AOP 功能不可用。请确保 net.bytebuddy:byte-buddy 在 classpath 中。", e);
-    }
-    return null;
+    throw new __QinJavaLangUnsupportedOperationException(
+      "SubhutiParser.create(...) was the removed runtime enhancement entry. "
+        + "Instantiate the grammar's generated/static enhanced parser class instead of "
+        + parserClass
+        + "."
+    );
   }
 }
 const SubhutiParser = com_subhuti_parser_SubhutiParser;
