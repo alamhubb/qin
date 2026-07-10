@@ -2009,6 +2009,17 @@ mode-safe parser-core primitive, then reduce the remaining successful-path
 wrapper/cache costs. Token category work should follow as a targeted lookahead
 model improvement, not be treated as the primary wall-clock closer.
 
+A follow-up adaptive low-yield memoization experiment on the same file was
+rejected. It made recognizer speculative rules stop memoizing after `256` puts
+with zero hits. Structural counters improved (`ruleCacheKeyBuilds` dropped from
+about `45.9k` to `38.6k`, `ruleCachePuts` from about `32.1k` to `24.8k`, with
+`7322` adaptive skips), but wall-clock regressed to `avgMs=259.826
+bestMs=235.282` versus the retained token-stream baseline of about
+`avgMs=251.337 bestMs=214.991`. Do not reintroduce a per-rule adaptive
+memoization Map on the hot path just because cache counters fall; future
+wrapper/cache reductions need a lower-overhead static or self-analysis-derived
+plan.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
