@@ -2925,6 +2925,32 @@ parser cases, including fields and methods. On a 14,643-character Java source,
 the static `.class` path measured about `110.5ms` parse-only and `125.3ms`
 parse-plus-AST over 30 measured rounds.
 
+The next retained worklist/GAST correctness unit makes runtime planning partial
+without making it lossy. Callsite analysis starts at LL(1) and increases `k`
+only while static alternatives are still ambiguous, up to the framework bound;
+it does not eagerly expand every callsite to LL(4). Every generated token path
+stores all of its non-empty prefixes, so runtime lookup can try the longest
+available key and then shorten it without losing a valid PEG branch. A branch
+whose first token is still contextual or dynamic remains an ordered runtime
+candidate beside the static token candidates. Planning-gated alternatives are
+also retained until their gate is evaluated. Dynamic candidates may therefore
+participate in an immutable lookahead plan, but they cannot use the direct
+single-alternative `MANY` path because failed repetition still requires normal
+state restoration. A raw `Runnable` prediction miss likewise means "no safe
+pruning", not "the ordered PEG choice has no branches". Replacing or extending
+the effective grammar invalidates parser-local and hot prediction plans before
+the new runtime plan is installed.
+
+Focused coverage proves planning-gate precedence, partial static plus dynamic
+alternatives, dynamic `MANY` restoration, raw `Runnable` ordered backtracking,
+LL(1)-first bounded analysis, and shorter-prefix lookup. Ten static Slime parser
+smokes and five Subhuti GAST/worklist/runtime-plan smokes pass. The 40,500-
+character real `OvsParser.ts` also parses through `SlimeParserStaticEnhanced`
+with `fail=false` and the cursor at character 40,496; the remaining four
+characters are trailing whitespace. This is one parser path: dynamic candidates
+are part of the same immutable plan and ordinary PEG execution, not a fallback
+parser or compatibility grammar.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
