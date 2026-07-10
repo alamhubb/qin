@@ -2506,6 +2506,21 @@ focused 2026-07-10 probe, the ordinary recognizer chain removed its
 200,000 rounds; the exact-GAST direct chain also kept
 `tokenCacheGets/Misses/Puts=0` and measured about `avgUs=0.437` on that run.
 
+The next retained Chevrotain-alignment step separates recording output as well as
+runtime execution. `Alternative.of(...)` recording now writes both the legacy
+`SubhutiGrammarNode` diagnostic tree and an exact `SubhutiGastNode` tree. When the
+recorded GAST is complete and unambiguous, Subhuti builds the `Or(...)` prediction
+through `SubhutiGastCallsiteAnalysis` instead of interpreting the legacy
+FIRST/lookahead grammar tree. When the recorded prefixes are duplicate,
+prefix-conflicting, nullable, or dynamic, the parser keeps the previous PEG-safe
+recording expansion path, preserving behavior such as the existing AB/AC LL(2)
+smoke. This is not a compatibility parser: it is the first bridge that lets
+ordinary recording fallback produce analyzable GAST while keeping incomplete or
+ambiguous recording visible. The focused `SubhutiGrammarRecordingSmokeTestMain`
+proves the split: distinct recorded alternatives produce one GAST self-analysis
+prediction, while ambiguous common-prefix alternatives stay on the older LL(2)
+expansion path until a fuller exact-GAST recording model can prove them safely.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
