@@ -2042,6 +2042,25 @@ proof of a better Chevrotain-style runtime path. Keep low-yield memo policy
 changes only when the same focused parser-only benchmark improves wall-clock
 time.
 
+A terminal-leaf direct-execution experiment was rejected because it exposed an
+architecture boundary: the current `SubhutiGrammarGraph` often stores FIRST-token
+approximations, not complete rule bodies. For example, graph data can say
+`ImportDeclaration -> Import`, but the real rule must also consume the import
+clause, `from`, string literal, and ASI. Treating that FIRST-token graph as a
+complete Chevrotain-style GAST made parsing stop at the `{` after `import`.
+Therefore, any future lightweight execution plan must first distinguish
+FIRST/lookahead graph facts from exact grammar-tree nodes. Do not execute a rule
+directly from `singleTerminalForRule(...)` unless the graph node is proven to be
+the complete rule body, not merely its start token.
+
+A `currentTokenForPrediction()` pretokenized miss fast path was also rejected.
+It tried to read the current token directly from the parsed ordinal on cache
+misses, but `SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305` to
+roughly `avgMs=336-344ms`. The retained lesson is that the token cursor win came
+from replacing repeated source-index token lookup at broader lookahead points;
+adding extra branches to an already cached current-token path is not currently a
+maximum-return optimization.
+
 A follow-up adaptive low-yield memoization experiment on the same file was
 rejected. It made recognizer speculative rules stop memoizing after `256` puts
 with zero hits. Structural counters improved (`ruleCacheKeyBuilds` dropped from
