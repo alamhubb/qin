@@ -2448,6 +2448,26 @@ for the same 14-token input. Treat this as a current active-path performance
 regression to narrow at the generated Java-to-TS/Subhuti runtime layer; do not
 replace it with the Node snapshot or another fallback parser.
 
+## Subhuti Runtime Plan Coverage
+
+The Chevrotain-style runtime plan needs an observable coverage boundary, not
+just faster-looking counters. `SubhutiParserRuntimePlan` should report which
+facts came from `SubhutiGrammarGraph` and which came from exact
+`SubhutiGastGrammar`: rule counts, alternation counts, planned predictions,
+exact/dynamic GAST rule counts, consuming element counts, and recognizer
+pass-through/terminal-leaf facts. This report is the standard way to decide
+whether a future optimization is allowed to run on exact GAST evidence or is
+still only working from FIRST/lookahead graph facts.
+
+On 2026-07-10, Subhuti added `getRuntimePlanReport()` and a focused
+`SubhutiParserRuntimePlanSmokeTestMain` GAST-only parser. The smoke proves that
+an exact GAST grammar with no `SubhutiGrammarGraph` can still build one
+self-analysis prediction and feed recognizer terminal-leaf/pass-through skips.
+This is a small but important architecture step toward Chevrotain's
+`performSelfAnalysis()` model: direct successful-path reductions should now be
+guarded by runtime-plan coverage instead of assuming that a graph summary is a
+complete executable grammar body.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
