@@ -2020,6 +2020,14 @@ memoization Map on the hot path just because cache counters fall; future
 wrapper/cache reductions need a lower-overhead static or self-analysis-derived
 plan.
 
+A second static-plan experiment tried to skip loop detection for graph-proven
+non-recursive, non-dynamic recognizer rules. The graph smoke passed, but on
+`SlimeAstCreateUtils.ts` the parser reported `ruleLoopDetectionSkips=0`, so the
+current generated Slime graph did not expose useful eligible rules beyond paths
+already handled by recognizer pass-through or terminal-leaf inlining. Do not
+treat generic loop-detection skipping as the next main closer until the graph
+model exposes concrete hot rules that can actually hit this path.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
