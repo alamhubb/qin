@@ -209,7 +209,7 @@ Co
 ```
 
 Do not modify the user's Qin source to add semicolons. Add semicolons only in generated TypeScript, linked module output, or other compiler-owned emitted code where the emitter knows it is ending a statement.
-Generated TypeScript parser packages must not execute JVM-only Subhuti factory internals or route through runtime enhancement. The standard parser entry is the generated/static enhanced wrapper such as `QinParserStaticEnhanced.create(source)`, whose generated methods emit `executeRuleWrapper(...)` around `@SubhutiRule` bodies. `SubhutiParser.create(...)` is a removed historical runtime entry and should fail fast if reached; do not lower it to a JS helper, reflection path, runtime enhancement route, or raw-parser fallback in generated packages or tests.
+Generated TypeScript parser packages must not execute JVM-only Subhuti factory internals. The standard parser entry is the generated/static enhanced wrapper such as `QinParserStaticEnhanced.create(source)`, whose generated methods emit `executeRuleWrapper(...)` around `@SubhutiRule` bodies. `SubhutiParser.create(...)` is a removed historical parser factory entry and should fail fast if reached; do not lower it to a JS helper, reflection path, or raw-parser fallback in generated packages or tests.
 
 ## Completion Rules
 

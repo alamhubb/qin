@@ -164,8 +164,8 @@ Rejected decorator forms:
   compatibility layer instead of a Qin-owned static lowering contract
 
 Unsupported decorator forms should fail early with a clear diagnostic. Do not
-repair them with runtime reflection, runtime bytecode fallback generation,
-broad dynamic helper calls, or source rewrites that hide the missing lowerer.
+repair them with runtime reflection, broad dynamic helper calls, or source
+rewrites that hide the missing lowerer.
 
 ## 2. Supported-by-Design Surface
 

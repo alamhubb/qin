@@ -50,7 +50,7 @@ class com_subhuti_parser_SubhutiParser extends com_subhuti_parser_SubhutiParserF
   }
   static create(parserClass: any, ...args: any[]): any {
     throw new __QinJavaLangUnsupportedOperationException(
-      "SubhutiParser.create(...) was the removed runtime enhancement entry. "
+      "SubhutiParser.create(...) was the removed historical parser factory entry. "
         + "Instantiate the grammar's generated/static enhanced parser class instead of "
         + parserClass
         + "."
