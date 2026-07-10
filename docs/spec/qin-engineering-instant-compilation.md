@@ -2080,6 +2080,23 @@ already handled by recognizer pass-through or terminal-leaf inlining. Do not
 treat generic loop-detection skipping as the next main closer until the graph
 model exposes concrete hot rules that can actually hit this path.
 
+On 2026-07-10, three more successful-path experiments were rejected on the same
+`SlimeAstCreateUtils.ts` static enhanced parser-only probe. Replacing the active
+loop-detection `HashSet<SubhutiRuleCacheKey>` with a structured stack-array scan
+preserved the loop key semantics but regressed from `avgMs=272.645
+bestMs=223.764` to `avgMs=294.740 bestMs=243.707`; stack scanning is not a
+better generic loop-detection model for the current rule depth. Changing
+`SubhutiPackratCache` from access-order `LinkedHashMap` to insertion-order
+eviction also failed to improve wall-clock (`avgMs=290.361 bestMs=216.658`),
+so LRU hit mutation is not the maximum-return packrat issue. Finally, a runtime
+`exactSingleTerminalForRule(...)` direct-recognizer experiment regressed to
+`avgMs=303.004 bestMs=254.903` because every wrapper paid a dynamic graph lookup
+while only a few explicitly exact terminal rules could benefit. The retained
+architecture lesson is that exact grammar-body execution is still the right
+Chevrotain-style direction, but it must be generated or preplanned for proven
+hot rules from a real GAST; do not add per-wrapper runtime graph queries to
+discover tiny direct-execution cases.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
