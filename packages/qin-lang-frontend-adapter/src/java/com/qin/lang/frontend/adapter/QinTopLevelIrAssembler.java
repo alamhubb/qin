@@ -230,6 +230,37 @@ final class QinTopLevelIrAssembler {
                 }
             }
             if (statement instanceof ExportNamedDeclaration) {
+                Object exportedDeclaration = QinSlimeFrontendAdapter.invokeByName(statement, "declaration");
+                if (exportedDeclaration instanceof ClassDeclaration classDeclaration) {
+                    QinIrClassDeclaration loweredClass = legacyLowerer.lowerClassDeclarationOrNull(
+                            classDeclaration,
+                            javaImportLookup,
+                            jsDeclarationClassLookup,
+                            localDeclarationNames,
+                            declarationLookup,
+                            localJvmDeclarations);
+                    if (loweredClass != null) {
+                        assembly.classDeclarations().add(loweredClass);
+                        localJvmDeclarations.put(loweredClass.simpleName(), loweredClass);
+                    }
+                    QinIrConstDeclaration declaration = legacyLowerer.lowerClassDeclarationValue(
+                            classDeclaration,
+                            javaImportLookup,
+                            declarationLookup,
+                            loweredClass != null);
+                    assembly.declarations().add(declaration);
+                    assembly.executionSteps().add(new QinIrProgram.TopLevelExecutionStep(
+                            QinIrProgram.TopLevelStatementKind.DECLARATION,
+                            assembly.declarations().size() - 1));
+                    declarationLookup.put(declaration.name(), declaration.initializer());
+                    if (enableGlobalBinding) {
+                        assembly.expressionStatements().add(legacyLowerer.createGlobalBindingStatement(declaration.name()));
+                        assembly.executionSteps().add(new QinIrProgram.TopLevelExecutionStep(
+                                QinIrProgram.TopLevelStatementKind.EXPRESSION_STATEMENT,
+                                assembly.expressionStatements().size() - 1));
+                    }
+                    continue;
+                }
                 legacyLowerer.lowerExportNamedDeclaration(
                         statement,
                         assembly,

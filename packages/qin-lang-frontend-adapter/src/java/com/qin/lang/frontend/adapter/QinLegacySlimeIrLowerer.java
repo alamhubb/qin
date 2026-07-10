@@ -158,7 +158,16 @@ final class QinLegacySlimeIrLowerer extends QinSlimeIrLoweringSupport {
         }
         Set<String> names = new LinkedHashSet<>();
         for (AstNode statement : body) {
-            if (!(statement instanceof ClassDeclaration classDeclaration)
+            ClassDeclaration classDeclaration = null;
+            if (statement instanceof ClassDeclaration directClassDeclaration) {
+                classDeclaration = directClassDeclaration;
+            } else if (statement instanceof ExportNamedDeclaration) {
+                Object declaration = QinSlimeFrontendAdapter.invokeByName(statement, "declaration");
+                if (declaration instanceof ClassDeclaration exportedClassDeclaration) {
+                    classDeclaration = exportedClassDeclaration;
+                }
+            }
+            if (classDeclaration == null
                     || classDeclaration.id() == null
                     || classDeclaration.id().name() == null
                     || classDeclaration.id().name().isBlank()) {

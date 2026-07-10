@@ -492,6 +492,14 @@ public final class QinBuiltinRegistry {
                             MethodTypeDesc.ofDescriptor(
                                     "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
                             List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
+            Map.entry(key("Global", "__qin_java_pattern_regexp__", 2),
+                    new BuiltinMethod(
+                            "Global",
+                            "__qin_java_pattern_regexp__",
+                            "com.qin.lang.runtime.JavaEsmGlobal",
+                            "__qin_java_pattern_regexp__",
+                            MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"),
+                            List.of(BuiltinArgKind.ANY, BuiltinArgKind.ANY))),
             Map.entry(key("Global", "__qin_unary__", 2),
                     new BuiltinMethod(
                             "Global",

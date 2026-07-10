@@ -188,6 +188,13 @@ public final class JavaEsmGlobal {
         return JavaEsmRegExp.fromJavaPattern(source, flags);
     }
 
+    public static String __qin_string_replace__(String target, Object search, Object replacement) {
+        return String.valueOf(JavaEsmString.invoke(
+                target == null ? "null" : target,
+                "replace",
+                new Object[]{search, replacement}));
+    }
+
     public static Object __qin_global__(Object name) {
         String globalName = String.valueOf(name);
         Object bound = GLOBAL_BINDINGS.get(globalName);

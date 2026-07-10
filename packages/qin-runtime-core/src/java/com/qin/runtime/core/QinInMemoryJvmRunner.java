@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class QinInMemoryJvmRunner {
     private static final long DEFAULT_JS_RUN_STACK_BYTES = 32L * 1024L * 1024L;
     private static final long DEFAULT_JS_RUN_TIMEOUT_MS = 30_000L;
-    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 6;
+    private static final int MODULE_CLASS_DISK_CACHE_VERSION = 8;
 
     private final QinCfaPipeline cfaPipeline;
     private final QinCompileSnapshotWriter snapshotWriter;
@@ -690,6 +690,7 @@ public final class QinInMemoryJvmRunner {
             if (!dependencyGraphInitialized) {
                 int dependencyCount = dependencyModuleCount(entryModuleClass);
                 logPhase("module-class dependency session start", startNanos, "modules=" + dependencyCount);
+                preloadDeclarationClasses();
                 if (compileResult.initializerClass != null) {
                     result = runCachedModuleClass(classLoader, compileResult.initializerClass, startNanos, traceModules);
                 }
@@ -711,6 +712,17 @@ public final class QinInMemoryJvmRunner {
                 logPhase("module-class run batch done", startNanos, "modules=1");
             }
             return result;
+        }
+
+        private void preloadDeclarationClasses() {
+            Map<String, byte[]> declarations = new LinkedHashMap<>();
+            if (compileResult.initializerClass != null) {
+                declarations.putAll(compileResult.initializerClass.declarationClassBytes);
+            }
+            for (CachedModuleClassFile moduleClassFile : compileResult.moduleClasses) {
+                declarations.putAll(moduleClassFile.declarationClassBytes);
+            }
+            bindDeclarationClasses(classLoader.defineAll(declarations));
         }
 
         private int dependencyModuleCount(CachedModuleClassFile entryModuleClass) {
