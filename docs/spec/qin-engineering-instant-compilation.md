@@ -2032,6 +2032,16 @@ wall-clock improvement; the remaining larger gap is still token-array/cursor
 execution and successful-path rule wrapper/cache structure, not this `Optional`
 surface.
 
+A static low-yield memoization expansion was also rejected. Adding
+`BindingIdentifier`, `StatementListItem`, and several TypeScript type pass-through
+rules to `recognizerLowYieldMemoRules()` lowered `ruleCacheKeyBuilds` from
+`45871` to `39271` and `ruleCachePuts` from `32106` to `25507`, but
+`SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305 bestMs=215.383` to
+about `avgMs=316.705 bestMs=253.855`. Do not treat lower packrat counters as
+proof of a better Chevrotain-style runtime path. Keep low-yield memo policy
+changes only when the same focused parser-only benchmark improves wall-clock
+time.
+
 A follow-up adaptive low-yield memoization experiment on the same file was
 rejected. It made recognizer speculative rules stop memoizing after `256` puts
 with zero hits. Structural counters improved (`ruleCacheKeyBuilds` dropped from
