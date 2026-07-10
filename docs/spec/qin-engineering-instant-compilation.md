@@ -2128,6 +2128,19 @@ created. Focused smoke coverage must prove that an import-like rule keeps an
 LL(k) prefix derived from the complete body rather than collapsing to the single
 FIRST token.
 
+The runtime lookup order should prefer declared exact GAST self-analysis plans
+before per-callsite runtime GAST analysis. When `gastGrammar().alternations()`
+is non-empty, `getOrPrediction(...)` first builds the standard callsite key,
+hydrates the parser-class self-analysis cache, and reuses that plan if present.
+Only if no declared plan exists should it fall back to runtime
+`SubhutiGastCallsiteAnalysis.fromAlternatives(...)`, graph lookahead, or
+recording-mode prediction. This moves Subhuti closer to Chevrotain's model:
+known grammar callsites are analyzed once per parser class, while non-declared
+or dynamic callsites still use the conservative standard path. The focused
+`SubhutiGastRuntimePredictionSmokeTestMain` proves the boundary by requiring a
+declared `Choice -> A | B` parser to hit self-analysis, skip the runtime
+GAST/graph/recording cache build, and still prune the unchosen branch.
+
 A `currentTokenForPrediction()` pretokenized miss fast path was also rejected.
 It tried to read the current token directly from the parsed ordinal on cache
 misses, but `SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305` to
