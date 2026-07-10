@@ -2348,6 +2348,30 @@ Chevrotain-style error-surface alignment, not as a major parser-speed closer.
 The remaining performance work should still target token cursor execution,
 wrapper/cache structure, and hot expression rules.
 
+The next retained `Many(Alternative...)` planning-gate step applies the same
+Chevrotain-style `GATE` discipline to repetition alternatives. When runtime
+lookahead has already narrowed a `MANY` candidate set, Subhuti now evaluates
+`Alternative.lookaheadRule(...)` planning gates before deciding whether the
+loop has one executable candidate or still needs a state-saving planned OR. This
+is intentionally limited to non-null candidate sets: an inconclusive or EOF
+prediction must still use the normal `tryAndRestore` loop-end behavior instead
+of converting "no matched suffix" into a hard inner failure. The focused
+`SubhutiManyAlternativesLookaheadSmokeTestMain` now covers a disabled recovery
+suffix with the same start token as the real suffix, proving the recovery branch
+is filtered before execution and the remaining suffix runs without a state
+save. Slime member suffix recovery alternatives now use
+`Alternative.lookaheadRule("IncompleteMemberAccessProperty", ...)`, so normal
+non-recovery parses do not keep that error branch in the hot member-suffix
+candidate set. On `SlimeAstCreateUtils.ts` pre-tokenized recognizer,
+`MemberExpression` candidate average moved from about `1.11` to `1.02`,
+`MemberExpression` state saves fell from `1174` to `179`,
+`orPredictionStateSaves` fell from `7456` to `6461`, and
+`orPredictionDirectManyExecutions` rose from `1679` to `2674`; the comparable
+five-round probe measured `avgMs=252.498 bestMs=226.941` on this machine. Treat
+this as retained framework architecture progress because it removes a proven
+unreachable recovery candidate from the successful path without adding fallback
+syntax or weakening errors.
+
 The next retained token-cursor step targets JavaScript's lexical-goal split for
 regular expression literals. The pre-tokenized recognizer path already owns the
 default-mode token array, but `RegularExpressionLiteral` checks use
