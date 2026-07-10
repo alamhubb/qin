@@ -2115,6 +2115,20 @@ and `SlimeAstCreateUtils.ts avgMs=349.125 bestMs=288.986` to
 `SlimeAstCreateUtils.ts avgMs=282.661 bestMs=243.411`. This is the current
 retained framework-level token-array step.
 
+The retained follow-up attacks the next measured cache-key hotspot without
+hard-coding Slime expression rules. In recognizer speculative parsing, Subhuti
+now tracks per-parse packrat hit/put yield and, after 256 zero-hit puts for a
+rule, skips further memo writes for that rule during the same parse. This is a
+performance-only packrat policy: it does not change grammar, prediction, token
+consumption, or parse failures, and the normal loop-detection key remains
+separate. `SubhutiAdaptiveLowYieldMemoSmokeTestMain` proves the focused pattern:
+a speculative branch repeatedly memoizes a rule that is never hit, then moves to
+`ruleCacheAdaptiveLowYieldSkips` after the threshold. On the UTF-8 2026-07-11
+generated TypeScript recognizer benchmark, the two-file pre-tokenized probe
+measured `SlimeParser.ts avgMs=117.096 bestMs=79.381` and
+`SlimeAstCreateUtils.ts avgMs=271.327 bestMs=220.832`, while
+`ruleCacheKeyBuilds` dropped to `18640` and `33006` respectively.
+
 A follow-up `SubhutiPackratCache.getNullable(...)` experiment was rejected. It
 removed `Optional` allocation from the hot rule-cache lookup path, but
 `SlimeAstCreateUtils.ts` regressed from the retained token-cursor result around
