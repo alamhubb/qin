@@ -1994,6 +1994,21 @@ trusted by OVS, CSSTS, Qin, or Java parser users. A correct performance fix must
 preserve token -> CST -> AST -> emitted ESM -> integration behavior while
 reducing unnecessary rule execution.
 
+On 2026-07-10, the focused generated Slime TS parser-only probe confirmed that
+token categories are not the largest remaining Subhuti/Chevrotain gap. They
+remain the right model for keyword-like `IdentifierName` prediction, but the
+largest measured win is Chevrotain-style token-stream parser input. On
+`SlimeAstCreateUtils.ts`, recognizer mode with rule profiling moved from
+`avgMs=492.051 bestMs=437.058` to `avgMs=289.321 bestMs=265.864` when the parser
+used an explicit pre-tokenized default-mode stream; with rule profiling disabled
+it moved from `avgMs=455.756 bestMs=406.563` to
+`avgMs=251.337 bestMs=214.991`. The same run reduced `tokenCacheGets` from about
+`721k` to about `58k` and added about `663k` token-stream hits. Therefore the
+next maximum-return framework work is to make token-stream input a standard,
+mode-safe parser-core primitive, then reduce the remaining successful-path
+wrapper/cache costs. Token category work should follow as a targeted lookahead
+model improvement, not be treated as the primary wall-clock closer.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
