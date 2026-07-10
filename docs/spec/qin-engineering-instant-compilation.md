@@ -2141,6 +2141,21 @@ or dynamic callsites still use the conservative standard path. The focused
 declared `Choice -> A | B` parser to hit self-analysis, skip the runtime
 GAST/graph/recording cache build, and still prune the unchosen branch.
 
+The next retained exact-GAST migration applies the same rule to real Slime
+syntax. `MetaProperty` is now declared as a complete exact body:
+`MetaProperty -> NewTarget | ImportMeta`, where `NewTarget` is `New Dot
+IdentifierName("target")` and `ImportMeta` is `Import Dot
+IdentifierName("meta")`. The parser rule uses `Alternative.rule(...)` with the
+same rule names, allowing the declared GAST self-analysis plan to select
+`import.meta` without executing the `NewTarget` branch. The focused
+`SlimeMetaPropertyGastSelfAnalysisSmokeTestMain` proves that both `import.meta`
+and `new.target` consume the full source, that `orPredictionSelfAnalysisHits`
+is used, and that the unchosen branch is not executed. Treat this as the model
+for future Chevrotain-style migrations: first declare complete GAST rule bodies,
+then attach the real `Or(...)` callsite to those rule names, then prove the
+chosen branch and unchosen branch behavior with a smallest focused smoke before
+measuring broad parser speed.
+
 A `currentTokenForPrediction()` pretokenized miss fast path was also rejected.
 It tried to read the current token directly from the parsed ordinal on cache
 misses, but `SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305` to
