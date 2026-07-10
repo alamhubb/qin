@@ -2968,6 +2968,28 @@ benchmark pass in both modes; five measured source-mode rounds reported CST
 Graph/FIRST data or as a GAST prefix with an explicit dynamic tail, never as an
 exact executable GAST body.
 
+The next retained token-mode hot-path unit removes allocation from
+`LexerMode.hashCode()`. Token-cache and rule-cache identities call that method
+for every mode-aware lookup; the old `Objects.hash(name)` allocated a varargs
+array each time. `LexerMode` now computes the same stable hash value once in its
+constructor and returns the cached integer. On the real 40,500-character
+`OvsParser.ts` source-mode recognizer, the clean 20-round baseline was
+`avgMs=178.215 bestMs=136.183`; two retained 20-round runs measured
+`avgMs=169.197 bestMs=138.072` and `avgMs=172.271 bestMs=141.732`, about a
+3.3% to 5.1% average improvement. Under the same JFR settings, average time
+moved from `161.886ms` to `154.209ms`, and
+`SubhutiTokenCacheLookupKey.reset` fell from 8.06% to 3.08% of execution
+samples. This is a semantic mode-identity optimization, not a cache-policy
+change.
+
+The same audit found that the direct recognizer token-read path skipped the
+existing pre-tokenized REGEXP negative gate. It now applies that gate before
+falling back to mode-specific lexer work, matching `_getOrParseTokenEntry` and
+preserving the standard regexp-versus-default token decision. The focused smoke
+reports `preTokenizedRegexpNegativeHits=1` and `tokenCacheGets=0`. Seventeen
+focused Subhuti/Slime smokes, including template-literal source-mode parsing,
+pass after the change.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
