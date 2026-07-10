@@ -2647,6 +2647,23 @@ from the sequence path. The pre-tokenized case in
   `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`, and
   `tokenStreamGets=0`.
 
+  The next retained token-array/parser-input step makes the default-mode token
+  array a parser-owned input mode instead of requiring callers to construct a
+  separate `SubhutiLexer`. `useDefaultModeTokenArrayInput()` tokenizes the parser
+  source once with the parser's own lexer and installs the same cursor-backed
+  ordinal index used by direct recognizer plans. Direct terminal recognizer reads
+  from that cursor without recording `tokenStreamGets`, matching the sequence and
+  container cursor paths. This is not a second parser or fallback lexer; it is the
+  standard Chevrotain-style token-array input model for default-mode recognizer
+  runs, while mixed lexer-mode cases continue to fall back only when the
+  token-array contract cannot represent the requested mode. On 2026-07-11,
+  `SubhutiDirectTerminalSequenceSmokeTestMain` added parser-owned token-array
+  direct-terminal coverage, and `SubhutiRecognizerPerformanceProbeMain 200000`
+  measured exact-GAST single-token recognition at `avgUs=0.466` from source and
+  `avgUs=0.258` through parser-owned token-array input, with
+  `ruleWrapperCalls=0`, `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`,
+  `tokenCacheGets=0`, and `tokenStreamGets=0`.
+
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
