@@ -1784,6 +1784,20 @@ stack overhead. The optimization is still analysis-gated: CST output, error
 recovery, top-level parse setup/EOF checks, debug tracing, and non-pass-through
 rules stay on the standard wrapper path.
 
+Static enhanced parser wrappers should also avoid avoidable argument-packaging
+work on the hot path. For a single-argument generated wrapper, pass that
+argument directly as `cacheKeyExtra` instead of generating
+`cacheKeyExtra(new Object[] {arg0})`; the helper returns the same value for one
+argument, but the temporary array still adds allocation churn before every
+wrapped rule call. This is a static-wrapper generation rule, not a grammar
+fallback. On 2026-07-10, applying it to `SlimeParserStaticEnhanced` kept the
+same structural parser counters and moved the generated
+`SlimeAstCreateUtils.ts` recognizer benchmark from about `525ms` average /
+`499ms` best to about `469ms` average / `424ms` best with warmup=3 and
+rounds=5. The broader Chevrotain gap remains successful-path rule wrapper,
+packrat, and grammar-plan cost; this wrapper-shape cleanup is a retained small
+step because it removes pure generated-code overhead.
+
 The follow-up successful-path cache policy removes two more unnecessary packrat
 costs without changing the grammar path. Top-level rules no longer build or
 write packrat entries, because there is no parent callsite that can reuse that
