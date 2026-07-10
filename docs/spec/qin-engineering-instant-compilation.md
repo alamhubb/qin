@@ -2185,6 +2185,25 @@ Chevrotain-style direction, but it must be generated or preplanned for proven
 hot rules from a real GAST; do not add per-wrapper runtime graph queries to
 discover tiny direct-execution cases.
 
+The next retained token-stream step applies the same principle to assignment
+lookahead. Source-mode `hasTopLevelAssignmentOperatorAhead()` stays conservative
+because deep scanning can force regexp-sensitive lexing far ahead of the parser,
+but pre-tokenized default-mode recognizers may scan the already materialized
+token array until an expression boundary. This is a Chevrotain-style token cursor
+optimization: it avoids entering the `LeftHandSideExpression ->
+AssignmentOperatorAny` branch when the current expression plainly has no
+top-level assignment operator, while preserving the normal source-mode path. The
+focused `SlimePreTokenizedAssignmentLookaheadSmokeTestMain` proves that `value`
+skips `AssignmentOperatorAny` and `value = next` still consumes the assignment.
+On `SlimeAstCreateUtils.ts` recognizer with pre-tokenized input, structural
+counters improved from about `ruleWrapperCalls=51745`,
+`ruleCoreExecutions=37981`, and `ruleCacheKeyBuilds=45870` to
+`ruleWrapperCalls=39201`, `ruleCoreExecutions=32466`, and
+`ruleCacheKeyBuilds=38841`; the same two-round probe moved from about
+`avgMs=476 bestMs=403` to `avgMs=407 bestMs=304`. Treat this as a targeted
+token-stream/grammar-gate optimization, not as a fallback parser or permission
+to reintroduce broad source-mode deep scans.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
