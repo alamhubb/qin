@@ -2134,6 +2134,20 @@ with `Integer.MAX_VALUE`; `SlimeAstCreateUtils.ts` regressed from the current
 `33006` to `171007`. Keep the adaptive policy as part of the retained
 token-array/cache-key combination, not as a standalone optimization claim.
 
+The same 2026-07-11 baseline showed that the original 256 zero-hit threshold was
+too late for many speculative rules that produce only about 258 cache puts in a
+large generated TypeScript file. Lowering `ADAPTIVE_LOW_YIELD_MEMO_MIN_PUTS` to
+64 is retained because it preserves the same parser semantics while making the
+framework stop writing zero-yield speculative memo entries sooner. The focused
+adaptive smoke still proves visible skip behavior, and the UTF-8 10-round
+two-file recognizer probe moved `SlimeParser.ts` from `avgMs=96.579 bestMs=73.821`
+to `avgMs=83.218 bestMs=60.197`, and `SlimeAstCreateUtils.ts` from
+`avgMs=217.806 bestMs=175.328` to `avgMs=207.133 bestMs=173.438`.
+`ruleCacheKeyBuilds` dropped from `18640/33006` to `9640/22086`. Treat this as a
+measured framework packrat-policy refinement, not as the main Chevrotain gap
+closer; the remaining dominant cost is still successful-path wrapper/core work
+around expression/member rules.
+
 A parser-state token-sequence cache for prediction was rejected on the same
 2026-07-11 baseline. The focused `And(() -> Choice())` probe could produce a
 cache hit for repeated lookahead at the exact same parser state, but the real
