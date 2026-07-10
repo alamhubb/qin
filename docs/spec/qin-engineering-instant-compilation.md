@@ -566,9 +566,8 @@ Grammar-local first-token dispatch may be used as a focused diagnostic or a
 temporary proof of the slow boundary, but the durable Qin direction is a
 framework-level prediction layer.
 
-Qin parser cold-start work follows the same rule. Runtime ByteBuddy generation
-is a historical Java-only diagnostic/reference mechanism, not a current Qin
-standard path. The Qin-owned parser path should use a static enhanced parser
+Qin parser cold-start work follows the same rule. Runtime parser enhancement is
+not a current Qin standard path. The Qin-owned parser path should use a static enhanced parser
 `.class` when the source grammar is known. A valid
 static enhanced parser preserves the same `@SubhutiRule` wrapper semantics,
 packrat keys, CST shape, AST output, and error behavior as the dynamic enhanced
@@ -579,8 +578,8 @@ eagerly initialize heavyweight logging frameworks just to emit rare diagnostics;
 diagnostics that only apply to non-standard raw parser construction should stay
 on a lightweight path so the standard static parser can start quickly.
 Focused parser performance probes must measure that same standard static path.
-Do not use `SubhutiParser.create(...)`, `ByteBuddyParserFactory.createRaw(...)`,
-or another runtime ByteBuddy route as the main Qin parser benchmark path. Those
+Do not use `SubhutiParser.create(...)` or another runtime parser-enhancement
+route as the main Qin parser benchmark path. Those
 routes are historical or diagnostic references only, and any performance fix
 must be proven on the static enhanced `.class` wrapper and its `cst(false)`
 recognizer mode when parser-only timing is required.
@@ -588,7 +587,7 @@ recognizer mode when parser-only timing is required.
 Decorator handling follows the canonical Qin JS compatibility rule in
 `packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md`: Qin-owned decorators
 are lowered at compile time into static `.class` wrappers, metadata,
-initializer calls, JVM annotations, or rule tables. Runtime ByteBuddy,
+initializer calls, JVM annotations, or rule tables. Runtime enhancement,
 reflection, or JavaScript descriptor emulation must not become the standard
 fallback for a missing decorator lowerer.
 
@@ -596,9 +595,9 @@ When Qin emits or transforms JVM bytecode directly, prefer the JDK Class-File
 API as the standard implementation path when it covers the required classfile
 features. ASM is a mature third-party bytecode engineering reference and may be
 studied or evaluated for gaps, but it should not replace the current Qin
-Class-File API route merely because it is popular. ByteBuddy remains outside
-the standard static `.class` path; it is not the mechanism for parser wrappers,
-decorator lowering, or Qin-owned source-to-class compilation.
+Class-File API route merely because it is popular. Runtime enhancement remains
+outside the standard static `.class` path; it is not the mechanism for parser
+wrappers, decorator lowering, or Qin-owned source-to-class compilation.
 
 Subhuti should learn from mature parser frameworks by recording enough grammar
 metadata to predict alternatives before executing them. The framework should

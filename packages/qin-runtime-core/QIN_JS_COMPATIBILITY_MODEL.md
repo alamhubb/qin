@@ -134,9 +134,8 @@ Accepted Qin-owned decorator forms:
 
 For example, a parser source method annotated with `@SubhutiRule` should compile
 to a static `.class` wrapper, rule metadata, or rule table that preserves the
-same rule-wrapper semantics. Runtime ByteBuddy enhancement is a historical
-Java-only diagnostic/reference mechanism, not a current Qin standard path, and
-must not become a fallback for a missing static lowerer.
+same rule-wrapper semantics. Runtime parser enhancement is not a current Qin
+standard path and must not become a fallback for a missing static lowerer.
 
 Java annotations can express metadata on emitted `.class` files, but they do
 not by themselves replace TypeScript decorator behavior such as wrapping a
@@ -151,7 +150,7 @@ Class-File API first when it supports the needed bytecode feature. ASM is a
 mature external bytecode toolkit and can be used as a design reference or gap
 evaluation point, but the standard Qin route should stay on the current
 Class-File API path instead of switching bytecode libraries without a concrete
-missing capability. Runtime ByteBuddy generation is not part of this static
+missing capability. Runtime bytecode generation is not part of this static
 emission model.
 
 Rejected decorator forms:
@@ -165,8 +164,8 @@ Rejected decorator forms:
   compatibility layer instead of a Qin-owned static lowering contract
 
 Unsupported decorator forms should fail early with a clear diagnostic. Do not
-repair them with runtime reflection, ByteBuddy fallback generation, broad
-dynamic helper calls, or source rewrites that hide the missing lowerer.
+repair them with runtime reflection, runtime bytecode fallback generation,
+broad dynamic helper calls, or source rewrites that hide the missing lowerer.
 
 ## 2. Supported-by-Design Surface
 
