@@ -2202,6 +2202,25 @@ closer. The current main speed closer remains the successful-path cost around
 `MemberExpression`, `AssignmentExpression`, token cursor access, wrapper/cache
 work, and state snapshots.
 
+The next retained GAST-analysis step allows exact callsite analysis to keep a
+known terminal prefix even when the rule body has a dynamic tail after that
+prefix. This matches the Chevrotain-style distinction between "enough prefix to
+plan lookahead" and "complete body can be executed": a rule such as
+`BracketSuffix -> LBracket dynamic(Expression) RBracket` may contribute
+`LBracket` to lookahead, while `dynamic(...) A` remains unplanned because the
+first consumed token is unknown. `SubhutiGastCallsiteAnalysisSmokeTestMain`
+proves both sides. Slime now declares member suffix GAST prefixes such as
+`DotMemberSuffix -> Dot IdentifierName`, `DotPrivateIdentifierSuffix -> Dot
+PrivateIdentifier`, `ComputedMemberSuffix -> LBracket dynamic(Expression)
+RBracket`, `OptionalChain -> QuestionDot dynamic(...)`, and
+`TSNonNullExpressionTail -> LogicalNot`. On `SlimeAstCreateUtils.ts` this did
+not materially move wall-clock (`avgMs=282.813` local baseline to
+`avgMs=282.866`), but it reduced the hot `MemberExpression` candidate average
+from about `1.21` to `1.11` and increased skipped alternatives by about `995`.
+Keep this as a structural Chevrotain-alignment step, not as the final speed
+closer; the next performance work still needs to turn these better plans into
+less state-save, wrapper, cache, and token-access work.
+
 A `currentTokenForPrediction()` pretokenized miss fast path was also rejected.
 It tried to read the current token directly from the parsed ordinal on cache
 misses, but `SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305` to
@@ -2245,6 +2264,18 @@ architecture lesson is that exact grammar-body execution is still the right
 Chevrotain-style direction, but it must be generated or preplanned for proven
 hot rules from a real GAST; do not add per-wrapper runtime graph queries to
 discover tiny direct-execution cases.
+
+Two further 2026-07-10 experiments were rejected before the retained
+dynamic-tail GAST change. Reading prediction current-token misses directly from
+the pretokenized ordinal stream passed focused smokes but regressed
+`SlimeAstCreateUtils.ts` from `avgMs=282.813 bestMs=255.735` to
+`avgMs=334.883 bestMs=299.250` and increased `tokenStreamGets`; do not add
+extra direct-token branches inside the already cached current-token prediction
+path. Moving recognizer pass-through and terminal-leaf classification into a
+parser-class/grammar-revision execution-plan cache also passed its smoke but
+regressed the same probe to `avgMs=340.628 bestMs=316.210` with no useful
+structural-count improvement; per-instance graph classification is not the
+current hot cost compared with successful-path wrapper/cache/token execution.
 
 The next retained token-stream step applies the same principle to assignment
 lookahead. Source-mode `hasTopLevelAssignmentOperatorAhead()` stays conservative
