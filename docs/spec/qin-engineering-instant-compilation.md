@@ -2898,6 +2898,33 @@ direct plans. Treat this unit as a cold self-analysis and architecture fix with
 a measured warm recognizer benefit; it does not by itself remove the remaining
 successful-path wrapper/core/token costs.
 
+Static enhanced parser classes are generated source artifacts, not runtime
+proxies. `SubhutiStaticEnhancedGenerator` is the standard generator for Java
+parser classes: it preserves the source parser superclass, source-visible method
+name and signature, `@SubhutiRule.name`, `@SubhutiRule.cache`, void versus
+returned-value wrapper shape, argument order, and structural multi-argument
+cache keys. Generated classes compile to ordinary `.class` files and may
+explicitly enable worklist GAST self-analysis. Runtime bytecode generation,
+reflection dispatch, and `SubhutiParser.create(...)` are not parser creation
+paths.
+
+Recording-mode FIRST analysis must treat `OPTION` and `MANY` as nullable. A
+recorded token inside either container cannot terminate the whole alternative
+as an exact FIRST sequence because the following grammar element may also start
+that alternative. Recording continues after the nullable container; if the
+remaining structure cannot be represented completely, the callsite becomes
+analysis-only. It must never use the truncated container prefix to authorize
+negative runtime pruning. `AT_LEAST_ONE` remains non-nullable.
+
+On 2026-07-11, this correction fixed the framework-level `typeType | VOID`
+case where `typeType` begins with `Many(annotation)`: primitive `INT` had
+previously been excluded from FIRST and both branches were skipped. Focused
+`OPTION(A) B` and `MANY(A) B` smokes now preserve `B` as a valid start. A
+generated 156-rule `JavaParserStaticEnhanced` then passed 7/7 incremental Java
+parser cases, including fields and methods. On a 14,643-character Java source,
+the static `.class` path measured about `110.5ms` parse-only and `125.3ms`
+parse-plus-AST over 30 measured rounds.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
