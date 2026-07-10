@@ -2101,6 +2101,18 @@ FIRST/lookahead graph facts from exact grammar-tree nodes. Do not execute a rule
 directly from `singleTerminalForRule(...)` unless the graph node is proven to be
 the complete rule body, not merely its start token.
 
+The Chevrotain-style self-analysis cache must also be keyed by the exact GAST
+identity, not only by parser class and callsite. A parser class/callsite pair
+can only reuse a direct lookahead/execution plan when the resolved grammar body
+that produced the plan is the same grammar revision. If a `SubhutiGastGrammar`
+instance gains or changes rule bodies, its analysis revision changes and cached
+plans for the old revision must not be reused. This keeps the architectural
+split honest: `SubhutiGrammarGraph` may remain a partial FIRST/lookahead fact
+surface, while `SubhutiGastGrammar` owns exact rule-body planning. Missing GAST,
+dynamic lambda alternatives, recursive unresolved rules, or stale grammar
+revisions must stay analysis-only or rebuild the plan; they must not silently
+execute a plan derived from different rule bodies.
+
 A `currentTokenForPrediction()` pretokenized miss fast path was also rejected.
 It tried to read the current token directly from the parsed ordinal on cache
 misses, but `SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305` to
