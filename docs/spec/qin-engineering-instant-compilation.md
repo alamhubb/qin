@@ -2520,12 +2520,28 @@ keeps the same exact-GAST authorization and the same visible parse-failure
 surface, but removes per-token `tokenStreamGets` and token-entry cache checks
 from the sequence path. The pre-tokenized case in
 `SubhutiDirectTerminalSequenceSmokeTestMain` asserts `tokenStreamGets=0`; the
-focused 2026-07-10 probe measured the 10-token pre-tokenized exact-GAST sequence
-at about `avgUs=0.293` with `ruleWrapperCalls=0`, `ruleCoreExecutions=0`,
-`ruleCacheKeyBuilds=0`, `tokenCacheGets=0`, and `tokenStreamGets=0`.
+  focused 2026-07-10 probe measured the 10-token pre-tokenized exact-GAST sequence
+  at about `avgUs=0.293` with `ruleWrapperCalls=0`, `ruleCoreExecutions=0`,
+  `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`, and `tokenStreamGets=0`.
 
-The follow-up retained token-consume cleanup shares the existing recognizer
-direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
+  The next retained exact-GAST execution unit extends direct recognizer plans to
+  simple `OPTION` terminal sequences. When exact GAST proves that a void rule is
+  a sequence of required terminals plus optional terminal subsequences, and no
+  element uses token-value matching, the runtime plan may decide optional
+  presence from the optional sequence's first terminal and then consume the
+  planned terminals directly. This preserves Chevrotain-style `OPTION` semantics:
+  absent optional input does not fail, but once the optional start token is
+  present, a missing inner required token remains a visible parse failure rather
+  than being restored away as absence. The focused
+  `SubhutiDirectTerminalSequenceSmokeTestMain` now proves absent, present,
+  inner-failure, and pre-tokenized cursor cases. The 2026-07-11 focused probe
+  measured the four-token optional plan at about `avgUs=1.569` from source and
+  `avgUs=0.532` with pre-tokenized input, with `ruleWrapperCalls=0`,
+  `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`,
+  `tokenStreamGets=0`, and `ruleWrapperDirectRecognizerPlanSkips=1`.
+
+  The follow-up retained token-consume cleanup shares the existing recognizer
+  direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
 the source-index token cache, token matching reads the current token directly
 instead of doing `HashMap` token-cache get/miss/put work. This keeps the same
