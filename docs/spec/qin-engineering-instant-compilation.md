@@ -2540,6 +2540,23 @@ from the sequence path. The pre-tokenized case in
   `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`,
   `tokenStreamGets=0`, and `ruleWrapperDirectRecognizerPlanSkips=1`.
 
+  The matching exact-GAST repetition step extends the same direct recognizer plan
+  to simple `MANY` terminal sequences. A repetition element may run only when
+  exact GAST proves the repeated body is a terminal sequence with no token-value,
+  gate, alternation, or dynamic boundary. The loop continues while the repeated
+  sequence's first terminal is present; after that start token is present, an
+  inner mismatch is a visible parse failure rather than being treated as the end
+  of repetition. This is the same Chevrotain-style distinction as `OPTION`:
+  lookahead decides whether the production is entered, and entered productions do
+  not hide internal errors. The focused
+  `SubhutiDirectTerminalSequenceSmokeTestMain` covers absent repetition,
+  multiple repetitions, inner failure, and the pre-tokenized cursor path. The
+  2026-07-11 focused probe measured a six-token two-iteration repetition plan at
+  about `avgUs=2.332` from source and `avgUs=0.285` with pre-tokenized input,
+  with `ruleWrapperCalls=0`, `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`,
+  `tokenCacheGets=0`, `tokenStreamGets=0`, and
+  `ruleWrapperDirectRecognizerPlanSkips=1`.
+
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
