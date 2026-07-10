@@ -2478,6 +2478,23 @@ exact coverage and reduces the recognizer path from eleven wrappers to one.
 This is the intended Chevrotain-style safety rule for future wrapper/cache/token
 optimizations.
 
+The next accepted exact-GAST execution unit is direct terminal recognizer
+planning. When exact GAST proves that a void rule, possibly through a chain of
+single rule references, is exactly one terminal with no token-value constraint,
+`SubhutiParserRuntimePlan` records a direct terminal plan. In `cst(false)` mode,
+with recovery and debugger disabled, the void rule wrapper may consume that
+terminal directly and skip the successful-path wrapper/core/cache stack while
+still preserving top-level initialization, EOF validation, parse failure, token
+semantics, and CST-producing mode. A direct plan miss is not a fallback parser;
+only exact GAST can authorize this path, and a token mismatch remains the
+standard parse failure. Retained focused probes on 2026-07-10 moved the exact
+GAST recognizer chain to about `avgUs=0.6-0.8` with `ruleWrapperCalls=0`,
+`ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, and
+`ruleWrapperDirectTerminalSkips=1`. An instance-level direct-terminal lookup
+cache experiment was rejected because focused wall-clock results were unstable;
+future work should continue through generated or parser-class runtime plans, not
+per-instance micro-caches.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
