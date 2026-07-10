@@ -2468,6 +2468,16 @@ This is a small but important architecture step toward Chevrotain's
 guarded by runtime-plan coverage instead of assuming that a graph summary is a
 complete executable grammar body.
 
+The follow-up tightening makes that boundary executable: graph-derived
+pass-through and terminal-leaf facts remain visible in the runtime-plan report
+but no longer feed successful-path wrapper skips. Direct recognizer skips are
+fed only by exact `SubhutiGastGrammar` facts. The updated smokes prove both
+sides: a graph-only parser still reports graph coverage and uses predictions,
+but has zero `ruleWrapperPassThroughSkips`; an exact-GAST chain parser reports
+exact coverage and reduces the recognizer path from eleven wrappers to one.
+This is the intended Chevrotain-style safety rule for future wrapper/cache/token
+optimizations.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
