@@ -2188,6 +2188,16 @@ and gives Subhuti a Chevrotain-style plan boundary, but broad parser speed still
 depends on the next successful-path reductions for wrapper/cache/state/token
 execution.
 
+A same-day LL(k) depth experiment was rejected. Raising the framework lookahead
+constants from `4` to `8` in `SubhutiGastCallsiteAnalysis`,
+`SubhutiOrLookaheadPlan`, and `SubhutiParserCombinators` compiled and the
+focused parser benchmark still succeeded, but `SlimeAstCreateUtils.ts` showed
+no structural improvement: `orPredictionStateSaves`, `LeftHandSideExpression`
+state saves, wrapper calls, cache-key builds, and token-stream gets stayed the
+same. Do not treat a larger global `k` as the next performance closer unless a
+focused callsite first proves that the extra depth changes candidate sets while
+preserving PEG prefix ambiguity rules.
+
 The next retained exact-GAST migration applies the same rule to real Slime
 syntax. `MetaProperty` is now declared as a complete exact body:
 `MetaProperty -> NewTarget | ImportMeta`, where `NewTarget` is `New Dot
