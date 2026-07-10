@@ -2156,6 +2156,21 @@ then attach the real `Or(...)` callsite to those rule names, then prove the
 chosen branch and unchosen branch behavior with a smallest focused smoke before
 measuring broad parser speed.
 
+The follow-up `ModuleExportName -> IdentifierName | StringLiteral` retained the
+same exact-GAST pattern on another real Slime rule whose complete body was
+already available. Adding `gast.putAlternation("ModuleExportName",
+"IdentifierName", "StringLiteral")` lets the declared self-analysis plan choose
+a string literal export name without first executing the `IdentifierName`
+branch. `SlimeModuleExportNameGastSelfAnalysisSmokeTestMain` proves both
+identifier and string-literal export names consume the full source, hit
+`orPredictionSelfAnalysisHits`, and skip the unchosen identifier branch for the
+string-literal case. The broader `SlimeAstCreateUtils.ts` parser-only probe did
+not show structural-count movement because that file does not exercise this
+callsite heavily; keep this as exact-GAST coverage, not as a claimed main speed
+closer. The current main speed closer remains the successful-path cost around
+`MemberExpression`, `AssignmentExpression`, token cursor access, wrapper/cache
+work, and state snapshots.
+
 A `currentTokenForPrediction()` pretokenized miss fast path was also rejected.
 It tried to read the current token directly from the parsed ordinal on cache
 misses, but `SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305` to
