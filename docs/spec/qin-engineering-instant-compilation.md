@@ -2134,6 +2134,16 @@ with `Integer.MAX_VALUE`; `SlimeAstCreateUtils.ts` regressed from the current
 `33006` to `171007`. Keep the adaptive policy as part of the retained
 token-array/cache-key combination, not as a standalone optimization claim.
 
+A parser-state token-sequence cache for prediction was rejected on the same
+2026-07-11 baseline. The focused `And(() -> Choice())` probe could produce a
+cache hit for repeated lookahead at the exact same parser state, but the real
+generated TypeScript corpus produced `predictionTokenSequenceCacheHits=0` and
+large miss counts (`29093` on `SlimeParser.ts`, `116113` on
+`SlimeAstCreateUtils.ts`). The two-file pre-tokenized recognizer benchmark was
+mixed and regressed the larger file (`SlimeParser.ts avgMs=91.808 bestMs=62.279`,
+`SlimeAstCreateUtils.ts avgMs=244.994 bestMs=187.626`). Do not retain a
+state-sequence cache unless corpus counters show real reuse on the hot path.
+
 A follow-up `SubhutiPackratCache.getNullable(...)` experiment was rejected. It
 removed `Optional` allocation from the hot rule-cache lookup path, but
 `SlimeAstCreateUtils.ts` regressed from the retained token-cursor result around
