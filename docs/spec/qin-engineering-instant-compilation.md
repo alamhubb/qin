@@ -2540,8 +2540,8 @@ from the sequence path. The pre-tokenized case in
 
   The next retained exact-GAST execution unit extends direct recognizer plans to
   simple `OPTION` terminal sequences. When exact GAST proves that a void rule is
-  a sequence of required terminals plus optional terminal subsequences, and no
-  element uses token-value matching, the runtime plan may decide optional
+  a sequence of required terminals plus optional terminal subsequences, the
+  runtime plan may decide optional
   presence from the optional sequence's first terminal and then consume the
   planned terminals directly. This preserves Chevrotain-style `OPTION` semantics:
   absent optional input does not fail, but once the optional start token is
@@ -2556,8 +2556,8 @@ from the sequence path. The pre-tokenized case in
 
   The matching exact-GAST repetition step extends the same direct recognizer plan
   to simple `MANY` terminal sequences. A repetition element may run only when
-  exact GAST proves the repeated body is a terminal sequence with no token-value,
-  gate, alternation, or dynamic boundary. The loop continues while the repeated
+  exact GAST proves the repeated body is a terminal sequence with no gate,
+  alternation, or dynamic boundary. The loop continues while the repeated
   sequence's first terminal is present; after that start token is present, an
   inner mismatch is a visible parse failure rather than being treated as the end
   of repetition. This is the same Chevrotain-style distinction as `OPTION`:
@@ -2578,8 +2578,8 @@ from the sequence path. The pre-tokenized case in
   the same first-terminal lookahead loop as `MANY`. This keeps Chevrotain-style
   one-or-more semantics precise: entered productions do not hide missing inner
   tokens, and the optimization is available only when exact GAST proves the
-  repeated body is a terminal sequence with no token-value, gate, alternation,
-  or dynamic boundary. On 2026-07-11,
+  repeated body is a terminal sequence with no gate, alternation, or dynamic
+  boundary. On 2026-07-11,
   `SubhutiDirectTerminalSequenceSmokeTestMain` added absent-first-item,
   single-item, multi-item, inner-failure, and pre-tokenized cursor coverage. The
   focused `SubhutiRecognizerPerformanceProbeMain 200000` run measured the
@@ -2587,6 +2587,21 @@ from the sequence path. The pre-tokenized case in
   `avgUs=0.241` with pre-tokenized input, with `ruleWrapperCalls=0`,
   `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`,
   `tokenStreamGets=0`, and `ruleWrapperDirectRecognizerPlanSkips=1`.
+
+  The next exact-GAST execution tightening lets direct terminal, sequence, and
+  container plans carry `TerminalValue` as well as token names. This is still a
+  single standard parser path: only exact `SubhutiGastGrammar` terminal-value
+  nodes authorize the skip, and the runtime cursor checks both `tokenName` and
+  `tokenValue` before consuming. A wrong value remains a visible parse failure
+  and is not consumed as a weaker token-name match. The focused
+  `SubhutiDirectTerminalSequenceSmokeTestMain` covers matching terminal values,
+  wrong-value failure without consumption, terminal-value sequences,
+  pre-tokenized cursor matching, and value-aware optional presence. The
+  2026-07-11 `SubhutiRecognizerPerformanceProbeMain 200000` run measured a
+  two-token terminal-value sequence at `avgUs=1.139` from source and
+  `avgUs=0.432` with pre-tokenized input, with `ruleWrapperCalls=0`,
+  `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`,
+  `tokenStreamGets=0`, and `ruleWrapperDirectTerminalSequenceSkips=1`.
 
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
