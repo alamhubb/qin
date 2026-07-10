@@ -2699,6 +2699,17 @@ from the sequence path. The pre-tokenized case in
   alignment path; the durable direction is a unified token-array/parser-input
   model plus exact-GAST runtime plans.
 
+  A 2026-07-11 `Many(Alternative...)` experiment hoisted the static
+  `SubhutiOrPrediction` lookup outside the repetition loop. It correctly reduced
+  one structural counter on the generated TypeScript recognizer profile
+  (`orPredictionHotCacheHits` dropped from about `102709` to `100031` on
+  `SlimeAstCreateUtils.ts`), but the same focused run regressed wall-clock timing
+  from about `349.9ms` to `376.5ms` and increased current-token prediction misses.
+  Do not keep plan-hoisting micro-optimizations merely because one cache counter
+  improves. The next retained work should remove larger successful-path costs,
+  especially wrapper/core/token work proven by both structural counters and
+  wall-clock measurements.
+
   The retained follow-up specializes exact-GAST `ALTERNATION` plans by size.
   Small direct OR plans with at most two alternatives keep the already-proven
   linear recognizer path, avoiding fixed map-dispatch overhead on the common
