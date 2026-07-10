@@ -2603,6 +2603,25 @@ from the sequence path. The pre-tokenized case in
   `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`,
   `tokenStreamGets=0`, and `ruleWrapperDirectTerminalSequenceSkips=1`.
 
+  Simple exact-GAST `ALTERNATION` is now also a direct recognizer plan when every
+  alternative is a terminal sequence and each alternative has a distinct first
+  terminal key, including token value and lexer mode. Runtime execution chooses
+  the matching alternative by that first terminal and then consumes the planned
+  sequence directly. If no alternative can start, the rule fails without
+  consuming input; if an entered alternative later misses an inner token, that
+  failure remains visible. Prefix-ambiguous alternatives such as `A` versus
+  `A B`, gated alternatives, nullable alternatives, dynamic bodies, or partial
+  `SubhutiGrammarGraph` FIRST facts must stay analysis-only to preserve PEG
+  branch order. The 2026-07-11 focused
+  `SubhutiDirectTerminalSequenceSmokeTestMain` covers first-branch selection,
+  second-branch selection, inner failure, no-start failure without consumption,
+  and the pre-tokenized cursor path. `SubhutiRecognizerPerformanceProbeMain
+  200000` measured a two-token second-branch OR plan at `avgUs=1.067` from
+  source and `avgUs=0.234` with pre-tokenized input, with
+  `ruleWrapperCalls=0`, `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`,
+  `tokenCacheGets=0`, `tokenStreamGets=0`, and
+  `ruleWrapperDirectRecognizerPlanSkips=1`.
+
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
