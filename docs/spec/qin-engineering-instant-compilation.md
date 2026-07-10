@@ -2177,6 +2177,15 @@ proof of a better Chevrotain-style runtime path. Keep low-yield memo policy
 changes only when the same focused parser-only benchmark improves wall-clock
 time.
 
+The 2026-07-11 follow-up also rejected adding `MemberExpression` to
+`recognizerLowYieldMemoRules()`. The rule looked tempting because the profile
+showed only `651` cache hits for `7787` puts, but those hits saved large spans.
+The focused 10-round two-file recognizer probe regressed to
+`SlimeParser.ts avgMs=98.119 bestMs=74.854` and
+`SlimeAstCreateUtils.ts avgMs=240.221 bestMs=199.196`. Keep `MemberExpression`
+memoized until a structural exact-GAST/common-prefix plan can remove the repeated
+work without losing those useful hits.
+
 A later targeted low-yield memo point was retained for `ArgumentListItem`.
 Unlike the rejected broad expansion, this single rule showed zero cache hits in
 the hot generated-TS recognizer probe while contributing thousands of cache
