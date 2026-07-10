@@ -2781,6 +2781,19 @@ Chevrotain-style route from recording to executable GAST plans. The focused
 GAST LL(2) self-analysis prediction, while `A` versus `A B` still disables
 runtime pruning.
 
+The next structural API step adds `Alternative.structure(...)`: a grammar author
+or future generator can attach an explicit diagnostic `SubhutiGrammarNode` and
+exact/prefix `SubhutiGastNode` to a branch without executing that branch in
+recording mode. `SubhutiGastCallsiteAnalysis` must let its path analysis decide
+whether a dynamic tail is usable; a branch such as
+`LBracket dynamic(Expression) RBracket` can still contribute the known
+`LBracket` prefix, while a dynamic
+prefix before the first consumed token stays unplanned. This is a Chevrotain-style
+self-analysis surface, not a fallback parser and not a second grammar. The
+focused `SubhutiGastCallsiteAnalysisSmokeTestMain` proves both the structured
+Alternative path and the existing rule-reference path for known-prefix dynamic
+tails.
+
 The next retained real-parser GAST coverage step adds exact operator rules for
 Slime's `MultiplicativeOperator`, `AssignmentOperator`, and
 `AssignmentOperatorAny`. This is the preferred Chevrotain-style direction for
