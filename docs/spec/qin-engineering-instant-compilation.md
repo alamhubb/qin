@@ -2372,6 +2372,19 @@ this as retained framework architecture progress because it removes a proven
 unreachable recovery candidate from the successful path without adding fallback
 syntax or weakening errors.
 
+A broader `LeftHandSideExpression` experiment was rejected immediately after
+that retained step. It tried to make `NewExpression` a planning-gated fallback
+behind `OptionalExpression` and `CallExpression` so simple call expressions
+would not keep the `NewExpression -> MemberExpression` candidate. The focused
+`SlimeAstCreateUtils.ts` parser probe failed with unconsumed `class` at source
+position `13464`, proving the gate did not model the full JS/TS left-hand-side
+boundary. Do not reintroduce this broad `NewExpression` gate without first
+building smaller grammar-specific coverage for class expressions, call heads,
+`new` chains, optional chains, and TypeScript postfix forms. The remaining
+`LeftHandSideExpression` state saves should be attacked with narrower exact
+GAST/factoring evidence, not by excluding `NewExpression` through an incomplete
+deep lookahead predicate.
+
 The next retained token-cursor step targets JavaScript's lexical-goal split for
 regular expression literals. The pre-tokenized recognizer path already owns the
 default-mode token array, but `RegularExpressionLiteral` checks use
