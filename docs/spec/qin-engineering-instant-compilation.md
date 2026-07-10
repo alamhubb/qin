@@ -2204,6 +2204,23 @@ counters improved from about `ruleWrapperCalls=51745`,
 token-stream/grammar-gate optimization, not as a fallback parser or permission
 to reintroduce broad source-mode deep scans.
 
+The next retained OPTION/GAST coverage step connects optional initializers to
+the grammar graph. `Initializer` is now declared as starting with `Assign`, and
+optional initializer sites use `Option(Alternative.rule("Initializer", ...))`
+instead of entering the rule and failing whenever `=` is absent. This is the
+same Chevrotain-style optional-production direction as earlier type-argument
+and expression-tail work: the grammar metadata decides whether the optional
+production can start before the wrapper and packrat cache are paid. The focused
+`SlimeInitializerOptionLookaheadSmokeTestMain` proves both sides: `const value;`
+skips the `Initializer` rule, while `const value = 1;` still executes it. On
+`SlimeAstCreateUtils.ts` pre-tokenized recognizer, structural counters moved
+from about `ruleWrapperCalls=39201`, `ruleCoreExecutions=32466`, and
+`ruleCacheKeyBuilds=38841` to `ruleWrapperCalls=38544`,
+`ruleCoreExecutions=31809`, and `ruleCacheKeyBuilds=38184`; the same two-round
+probe measured about `avgMs=322 bestMs=262`. Keep this as a small but real
+Chevrotain-alignment step: it removes failure-driven optional parsing from a hot
+standard path without changing accepted syntax.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
