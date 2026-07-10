@@ -2113,6 +2113,21 @@ dynamic lambda alternatives, recursive unresolved rules, or stale grammar
 revisions must stay analysis-only or rebuild the plan; they must not silently
 execute a plan derived from different rule bodies.
 
+The next accepted Chevrotain-style step is declared exact GAST alternations.
+`SubhutiGastGrammar` may declare OR callsites such as `ModuleItem ->
+ImportDeclaration | ExportDeclaration` beside exact rule bodies. Then
+`SubhutiGastSelfAnalysis` can build `SubhutiOrPrediction` entries directly from
+that grammar, without executing the alternatives in recording mode. This differs
+from `SubhutiGrammarGraph.putAlternation(...)`: graph alternations may still be
+FIRST/lookahead summaries, but GAST alternations are eligible only when all
+referenced rule bodies resolve through exact `SubhutiGastNode` structure. The
+runtime may hydrate these plans through the normal parser-class self-analysis
+cache; if a referenced rule is dynamic, missing, recursive in an unsupported
+way, or only represented by graph facts, no executable GAST prediction is
+created. Focused smoke coverage must prove that an import-like rule keeps an
+LL(k) prefix derived from the complete body rather than collapsing to the single
+FIRST token.
+
 A `currentTokenForPrediction()` pretokenized miss fast path was also rejected.
 It tried to read the current token directly from the parsed ordinal on cache
 misses, but `SlimeAstCreateUtils.ts` regressed from about `avgMs=259.305` to
