@@ -661,6 +661,54 @@ code, unbounded lookahead, or unanalyzable predicates, the framework must report
 that choice as dynamic or ambiguous instead of pretending it has a perfect
 prediction. That is a grammar diagnostic, not a fallback parser.
 
+The Chevrotain-style refactor should be a structural split, not another
+runtime hot-path patch. Subhuti must separate at least four concerns:
+
+- `SubhutiGrammarGraph` remains a grammar-fact and lookahead summary surface for
+  partially modeled grammars. It may contain FIRST/lookahead approximations and
+  must not be treated as an executable grammar body.
+- a new exact GAST layer should represent complete grammar structure:
+  `Rule`, `Alternative`, `Terminal`, `TerminalValue`, `NonTerminal`, `Option`,
+  `Many`, `AtLeastOne`, `Gate`, and explicit `Action` boundaries. Only this
+  layer may drive direct execution or generated runtime plans.
+- a self-analysis layer should run once per parser class, resolve rule
+  references, compute nullable/FIRST/FOLLOW/LL(k), detect duplicate or prefix
+  ambiguity, and mark dynamic sections. Its output is a diagnostic report plus
+  immutable lookahead/execution plans.
+- runtime parser execution should consume those plans through stable callsite
+  ids or generated wrapper code. It should not rediscover first tokens, rebuild
+  alternative graphs, or query incomplete graph nodes on every rule call.
+
+The migration order should be:
+
+1. Introduce the exact GAST model beside the existing graph. Do not delete or
+   reinterpret current `SubhutiGrammarGraph` entries; current graph data has
+   proven to mix complete and FIRST-only facts.
+2. Teach explicit grammar APIs such as `Alternative.rule/token/tokenValue`,
+   `Option(Alternative...)`, and `Many(Alternative...)` to record exact GAST
+   nodes when their bodies are analyzable. Plain `Alternative.of(...)` stays
+   supported but records an `Action` or `Dynamic` node unless recording proves a
+   complete structure without side effects.
+3. Add a parser-class `SubhutiGrammarSelfAnalysis` pass that produces immutable
+   per-callsite plans and warnings. Ambiguous, prefix-conflicting, or dynamic
+   callsites stay on the ordinary PEG path with visible diagnostics.
+4. Change static enhanced wrapper generation to embed stable callsite ids and,
+   where analysis proves it, direct plan calls. This is the correct place for
+   Chevrotain-like performance wins because the decision is made once, not by
+   per-wrapper runtime graph lookup.
+5. Only after exact GAST coverage exists, add successful-path execution plans:
+   direct terminal/value consume for exact terminal rules, pass-through rule
+   chains, token-set `MANY`/`OPTION`, and later compact expression-precedence
+   plans. Each plan must preserve CST mode, recognizer `cst(false)` mode,
+   packrat semantics where still needed, and PEG prefix order.
+
+Rejected shortcuts define the boundary of this refactor. Do not use
+`singleTerminalForRule(...)` as executable grammar; it may be only FIRST data.
+Do not add runtime graph queries to every wrapper to discover small direct
+execution cases. Do not globally disable packrat, loop detection, or state
+snapshots because a tiny probe got faster. The accepted path is exact GAST plus
+class/callsite self-analysis plus generated or cached immutable runtime plans.
+
 Focused performance probes must measure both structural work avoided and real
 wall-clock time. FIRST-token prediction that only skips cheap token mismatches
 may be slower than ordinary PEG retry because it pays an extra lookahead cost;
