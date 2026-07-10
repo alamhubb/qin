@@ -2023,6 +2023,15 @@ lexer cache shortcut. Continue reducing the remaining gap through
 token-array/cursor execution and successful-path wrapper/cache reduction before
 treating token categories as the maximum-return item.
 
+A follow-up `SubhutiPackratCache.getNullable(...)` experiment was rejected. It
+removed `Optional` allocation from the hot rule-cache lookup path, but
+`SlimeAstCreateUtils.ts` regressed from the retained token-cursor result around
+`avgMs=275.659 bestMs=222.191` to roughly `avgMs=299-324ms`. Do not prioritize
+small allocation cleanups in the packrat API unless a focused probe shows
+wall-clock improvement; the remaining larger gap is still token-array/cursor
+execution and successful-path rule wrapper/cache structure, not this `Optional`
+surface.
+
 A follow-up adaptive low-yield memoization experiment on the same file was
 rejected. It made recognizer speculative rules stop memoizing after `256` puts
 with zero hits. Structural counters improved (`ruleCacheKeyBuilds` dropped from
