@@ -2712,6 +2712,21 @@ Chevrotain-style route from recording to executable GAST plans. The focused
 GAST LL(2) self-analysis prediction, while `A` versus `A B` still disables
 runtime pruning.
 
+The next retained real-parser GAST coverage step adds exact operator rules for
+Slime's `MultiplicativeOperator`, `AssignmentOperator`, and
+`AssignmentOperatorAny`. This is the preferred Chevrotain-style direction for
+operator hot paths: expose the real grammar facts to `SubhutiGastGrammar` so the
+framework can prebuild runtime-plan coverage, rather than adding caller fallback
+or hand-written parsing shortcuts. `SlimeOperatorGastDirectPlanSmokeTestMain`
+asserts the added exact-GAST coverage in the static enhanced parser. On the
+focused generated TypeScript recognizer benchmark with pre-tokenized default-mode
+input, the 2026-07-11 retained run measured `SlimeParser.ts` at
+`recognizer avgMs=183.391 bestMs=100.920` and `SlimeAstCreateUtils.ts` at
+`recognizer avgMs=285.466 bestMs=258.489`. The same investigation rejected two
+negative experiments: broad manual low-yield memo lists and a stack-array
+loop-detection replacement both reduced some counters but failed to improve the
+real generated TypeScript corpus consistently, so they were not retained.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
