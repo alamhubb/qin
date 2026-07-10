@@ -2512,6 +2512,18 @@ probe, a 10-token exact-GAST sequence ran with `ruleWrapperCalls=0`,
 `ruleWrapperDirectTerminalSequenceSkips=1`, and about `avgUs=2.124` over
 200,000 rounds.
 
+The follow-up token-array cursor step specializes that exact-GAST sequence plan
+for pre-tokenized recognizer input. When all terminals in the direct sequence use
+the default lexer mode, Subhuti advances by parsed-token ordinal in the existing
+token array instead of calling `_consumeTokenMatch(...)` for each terminal. This
+keeps the same exact-GAST authorization and the same visible parse-failure
+surface, but removes per-token `tokenStreamGets` and token-entry cache checks
+from the sequence path. The pre-tokenized case in
+`SubhutiDirectTerminalSequenceSmokeTestMain` asserts `tokenStreamGets=0`; the
+focused 2026-07-10 probe measured the 10-token pre-tokenized exact-GAST sequence
+at about `avgUs=0.293` with `ruleWrapperCalls=0`, `ruleCoreExecutions=0`,
+`ruleCacheKeyBuilds=0`, `tokenCacheGets=0`, and `tokenStreamGets=0`.
+
 The follow-up retained token-consume cleanup shares the existing recognizer
 direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
