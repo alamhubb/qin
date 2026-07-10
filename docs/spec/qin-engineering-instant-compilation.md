@@ -2099,6 +2099,22 @@ measured `avgMs=379.819 bestMs=329.542`. Treat the structural reduction as
 accepted, while continuing to judge wall-clock movement with repeated focused
 probes because single-run parser timings are noisy.
 
+The next retained refinement keeps the same cursor direction but avoids making
+the current-token cache the first hop for the hottest ordinary lookahead path.
+For pre-tokenized parser-only recognizers, `LA(1)` and `isEof()` now read the
+parser-owned token array directly before entering `_getOrParseTokenEntry(...)`.
+The current-token cache still exists for paths that need the cache-shaped entry,
+but Chevrotain-style token-array input is the primary `LA(1)`/EOF path when CST
+and recovery are off. `SubhutiCurrentTokenEntryCacheSmokeTestMain` now proves
+that `LA(1), LA(1), consume` can complete with zero `tokenStreamGets` and zero
+`currentTokenEntryCacheHits` on this focused pre-tokenized recognizer path. On
+the 2026-07-11 generated TypeScript recognizer benchmark, the same two-file
+pre-tokenized probe moved from `SlimeParser.ts avgMs=164.391 bestMs=142.075`
+and `SlimeAstCreateUtils.ts avgMs=349.125 bestMs=288.986` to
+`SlimeParser.ts avgMs=127.607 bestMs=94.030` and
+`SlimeAstCreateUtils.ts avgMs=282.661 bestMs=243.411`. This is the current
+retained framework-level token-array step.
+
 A follow-up `SubhutiPackratCache.getNullable(...)` experiment was rejected. It
 removed `Optional` allocation from the hot rule-cache lookup path, but
 `SlimeAstCreateUtils.ts` regressed from the retained token-cursor result around
