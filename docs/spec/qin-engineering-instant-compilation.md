@@ -2301,6 +2301,23 @@ Chevrotain-style error-surface alignment, not as a major parser-speed closer.
 The remaining performance work should still target token cursor execution,
 wrapper/cache structure, and hot expression rules.
 
+The next retained token-cursor step targets JavaScript's lexical-goal split for
+regular expression literals. The pre-tokenized recognizer path already owns the
+default-mode token array, but `RegularExpressionLiteral` checks use
+`LexerMode.REGEXP` and were still falling back to the on-demand token cache tens
+of thousands of times. Subhuti now uses the default-mode token stream as a
+negative gate for REGEXP mode: if the current default token's source start is
+not `/`, a regular expression literal cannot start there, so the parser returns
+that default token as the mismatch instead of re-lexing in REGEXP mode. If the
+default token does start with `/`, the standard REGEXP lexer path still runs.
+The focused `SubhutiPreTokenizedRegexpNegativeGateSmokeTestMain` proves the
+non-slash case fails without token-cache fallback. On `SlimeAstCreateUtils.ts`
+pre-tokenized recognizer, `tokenCacheGets` fell from about `52k` to `2`, with
+`preTokenizedRegexpNegativeHits=52708`; the same two-round focused probe measured
+`avgMs=312.700 bestMs=257.931`. Treat this as the current strongest
+Chevrotain-style token-array/cursor win: it removes repeated lexer-mode retries
+without weakening the real `/.../` REGEXP path.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
