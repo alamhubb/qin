@@ -2630,6 +2630,23 @@ from the sequence path. The pre-tokenized case in
   alignment path; the durable direction is a unified token-array/parser-input
   model plus exact-GAST runtime plans.
 
+  The retained follow-up specializes exact-GAST `ALTERNATION` plans by size.
+  Small direct OR plans with at most two alternatives keep the already-proven
+  linear recognizer path, avoiding fixed map-dispatch overhead on the common
+  tiny-OR case. Larger simple OR plans precompute a first-token dispatch table in
+  the runtime plan, grouped by lexer mode and token key, then consume the selected
+  terminal sequence directly. A broad token-name first terminal and value-aware
+  first terminals for the same token name/mode are treated as ambiguous and stay
+  analysis-only, because the broad token would otherwise match the value-aware
+  token and change PEG branch order. On 2026-07-11, the focused
+  `SubhutiDirectTerminalSequenceSmokeTestMain` added three-branch dispatch
+  coverage, including the pre-tokenized cursor path. `SubhutiRecognizerPerformanceProbeMain
+  200000` measured the two-branch linear OR at `avgUs=0.966` from source and
+  `avgUs=0.206` pre-tokenized, and the three-branch dispatch OR at `avgUs=0.915`
+  from source and `avgUs=0.279` pre-tokenized, with `ruleWrapperCalls=0`,
+  `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`, and
+  `tokenStreamGets=0`.
+
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
