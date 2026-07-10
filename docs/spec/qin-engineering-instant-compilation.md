@@ -2571,6 +2571,23 @@ from the sequence path. The pre-tokenized case in
   `tokenCacheGets=0`, `tokenStreamGets=0`, and
   `ruleWrapperDirectRecognizerPlanSkips=1`.
 
+  The same exact-GAST direct recognizer plan now covers simple `AT_LEAST_ONE`
+  terminal sequences. Unlike `MANY`, the first sequence is consumed
+  unconditionally after preceding required elements, so absence of the first
+  item is a visible parse failure; after one item succeeds, additional items use
+  the same first-terminal lookahead loop as `MANY`. This keeps Chevrotain-style
+  one-or-more semantics precise: entered productions do not hide missing inner
+  tokens, and the optimization is available only when exact GAST proves the
+  repeated body is a terminal sequence with no token-value, gate, alternation,
+  or dynamic boundary. On 2026-07-11,
+  `SubhutiDirectTerminalSequenceSmokeTestMain` added absent-first-item,
+  single-item, multi-item, inner-failure, and pre-tokenized cursor coverage. The
+  focused `SubhutiRecognizerPerformanceProbeMain 200000` run measured the
+  six-token two-iteration at-least-one plan at `avgUs=2.699` from source and
+  `avgUs=0.241` with pre-tokenized input, with `ruleWrapperCalls=0`,
+  `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`,
+  `tokenStreamGets=0`, and `ruleWrapperDirectRecognizerPlanSkips=1`.
+
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
