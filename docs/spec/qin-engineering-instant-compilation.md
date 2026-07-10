@@ -2172,6 +2172,22 @@ or dynamic callsites still use the conservative standard path. The focused
 declared `Choice -> A | B` parser to hit self-analysis, skip the runtime
 GAST/graph/recording cache build, and still prune the unchosen branch.
 
+On 2026-07-10 this lookup model was lifted into a parser-class runtime plan.
+`SubhutiParserRuntimePlan` is the framework-level owner for Graph/GAST
+self-analysis predictions plus recognizer pass-through and terminal-leaf facts.
+It is keyed by parser class and grammar identity/revision, built once, and
+reused by later parser instances. Runtime `Or(...)` should first consult this
+plan for declared self-analysis predictions instead of rebuilding or hydrating
+scattered caches. Recognizer wrapper inlining should also read from this plan
+instead of recomputing graph rule sets per parser instance. The focused
+`SubhutiParserRuntimePlanSmokeTestMain` proves the first parser builds the plan,
+the second parser reuses it, declared `Choice -> A | B` hits self-analysis
+without recording mode, and terminal-leaf recognizer execution comes from the
+same plan. Treat this as architecture groundwork: it reduces repeated planning
+and gives Subhuti a Chevrotain-style plan boundary, but broad parser speed still
+depends on the next successful-path reductions for wrapper/cache/state/token
+execution.
+
 The next retained exact-GAST migration applies the same rule to real Slime
 syntax. `MetaProperty` is now declared as a complete exact body:
 `MetaProperty -> NewTarget | ImportMeta`, where `NewTarget` is `New Dot
