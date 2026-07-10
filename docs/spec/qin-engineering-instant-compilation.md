@@ -2495,6 +2495,17 @@ cache experiment was rejected because focused wall-clock results were unstable;
 future work should continue through generated or parser-class runtime plans, not
 per-instance micro-caches.
 
+The follow-up retained token-consume cleanup shares the existing recognizer
+direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
+In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
+the source-index token cache, token matching reads the current token directly
+instead of doing `HashMap` token-cache get/miss/put work. This keeps the same
+token semantics and still uses the cache after an explicit `LA(...)` call. On the
+focused 2026-07-10 probe, the ordinary recognizer chain removed its
+`tokenCacheGets/Misses/Puts=1` counters and measured about `avgUs=1.181` at
+200,000 rounds; the exact-GAST direct chain also kept
+`tokenCacheGets/Misses/Puts=0` and measured about `avgUs=0.437` on that run.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
