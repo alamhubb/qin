@@ -2284,6 +2284,23 @@ framework work because it improves correctness and modestly reduces successful
 path overhead; continue judging later optional-production changes with the same
 focused smoke plus benchmark discipline.
 
+The matching `Many(Alternative...)` single-candidate step follows the same
+strictness rule. When runtime lookahead leaves exactly one repetition
+alternative, Subhuti executes that alternative directly instead of saving state
+and treating an inner failure as "the repetition ended". This aligns with
+Chevrotain's MANY behavior: lookahead decides whether the repeated production is
+present, and once present its internal errors remain visible. The focused
+`SubhutiManyAlternativesLookaheadSmokeTestMain` now covers `id.name`, `id()`,
+no-suffix input, and `id.`; the last case proves that a suffix start token
+followed by a missing required member name fails inside the suffix rather than
+restoring to the pre-suffix state. On `SlimeAstCreateUtils.ts`, the focused
+probe recorded `orPredictionDirectManyExecutions=1679`, but wall-clock did not
+improve over the prior optional-production result (`avgMs=415.242
+bestMs=370.156` in the retained three-round run). Treat this as accepted
+Chevrotain-style error-surface alignment, not as a major parser-speed closer.
+The remaining performance work should still target token cursor execution,
+wrapper/cache structure, and hot expression rules.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
