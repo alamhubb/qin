@@ -2009,6 +2009,20 @@ mode-safe parser-core primitive, then reduce the remaining successful-path
 wrapper/cache costs. Token category work should follow as a targeted lookahead
 model improvement, not be treated as the primary wall-clock closer.
 
+The next accepted token-stream step on the same date moved pre-tokenized
+recognizer access closer to Chevrotain's token-index cursor. Subhuti now uses
+the parsed token ordinal to read the current token and default-mode lookahead
+sequences directly from the pre-tokenized token array when CST and recovery are
+off. On `SlimeAstCreateUtils.ts`, the same static enhanced parser-only probe
+improved from `avgMs=373.488 bestMs=289.573` at the start of the session to
+`avgMs=275.659 bestMs=222.191`; a two-file generated Slime TS probe measured
+`SlimeParser.ts avgMs=171.830 bestMs=120.743` and
+`SlimeAstCreateUtils.ts avgMs=258.512 bestMs=240.658`. The retained lesson is
+that token-stream input should be a first-class parser-core model, not just a
+lexer cache shortcut. Continue reducing the remaining gap through
+token-array/cursor execution and successful-path wrapper/cache reduction before
+treating token categories as the maximum-return item.
+
 A follow-up adaptive low-yield memoization experiment on the same file was
 rejected. It made recognizer speculative rules stop memoizing after `256` puts
 with zero hits. Structural counters improved (`ruleCacheKeyBuilds` dropped from
