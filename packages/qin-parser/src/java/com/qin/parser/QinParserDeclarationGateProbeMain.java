@@ -1,7 +1,5 @@
 package com.qin.parser;
 
-import com.subhuti.parser.SubhutiParser;
-import com.subhuti.parser.SubhutiRule;
 import com.slime.parser.base.SlimeJavascriptParserBase.DeclarationParams;
 
 public final class QinParserDeclarationGateProbeMain {
@@ -17,7 +15,7 @@ public final class QinParserDeclarationGateProbeMain {
     }
 
     private static void probesConstDeclaration() {
-        ProbeParser parser = SubhutiParser.create(ProbeParser.class, "const text = 'x'");
+        ProbeParser parser = new ProbeParser("const text = 'x'");
         parser.cache(true);
         parser.Declaration(new DeclarationParams(false, true, false));
         require(!parser.isParserFail(), "const should parse through standard declaration");
@@ -27,7 +25,7 @@ public final class QinParserDeclarationGateProbeMain {
     }
 
     private static void probesConstProgram() {
-        ProbeParser parser = SubhutiParser.create(ProbeParser.class, "const text = 'x'");
+        ProbeParser parser = new ProbeParser("const text = 'x'");
         parser.cache(true);
         try {
             parser.Program(QinParser.SourceType.MODULE);
@@ -40,7 +38,7 @@ public final class QinParserDeclarationGateProbeMain {
     }
 
     private static void probesTypeDeclaration() {
-        ProbeParser parser = SubhutiParser.create(ProbeParser.class, "type Box = object");
+        ProbeParser parser = new ProbeParser("type Box = object");
         parser.cache(true);
         parser.Declaration(new DeclarationParams(false, true, false));
         require(!parser.isParserFail(), "type should parse through standard/TS declaration");
@@ -49,14 +47,14 @@ public final class QinParserDeclarationGateProbeMain {
     }
 
     private static void probesObjectDeclaration() {
-        ProbeParser parser = SubhutiParser.create(ProbeParser.class, "object Store {}");
+        ProbeParser parser = new ProbeParser("object Store {}");
         parser.cache(true);
         parser.Declaration(new DeclarationParams(false, true, false));
         require(!parser.isParserFail(), "object should parse through Qin object declaration");
         require(parser.qinObjectCalls == 1, "object should execute Qin object branch");
     }
 
-    public static class ProbeParser extends QinParser {
+    public static class ProbeParser extends QinParserStaticEnhanced {
         int qinObjectGateCalls;
         int qinObjectGateAllows;
         int standardGateCalls;
@@ -88,7 +86,6 @@ public final class QinParserDeclarationGateProbeMain {
         }
 
         @Override
-        @SubhutiRule
         public void QinObjectDeclaration(DeclarationParams params) {
             qinObjectCalls++;
             super.QinObjectDeclaration(params);

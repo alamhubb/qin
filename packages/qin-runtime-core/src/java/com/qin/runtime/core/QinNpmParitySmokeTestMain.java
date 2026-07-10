@@ -133,9 +133,6 @@ public final class QinNpmParitySmokeTestMain {
             if (line.isEmpty()) {
                 continue;
             }
-            if (line.startsWith("[ByteBuddy]")) {
-                continue;
-            }
             if (normalized.length() > 0) {
                 normalized.append('\n');
             }

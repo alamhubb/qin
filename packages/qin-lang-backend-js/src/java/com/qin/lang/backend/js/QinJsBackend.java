@@ -1036,7 +1036,6 @@ public class QinJsBackend implements QinIrCodeBackend {
 
     private boolean isJavaSdkToolingRuntimeImport(String name) {
         return "__qin_subhuti_rule_cache_key".equals(name)
-                || "__qin_subhuti_parser_create".equals(name)
                 || "__QinJavaIoFile".equals(name)
                 || "__QinJavaNioFilePath".equals(name)
                 || "__QinJavaNioFilePaths".equals(name)
@@ -4397,10 +4396,6 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("]");
     }
 
-    private boolean isSubhutiParserCreateCall(QinIrStaticMethodCallExpression expression) {
-        return "com.subhuti.parser.SubhutiParser".equals(expression.ownerBinaryName())
-                && "create".equals(expression.methodName());
-    }
     private void emitJavaClassLiteral(StringBuilder js, QinIrJavaClassLiteralExpression classLiteralExpression) {
         String displayName = classLiteralExpression.binaryName() == null
                 ? classLiteralExpression.typeName()
@@ -6411,13 +6406,6 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
-            if (isSubhutiParserCreateCall(staticMethodCallExpression)) {
-                requireExternalJavaSdkRuntime("__qin_subhuti_parser_create");
-                js.append("__qin_subhuti_parser_create(");
-                emitArguments(js, staticMethodCallExpression.arguments());
-                js.append(")");
-                return;
-            }
             ensureSupportedJavaOwner(staticMethodCallExpression.ownerBinaryName());
             js.append(javaOwnerReference(
                             staticMethodCallExpression.ownerBinaryName(),

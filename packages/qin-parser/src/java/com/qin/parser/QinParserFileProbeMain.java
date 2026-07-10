@@ -1,6 +1,5 @@
 package com.qin.parser;
 
-import com.subhuti.parser.SubhutiParser;
 import com.subhuti.struct.SubhutiCst;
 import com.subhuti.struct.SubhutiMatchToken;
 
@@ -17,7 +16,7 @@ public final class QinParserFileProbeMain {
         Path file = Path.of(args[0]).toAbsolutePath().normalize();
         String source = Files.readString(file, StandardCharsets.UTF_8);
 
-        QinParser parser = SubhutiParser.create(QinParser.class, source);
+        QinParser parser = QinParserStaticEnhanced.create(source);
         parser.cache(true);
 
         try {

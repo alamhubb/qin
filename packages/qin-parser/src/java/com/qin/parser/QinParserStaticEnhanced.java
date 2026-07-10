@@ -6,9 +6,9 @@ import java.util.Arrays;
  * Static Subhuti rule wrapper for QinParser.
  *
  * <p>Generated from QinParser's visible @SubhutiRule methods so the Qin parser
- * path does not pay runtime ByteBuddy class generation before the first parse.
+ * path uses generated rule wrappers before the first parse.
  */
-public final class QinParserStaticEnhanced extends QinParser {
+public class QinParserStaticEnhanced extends QinParser {
     public QinParserStaticEnhanced(String sourceCode) {
         super(sourceCode);
     }

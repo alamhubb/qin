@@ -1,6 +1,5 @@
 package com.qin.parser;
 
-import com.subhuti.parser.SubhutiParser;
 import com.subhuti.struct.SubhutiCst;
 import com.subhuti.struct.SubhutiMatchToken;
 
@@ -25,7 +24,7 @@ public final class QinParserPrefixProbeMain {
         int endIndex = Math.min(lines.size(), endLine);
         String source = String.join(System.lineSeparator(), lines.subList(0, endIndex));
 
-        QinParser parser = SubhutiParser.create(QinParser.class, source);
+        QinParser parser = QinParserStaticEnhanced.create(source);
         parser.cache(true);
         try {
             SubhutiCst cst = parser.Program(QinParser.SourceType.MODULE);

@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import com.subhuti.parser.SubhutiParser;
 import com.subhuti.struct.SubhutiCst;
 import com.subhuti.struct.SubhutiMatchToken;
 
@@ -60,7 +59,7 @@ public final class QinParserLineSliceProbeMain {
             String source,
             boolean noCache,
             boolean noPrediction) {
-        QinParser parser = SubhutiParser.create(QinParser.class, source);
+        QinParser parser = QinParserStaticEnhanced.create(source);
         parser.cache(!noCache);
         if (noPrediction) {
             disableOrPrediction(parser);

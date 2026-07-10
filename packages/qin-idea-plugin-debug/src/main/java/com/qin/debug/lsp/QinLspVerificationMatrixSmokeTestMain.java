@@ -1701,9 +1701,9 @@ public final class QinLspVerificationMatrixSmokeTestMain {
         String parserRuntimeNamesSource = Files.readString(parserRuntimeNamesPath);
         String frontendAdapterSource = Files.readString(frontendAdapterPath);
         String importMetaShimSmokeSource = Files.readString(importMetaShimSmokePath);
-        require(parserFacadeSource.contains("SubhutiParser.create(QinParser.class, source)")
+        require(parserFacadeSource.contains("QinParserStaticEnhanced.create(source)")
                         && !parserFacadeSource.contains("new QinParser("),
-                "QinParserFacade must create QinParser through SubhutiParser.create, not raw construction");
+                "QinParserFacade must create QinParser through the generated/static enhanced wrapper, not raw construction");
         require(!parserFacadeSource.contains("rewriteSimpleSwitchStatements")
                         && !parserFacadeSource.contains("__qin_switch_"),
                 "QinParserFacade must not lower switch syntax with string rewrites");
@@ -2120,7 +2120,7 @@ public final class QinLspVerificationMatrixSmokeTestMain {
                         && sequenceSource.contains("getDeclaredMethod(\"message\")"),
                 "Sequence expression smoke must cover console side effect plus JVM return execution");
         require(slimeParserExtendsSource.contains("classfile inheritance proof, not a production parser entry")
-                        && slimeParserExtendsSource.contains("QinParserFacade uses SubhutiParser.create"),
+                        && slimeParserExtendsSource.contains("QinParserFacade uses generated/static enhanced parser wrappers"),
                 "Direct SlimeParser construction in the JVM inheritance smoke must stay documented as non-production");
     }
 

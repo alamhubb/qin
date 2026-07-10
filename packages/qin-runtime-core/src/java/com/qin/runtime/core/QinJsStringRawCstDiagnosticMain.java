@@ -1,7 +1,6 @@
 package com.qin.runtime.core;
 
-import com.slime.parser.SlimeJavascriptParser;
-import com.subhuti.parser.SubhutiParser;
+import com.slime.parser.SlimeParserStaticEnhanced;
 import com.subhuti.struct.SubhutiCst;
 
 public final class QinJsStringRawCstDiagnosticMain {
@@ -13,8 +12,8 @@ public final class QinJsStringRawCstDiagnosticMain {
                 const raw = String.raw`[\\p{ID_Start}$_]|\\\\u[0-9a-fA-F]{4}`;
                 raw;
                 """;
-        SlimeJavascriptParser parser = SubhutiParser.create(SlimeJavascriptParser.class, source.trim());
-        SubhutiCst cst = parser.Program(SlimeJavascriptParser.SourceType.MODULE);
+        SlimeParserStaticEnhanced parser = SlimeParserStaticEnhanced.create(source.trim());
+        SubhutiCst cst = parser.Program(SlimeParserStaticEnhanced.SourceType.MODULE);
         if (cst == null) {
             cst = parser.getCst();
         }
