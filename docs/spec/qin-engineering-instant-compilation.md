@@ -2861,6 +2861,43 @@ Chevrotain target remains full GAST and immutable runtime plans; this change
 removes a proven cost from rules that still need the ordinary wrapper while
 that coverage expands.
 
+The next retained architecture unit replaces recursive deep grammar recording
+with a parser-class worklist self-analysis for static enhanced parsers. The
+top-level rule starts one recording session; wrappers record `RULE_REF` nodes
+and enqueue unseen `ruleName + parameter variant` tasks instead of recursively
+executing their bodies. `OR`, `OPTION`, `MANY`, `AT_LEAST_ONE`, and terminals
+become structural GAST nodes. Parameter variants merge as exact only when their
+recorded bodies are identical; otherwise that rule is explicitly dynamic. The
+resulting grammar and immutable runtime plan are cached by parser class,
+declared-grammar revision, entry rule, and entry parameter, so later parser
+instances reuse self-analysis rather than repeat it. This is one standard PEG
+parser path: dynamic sections remain on ordinary PEG execution and are never
+parsed by a fallback grammar.
+
+Two graph algorithms must remain bounded for this model to scale like
+Chevrotain self-analysis. Shared GAST rule analysis memoizes completed rules,
+and recursive-rule detection uses one strongly connected component pass instead
+of traversing the whole call graph once per rule. Callsite LL(k) analysis uses a
+memoized set of token prefixes keyed by GAST node and remaining lookahead depth;
+prefixes are deduplicated with a hash set and capped at 2,048 paths. Exceeding
+that analysis budget marks the callsite analysis-only and does not authorize
+runtime pruning. This preserves PEG order and prevents a bounded token depth
+such as `k=4` from still producing unbounded intermediate path combinations.
+
+On 2026-07-11, focused smokes covered a 64-level shared GAST DAG, an `8^4`
+alternative/sequence expansion, recursive and parameterized rules, AB/AC LL(2),
+and the `A` versus `A B` prefix ambiguity; all completed below one second. The
+real generated TypeScript cold CST probe moved from the previous 30-second
+timeout to about `1511ms` for `SlimeParser.ts` (67,200 characters) and `1953ms`
+for `SlimeAstCreateUtils.ts` (174,056 characters). A same-probe worklist A/B on
+the larger file measured `834.6ms` enabled versus `892.6ms` disabled with equal
+token and CST counts. The matching pre-tokenized recognizer A/B measured
+`268.2ms` enabled versus `340.3ms` disabled, while removing 2,033 wrapper calls,
+2,031 core executions, and 500 cache-key builds through additional exact GAST
+direct plans. Treat this unit as a cold self-analysis and architecture fix with
+a measured warm recognizer benefit; it does not by itself remove the remaining
+successful-path wrapper/core/token costs.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
