@@ -2071,6 +2071,21 @@ lexer cache shortcut. Continue reducing the remaining gap through
 token-array/cursor execution and successful-path wrapper/cache reduction before
 treating token categories as the maximum-return item.
 
+The follow-up current-token entry cache keeps that same Chevrotain-style cursor
+direction. In parser-only `cst(false)` mode, non-recovery pre-tokenized default
+mode parsing may cache the current `TokenCacheEntry` for the exact parser state
+`currentIndex`, line, column, parsed token count, lexer mode, and previous token
+name. Repeated `LA(1)`, `isEof()`, or immediate consume calls at the same state
+then reuse the same entry instead of touching the token array again. This is not
+a syntax fallback and it is not enabled for CST or recovery paths. The focused
+`SubhutiCurrentTokenEntryCacheSmokeTestMain` proves one token-array read and two
+cache hits for `LA(1), LA(1), consume`. On `SlimeAstCreateUtils.ts`, the
+parser-only probe reduced `tokenStreamGets` from roughly `333k` to about `200k`
+with about `132k` `currentTokenEntryCacheHits`; a three-round retained run
+measured `avgMs=379.819 bestMs=329.542`. Treat the structural reduction as
+accepted, while continuing to judge wall-clock movement with repeated focused
+probes because single-run parser timings are noisy.
+
 A follow-up `SubhutiPackratCache.getNullable(...)` experiment was rejected. It
 removed `Optional` allocation from the hot rule-cache lookup path, but
 `SlimeAstCreateUtils.ts` regressed from the retained token-cursor result around
