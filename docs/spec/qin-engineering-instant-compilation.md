@@ -2105,6 +2105,22 @@ proof of a better Chevrotain-style runtime path. Keep low-yield memo policy
 changes only when the same focused parser-only benchmark improves wall-clock
 time.
 
+A later targeted low-yield memo point was retained for `ArgumentListItem`.
+Unlike the rejected broad expansion, this single rule showed zero cache hits in
+the hot generated-TS recognizer probe while contributing thousands of cache
+key/put operations. Adding only `ArgumentListItem` to the existing recognizer
+low-yield no-memo policy removed it from `cacheWork`; the focused
+`SlimeArgumentListItemLowYieldMemoSmokeTestMain` proves argument parsing still
+executes the rule while avoiding recognizer cache puts. On the two-file
+pre-tokenized recognizer probe, `SlimeParser.ts` measured
+`avgMs=152.134 bestMs=101.166`, and `SlimeAstCreateUtils.ts` measured
+`avgMs=262.956 bestMs=234.088`, with the latter reducing
+`ruleCacheKeyBuilds` from about `38005` to `35483` and `ruleCachePuts` from
+about `31270` to `28748`. Treat this as a narrowly retained profile-derived
+step, not the desired end state: future Chevrotain-style self-analysis should
+derive such deterministic low-yield/no-memo decisions from complete GAST or an
+execution plan instead of making grammar authors maintain a hand list.
+
 A terminal-leaf direct-execution experiment was rejected because it exposed an
 architecture boundary: the current `SubhutiGrammarGraph` often stores FIRST-token
 approximations, not complete rule bodies. For example, graph data can say
