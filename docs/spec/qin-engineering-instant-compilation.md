@@ -2127,7 +2127,12 @@ a speculative branch repeatedly memoizes a rule that is never hit, then moves to
 generated TypeScript recognizer benchmark, the two-file pre-tokenized probe
 measured `SlimeParser.ts avgMs=117.096 bestMs=79.381` and
 `SlimeAstCreateUtils.ts avgMs=271.327 bestMs=220.832`, while
-`ruleCacheKeyBuilds` dropped to `18640` and `33006` respectively.
+`ruleCacheKeyBuilds` dropped to `18640` and `33006` respectively. A follow-up
+A/B check on the same 2026-07-11 code temporarily disabled the adaptive threshold
+with `Integer.MAX_VALUE`; `SlimeAstCreateUtils.ts` regressed from the current
+`avgMs=222.557` run to `avgMs=280.288`, and `ruleCacheKeyBuilds` returned from
+`33006` to `171007`. Keep the adaptive policy as part of the retained
+token-array/cache-key combination, not as a standalone optimization claim.
 
 A follow-up `SubhutiPackratCache.getNullable(...)` experiment was rejected. It
 removed `Optional` allocation from the hot rule-cache lookup path, but
@@ -2298,16 +2303,17 @@ from replacing repeated source-index token lookup at broader lookahead points;
 adding extra branches to an already cached current-token path is not currently a
 maximum-return optimization.
 
-A follow-up adaptive low-yield memoization experiment on the same file was
-rejected. It made recognizer speculative rules stop memoizing after `256` puts
-with zero hits. Structural counters improved (`ruleCacheKeyBuilds` dropped from
-about `45.9k` to `38.6k`, `ruleCachePuts` from about `32.1k` to `24.8k`, with
-`7322` adaptive skips), but wall-clock regressed to `avgMs=259.826
-bestMs=235.282` versus the retained token-stream baseline of about
-`avgMs=251.337 bestMs=214.991`. Do not reintroduce a per-rule adaptive
-memoization Map on the hot path just because cache counters fall; future
-wrapper/cache reductions need a lower-overhead static or self-analysis-derived
-plan.
+An earlier adaptive low-yield memoization experiment on the 2026-07-10 baseline
+was rejected. It made recognizer speculative rules stop memoizing after `256`
+puts with zero hits. Structural counters improved (`ruleCacheKeyBuilds` dropped
+from about `45.9k` to `38.6k`, `ruleCachePuts` from about `32.1k` to `24.8k`,
+with `7322` adaptive skips), but wall-clock regressed to `avgMs=259.826
+bestMs=235.282` versus that day's retained token-stream baseline of about
+`avgMs=251.337 bestMs=214.991`. That negative conclusion applied to the old
+baseline only and has been superseded by the retained 2026-07-11 token-array
+cursor plus adaptive cache-key combination above. The durable lesson remains:
+do not keep a cache-counter optimization unless same-baseline A/B timing proves
+it.
 
 A second static-plan experiment tried to skip loop detection for graph-proven
 non-recursive, non-dynamic recognizer rules. The graph smoke passed, but on
