@@ -1868,6 +1868,21 @@ without pruning and LL(3) at about `183ms` vs `285ms` without pruning. This is
 not fallback behavior; it is the standard predicted `Or` path avoiding a
 PEG-era state copy that Chevrotain-style lookahead has already made unnecessary.
 
+The same single-candidate rule also applies inside `Many(Alternative...)`.
+When graph/lookahead prediction has already selected exactly one candidate and
+the parser is not in error recovery or tolerant collection mode, Subhuti executes
+that alternative directly for the current iteration instead of wrapping it in
+`tryAndRestore(() -> OrPlanned(...))`. The iteration still saves the starting
+state so a failed candidate or zero progress cleanly terminates the repetition;
+it simply avoids the extra planned-OR layer that Chevrotain-style lookahead has
+made redundant. The focused proof is
+`SubhutiManyAlternativesLookaheadSmokeTestMain`, which checks member-style
+suffix parsing and requires the single suffix iteration to report
+`orPredictionStateSaves=0` and `orPredictionStateSaveSkips=1`. On 2026-07-10,
+the generated Slime TS parser-only probe showed a small wall-clock win on
+`SlimeAstCreateUtils.ts` while leaving parser semantics and CST-capable paths
+unchanged.
+
 On 2026-07-10, Subhuti also narrowed the recognizer-mode state snapshot cost.
 When `cst(false)` is active and the parsed-token object list is empty, `saveState`
 and `restoreState` no longer inspect the CST stack or trim the parsed-token list;
