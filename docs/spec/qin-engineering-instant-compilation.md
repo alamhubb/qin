@@ -2664,6 +2664,24 @@ from the sequence path. The pre-tokenized case in
   `ruleWrapperCalls=0`, `ruleCoreExecutions=0`, `ruleCacheKeyBuilds=0`,
   `tokenCacheGets=0`, and `tokenStreamGets=0`.
 
+  The retained follow-up makes parser-owned token-array input automatic for
+  top-level exact-GAST direct recognizer plans whose terminals are all in
+  default lexer mode. This moves the proven Chevrotain-style token-array model
+  from a caller opt-in benchmark path into the standard direct recognizer entry,
+  without using it as a fallback: the rule must still be exact GAST, `cst(false)`,
+  no recovery/debug, at the top-level start state, and default-mode-only. Mixed
+  lexer-mode or already-partial parses continue through the existing standard
+  token path. On 2026-07-11, `SubhutiDirectTerminalSequenceSmokeTestMain`
+  added coverage that a default-mode direct plan installs parser-owned
+  token-array input automatically. The focused
+  `SubhutiRecognizerPerformanceProbeMain 200000` run measured source-path
+  improvements such as the 10-token sequence at `avgUs=0.454`, optional plan at
+  `avgUs=0.664`, repetition plan at `avgUs=0.436`, at-least-one plan at
+  `avgUs=0.476`, token-value sequence at `avgUs=0.462`, two-branch alternation
+  at `avgUs=0.459`, and three-branch dispatch alternation at `avgUs=0.487`,
+  all with `ruleWrapperCalls=0`, `ruleCoreExecutions=0`,
+  `ruleCacheKeyBuilds=0`, `tokenCacheGets=0`, and `tokenStreamGets=0`.
+
   The follow-up retained token-consume cleanup shares the existing recognizer
   direct-read primitive between `_consumeToken(...)` and `_consumeTokenMatch(...)`.
 In `cst(false)` mode, when recovery is disabled and no prior lookahead has filled
