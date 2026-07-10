@@ -2266,6 +2266,24 @@ probe measured about `avgMs=322 bestMs=262`. Keep this as a small but real
 Chevrotain-alignment step: it removes failure-driven optional parsing from a hot
 standard path without changing accepted syntax.
 
+The next retained optional-production runtime step makes that behavior stricter
+and cheaper. When `Option(Alternative...)` has graph-backed start prediction and
+the current token proves the optional production is present, Subhuti now executes
+the alternative directly instead of wrapping it in `tryAndRestore`. This matches
+Chevrotain's OPTION shape more closely: lookahead decides whether the optional
+body is entered; once entered, an inner parse error remains visible rather than
+being treated as an absent optional production. The focused
+`SubhutiAlternativeStartPredictionSmokeTestMain` proves all three cases: absent
+optional input skips the body, present optional input executes directly, and a
+partial inner failure is not restored away. On `SlimeAstCreateUtils.ts`
+pre-tokenized recognizer, the same two-round focused probe moved from the local
+baseline `avgMs=432.008 bestMs=341.595` to
+`avgMs=403.660 bestMs=308.245`, with
+`alternativeStartPredictionDirectOptionExecutions=2585`. Treat this as accepted
+framework work because it improves correctness and modestly reduces successful
+path overhead; continue judging later optional-production changes with the same
+focused smoke plus benchmark discipline.
+
 On 2026-07-07, the focused `com.qin.parser.QinParser` Java-to-TypeScript
 generation probe succeeded after adding standard `java.util.IdentityHashMap`
 and `Collections.newSetFromMap` support to the Qin Java SDK JS runtime and JS
