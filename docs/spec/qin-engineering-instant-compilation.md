@@ -1845,6 +1845,20 @@ rounds=5. The broader Chevrotain gap remains successful-path rule wrapper,
 packrat, and grammar-plan cost; this wrapper-shape cleanup is a retained small
 step because it removes pure generated-code overhead.
 
+Void `@SubhutiRule` methods in static enhanced parser wrappers should call
+`executeVoidRuleWrapper(...)`, not `executeRuleWrapper(() -> { ...; return null;
+})`. This keeps the source-level rule shape isomorphic while exposing the
+standard void-rule direct-recognizer entry to generated/static parser classes.
+It is not a fallback: exact GAST still authorizes any direct execution, while
+normal CST, recovery, debug, returned-value rules, and unplanned rules stay on
+the standard wrapper path. On 2026-07-11,
+`SubhutiDirectTerminalSequenceSmokeTestMain` added a static-enhanced-style void
+wrapper probe for an exact-GAST `OPTION` sequence and proved
+`ruleWrapperCalls=0`, `ruleCoreExecutions=0`, and
+`ruleWrapperDirectRecognizerPlanSkips=1`. The same change updates
+`SlimeParserStaticEnhanced` and `QinParserStaticEnhanced` generation shape, and
+retains the single-argument `cacheKeyExtra=arg0` rule.
+
 The follow-up successful-path cache policy removes two more unnecessary packrat
 costs without changing the grammar path. Top-level rules no longer build or
 write packrat entries, because there is no parent callsite that can reuse that
