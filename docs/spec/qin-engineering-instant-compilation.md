@@ -2727,6 +2727,26 @@ negative experiments: broad manual low-yield memo lists and a stack-array
 loop-detection replacement both reduced some counters but failed to improve the
 real generated TypeScript corpus consistently, so they were not retained.
 
+The next retained leaf-rule GAST step adds exact coverage for primary/literal
+leaves: `ThisExpression`, `BooleanLiteral`, `NumericLiteral`,
+`RegularExpressionLiteral`, `PrivateIdentifier`, `NoSubstitutionTemplate`, and
+`Literal`. This is still the same architecture direction: expose complete rule
+bodies to exact `SubhutiGastGrammar`, let `SubhutiParserRuntimePlan` decide safe
+pass-through/direct recognizer coverage, and keep semantic rules such as
+`Identifier` dynamic until their checks can be modeled honestly. The focused
+`SlimeLiteralGastDirectPlanSmokeTestMain` asserts that the static enhanced parser
+sees the added exact-GAST coverage. On the retained 2026-07-11 generated
+TypeScript recognizer benchmark with pre-tokenized default-mode input,
+`SlimeParser.ts` measured `recognizer avgMs=164.391 bestMs=142.075`, and
+`SlimeAstCreateUtils.ts` measured `recognizer avgMs=349.125 bestMs=288.986`.
+The structural counters moved in the intended direction: for `SlimeParser.ts`,
+`ruleWrapperCalls` dropped from about `54863` to `54395`,
+`ruleCoreExecutions` from about `53464` to `52996`, and
+`ruleWrapperPassThroughSkips` rose from about `1311` to `1779`; for
+`SlimeAstCreateUtils.ts`, `ruleWrapperCalls` dropped from about `176949` to
+`174010`, `ruleCoreExecutions` from about `172935` to `169996`, and
+`ruleWrapperPassThroughSkips` rose from about `2042` to `4981`.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
