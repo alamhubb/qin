@@ -2511,15 +2511,19 @@ runtime execution. `Alternative.of(...)` recording now writes both the legacy
 `SubhutiGrammarNode` diagnostic tree and an exact `SubhutiGastNode` tree. When the
 recorded GAST is complete and unambiguous, Subhuti builds the `Or(...)` prediction
 through `SubhutiGastCallsiteAnalysis` instead of interpreting the legacy
-FIRST/lookahead grammar tree. When the recorded prefixes are duplicate,
-prefix-conflicting, nullable, or dynamic, the parser keeps the previous PEG-safe
-recording expansion path, preserving behavior such as the existing AB/AC LL(2)
-smoke. This is not a compatibility parser: it is the first bridge that lets
-ordinary recording fallback produce analyzable GAST while keeping incomplete or
-ambiguous recording visible. The focused `SubhutiGrammarRecordingSmokeTestMain`
-proves the split: distinct recorded alternatives produce one GAST self-analysis
-prediction, while ambiguous common-prefix alternatives stay on the older LL(2)
-expansion path until a fuller exact-GAST recording model can prove them safely.
+FIRST/lookahead grammar tree. If the first recording pass sees duplicate
+prefixes, the duplicate-prefix expansion must update both the diagnostic grammar
+tree and the recorded GAST tree, then retry exact-GAST planning. This lets
+ordinary AB/AC-style LL(k) choices move onto the GAST self-analysis path while
+still preserving PEG prefix ambiguity such as `A` versus `A B`: that shape must
+remain analysis-only and keep branch order because pruning into the longer branch
+would change PEG semantics. Nullable or dynamic alternatives also remain
+analysis-only. This is not a compatibility parser; it is the standard
+Chevrotain-style route from recording to executable GAST plans. The focused
+`SubhutiGrammarRecordingSmokeTestMain` and
+`SubhutiOrFirstTokenPredictionSmokeTestMain` prove both sides: AB/AC records a
+GAST LL(2) self-analysis prediction, while `A` versus `A B` still disables
+runtime pruning.
 
 ## Pipeline Probe Artifact Reuse
 
