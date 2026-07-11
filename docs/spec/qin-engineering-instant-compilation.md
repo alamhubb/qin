@@ -3037,6 +3037,33 @@ the semantic-key Map baseline of about `118ms` average and `92-95ms` best. The
 cache smoke, the 18 focused Subhuti/Slime smokes, and the 1,000-round recognizer
 plan probe all pass.
 
+The next retained lookahead unit removes quadratic repeated source walks from
+`LA(offset)`. A real OVS profile recorded 44,426 ordinary lookahead calls:
+18,253 at offset 1, about 16,371 at offsets 2 through 15, and 14,640 above 15.
+Grammar gates such as optional-chain detection and balanced member/arrow scans
+ask for offsets 1, 2, 3, and so on while parser state is unchanged. The old
+implementation restarted from `currentIndex` for every request, so a linear
+scan generated 1.24 million token-cache reads.
+
+For non-pretokenized, non-recovery lexers without previous-token dependence,
+Subhuti now keeps one parser-state lookahead sequence keyed by source index,
+line, column, and lexer mode. It grows only from the last known token and serves
+already materialized offsets in O(1). A parser state change resets the sequence;
+pretokenized ordinal lookup, mixed-mode lists, recovery, and contextual token
+tables keep their existing paths. Runtime stats expose sequence hits, fills,
+and resets. The focused smoke proves four-token incremental extension, repeated
+offset hits, and reset after consumption.
+
+On `OvsParser.ts`, token-cache reads fell from about 1,246,000 to 75,000, a 94%
+reduction. Two 20-round recognizer runs measured
+`avgMs=105.558 bestMs=82.314` and `avgMs=92.232 bestMs=71.248`, versus the
+source-index array baseline of `avgMs=108-115` and `bestMs=83-89`. The 20-round
+CST result measured `avgMs=109.887 bestMs=87.094`, down from
+`avgMs=122.474 bestMs=95.049`. Under JFR, recognizer measured
+`avgMs=86.717 bestMs=72.759`; `LA(int)` disappeared from the leading hot-method
+list and `sourceLookaheadEntry` accounted for only 1.99% of samples. Nineteen
+focused smokes and the 1,000-round recognizer reset/plan probe pass.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
