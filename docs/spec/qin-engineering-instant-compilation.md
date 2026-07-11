@@ -3488,20 +3488,21 @@ inlining every Java helper is invalid because it imports lexer/runtime utility
 implementation into the grammar tree. The current coverage gate reports 88
 inline occurrences, 154 dynamic occurrences, 263 immutable occurrence
 predictions, and 36 executable variants. `SubhutiStaticGrammarPlan` owns this
-self-analysis result. The Class-File instrumenter rewrites only source
-combinator callsites whose static occurrence has an exact executable
-prediction; partial or dynamic callsites keep their original combinator shape
-and are not routed through an indexed API. Runtime-plan construction reads the
-precomputed occurrence prediction instead of repeating callsite analysis.
+self-analysis result. The Class-File instrumenter gives every source-owned
+top-level `OR` a stable occurrence id; an occurrence with no safe lookahead
+plan remains indexed but executes in PEG order. `OPTION`, `MANY`, and
+`AT_LEAST_ONE` are indexed only when their static occurrence has an exact
+executable prediction. Runtime-plan construction reads the precomputed
+occurrence prediction instead of repeating callsite analysis.
 
-Direct rule-body execution and indexed prediction have separate proof gates. A
-complete executable rule body does not authorize an occurrence to prune a
-partial choice. The retained template-literal recognizer regression proves this
-boundary: instrumenting all syntactically visible containers allowed a partial
-static prediction to skip the function declaration path and leave the source
-unconsumed. Exact-occurrence-only instrumentation restores ordinary PEG
-behavior while allowing exact callsites such as `ModuleExportName` to use the
-static occurrence runtime plan.
+Direct rule-body execution, occurrence identity, and branch pruning have
+separate proof gates. A complete executable rule body does not authorize an
+occurrence to prune a partial choice. The retained template-literal recognizer
+regression proves this boundary: giving every container a non-exact start plan
+allowed a partial prediction to skip the function declaration path and leave
+the source unconsumed. Stable identity is safe for every source-owned top-level
+`OR`; branch pruning is enabled only when the occurrence plan proves it safe.
+This preserves ordinary PEG behavior while removing runtime callsite discovery.
 
 This is a migration baseline, not a completion
 claim: the next architecture work must structurally model token/value factories,
@@ -3527,10 +3528,30 @@ plan exists, `effectiveGastGrammar()` is the plan's generated GAST, never the
 hand-declared GAST or a worklist result. The real Slime parser now exposes 301
 GAST rules and 317 variants from the same plan, including 88 exact rules and
 100 exact variants; the previous 24-rule declared GAST is no longer an
-authoritative generated-parser input. The separate legacy Graph currently
-remains only as a conservative FIRST/prefix source. It must be replaced by a
-prefix-plan projection from the same static GAST before Graph can be removed;
-prefix evidence must remain explicitly weaker than an exact executable body.
+authoritative generated-parser input. The generated static plan now also
+projects a conservative prefix graph from that same GAST. Consequently
+generated parsers no longer read the hand-written Graph as an authoritative
+input: `graphRuleCount`, `gastRuleCount`, and `staticRuleCount` are all 301.
+Prefix evidence remains explicitly weaker than an exact executable body and
+may support FIRST/lookahead or recognizer analysis, but it never authorizes
+direct execution by itself.
+
+Generated parser runtime has one strict analysis boundary. Indexed occurrences
+read only their immutable static occurrence plans. A generated parser callsite
+that has not yet received an occurrence id executes the source PEG order and
+must not start runtime Graph traversal, GAST callsite analysis, recording mode,
+or prediction-cache construction. This is intentionally different from
+non-generated development parsers, which may still opt into explicit
+Graph/GAST self-analysis. Focused generated-parser smokes require both
+`orPredictionGraphBuilds=0` and `orPredictionRecordingBuilds=0`.
+
+The real Slime Class-File pass currently writes 200 static combinator
+occurrences: all 108 source-owned top-level `OR` occurrences plus 92 exact
+`OPTION`/`MANY`/`AT_LEAST_ONE` occurrences. Combinators compiled into synthetic
+lambda methods are the next static ownership boundary. They must eventually
+receive their enclosing rule/variant/occurrence identity from source analysis
+and Class-File metadata; restoring runtime whole-graph analysis for them is not
+an acceptable bridge.
 
 ## Pipeline Probe Artifact Reuse
 
