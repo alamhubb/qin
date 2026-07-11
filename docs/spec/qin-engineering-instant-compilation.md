@@ -4046,9 +4046,31 @@ surfaces and exact equality only for internal consistency relations. The old
 identity work and had become a permanently failing test rather than a valid
 regression gate. Current minima cover 448 DSL occurrences, 361 indexed
 callsites, 378 occurrence predictions, 752 action slots, 102 exact rules, and
-78 exact variants, while dynamic occurrences may not exceed 200. Whole-rule
+78 exact variants, while dynamic occurrences may not exceed 170. Whole-rule
 direct executability remains separately gated at 25; numeric action/container
 coverage must not be misreported as a pure recognizer rule body.
+
+Local `List<Alternative<...>>` grammar builders are part of the framework DSL,
+not opaque Java bookkeeping. During static source analysis, Subhuti identifies
+the accumulator by its javac `Element`, records each `add(...)` in source order,
+attaches enclosing conditional additions as explicit GAST `GATE` nodes, and
+expands `Or(accumulator)` into the same ordered `ALTERNATIVE` structure as
+direct `Or(Alternative...)`. Symbol identity is mandatory: a same-named field
+or variable in another scope must not be merged into the local grammar builder.
+Unsupported or non-local containers remain dynamic; the analyzer must not infer
+them from a matching variable-name string.
+
+This is one source grammar and one generated plan, not a compatibility path.
+The runtime still executes the existing `Or(List<Alternative<...>>)` API while
+self-analysis receives its complete admitted structure ahead of parsing. On the
+real Slime plan, this removed `add`, `local:alternatives`, and
+`unresolved-alternative:alternatives` from the three affected rule variants and
+reduced dynamic occurrences from 200 to 170. Planned callsites remained 294,
+exact rules/variants remained 102/78, and executable variants remained 25, so
+no admission threshold was weakened. Focused generator symbol-identity tests,
+real Class-File generation/verification, coverage, and five Slime runtime-plan
+smokes pass. No wall-clock speedup is claimed from this structural coverage
+unit.
 
 ## Pipeline Probe Artifact Reuse
 
