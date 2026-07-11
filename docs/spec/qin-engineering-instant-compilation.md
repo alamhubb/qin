@@ -3522,6 +3522,16 @@ source-derived exactness gate. The next consolidation step is to represent
 those declarations in the generated static plan, then remove Graph/declared
 GAST as separate authoritative inputs rather than retaining parallel models.
 
+That GAST consolidation is now complete for generated parsers. When a static
+plan exists, `effectiveGastGrammar()` is the plan's generated GAST, never the
+hand-declared GAST or a worklist result. The real Slime parser now exposes 301
+GAST rules and 317 variants from the same plan, including 88 exact rules and
+100 exact variants; the previous 24-rule declared GAST is no longer an
+authoritative generated-parser input. The separate legacy Graph currently
+remains only as a conservative FIRST/prefix source. It must be replaced by a
+prefix-plan projection from the same static GAST before Graph can be removed;
+prefix evidence must remain explicitly weaker than an exact executable body.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
