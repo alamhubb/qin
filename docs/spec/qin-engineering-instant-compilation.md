@@ -3430,6 +3430,16 @@ structure, while `GATE` remains an explicit runtime predicate; neither may be
 confused with an unknown consumable rule body. Do not reintroduce lambda
 guessing or per-call recording for these containers.
 
+Complete static void rule variants may additionally replace their rule body with
+the generated direct recognizer plan in `cst(false)` mode. This optimization is
+admitted only when the occurrence GAST is wholly reducible to terminals,
+subrules, alternations, and the supported containers. A focused pure-grammar
+probe reduced the successful path to the single top-level wrapper and one direct
+recognizer execution; nested subrule wrappers and cores were not entered. Any
+`ACTION`, dynamic boundary, CST output, recovery mode, or debugger disables that
+replacement. Source actions are observable semantics and must never be dropped
+merely because their neighboring token path is statically known.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
