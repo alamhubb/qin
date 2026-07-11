@@ -3204,6 +3204,21 @@ lookup appeared as a replacement hotspot. This is a measured architecture step,
 not a claim that all dynamic callsites have reached Chevrotain-style direct
 plans.
 
+Partial worklist callsites are not exact parser-class execution plans. A focused
+experiment admitted every callsite with at least one safe static prefix,
+increasing `gastOrCallsitePlanCount` from 38 to 113. After fixing two lossy
+nullable/dynamic path cases, the real `OvsParser.ts` parsed correctly, but the
+conservative dynamic candidates increased recognizer wrapper calls from 32,852
+to 40,059 and state saves from 3,219 to 11,640. Keeping the richer partial path
+representation without direct execution still regressed the paired benchmark
+from about `65.4ms` / `50.0ms` CST/recognizer to `73.2ms` / `60.2ms`.
+The experiment was therefore removed. Partial GAST remains diagnostic and may
+feed the ordinary contextual prediction path; it must not be installed as an
+exact immutable callsite plan until the framework can encode its dynamic paths
+without losing correctness or increasing successful-path work. The focused
+runtime-plan smoke asserts both static-hit and dynamic-hit partial examples
+receive zero `orPredictionRuntimePlanCallsiteHits`.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
