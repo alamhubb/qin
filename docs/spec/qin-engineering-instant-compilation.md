@@ -3770,6 +3770,17 @@ fell from 83 to 78. Fully warmed time remained in the same range at
 `predictionCandidateIndexes`, which still materializes boxed candidate lists
 for static LL(1) decisions.
 
+Prediction diagnostics are opt-in runtime instrumentation. Normal generated
+parsing does not concatenate `lastOrPredictionDebug` strings for every OR;
+`-Dsubhuti.debug.prediction=true` enables those detailed candidate traces when
+investigating lookahead behavior. Numeric counters and strict parse failures
+remain active without that flag. On the next 500-warmup/5,000-round JFR probe,
+the previously reported `predictionCandidateIndexes` allocation site fell from
+25.16% to zero, proving that the cost was unconditional diagnostic string
+construction rather than the immutable candidate lists themselves. The next
+sampled allocation leader moved into source grammar execution at
+`StatementListItem`.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
