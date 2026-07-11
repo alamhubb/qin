@@ -3266,6 +3266,20 @@ plan identity, and runtime lookup as one architecture change. It may fold equal
 variant bodies back to the base rule, but must not publish synthetic GAST rules
 that runtime callsites cannot identify.
 
+Adding enclosing `ruleName + cacheKeyExtra` to every runtime callsite identity
+was also tested and removed. It increased recorded callsites from 118 to 410
+and exact plans from 39 to 106, but did not increase real `OvsParser.ts` plan
+hits. A B-C-C-B crossed run measured about `70.905ms` / `54.690ms`
+CST/recognizer for the baseline and `72.733ms` / `54.480ms` for the identity
+candidate, so CST regressed about 2.6% while recognizer stayed flat. Combining
+that identity with synthetic variant GAST still produced 866 rules and reduced
+`OvsConsumer.ts` runtime-plan hits from 77 to 55, with about `6.100ms` CST and
+`4.161ms` recognizer. Both experiments were removed. The next variant design
+should use a generated/static grammar occurrence id (or equivalent immutable
+GAST occurrence identity), with parameters represented by explicit gates or
+bounded specialization, instead of copying every callsite across all 783
+observed parameter states or adding nested runtime map lookups.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
