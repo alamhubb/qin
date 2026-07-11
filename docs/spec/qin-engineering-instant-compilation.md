@@ -3464,12 +3464,25 @@ Source analysis must give lambda bodies and Java method references the same
 grammar ownership. A method reference such as `this::TSAsExpressionTail` is a
 static `NonTerminal` targeting that exact rule variant; it must not become an
 empty alternative, a lambda-class identity, or a runtime recording request.
+The arguments of a `SUBRULE` call are runtime parameter bindings, not grammar
+children. Accessors such as `params.yield()` and `params.await()` therefore do
+not create dynamic GAST descendants under the referenced non-terminal; any
+context-dependent behavior remains an explicit gate in the referenced rule.
+
+Parser helper methods that consume a terminal use the framework-level
+`@SubhutiTerminal(tokenName=..., tokenValueArgument=...)` declaration. The
+source analyzer resolves that declaration into an exact terminal or
+value-terminal occurrence. A non-literal value argument stays visibly dynamic;
+the analyzer must not guess it, specialize it from a sample run, or hard-code a
+Slime helper name. This is Subhuti's static equivalent of an explicit
+Chevrotain `CONSUME` node.
+
 Nested parser classes are owned by their enclosing Java source file during
 Javac Tree analysis, so source filtering must map `Outer.InnerParser` to
 `Outer.java` without scanning unrelated project sources. The real Slime build
 now generates and initializes one static plan with 301 rules, 317 variants, and
-3,100 occurrences. Its current coverage gate reports 448 dynamic occurrences
-and 20 executable variants. This is a migration baseline, not a completion
+2,962 occurrences. Its current coverage gate reports 235 dynamic occurrences
+and 36 executable variants. This is a migration baseline, not a completion
 claim: the next architecture work must structurally model token/value factories,
 helpers, and remaining lambda bodies until the static plan can replace runtime
 worklist analysis as the sole authoritative grammar model.
