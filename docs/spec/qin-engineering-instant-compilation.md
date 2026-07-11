@@ -3125,8 +3125,9 @@ Lexer-mode normalization is parser-class planning work, not runtime `Or(...)`
 work. Every immutable `SubhutiOrPrediction` now owns copied token paths, one
 fully normalized lexer-mode path for each token path, and its shared lexer-mode
 prefix, the value-aware-token flag derived from those paths, and ordered groups
-of token-path indexes sharing the same lexer-mode path. Runtime prediction reads
-those facts directly; it must not rebuild
+of token-path indexes sharing the same lexer-mode path. Each group also records
+whether any of its paths needs value-aware keys. Runtime prediction reads those
+facts directly; it must not rebuild
 `LexerMode[]`, `Collections.nCopies(...)`, or a shared mode prefix on each
 callsite execution, rescan token paths for value-aware keys, or construct a
 temporary mode-to-lookahead `HashMap` for mixed-mode choices. Dynamic graph
@@ -3147,6 +3148,11 @@ Precomputing mixed-mode path groups changed the next crossed 80-round result
 from `57.583ms` to `55.312ms`; paired JFR moved from `58.333ms` to `57.159ms`,
 the mixed-mode prediction method fell from 3.86% to 3.22%, and its runtime
 `HashMap.computeIfAbsent` hotspot disappeared.
+Using each group's value-aware flag to select token names or value-aware keys
+changed the next crossed 80-round result from `55.813ms` to `54.747ms`; paired
+JFR moved from `57.301ms` to `55.522ms`, and the prior
+`currentTokenKeysForPrediction`, value-key matcher, and `String[][]` allocation
+hotspots disappeared for ordinary token-name groups.
 
 ## Pipeline Probe Artifact Reuse
 
