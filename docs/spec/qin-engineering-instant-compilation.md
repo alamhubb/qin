@@ -3204,6 +3204,15 @@ lookup appeared as a replacement hotspot. This is a measured architecture step,
 not a claim that all dynamic callsites have reached Chevrotain-style direct
 plans.
 
+Grammar declaration order is part of the self-analysis contract. GAST rules,
+alternations, recorded callsites, and graph-derived rule facts must publish
+immutable insertion-ordered snapshots; unordered `Map.copyOf(...)` or
+`Set.copyOf(...)` views are not valid plan inputs. Exact runtime plans identify
+recorded `Or(...)` occurrences by stable grammar/callsite order, so changing
+iteration order across snapshots can change plan identity or attach a plan to
+the wrong occurrence even when the grammar source did not change. The focused
+`SubhutiGrammarOrderSmokeTestMain` owns this invariant.
+
 Partial worklist callsites are not exact parser-class execution plans. A focused
 experiment admitted every callsite with at least one safe static prefix,
 increasing `gastOrCallsitePlanCount` from 38 to 113. After fixing two lossy
