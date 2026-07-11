@@ -3481,8 +3481,29 @@ Nested parser classes are owned by their enclosing Java source file during
 Javac Tree analysis, so source filtering must map `Outer.InnerParser` to
 `Outer.java` without scanning unrelated project sources. The real Slime build
 now generates and initializes one static plan with 301 rules, 317 variants, and
-2,962 occurrences. Its current coverage gate reports 235 dynamic occurrences
-and 36 executable variants. This is a migration baseline, not a completion
+3,307 occurrences. Source-owned parser helper methods are admitted as inline
+non-terminals only after an isolated source scan proves their complete body has
+no action, gate, dynamic boundary, recursion, or non-parser receiver. Blindly
+inlining every Java helper is invalid because it imports lexer/runtime utility
+implementation into the grammar tree. The current coverage gate reports 88
+inline occurrences, 154 dynamic occurrences, 263 immutable occurrence
+predictions, and 36 executable variants. `SubhutiStaticGrammarPlan` owns this
+self-analysis result. The Class-File instrumenter rewrites only source
+combinator callsites whose static occurrence has an exact executable
+prediction; partial or dynamic callsites keep their original combinator shape
+and are not routed through an indexed API. Runtime-plan construction reads the
+precomputed occurrence prediction instead of repeating callsite analysis.
+
+Direct rule-body execution and indexed prediction have separate proof gates. A
+complete executable rule body does not authorize an occurrence to prune a
+partial choice. The retained template-literal recognizer regression proves this
+boundary: instrumenting all syntactically visible containers allowed a partial
+static prediction to skip the function declaration path and leave the source
+unconsumed. Exact-occurrence-only instrumentation restores ordinary PEG
+behavior while allowing exact callsites such as `ModuleExportName` to use the
+static occurrence runtime plan.
+
+This is a migration baseline, not a completion
 claim: the next architecture work must structurally model token/value factories,
 helpers, and remaining lambda bodies until the static plan can replace runtime
 worklist analysis as the sole authoritative grammar model.
