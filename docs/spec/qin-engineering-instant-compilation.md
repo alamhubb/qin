@@ -3454,11 +3454,25 @@ output with a different CST hierarchy is not parity.
 
 `getRuntimePlanReport()` must expose this static architecture separately from
 legacy Graph/worklist GAST facts: static rule count, variant count, occurrence
-count, action count, gate count, and executable variant count. These counters
-are the migration coverage gate. A higher FIRST/callsite-plan count does not
-substitute for more executable static variants, and an action/gate-heavy rule
-must remain visibly non-executable until its semantics are represented in the
-instruction model.
+count, action count, gate count, dynamic count, and executable variant count.
+These counters are the migration coverage gate. A higher FIRST/callsite-plan
+count does not substitute for more executable static variants, and an
+action/gate/dynamic-heavy rule must remain visibly non-executable until its
+semantics are represented in the instruction model.
+
+Source analysis must give lambda bodies and Java method references the same
+grammar ownership. A method reference such as `this::TSAsExpressionTail` is a
+static `NonTerminal` targeting that exact rule variant; it must not become an
+empty alternative, a lambda-class identity, or a runtime recording request.
+Nested parser classes are owned by their enclosing Java source file during
+Javac Tree analysis, so source filtering must map `Outer.InnerParser` to
+`Outer.java` without scanning unrelated project sources. The real Slime build
+now generates and initializes one static plan with 301 rules, 317 variants, and
+3,100 occurrences. Its current coverage gate reports 448 dynamic occurrences
+and 20 executable variants. This is a migration baseline, not a completion
+claim: the next architecture work must structurally model token/value factories,
+helpers, and remaining lambda bodies until the static plan can replace runtime
+worklist analysis as the sole authoritative grammar model.
 
 ## Pipeline Probe Artifact Reuse
 
