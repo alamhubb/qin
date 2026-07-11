@@ -3124,10 +3124,12 @@ saves fell from 8,838 to 3,210 and rule-wrapper calls from 37,624 to 32,849.
 Lexer-mode normalization is parser-class planning work, not runtime `Or(...)`
 work. Every immutable `SubhutiOrPrediction` now owns copied token paths, one
 fully normalized lexer-mode path for each token path, and its shared lexer-mode
-prefix. Runtime prediction reads those plans directly; it must not rebuild
+prefix, plus the value-aware-token flag derived from those paths. Runtime
+prediction reads those facts directly; it must not rebuild
 `LexerMode[]`, `Collections.nCopies(...)`, or a shared mode prefix on each
-callsite execution. Dynamic graph candidates remain explicit ordered candidate
-indexes and continue through ordinary speculative execution.
+callsite execution, nor rescan token paths for value-aware keys. Dynamic graph
+candidates remain explicit ordered candidate indexes and continue through
+ordinary speculative execution.
 
 On the same 40,500-character `OvsParser.ts` probe, a crossed 50-round A/B moved
 CST from `80.703ms` to `76.492ms` and recognizer mode from `62.778ms` to
@@ -3136,6 +3138,9 @@ CST from `80.703ms` to `76.492ms` and recognizer mode from `62.778ms` to
 selection fell from 4.01% to 3.14%, and the prior `LexerMode[]` and
 `Collections$CopiesList` allocation hotspots disappeared. The parse counters,
 rule-wrapper counts, state saves, token counts, and CST output remained equal.
+Moving the remaining value-aware-key scan to the same plan changed a crossed
+80-round recognizer result from `59.846ms` to `59.028ms`; a paired JFR run moved
+from `61.825ms` to `59.331ms`, and the prior 3.13% scan hotspot disappeared.
 
 ## Pipeline Probe Artifact Reuse
 
