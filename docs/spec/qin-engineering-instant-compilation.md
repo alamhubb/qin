@@ -3166,6 +3166,19 @@ On `OvsParser.ts`, a crossed 50-round result moved CST from `72.069ms` to
 wrapper-lambda allocation classes; allocation pressure attributed to
 `Alternative.rule(... Runnable)` fell from 7.76% to 2.54%.
 
+Rule-reference grammar metadata is now materialized only when self-analysis
+asks for it. Hot `Alternative.rule(...)` construction retains the rule name and
+execution payload, while `RULE_REF` `SubhutiGrammarNode` and `SubhutiGastNode`
+objects are created lazily by `predictionGrammarNode()` / `gastNode()`. This is
+one standard grammar path: self-analysis still sees the same complete nodes,
+while runtime execution no longer rebuilds metadata that the immutable plan
+already owns.
+
+On `OvsParser.ts`, a crossed 80-round recognizer result moved from `52.580ms`
+to `52.349ms`; paired JFR moved from `54.620ms` to `53.545ms`. Grammar-node
+allocation pressure fell from 7.16% to 2.94%. A 50-round CST pair moved from
+`66.215ms` to `64.828ms` with identical CST and parser counters.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
