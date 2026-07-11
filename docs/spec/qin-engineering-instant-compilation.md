@@ -3781,6 +3781,42 @@ construction rather than the immutable candidate lists themselves. The next
 sampled allocation leader moved into source grammar execution at
 `StatementListItem`.
 
+Generated static parser actions use numeric execution tables. Source analysis
+assigns `ruleId + variantId + occurrenceId + actionId`; the Class-File pass
+maps each executable action id to the original synthetic lambda method and
+emits a verifier-checked `lookupswitch` method in the parser class. The
+generated `StaticEnhanced` subclass publishes one `executeStaticAction`
+dispatcher grouped by rule and variant. This path does not use reflection,
+`MethodHandle`, ByteBuddy, lambda-class identity, or grammar-local registries.
+
+An action table is executable only when its captured state has a static frame
+mapping. Zero-argument lambda bodies receive the parser instance directly;
+one-argument lambda bodies receive the current primitive invocation argument
+and perform a JVM `checkcast` before invoking the original body. Unsupported
+capture shapes are not advertised as executable tables. The instrumenter
+reports the tables it actually emitted back to source generation, so generated
+Java never references a table that does not exist.
+
+Direct static OR execution additionally requires an immutable executable
+lookahead plan for that exact occurrence. Having action ids alone is not
+enough. When both proofs exist, the normal CST/recognizer bytecode checks the
+already-bound execution strategy before any source payload is constructed,
+predicts one branch, and invokes its action id. Recovery and debug strategies
+retain the source payload in a cold bytecode branch because they require failed
+candidate state and diagnostic context. This is one compile-time strategy
+selection contract, not parse-failure fallback or a second parser.
+
+The real Slime build currently emits 193 static action tables. Focused LL(1)
+and LL(k) smokes prove numeric dispatch, typed captured-argument recovery, CST,
+recognizer, recovery, and debug behavior. On `let a = 10`, fully warmed timing
+remains approximately `avg=0.112ms`, `best=0.043ms`; no CPU improvement is
+claimed yet. JFR still attributes 8.55% sampled allocation pressure to
+`Alternative` and 1.75% to `Alternative[]`, led by `StatementListItem(params)`.
+That occurrence has action tables but no executable static prediction, so the
+next framework task is improving complete FIRST/LL(k) plan coverage for its
+Declaration/Statement branches. Grammar-local hints or special cases are not
+an acceptable substitute.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
