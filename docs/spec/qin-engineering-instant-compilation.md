@@ -3678,6 +3678,30 @@ for intentional empty productions such as the omitted binding name in an
 anonymous default-exported function or class; an unlabelled `() -> {}` is not a
 valid substitute.
 
+Lexer grammar metadata follows the same initialization-time lifecycle as the
+static parser plan. `SubhutiLexerVocabulary` is the single immutable compiled
+form for a stable token-definition identity sequence. It owns mode-prioritized
+definitions, dense token ids, token names, the vocabulary fingerprint, ASCII
+first-character candidate arrays, exact-fixed-token counts, and declared
+previous-token dependence. `SubhutiLexer` is only the mutable session: it owns
+per-run instrumentation and traditional tokenize state while delegating all
+grammar metadata to the vocabulary plan. Constructing another parser from the
+same static token definitions must reuse the vocabulary-plan identity; it must
+not sort definitions, rebuild candidate arrays, or calculate SHA-256 again.
+Changed definitions compile a distinct plan, and concurrent parsers share no
+mutable lexer state. This is one standard initialization path, not a cached
+path plus an uncached fallback.
+
+`SubhutiLexerVocabularyLifecycleSmokeTestMain` owns plan sharing, session
+counter isolation, changed-vocabulary invalidation, and concurrent-session
+isolation. On the same 100-warmup/500-round `let a = 10` recognizer probe, three
+pre-change averages were `0.661ms`, `0.627ms`, and `0.639ms`; after moving lexer
+metadata to the immutable vocabulary plan they were `0.329ms`, `0.316ms`, and
+`0.348ms`, an approximately 48.5% reduction by the mean of those runs. Best
+time moved from approximately `0.35ms` to `0.14-0.15ms`. Generic wrappers,
+runtime Graph/recording, and rule cache-key construction remain absent from the
+static success path.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
