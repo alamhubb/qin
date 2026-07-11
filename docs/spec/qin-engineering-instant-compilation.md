@@ -3545,14 +3545,14 @@ non-generated development parsers, which may still opt into explicit
 Graph/GAST self-analysis. Focused generated-parser smokes require both
 `orPredictionGraphBuilds=0` and `orPredictionRecordingBuilds=0`.
 
-The real Slime Class-File pass now writes 274 static combinator occurrences,
-including source-owned top-level operations and exact operations compiled into
-synthetic lambda methods. Source analysis records every grammar lambda's SAM
-method name, enclosing lambda occurrence, and owned grammar occurrences. The
-Class-File pass follows each `LambdaMetafactory` implementation handle and maps
-that source ownership tree onto the actual synthetic methods recursively. It
-does not guess `lambda$...` numbering, because compiler numbering is not a
-grammar identity.
+The real Slime Class-File pass now writes stable ids into all 317 parser DSL
+bytecode callsites, including source-owned top-level operations, operations in
+ordinary Java control flow, and operations compiled into synthetic lambda
+methods. Source analysis records every grammar lambda's SAM method name,
+enclosing lambda occurrence, and owned grammar occurrences. The Class-File pass
+follows each `LambdaMetafactory` implementation handle and maps that source
+ownership tree onto the actual synthetic methods recursively. It does not guess
+`lambda$...` numbering, because compiler numbering is not a grammar identity.
 
 This mapping is strict. Missing implementation methods, SAM/order mismatches,
 duplicate ownership, or source/Class-File occurrence mismatches fail the build;
@@ -3560,6 +3560,24 @@ they do not restore runtime recording or whole-graph analysis. Focused coverage
 must prove both a root `OR` and a combinator nested inside an alternative lambda,
 while a real generated Slime probe must prove that an absent nested `OPTION`
 skips its body through the indexed immutable plan.
+
+Occurrence identity and lookahead eligibility are separate architecture facts,
+as they are in Chevrotain's numbered DSL occurrences and precomputed lookahead
+function cache. Every real `OR`, `OPTION`, `MANY`, and `AT_LEAST_ONE` bytecode
+callsite is rewritten to its indexed API even when self-analysis cannot build a
+lookahead plan. An indexed occurrence without a plan executes the single source
+PEG body path and must not start Graph traversal, recording, or runtime grammar
+analysis. The Class-File instrumenter therefore depends only on source-owned
+occurrence identity, never on prediction eligibility.
+
+The static model distinguishes three coverage levels. The current Slime plan
+contains 401 parser DSL GAST nodes after safe inline expansion, 317 real
+bytecode callsites with stable numeric identity, and 188 indexed callsites with
+an immutable executable lookahead plan. Inline-expanded GAST nodes do not claim
+independent bytecode callsites. Runtime reports expose these as
+`staticDslOccurrenceCount`, `staticIndexedDslOccurrenceCount`, and
+`staticPlannedDslOccurrenceCount`; these numbers must not be replaced by one
+ambiguous "prediction count".
 
 ## Pipeline Probe Artifact Reuse
 
