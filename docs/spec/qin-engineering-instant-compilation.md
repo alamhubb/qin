@@ -3545,13 +3545,21 @@ non-generated development parsers, which may still opt into explicit
 Graph/GAST self-analysis. Focused generated-parser smokes require both
 `orPredictionGraphBuilds=0` and `orPredictionRecordingBuilds=0`.
 
-The real Slime Class-File pass currently writes 200 static combinator
-occurrences: all 108 source-owned top-level `OR` occurrences plus 92 exact
-`OPTION`/`MANY`/`AT_LEAST_ONE` occurrences. Combinators compiled into synthetic
-lambda methods are the next static ownership boundary. They must eventually
-receive their enclosing rule/variant/occurrence identity from source analysis
-and Class-File metadata; restoring runtime whole-graph analysis for them is not
-an acceptable bridge.
+The real Slime Class-File pass now writes 274 static combinator occurrences,
+including source-owned top-level operations and exact operations compiled into
+synthetic lambda methods. Source analysis records every grammar lambda's SAM
+method name, enclosing lambda occurrence, and owned grammar occurrences. The
+Class-File pass follows each `LambdaMetafactory` implementation handle and maps
+that source ownership tree onto the actual synthetic methods recursively. It
+does not guess `lambda$...` numbering, because compiler numbering is not a
+grammar identity.
+
+This mapping is strict. Missing implementation methods, SAM/order mismatches,
+duplicate ownership, or source/Class-File occurrence mismatches fail the build;
+they do not restore runtime recording or whole-graph analysis. Focused coverage
+must prove both a root `OR` and a combinator nested inside an alternative lambda,
+while a real generated Slime probe must prove that an absent nested `OPTION`
+skips its body through the indexed immutable plan.
 
 ## Pipeline Probe Artifact Reuse
 
