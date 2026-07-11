@@ -3452,6 +3452,14 @@ all following container tokens, with one wrapper and one direct-plan execution.
 Do not flatten subrules when compiling a CST-capable plan; token-equivalent
 output with a different CST hierarchy is not parity.
 
+`getRuntimePlanReport()` must expose this static architecture separately from
+legacy Graph/worklist GAST facts: static rule count, variant count, occurrence
+count, action count, gate count, and executable variant count. These counters
+are the migration coverage gate. A higher FIRST/callsite-plan count does not
+substitute for more executable static variants, and an action/gate-heavy rule
+must remain visibly non-executable until its semantics are represented in the
+instruction model.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
