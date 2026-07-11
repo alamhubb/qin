@@ -3994,6 +3994,16 @@ measured approximately `18.166ms`; its counters did not change because that
 input does not exercise the newly admitted optional paths, so no speedup is
 claimed from that benchmark.
 
+Exact single-branch static `AT_LEAST_ONE` completes the same numeric container
+execution family. Compiled lookahead must accept the first item or parsing
+fails without dispatch; subsequent matching items reuse the same action id and
+the first non-match ends the repetition successfully. Every successful action
+must consume input, and the loop performs no source payload construction or
+speculative state save/restore. Focused tests prove missing-first failure,
+two-item dispatch, normal termination, and immediate no-progress rejection.
+The current real Slime grammar has no `AtLeastOne(...)` callsite, so this is a
+framework-completeness result rather than a current Slime speedup claim.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
