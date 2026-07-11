@@ -3288,6 +3288,13 @@ the effective grammar rule name plus its existing parameter/token/mode context.
 Numeric rule ids are retained only for active-invocation slots, where the
 crossed benchmark proved a material gain.
 
+Parser-class reuse of learned adaptive low-yield names was also measured and
+removed. It let later parser instances start with 57 learned rules, reducing
+per-file key builds from 10,110 to 6,440 and puts from 8,266 to 4,596, but a
+B-C-C-B run regressed from about `54.173ms` to `58.107ms` recognizer time,
+roughly 7.3%. Adaptive low-yield learning therefore remains parser-instance
+local; lower cache counters alone are not evidence of a faster parser.
+
 Partial worklist callsites are not exact parser-class execution plans. A focused
 experiment admitted every callsite with at least one safe static prefix,
 increasing `gastOrCallsitePlanCount` from 38 to 113. After fixing two lossy
