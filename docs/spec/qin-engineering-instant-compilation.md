@@ -3179,6 +3179,31 @@ to `52.349ms`; paired JFR moved from `54.620ms` to `53.545ms`. Grammar-node
 allocation pressure fell from 7.16% to 2.94%. A 50-round CST pair moved from
 `66.215ms` to `64.828ms` with identical CST and parser counters.
 
+Worklist self-analysis now records stable `Or(...)` callsites beside their full
+branch GAST. The parser-class runtime plan builds lookahead entries only for
+callsites whose recorded branch structure is stable and whose resolved GAST is
+exact. Runtime lookup uses the first executable lambda class as the occurrence
+identity and verifies the recorded arity and first structural identity before
+reading the immutable plan. A `Runnable Or` containing a conditional `null`
+branch is explicitly dynamic and cannot receive this direct callsite plan;
+partial or context-dependent GAST continues through the ordinary ordered PEG
+prediction/execution semantics. This is one parser path, not an exact-plan plus
+fallback-parser pair.
+
+`getRuntimePlanReport()` exposes `gastCallsiteCount` and
+`gastOrCallsitePlanCount`; `getOrPredictionStats()` exposes
+`orPredictionRuntimePlanCallsiteHits`. The focused
+`SubhutiGastCallsiteRuntimePlanSmokeTestMain` proves three repeated exact calls
+use the parser-class plan with zero runtime key builds while a conditional-null
+callsite receives zero direct-plan hits. On the 40,500-character
+`OvsParser.ts`, the retained plan covered about 1,907 recognizer calls. Two
+crossed 50-round pairs averaged about a 2.4% CST improvement and a 1.1%
+recognizer improvement. Paired JFR reduced
+`hotOrPredictionEntryMatchesAlternatives` from 3.10% to 0.98%; no runtime-plan
+lookup appeared as a replacement hotspot. This is a measured architecture step,
+not a claim that all dynamic callsites have reached Chevrotain-style direct
+plans.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
