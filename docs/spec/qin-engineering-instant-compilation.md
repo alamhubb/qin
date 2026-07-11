@@ -3937,6 +3937,41 @@ These are local development measurements. The retained architectural result is
 complete inheritance-aware GAST ownership and direct execution of the parent
 `PrimaryExpression` OR without constructing its 13 source alternatives.
 
+Exact single-branch static `MANY` occurrences use the same immutable numeric
+execution architecture as direct static `OR`. Admission requires a root
+occurrence, one structurally complete alternative, an executable prediction,
+and a generated action target. The normal CST/recognizer strategy checks EOF
+and compiled lookahead, evaluates the numeric gate when present, dispatches the
+numeric action, and requires each successful iteration to consume input. A
+non-matching lookahead ends repetition; an action that consumes no input fails
+immediately. The loop does not create source payloads, save speculative parser
+state, or restore failed candidates. Recovery/debug remains a separately bound
+compile-time execution strategy and unsupported occurrences retain their one
+standard source-combinator strategy; runtime never attempts numeric execution
+and then falls back to another implementation.
+
+The Class-File pass isolates combinator operands by JVM descriptor and verified
+instruction stack effects rather than matching one source-bytecode shape. This
+single operand slicer covers plain `Runnable` payloads, `Alternative.token`,
+`Alternative.tokens` with nested varargs arrays, and inherited hidden variants
+with explicit `ruleId + variantId + occurrenceId` addresses. The transformed
+class is accepted only after Class-File API verification. Focused execution
+tests prove zero-match and two-match repetition, two numeric action dispatches,
+zero `staticActionRetryRestores`, immediate no-progress rejection, and nested
+varargs payload removal.
+
+The real Slime build continues to generate 317 wrappers, 238 action tables, and
+13 gate tables. Bytecode inspection confirms numeric `MANY` execution in the
+exact multiplicative, additive, shift, equality, bitwise, logical, coalescing,
+and selected TypeScript repetition rules. `RelationalExpression` remains on its
+source strategy because its condition is not yet a complete numeric plan; the
+framework does not weaken the admission proof. The 1,000-line `a.b.c.d;`
+recognizer probe measured approximately `17.863ms` to `20.105ms` across the
+latest local runs, around the prior `19.217ms` baseline, so no stable CPU
+speedup is claimed for this input. The retained gain is architectural: exact
+repetition now executes its precomputed lookahead and action plan without
+runtime lambda/Alternative construction or speculative repetition state.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
