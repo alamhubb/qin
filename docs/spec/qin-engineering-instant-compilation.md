@@ -3579,6 +3579,42 @@ independent bytecode callsites. Runtime reports expose these as
 `staticPlannedDslOccurrenceCount`; these numbers must not be replaced by one
 ambiguous "prediction count".
 
+Static occurrence lookahead is compiled after self-analysis, not interpreted
+from the diagnostic `SubhutiOrPrediction` object graph on every parse. The
+lexer assigns every token name a dense parser-local `tokenTypeId` in original
+vocabulary order and writes that id into every lexer-produced
+`SubhutiMatchToken`. Token mode sorting must not change this identity. The
+runtime-plan cache includes a strict SHA-256 fingerprint of the ordered token
+vocabulary, so a plan cannot be reused with incompatible token ids.
+
+`SubhutiLookaheadPlan` is the generated/static runtime form. It has specialized
+plans for ordinary LL(1), value-aware LL(1), and LL(k):
+
+- ordinary LL(1) indexes a precomputed candidate array directly by
+  `tokenTypeId`;
+- value-aware LL(1) first selects the token family by id and then reads the
+  precomputed value entry, preserving contextual keywords such as
+  `IdentifierName("from")` without constructing a string key at runtime;
+- LL(k) stores ordered token-id/value paths and their prefix candidate lists,
+  then compares current token objects directly. Incomplete common prefixes must
+  still select the ordered PEG candidates and produce the normal visible parse
+  failure; they must not become an empty-candidate success.
+
+Contextual token-consumer helpers must declare their real terminal identity.
+`@SubhutiTerminal` supports either `tokenValueArgument` or one fixed
+`tokenValue`, never both. For example `Let()` is statically
+`IdentifierName("let")`, not a fictional lexer token named `Let`. The analyzer
+must reject or leave dynamic missing metadata; the lookahead compiler must not
+guess aliases or ignore unknown token names.
+
+The current real Slime gate has 188 planned bytecode callsites and 188 compiled
+runtime lookahead plans: 154 ordinary LL(1), 25 value-aware LL(1), and 9 LL(k),
+with no mixed-mode callsite. Runtime reports expose these classes plus
+`staticCompiledLookaheadCount`; that compiled count must equal
+`staticPlannedDslOccurrenceCount`. Focused execution tests separately prove
+source semantic actions, value-aware branch selection, complete LL(k) selection,
+and incomplete-prefix failure while Graph/recording builds remain zero.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
