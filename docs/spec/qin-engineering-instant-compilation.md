@@ -3064,6 +3064,28 @@ CST result measured `avgMs=109.887 bestMs=87.094`, down from
 list and `sourceLookaheadEntry` accounted for only 1.99% of samples. Nineteen
 focused smokes and the 1,000-round recognizer reset/plan probe pass.
 
+The next retained lexer-framework unit adopts Chevrotain's ordered first-character
+candidate shape without requiring grammar-specific hints. `SubhutiCreateToken`
+now distinguishes an exact `fixedValue` contract from ordinary regex value
+metadata. At lexer construction, Subhuti builds immutable ASCII first-character
+candidate arrays: exact fixed tokens enter only their declared first-character
+bucket, while regex tokens remain in every bucket at their original relative
+position. Non-ASCII input retains the full ordered token table. This preserves
+keyword/identifier priority, long/short operator priority, skip tokens, lexer
+modes, context constraints, and lookahead; it is one standard lexer path, not a
+fallback scanner.
+
+The JavaScript/TypeScript table has 120 definitions: 96 exact fixed tokens and
+24 regex definitions. On the 40,500-character `OvsParser.ts` probe, one parse
+performed 188,548 candidate checks and 151,086 pattern attempts. The retained
+20-round result moved CST from `avgMs=103.994 bestMs=83.997` to
+`avgMs=94.312 bestMs=69.592`, and recognizer mode from
+`avgMs=82.075 bestMs=69.214` to `avgMs=70.840 bestMs=55.895`. JFR reduced
+`SubhutiLexer._matchTokenWithMode` from 5.98% to 2.53% of samples and
+`Matcher.reset` from 4.78% to 0.84%. Focused coverage proves
+keyword/identifier conflicts, longest operators, comments, template-tail mode,
+and ordered regex candidates without fixed hints.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
