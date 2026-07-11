@@ -3336,6 +3336,22 @@ GAST occurrence identity), with parameters represented by explicit gates or
 bounded specialization, instead of copying every callsite across all 783
 observed parameter states or adding nested runtime map lookups.
 
+Recording more GAST structure is not by itself a parser-speed result. A rejected
+experiment changed `assertNoLineBreak()` during worklist recording from a
+`DYNAMIC(contextual-lookahead)` stop into an explicit non-consuming `GATE` and
+continued recording the remaining rule body. On generated `SlimeParser.ts`
+(67,200 characters), this increased GAST rules from 267 to 272, exact rules from
+61 to 63, exact callsite plans from 39 to 44, and runtime-plan callsite hits from
+5,758 to 6,299. It did not reduce any wrapper, core execution, cache-key, or
+direct-recognizer counter, and it added lookahead/token-cache reads. A B-C-C-B
+five-round crossed run measured `134.245ms` / `139.589ms` for the baseline and
+`142.967ms` / `154.725ms` for the candidate, about an 8.6% average regression.
+The experiment was removed. Keep explicit GAST gates when they are required to
+model a real grammar predicate, but do not promote contextual assertions merely
+to raise coverage counters. A retained GAST change must either remove proven
+successful-path work or produce a wall-clock win on the focused real parser;
+plan count and plan-hit count alone are insufficient.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
