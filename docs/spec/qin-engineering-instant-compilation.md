@@ -3972,6 +3972,28 @@ speedup is claimed for this input. The retained gain is architectural: exact
 repetition now executes its precomputed lookahead and action plan without
 runtime lambda/Alternative construction or speculative repetition state.
 
+Exact single-branch static `OPTION` occurrences use that same numeric action
+architecture. Admission requires an executable prediction and generated action
+target for the exact rule variant. The normal strategy checks EOF and compiled
+lookahead before dispatch, evaluates the numeric gate once when present, and
+invokes the action only when both prediction and gate accept. A rejected gate
+leaves the input untouched for following grammar elements. A successful action
+must consume input; no-progress actions fail immediately. No speculative state
+snapshot is created, and normal execution never constructs the source
+`Runnable`, `Alternative`, or varargs payload.
+
+Focused tests prove EOF absence, matching presence, accepted and rejected
+captured boolean gates, zero retry restores, and immediate no-progress failure.
+The real Slime build and Class-File verification remain green. Inspection of
+the principal Slime grammar classes found 50 numeric `OPTION` callsites,
+including class, function, expression, module, statement, and TypeScript rules.
+The effective `ClassTail` body uses the active occurrence address while the
+hidden parent body uses explicit `(ruleId, variantId, occurrenceId)` dispatch,
+preserving inheritance-aware GAST ownership. The 1,000-line `a.b.c.d;` probe
+measured approximately `18.166ms`; its counters did not change because that
+input does not exercise the newly admitted optional paths, so no speedup is
+claimed from that benchmark.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
