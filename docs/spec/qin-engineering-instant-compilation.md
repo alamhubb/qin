@@ -3336,6 +3336,31 @@ GAST occurrence identity), with parameters represented by explicit gates or
 bounded specialization, instead of copying every callsite across all 783
 observed parameter states or adding nested runtime map lookups.
 
+The retained variant-aware GAST foundation preserves parameter identity without
+installing that rejected runtime lookup. `RULE_REF` nodes may carry the
+normalized target `cacheKeyExtra`; worklist self-analysis stores every
+`ruleName + cacheKeyExtra` body in an immutable variant table while continuing
+to publish the name-only common body for the existing runtime plan. Variant
+self-analysis follows those exact references transitively, and
+`getRuntimePlanReport()` exposes `gastVariantCount`, `gastExactVariantCount`,
+`gastDynamicVariantCount`, and `gastVariantConsumingElementCount`. This is one
+grammar model, not a fallback parser: variant metadata is self-analysis input,
+while no variant may affect runtime execution until stable grammar occurrence
+identity is available end to end.
+
+On generated `SlimeParser.ts`, the retained model records 783 variants across
+267 name-level rules. Of those variants, 105 are exact and 748 contain or reach
+a dynamic boundary; recursive variants may be both structurally exact and
+runtime-dynamic, so these categories are not complements. The existing runtime
+surface remains unchanged at 118 callsites, 39 exact callsite plans, 5,758
+runtime-plan hits, and 56,298 wrapper calls. This proves two things: variant
+identity was previously discarded too early, and preserving it alone cannot
+remove the successful-path cost. The next architecture boundary is a static
+enhanced grammar generator that emits stable rule-local occurrence ids and
+complete GAST for the admitted combinator/control-flow subset, so immutable
+variant plans can be indexed directly instead of guessed from lambda classes or
+looked up through a universal `ruleName + cacheKeyExtra` map.
+
 Recording more GAST structure is not by itself a parser-speed result. A rejected
 experiment changed `assertNoLineBreak()` during worklist recording from a
 `DYNAMIC(contextual-lookahead)` stop into an explicit non-consuming `GATE` and
