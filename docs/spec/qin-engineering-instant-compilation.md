@@ -3377,6 +3377,32 @@ to raise coverage counters. A retained GAST change must either remove proven
 successful-path work or produce a wall-clock win on the focused real parser;
 plan count and plan-hit count alone are insufficient.
 
+Static enhanced parser generation now publishes the deterministic rule-id table
+beside the generated wrappers. The table uses the same stable first-occurrence
+rule-name ordering as the numeric ids passed to `executeVoidRuleWrapper(...)`
+and `executeRuleWrapper(...)`; same-name overloads still share one id. Both
+`SlimeParserStaticEnhanced` and `JavaParserStaticEnhanced` expose this table
+through the parser-class hook. The table has no hot-path behavior by itself. It
+is the indexed identity boundary that future generated rule-local occurrence
+plans must use, rather than reconstructing rule names or adding composite string
+keys at runtime.
+
+Exact GAST is proof of grammar completeness, not proof that packrat memoization
+is unprofitable. A rejected variant experiment treated every exact,
+non-recursive variant as recognizer pass-through. On `SlimeParser.ts` it reduced
+wrapper/core executions by 4,107, but cache-key builds rose from 12,809 to
+13,605, cache puts rose from 9,630 to 10,426, and a crossed baseline/candidate
+run regressed from `132.889ms` to `220.108ms` in the first pair. Restricting the
+plan to one-consuming-element variants and indexing it through the generated
+rule-id table removed that large regression, but neither `SlimeParser.ts` nor
+`SlimeAstCreateUtils.ts` executed any eligible variant: structural counters
+were unchanged, while the larger file measured `299.972ms` baseline versus
+`345.413ms` candidate. The runtime check was removed. Do not equate
+"exact" with "skip wrapper/cache". A successful-path optimization must be a
+complete executable plan, or have separate evidence that memoization and state
+work are unnecessary for that exact occurrence; otherwise exact GAST remains
+self-analysis metadata.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
