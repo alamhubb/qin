@@ -3421,14 +3421,14 @@ they must fail on a missing scope, unknown occurrence, source/class mismatch, or
 kind mismatch. Runtime `StackWalker`, lambda-class maps, composite string keys,
 and a recording fallback are not part of this path.
 
-The first executable slice covers static `OR`. A focused instrumented parser
-kept the source `Or(() -> ARule(), () -> BRule())`, rewrote exactly one bytecode
-callsite, and used the immutable plan to select `BRule` for input `b` without
-executing `ARule`. `ACTION` is non-consuming self-analysis structure, while
-`GATE` remains an explicit runtime predicate; neither may be confused with an
-unknown consumable rule body. The same indexed-plan architecture must own
-`OPTION`, `MANY`, and `AT_LEAST_ONE` next. Do not reintroduce lambda guessing or
-per-call recording for those containers.
+The executable slice covers static `OR`, `OPTION`, `MANY`, and `AT_LEAST_ONE`.
+A focused instrumented parser kept ordinary combinator source, rewrote four
+bytecode callsites, selected `BRule` without executing `ARule`, skipped absent
+optional/repeated bodies through precomputed token lookahead, and enforced
+progress for repeated bodies. `ACTION` is non-consuming self-analysis
+structure, while `GATE` remains an explicit runtime predicate; neither may be
+confused with an unknown consumable rule body. Do not reintroduce lambda
+guessing or per-call recording for these containers.
 
 ## Pipeline Probe Artifact Reuse
 
