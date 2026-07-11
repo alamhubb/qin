@@ -3789,6 +3789,16 @@ generated `StaticEnhanced` subclass publishes one `executeStaticAction`
 dispatcher grouped by rule and variant. This path does not use reflection,
 `MethodHandle`, ByteBuddy, lambda-class identity, or grammar-local registries.
 
+Callback identity is not limited to lambda syntax. A statically resolved parser
+method reference such as `this::EmptyStatement` is the same grammar action as
+`() -> EmptyStatement()` and receives a dense action id. Source analysis records
+both callback forms in source order; the Class-File pass reads their bootstrap
+method handles once at generation time and emits direct JVM invocation in the
+numeric action table. Runtime does not retain or invoke a `MethodHandle`. A
+rule-level direct OR is rejected unless every candidate has a generated action
+target, so unsupported callback shapes fail the compile-time coverage gate
+instead of selecting a second runtime path.
+
 An action table is executable only when its captured state has a static frame
 mapping. Zero-argument lambda bodies receive the parser instance directly;
 one-argument lambda bodies receive the current primitive invocation argument
@@ -3865,10 +3875,21 @@ primitive captured gates, ordered first-pass selection, and one action dispatch.
 async, generator, getter, and setter forms.
 `SlimeStaticStatementListItemPlanSmokeTestMain` proves declaration, return, and
 expression statement branches, including numeric retry for the mixed expression
-case. The real Slime generation reports 193 action tables and 9 gate tables;
-the focused paths keep `ruleWrapperCalls=0` and expose non-zero
+case, plus method-reference branches for empty and debugger statements. The
+real Slime generation reports 205 action tables and 9 gate tables; the focused
+paths keep `ruleWrapperCalls=0` and expose non-zero
 `staticActionDispatches`, plus `staticGateDispatches` or
 `staticActionRetryRestores` where required.
+
+On the 1,000-line `a.b.c.d;` recognizer probe, compiling method references into
+the same action tables reduced indexed static rule entries from 35,003 to
+31,003. The ordinary 15-warmup/30-round run changed from `avg=24.264ms` to
+`avg=21.219ms` (approximately 12.6%); matched JFR runs changed from
+`avg=21.457ms` to `avg=19.452ms` (approximately 9.3%). These are local
+development measurements, not a cross-machine guarantee. The remaining parser
+allocation leaders are `Alternative.token`, `Alternative.rule`, and repetition
+payloads, so the next framework boundary is numeric OPTION/MANY execution, not
+grammar-local source rewrites.
 
 ## Pipeline Probe Artifact Reuse
 
