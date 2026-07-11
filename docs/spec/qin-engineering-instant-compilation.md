@@ -3104,6 +3104,23 @@ Against the preceding retained lexer commit, a paired 20-round recognizer run
 was effectively wall-clock neutral (`73.945ms` to `73.241ms`) while state saves
 fell from 9,290 to 8,838 and direct planned repetitions rose from 10 to 462.
 
+Declared graph alternations are now reusable rule facts as well as callsite
+prediction declarations. `putAlternation(scope, ruleNames...)` installs an
+alternation rule for `scope` when no explicit rule body exists; a later or
+earlier explicit `putRule(scope, ...)` remains authoritative. Grammar owners
+should reference that scope instead of maintaining a second hand-written FIRST
+token list. This removes duplicated metadata and lets nested graph analysis
+resolve the same canonical alternatives used by parser-class self-analysis.
+
+The first retained use replaces `ModuleStatementListItem`'s stale terminal list
+with a reference to `StatementListItem`. The duplicate list had omitted valid
+`Yield` and `Await` expression starts, so a graph plan rejected `yield => {}`
+before the dynamic statement branch could run. With the canonical alternation
+rule, both the yield-arrow regression and the `-value` exponentiation probe pass.
+On `OvsParser.ts`, the following 20-round result moved CST from `91.681ms` to
+`87.319ms` and recognizer mode from `72.729ms` to `65.965ms`; recognizer state
+saves fell from 8,838 to 3,210 and rule-wrapper calls from 37,624 to 32,849.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
