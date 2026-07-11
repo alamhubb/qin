@@ -3154,6 +3154,18 @@ JFR moved from `57.301ms` to `55.522ms`, and the prior
 `currentTokenKeysForPrediction`, value-key matcher, and `String[][]` allocation
 hotspots disappeared for ordinary token-name groups.
 
+`Alternative` execution shape is also part of the runtime plan boundary.
+Runnable alternatives now retain and execute their original `Runnable`
+directly instead of wrapping it in a second capturing `Supplier` lambda on every
+`Or(...)` call. This preserves the same `Alternative.rule/token/tokens/structure`
+source APIs, GAST nodes, gates, PEG order, and null result while making the
+original method-reference class the callsite identity.
+
+On `OvsParser.ts`, a crossed 50-round result moved CST from `72.069ms` to
+`66.892ms` and recognizer mode from `53.236ms` to `50.328ms`. JFR removed both
+wrapper-lambda allocation classes; allocation pressure attributed to
+`Alternative.rule(... Runnable)` fell from 7.76% to 2.54%.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
