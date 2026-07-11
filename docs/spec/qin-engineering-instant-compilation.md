@@ -3627,6 +3627,18 @@ numeric core directly. Focused real Slime parsing requires
 `staticRootRuleEntries=1`, a non-zero `staticCoreRuleEntries`,
 `ruleWrapperCalls=0`, and `ruleCacheKeyBuilds=0`.
 
+Static execution mode is specialized once per root invocation, following
+Chevrotain's initialization-time CST hook selection. Subhuti binds one of
+`RECOGNIZER`, `CST`, `RECOVERY_RECOGNIZER`, `RECOVERY_CST`,
+`DEBUG_RECOGNIZER`, or `DEBUG_CST`, then installs the corresponding rule-core,
+void-body, and debug-hook strategies. Nested static rules call those bound
+strategies directly; they do not repeatedly inspect the mutable
+`buildCst/recovery/debug` flag combination. Runtime stats require
+`staticExecutionModeBindings=1` and expose the selected mode. On the same
+20-warmup/100-round `let a = 10` recognizer probe, this reduced average parse
+time from `1.075ms` to `0.985ms` while retaining zero generic wrappers, cache
+keys, Graph builds, and recording builds.
+
 Executable-plan FIRST analysis returns the complete terminal set, not one
 representative terminal. Sequences continue through nullable prefixes, choices
 union every branch, and rule references recurse through the static variant
