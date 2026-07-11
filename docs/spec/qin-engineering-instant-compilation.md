@@ -3016,6 +3016,27 @@ Subhuti/Slime smokes pass, and source-mode generated-file probes measured
 `SlimeParser.ts` at `avgMs=251.982` and `SlimeAstCreateUtils.ts` at
 `avgMs=447.665` over three rounds.
 
+Once that semantic key collapse is proven, context-free canonical lexer modes
+may use direct source-index storage. `SubhutiTokenCache` now keeps lazy arrays
+for `DEFAULT_MODE`, `TEMPLATE_TAIL`, and `REGEXP` when the active token table has
+no previous-token dependency. A token read becomes a mode check plus
+`entries[sourceIndex]`; context-dependent token tables and custom modes retain
+the structured `SubhutiTokenCacheKey` map. `clear()` resets both representations,
+and `isEmpty()` preserves the direct-recognizer guard. This is the source-mode
+equivalent of Chevrotain's token-array cursor without pretending that
+context-sensitive/custom modes are globally linear.
+
+On `OvsParser.ts`, two 20-round recognizer runs measured
+`avgMs=115.340 bestMs=88.991` and `avgMs=108.203 bestMs=83.452`, improving on
+the semantic-key Map baseline of about `118ms` average and `92-95ms` best. The
+20-round CST result moved from `avgMs=130.385 bestMs=104.242` to
+`avgMs=122.474 bestMs=95.049`. Under JFR, the run measured
+`avgMs=97.356 bestMs=82.448`; `_getOrParseTokenEntry` and token-cache
+`HashMap.getNode/hash` disappeared from the leading hot-method list, leaving
+`LA(int)` as the largest parser-framework method. The context-free/contextual
+cache smoke, the 18 focused Subhuti/Slime smokes, and the 1,000-round recognizer
+plan probe all pass.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
