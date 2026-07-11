@@ -3086,6 +3086,24 @@ performed 188,548 candidate checks and 151,086 pattern attempts. The retained
 keyword/identifier conflicts, longest operators, comments, template-tail mode,
 and ordered regex candidates without fixed hints.
 
+The next retained GAST correction separates two identities that a runtime plan
+must not conflate. A candidate-map key such as `A` may be only a FIRST prefix
+summary for complete paths `A B` and `A C`; it is not proof that an actual
+one-token alternative `A` exists. Prefix preservation now compares the complete
+token sequences and their owning alternative indexes. Thus `A B | A C` becomes
+LL(2), while a real `A | A B` choice still preserves both PEG-ordered candidates
+for the longer input.
+
+Parser runtime plans also retain the keys produced by exact GAST self-analysis
+separately from graph/FIRST prediction keys. Only an exact-GAST key may execute
+before callsite GAST analysis; graph predictions remain at the conservative
+prediction boundary. This lets a declared exact `AB | AC` plan run directly
+without allowing a partial graph plan to reject valid contextual syntax such as
+`yield => 42`. Focused runtime-plan tests assert both identities directly.
+Against the preceding retained lexer commit, a paired 20-round recognizer run
+was effectively wall-clock neutral (`73.945ms` to `73.241ms`) while state saves
+fell from 9,290 to 8,838 and direct planned repetitions rose from 10 to 462.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
