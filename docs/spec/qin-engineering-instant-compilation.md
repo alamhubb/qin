@@ -3810,12 +3810,29 @@ The real Slime build currently emits 193 static action tables. Focused LL(1)
 and LL(k) smokes prove numeric dispatch, typed captured-argument recovery, CST,
 recognizer, recovery, and debug behavior. On `let a = 10`, fully warmed timing
 remains approximately `avg=0.112ms`, `best=0.043ms`; no CPU improvement is
-claimed yet. JFR still attributes 8.55% sampled allocation pressure to
-`Alternative` and 1.75% to `Alternative[]`, led by `StatementListItem(params)`.
-That occurrence has action tables but no executable static prediction, so the
-next framework task is improving complete FIRST/LL(k) plan coverage for its
-Declaration/Statement branches. Grammar-local hints or special cases are not
-an acceptable substitute.
+claimed yet. JFR attributed 8.55% sampled allocation pressure to `Alternative`
+and 1.75% to `Alternative[]`, led by `StatementListItem(params)`. That mixed
+Declaration/Statement occurrence now has an executable plan and enters its
+numeric action table without constructing the source alternatives on the
+normal path. Grammar-local hints or special cases remain unacceptable.
+
+Mixed static alternatives preserve PEG ordering. A GAST branch may be dynamic
+while still exposing known FIRST/LL(k) token paths; analysis must retain both
+facts instead of discarding the known paths. Runtime candidate selection must
+merge every dynamic branch with token-matched branches in source order for
+both shared and mixed lexer modes. A dynamic marker never authorizes pruning
+that branch as if prediction were exact.
+
+When the merged plan contains multiple candidates, numeric action execution
+saves parser state once and tries action ids in source order. A failed or
+non-consuming action restores that state before the next candidate; success
+requires input consumption. This is the compiled form of the one standard PEG
+ordered-choice semantics, not a fallback parser. The profile counter
+`staticActionRetryRestores` makes this remaining speculative work visible.
+Prediction-only `Alternative.rule(name, action)` metadata must use the same
+target variant as the real `SUBRULE` in that action body; source analysis
+normalizes the reference before building GAST and fails through normal parsing
+if no candidate succeeds.
 
 Static gated alternatives use the same occurrence plan. Source analysis assigns
 dense `gateId` values to `BooleanSupplier` predicates owned by an alternative,
@@ -3845,10 +3862,13 @@ action/gate ownership; it must never bypass semantic actions.
 `SubhutiStaticGrammarExecutionSmokeTestMain` proves two same-token branches,
 primitive captured gates, ordered first-pass selection, and one action dispatch.
 `SlimeStaticGateActionPlanSmokeTestMain` proves real `MethodDefinition` plain,
-async, generator, getter, and setter forms. The real Slime generation reports
-193 action tables and 9 gate tables; the focused path keeps
-`ruleWrapperCalls=0` and exposes non-zero `staticActionDispatches`, plus
-`staticGateDispatches` for gated branches.
+async, generator, getter, and setter forms.
+`SlimeStaticStatementListItemPlanSmokeTestMain` proves declaration, return, and
+expression statement branches, including numeric retry for the mixed expression
+case. The real Slime generation reports 193 action tables and 9 gate tables;
+the focused paths keep `ruleWrapperCalls=0` and expose non-zero
+`staticActionDispatches`, plus `staticGateDispatches` or
+`staticActionRetryRestores` where required.
 
 ## Pipeline Probe Artifact Reuse
 
