@@ -4024,6 +4024,32 @@ previously rejected solely by the root-only admission rule. The 1,000-line
 `a.b.c.d;` probe remained approximately `18.739ms` because it does not exercise
 those newly admitted bodies; no speedup is claimed from that input.
 
+Virtual rule-target resolution is inheritance-aware. Owner-specific method keys
+continue to resolve explicit parent bodies, including `super` calls. When a
+source call resolves to an abstract ancestor signature, the analyzer selects
+the most-derived annotated rule method only when all same-signature candidates
+belong to one inheritance chain. Same-signature methods on unrelated classes
+remain ambiguous and dynamic. This preserves Java virtual dispatch while
+keeping hidden parent variants separately addressable.
+
+On the real Slime plan this changed dynamic occurrences from 240 to 200,
+exact rules from 77 to 102, exact variants from 75 to 78, and recognizer
+pass-through rules from 61 to 83. Calls such as `AssignmentExpression`,
+`UniqueFormalParameters`, `MethodDefinition`, and `Declaration` now emit one
+`SUBRULE` with the most-derived target variant instead of an unwrapped dynamic
+node plus incorrectly scanned runtime argument expressions. Planned callsites
+remain 294, proving that target resolution did not weaken lookahead admission.
+
+Static coverage tests use monotonic architectural gates for growing grammar
+surfaces and exact equality only for internal consistency relations. The old
+`401/317/154/36/563` snapshot predated later inherited-variant and action/gate
+identity work and had become a permanently failing test rather than a valid
+regression gate. Current minima cover 448 DSL occurrences, 361 indexed
+callsites, 378 occurrence predictions, 752 action slots, 102 exact rules, and
+78 exact variants, while dynamic occurrences may not exceed 200. Whole-rule
+direct executability remains separately gated at 25; numeric action/container
+coverage must not be misreported as a pure recognizer rule body.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
