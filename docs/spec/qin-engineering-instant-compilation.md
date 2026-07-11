@@ -3770,6 +3770,25 @@ fell from 83 to 78. Fully warmed time remained in the same range at
 `predictionCandidateIndexes`, which still materializes boxed candidate lists
 for static LL(1) decisions.
 
+Regex matchers belong to one mutable lexer session, never to the shared
+`SubhutiLexerVocabulary`. A session creates at most one `Matcher` for each
+vocabulary `Pattern` identity and reuses it with `reset(code)` followed by the
+normal `region(...).lookingAt()` operation. This keeps the vocabulary immutable
+and safely shared across parser instances while removing repeated
+`Pattern.matcher(code)` allocation from the token and lexical-lookahead paths.
+It does not change token order, candidate selection, regex patterns, or the
+number of pattern attempts.
+
+On the 1,000-line `a.b.c.d;` recognizer probe, session-local matcher reuse
+changed the ordinary average from `21.219ms` to `20.020ms` (approximately
+5.7%) and the matched JFR average from `19.452ms` to `18.167ms`
+(approximately 6.6%). `Pattern.matcher` disappeared from the JFR allocation
+leaders, where it had accounted for 26.69% before this change; remaining regex
+match allocation was approximately 1.29%. These are local development
+measurements. The retained architectural result is immutable shared lexer
+metadata plus mutable session-local matching state, matching the same
+initialization-versus-execution split used by the static grammar plan.
+
 Prediction diagnostics are opt-in runtime instrumentation. Normal generated
 parsing does not concatenate `lastOrPredictionDebug` strings for every OR;
 `-Dsubhuti.debug.prediction=true` enables those detailed candidate traces when
