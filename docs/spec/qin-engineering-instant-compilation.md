@@ -3756,6 +3756,20 @@ with only dozens of allocation samples and are treated as noise, not as a CPU
 speedup or regression claim. The retained result is removal of one proven
 per-call wrapper allocation while all focused static semantics remain green.
 
+Exact fixed lexer definitions do not allocate a regex `Matcher`. The lexer
+compares their declared `fixedValue` directly with the source, then applies the
+same mode, context, and lookahead constraints as every other token. Keyword
+boundaries therefore remain owned by their negative lookahead declaration;
+`if` matches the keyword while `iffy` continues to match the identifier.
+Definitions without an exact fixed value still use the standard regex path.
+
+On the 500-warmup/5,000-round probe, regex `Pattern.matcher` fell from 18.45%
+to 6.11% of sampled allocation pressure and the minimal input's matcher count
+fell from 83 to 78. Fully warmed time remained in the same range at
+`avg=0.105ms`, `best=0.044ms`. The next measured framework allocation target is
+`predictionCandidateIndexes`, which still materializes boxed candidate lists
+for static LL(1) decisions.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
