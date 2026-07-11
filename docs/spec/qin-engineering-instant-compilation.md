@@ -3440,6 +3440,18 @@ recognizer execution; nested subrule wrappers and cores were not entered. Any
 replacement. Source actions are observable semantics and must never be dropped
 merely because their neighboring token path is statically known.
 
+The direct executable representation is an instruction tree, not a flattened
+terminal list. It preserves nested `Rule`, `Sequence`, `Choice`, `Optional`,
+`Repetition`, `AtLeastOne`, and `Terminal` operations. Recognizer execution
+ignores rule-enter/exit materialization, while CST execution uses the same tree
+to create and attach every nested rule node and token node. The generated
+wrapper continues to own the root rule boundary, so the instruction executor
+starts at the root body and materializes only nested `SUBRULE` boundaries. A
+focused CST probe proved the expected `Top -> BRule -> B` shape while retaining
+all following container tokens, with one wrapper and one direct-plan execution.
+Do not flatten subrules when compiling a CST-capable plan; token-equivalent
+output with a different CST hierarchy is not parity.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
