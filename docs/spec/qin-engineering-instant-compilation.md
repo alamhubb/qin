@@ -3910,6 +3910,33 @@ allocation leaders are `Alternative.token`, `Alternative.rule`, and repetition
 payloads, so the next framework boundary is numeric OPTION/MANY execution, not
 grammar-local source rewrites.
 
+Static grammar discovery must retain every inherited `@SubhutiRule` body, not
+only the most-derived Java override for each method signature. The generated
+subclass still emits one normal virtual wrapper for the effective method, but
+source analysis and Class-File instrumentation assign each parent and child
+body its own rule variant. This is required because a parent implementation may
+remain executable through `super`, and its combinator occurrence ids are not
+the child's occurrence ids.
+
+Hidden parent rule bodies use an explicit immutable occurrence address at each
+instrumented combinator callsite: `ruleId + variantId + occurrenceId`. Their
+numeric OR action/gate dispatch uses that same address. Ordinary effective rule
+bodies may continue using the already-active static invocation frame. The
+runtime must never infer a hidden body's grammar identity from virtual dispatch
+or reuse the child's active variant; doing so either indexes the wrong GAST or
+recursively dispatches the child action. This is the inheritance equivalent of
+Chevrotain's rule-local numbered DSL occurrences, not a compatibility path.
+
+The real Slime build now emits 238 static action tables and 13 gate tables while
+keeping 317 effective generated wrappers. On the 1,000-line `a.b.c.d;`
+recognizer probe, the ordinary 15-warmup/30-round average changed from
+`21.401ms` to `19.217ms` (approximately 10.2%); the matched JFR average was
+`19.418ms`. Indexed static rule entries fell from 31,003 to 30,003, token stream
+gets from 36,000 to 35,000, and prediction state saves from 17,000 to 16,000.
+These are local development measurements. The retained architectural result is
+complete inheritance-aware GAST ownership and direct execution of the parent
+`PrimaryExpression` OR without constructing its 13 source alternatives.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
