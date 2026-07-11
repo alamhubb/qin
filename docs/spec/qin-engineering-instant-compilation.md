@@ -4004,6 +4004,26 @@ two-item dispatch, normal termination, and immediate no-progress rejection.
 The current real Slime grammar has no `AtLeastOne(...)` callsite, so this is a
 framework-completeness result rather than a current Slime speedup claim.
 
+Direct container plans are not limited to root rule methods. Source analysis
+already assigns every combinator occurrence to either the root body or a
+specific lambda body. The Class-File pass now groups direct occurrences by that
+owner and emits one `DirectActionMethodPlan` for each real JVM method. A nested
+`OR`, `OPTION`, `MANY`, or `AT_LEAST_ONE` therefore keeps the same immutable
+`ruleId + variantId + occurrenceId` identity while executing inside its outer
+numeric action. Hidden inherited bodies retain their explicit variant address;
+ordinary lambda bodies use the active static invocation frame.
+
+The focused nested smoke proves `OPTION -> lambda action -> MANY`: the outer
+action plus two repeated items produce three numeric dispatches and zero retry
+restores, and Class-File inspection proves the synthetic lambda method itself
+invokes `executeStaticManyAction`. Real Slime generation and verification pass
+without duplicate helper-method identities. Across the principal Slime grammar
+classes, inspection found 21 nested direct `OR`, 4 nested direct `MANY`, and 49
+nested direct `OPTION` callsites, adding 74 direct nested containers that were
+previously rejected solely by the root-only admission rule. The 1,000-line
+`a.b.c.d;` probe remained approximately `18.739ms` because it does not exercise
+those newly admitted bodies; no speedup is claimed from that input.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
