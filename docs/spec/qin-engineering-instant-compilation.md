@@ -2990,6 +2990,32 @@ reports `preTokenizedRegexpNegativeHits=1` and `tokenCacheGets=0`. Seventeen
 focused Subhuti/Slime smokes, including template-literal source-mode parsing,
 pass after the change.
 
+The next retained cache-key architecture unit makes previous-token identity a
+declared lexer dependency instead of an unconditional cache dimension.
+`SubhutiLexer` inspects token context constraints once: `onlyAfter` and
+`notAfter` make tokenization depend on the previous token name; line/start-only
+constraints do not. `SubhutiParserCore` includes `lastTokenName` in the token
+cache key only for a lexer that declares that dependency. The lexer still
+receives the real previous token on every cache miss. A focused smoke proves
+both contracts: a context-free lexer reuses one entry across two previous-token
+states, while an `onlyAfter` lexer retains separate entries and returns distinct
+token kinds.
+
+This removes a large accidental state dimension from the real JavaScript
+grammar. `OvsParser.ts` had 18,766 token-cache keys but only 7,556 distinct
+`sourceIndex + lexerMode` groups; 15,635 entries belonged to groups with two to
+nine previous-token variants even though the JavaScript token table has no
+`onlyAfter` or `notAfter` constraint. After the change, token-cache misses fell
+from 18,768 to 7,558. Two 20-round source-mode recognizer runs measured
+`avgMs=118.488 bestMs=92.047` and `avgMs=118.147 bestMs=94.908`, compared with
+the retained allocation-free mode-hash baseline of `avgMs=169-172` and
+`bestMs=138-142`, about a 30% average improvement. The matching 20-round CST
+run measured `avgMs=130.385 bestMs=104.242`. Under the same JFR setup,
+recognizer average moved from `154.209ms` to `121.117ms`. Eighteen focused
+Subhuti/Slime smokes pass, and source-mode generated-file probes measured
+`SlimeParser.ts` at `avgMs=251.982` and `SlimeAstCreateUtils.ts` at
+`avgMs=447.665` over three rounds.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
