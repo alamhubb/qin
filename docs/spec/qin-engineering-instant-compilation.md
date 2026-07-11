@@ -3213,6 +3213,32 @@ iteration order across snapshots can change plan identity or attach a plan to
 the wrong occurrence even when the grammar source did not change. The focused
 `SubhutiGrammarOrderSmokeTestMain` owns this invariant.
 
+Runtime gates and token lookahead are separate plan dimensions. An explicit
+GAST `GATE` consumes no token, so exact callsite analysis may compute the token
+paths that follow it while the ordinary runtime `Alternative` still evaluates
+`gateAllows()` before executing the selected branch. Planning gates remain
+eligible runtime candidates through the standard planning-gate path. This does
+not make arbitrary `DYNAMIC` nodes exact and does not authorize direct rule
+execution through a gate; it only lets a structurally complete `Or(...)`
+callsite reuse immutable token lookahead without dropping the predicate.
+
+LL(k) exactness is decided at complete token paths, not every intermediate
+prefix. `A B | A C` is exact at `k=2` when each complete path maps to its one
+owning alternative, even though the intermediate `A` prefix is shared. `A | A
+B` remains analysis-only because the complete shorter path `A` still maps to
+both ordered PEG candidates. `SubhutiGastCallsiteAnalysisSmokeTestMain`,
+`SubhutiGastCallsiteRuntimePlanSmokeTestMain`,
+`SubhutiGrammarRecordingSmokeTestMain`, and
+`SubhutiOrFirstTokenPredictionSmokeTestMain` jointly own these boundaries.
+
+On the 40,500-character `OvsParser.ts`, admitting exact gated token lookahead
+increased `gastOrCallsitePlanCount` from 38 to 39 and recognizer
+`orPredictionRuntimePlanCallsiteHits` from about 1,907 to 3,536. A sequential
+50-round run measured about `64.679ms` CST and `49.833ms` recognizer versus the
+recent approximately `65.4ms` / `50.0ms` baseline. All 26 Subhuti parser smoke
+mains passed. The result is retained as a self-analysis coverage improvement;
+wrapper and packrat work remain separate later targets.
+
 Partial worklist callsites are not exact parser-class execution plans. A focused
 experiment admitted every callsite with at least one safe static prefix,
 increasing `gastOrCallsitePlanCount` from 38 to 113. After fixing two lossy
