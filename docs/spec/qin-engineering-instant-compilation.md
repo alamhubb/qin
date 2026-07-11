@@ -3240,12 +3240,18 @@ mains passed. The result is retained as a self-analysis coverage improvement;
 wrapper and packrat work remain separate later targets.
 
 Generated static rule wrappers now carry deterministic numeric rule ids. The
-generator assigns ids in its stable visible-method order and passes them to the
+generator assigns ids by grammar rule name in stable first-occurrence order and passes them to the
 standard wrapper API without changing grammar source methods, rule names,
 arguments, return values, or cache policy. Runtime recursion detection uses a
 parser-instance `ActiveRuleInvocations[]` slot for indexed wrappers instead of
 performing a rule-name hash-map lookup on every wrapper entry. Packrat cache
 identity remains unchanged and is a separate optimization boundary.
+
+Overloads with the same effective `@SubhutiRule` name share one numeric id.
+This preserves the previous rule-name recursion domain; assigning ids per Java
+method signature is incorrect because mutually recursive overloads would no
+longer meet in the same active-invocation slot. The generator smoke owns this
+same-name-overload invariant.
 
 This uses one tiered execution model, not fallback parsing. The parser instance
 that builds worklist self-analysis stays on the cold name-indexed invocation
@@ -3265,6 +3271,14 @@ warm. The generator smoke plus all 27 parser smoke mains passed. An `-Xint`
 first-parse check measured about `10.861s` candidate versus `11.088s` baseline;
 JIT cold-start samples remained noisy, which is why the first self-analysis
 builder stays on the cold tier.
+
+An indexed adaptive-memo policy was measured and removed. Replacing the
+`Map<String,Integer>` / `Set<String>` learning state with rule-id arrays kept
+the exact 10,110 key builds, 8,266 puts, and 22,219 adaptive skips only after
+same-name overloads shared an id, but a B-C-C-B run moved from about
+`56.961ms` to `57.129ms` recognizer time. The approximately 0.3% regression
+did not justify another policy representation, so adaptive memoization remains
+name-keyed.
 
 Partial worklist callsites are not exact parser-class execution plans. A focused
 experiment admitted every callsite with at least one safe static prefix,
