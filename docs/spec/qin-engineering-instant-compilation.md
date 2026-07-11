@@ -3239,6 +3239,33 @@ recent approximately `65.4ms` / `50.0ms` baseline. All 26 Subhuti parser smoke
 mains passed. The result is retained as a self-analysis coverage improvement;
 wrapper and packrat work remain separate later targets.
 
+Generated static rule wrappers now carry deterministic numeric rule ids. The
+generator assigns ids in its stable visible-method order and passes them to the
+standard wrapper API without changing grammar source methods, rule names,
+arguments, return values, or cache policy. Runtime recursion detection uses a
+parser-instance `ActiveRuleInvocations[]` slot for indexed wrappers instead of
+performing a rule-name hash-map lookup on every wrapper entry. Packrat cache
+identity remains unchanged and is a separate optimization boundary.
+
+This uses one tiered execution model, not fallback parsing. The parser instance
+that builds worklist self-analysis stays on the cold name-indexed invocation
+path; later instances that reuse the immutable parser-class analysis use the
+numeric slots. Handwritten/non-generated wrappers use the same semantics
+through the non-indexed wrapper overload. A focused
+`SubhutiIndexedRuleWrapperSmokeTestMain` proves indexed wrappers avoid the
+name map and still reject same-position recursion, while the generator smoke
+owns deterministic emitted ids.
+
+On the 40,500-character `OvsParser.ts`, a B-C-C-B crossed 20-round run moved
+the mean from about `71.412ms` / `53.584ms` CST/recognizer to `67.870ms` /
+`52.648ms`, approximately 5.0% and 1.7% faster. A later sequential 50-round
+run measured `64.599ms` CST and `48.761ms` recognizer, with all 35,474 CST and
+32,852 recognizer wrapper entries using indexed slots after self-analysis was
+warm. The generator smoke plus all 27 parser smoke mains passed. An `-Xint`
+first-parse check measured about `10.861s` candidate versus `11.088s` baseline;
+JIT cold-start samples remained noisy, which is why the first self-analysis
+builder stays on the cold tier.
+
 Partial worklist callsites are not exact parser-class execution plans. A focused
 experiment admitted every callsite with at least one safe static prefix,
 increasing `gastOrCallsitePlanCount` from 38 to 113. After fixing two lossy
