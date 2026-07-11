@@ -3817,6 +3817,39 @@ next framework task is improving complete FIRST/LL(k) plan coverage for its
 Declaration/Statement branches. Grammar-local hints or special cases are not
 an acceptable substitute.
 
+Static gated alternatives use the same occurrence plan. Source analysis assigns
+dense `gateId` values to `BooleanSupplier` predicates owned by an alternative,
+and the Class-File pass emits verifier-checked `boolean gate(int)` switch tables.
+Generated subclasses dispatch by `ruleId + variantId + gateId`. Captured parser
+instances use normal virtual calls; captured rule arguments use the active
+static invocation frame, with strict JVM casts or primitive wrapper unboxing.
+No reflection, `MethodHandle`, ByteBuddy, lambda-class lookup, or runtime gate
+registry participates in this path.
+
+`Alternative.token`, `tokenValue`, and `rule` are explicit grammar DSL, like
+Chevrotain's terminal and subrule declarations. Their declared token/value/rule
+identity is recorded as prediction-only GAST metadata. It drives lookahead but
+does not consume input or duplicate the action lambda body. When prediction
+metadata exists, the alternative's lookahead tree owns only that metadata and
+its gate; the separately compiled numeric action owns execution. This split is
+required to avoid counting one branch body twice while still allowing dynamic
+candidate branches to remain in ordered PEG selection.
+
+Runtime selection is `token candidates -> source-ordered numeric gates -> first
+passing branch -> numeric action`. A null pruning result means all alternatives
+remain candidates; it is not an empty candidate set. A branch without a gate is
+eligible immediately. If no gated candidate passes, parsing fails visibly. A
+pure executable recognizer plan is generated only for variants without numeric
+action/gate ownership; it must never bypass semantic actions.
+
+`SubhutiStaticGrammarExecutionSmokeTestMain` proves two same-token branches,
+primitive captured gates, ordered first-pass selection, and one action dispatch.
+`SlimeStaticGateActionPlanSmokeTestMain` proves real `MethodDefinition` plain,
+async, generator, getter, and setter forms. The real Slime generation reports
+193 action tables and 9 gate tables; the focused path keeps
+`ruleWrapperCalls=0` and exposes non-zero `staticActionDispatches`, plus
+`staticGateDispatches` for gated branches.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
