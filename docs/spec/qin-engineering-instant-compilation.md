@@ -3508,6 +3508,20 @@ claim: the next architecture work must structurally model token/value factories,
 helpers, and remaining lambda bodies until the static plan can replace runtime
 worklist analysis as the sole authoritative grammar model.
 
+Static enhanced generation no longer has a worklist switch. The generator
+accepts one standard five-argument command, emits the source-derived static
+plan, and must not override `enableGastWorklistSelfAnalysis()`. Real generated
+Slime parser validation requires `gastWorklistAnalysisBuilds=0`; grammar
+recording may remain a framework development facility for non-generated parser
+experiments, but it is not part of generated parser startup or parsing.
+
+The generated parser currently still receives a small hand-declared exact GAST
+surface alongside the generated static plan. That declared surface is static,
+not runtime recording, and remains useful for callsites not yet admitted by the
+source-derived exactness gate. The next consolidation step is to represent
+those declarations in the generated static plan, then remove Graph/declared
+GAST as separate authoritative inputs rather than retaining parallel models.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
