@@ -3121,6 +3121,22 @@ On `OvsParser.ts`, the following 20-round result moved CST from `91.681ms` to
 `87.319ms` and recognizer mode from `72.729ms` to `65.965ms`; recognizer state
 saves fell from 8,838 to 3,210 and rule-wrapper calls from 37,624 to 32,849.
 
+Lexer-mode normalization is parser-class planning work, not runtime `Or(...)`
+work. Every immutable `SubhutiOrPrediction` now owns copied token paths, one
+fully normalized lexer-mode path for each token path, and its shared lexer-mode
+prefix. Runtime prediction reads those plans directly; it must not rebuild
+`LexerMode[]`, `Collections.nCopies(...)`, or a shared mode prefix on each
+callsite execution. Dynamic graph candidates remain explicit ordered candidate
+indexes and continue through ordinary speculative execution.
+
+On the same 40,500-character `OvsParser.ts` probe, a crossed 50-round A/B moved
+CST from `80.703ms` to `76.492ms` and recognizer mode from `62.778ms` to
+`57.901ms`. A paired JFR recognizer run moved from `66.714ms` to `62.812ms`:
+`sharedLexerModePrefix` disappeared from hot methods, mixed-mode candidate
+selection fell from 4.01% to 3.14%, and the prior `LexerMode[]` and
+`Collections$CopiesList` allocation hotspots disappeared. The parse counters,
+rule-wrapper counts, state saves, token counts, and CST output remained equal.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
