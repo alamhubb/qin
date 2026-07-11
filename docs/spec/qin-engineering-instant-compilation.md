@@ -3639,6 +3639,27 @@ strategies directly; they do not repeatedly inspect the mutable
 time from `1.075ms` to `0.985ms` while retaining zero generic wrappers, cache
 keys, Graph builds, and recording builds.
 
+Static rule recursion protection uses a primitive invocation stack, not the
+generic wrapper's `ActiveRuleInvocations` object table. Parallel arrays hold the
+active `invocationId`, token index, argument, lexer mode, previous-token name,
+and previous frame for the same invocation id. A dense head array gives direct
+access to the active chain for one rule variant. Entry therefore checks only
+active frames of that numeric invocation and preserves the existing rule that
+same variant + same argument + same token/mode context is a loop, while a
+different parameterized invocation remains legal. Exit is an index decrement
+and head restoration.
+
+The same stack owns the active static `ruleId + variantId` scope used by indexed
+DSL occurrences. Static parsing no longer pushes rule names into the generic
+`ArrayDeque<String>`; diagnostics resolve a name from the generated numeric rule
+table only when needed. Generic non-generated wrappers retain their existing
+object-based recursion path. On the same 20-warmup/100-round Slime recognizer
+probe, replacing static object slots/string scope with the primitive stack
+reduced average parse time from `0.985ms` to `0.879ms` and best time from
+`0.503ms` to `0.460ms`. Runtime stats expose
+`staticPrimitiveInvocationEntries`; generic wrapper/core/cache and runtime
+Graph/recording counters remain zero.
+
 Executable-plan FIRST analysis returns the complete terminal set, not one
 representative terminal. Sequences continue through nullable prefixes, choices
 union every branch, and rule references recurse through the static variant
