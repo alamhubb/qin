@@ -3702,6 +3702,24 @@ time moved from approximately `0.35ms` to `0.14-0.15ms`. Generic wrappers,
 runtime Graph/recording, and rule cache-key construction remain absent from the
 static success path.
 
+Static grammar plans also own the identity of source semantic actions. Source
+analysis assigns a dense `actionId` to each executable `Runnable.run` or
+`Supplier.get` lambda whose body is owned by an `ALTERNATIVE` occurrence. Gate
+functions such as `BooleanSupplier.getAsBoolean`, explicit epsilon branches,
+and unresolved dynamic shapes do not receive action ids. Each `RuleVariant`
+publishes the immutable mapping from alternative occurrence id to action id and
+validates that both sides are dense, unique, and structurally valid. The real
+Slime plan currently contains 563 action slots across 196 of 317 variants;
+`staticActionSlotCount` owns that coverage gate.
+
+This identity layer does not by itself change runtime execution or claim a
+speedup. It is the required bridge from source lambda bodies already verified
+by the Class-File pass to a later `occurrenceId + actionId` execution table.
+Until that execution table is installed, source bodies still construct
+`Alternative` payloads for variants outside the 36 fully executable grammar
+plans. Runtime must not guess action identity from lambda classes or restore a
+parallel dynamic lookup path.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
