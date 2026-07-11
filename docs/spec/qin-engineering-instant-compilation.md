@@ -3254,6 +3254,18 @@ without losing correctness or increasing successful-path work. The focused
 runtime-plan smoke asserts both static-hit and dynamic-hit partial examples
 receive zero `orPredictionRuntimePlanCallsiteHits`.
 
+Parameterized rule GAST cannot be specialized independently of callsite
+identity. A rejected experiment materialized internal rules for every distinct
+`cacheKeyExtra` body while runtime callsites were still keyed only by lambda
+class. On the generated Slime parser this propagated variant differences from
+13 source rules to 122 rules, expanded GAST rules from 267 to 866, reduced
+recorded stable callsites from 118 to 61, and reduced exact callsite plans from
+39 to 26. The experiment was removed. A future variant-aware design must carry
+the enclosing normalized rule variant through recording, immutable callsite
+plan identity, and runtime lookup as one architecture change. It may fold equal
+variant bodies back to the base rule, but must not publish synthetic GAST rules
+that runtime callsites cannot identify.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
