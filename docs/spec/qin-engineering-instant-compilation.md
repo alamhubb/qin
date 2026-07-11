@@ -3403,6 +3403,33 @@ complete executable plan, or have separate evidence that memoization and state
 work are unnecessary for that exact occurrence; otherwise exact GAST remains
 self-analysis metadata.
 
+The retained static-occurrence architecture removes the runtime lambda-class
+identity boundary. `SubhutiStaticEnhancedGenerator` now uses the JDK Javac Tree
+API during the parser build to preserve rule variants and the complete lexical
+grammar occurrence tree, including `OR`, alternatives, `OPTION`, `MANY`,
+`AT_LEAST_ONE`, subrules, token consumption, gates, and actions. Every grammar
+operation receives a dense source-order `rule id + variant id + occurrence id`
+address. The generated parser embeds one immutable `SubhutiStaticGrammarPlan`;
+the parser-class runtime plan derives executable lookahead from that model once.
+
+The source grammar API remains unchanged. A second build step uses the standard
+JDK Class-File API to rewrite compiled combinator invocations such as
+`Or(Runnable...)` into `OrIndexed(Runnable[], occurrenceId)`. Generated rule
+wrappers establish the active numeric rule/variant scope before invoking the
+original body. Runtime indexed combinators therefore use direct array lookup;
+they must fail on a missing scope, unknown occurrence, source/class mismatch, or
+kind mismatch. Runtime `StackWalker`, lambda-class maps, composite string keys,
+and a recording fallback are not part of this path.
+
+The first executable slice covers static `OR`. A focused instrumented parser
+kept the source `Or(() -> ARule(), () -> BRule())`, rewrote exactly one bytecode
+callsite, and used the immutable plan to select `BRule` for input `b` without
+executing `ARule`. `ACTION` is non-consuming self-analysis structure, while
+`GATE` remains an explicit runtime predicate; neither may be confused with an
+unknown consumable rule body. The same indexed-plan architecture must own
+`OPTION`, `MANY`, and `AT_LEAST_ONE` next. Do not reintroduce lambda guessing or
+per-call recording for those containers.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
