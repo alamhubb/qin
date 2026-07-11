@@ -3481,7 +3481,7 @@ Nested parser classes are owned by their enclosing Java source file during
 Javac Tree analysis, so source filtering must map `Outer.InnerParser` to
 `Outer.java` without scanning unrelated project sources. The real Slime build
 now generates and initializes one static plan with 301 rules, 317 variants, and
-3,307 occurrences. Source-owned parser helper methods are admitted as inline
+3,313 occurrences. Source-owned parser helper methods are admitted as inline
 non-terminals only after an isolated source scan proves their complete body has
 no action, gate, dynamic boundary, recursion, or non-parser receiver. Blindly
 inlining every Java helper is invalid because it imports lexer/runtime utility
@@ -3608,12 +3608,42 @@ must reject or leave dynamic missing metadata; the lookahead compiler must not
 guess aliases or ignore unknown token names.
 
 The current real Slime gate has 188 planned bytecode callsites and 188 compiled
-runtime lookahead plans: 154 ordinary LL(1), 25 value-aware LL(1), and 9 LL(k),
+runtime lookahead plans: 153 ordinary LL(1), 26 value-aware LL(1), and 9 LL(k),
 with no mixed-mode callsite. Runtime reports expose these classes plus
 `staticCompiledLookaheadCount`; that compiled count must equal
 `staticPlannedDslOccurrenceCount`. Focused execution tests separately prove
 source semantic actions, value-aware branch selection, complete LL(k) selection,
 and incomplete-prefix failure while Graph/recording builds remain zero.
+
+Static generated rules use one compiled invocation engine keyed by dense
+`ruleId + variantId`. Runtime self-analysis assigns each variant a numeric
+`invocationId`, computes conservative nullability to a fixed point, and compiles
+its executable instruction tree once. Generated wrappers enter
+`executeStaticRule(...)` or `executeStaticVoidRule(...)`; they do not call the
+generic string wrapper, construct a rule cache key, or rebuild a plan. A root
+entry initializes parser state once, installs the default-mode token-array input
+once, and validates complete consumption once. Nested static rules enter the
+numeric core directly. Focused real Slime parsing requires
+`staticRootRuleEntries=1`, a non-zero `staticCoreRuleEntries`,
+`ruleWrapperCalls=0`, and `ruleCacheKeyBuilds=0`.
+
+Executable-plan FIRST analysis returns the complete terminal set, not one
+representative terminal. Sequences continue through nullable prefixes, choices
+union every branch, and rule references recurse through the static variant
+graph. Nullability preserves Java control-flow structure: a `GATE` owns its
+conditional children and is itself nullable; its children are not flattened
+into an unconditional sequence. The `SemicolonASI` EOF regression owns this
+boundary.
+
+Ordered choice has an explicit epsilon contract, matching Chevrotain's
+`EMPTY_ALT` model. `Alternative.empty()` is the only branch identity allowed to
+succeed without consuming input. Ordinary lambdas that return successfully
+without consuming input are rejected so they cannot mask a later valid branch;
+`MANY` and `AT_LEAST_ONE` retain independent progress checks. Source analysis
+records `Alternative.empty()` as a nullable GAST action. Grammars use this API
+for intentional empty productions such as the omitted binding name in an
+anonymous default-exported function or class; an unlabelled `() -> {}` is not a
+valid substitute.
 
 ## Pipeline Probe Artifact Reuse
 
