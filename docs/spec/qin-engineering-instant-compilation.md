@@ -3720,6 +3720,27 @@ Until that execution table is installed, source bodies still construct
 plans. Runtime must not guess action identity from lambda classes or restore a
 parallel dynamic lookup path.
 
+`Alternative.token`, `tokenValue`, and `tokens` keep their grammar metadata
+lazy. The source action and compact terminal descriptors are created at the
+callsite, while `SubhutiGrammarNode` and `SubhutiGastNode` are materialized only
+if a non-generated development analysis explicitly requests them. Generated
+parsers already own the canonical static GAST and never rebuild this diagnostic
+metadata while parsing. This is one Alternative model with lazy immutable
+metadata, not separate generated and fallback implementations. Rule-reference
+metadata already follows the same lazy rule.
+
+On the 500-warmup/5,000-round `let a = 10` JFR probe,
+`Alternative.tokenGastAlternation` fell from 26.39% of sampled allocation
+pressure to zero, while `Alternative.token` fell from 10.09% to 1.84%. The
+fully warmed average moved only from `0.104ms` to `0.101ms`, so the retained
+claim is lower allocation and GC pressure, not a material short-input CPU
+speedup. The next measured allocation target is the `Arrays.asList` wrapper
+currently created by indexed static OR execution.
+
+Generated action maps are emitted in dense `actionId` order. Map iteration
+order is never generation order: action-plan source must be byte-for-byte
+stable across rebuilds from unchanged inputs.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
