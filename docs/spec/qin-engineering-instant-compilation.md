@@ -3741,6 +3741,21 @@ Generated action maps are emitted in dense `actionId` order. Map iteration
 order is never generation order: action-plan source must be byte-for-byte
 stable across rebuilds from unchanged inputs.
 
+Indexed static `OR` executes `Alternative[]` directly. It must not adapt that
+array to `List` with `Arrays.asList` after the Class-File pass has already
+assigned the occurrence id. The array executor preserves compiled prediction,
+planning gates, ordinary gates, ordered PEG retry, speculative state,
+recovery-state capture, and explicit epsilon semantics. Non-generated
+development `Or(List)` remains the grammar-analysis API; generated indexed
+calls have one array-native runtime contract.
+
+On the same 500-warmup/5,000-round JFR probe, `Arrays.asList(Object[])` fell
+from 22.49% of sampled allocation pressure to zero. The approximately
+`0.101ms` versus `0.114ms` fully warmed averages come from short recordings
+with only dozens of allocation samples and are treated as noise, not as a CPU
+speedup or regression claim. The retained result is removal of one proven
+per-call wrapper allocation while all focused static semantics remain green.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
