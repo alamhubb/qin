@@ -3280,6 +3280,14 @@ same-name overloads shared an id, but a B-C-C-B run moved from about
 did not justify another policy representation, so adaptive memoization remains
 name-keyed.
 
+Numeric ids were also tested as warm-tier packrat-key dimensions and removed.
+The cache hit/put/key-build counts and cache scope remained identical, but a
+B-C-C-B crossed run moved from about `57.122ms` to `59.451ms` recognizer
+time, roughly 4.1% slower. `SubhutiRuleCacheKey` therefore remains keyed by
+the effective grammar rule name plus its existing parameter/token/mode context.
+Numeric rule ids are retained only for active-invocation slots, where the
+crossed benchmark proved a material gain.
+
 Partial worklist callsites are not exact parser-class execution plans. A focused
 experiment admitted every callsite with at least one safe static prefix,
 increasing `gastOrCallsitePlanCount` from 38 to 113. After fixing two lossy
