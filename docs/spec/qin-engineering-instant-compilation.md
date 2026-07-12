@@ -4045,8 +4045,8 @@ surfaces and exact equality only for internal consistency relations. The old
 `401/317/154/36/563` snapshot predated later inherited-variant and action/gate
 identity work and had become a permanently failing test rather than a valid
 regression gate. Current minima cover 448 DSL occurrences, 361 indexed
-callsites, 378 occurrence predictions, 752 action slots, 102 exact rules, and
-78 exact variants, while dynamic occurrences may not exceed 170. Whole-rule
+callsites, 381 occurrence predictions, 752 action slots, 102 exact rules, and
+78 exact variants, while dynamic occurrences may not exceed 128. Whole-rule
 direct executability remains separately gated at 25; numeric action/container
 coverage must not be misreported as a pure recognizer rule body.
 
@@ -4071,6 +4071,46 @@ no admission threshold was weakened. Focused generator symbol-identity tests,
 real Class-File generation/verification, coverage, and five Slime runtime-plan
 smokes pass. No wall-clock speedup is claimed from this structural coverage
 unit.
+
+The matching executable-plan step distinguishes a grammar gate from the code
+inside its predicate. An explicit `Alternative` gate callback is one GAST
+`GATE`; its Java lambda or method-reference body is not a nested grammar rule
+and must not be recorded as `DYNAMIC`. A conditional accumulator addition may
+also receive a numeric gate id when static analysis proves that its expression
+references only the rule parameters. The generated parser reconstructs those
+typed parameters from the active invocation argument and evaluates the original
+condition through the standard `executeStaticGate(ruleId, variantId, gateId)`
+dispatcher. Primitive and multi-argument parameter recovery is generated
+statically. Conditions that use locals, fields, arbitrary methods, or otherwise
+fail the proof remain dynamic and cannot authorize direct execution.
+
+Direct accumulator execution additionally requires a pure builder region. From
+the local `ArrayList` declaration through `Or(accumulator)`, source analysis
+admits only ordered `add(...)`, admitted conditional additions, and the final
+`Or`. Any unrelated statement cancels hoisting. The Class-File pass then proves
+the accumulator local is initialized once, flows only to `List.add` and
+`OrIndexed`, and is not read afterward. Only then may the normal numeric plan
+guard be moved before allocation. A direct-plan hit skips the `ArrayList`, every
+`Alternative`, and every lambda payload; recovery/debug uses its separately
+bound source execution strategy. Every branch gate must have a numeric id and
+every branch action must have a numeric action target. There is no runtime
+attempt followed by a fallback parser path.
+
+On the real Slime plan, the three accumulator OR sites now add three immutable
+plans: planned callsites changed from 294 to 297, occurrence predictions from
+378 to 381, and dynamic occurrences from 170 to 128. Exact rule/variant counts
+remain 102/78 and whole-rule executable variants remain 25. Bytecode inspection
+proves `AssignmentExpression` checks the direct plan before `new ArrayList`.
+Focused tests cover source-gate true/false behavior, primitive generated-gate
+javac compilation, same-named symbol isolation, impure-region rejection,
+unmapped-gate rejection, and guard-before-allocation.
+
+The same-JVM 1,000-line `a.b.c.d;` A/B measured the non-direct diagnostic build
+at `30.246ms` and `30.607ms` average, versus `29.585ms` and `29.450ms` with the
+final direct accumulator plan. The retained result is about 3% on this local
+run, with best time improving from about `25.42ms` to `23.88ms`. These numbers
+are not comparable to older `18-19ms` runs made under a different machine/JVM
+state; the controlled A/B is the valid evidence for this unit.
 
 ## Pipeline Probe Artifact Reuse
 
