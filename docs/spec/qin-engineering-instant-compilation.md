@@ -4173,6 +4173,35 @@ same expression probe this reduced OR state saves from 16,000 to 15,000,
 `23.39ms`; treat that wall-clock change as noise-level evidence while retaining
 the more precise prediction model and counter reduction.
 
+Immutable grammar fields are compile-time grammar constants when all ownership
+proofs succeed. The field must be `final List<Alternative<...>>`, have exactly
+one initializer or assignment, receive the result of one no-argument
+source-owned provider, and that provider must contain only a single
+`return List.of(...)` of typed `Alternative` expressions. Source analysis
+expands those alternatives by javac `Element` identity and records the provider
+method as the owner of its callback lambdas. Class-File instrumentation then
+maps those callbacks in the provider method while the OR occurrence remains in
+the rule method. Mutable fields, multiple writes, arbitrary providers, and
+name-only matches remain dynamic; there is no runtime probing fallback.
+
+Applying this framework feature to `IdentifierName` exposed four invalid
+prediction declarations immediately: `async`, `let`, `static`, and `as` are
+fixed values of the `IdentifierName` token, not lexer token types. The grammar
+now uses `Alternative.tokenValue("IdentifierName", value, ...)`; the framework
+does not translate unknown token names. The generated parser gained one static
+action table. IdentifierName prediction changed from 43 candidates and 3,000
+state saves to one candidate and zero saves on the 1,000-line expression probe;
+total saves fell from 15,000 to 12,000. Planned callsites increased from 297 to
+301, occurrence predictions from 381 to 385, and action slots from 752 to 795.
+The expanded semantic-action bodies make previously opaque gates/actions
+visible, so static dynamic occurrences are now 135 rather than 128 while exact
+rule/variant and executable-variant counts remain 102/78/25.
+
+The retained 30-round parser-only run measured approximately `23.04ms`, and the
+full source parse remained approximately `30.92ms`. This unit therefore claims
+the stronger immutable grammar model, early token-contract failure, and exact
+counter reduction; it does not claim a large end-to-end speedup.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
