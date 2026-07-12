@@ -4112,6 +4112,27 @@ run, with best time improving from about `25.42ms` to `23.88ms`. These numbers
 are not comparable to older `18-19ms` runs made under a different machine/JVM
 state; the controlled A/B is the valid evidence for this unit.
 
+GAST self-analysis must expose structural knowledge separately from execution
+authorization. `complete` means every grammar node and referenced rule body is
+known; an explicit `GATE` is complete structure, while `DYNAMIC` and a missing
+rule reference are incomplete. `gated` independently records that the known
+grammar depends on parser context. `exact` keeps the stricter prediction and
+recognizer safety contract, and `executable` requires the additional numeric
+action, gate, container, and invocation proofs needed to run the immutable
+plan. These are ordered evidence levels, not alternate parser paths: every
+exact rule must be complete, but a complete gated rule is not automatically
+exact or executable. Normal parsing never tries a weaker plan and falls back.
+
+On the real generated Slime plan after this split, rule counts are
+`complete=104`, `gated=175`, `exact=102`; variant counts are `complete=80`,
+`gated=261`, `exact=78`. Planned callsites remain 297, occurrence predictions
+remain 381, and executable variants remain 25. The unchanged admission counts
+prove that this unit adds self-analysis precision and diagnostics without
+weakening direct-execution gates. Coverage requires `complete >= exact` and
+keeps the observed gated surfaces visible so future work can replace known
+context dependencies with numeric plans deliberately instead of treating them
+as unknown grammar.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
