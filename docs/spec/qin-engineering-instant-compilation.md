@@ -4151,6 +4151,28 @@ callsites, 381 occurrence predictions, and 25 executable variants, proving the
 snapshot changes analysis ownership and cold work without changing grammar
 admission or parse semantics.
 
+Parser benchmarks must separate source tokenization from parser execution.
+`SlimeExpressionPathBenchmarkMain` can materialize one default-mode token stream
+and reuse it through `slime.expression.benchmark.pretokenized=true`. On the
+9,000-character, 8,000-token expression probe, one retained 30-round run
+measured full source parsing at `30.99ms` and pre-tokenized parsing at
+`21.77ms`; lexer work was material but not the dominant remaining cost. The
+pre-tokenized profile still showed 30,003 static rule entries, 11,000 action
+dispatches, and 16,000 OR state saves, so further work must target immutable
+prediction execution rather than attributing the whole gap to lexing.
+
+GAST dynamic status describes an unknown first-token path, not every unknown
+tail. If a sequence has already consumed a required known prefix, a later
+dynamic subtree remains bound to that prefix and must not make the branch an
+unconditional candidate for every token. If the preceding path is nullable,
+the dynamic tail can still choose the first token and remains unconditional.
+Focused required-prefix and nullable-prefix tests enforce both sides. On the
+same expression probe this reduced OR state saves from 16,000 to 15,000,
+`MemberExpression` saves from 5,000 to 4,000, and gate dispatches from 9,000 to
+7,000. Old/new 30-round parser-only runs were approximately `23.80ms` and
+`23.39ms`; treat that wall-clock change as noise-level evidence while retaining
+the more precise prediction model and counter reduction.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
