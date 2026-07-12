@@ -4133,6 +4133,24 @@ keeps the observed gated surfaces visible so future work can replace known
 context dependencies with numeric plans deliberately instead of treating them
 as unknown grammar.
 
+Rule and variant analysis are one self-analysis lifecycle. Runtime-plan
+construction calls `analyzeGrammar(...)` once and receives one immutable
+`AnalysisSnapshot` containing both results; variant analysis reuses the rule
+result instead of traversing every base rule a second time. Runtime recognizer
+classification then scans the analyzed rule set once to derive pass-through,
+terminal-leaf, direct-terminal, terminal-sequence, and container-plan maps.
+These maps are immutable runtime-plan products, not independent analyzers with
+separate views of the grammar.
+
+A focused 48-rule, 64-variant shared-DAG probe compares the previous public
+composition (`analyze` followed by `analyzeVariants`) with the unified snapshot
+in the same warmed JVM. Two retained local runs measured 200 rounds at
+`36.84ms -> 19.36ms` and `45.48ms -> 14.79ms`. This is self-analysis build
+time, not hot parse throughput. Real Slime coverage remains exactly 297 planned
+callsites, 381 occurrence predictions, and 25 executable variants, proving the
+snapshot changes analysis ownership and cold work without changing grammar
+admission or parse semantics.
+
 ## Pipeline Probe Artifact Reuse
 
 Five-stage parser/compiler probes are diagnostic accelerators. They should expose token -> CST -> AST -> emitted ESM -> integration boundaries without paying for the same lower layers twice.
