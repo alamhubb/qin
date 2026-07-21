@@ -163,7 +163,8 @@ public class ConfigLoader {
                 stringField(map, "sourceDir", null),
                 stringField(map, "testDir", null),
                 stringField(map, "outputDir", null),
-                stringField(map, "encoding", null));
+                stringField(map, "encoding", null),
+                stringListField(map, "sourceExcludes"));
     }
 
     private FrontendConfig frontendConfigField(Map<String, Object> source) {

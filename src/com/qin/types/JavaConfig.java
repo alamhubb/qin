@@ -2,6 +2,8 @@ package com.qin.types;
 
 import com.qin.constants.QinConstants;
 
+import java.util.List;
+
 /**
  * Java-specific configuration.
  */
@@ -13,7 +15,8 @@ public record JavaConfig(
         String sourceDir,
         String testDir,
         String outputDir,
-        String encoding) {
+        String encoding,
+        List<String> sourceExcludes) {
 
     public JavaConfig {
         version = version != null && !version.isBlank() ? version : QinConstants.DEFAULT_JAVA_VERSION;
@@ -24,6 +27,24 @@ public record JavaConfig(
         testDir = testDir != null && !testDir.isBlank() ? testDir : QinConstants.DEFAULT_TEST_DIR;
         outputDir = outputDir != null && !outputDir.isBlank() ? outputDir : QinConstants.BUILD_CLASSES_DIR;
         encoding = encoding != null && !encoding.isBlank() ? encoding : QinConstants.CHARSET_UTF8;
+        sourceExcludes = sourceExcludes != null
+                ? sourceExcludes.stream()
+                        .filter(item -> item != null && !item.isBlank())
+                        .map(String::trim)
+                        .toList()
+                : List.of();
+    }
+
+    public JavaConfig(
+            String version,
+            String release,
+            String source,
+            String target,
+            String sourceDir,
+            String testDir,
+            String outputDir,
+            String encoding) {
+        this(version, release, source, target, sourceDir, testDir, outputDir, encoding, null);
     }
 
     public JavaConfig() {

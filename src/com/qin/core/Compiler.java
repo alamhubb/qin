@@ -147,8 +147,34 @@ public class Compiler {
         try (Stream<Path> walk = Files.walk(dir)) {
             return walk
                     .filter(p -> p.toString().endsWith(".java"))
+                    .filter(p -> !isExcludedJavaSource(p))
                     .map(Path::toString)
                     .collect(Collectors.toList());
         }
+    }
+
+    private boolean isExcludedJavaSource(Path source) {
+        Path normalizedSource = source.toAbsolutePath().normalize();
+        for (String exclude : javaCompileConfig.sourceExcludes()) {
+            Path excludePath = resolveSourceExclude(exclude);
+            if (excludePath != null && normalizedSource.startsWith(excludePath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Path resolveSourceExclude(String rawExclude) {
+        if (rawExclude == null || rawExclude.isBlank()) {
+            return null;
+        }
+        String exclude = rawExclude.trim().replace('\\', '/');
+        while (exclude.endsWith("/**") || exclude.endsWith("/*")) {
+            exclude = exclude.substring(0, exclude.lastIndexOf('/'));
+        }
+        if (exclude.isBlank()) {
+            return null;
+        }
+        return Paths.get(cwd, exclude).toAbsolutePath().normalize();
     }
 }

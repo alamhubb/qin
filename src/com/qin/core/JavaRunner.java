@@ -573,6 +573,7 @@ public class JavaRunner {
         metadata.put("java.sourceDir", nullToEmpty(javaCompileConfig.sourceDir()));
         metadata.put("java.testDir", nullToEmpty(javaCompileConfig.testDir()));
         metadata.put("java.outputDir", nullToEmpty(javaCompileConfig.outputDir()));
+        metadata.put("java.sourceExcludes", String.join("\u001f", javaCompileConfig.sourceExcludes()));
         metadata.put("java.effectiveLanguageLevel", nullToEmpty(javaCompileConfig.effectiveLanguageLevel()));
         metadata.put("java.effectiveSourceLevel", nullToEmpty(javaCompileConfig.effectiveSourceLevel()));
         metadata.put("javac.options", String.join("\u001f", javacOptions));
@@ -604,9 +605,35 @@ public class JavaRunner {
         try (Stream<Path> walk = Files.walk(dir)) {
             return walk
                     .filter(p -> p.toString().endsWith(".java"))
+                    .filter(p -> !isExcludedJavaSource(p))
                     .map(Path::toString)
                     .collect(Collectors.toList());
         }
+    }
+
+    private boolean isExcludedJavaSource(Path source) {
+        Path normalizedSource = source.toAbsolutePath().normalize();
+        for (String exclude : javaCompileConfig.sourceExcludes()) {
+            Path excludePath = resolveSourceExclude(exclude);
+            if (excludePath != null && normalizedSource.startsWith(excludePath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Path resolveSourceExclude(String rawExclude) {
+        if (rawExclude == null || rawExclude.isBlank()) {
+            return null;
+        }
+        String exclude = rawExclude.trim().replace('\\', '/');
+        while (exclude.endsWith("/**") || exclude.endsWith("/*")) {
+            exclude = exclude.substring(0, exclude.lastIndexOf('/'));
+        }
+        if (exclude.isBlank()) {
+            return null;
+        }
+        return Paths.get(cwd, exclude).toAbsolutePath().normalize();
     }
 
     private String readStream(InputStream is) throws IOException {

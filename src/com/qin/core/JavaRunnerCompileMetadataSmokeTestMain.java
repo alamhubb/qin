@@ -26,6 +26,13 @@ public final class JavaRunnerCompileMetadataSmokeTestMain {
                   }
                 }
                 """, StandardCharsets.UTF_8);
+        Path excludedDir = sourceDir.resolve("generated-probes");
+        Files.createDirectories(excludedDir);
+        Files.writeString(excludedDir.resolve("BrokenProbe.java"), """
+                public final class BrokenProbe {
+                  this is intentionally invalid Java
+                }
+                """, StandardCharsets.UTF_8);
 
         writeConfig(root, "17");
         CompileResult first = new JavaRunner(loadConfig(root), "", root.toString()).compile();
@@ -61,6 +68,7 @@ public final class JavaRunnerCompileMetadataSmokeTestMain {
                     version: "21",
                     release: "%s",
                     sourceDir: "src",
+                    sourceExcludes: ["src/generated-probes"],
                     outputDir: "build/classes",
                     encoding: "UTF-8"
                   }

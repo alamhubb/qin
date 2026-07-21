@@ -17,7 +17,8 @@ public record JavaCompileConfig(
         String sourceDir,
         String testDir,
         String outputDir,
-        String encoding) {
+        String encoding,
+        List<String> sourceExcludes) {
 
     public static JavaCompileConfig from(QinConfig config) {
         return from(config != null ? config.java() : null);
@@ -46,7 +47,8 @@ public record JavaCompileConfig(
                 firstNonBlank(javaConfig.sourceDir(), QinConstants.DEFAULT_SOURCE_DIR),
                 firstNonBlank(javaConfig.testDir(), QinConstants.DEFAULT_TEST_DIR),
                 firstNonBlank(javaConfig.outputDir(), QinConstants.BUILD_CLASSES_DIR),
-                firstNonBlank(javaConfig.encoding(), QinConstants.CHARSET_UTF8));
+                firstNonBlank(javaConfig.encoding(), QinConstants.CHARSET_UTF8),
+                javaConfig.sourceExcludes() != null ? javaConfig.sourceExcludes() : List.of());
     }
 
     public void appendJavacOptions(List<String> options) {

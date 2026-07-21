@@ -228,6 +228,16 @@ Use multiple type-source frontends that feed one Qin LSP symbol model:
 - JDK, dependency jars, and compiled project `.class` files: do not run the source parser on bytecode. Read classpath metadata through a classfile reader such as ASM or the JDK compiler/model APIs, then normalize into `QinSymbolModel` before emitting `.d.ts`.
 - Qin and Java compilation output: use `QinIrProgram`/`QinIrClassDeclaration` as the executable backend IR, then derive `QinSymbolModel` entries when LSP declarations need project-local Qin classes.
 
+The Java source parser remains a hard generated-parser-chain dependency while
+`JavaCstToAst` is exported from `@qin/generated-qin-parser-ts`. After the
+Subhuti v2 static grammar migration removed the old runtime lambda API,
+`slime-java` sources that still call inherited `Or`, `Option`, `Many`, or
+`AtLeastOne` are not a valid standard path. Do not reintroduce those methods as
+compatibility helpers, and do not drop `JavaCstToAst` from the generated parser
+package just to make LSP smoke tests pass. Either migrate `slime-java` to the
+single Subhuti v2 static grammar API or replace the Java source symbol frontend
+with an explicitly approved standard source model.
+
 Do not maintain independent Java semantic and TypeScript declaration models. `QinJavaSemanticModel` is currently the Java-source semantic slice used by `QinJavaAstIrLowerer`; `QinDeclarationIrLowerer` is a Qin AST -> executable IR lowering boundary; `QinIrProgram` is the backend IR consumed by JVM/JS emitters. These are related but not interchangeable. The durable LSP shape is `QinSymbolModel`: one shared symbol/type model with adapters from Java source semantics, classpath metadata, and Qin IR.
 
 `QinIrProgram` and `QinSymbolModel` are peer models, not inheritance parents or children. Share reusable value objects such as `QinIrTypeRef`, annotation refs, qualified names, modifiers, and visibility only when the meaning is truly identical. Convert between models through explicit adapters such as `QinIrProgram -> QinSymbolModel` and `QinJavaSemanticModel -> QinSymbolModel`. Do not add duplicate class/method/field/type shapes with different names unless the semantics are genuinely different.
