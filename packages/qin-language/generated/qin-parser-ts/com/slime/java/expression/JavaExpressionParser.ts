@@ -1,35 +1,45 @@
 import { com_slime_java_type_JavaTypeParser, com_slime_java_type_JavaTypeParser as JavaTypeParser } from "../type/JavaTypeParser.ts";
+import { com_subhuti_struct_SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken as SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken$Builder } from "../../../subhuti/struct/SubhutiMatchToken.ts";
 import { com_slime_java_literal_JavaLiteralParser, com_slime_java_literal_JavaLiteralParser as JavaLiteralParser } from "../literal/JavaLiteralParser.ts";
 import { com_slime_java_identifier_JavaIdentifierParser, com_slime_java_identifier_JavaIdentifierParser as JavaIdentifierParser } from "../identifier/JavaIdentifierParser.ts";
 import { com_slime_java_base_JavaParserBase, com_slime_java_base_JavaParserBase as JavaParserBase } from "../base/JavaParserBase.ts";
-import { com_subhuti_parser_SubhutiParser, com_subhuti_parser_SubhutiParser as SubhutiParser } from "../../../subhuti/parser/SubhutiParser.ts";
+import { com_subhuti_parser_SubhutiParser, com_subhuti_parser_SubhutiParser as SubhutiParser, com_subhuti_parser_SubhutiParser$StaticGrammarRuntime, com_subhuti_parser_SubhutiParser$StaticGrammarRuntime as StaticGrammarRuntime, com_subhuti_parser_SubhutiParser$StaticPrefix, com_subhuti_parser_SubhutiParser$StaticPrefix as StaticPrefix, com_subhuti_parser_SubhutiParser$StaticChoice, com_subhuti_parser_SubhutiParser$StaticChoice as StaticChoice } from "../../../subhuti/parser/SubhutiParser.ts";
 import { com_subhuti_parser_SubhutiParserFinal, com_subhuti_parser_SubhutiParserFinal as SubhutiParserFinal } from "../../../subhuti/parser/SubhutiParserFinal.ts";
-import { com_subhuti_parser_SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators as SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher as StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext as AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext as AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame as ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames as CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$RecordedAlternativePrediction, com_subhuti_parser_SubhutiParserCombinators$RecordedAlternativePrediction as RecordedAlternativePrediction } from "../../../subhuti/parser/SubhutiParserCombinators.ts";
-import { com_subhuti_parser_SubhutiParserCore, com_subhuti_parser_SubhutiParserCore as SubhutiParserCore, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult as RuleExecutionResult } from "../../../subhuti/parser/SubhutiParserCore.ts";
-import { com_subhuti_parser_SubhutiParserState, com_subhuti_parser_SubhutiParserState as SubhutiParserState, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException as SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException as SubhutiFirstTokenUnknownException } from "../../../subhuti/parser/SubhutiParserState.ts";
+import { com_subhuti_parser_SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators as SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators$StaticSourceReturnControl, com_subhuti_parser_SubhutiParserCombinators$StaticSourceReturnControl as StaticSourceReturnControl, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher as StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext as AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext as AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$PlannedAlternativeIndexes, com_subhuti_parser_SubhutiParserCombinators$PlannedAlternativeIndexes as PlannedAlternativeIndexes, com_subhuti_parser_SubhutiParserCombinators$StaticPlannedCandidates, com_subhuti_parser_SubhutiParserCombinators$StaticPlannedCandidates as StaticPlannedCandidates, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame as ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames as CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenKeys, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenKeys as CurrentTokenKeys } from "../../../subhuti/parser/SubhutiParserCombinators.ts";
+import { com_subhuti_parser_SubhutiParserCore, com_subhuti_parser_SubhutiParserCore as SubhutiParserCore, com_subhuti_parser_SubhutiParserCore$StaticInvocationArguments, com_subhuti_parser_SubhutiParserCore$StaticInvocationArguments as StaticInvocationArguments, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult as RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$StaticExecutionMode, com_subhuti_parser_SubhutiParserCore$StaticExecutionMode as StaticExecutionMode, com_subhuti_parser_SubhutiParserCore$StaticDebugHooks, com_subhuti_parser_SubhutiParserCore$StaticDebugHooks as StaticDebugHooks, com_subhuti_parser_SubhutiParserCore$CacheWork, com_subhuti_parser_SubhutiParserCore$CacheWork as CacheWork, com_subhuti_parser_SubhutiParserCore$FailureWork, com_subhuti_parser_SubhutiParserCore$FailureWork as FailureWork } from "../../../subhuti/parser/SubhutiParserCore.ts";
+import { com_subhuti_parser_SubhutiParserState, com_subhuti_parser_SubhutiParserState as SubhutiParserState, com_subhuti_parser_SubhutiParserState$ActiveRuleInvocations, com_subhuti_parser_SubhutiParserState$ActiveRuleInvocations as ActiveRuleInvocations, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException as SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException as SubhutiFirstTokenUnknownException } from "../../../subhuti/parser/SubhutiParserState.ts";
 import { com_subhuti_lookahead_SubhutiTokenLookahead } from "../../../subhuti/lookahead/SubhutiTokenLookahead.ts";
 
 // Generated by Qin TypeScript backend
-import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_functional, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__ } from "@qin/java-sdk-js";
+import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__, __qin_java_functional } from "@qin/java-sdk-js";
 import { __qin_subhuti_rule_cache_key } from "@qin/java-sdk-js/tooling";
 
 function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
   return value.__qin_structural_object__ === true || value.constructor == null || value.constructor === Object;
 }
+const __QinSubhutiCompileOnlyDsl = {
+  __fail(name) {
+    throw new Error("SubhutiCompileOnlyDsl." + name + " is compile-time-only and cannot execute at runtime");
+  },
+  Or(..._args) { return this.__fail("Or"); },
+  Option(..._args) { return this.__fail("Option"); },
+  Many(..._args) { return this.__fail("Many"); },
+  AtLeastOne(..._args) { return this.__fail("AtLeastOne"); },
+  gate(..._args) { return this.__fail("gate"); }
+};
+const SubhutiCompileOnlyDsl = __QinSubhutiCompileOnlyDsl;
 class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type_JavaTypeParser {
   constructor(...__qin_args: any[]) {
-    switch (__qin_args.length) {
-      case 1: {
-        const sourceCode: any = __qin_args[0];
-        super(sourceCode);
-        this.__qin_constructor_com_slime_java_expression_JavaExpressionParser_1(sourceCode);
-        return;
-      }
-      default: throw new Error("Unsupported Java constructor arity: JavaExpressionParser/" + __qin_args.length);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) {
+      const sourceCode: any = __qin_args[0];
+      super(sourceCode);
+      this.__qin_constructor_com_slime_java_expression_JavaExpressionParser_1_0(sourceCode);
+      return;
     }
+    throw new Error("Unsupported Java constructor overload: JavaExpressionParser/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_expression_JavaExpressionParser_1(sourceCode: string): void {
+  __qin_constructor_com_slime_java_expression_JavaExpressionParser_1_0(sourceCode: string): void {
     null;
   }
   expression(): any {
@@ -38,12 +48,75 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "expression", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_expression(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentExpressionLooksLikeLambda.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.lambdaExpression();
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentExpressionLooksLikeAssignmentExpression.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.assignmentExpression();
-    }));
+    })));
     return null;
+  }
+  currentExpressionLooksLikeLambda(): any {
+    let parenDepth: any = 0.0;
+    let bracketDepth: any = 0.0;
+    let angleDepth: any = 0.0;
+    let braceDepth: any = 0.0;
+    for (let offset: any = 1.0; __qin_binary__("<=", offset, 128.0); offset++) {
+      let token: any = this.LA(offset);
+      if ((__qin_binary__("==", token, null) || token.isEof())) {
+        return false;
+      }
+      let tokenName: any = token.getTokenName();
+      if ((__QinJavaLangString.equals("ARROW", tokenName) && __qin_binary__("==", parenDepth, 0.0) && __qin_binary__("==", bracketDepth, 0.0) && __qin_binary__("==", angleDepth, 0.0) && __qin_binary__("==", braceDepth, 0.0))) {
+        return true;
+      }
+      if (__QinJavaLangString.equals("LPAREN", tokenName)) {
+        parenDepth++;
+      } else {
+        if (__QinJavaLangString.equals("RPAREN", tokenName)) {
+          if (__qin_binary__("==", parenDepth, 0.0)) {
+            return false;
+          }
+          parenDepth--;
+        } else {
+          if (__QinJavaLangString.equals("LBRACK", tokenName)) {
+            bracketDepth++;
+          } else {
+            if (__QinJavaLangString.equals("RBRACK", tokenName)) {
+              if (__qin_binary__(">", bracketDepth, 0.0)) {
+                bracketDepth--;
+              }
+            } else {
+              if (__QinJavaLangString.equals("LT", tokenName)) {
+                angleDepth++;
+              } else {
+                if ((__QinJavaLangString.equals("GT", tokenName) && __qin_binary__(">", angleDepth, 0.0))) {
+                  angleDepth--;
+                } else {
+                  if (__QinJavaLangString.equals("LBRACE", tokenName)) {
+                    braceDepth++;
+                  } else {
+                    if ((__QinJavaLangString.equals("RBRACE", tokenName) && __qin_binary__(">", braceDepth, 0.0))) {
+                      braceDepth--;
+                    } else {
+                      if ((this.expressionBoundaryToken(tokenName) && __qin_binary__("==", parenDepth, 0.0) && __qin_binary__("==", bracketDepth, 0.0) && __qin_binary__("==", angleDepth, 0.0) && __qin_binary__("==", braceDepth, 0.0))) {
+                        return false;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+  currentExpressionLooksLikeAssignmentExpression(): any {
+    return (!this.currentExpressionLooksLikeLambda());
+  }
+  expressionBoundaryToken(tokenName: string): any {
+    return (__QinJavaLangString.equals("SEMI", tokenName) || __QinJavaLangString.equals("COMMA", tokenName) || __QinJavaLangString.equals("COLON", tokenName) || __QinJavaLangString.equals("ARROW", tokenName) || __QinJavaLangString.equals("RBRACE", tokenName) || __QinJavaLangString.equals("RBRACK", tokenName));
   }
   primary(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -51,22 +124,32 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "primary", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_primary(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.switchExpression();
     }), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.LPAREN();
       this.expression();
       this.__qin_field_tokenConsumer.RPAREN();
       return null;
-    }), __qin_java_functional(() => {
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPrimaryLooksLikeThisMethodReference.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      this.__qin_field_tokenConsumer.THIS();
+      this.__qin_field_tokenConsumer.COLONCOLON();
+      this.identifier();
+      return null;
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPrimaryLooksLikeSuperMethodReference.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      this.__qin_field_tokenConsumer.SUPER();
+      this.__qin_field_tokenConsumer.COLONCOLON();
+      this.identifier();
+      return null;
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPrimaryLooksLikePlainThis.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.THIS();
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPrimaryLooksLikePlainSuper.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.SUPER();
-    }), __qin_java_functional(() => {
+    })), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.NEW();
       this.typeType();
-      this.Or(__qin_java_functional(() => {
-      return this.__qin_arguments();
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
+      return this.classCreatorRest();
     }), __qin_java_functional(() => {
       return this.arrayInitializer();
     }), __qin_java_functional(() => {
@@ -74,30 +157,30 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }));
       return null;
     }), __qin_java_functional(() => {
+      return this.literal();
+    }), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPrimaryLooksLikeTypeMethodReference.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.typeType();
       this.__qin_field_tokenConsumer.COLONCOLON();
-      this.Or(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.identifier();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.NEW();
     }));
       return null;
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPrimaryLooksLikeTypeClassLiteral.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.typeTypeOrVoid();
       this.__qin_field_tokenConsumer.DOT();
       this.__qin_field_tokenConsumer.CLASS();
       return null;
-    }), __qin_java_functional(() => {
-      return this.literal();
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPrimaryLooksLikeIdentifierPrimary.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.identifier();
-      this.Option(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.__qin_arguments();
     }));
       return null;
-    }), __qin_java_functional(() => {
+    })), __qin_java_functional(() => {
       this.nonWildcardTypeArguments();
-      this.Or(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.explicitGenericInvocationSuffix();
     }), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.THIS();
@@ -108,18 +191,267 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }));
     return null;
   }
+  currentPrimaryLooksLikeThisMethodReference(): any {
+    return (this.lookaheadToken(1.0, "THIS") && this.lookaheadToken(2.0, "COLONCOLON"));
+  }
+  currentPrimaryLooksLikeSuperMethodReference(): any {
+    return (this.lookaheadToken(1.0, "SUPER") && this.lookaheadToken(2.0, "COLONCOLON"));
+  }
+  currentPrimaryLooksLikePlainThis(): any {
+    return (this.lookaheadToken(1.0, "THIS") && !this.lookaheadToken(2.0, "COLONCOLON"));
+  }
+  currentPrimaryLooksLikePlainSuper(): any {
+    return (this.lookaheadToken(1.0, "SUPER") && !this.lookaheadToken(2.0, "COLONCOLON"));
+  }
+  currentPrimaryLooksLikeTypeMethodReference(): any {
+    return (__qin_binary__(">", this.scanPrimaryTypeEndOffset(false), 1.0) && this.lookaheadToken(this.scanPrimaryTypeEndOffset(false), "COLONCOLON"));
+  }
+  currentPrimaryLooksLikeTypeClassLiteral(): any {
+    return (__qin_binary__(">", this.scanPrimaryTypeEndOffset(true), 1.0) && this.lookaheadToken(this.scanPrimaryTypeEndOffset(true), "DOT") && this.lookaheadToken(__qin_binary__("+", this.scanPrimaryTypeEndOffset(true), 1.0), "CLASS"));
+  }
+  currentPrimaryLooksLikeIdentifierPrimary(): any {
+    return (this.isIdentifierStartToken(this.lookaheadName(1.0)) && !this.currentPrimaryLooksLikeTypeMethodReference() && !this.currentPrimaryLooksLikeTypeClassLiteral());
+  }
+  currentTypeNameDotLooksLikeClassLiteralSuffix(): any {
+    return (this.lookaheadToken(1.0, "DOT") && this.lookaheadToken(2.0, "CLASS"));
+  }
+  scanPrimaryTypeEndOffset(allowVoid: boolean): any {
+    let offset: any = 1.0;
+    if ((allowVoid && this.lookaheadToken(offset, "VOID"))) {
+      return __qin_binary__("+", offset, 1.0);
+    }
+    if (this.isPrimitiveTypeToken(this.lookaheadName(offset))) {
+      offset++;
+    } else {
+      if (this.isTypeIdentifierStartToken(this.lookaheadName(offset))) {
+        offset = this.scanClassOrInterfaceTypeEndOffset(offset);
+      } else {
+        return __qin_binary__("-", 0.0, 1.0);
+      }
+    }
+    return this.scanArraySuffixEndOffset(offset);
+  }
+  scanTypeTypeEndOffset(offset: number): any {
+    let current: any = this.scanAnnotationsEndOffset(offset);
+    if (__qin_binary__("<", current, 1.0)) {
+      return __qin_binary__("-", 0.0, 1.0);
+    }
+    if (this.isPrimitiveTypeToken(this.lookaheadName(current))) {
+      current++;
+    } else {
+      if (this.isTypeIdentifierStartToken(this.lookaheadName(current))) {
+        current = this.scanClassOrInterfaceTypeEndOffset(current);
+      } else {
+        return __qin_binary__("-", 0.0, 1.0);
+      }
+    }
+    return this.scanAnnotatedArraySuffixEndOffset(current);
+  }
+  scanAnnotationsEndOffset(offset: number): any {
+    let current: any = offset;
+    while (this.lookaheadToken(current, "AT")) {
+      current = this.scanAnnotationEndOffset(current);
+      if (__qin_binary__("<", current, 1.0)) {
+        return __qin_binary__("-", 0.0, 1.0);
+      }
+    }
+    return current;
+  }
+  scanAnnotationEndOffset(offset: number): any {
+    if ((!this.lookaheadToken(offset, "AT"))) {
+      return __qin_binary__("-", 0.0, 1.0);
+    }
+    let current: any = __qin_binary__("+", offset, 1.0);
+    if ((!this.isTypeIdentifierStartToken(this.lookaheadName(current)))) {
+      return __qin_binary__("-", 0.0, 1.0);
+    }
+    current++;
+    while ((this.lookaheadToken(current, "DOT") && this.isTypeIdentifierStartToken(this.lookaheadName(__qin_binary__("+", current, 1.0))))) {
+      current += 2.0;
+    }
+    if (this.lookaheadToken(current, "LPAREN")) {
+      current = this.scanBalancedGroupEndOffset(current, "LPAREN", "RPAREN");
+    }
+    return current;
+  }
+  scanBalancedGroupEndOffset(offset: number, openTokenName: string, closeTokenName: string): any {
+    let depth: any = 0.0;
+    for (let current: any = offset; __qin_binary__("<=", current, __qin_binary__("+", offset, 128.0)); current++) {
+      let tokenName: any = this.lookaheadName(current);
+      if (__qin_binary__("==", tokenName, null)) {
+        return __qin_binary__("-", 0.0, 1.0);
+      }
+      if (__QinJavaLangString.equals(openTokenName, tokenName)) {
+        depth++;
+      } else {
+        if (__QinJavaLangString.equals(closeTokenName, tokenName)) {
+          depth--;
+          if (__qin_binary__("==", depth, 0.0)) {
+            return __qin_binary__("+", current, 1.0);
+          }
+        }
+      }
+    }
+    return __qin_binary__("-", 0.0, 1.0);
+  }
+  scanClassOrInterfaceTypeEndOffset(offset: number): any {
+    if ((!this.isTypeIdentifierStartToken(this.lookaheadName(offset)))) {
+      return __qin_binary__("-", 0.0, 1.0);
+    }
+    offset++;
+    offset = this.scanOptionalTypeArgumentsEndOffset(offset);
+    while ((this.lookaheadToken(offset, "DOT") && !this.lookaheadToken(__qin_binary__("+", offset, 1.0), "CLASS") && this.isTypeIdentifierStartToken(this.lookaheadName(__qin_binary__("+", offset, 1.0))))) {
+      offset += 2.0;
+      offset = this.scanOptionalTypeArgumentsEndOffset(offset);
+    }
+    return offset;
+  }
+  scanOptionalTypeArgumentsEndOffset(offset: number): any {
+    if ((!this.lookaheadToken(offset, "LT"))) {
+      return offset;
+    }
+    let depth: any = 0.0;
+    for (let current: any = offset; __qin_binary__("<=", current, __qin_binary__("+", offset, 128.0)); current++) {
+      let tokenName: any = this.lookaheadName(current);
+      if (__qin_binary__("==", tokenName, null)) {
+        return offset;
+      }
+      if (__QinJavaLangString.equals("LT", tokenName)) {
+        depth++;
+      } else {
+        if (__QinJavaLangString.equals("GT", tokenName)) {
+          depth--;
+          if (__qin_binary__("==", depth, 0.0)) {
+            return __qin_binary__("+", current, 1.0);
+          }
+        } else {
+          if ((this.expressionBoundaryToken(tokenName) && __qin_binary__("==", depth, 0.0))) {
+            return offset;
+          }
+        }
+      }
+    }
+    return offset;
+  }
+  scanArraySuffixEndOffset(offset: number): any {
+    let current: any = offset;
+    while ((this.lookaheadToken(current, "LBRACK") && this.lookaheadToken(__qin_binary__("+", current, 1.0), "RBRACK"))) {
+      current += 2.0;
+    }
+    return current;
+  }
+  scanAnnotatedArraySuffixEndOffset(offset: number): any {
+    let current: any = offset;
+    while (true) {
+      let afterAnnotations: any = this.scanAnnotationsEndOffset(current);
+      if (__qin_binary__("<", afterAnnotations, 1.0)) {
+        return __qin_binary__("-", 0.0, 1.0);
+      }
+      if ((!this.lookaheadToken(afterAnnotations, "LBRACK") || !this.lookaheadToken(__qin_binary__("+", afterAnnotations, 1.0), "RBRACK"))) {
+        return current;
+      }
+      current = __qin_binary__("+", afterAnnotations, 2.0);
+    }
+    return null;
+  }
+  lookaheadToken(offset: number, tokenName: string): any {
+    return __QinJavaLangString.equals(tokenName, this.lookaheadName(offset));
+  }
+  currentLooksLikeArguments(): any {
+    return this.lookaheadToken(1.0, "LPAREN");
+  }
+  lookaheadName(offset: number): any {
+    let token: any = this.LA(offset);
+    if ((__qin_binary__("==", token, null) || token.isEof())) {
+      return null;
+    }
+    return token.getTokenName();
+  }
+  isPrimitiveTypeToken(tokenName: string): any {
+    return (__QinJavaLangString.equals("BOOLEAN", tokenName) || __QinJavaLangString.equals("CHAR", tokenName) || __QinJavaLangString.equals("BYTE", tokenName) || __QinJavaLangString.equals("SHORT", tokenName) || __QinJavaLangString.equals("INT", tokenName) || __QinJavaLangString.equals("LONG", tokenName) || __QinJavaLangString.equals("FLOAT", tokenName) || __QinJavaLangString.equals("DOUBLE", tokenName));
+  }
+  isIdentifierStartToken(tokenName: string): any {
+    return (__QinJavaLangString.equals("IDENTIFIER", tokenName) || __QinJavaLangString.equals("MODULE", tokenName) || __QinJavaLangString.equals("OPEN", tokenName) || __QinJavaLangString.equals("REQUIRES", tokenName) || __QinJavaLangString.equals("EXPORTS", tokenName) || __QinJavaLangString.equals("OPENS", tokenName) || __QinJavaLangString.equals("TO", tokenName) || __QinJavaLangString.equals("USES", tokenName) || __QinJavaLangString.equals("PROVIDES", tokenName) || __QinJavaLangString.equals("WITH", tokenName) || __QinJavaLangString.equals("TRANSITIVE", tokenName) || __QinJavaLangString.equals("SEALED", tokenName) || __QinJavaLangString.equals("PERMITS", tokenName) || __QinJavaLangString.equals("RECORD", tokenName) || __QinJavaLangString.equals("VAR", tokenName) || __QinJavaLangString.equals("YIELD", tokenName) || __QinJavaLangString.equals("WHEN", tokenName));
+  }
+  isTypeIdentifierStartToken(tokenName: string): any {
+    return (__QinJavaLangString.equals("IDENTIFIER", tokenName) || __QinJavaLangString.equals("MODULE", tokenName) || __QinJavaLangString.equals("OPEN", tokenName) || __QinJavaLangString.equals("REQUIRES", tokenName) || __QinJavaLangString.equals("EXPORTS", tokenName) || __QinJavaLangString.equals("OPENS", tokenName) || __QinJavaLangString.equals("TO", tokenName) || __QinJavaLangString.equals("USES", tokenName) || __QinJavaLangString.equals("PROVIDES", tokenName) || __QinJavaLangString.equals("WITH", tokenName) || __QinJavaLangString.equals("TRANSITIVE", tokenName) || __QinJavaLangString.equals("SEALED", tokenName) || __QinJavaLangString.equals("PERMITS", tokenName) || __QinJavaLangString.equals("WHEN", tokenName));
+  }
   assignmentExpression(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
       return this.__qin_subhuti_raw_assignmentExpression();
     }), "assignmentExpression", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_assignmentExpression(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentExpressionLooksLikeAssignment.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.assignment();
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentExpressionLooksLikeConditionalExpression.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.conditionalExpression();
-    }));
+    })));
     return null;
+  }
+  currentExpressionLooksLikeAssignment(): any {
+    let parenDepth: any = 0.0;
+    let bracketDepth: any = 0.0;
+    let angleDepth: any = 0.0;
+    let braceDepth: any = 0.0;
+    for (let offset: any = 1.0; __qin_binary__("<=", offset, 128.0); offset++) {
+      let token: any = this.LA(offset);
+      if ((__qin_binary__("==", token, null) || token.isEof())) {
+        return false;
+      }
+      let tokenName: any = token.getTokenName();
+      if ((this.isAssignmentOperatorToken(tokenName) && __qin_binary__("==", parenDepth, 0.0) && __qin_binary__("==", bracketDepth, 0.0) && __qin_binary__("==", angleDepth, 0.0) && __qin_binary__("==", braceDepth, 0.0))) {
+        return true;
+      }
+      if (__QinJavaLangString.equals("LPAREN", tokenName)) {
+        parenDepth++;
+      } else {
+        if (__QinJavaLangString.equals("RPAREN", tokenName)) {
+          if (__qin_binary__("==", parenDepth, 0.0)) {
+            return false;
+          }
+          parenDepth--;
+        } else {
+          if (__QinJavaLangString.equals("LBRACK", tokenName)) {
+            bracketDepth++;
+          } else {
+            if (__QinJavaLangString.equals("RBRACK", tokenName)) {
+              if (__qin_binary__("==", bracketDepth, 0.0)) {
+                return false;
+              }
+              bracketDepth--;
+            } else {
+              if (__QinJavaLangString.equals("LT", tokenName)) {
+                angleDepth++;
+              } else {
+                if ((__QinJavaLangString.equals("GT", tokenName) && __qin_binary__(">", angleDepth, 0.0))) {
+                  angleDepth--;
+                } else {
+                  if (__QinJavaLangString.equals("LBRACE", tokenName)) {
+                    braceDepth++;
+                  } else {
+                    if ((__QinJavaLangString.equals("RBRACE", tokenName) && __qin_binary__(">", braceDepth, 0.0))) {
+                      braceDepth--;
+                    } else {
+                      if ((this.expressionBoundaryToken(tokenName) && __qin_binary__("==", parenDepth, 0.0) && __qin_binary__("==", bracketDepth, 0.0) && __qin_binary__("==", angleDepth, 0.0) && __qin_binary__("==", braceDepth, 0.0))) {
+                        return false;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+  currentExpressionLooksLikeConditionalExpression(): any {
+    return (!this.currentExpressionLooksLikeAssignment());
+  }
+  isAssignmentOperatorToken(tokenName: string): any {
+    return (__QinJavaLangString.equals("ASSIGN", tokenName) || __QinJavaLangString.equals("ADD_ASSIGN", tokenName) || __QinJavaLangString.equals("SUB_ASSIGN", tokenName) || __QinJavaLangString.equals("MUL_ASSIGN", tokenName) || __QinJavaLangString.equals("DIV_ASSIGN", tokenName) || __QinJavaLangString.equals("AND_ASSIGN", tokenName) || __QinJavaLangString.equals("OR_ASSIGN", tokenName) || __QinJavaLangString.equals("XOR_ASSIGN", tokenName) || __QinJavaLangString.equals("MOD_ASSIGN", tokenName) || __QinJavaLangString.equals("LSHIFT_ASSIGN", tokenName) || __QinJavaLangString.equals("RSHIFT_ASSIGN", tokenName) || __QinJavaLangString.equals("URSHIFT_ASSIGN", tokenName));
   }
   assignment(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -147,7 +479,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "assignmentOperator", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_assignmentOperator(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.ASSIGN();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.ADD_ASSIGN();
@@ -181,7 +513,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_conditionalExpression(): any {
     this.conditionalOrExpression();
-    this.Option(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.QUESTION();
       this.expression();
       this.__qin_field_tokenConsumer.COLON();
@@ -197,7 +529,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_conditionalOrExpression(): any {
     this.conditionalAndExpression();
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.OR();
       this.conditionalAndExpression();
       return null;
@@ -211,7 +543,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_conditionalAndExpression(): any {
     this.inclusiveOrExpression();
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.AND();
       this.inclusiveOrExpression();
       return null;
@@ -225,7 +557,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_inclusiveOrExpression(): any {
     this.exclusiveOrExpression();
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.BITOR();
       this.exclusiveOrExpression();
       return null;
@@ -239,7 +571,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_exclusiveOrExpression(): any {
     this.andExpression();
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.CARET();
       this.andExpression();
       return null;
@@ -253,7 +585,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_andExpression(): any {
     this.equalityExpression();
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.BITAND();
       this.equalityExpression();
       return null;
@@ -267,8 +599,8 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_equalityExpression(): any {
     this.relationalExpression();
-    this.Many(__qin_java_functional(() => {
-      this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.EQUAL();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.NOTEQUAL();
@@ -285,9 +617,9 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_relationalExpression(): any {
     this.shiftExpression();
-    this.Many(__qin_java_functional(() => {
-      return this.Or(__qin_java_functional(() => {
-      this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
+      return SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentRelationalExpressionHasComparisonOperator.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.LT();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.GT();
@@ -298,17 +630,29 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }));
       this.shiftExpression();
       return null;
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentRelationalExpressionHasInstanceof.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.INSTANCEOF();
-      this.Or(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentInstanceofLooksLikePattern.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.pattern();
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentInstanceofLooksLikeTypeOnly.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.typeType();
-    }));
+    })));
       return null;
-    }));
+    })));
     }));
     return null;
+  }
+  currentRelationalExpressionHasComparisonOperator(): any {
+    return (__QinJavaLangString.equals("LT", this.lookaheadName(1.0)) || __QinJavaLangString.equals("GT", this.lookaheadName(1.0)) || __QinJavaLangString.equals("LE", this.lookaheadName(1.0)) || __QinJavaLangString.equals("GE", this.lookaheadName(1.0)));
+  }
+  currentRelationalExpressionHasInstanceof(): any {
+    return this.lookaheadToken(1.0, "INSTANCEOF");
+  }
+  currentInstanceofLooksLikePattern(): any {
+    return (__qin_binary__(">", this.scanTypeTypeEndOffset(1.0), 1.0) && this.isIdentifierStartToken(this.lookaheadName(this.scanTypeTypeEndOffset(1.0))));
+  }
+  currentInstanceofLooksLikeTypeOnly(): any {
+    return (__qin_binary__(">", this.scanTypeTypeEndOffset(1.0), 1.0) && !this.isIdentifierStartToken(this.lookaheadName(this.scanTypeTypeEndOffset(1.0))));
   }
   shiftExpression(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -317,12 +661,15 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_shiftExpression(): any {
     this.additiveExpression();
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentShiftExpressionHasShiftOperator.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.shiftOperator();
       this.additiveExpression();
       return null;
-    }));
+    })));
     return null;
+  }
+  currentShiftExpressionHasShiftOperator(): any {
+    return (this.currentShiftOperatorLooksLikeLeftShift() || this.currentShiftOperatorLooksLikeRightShift());
   }
   shiftOperator(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -330,19 +677,25 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "shiftOperator", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_shiftOperator(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentShiftOperatorLooksLikeLeftShift.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.LT();
       this.__qin_field_tokenConsumer.LT();
       return null;
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentShiftOperatorLooksLikeRightShift.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.GT();
       this.__qin_field_tokenConsumer.GT();
-      this.Option(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.GT();
     }));
       return null;
-    }));
+    })));
     return null;
+  }
+  currentShiftOperatorLooksLikeLeftShift(): any {
+    return (this.lookaheadToken(1.0, "LT") && this.lookaheadToken(2.0, "LT"));
+  }
+  currentShiftOperatorLooksLikeRightShift(): any {
+    return (this.lookaheadToken(1.0, "GT") && this.lookaheadToken(2.0, "GT"));
   }
   additiveExpression(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -351,8 +704,8 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_additiveExpression(): any {
     this.multiplicativeExpression();
-    this.Many(__qin_java_functional(() => {
-      this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.ADD();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.SUB();
@@ -369,8 +722,8 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_multiplicativeExpression(): any {
     this.unaryExpression();
-    this.Many(__qin_java_functional(() => {
-      this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.MUL();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.DIV();
@@ -388,24 +741,68 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "unaryExpression", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_unaryExpression(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentUnaryExpressionLooksLikePrefix.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.prefixOp();
       this.unaryExpression();
       return null;
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentUnaryExpressionLooksLikeCast.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.LPAREN();
-      this.Or(__qin_java_functional(() => {
-      return this.typeType();
-    }), __qin_java_functional(() => {
-      return this.primitiveType();
-    }));
+      this.typeType();
       this.__qin_field_tokenConsumer.RPAREN();
       this.unaryExpression();
       return null;
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentUnaryExpressionLooksLikePostfix.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.postfixExpression();
-    }));
+    })));
     return null;
+  }
+  currentUnaryExpressionLooksLikePrefix(): any {
+    return this.isPrefixOperatorToken(this.lookaheadName(1.0));
+  }
+  currentUnaryExpressionLooksLikeCast(): any {
+    if ((!this.lookaheadToken(1.0, "LPAREN"))) {
+      return false;
+    }
+    let typeEndOffset: any = null;
+    if (this.isPrimitiveTypeToken(this.lookaheadName(2.0))) {
+      typeEndOffset = 3.0;
+    } else {
+      if (this.isTypeIdentifierStartToken(this.lookaheadName(2.0))) {
+        typeEndOffset = this.scanClassOrInterfaceTypeEndOffset(2.0);
+      } else {
+        return false;
+      }
+    }
+    if (__qin_binary__("<", typeEndOffset, 0.0)) {
+      return false;
+    }
+    typeEndOffset = this.scanArraySuffixEndOffset(typeEndOffset);
+    return (this.lookaheadToken(typeEndOffset, "RPAREN") && this.canStartUnaryExpressionAt(__qin_binary__("+", typeEndOffset, 1.0)));
+  }
+  currentUnaryExpressionLooksLikePostfix(): any {
+    return (!this.currentUnaryExpressionLooksLikePrefix() && !this.currentUnaryExpressionLooksLikeCast() && this.canStartPostfixExpressionAt(1.0));
+  }
+  canStartUnaryExpressionAt(offset: number): any {
+    return (this.isPrefixOperatorToken(this.lookaheadName(offset)) || this.canStartPostfixExpressionAt(offset));
+  }
+  canStartPostfixExpressionAt(offset: number): any {
+    return (__QinJavaLangString.equals("SWITCH", this.lookaheadName(offset)) || __QinJavaLangString.equals("LPAREN", this.lookaheadName(offset)) || __QinJavaLangString.equals("THIS", this.lookaheadName(offset)) || __QinJavaLangString.equals("SUPER", this.lookaheadName(offset)) || __QinJavaLangString.equals("NEW", this.lookaheadName(offset)) || __QinJavaLangString.equals("LT", this.lookaheadName(offset)) || this.currentOffsetLooksLikeTypeMethodReference(offset) || this.currentOffsetLooksLikeTypeClassLiteral(offset) || this.isLiteralStartToken(this.lookaheadName(offset)) || this.isIdentifierStartToken(this.lookaheadName(offset)));
+  }
+  currentOffsetLooksLikeTypeMethodReference(offset: number): any {
+    return (__qin_binary__(">", this.scanTypeTypeEndOffset(offset), offset) && this.lookaheadToken(this.scanTypeTypeEndOffset(offset), "COLONCOLON"));
+  }
+  currentOffsetLooksLikeTypeClassLiteral(offset: number): any {
+    if (this.lookaheadToken(offset, "VOID")) {
+      return (this.lookaheadToken(__qin_binary__("+", offset, 1.0), "DOT") && this.lookaheadToken(__qin_binary__("+", offset, 2.0), "CLASS"));
+    }
+    let typeEndOffset: any = this.scanTypeTypeEndOffset(offset);
+    return (__qin_binary__(">", typeEndOffset, offset) && this.lookaheadToken(typeEndOffset, "DOT") && this.lookaheadToken(__qin_binary__("+", typeEndOffset, 1.0), "CLASS"));
+  }
+  isPrefixOperatorToken(tokenName: string): any {
+    return (__QinJavaLangString.equals("INC", tokenName) || __QinJavaLangString.equals("DEC", tokenName) || __QinJavaLangString.equals("BANG", tokenName) || __QinJavaLangString.equals("TILDE", tokenName) || __QinJavaLangString.equals("ADD", tokenName) || __QinJavaLangString.equals("SUB", tokenName));
+  }
+  isLiteralStartToken(tokenName: string): any {
+    return (__QinJavaLangString.equals("DECIMAL_LITERAL", tokenName) || __QinJavaLangString.equals("HEX_LITERAL", tokenName) || __QinJavaLangString.equals("OCT_LITERAL", tokenName) || __QinJavaLangString.equals("BINARY_LITERAL", tokenName) || __QinJavaLangString.equals("FLOAT_LITERAL", tokenName) || __QinJavaLangString.equals("HEX_FLOAT_LITERAL", tokenName) || __QinJavaLangString.equals("BOOL_LITERAL", tokenName) || __QinJavaLangString.equals("CHAR_LITERAL", tokenName) || __QinJavaLangString.equals("STRING_LITERAL", tokenName) || __QinJavaLangString.equals("TEXT_BLOCK", tokenName) || __QinJavaLangString.equals("NULL_LITERAL", tokenName));
   }
   prefixOp(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -413,7 +810,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "prefixOp", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_prefixOp(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.INC();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.DEC();
@@ -435,13 +832,21 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
   }
   __qin_subhuti_raw_postfixExpression(): any {
     this.primary();
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       return this.selector();
     }));
-    this.Many(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentPostfixExpressionLooksLikeMethodReference.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      this.__qin_field_tokenConsumer.COLONCOLON();
+      this.identifier();
+      return null;
+    })));
+    SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       return this.postfixOp();
     }));
     return null;
+  }
+  currentPostfixExpressionLooksLikeMethodReference(): any {
+    return this.lookaheadToken(1.0, "COLONCOLON");
   }
   selector(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -449,13 +854,13 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "selector", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_selector(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.DOT();
-      this.Or(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       this.identifier();
-      this.Option(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentLooksLikeArguments.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.__qin_arguments();
-    }));
+    })));
       return null;
     }), __qin_java_functional(() => {
       return this.explicitGenericInvocation();
@@ -463,7 +868,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
       return this.__qin_field_tokenConsumer.THIS();
     }), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.NEW();
-      this.Option(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.nonWildcardTypeArguments();
     }));
       this.innerCreator();
@@ -488,7 +893,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "postfixOp", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_postfixOp(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.INC();
     }), __qin_java_functional(() => {
       return this.__qin_field_tokenConsumer.DEC();
@@ -512,27 +917,43 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "lambdaParameters", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_lambdaParameters(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentLambdaParametersLookLikeSingleIdentifier.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       return this.identifier();
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentLambdaParametersLookLikeFormalList.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.LPAREN();
-      this.Option(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Option(__qin_java_functional(() => {
       return this.formalParameterList();
     }));
       this.__qin_field_tokenConsumer.RPAREN();
       return null;
-    }), __qin_java_functional(() => {
+    })), SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentLambdaParametersLookLikeInferredList.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.LPAREN();
       this.identifier();
-      this.Many(__qin_java_functional(() => {
+      SubhutiCompileOnlyDsl.Many(__qin_java_functional(() => {
       this.__qin_field_tokenConsumer.COMMA();
       this.identifier();
       return null;
     }));
       this.__qin_field_tokenConsumer.RPAREN();
       return null;
-    }));
+    })));
     return null;
+  }
+  currentLambdaParametersLookLikeSingleIdentifier(): any {
+    return (this.isIdentifierStartToken(this.lookaheadName(1.0)) && this.lookaheadToken(2.0, "ARROW"));
+  }
+  currentLambdaParametersLookLikeFormalList(): any {
+    return (this.lookaheadToken(1.0, "LPAREN") && !this.currentLambdaParametersLookLikeInferredList());
+  }
+  currentLambdaParametersLookLikeInferredList(): any {
+    if ((!this.lookaheadToken(1.0, "LPAREN") || !this.isIdentifierStartToken(this.lookaheadName(2.0)))) {
+      return false;
+    }
+    let offset: any = 3.0;
+    while ((this.lookaheadToken(offset, "COMMA") && this.isIdentifierStartToken(this.lookaheadName(__qin_binary__("+", offset, 1.0))))) {
+      offset += 2.0;
+    }
+    return (this.lookaheadToken(offset, "RPAREN") && this.lookaheadToken(__qin_binary__("+", offset, 1.0), "ARROW"));
   }
   switchExpression(): any {
     return this.executeRuleWrapper(__qin_java_functional(() => {
@@ -543,7 +964,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     this.__qin_field_tokenConsumer.SWITCH();
     this.parExpression();
     this.__qin_field_tokenConsumer.LBRACE();
-    this.AtLeastOne(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.AtLeastOne(__qin_java_functional(() => {
       return this.switchRule();
     }));
     this.__qin_field_tokenConsumer.RBRACE();
@@ -555,7 +976,7 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "lambdaBody", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_lambdaBody(): any {
-    this.Or(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.Or(__qin_java_functional(() => {
       return this.expression();
     }), __qin_java_functional(() => {
       return this.block();
@@ -568,16 +989,30 @@ class com_slime_java_expression_JavaExpressionParser extends com_slime_java_type
     }), "arrayCreatorDimensions", "JavaExpressionParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_arrayCreatorDimensions(): any {
-    this.AtLeastOne(__qin_java_functional(() => {
+    SubhutiCompileOnlyDsl.AtLeastOne(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentArrayCreatorHasSizedDimension.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
       this.__qin_field_tokenConsumer.LBRACK();
       this.expression();
       this.__qin_field_tokenConsumer.RBRACK();
       return null;
-    }));
+    })));
+    SubhutiCompileOnlyDsl.Many(SubhutiCompileOnlyDsl.gate((() => { const __qin_bound_receiver = this; return __qin_bound_receiver.currentArrayCreatorHasEmptyDimension.bind(__qin_bound_receiver); })(), __qin_java_functional(() => {
+      this.__qin_field_tokenConsumer.LBRACK();
+      this.__qin_field_tokenConsumer.RBRACK();
+      return null;
+    })));
     return null;
+  }
+  currentArrayCreatorHasSizedDimension(): any {
+    return (this.lookaheadToken(1.0, "LBRACK") && !this.lookaheadToken(2.0, "RBRACK"));
+  }
+  currentArrayCreatorHasEmptyDimension(): any {
+    return (this.lookaheadToken(1.0, "LBRACK") && this.lookaheadToken(2.0, "RBRACK"));
   }
   __qin_arguments(): any {
     throw new Error("Abstract Java method is not implemented: arguments");
+  }
+  classCreatorRest(): any {
+    throw new Error("Abstract Java method is not implemented: classCreatorRest");
   }
   nonWildcardTypeArguments(): any {
     throw new Error("Abstract Java method is not implemented: nonWildcardTypeArguments");

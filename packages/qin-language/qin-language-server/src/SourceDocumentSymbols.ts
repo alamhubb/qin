@@ -176,7 +176,8 @@ function findBindingIdentifierName(cst: unknown): unknown | undefined {
     if (found) {
       return
     }
-    if (readCstName(node) === 'BindingIdentifier') {
+    const name = readCstName(node)
+    if (name === 'BindingIdentifier' || name === 'QinObjectName') {
       const token = findToken(node, item => readCstName(item) === 'IdentifierName' && readCstValue(item) !== undefined)
       if (token) {
         found = token

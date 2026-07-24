@@ -72,10 +72,14 @@ export function parseGeneratedQinSource(
         ? parser.Program()
         : null
     const cstName = readCstName(cst)
-    const diagnostics = readRecoveryDiagnostics(parser)
+    const parserFail = readParserFail(parser)
+    const recoveryDiagnostics = readRecoveryDiagnostics(parser)
+    const diagnostics = parserFail && recoveryDiagnostics.length === 0
+      ? createParserFailDiagnostics(parser, source, options.mode)
+      : recoveryDiagnostics
     return {
       available: true,
-      ok: cstName === 'Program' && (options.mode !== 'editor' || diagnostics.length === 0),
+      ok: cstName === 'Program' && !parserFail && (options.mode !== 'editor' || diagnostics.length === 0),
       cstName,
       cst,
       diagnostics,
@@ -90,6 +94,55 @@ export function parseGeneratedQinSource(
       diagnostics: [createGeneratedParserDiagnostic(error)],
     }
   }
+}
+
+function readParserFail(parser: unknown): boolean {
+  if (!parser || typeof parser !== 'object') {
+    return false
+  }
+  const isParserFail = (parser as { isParserFail?: () => unknown }).isParserFail
+  if (typeof isParserFail !== 'function') {
+    return false
+  }
+  return isParserFail.call(parser) === true
+}
+
+function createParserFailDiagnostics(
+  parser: unknown,
+  source: string,
+  mode: 'strict' | 'editor' | undefined,
+): QinGeneratedParserDiagnostic[] {
+  const token = callObjectMethod(parser, 'curToken')
+  const line = Math.max(0, callNumberMethod(token, 'rowNum', 1) - 1)
+  const column = Math.max(0, callNumberMethod(token, 'columnStartNum', 1) - 1)
+  const offset = callNumberMethod(token, 'index', -1)
+  const tokenValue = callStringMethod(token, 'value') ?? callStringMethod(token, 'tokenName')
+  if (mode === 'editor' && isEditorIncompleteMemberAccess(source, offset)) {
+    return []
+  }
+  return [{
+    message: 'Qin parser rejected source',
+    line,
+    column,
+    offset: offset >= 0 ? offset : undefined,
+    length: tokenValue ? tokenValue.length : undefined,
+  }]
+}
+
+function isEditorIncompleteMemberAccess(source: string, offset: number): boolean {
+  const cursor = offset >= 0 ? Math.min(offset, source.length) : source.length
+  let previous = cursor - 1
+  while (previous >= 0 && /\s/.test(source.charAt(previous))) {
+    previous--
+  }
+  if (previous < 0 || source.charAt(previous) !== '.') {
+    return false
+  }
+  if (cursor >= source.length) {
+    return true
+  }
+  const current = source.charAt(cursor)
+  return /[A-Za-z_$}]/.test(current)
 }
 
 function readRecoveryDiagnostics(parser: unknown): QinGeneratedParserDiagnostic[] {
@@ -280,6 +333,14 @@ function readFoundToken(details: unknown): string | undefined {
   const tokenName = callStringMethod(found, 'tokenName')
   const value = callStringMethod(found, 'value')
   return value ? `${tokenName ?? 'token'} '${value}'` : tokenName
+}
+
+function callObjectMethod(value: unknown, methodName: string): unknown {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+  const method = (value as Record<string, unknown>)[methodName]
+  return typeof method === 'function' ? method.call(value) : undefined
 }
 
 function callStringMethod(value: unknown, methodName: string): string | undefined {

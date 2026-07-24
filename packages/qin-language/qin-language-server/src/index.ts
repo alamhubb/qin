@@ -7,9 +7,10 @@ import {
 import type { LanguageServicePlugin } from '@volar/language-service'
 import { create as createTypeScriptServices } from 'volar-service-typescript'
 import { QinLanguagePlugin } from './QinLanguagePlugin'
-import { QinLanguageServicePlugin } from './QinLanguageServicePlugin'
+import { QinLanguageServicePlugin, provideSourceImplementations } from './QinLanguageServicePlugin'
 import { extensionWithoutDot, resolveLanguageServerMetadata } from './LanguageServerMetadata'
 import { logToFile } from './logutil'
+import { URI } from 'vscode-uri'
 
 const QIN_IDENTIFIER_COMPLETION_TRIGGER_CHARACTERS = [
   ...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$',
@@ -49,7 +50,7 @@ connection.onInitialize((params) => {
       isValidationEnabled(document) {
         return document.languageId !== 'qin' && !isQinDocumentUri(document.uri, sourceExtension)
       },
-    }))).map(plugin => withCompletionLogging(plugin)),
+    }))).map(plugin => withQinSourceImplementationProvider(plugin)).map(plugin => withCompletionLogging(plugin)),
   ]
   const tsProject = createTypeScriptProject(
     tsdk.typescript,
@@ -146,6 +147,35 @@ function withTypeScriptDeclarationProvider(plugins: LanguageServicePlugin[]): La
       },
     }
   })
+}
+
+function withQinSourceImplementationProvider(plugin: LanguageServicePlugin): LanguageServicePlugin {
+  return {
+    ...plugin,
+    capabilities: {
+      ...plugin.capabilities,
+      implementationProvider: true,
+    },
+    create(context) {
+      const service = plugin.create(context)
+      return {
+        ...service,
+        async provideImplementation(document, position, token) {
+          const sourceUri = context.decodeEmbeddedDocumentUri?.(URI.parse(document.uri))?.[0].toString() ?? document.uri
+          const extra = sourceUri !== document.uri
+              || document.languageId === 'qin'
+              || isQinDocumentUri(document.uri, sourceExtension)
+            ? provideSourceImplementations(document, position, sourceUri)
+            : []
+          const original = await service.provideImplementation?.(document, position, token) ?? []
+          return [
+            ...extra,
+            ...original,
+          ]
+        },
+      }
+    },
+  }
 }
 
 function withCompletionLogging(plugin: LanguageServicePlugin): LanguageServicePlugin {

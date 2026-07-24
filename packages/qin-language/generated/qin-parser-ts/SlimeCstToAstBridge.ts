@@ -21,12 +21,12 @@ function __qinBindSlimeCstToAstTransformer(instance: any): void {
   }
 }
 
-let __qinSlimeCstToAstUtils: SlimeCstToAst;
+var __qinSlimeCstToAstUtils: SlimeCstToAst = new SlimeCstToAst();
 export function registerSlimeCstToAstUtil(instance: SlimeCstToAst): void {
   __qinSlimeCstToAstUtils = instance;
 }
 
-export const SlimeCstToAstUtils = {} as SlimeCstToAst;
+export const SlimeCstToAstUtils: any = {};
 const __qinSlimeCstToAstFacade: any = SlimeCstToAstUtils;
 __qinSlimeCstToAstFacade.resetState = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.resetState(...args);
@@ -268,5 +268,3 @@ __qinSlimeCstToAstFacade.createTSEnumDeclarationAst = function (...args: any[]):
 __qinSlimeCstToAstFacade.createProgramAst = function (...args: any[]): any {
   return __qinSlimeCstToAstUtils.createProgramAst(...args);
 };
-
-__qinSlimeCstToAstUtils = new SlimeCstToAst();

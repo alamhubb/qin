@@ -3,13 +3,13 @@ import { com_subhuti_struct_LexerMode, com_subhuti_struct_LexerMode as LexerMode
 import { com_subhuti_struct_SubhutiCreateToken, com_subhuti_struct_SubhutiCreateToken as SubhutiCreateToken, com_subhuti_struct_SubhutiCreateToken$Builder } from "../struct/SubhutiCreateToken.ts";
 import { com_subhuti_struct_SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken as SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken$Builder } from "../struct/SubhutiMatchToken.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../struct/SubhutiCst.ts";
-import { com_subhuti_parser_SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators as SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher as StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext as AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext as AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame as ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames as CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$RecordedAlternativePrediction, com_subhuti_parser_SubhutiParserCombinators$RecordedAlternativePrediction as RecordedAlternativePrediction } from "./SubhutiParserCombinators.ts";
-import { com_subhuti_parser_SubhutiParserCore, com_subhuti_parser_SubhutiParserCore as SubhutiParserCore, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult as RuleExecutionResult } from "./SubhutiParserCore.ts";
-import { com_subhuti_parser_SubhutiParserState, com_subhuti_parser_SubhutiParserState as SubhutiParserState, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException as SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException as SubhutiFirstTokenUnknownException } from "./SubhutiParserState.ts";
+import { com_subhuti_parser_SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators as SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators$StaticSourceReturnControl, com_subhuti_parser_SubhutiParserCombinators$StaticSourceReturnControl as StaticSourceReturnControl, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher as StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext as AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext as AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$PlannedAlternativeIndexes, com_subhuti_parser_SubhutiParserCombinators$PlannedAlternativeIndexes as PlannedAlternativeIndexes, com_subhuti_parser_SubhutiParserCombinators$StaticPlannedCandidates, com_subhuti_parser_SubhutiParserCombinators$StaticPlannedCandidates as StaticPlannedCandidates, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame as ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames as CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenKeys, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenKeys as CurrentTokenKeys } from "./SubhutiParserCombinators.ts";
+import { com_subhuti_parser_SubhutiParserCore, com_subhuti_parser_SubhutiParserCore as SubhutiParserCore, com_subhuti_parser_SubhutiParserCore$StaticInvocationArguments, com_subhuti_parser_SubhutiParserCore$StaticInvocationArguments as StaticInvocationArguments, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult as RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$StaticExecutionMode, com_subhuti_parser_SubhutiParserCore$StaticExecutionMode as StaticExecutionMode, com_subhuti_parser_SubhutiParserCore$StaticDebugHooks, com_subhuti_parser_SubhutiParserCore$StaticDebugHooks as StaticDebugHooks, com_subhuti_parser_SubhutiParserCore$CacheWork, com_subhuti_parser_SubhutiParserCore$CacheWork as CacheWork, com_subhuti_parser_SubhutiParserCore$FailureWork, com_subhuti_parser_SubhutiParserCore$FailureWork as FailureWork } from "./SubhutiParserCore.ts";
+import { com_subhuti_parser_SubhutiParserState, com_subhuti_parser_SubhutiParserState as SubhutiParserState, com_subhuti_parser_SubhutiParserState$ActiveRuleInvocations, com_subhuti_parser_SubhutiParserState$ActiveRuleInvocations as ActiveRuleInvocations, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException as SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException as SubhutiFirstTokenUnknownException } from "./SubhutiParserState.ts";
 import { com_subhuti_lookahead_SubhutiTokenLookahead } from "../lookahead/SubhutiTokenLookahead.ts";
 
 // Generated by Qin TypeScript backend
-import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_functional, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__, __QinJavaLangSystem, __QinJavaLangThrowable, __QinJavaLangException, __QinJavaLangRuntimeException, __QinJavaLangReflectiveOperationException, __QinJavaLangClassNotFoundException, __QinJavaLangNoSuchMethodException, __QinJavaLangReflectInvocationTargetException, __QinJavaLangError, __QinJavaLangStackOverflowError, __QinJavaLangIllegalArgumentException, __QinJavaLangNumberFormatException, __QinJavaLangIllegalStateException, __QinJavaLangUnsupportedOperationException, __QinJavaIoIOException, __QinJavaUtilCollections, __QinJavaUtilUnmodifiableMap } from "@qin/java-sdk-js";
+import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__, __QinJavaLangSystem, __QinJavaLangThrowable, __QinJavaLangException, __QinJavaLangRuntimeException, __QinJavaLangReflectiveOperationException, __QinJavaLangClassNotFoundException, __QinJavaLangClassCastException, __QinJavaLangNoSuchMethodException, __QinJavaLangReflectInvocationTargetException, __QinJavaLangError, __QinJavaLangStackOverflowError, __QinJavaLangIllegalArgumentException, __QinJavaLangNumberFormatException, __QinJavaLangIllegalStateException, __QinJavaLangUnsupportedOperationException, __QinJavaIoIOException, __QinJavaUtilArrayList, __QinJavaUtilUnmodifiableList, __qin_java_functional, __QinJavaUtilCollections, __QinJavaUtilUnmodifiableMap } from "@qin/java-sdk-js";
 
 function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -19,19 +19,17 @@ const System = __QinJavaLangSystem;
 const RuntimeException = __QinJavaLangRuntimeException;
 class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiParserCombinators {
   constructor(...__qin_args: any[]) {
-    switch (__qin_args.length) {
-      case 3: {
-        const sourceCode: any = __qin_args[0];
-        const tokenConsumerClass: any = __qin_args[1];
-        const tokens: any = __qin_args[2];
-        super(sourceCode, tokenConsumerClass, tokens);
-        this.__qin_constructor_com_subhuti_parser_SubhutiParserFinal_3(sourceCode, tokenConsumerClass, tokens);
-        return;
-      }
-      default: throw new Error("Unsupported Java constructor arity: SubhutiParserFinal/" + __qin_args.length);
+    if (__qin_args.length === 3 && (__qin_args[0] === null || typeof __qin_args[0] === "string") && (__qin_args[1] === null || typeof __qin_args[1] === "function" || (typeof __qin_args[1] === "object" && typeof __qin_args[1].getName === "function" && typeof __qin_args[1].isAssignableFrom === "function")) && (__qin_args[2] === null || Array.isArray(__qin_args[2]) || __qin_args[2] instanceof __QinJavaUtilArrayList || __qin_args[2] instanceof __QinJavaUtilUnmodifiableList)) {
+      const sourceCode: any = __qin_args[0];
+      const tokenConsumerClass: any = __qin_args[1];
+      const tokens: any = __qin_args[2];
+      super(sourceCode, tokenConsumerClass, tokens);
+      this.__qin_constructor_com_subhuti_parser_SubhutiParserFinal_3_0(sourceCode, tokenConsumerClass, tokens);
+      return;
     }
+    throw new Error("Unsupported Java constructor overload: SubhutiParserFinal/" + __qin_args.length);
   }
-  __qin_constructor_com_subhuti_parser_SubhutiParserFinal_3(sourceCode: string, tokenConsumerClass: any, tokens: any): void {
+  __qin_constructor_com_subhuti_parser_SubhutiParserFinal_3_0(sourceCode: string, tokenConsumerClass: any, tokens: any): void {
     null;
   }
   setMode(mode: com_subhuti_struct_LexerMode): any {
@@ -42,11 +40,11 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
     return this.__qin_field_currentMode;
   }
   withMode(mode: com_subhuti_struct_LexerMode, rule: any): any {
-    rule = __qin_java_functional(rule);
+    const __qin_functional_rule_1 = __qin_java_functional(rule);
     let savedMode: any = this.__qin_field_currentMode;
     this.__qin_field_currentMode = mode;
     try {
-      return rule.get();
+      return __qin_functional_rule_1.get();
     } finally {
       this.__qin_field_currentMode = savedMode;
     }
@@ -81,45 +79,37 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
     throw new Error("Unsupported Java overload: Rule/" + __qin_args.length);
   }
   __qin_overload_Rule_2_0(ruleName: string, rule: any): any {
-    rule = __qin_java_functional(rule);
-    this.executeRuleWrapper(__qin_java_functional(() => {
-      rule.run();
-      return null;
-    }), ruleName, this.getClass().getSimpleName());
+    const __qin_functional_rule_1 = __qin_java_functional(rule);
+    this.executeVoidRuleWrapper(__qin_functional_rule_1, ruleName, this.getClass().getSimpleName());
     return null;
   }
   __qin_overload_Rule_2_1(ruleName: string, rule: any): any {
-    rule = __qin_java_functional(rule);
-    return this.executeRuleWrapper(rule, ruleName, this.getClass().getSimpleName());
+    const __qin_functional_rule_1 = __qin_java_functional(rule);
+    return this.executeRuleWrapper(__qin_functional_rule_1, ruleName, this.getClass().getSimpleName());
   }
   debugLog(message: string): any {
     if (this.__qin_field_debugMode) {
-      __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[DEBUG] ", this.__qin_field_currentPosition), ": "), message));
+      __QinJavaLangSystem.out.println(("[DEBUG] " + this.__qin_field_currentPosition + ": " + message));
     }
     return null;
   }
   debugEnter(ruleName: string): any {
     if (this.__qin_field_debugMode) {
-      __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[ENTER] ", ruleName), " at "), this.__qin_field_currentPosition));
+      __QinJavaLangSystem.out.println(("[ENTER] " + ruleName + " at " + this.__qin_field_currentPosition));
     }
     return null;
   }
   debugExit(ruleName: string, success: boolean): any {
     if (this.__qin_field_debugMode) {
-      __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[EXIT] ", ruleName), " "), (() => {
-      if (success) {
-        return "SUCCESS";
-      }
-      return "FAIL";
-    })()), " at "), this.__qin_field_currentPosition));
+      __QinJavaLangSystem.out.println(("[EXIT] " + ruleName + " " + (success ? "SUCCESS" : "FAIL") + " at " + this.__qin_field_currentPosition));
     }
     return null;
   }
   debugCstStack(): any {
     if (this.__qin_field_debugMode) {
-      __QinJavaLangSystem.out.println(__qin_binary__("+", "[CST STACK] size=", this.__qin_field_cstStack.size()));
-      for (let i: any = 0.0; __qin_binary__("<", i, this.__qin_field_cstStack.size()); i++) {
-        __QinJavaLangSystem.out.println(__qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "  [", i), "] "), this.__qin_field_cstStack.get(i).getName()));
+      __QinJavaLangSystem.out.println(("[CST STACK] size=" + ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(this.__qin_field_cstStack)));
+      for (let i: any = 0.0; __qin_binary__("<", i, ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(this.__qin_field_cstStack)); i++) {
+        __QinJavaLangSystem.out.println(("  [" + i + "] " + ((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(this.__qin_field_cstStack, i).getName()));
       }
     }
     return null;
@@ -129,21 +119,11 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
       return null;
     }
     let curToken: any = this.getCurToken();
-    let tokenInfo: any = (() => {
-      if (__qin_binary__("!=", curToken, null)) {
-        return __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "'", curToken.value()), "' ("), curToken.tokenName()), ")");
-      }
-      return "EOF";
-    })();
-    return __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "Parse error at ", this.__qin_field_currentPosition), ": unexpected "), tokenInfo);
+    let tokenInfo: any = (__qin_binary__("!=", curToken, null) ? ("'" + curToken.value() + "' (" + curToken.tokenName() + ")") : "EOF");
+    return ("Parse error at " + this.__qin_field_currentPosition + ": unexpected " + tokenInfo);
   }
   assertParseSuccess(): any {
-    if ((() => {
-      if (this.__qin_field_parseSuccess) {
-        return false;
-      }
-      return true;
-    })()) {
+    if ((!this.__qin_field_parseSuccess)) {
       throw new __QinJavaLangRuntimeException(this.getErrorInfo());
     }
     return null;
@@ -170,12 +150,7 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
     return this.getCurToken();
   }
   parserFailOrIsEof(): any {
-    return (() => {
-      if (this.isParserFail()) {
-        return true;
-      }
-      return this.isEof();
-    })();
+    return (this.isParserFail() || this.isEof());
   }
   enableAnalysisMode(): any {
     this.analysisMode(true);
@@ -204,6 +179,10 @@ class com_subhuti_parser_SubhutiParserFinal extends com_subhuti_parser_SubhutiPa
   }
   __qin_overload_debug_2_2(enable: boolean, showRulePath: boolean): any {
     this.debug(enable);
+    return this;
+  }
+  cst(enable: boolean): any {
+    super.cst(enable);
     return this;
   }
   setLogFile(filePath: string): any {

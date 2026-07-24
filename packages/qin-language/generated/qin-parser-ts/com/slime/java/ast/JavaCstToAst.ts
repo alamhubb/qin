@@ -1,5 +1,5 @@
 import { com_slime_java_JavaParser, com_slime_java_JavaParser as JavaParser } from "../JavaParser.ts";
-import { com_subhuti_parser_SubhutiParser, com_subhuti_parser_SubhutiParser as SubhutiParser } from "../../../subhuti/parser/SubhutiParser.ts";
+import { com_slime_java_JavaParserStaticEnhanced, com_slime_java_JavaParserStaticEnhanced as JavaParserStaticEnhanced } from "../JavaParserStaticEnhanced.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../subhuti/struct/SubhutiCst.ts";
 import { com_subhuti_struct_SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken as SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken$Builder } from "../../../subhuti/struct/SubhutiMatchToken.ts";
 import { com_slime_java_ast_JavaAstProgram, com_slime_java_ast_JavaAstProgram as JavaAstProgram } from "./JavaAstProgram.ts";
@@ -24,15 +24,18 @@ import { com_slime_java_ast_JavaAstIfStatement, com_slime_java_ast_JavaAstIfStat
 import { com_slime_java_ast_JavaAstWhileStatement, com_slime_java_ast_JavaAstWhileStatement as JavaAstWhileStatement } from "./JavaAstWhileStatement.ts";
 import { com_slime_java_ast_JavaAstDoWhileStatement, com_slime_java_ast_JavaAstDoWhileStatement as JavaAstDoWhileStatement } from "./JavaAstDoWhileStatement.ts";
 import { com_slime_java_ast_JavaAstTryStatement, com_slime_java_ast_JavaAstTryStatement as JavaAstTryStatement } from "./JavaAstTryStatement.ts";
+import { com_slime_java_ast_JavaAstTryResource, com_slime_java_ast_JavaAstTryResource as JavaAstTryResource } from "./JavaAstTryResource.ts";
+import { com_slime_java_ast_JavaAstIdentifierExpression, com_slime_java_ast_JavaAstIdentifierExpression as JavaAstIdentifierExpression } from "./JavaAstIdentifierExpression.ts";
+import { com_slime_java_ast_JavaAstSynchronizedStatement, com_slime_java_ast_JavaAstSynchronizedStatement as JavaAstSynchronizedStatement } from "./JavaAstSynchronizedStatement.ts";
 import { com_slime_java_ast_JavaAstSwitchStatement, com_slime_java_ast_JavaAstSwitchStatement as JavaAstSwitchStatement } from "./JavaAstSwitchStatement.ts";
 import { com_slime_java_ast_JavaAstSwitchCase, com_slime_java_ast_JavaAstSwitchCase as JavaAstSwitchCase } from "./JavaAstSwitchCase.ts";
 import { com_slime_java_ast_JavaAstSwitchExpression, com_slime_java_ast_JavaAstSwitchExpression as JavaAstSwitchExpression } from "./JavaAstSwitchExpression.ts";
+import { com_slime_java_ast_JavaAstInstanceofPatternExpression, com_slime_java_ast_JavaAstInstanceofPatternExpression as JavaAstInstanceofPatternExpression } from "./JavaAstInstanceofPatternExpression.ts";
 import { com_slime_java_ast_JavaAstCatchClause, com_slime_java_ast_JavaAstCatchClause as JavaAstCatchClause } from "./JavaAstCatchClause.ts";
 import { com_slime_java_ast_JavaAstEnhancedForStatement, com_slime_java_ast_JavaAstEnhancedForStatement as JavaAstEnhancedForStatement } from "./JavaAstEnhancedForStatement.ts";
 import { com_slime_java_ast_JavaAstForStatement, com_slime_java_ast_JavaAstForStatement as JavaAstForStatement } from "./JavaAstForStatement.ts";
 import { com_slime_java_ast_JavaAstLocalVariableDeclaration, com_slime_java_ast_JavaAstLocalVariableDeclaration as JavaAstLocalVariableDeclaration } from "./JavaAstLocalVariableDeclaration.ts";
 import { com_slime_java_ast_JavaAstArrayLiteralExpression, com_slime_java_ast_JavaAstArrayLiteralExpression as JavaAstArrayLiteralExpression } from "./JavaAstArrayLiteralExpression.ts";
-import { com_slime_java_ast_JavaAstIdentifierExpression, com_slime_java_ast_JavaAstIdentifierExpression as JavaAstIdentifierExpression } from "./JavaAstIdentifierExpression.ts";
 import { com_slime_java_ast_JavaAstNumberLiteral, com_slime_java_ast_JavaAstNumberLiteral as JavaAstNumberLiteral } from "./JavaAstNumberLiteral.ts";
 import { com_slime_java_ast_JavaAstStringLiteral, com_slime_java_ast_JavaAstStringLiteral as JavaAstStringLiteral } from "./JavaAstStringLiteral.ts";
 import { com_slime_java_ast_JavaAstBooleanLiteral, com_slime_java_ast_JavaAstBooleanLiteral as JavaAstBooleanLiteral } from "./JavaAstBooleanLiteral.ts";
@@ -46,7 +49,6 @@ import { com_slime_java_ast_JavaAstMethodReferenceExpression, com_slime_java_ast
 import { com_slime_java_ast_JavaAstClassLiteralExpression, com_slime_java_ast_JavaAstClassLiteralExpression as JavaAstClassLiteralExpression } from "./JavaAstClassLiteralExpression.ts";
 import { com_slime_java_ast_JavaAstLambdaExpression, com_slime_java_ast_JavaAstLambdaExpression as JavaAstLambdaExpression } from "./JavaAstLambdaExpression.ts";
 import { com_slime_java_ast_JavaAstBinaryExpression, com_slime_java_ast_JavaAstBinaryExpression as JavaAstBinaryExpression } from "./JavaAstBinaryExpression.ts";
-import { com_slime_java_ast_JavaAstInstanceofPatternExpression, com_slime_java_ast_JavaAstInstanceofPatternExpression as JavaAstInstanceofPatternExpression } from "./JavaAstInstanceofPatternExpression.ts";
 import { com_slime_java_ast_JavaAstInstanceofExpression, com_slime_java_ast_JavaAstInstanceofExpression as JavaAstInstanceofExpression } from "./JavaAstInstanceofExpression.ts";
 import { com_slime_java_ast_JavaAstUpdateExpression, com_slime_java_ast_JavaAstUpdateExpression as JavaAstUpdateExpression } from "./JavaAstUpdateExpression.ts";
 import { com_slime_java_ast_JavaAstMemberAccessExpression, com_slime_java_ast_JavaAstMemberAccessExpression as JavaAstMemberAccessExpression } from "./JavaAstMemberAccessExpression.ts";
@@ -54,7 +56,7 @@ import { com_slime_java_ast_JavaAstArrayAccessExpression, com_slime_java_ast_Jav
 import { com_slime_java_ast_JavaAstAnnotation, com_slime_java_ast_JavaAstAnnotation as JavaAstAnnotation } from "./JavaAstAnnotation.ts";
 
 // Generated by Qin TypeScript backend
-import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_functional, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__, __QinJavaLangThrowable, __QinJavaLangException, __QinJavaLangRuntimeException, __QinJavaLangReflectiveOperationException, __QinJavaLangClassNotFoundException, __QinJavaLangNoSuchMethodException, __QinJavaLangReflectInvocationTargetException, __QinJavaLangError, __QinJavaLangStackOverflowError, __QinJavaLangIllegalArgumentException, __QinJavaLangNumberFormatException, __QinJavaLangIllegalStateException, __QinJavaLangUnsupportedOperationException, __QinJavaIoIOException, __QinJavaLangBoolean, __QinJavaLangDouble, __QinJavaLangCharacter, __QinJavaLangStringBuilder, __QinJavaLangInteger, __QinJavaUtilArrayList, __QinJavaUtilUnmodifiableList, __QinJavaUtilList } from "@qin/java-sdk-js";
+import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__, __QinJavaLangThrowable, __QinJavaLangException, __QinJavaLangRuntimeException, __QinJavaLangReflectiveOperationException, __QinJavaLangClassNotFoundException, __QinJavaLangClassCastException, __QinJavaLangNoSuchMethodException, __QinJavaLangReflectInvocationTargetException, __QinJavaLangError, __QinJavaLangStackOverflowError, __QinJavaLangIllegalArgumentException, __QinJavaLangNumberFormatException, __QinJavaLangIllegalStateException, __QinJavaLangUnsupportedOperationException, __QinJavaIoIOException, __QinJavaLangBoolean, __qin_java_implements, __QinJavaLangDouble, __QinJavaMathBigInteger, __QinJavaLangCharacter, __QinJavaLangStringBuilder, __QinJavaLangInteger, __QinJavaUtilArrayList, __QinJavaUtilUnmodifiableList, __QinJavaUtilList, __QinJavaUtilArrays, __qin_java_hash_key_equals__, __qin_java_string_hash_code__, __qin_java_identity_hash_code__, __qin_java_value_hash_code__, __qin_java_values_equal__, __qin_java_hash_key__, __qin_java_functional } from "@qin/java-sdk-js";
 
 function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -64,47 +66,31 @@ const IllegalArgumentException = __QinJavaLangIllegalArgumentException;
 const ArrayList = __QinJavaUtilArrayList;
 const Boolean = __QinJavaLangBoolean;
 const Double = __QinJavaLangDouble;
+const BigInteger = __QinJavaMathBigInteger;
 const Character = __QinJavaLangCharacter;
 const StringBuilder = __QinJavaLangStringBuilder;
 const Integer = __QinJavaLangInteger;
 class com_slime_java_ast_JavaCstToAst {
   constructor(...__qin_args: any[]) {
-    switch (__qin_args.length) {
-      case 0: {
-        this.__qin_constructor_com_slime_java_ast_JavaCstToAst_0();
-        return;
-      }
-      default: throw new Error("Unsupported Java constructor arity: JavaCstToAst/" + __qin_args.length);
+    if (__qin_args.length === 0 && true) {
+      this.__qin_constructor_com_slime_java_ast_JavaCstToAst_0_0();
+      return;
     }
+    throw new Error("Unsupported Java constructor overload: JavaCstToAst/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_ast_JavaCstToAst_0(): void {
+  __qin_constructor_com_slime_java_ast_JavaCstToAst_0_0(): void {
     null;
   }
   static parse(source: string): any {
-    let parser: any = SubhutiParser.create(__qin_java_class_info__(com_slime_java_JavaParser, { name: "com.slime.java.JavaParser" }), source);
+    let parser: any = com_slime_java_JavaParserStaticEnhanced.create(source);
     parser.compilationUnit();
-    if ((() => {
-      if (com_slime_java_ast_JavaCstToAst.isAtEof(parser)) {
-        return false;
-      }
-      return true;
-    })()) {
-      throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Java source did not parse to EOF: ", com_slime_java_ast_JavaCstToAst.currentTokenInfo(parser)));
+    if ((!com_slime_java_ast_JavaCstToAst.isAtEof(parser))) {
+      throw new __QinJavaLangIllegalArgumentException(("Java source did not parse to EOF: " + com_slime_java_ast_JavaCstToAst.currentTokenInfo(parser)));
     }
     return com_slime_java_ast_JavaCstToAst.lower(parser.getCst());
   }
   static lower(root: com_subhuti_struct_SubhutiCst): any {
-    if ((() => {
-      if (__qin_binary__("==", root, null)) {
-        return true;
-      }
-      return (() => {
-      if (__QinJavaLangString.equals("compilationUnit", root.getName())) {
-        return false;
-      }
-      return true;
-    })();
-    })()) {
+    if ((__qin_binary__("==", root, null) || !__QinJavaLangString.equals("compilationUnit", root.getName()))) {
       throw new __QinJavaLangIllegalArgumentException("Expected compilationUnit CST root");
     }
     let packageName: any = null;
@@ -142,12 +128,7 @@ class com_slime_java_ast_JavaCstToAst {
   }
   static lowerClass(node: com_subhuti_struct_SubhutiCst, annotations: any): any {
     let name: any = com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(node, "typeIdentifier"));
-    let superTypeName: any = (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(node, "EXTENDS"), null)) {
-        return null;
-      }
-      return com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType"));
-    })();
+    let superTypeName: any = (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(node, "EXTENDS"), null) ? null : com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType")));
     let implementsTypeNames: any = com_slime_java_ast_JavaCstToAst.lowerImplementsTypeNames(node);
     let typeParameters: any = com_slime_java_ast_JavaCstToAst.lowerTypeParameters(com_slime_java_ast_JavaCstToAst.child(node, "typeParameters"));
     let fields: any = new __QinJavaUtilArrayList();
@@ -158,12 +139,7 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("!=", classBody, null)) {
       for (const bodyDeclaration of com_slime_java_ast_JavaCstToAst.children(classBody, "classBodyDeclaration")) {
         let initializerBlock: any = com_slime_java_ast_JavaCstToAst.child(bodyDeclaration, "block");
-        if ((() => {
-      if (__qin_binary__("!=", initializerBlock, null)) {
-        return com_slime_java_ast_JavaCstToAst.hasTokenValue(bodyDeclaration, "static");
-      }
-      return false;
-    })()) {
+        if ((__qin_binary__("!=", initializerBlock, null) && com_slime_java_ast_JavaCstToAst.hasTokenValue(bodyDeclaration, "static"))) {
           staticInitializers.add(new com_slime_java_ast_JavaAstStaticInitializer(com_slime_java_ast_JavaCstToAst.lowerBlock(initializerBlock)));
           continue;
         }
@@ -199,6 +175,10 @@ class com_slime_java_ast_JavaCstToAst {
         if (__qin_binary__("!=", nestedEnum, null)) {
           nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerEnum(nestedEnum, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
         }
+        let nestedInterface: any = com_slime_java_ast_JavaCstToAst.child(member, "interfaceDeclaration");
+        if (__qin_binary__("!=", nestedInterface, null)) {
+          nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerInterface(nestedInterface, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
+        }
         let nestedRecord: any = com_slime_java_ast_JavaCstToAst.child(member, "recordDeclaration");
         if (__qin_binary__("!=", nestedRecord, null)) {
           nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerRecord(nestedRecord, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
@@ -209,12 +189,8 @@ class com_slime_java_ast_JavaCstToAst {
   }
   static lowerInterface(node: com_subhuti_struct_SubhutiCst, annotations: any): any {
     let name: any = com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(node, "typeIdentifier"));
-    let extendsTypeNames: any = (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(node, "EXTENDS"), null)) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerTypeList(com_slime_java_ast_JavaCstToAst.child(node, "typeList"));
-    })();
+    let extendsTypeNames: any = (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(node, "EXTENDS"), null) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerTypeList(com_slime_java_ast_JavaCstToAst.child(node, "typeList")));
+    let fields: any = new __QinJavaUtilArrayList();
     let methods: any = new __QinJavaUtilArrayList();
     let nestedClasses: any = new __QinJavaUtilArrayList();
     let interfaceBody: any = com_slime_java_ast_JavaCstToAst.child(node, "interfaceBody");
@@ -222,6 +198,10 @@ class com_slime_java_ast_JavaCstToAst {
       let member: any = com_slime_java_ast_JavaCstToAst.child(bodyDeclaration, "interfaceMemberDeclaration");
       if (__qin_binary__("==", member, null)) {
         continue;
+      }
+      let constDeclaration: any = com_slime_java_ast_JavaCstToAst.child(member, "constDeclaration");
+      if (__qin_binary__("!=", constDeclaration, null)) {
+        fields.addAll(com_slime_java_ast_JavaCstToAst.lowerConstFields(constDeclaration, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
       }
       let method: any = com_slime_java_ast_JavaCstToAst.child(member, "interfaceMethodDeclaration");
       if (__qin_binary__("!=", method, null)) {
@@ -248,7 +228,7 @@ class com_slime_java_ast_JavaCstToAst {
         nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerRecord(nestedRecord, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
       }
     }
-    return new com_slime_java_ast_JavaAstClassDeclaration(name, null, extendsTypeNames, com_slime_java_ast_JavaCstToAst.lowerTypeParameters(com_slime_java_ast_JavaCstToAst.child(node, "typeParameters")), annotations, __QinJavaUtilList.of(), methods, __QinJavaUtilList.of(), nestedClasses);
+    return new com_slime_java_ast_JavaAstClassDeclaration(name, null, extendsTypeNames, com_slime_java_ast_JavaCstToAst.lowerTypeParameters(com_slime_java_ast_JavaCstToAst.child(node, "typeParameters")), annotations, fields, methods, __QinJavaUtilList.of(), nestedClasses);
   }
   static lowerRecord(node: com_subhuti_struct_SubhutiCst, annotations: any): any {
     let name: any = com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(node, "typeIdentifier"));
@@ -268,12 +248,7 @@ class com_slime_java_ast_JavaCstToAst {
       }
       for (const bodyDeclaration of com_slime_java_ast_JavaCstToAst.children(recordBody, "classBodyDeclaration")) {
         let initializerBlock: any = com_slime_java_ast_JavaCstToAst.child(bodyDeclaration, "block");
-        if ((() => {
-      if (__qin_binary__("!=", initializerBlock, null)) {
-        return com_slime_java_ast_JavaCstToAst.hasTokenValue(bodyDeclaration, "static");
-      }
-      return false;
-    })()) {
+        if ((__qin_binary__("!=", initializerBlock, null) && com_slime_java_ast_JavaCstToAst.hasTokenValue(bodyDeclaration, "static"))) {
           staticInitializers.add(new com_slime_java_ast_JavaAstStaticInitializer(com_slime_java_ast_JavaCstToAst.lowerBlock(initializerBlock)));
           continue;
         }
@@ -308,6 +283,10 @@ class com_slime_java_ast_JavaCstToAst {
         let nestedEnum: any = com_slime_java_ast_JavaCstToAst.child(member, "enumDeclaration");
         if (__qin_binary__("!=", nestedEnum, null)) {
           nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerEnum(nestedEnum, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
+        }
+        let nestedInterface: any = com_slime_java_ast_JavaCstToAst.child(member, "interfaceDeclaration");
+        if (__qin_binary__("!=", nestedInterface, null)) {
+          nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerInterface(nestedInterface, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
         }
         let nestedRecord: any = com_slime_java_ast_JavaCstToAst.child(member, "recordDeclaration");
         if (__qin_binary__("!=", nestedRecord, null)) {
@@ -327,7 +306,7 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("!=", enumConstants, null)) {
       for (const enumConstant of com_slime_java_ast_JavaCstToAst.children(enumConstants, "enumConstant")) {
         let constantName: any = com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(enumConstant, "identifier"));
-        fields.add(new com_slime_java_ast_JavaAstFieldDeclaration(name, constantName, __QinJavaUtilList.of(), new com_slime_java_ast_JavaAstNewExpression(name, com_slime_java_ast_JavaCstToAst.lowerArguments(com_slime_java_ast_JavaCstToAst.child(enumConstant, "arguments")))));
+        fields.add(new com_slime_java_ast_JavaAstFieldDeclaration(name, constantName, __QinJavaUtilList.of(), new com_slime_java_ast_JavaAstNewExpression(name, com_slime_java_ast_JavaCstToAst.lowerArguments(com_slime_java_ast_JavaCstToAst.child(enumConstant, "arguments"))), false, true));
       }
     }
     let methods: any = new __QinJavaUtilArrayList();
@@ -337,12 +316,7 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("!=", enumBodyDeclarations, null)) {
       for (const bodyDeclaration of com_slime_java_ast_JavaCstToAst.children(enumBodyDeclarations, "classBodyDeclaration")) {
         let initializerBlock: any = com_slime_java_ast_JavaCstToAst.child(bodyDeclaration, "block");
-        if ((() => {
-      if (__qin_binary__("!=", initializerBlock, null)) {
-        return com_slime_java_ast_JavaCstToAst.hasTokenValue(bodyDeclaration, "static");
-      }
-      return false;
-    })()) {
+        if ((__qin_binary__("!=", initializerBlock, null) && com_slime_java_ast_JavaCstToAst.hasTokenValue(bodyDeclaration, "static"))) {
           staticInitializers.add(new com_slime_java_ast_JavaAstStaticInitializer(com_slime_java_ast_JavaCstToAst.lowerBlock(initializerBlock)));
           continue;
         }
@@ -377,6 +351,10 @@ class com_slime_java_ast_JavaCstToAst {
         let nestedEnum: any = com_slime_java_ast_JavaCstToAst.child(member, "enumDeclaration");
         if (__qin_binary__("!=", nestedEnum, null)) {
           nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerEnum(nestedEnum, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
+        }
+        let nestedInterface: any = com_slime_java_ast_JavaCstToAst.child(member, "interfaceDeclaration");
+        if (__qin_binary__("!=", nestedInterface, null)) {
+          nestedClasses.add(com_slime_java_ast_JavaCstToAst.lowerInterface(nestedInterface, com_slime_java_ast_JavaCstToAst.lowerAnnotations(bodyDeclaration)));
         }
         let nestedRecord: any = com_slime_java_ast_JavaCstToAst.child(member, "recordDeclaration");
         if (__qin_binary__("!=", nestedRecord, null)) {
@@ -414,12 +392,7 @@ class com_slime_java_ast_JavaCstToAst {
     for (const typeParameter of com_slime_java_ast_JavaCstToAst.children(node, "typeParameter")) {
       let name: any = com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(typeParameter, "typeIdentifier"));
       let typeBound: any = com_slime_java_ast_JavaCstToAst.child(typeParameter, "typeBound");
-      let boundTypeName: any = (() => {
-      if (__qin_binary__("==", typeBound, null)) {
-        return "Object";
-      }
-      return com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(typeBound, "typeType"));
-    })();
+      let boundTypeName: any = (__qin_binary__("==", typeBound, null) ? "Object" : com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(typeBound, "typeType")));
       parameters.add(new com_slime_java_ast_JavaAstTypeParameter(name, boundTypeName));
     }
     return parameters;
@@ -431,12 +404,16 @@ class com_slime_java_ast_JavaCstToAst {
     for (const declarator of com_slime_java_ast_JavaCstToAst.children(declarators, "variableDeclarator")) {
       let declaratorId: any = com_slime_java_ast_JavaCstToAst.child(declarator, "variableDeclaratorId");
       let initializer: any = com_slime_java_ast_JavaCstToAst.child(declarator, "variableInitializer");
-      fields.add(new com_slime_java_ast_JavaAstFieldDeclaration(typeName, com_slime_java_ast_JavaCstToAst.identifierValue(declaratorId), annotations, (() => {
-      if (__qin_binary__("==", initializer, null)) {
-        return null;
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerVariableInitializer(initializer);
-    })(), false, staticField));
+      fields.add(new com_slime_java_ast_JavaAstFieldDeclaration(typeName, com_slime_java_ast_JavaCstToAst.identifierValue(declaratorId), annotations, (__qin_binary__("==", initializer, null) ? null : com_slime_java_ast_JavaCstToAst.lowerVariableInitializer(initializer)), false, staticField));
+    }
+    return fields;
+  }
+  static lowerConstFields(node: com_subhuti_struct_SubhutiCst, annotations: any): any {
+    let typeName: any = com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType"));
+    let fields: any = new __QinJavaUtilArrayList();
+    for (const declarator of com_slime_java_ast_JavaCstToAst.children(node, "constantDeclarator")) {
+      let initializer: any = com_slime_java_ast_JavaCstToAst.child(declarator, "variableInitializer");
+      fields.add(new com_slime_java_ast_JavaAstFieldDeclaration(typeName, com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(declarator, "identifier")), annotations, (__qin_binary__("==", initializer, null) ? null : com_slime_java_ast_JavaCstToAst.lowerVariableInitializer(initializer)), false, true));
     }
     return fields;
   }
@@ -467,7 +444,7 @@ class com_slime_java_ast_JavaCstToAst {
       parameters.add(new com_slime_java_ast_JavaAstParameter(com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(parameter, "typeType")), com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(parameter, "variableDeclaratorId"))));
     }
     for (const parameter of com_slime_java_ast_JavaCstToAst.children(parameterList, "lastFormalParameter")) {
-      parameters.add(new com_slime_java_ast_JavaAstParameter(__qin_binary__("+", com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(parameter, "typeType")), "[]"), com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(parameter, "variableDeclaratorId")), true));
+      parameters.add(new com_slime_java_ast_JavaAstParameter((com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(parameter, "typeType")) + "[]"), com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(parameter, "variableDeclaratorId")), true));
     }
     return parameters;
   }
@@ -485,12 +462,7 @@ class com_slime_java_ast_JavaCstToAst {
     return statements;
   }
   static lowerExplicitConstructorInvocationStatement(statement: com_subhuti_struct_SubhutiCst): any {
-    return new com_slime_java_ast_JavaAstExpressionStatement(new com_slime_java_ast_JavaAstMethodCallExpression((() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(statement, "THIS"), null)) {
-        return new com_slime_java_ast_JavaAstIdentifierExpression("super");
-      }
-      return new com_slime_java_ast_JavaAstThisExpression();
-    })(), "constructor", com_slime_java_ast_JavaCstToAst.lowerArguments(com_slime_java_ast_JavaCstToAst.child(statement, "arguments"))));
+    return new com_slime_java_ast_JavaAstExpressionStatement(new com_slime_java_ast_JavaAstMethodCallExpression((__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(statement, "THIS"), null) ? new com_slime_java_ast_JavaAstIdentifierExpression("super") : new com_slime_java_ast_JavaAstThisExpression()), "constructor", com_slime_java_ast_JavaCstToAst.lowerArguments(com_slime_java_ast_JavaCstToAst.child(statement, "arguments"))));
   }
   static explicitConstructorInvocation(block: com_subhuti_struct_SubhutiCst): any {
     for (const blockStatement of com_slime_java_ast_JavaCstToAst.children(block, "blockStatement")) {
@@ -526,10 +498,6 @@ class com_slime_java_ast_JavaCstToAst {
     return __QinJavaUtilList.of();
   }
   static lowerStatement(statement: com_subhuti_struct_SubhutiCst): any {
-    let block: any = com_slime_java_ast_JavaCstToAst.child(statement, "block");
-    if (__qin_binary__("!=", block, null)) {
-      return com_slime_java_ast_JavaCstToAst.lowerBlock(block);
-    }
     let ifStatement: any = com_slime_java_ast_JavaCstToAst.child(statement, "ifStatement");
     if (__qin_binary__("!=", ifStatement, null)) {
       return __QinJavaUtilList.of(com_slime_java_ast_JavaCstToAst.lowerIfStatement(ifStatement));
@@ -550,9 +518,17 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("!=", tryStatement, null)) {
       return __QinJavaUtilList.of(com_slime_java_ast_JavaCstToAst.lowerTryStatement(tryStatement));
     }
+    let synchronizedStatement: any = com_slime_java_ast_JavaCstToAst.child(statement, "synchronizedStatement");
+    if (__qin_binary__("!=", synchronizedStatement, null)) {
+      return __QinJavaUtilList.of(com_slime_java_ast_JavaCstToAst.lowerSynchronizedStatement(synchronizedStatement));
+    }
     let switchStatement: any = com_slime_java_ast_JavaCstToAst.child(statement, "switchStatement");
     if (__qin_binary__("!=", switchStatement, null)) {
       return __QinJavaUtilList.of(com_slime_java_ast_JavaCstToAst.lowerSwitchStatement(switchStatement));
+    }
+    let block: any = com_slime_java_ast_JavaCstToAst.child(statement, "block");
+    if (__qin_binary__("!=", block, null)) {
+      return com_slime_java_ast_JavaCstToAst.lowerBlock(block);
     }
     let returnStatement: any = com_slime_java_ast_JavaCstToAst.child(statement, "returnStatement");
     if (__qin_binary__("!=", returnStatement, null)) {
@@ -592,54 +568,57 @@ class com_slime_java_ast_JavaCstToAst {
     return statements;
   }
   static lowerIfStatement(ifStatement: com_subhuti_struct_SubhutiCst): any {
-    return new com_slime_java_ast_JavaAstIfStatement(com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(ifStatement, "parExpression"), "expression")), (() => {
-      if (com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement").isEmpty()) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerStatement(com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement").get(0.0));
-    })(), (() => {
-      if (__qin_binary__("<", com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement").size(), 2.0)) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerStatement(com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement").get(1.0));
-    })());
+    return new com_slime_java_ast_JavaAstIfStatement(com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(ifStatement, "parExpression"), "expression")), (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement")) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerStatement(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement"), 0.0))), (__qin_binary__("<", ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement")), 2.0) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerStatement(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(com_slime_java_ast_JavaCstToAst.children(ifStatement, "statement"), 1.0))));
   }
   static lowerWhileStatement(whileStatement: com_subhuti_struct_SubhutiCst): any {
-    return new com_slime_java_ast_JavaAstWhileStatement(com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(whileStatement, "parExpression"), "expression")), (() => {
-      if (com_slime_java_ast_JavaCstToAst.children(whileStatement, "statement").isEmpty()) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerStatement(com_slime_java_ast_JavaCstToAst.children(whileStatement, "statement").get(0.0));
-    })());
+    return new com_slime_java_ast_JavaAstWhileStatement(com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(whileStatement, "parExpression"), "expression")), (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(com_slime_java_ast_JavaCstToAst.children(whileStatement, "statement")) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerStatement(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(com_slime_java_ast_JavaCstToAst.children(whileStatement, "statement"), 0.0))));
   }
   static lowerDoWhileStatement(doWhileStatement: com_subhuti_struct_SubhutiCst): any {
-    return new com_slime_java_ast_JavaAstDoWhileStatement((() => {
-      if (com_slime_java_ast_JavaCstToAst.children(doWhileStatement, "statement").isEmpty()) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerStatement(com_slime_java_ast_JavaCstToAst.children(doWhileStatement, "statement").get(0.0));
-    })(), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(doWhileStatement, "parExpression"), "expression")));
+    return new com_slime_java_ast_JavaAstDoWhileStatement((((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(com_slime_java_ast_JavaCstToAst.children(doWhileStatement, "statement")) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerStatement(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(com_slime_java_ast_JavaCstToAst.children(doWhileStatement, "statement"), 0.0))), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(doWhileStatement, "parExpression"), "expression")));
   }
   static lowerTryStatement(tryStatement: com_subhuti_struct_SubhutiCst): any {
+    let resources: any = com_slime_java_ast_JavaCstToAst.lowerTryResources(com_slime_java_ast_JavaCstToAst.child(tryStatement, "resourceSpecification"));
     let blocks: any = com_slime_java_ast_JavaCstToAst.children(tryStatement, "block");
-    let tryStatements: any = (() => {
-      if (blocks.isEmpty()) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerBlock(blocks.get(0.0));
-    })();
+    let tryStatements: any = (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(blocks) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerBlock(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(blocks, 0.0)));
     let catchClauses: any = new __QinJavaUtilArrayList();
     for (const catchClause of com_slime_java_ast_JavaCstToAst.children(tryStatement, "catchClause")) {
       catchClauses.add(com_slime_java_ast_JavaCstToAst.lowerCatchClause(catchClause));
     }
+    let tryHandlerSuffix: any = com_slime_java_ast_JavaCstToAst.child(tryStatement, "tryHandlerSuffix");
+    for (const catchClause of com_slime_java_ast_JavaCstToAst.children(tryHandlerSuffix, "catchClause")) {
+      catchClauses.add(com_slime_java_ast_JavaCstToAst.lowerCatchClause(catchClause));
+    }
     let finallyBlock: any = com_slime_java_ast_JavaCstToAst.child(tryStatement, "finallyBlock");
-    let finallyStatements: any = (() => {
-      if (__qin_binary__("==", finallyBlock, null)) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerBlock(com_slime_java_ast_JavaCstToAst.child(finallyBlock, "block"));
-    })();
-    return new com_slime_java_ast_JavaAstTryStatement(tryStatements, catchClauses, finallyStatements);
+    if (__qin_binary__("==", finallyBlock, null)) {
+      finallyBlock = com_slime_java_ast_JavaCstToAst.child(tryHandlerSuffix, "finallyBlock");
+    }
+    let finallyStatements: any = (__qin_binary__("==", finallyBlock, null) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerBlock(com_slime_java_ast_JavaCstToAst.child(finallyBlock, "block")));
+    return new com_slime_java_ast_JavaAstTryStatement(resources, tryStatements, catchClauses, finallyStatements);
+  }
+  static lowerTryResources(resourceSpecification: com_subhuti_struct_SubhutiCst): any {
+    let resourcesNode: any = com_slime_java_ast_JavaCstToAst.child(resourceSpecification, "resources");
+    if (__qin_binary__("==", resourcesNode, null)) {
+      return __QinJavaUtilList.of();
+    }
+    let resources: any = new __QinJavaUtilArrayList();
+    for (const resource of com_slime_java_ast_JavaCstToAst.children(resourcesNode, "resource")) {
+      resources.add(com_slime_java_ast_JavaCstToAst.lowerTryResource(resource));
+    }
+    return resources;
+  }
+  static lowerTryResource(resource: com_subhuti_struct_SubhutiCst): any {
+    if (__qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(resource, "ASSIGN"), null)) {
+      let typeName: any = (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(resource, "VAR"), null) ? com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(resource, "classOrInterfaceType")) : "var");
+      let declaratorId: any = com_slime_java_ast_JavaCstToAst.child(resource, "variableDeclaratorId");
+      let name: any = com_slime_java_ast_JavaCstToAst.identifierValue(declaratorId);
+      return new com_slime_java_ast_JavaAstTryResource(typeName, name, com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(resource, "expression")), null);
+    }
+    let identifier: any = com_slime_java_ast_JavaCstToAst.child(resource, "identifier");
+    let name: any = com_slime_java_ast_JavaCstToAst.identifierValue(identifier);
+    return new com_slime_java_ast_JavaAstTryResource(null, name, null, new com_slime_java_ast_JavaAstIdentifierExpression(name));
+  }
+  static lowerSynchronizedStatement(synchronizedStatement: com_subhuti_struct_SubhutiCst): any {
+    return new com_slime_java_ast_JavaAstSynchronizedStatement(com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(synchronizedStatement, "parExpression"), "expression")), (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(synchronizedStatement, "block"), null) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerBlock(com_slime_java_ast_JavaCstToAst.child(synchronizedStatement, "block"))));
   }
   static lowerSwitchStatement(switchStatement: com_subhuti_struct_SubhutiCst): any {
     let parExpression: any = com_slime_java_ast_JavaCstToAst.child(switchStatement, "parExpression");
@@ -669,17 +648,12 @@ class com_slime_java_ast_JavaCstToAst {
     for (const blockStatement of com_slime_java_ast_JavaCstToAst.children(group, "blockStatement")) {
       statements.addAll(com_slime_java_ast_JavaCstToAst.lowerBlockStatement(blockStatement));
     }
-    if (labels.isEmpty()) {
+    if (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(labels)) {
       return __QinJavaUtilList.of(new com_slime_java_ast_JavaAstSwitchCase(null, statements));
     }
     let cases: any = new __QinJavaUtilArrayList();
-    for (let i: any = 0.0; __qin_binary__("<", i, labels.size()); i++) {
-      cases.add(new com_slime_java_ast_JavaAstSwitchCase(com_slime_java_ast_JavaCstToAst.lowerSwitchLabelExpression(labels.get(i)), (() => {
-      if (__qin_binary__("==", i, __qin_binary__("-", labels.size(), 1.0))) {
-        return statements;
-      }
-      return __QinJavaUtilList.of();
-    })()));
+    for (let i: any = 0.0; __qin_binary__("<", i, ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(labels)); i++) {
+      cases.add(new com_slime_java_ast_JavaAstSwitchCase(com_slime_java_ast_JavaCstToAst.lowerSwitchLabelExpression(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(labels, i)), (__qin_binary__("==", i, __qin_binary__("-", ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(labels), 1.0)) ? statements : __QinJavaUtilList.of())));
     }
     return cases;
   }
@@ -687,31 +661,16 @@ class com_slime_java_ast_JavaCstToAst {
     let statements: any = com_slime_java_ast_JavaCstToAst.lowerSwitchRuleOutcome(com_slime_java_ast_JavaCstToAst.child(rule, "switchRuleOutcome"));
     let expressionList: any = com_slime_java_ast_JavaCstToAst.child(rule, "expressionList");
     let switchRuleLabelList: any = com_slime_java_ast_JavaCstToAst.child(rule, "switchRuleLabelList");
-    if ((() => {
-      if (__qin_binary__("==", expressionList, null)) {
-        return __qin_binary__("==", switchRuleLabelList, null);
-      }
-      return false;
-    })()) {
+    if ((__qin_binary__("==", expressionList, null) && __qin_binary__("==", switchRuleLabelList, null))) {
       return __QinJavaUtilList.of(new com_slime_java_ast_JavaAstSwitchCase(null, statements));
     }
-    let tests: any = (() => {
-      if (__qin_binary__("!=", expressionList, null)) {
-        return com_slime_java_ast_JavaCstToAst.lowerExpressionList(expressionList);
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerSwitchRuleLabelList(switchRuleLabelList);
-    })();
-    if (tests.isEmpty()) {
+    let tests: any = (__qin_binary__("!=", expressionList, null) ? com_slime_java_ast_JavaCstToAst.lowerExpressionList(expressionList) : com_slime_java_ast_JavaCstToAst.lowerSwitchRuleLabelList(switchRuleLabelList));
+    if (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(tests)) {
       return __QinJavaUtilList.of(new com_slime_java_ast_JavaAstSwitchCase(null, statements));
     }
     let cases: any = new __QinJavaUtilArrayList();
-    for (let i: any = 0.0; __qin_binary__("<", i, tests.size()); i++) {
-      cases.add(new com_slime_java_ast_JavaAstSwitchCase(tests.get(i), (() => {
-      if (__qin_binary__("==", i, __qin_binary__("-", tests.size(), 1.0))) {
-        return statements;
-      }
-      return __QinJavaUtilList.of();
-    })()));
+    for (let i: any = 0.0; __qin_binary__("<", i, ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(tests)); i++) {
+      cases.add(new com_slime_java_ast_JavaAstSwitchCase(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(tests, i), (__qin_binary__("==", i, __qin_binary__("-", ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(tests), 1.0)) ? statements : __QinJavaUtilList.of())));
     }
     return cases;
   }
@@ -723,7 +682,21 @@ class com_slime_java_ast_JavaCstToAst {
     for (const label of com_slime_java_ast_JavaCstToAst.children(switchRuleLabelList, "assignmentExpression")) {
       lowered.add(com_slime_java_ast_JavaCstToAst.lowerExpression(label));
     }
+    for (const label of com_slime_java_ast_JavaCstToAst.children(switchRuleLabelList, "switchRuleLabel")) {
+      lowered.add(com_slime_java_ast_JavaCstToAst.lowerSwitchRuleLabel(label));
+    }
     return lowered;
+  }
+  static lowerSwitchRuleLabel(label: com_subhuti_struct_SubhutiCst): any {
+    let assignmentExpression: any = com_slime_java_ast_JavaCstToAst.child(label, "assignmentExpression");
+    if (__qin_binary__("!=", assignmentExpression, null)) {
+      return com_slime_java_ast_JavaCstToAst.lowerExpression(assignmentExpression);
+    }
+    let pattern: any = com_slime_java_ast_JavaCstToAst.child(label, "pattern");
+    if (__qin_binary__("!=", pattern, null)) {
+      return new com_slime_java_ast_JavaAstInstanceofPatternExpression(new com_slime_java_ast_JavaAstIdentifierExpression("__switch_discriminant"), com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(pattern, "typeType")), com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(pattern, "identifier")));
+    }
+    throw new __QinJavaLangIllegalArgumentException(("Unsupported Java switch rule label: " + label.toTreeString()));
   }
   static lowerSwitchRuleOutcome(outcome: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", outcome, null)) {
@@ -741,12 +714,7 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("!=", expressionStatement, null)) {
       let statementExpression: any = com_slime_java_ast_JavaCstToAst.child(expressionStatement, "statementExpression");
       let expression: any = com_slime_java_ast_JavaCstToAst.child(statementExpression, "expression");
-      return (() => {
-      if (__qin_binary__("==", expression, null)) {
-        return __QinJavaUtilList.of();
-      }
-      return __QinJavaUtilList.of(new com_slime_java_ast_JavaAstExpressionStatement(com_slime_java_ast_JavaCstToAst.lowerExpression(expression)));
-    })();
+      return (__qin_binary__("==", expression, null) ? __QinJavaUtilList.of() : __QinJavaUtilList.of(new com_slime_java_ast_JavaAstExpressionStatement(com_slime_java_ast_JavaCstToAst.lowerExpression(expression))));
     }
     let expression: any = com_slime_java_ast_JavaCstToAst.child(outcome, "expression");
     if (__qin_binary__("!=", expression, null)) {
@@ -755,12 +723,7 @@ class com_slime_java_ast_JavaCstToAst {
     return __QinJavaUtilList.of();
   }
   static lowerSwitchLabelExpression(label: com_subhuti_struct_SubhutiCst): any {
-    if ((() => {
-      if (__qin_binary__("==", label, null)) {
-        return true;
-      }
-      return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(label, "DEFAULT"), null);
-    })()) {
+    if ((__qin_binary__("==", label, null) || __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(label, "DEFAULT"), null))) {
       return null;
     }
     return com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(label, "expression"));
@@ -773,18 +736,8 @@ class com_slime_java_ast_JavaCstToAst {
     let enhancedForControl: any = com_slime_java_ast_JavaCstToAst.child(forControl, "enhancedForControl");
     if (__qin_binary__("!=", enhancedForControl, null)) {
       let bodyStatements: any = com_slime_java_ast_JavaCstToAst.children(forStatement, "statement");
-      let typeName: any = (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "VAR"), null)) {
-        return com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "typeType"));
-      }
-      return "var";
-    })();
-      return new com_slime_java_ast_JavaAstEnhancedForStatement(typeName, com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "variableDeclaratorId")), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "expression")), (() => {
-      if (bodyStatements.isEmpty()) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerStatement(bodyStatements.get(0.0));
-    })());
+      let typeName: any = (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "VAR"), null) ? com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "typeType")) : "var");
+      return new com_slime_java_ast_JavaAstEnhancedForStatement(typeName, com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "variableDeclaratorId")), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(enhancedForControl, "expression")), (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(bodyStatements) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerStatement(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(bodyStatements, 0.0))));
     }
     let forInit: any = com_slime_java_ast_JavaCstToAst.child(forControl, "forInit");
     let initializerStatements: any = __QinJavaUtilList.of();
@@ -793,32 +746,17 @@ class com_slime_java_ast_JavaCstToAst {
       if (__qin_binary__("!=", localVariableDeclaration, null)) {
         initializerStatements = com_slime_java_ast_JavaCstToAst.lowerLocalVariableDeclarations(localVariableDeclaration);
       } else {
-        initializerStatements = com_slime_java_ast_JavaCstToAst.lowerExpressionList(com_slime_java_ast_JavaCstToAst.child(forInit, "expressionList")).stream().map(new com_slime_java_ast_JavaAstExpressionStatement()).toList();
+        initializerStatements = __QinJavaUtilArrays.stream(com_slime_java_ast_JavaCstToAst.lowerExpressionList(com_slime_java_ast_JavaCstToAst.child(forInit, "expressionList"))).map(((...__qin_args) => new com_slime_java_ast_JavaAstExpressionStatement(...__qin_args))).toList();
       }
     }
     let test: any = com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(forControl, "expression"));
     let forUpdate: any = com_slime_java_ast_JavaCstToAst.child(forControl, "forUpdate");
-    let updateExpressions: any = (() => {
-      if (__qin_binary__("==", forUpdate, null)) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerExpressionList(com_slime_java_ast_JavaCstToAst.child(forUpdate, "expressionList"));
-    })();
+    let updateExpressions: any = (__qin_binary__("==", forUpdate, null) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerExpressionList(com_slime_java_ast_JavaCstToAst.child(forUpdate, "expressionList")));
     let bodyStatements: any = com_slime_java_ast_JavaCstToAst.children(forStatement, "statement");
-    return new com_slime_java_ast_JavaAstForStatement(initializerStatements, test, updateExpressions, (() => {
-      if (bodyStatements.isEmpty()) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerStatement(bodyStatements.get(0.0));
-    })());
+    return new com_slime_java_ast_JavaAstForStatement(initializerStatements, test, updateExpressions, (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(bodyStatements) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerStatement(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(bodyStatements, 0.0))));
   }
   static lowerLocalVariableDeclarations(localVariableDeclaration: com_subhuti_struct_SubhutiCst): any {
-    let typeName: any = (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(localVariableDeclaration, "VAR"), null)) {
-        return com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(localVariableDeclaration, "typeType"));
-      }
-      return "var";
-    })();
+    let typeName: any = (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(localVariableDeclaration, "VAR"), null) ? com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(localVariableDeclaration, "typeType")) : "var");
     let statements: any = new __QinJavaUtilArrayList();
     let declarators: any = com_slime_java_ast_JavaCstToAst.child(localVariableDeclaration, "variableDeclarators");
     if (__qin_binary__("==", declarators, null)) {
@@ -829,12 +767,7 @@ class com_slime_java_ast_JavaCstToAst {
     }
     for (const declarator of com_slime_java_ast_JavaCstToAst.children(declarators, "variableDeclarator")) {
       let initializer: any = com_slime_java_ast_JavaCstToAst.child(declarator, "variableInitializer");
-      statements.add(new com_slime_java_ast_JavaAstLocalVariableDeclaration(typeName, com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(declarator, "variableDeclaratorId")), (() => {
-      if (__qin_binary__("==", initializer, null)) {
-        return null;
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerVariableInitializer(initializer);
-    })()));
+      statements.add(new com_slime_java_ast_JavaAstLocalVariableDeclaration(typeName, com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(declarator, "variableDeclaratorId")), (__qin_binary__("==", initializer, null) ? null : com_slime_java_ast_JavaCstToAst.lowerVariableInitializer(initializer))));
     }
     return statements;
   }
@@ -846,20 +779,10 @@ class com_slime_java_ast_JavaCstToAst {
     return com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(initializer, "expression"));
   }
   static lowerReturnExpression(returnStatement: com_subhuti_struct_SubhutiCst): any {
-    return (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(returnStatement, "expression"), null)) {
-        return null;
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(returnStatement, "expression"));
-    })();
+    return (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(returnStatement, "expression"), null) ? null : com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(returnStatement, "expression")));
   }
   static optionalIdentifierValue(statement: com_subhuti_struct_SubhutiCst): any {
-    return (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(statement, "identifier"), null)) {
-        return null;
-      }
-      return com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(statement, "identifier"));
-    })();
+    return (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(statement, "identifier"), null) ? null : com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(statement, "identifier")));
   }
   static lowerThrowExpression(throwStatement: com_subhuti_struct_SubhutiCst): any {
     return com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(throwStatement, "expression"));
@@ -869,8 +792,8 @@ class com_slime_java_ast_JavaCstToAst {
   }
   static lastReturnExpression(statements: any): any {
     let returnStatement: any = null;
-    for (let i: any = __qin_binary__("-", statements.size(), 1.0); __qin_binary__(">=", i, 0.0); i--) {
-      if ((() => { const __qin_pattern_value = statements.get(i); return __qin_instanceof__(__qin_pattern_value, com_slime_java_ast_JavaAstReturnStatement) && (returnStatement = __qin_pattern_value, true); })()) {
+    for (let i: any = __qin_binary__("-", ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(statements), 1.0); __qin_binary__(">=", i, 0.0); i--) {
+      if ((() => { const __qin_pattern_value = ((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(statements, i); return __qin_instanceof__(__qin_pattern_value, com_slime_java_ast_JavaAstReturnStatement) && (returnStatement = __qin_pattern_value, true); })()) {
         return returnStatement.expression();
       }
     }
@@ -883,29 +806,43 @@ class com_slime_java_ast_JavaCstToAst {
     if (node.isToken()) {
       return (() => {
       switch (node.getName()) {
-        case "IDENTIFIER":
+        case "IDENTIFIER": {
           return new com_slime_java_ast_JavaAstIdentifierExpression(node.getValue());
-        case "DECIMAL_LITERAL":
-        case "HEX_LITERAL":
-        case "OCT_LITERAL":
-        case "BINARY_LITERAL":
-        case "FLOAT_LITERAL":
-        case "HEX_FLOAT_LITERAL":
+        }
+        case "DECIMAL_LITERAL": {
+        }
+        case "HEX_LITERAL": {
+        }
+        case "OCT_LITERAL": {
+        }
+        case "BINARY_LITERAL": {
+        }
+        case "FLOAT_LITERAL": {
+        }
+        case "HEX_FLOAT_LITERAL": {
           return new com_slime_java_ast_JavaAstNumberLiteral(com_slime_java_ast_JavaCstToAst.numberValue(node.getValue()), com_slime_java_ast_JavaCstToAst.isIntegralNumberToken(node.getName()));
-        case "CHAR_LITERAL":
+        }
+        case "CHAR_LITERAL": {
           return new com_slime_java_ast_JavaAstStringLiteral(com_slime_java_ast_JavaCstToAst.charLiteralText(node.getValue()));
-        case "BOOL_LITERAL":
+        }
+        case "BOOL_LITERAL": {
           return new com_slime_java_ast_JavaAstBooleanLiteral(__QinJavaLangBoolean.parseBoolean(node.getValue()));
-        case "STRING_LITERAL":
+        }
+        case "STRING_LITERAL": {
           return new com_slime_java_ast_JavaAstStringLiteral(com_slime_java_ast_JavaCstToAst.unquoteString(node.getValue()));
-        case "NULL_LITERAL":
+        }
+        case "NULL_LITERAL": {
           return new com_slime_java_ast_JavaAstNullLiteral();
-        case "THIS":
+        }
+        case "THIS": {
           return new com_slime_java_ast_JavaAstThisExpression();
-        case "SUPER":
+        }
+        case "SUPER": {
           return new com_slime_java_ast_JavaAstIdentifierExpression("super");
-        default:
-          throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Unsupported expression token: ", node.getName()));
+        }
+        default: {
+          throw new __QinJavaLangIllegalArgumentException(("Unsupported expression token: " + node.getName()));
+        }
       }
       return null;
     })();
@@ -934,31 +871,16 @@ class com_slime_java_ast_JavaCstToAst {
     if (__QinJavaLangString.equals("conditionalOrExpression", node.getName())) {
       return com_slime_java_ast_JavaCstToAst.lowerLeftAssociative(node, __QinJavaUtilList.of("OR"));
     }
-    if ((() => {
-      if (__QinJavaLangString.equals("conditionalExpression", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "QUESTION"), null);
-      }
-      return false;
-    })()) {
+    if ((__QinJavaLangString.equals("conditionalExpression", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "QUESTION"), null))) {
       return new com_slime_java_ast_JavaAstConditionalExpression(com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(node, "conditionalOrExpression")), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(node, "expression")), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.lastChild(node, "conditionalExpression")));
     }
     if (__QinJavaLangString.equals("assignment", node.getName())) {
       return new com_slime_java_ast_JavaAstAssignmentExpression(com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(node, "leftHandSide")), com_slime_java_ast_JavaCstToAst.assignmentOperatorValue(com_slime_java_ast_JavaCstToAst.child(node, "assignmentOperator")), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(node, "expression")));
     }
-    if ((() => {
-      if (__QinJavaLangString.equals("unaryExpression", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "prefixOp"), null);
-      }
-      return false;
-    })()) {
+    if ((__QinJavaLangString.equals("unaryExpression", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "prefixOp"), null))) {
       return new com_slime_java_ast_JavaAstUnaryExpression(com_slime_java_ast_JavaCstToAst.prefixOperatorValue(com_slime_java_ast_JavaCstToAst.child(node, "prefixOp")), com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.lastChild(node, "unaryExpression")));
     }
-    if ((() => {
-      if (__QinJavaLangString.equals("unaryExpression", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "LPAREN"), null);
-      }
-      return false;
-    })()) {
+    if ((__QinJavaLangString.equals("unaryExpression", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "LPAREN"), null))) {
       let castType: any = com_slime_java_ast_JavaCstToAst.child(node, "typeType");
       if (__qin_binary__("==", castType, null)) {
         castType = com_slime_java_ast_JavaCstToAst.child(node, "primitiveType");
@@ -970,96 +892,64 @@ class com_slime_java_ast_JavaCstToAst {
     if (__QinJavaLangString.equals("postfixExpression", node.getName())) {
       return com_slime_java_ast_JavaCstToAst.lowerPostfixExpression(node);
     }
-    if ((() => {
-      if (__QinJavaLangString.equals("primary", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "NEW"), null);
+    if ((__QinJavaLangString.equals("primary", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "COLONCOLON"), null))) {
+      let identifier: any = com_slime_java_ast_JavaCstToAst.child(node, "identifier");
+      let ownerName: any = null;
+      if (__qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "THIS"), null)) {
+        ownerName = "this";
+      } else {
+        if (__qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "SUPER"), null)) {
+          ownerName = "super";
+        } else {
+          ownerName = com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType"));
+        }
       }
-      return false;
-    })()) {
+      return new com_slime_java_ast_JavaAstMethodReferenceExpression(ownerName, (__qin_binary__("==", identifier, null) ? "new" : com_slime_java_ast_JavaCstToAst.identifierValue(identifier)));
+    }
+    if ((__QinJavaLangString.equals("primary", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "NEW"), null))) {
       let arrayInitializer: any = com_slime_java_ast_JavaCstToAst.child(node, "arrayInitializer");
       if (__qin_binary__("!=", arrayInitializer, null)) {
         return new com_slime_java_ast_JavaAstArrayLiteralExpression(com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType")), com_slime_java_ast_JavaCstToAst.lowerArrayInitializer(arrayInitializer));
       }
       let arrayCreatorDimensions: any = com_slime_java_ast_JavaCstToAst.child(node, "arrayCreatorDimensions");
       if (__qin_binary__("!=", arrayCreatorDimensions, null)) {
-        return new com_slime_java_ast_JavaAstArrayLiteralExpression(__qin_binary__("+", com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType")), "[]"), __QinJavaUtilList.of());
+        return new com_slime_java_ast_JavaAstArrayLiteralExpression((com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType")) + "[]"), __QinJavaUtilList.of());
       }
-      return new com_slime_java_ast_JavaAstNewExpression(com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType")), com_slime_java_ast_JavaCstToAst.lowerArguments(com_slime_java_ast_JavaCstToAst.child(node, "arguments")));
+      let __qin_arguments: any = com_slime_java_ast_JavaCstToAst.child(node, "arguments");
+      if (__qin_binary__("==", __qin_arguments, null)) {
+        __qin_arguments = com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "classCreatorRest"), "arguments");
+      }
+      return new com_slime_java_ast_JavaAstNewExpression(com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType")), com_slime_java_ast_JavaCstToAst.lowerArguments(__qin_arguments));
     }
-    if ((() => {
-      if (__QinJavaLangString.equals("primary", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "COLONCOLON"), null);
-      }
-      return false;
-    })()) {
-      let identifier: any = com_slime_java_ast_JavaCstToAst.child(node, "identifier");
-      return new com_slime_java_ast_JavaAstMethodReferenceExpression(com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(node, "typeType")), (() => {
-      if (__qin_binary__("==", identifier, null)) {
-        return "new";
-      }
-      return com_slime_java_ast_JavaCstToAst.identifierValue(identifier);
-    })());
-    }
-    if ((() => {
-      if (__QinJavaLangString.equals("primary", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "CLASS"), null);
-      }
-      return false;
-    })()) {
+    if ((__QinJavaLangString.equals("primary", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "CLASS"), null))) {
       return new com_slime_java_ast_JavaAstClassLiteralExpression(com_slime_java_ast_JavaCstToAst.typeNameOrVoid(com_slime_java_ast_JavaCstToAst.child(node, "typeTypeOrVoid")));
     }
-    if ((() => {
-      if ((() => {
-      if (__QinJavaLangString.equals("primary", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "identifier"), null);
-      }
-      return false;
-    })()) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "arguments"), null);
-      }
-      return false;
-    })()) {
+    if ((__QinJavaLangString.equals("primary", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "identifier"), null) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "arguments"), null))) {
       return new com_slime_java_ast_JavaAstMethodCallExpression(new com_slime_java_ast_JavaAstThisExpression(), com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(node, "identifier")), com_slime_java_ast_JavaCstToAst.lowerArguments(com_slime_java_ast_JavaCstToAst.child(node, "arguments")));
     }
-    if ((() => {
-      if (__QinJavaLangString.equals("primary", node.getName())) {
-        return __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "THIS"), null);
-      }
-      return false;
-    })()) {
+    if ((__QinJavaLangString.equals("primary", node.getName()) && __qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "THIS"), null))) {
       return new com_slime_java_ast_JavaAstThisExpression();
+    }
+    let boolLiteral: any = com_slime_java_ast_JavaCstToAst.child(node, "BOOL_LITERAL");
+    if (__qin_binary__("!=", boolLiteral, null)) {
+      return new com_slime_java_ast_JavaAstBooleanLiteral(__QinJavaLangBoolean.parseBoolean(boolLiteral.getValue()));
     }
     if (__QinJavaLangString.equals("identifier", node.getName())) {
       return new com_slime_java_ast_JavaAstIdentifierExpression(com_slime_java_ast_JavaCstToAst.identifierValue(node));
     }
     let children: any = com_slime_java_ast_JavaCstToAst.children(node);
-    if (__qin_binary__("==", children.size(), 1.0)) {
-      return com_slime_java_ast_JavaCstToAst.lowerExpression(children.get(0.0));
+    if (__qin_binary__("==", ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(children), 1.0)) {
+      return com_slime_java_ast_JavaCstToAst.lowerExpression(((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(children, 0.0));
     }
     for (const child of children) {
-      if ((() => {
-      if (child.isToken()) {
-        return false;
-      }
-      return true;
-    })()) {
+      if ((!child.isToken())) {
         return com_slime_java_ast_JavaCstToAst.lowerExpression(child);
       }
     }
-    throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Unsupported expression node: ", node.getName()));
+    throw new __QinJavaLangIllegalArgumentException(("Unsupported expression node: " + node.getName()));
   }
   static lowerLambdaExpression(node: com_subhuti_struct_SubhutiCst): any {
-    return new com_slime_java_ast_JavaAstLambdaExpression(com_slime_java_ast_JavaCstToAst.lowerLambdaParameterNames(com_slime_java_ast_JavaCstToAst.child(node, "lambdaParameters")), (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "expression"), null)) {
-        return null;
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "expression"));
-    })(), (() => {
-      if (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "block"), null)) {
-        return __QinJavaUtilList.of();
-      }
-      return com_slime_java_ast_JavaCstToAst.lowerBlock(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "block"));
-    })());
+    return new com_slime_java_ast_JavaAstLambdaExpression(com_slime_java_ast_JavaCstToAst.lowerLambdaParameterNames(com_slime_java_ast_JavaCstToAst.child(node, "lambdaParameters")), com_slime_java_ast_JavaCstToAst.lowerLambdaParameterTypeNames(com_slime_java_ast_JavaCstToAst.child(node, "lambdaParameters")), (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "expression"), null) ? null : com_slime_java_ast_JavaCstToAst.lowerExpression(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "expression"))), (__qin_binary__("==", com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "block"), null) ? __QinJavaUtilList.of() : com_slime_java_ast_JavaCstToAst.lowerBlock(com_slime_java_ast_JavaCstToAst.child(com_slime_java_ast_JavaCstToAst.child(node, "lambdaBody"), "block"))));
   }
   static lowerLambdaParameterNames(lambdaParameters: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", lambdaParameters, null)) {
@@ -1075,17 +965,26 @@ class com_slime_java_ast_JavaCstToAst {
     }
     return names;
   }
+  static lowerLambdaParameterTypeNames(lambdaParameters: com_subhuti_struct_SubhutiCst): any {
+    if (__qin_binary__("==", lambdaParameters, null)) {
+      return __QinJavaUtilList.of();
+    }
+    let typeNames: any = new __QinJavaUtilArrayList();
+    let formalParameterList: any = com_slime_java_ast_JavaCstToAst.child(lambdaParameters, "formalParameterList");
+    for (const formalParameter of com_slime_java_ast_JavaCstToAst.children(formalParameterList, "formalParameter")) {
+      typeNames.add(com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(formalParameter, "typeType")));
+    }
+    for (const lastFormalParameter of com_slime_java_ast_JavaCstToAst.children(formalParameterList, "lastFormalParameter")) {
+      typeNames.add((com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(lastFormalParameter, "typeType")) + "[]"));
+    }
+    return typeNames;
+  }
   static lowerLeftAssociative(node: com_subhuti_struct_SubhutiCst, operatorTokenNames: any): any {
     let children: any = com_slime_java_ast_JavaCstToAst.children(node);
     let current: any = null;
     let operator: any = null;
     for (const child of children) {
-      if ((() => {
-      if (child.isToken()) {
-        return operatorTokenNames.contains(child.getName());
-      }
-      return false;
-    })()) {
+      if ((child.isToken() && ((__qin_collection, __qin_value) => Array.isArray(__qin_collection) ? __qin_collection.some((__qin_item) => __qin_java_hash_key_equals__(__qin_item, __qin_value)) : __qin_collection.contains(__qin_value))(operatorTokenNames, child.getName()))) {
         operator = child.getValue();
         continue;
       }
@@ -1103,7 +1002,7 @@ class com_slime_java_ast_JavaCstToAst {
       }
     }
     if (__qin_binary__("==", current, null)) {
-      throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Expected expression under ", node.getName()));
+      throw new __QinJavaLangIllegalArgumentException(("Expected expression under " + node.getName()));
     }
     return current;
   }
@@ -1112,12 +1011,7 @@ class com_slime_java_ast_JavaCstToAst {
     let current: any = null;
     let operator: any = null;
     for (const child of children) {
-      if ((() => {
-      if (child.isToken()) {
-        return __QinJavaUtilList.of("LT", "GT", "LE", "GE", "INSTANCEOF").contains(child.getName());
-      }
-      return false;
-    })()) {
+      if ((child.isToken() && __QinJavaUtilList.of("LT", "GT", "LE", "GE", "INSTANCEOF").contains(child.getName()))) {
         operator = child.getValue();
         continue;
       }
@@ -1125,29 +1019,14 @@ class com_slime_java_ast_JavaCstToAst {
         continue;
       }
       if (__QinJavaLangString.equals("pattern", child.getName())) {
-        if ((() => {
-      if (__qin_binary__("==", current, null)) {
-        return true;
-      }
-      return (() => {
-      if (__QinJavaLangString.equals("instanceof", operator)) {
-        return false;
-      }
-      return true;
-    })();
-    })()) {
+        if ((__qin_binary__("==", current, null) || !__QinJavaLangString.equals("instanceof", operator))) {
           throw new __QinJavaLangIllegalArgumentException("Unexpected Java pattern under relationalExpression");
         }
         current = new com_slime_java_ast_JavaAstInstanceofPatternExpression(current, com_slime_java_ast_JavaCstToAst.typeName(com_slime_java_ast_JavaCstToAst.child(child, "typeType")), com_slime_java_ast_JavaCstToAst.identifierValue(com_slime_java_ast_JavaCstToAst.child(child, "identifier")));
         operator = null;
         continue;
       }
-      if ((() => {
-      if (__QinJavaLangString.equals("typeType", child.getName())) {
-        return __QinJavaLangString.equals("instanceof", operator);
-      }
-      return false;
-    })()) {
+      if ((__QinJavaLangString.equals("typeType", child.getName()) && __QinJavaLangString.equals("instanceof", operator))) {
         if (__qin_binary__("==", current, null)) {
           throw new __QinJavaLangIllegalArgumentException("Unexpected Java instanceof type under relationalExpression");
         }
@@ -1166,7 +1045,7 @@ class com_slime_java_ast_JavaCstToAst {
       }
     }
     if (__qin_binary__("==", current, null)) {
-      throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Expected expression under ", node.getName()));
+      throw new __QinJavaLangIllegalArgumentException(("Expected expression under " + node.getName()));
     }
     return current;
   }
@@ -1192,10 +1071,32 @@ class com_slime_java_ast_JavaCstToAst {
     for (const selector of com_slime_java_ast_JavaCstToAst.children(node, "selector")) {
       current = com_slime_java_ast_JavaCstToAst.lowerSelector(current, selector);
     }
+    if (__qin_binary__("!=", com_slime_java_ast_JavaCstToAst.child(node, "COLONCOLON"), null)) {
+      let identifier: any = com_slime_java_ast_JavaCstToAst.child(node, "identifier");
+      return new com_slime_java_ast_JavaAstMethodReferenceExpression(com_slime_java_ast_JavaCstToAst.methodReferenceOwnerName(current), (__qin_binary__("==", identifier, null) ? "new" : com_slime_java_ast_JavaCstToAst.identifierValue(identifier)));
+    }
     for (const postfixOp of com_slime_java_ast_JavaCstToAst.children(node, "postfixOp")) {
       current = new com_slime_java_ast_JavaAstUpdateExpression(current, com_slime_java_ast_JavaCstToAst.updateOperatorValue(postfixOp), false);
     }
     return current;
+  }
+  static methodReferenceOwnerName(expression: com_slime_java_ast_JavaAstExpression): any {
+    let identifierExpression: any = null;
+    let memberAccessExpression: any = null;
+    let methodCallExpression: any = null;
+    if ((() => { const __qin_pattern_value = expression; return __qin_instanceof__(__qin_pattern_value, com_slime_java_ast_JavaAstIdentifierExpression) && (identifierExpression = __qin_pattern_value, true); })()) {
+      return identifierExpression.name();
+    }
+    if ((() => { const __qin_instanceof_value = expression; return __qin_java_implements(__qin_instanceof_value, "com.slime.java.ast.JavaAstThisExpression"); })()) {
+      return "this";
+    }
+    if ((() => { const __qin_pattern_value = expression; return __qin_instanceof__(__qin_pattern_value, com_slime_java_ast_JavaAstMemberAccessExpression) && (memberAccessExpression = __qin_pattern_value, true); })()) {
+      return (com_slime_java_ast_JavaCstToAst.methodReferenceOwnerName(memberAccessExpression.receiver()) + "." + memberAccessExpression.propertyName());
+    }
+    if (((() => { const __qin_pattern_value = expression; return __qin_instanceof__(__qin_pattern_value, com_slime_java_ast_JavaAstMethodCallExpression) && (methodCallExpression = __qin_pattern_value, true); })() && methodCallExpression.__qin_arguments().isEmpty())) {
+      return (com_slime_java_ast_JavaCstToAst.methodReferenceOwnerName(methodCallExpression.receiver()) + "." + methodCallExpression.methodName() + "()");
+    }
+    throw new __QinJavaLangIllegalArgumentException(("Unsupported Java method reference owner expression: " + expression));
   }
   static updateOperatorValue(node: com_subhuti_struct_SubhutiCst): any {
     for (const child of com_slime_java_ast_JavaCstToAst.children(node)) {
@@ -1226,7 +1127,7 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("!=", expression, null)) {
       return new com_slime_java_ast_JavaAstArrayAccessExpression(receiver, com_slime_java_ast_JavaCstToAst.lowerExpression(expression));
     }
-    throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Unsupported Java selector: ", selector.toTreeString()));
+    throw new __QinJavaLangIllegalArgumentException(("Unsupported Java selector: " + selector.toTreeString()));
   }
   static lowerArguments(__qin_arguments: com_subhuti_struct_SubhutiCst): any {
     let expressionList: any = com_slime_java_ast_JavaCstToAst.child(__qin_arguments, "expressionList");
@@ -1258,57 +1159,52 @@ class com_slime_java_ast_JavaCstToAst {
     return elements;
   }
   static numberValue(value: string): any {
-    if ((() => {
-      if (__qin_binary__("==", value, null)) {
-        return true;
-      }
-      return __QinJavaLangString.isBlank(value);
-    })()) {
+    if ((__qin_binary__("==", value, null) || __QinJavaLangString.isBlank(value))) {
       return 0.0;
     }
-    return __QinJavaLangDouble.parseDouble(value.replace("_", ""));
+    let normalized: any = value.replace("_", "");
+    if (com_slime_java_ast_JavaCstToAst.hasNumberTypeSuffix(normalized)) {
+      normalized = __QinJavaLangString.substring(normalized, 0.0, __qin_binary__("-", __QinJavaLangString.length(normalized), 1.0));
+    }
+    if ((__QinJavaLangString.startsWith(normalized, "0x") || __QinJavaLangString.startsWith(normalized, "0X"))) {
+      if ((__qin_binary__(">=", normalized.indexOf("."), 0.0) || __qin_binary__(">=", normalized.indexOf("p"), 0.0) || __qin_binary__(">=", normalized.indexOf("P"), 0.0))) {
+        return __QinJavaLangDouble.parseDouble(normalized);
+      }
+      return new __QinJavaMathBigInteger(__QinJavaLangString.substring(normalized, 2.0), 16.0).doubleValue();
+    }
+    if ((__QinJavaLangString.startsWith(normalized, "0b") || __QinJavaLangString.startsWith(normalized, "0B"))) {
+      return new __QinJavaMathBigInteger(__QinJavaLangString.substring(normalized, 2.0), 2.0).doubleValue();
+    }
+    if ((__qin_binary__(">", __QinJavaLangString.length(normalized), 1.0) && __qin_binary__("==", __QinJavaLangString.charAt(normalized, 0.0), "0") && normalized.chars().allMatch(__qin_java_functional((ch) => {
+      return (__qin_binary__(">=", ch, "0") && __qin_binary__("<=", ch, "7"));
+    })))) {
+      return new __QinJavaMathBigInteger(__QinJavaLangString.substring(normalized, 1.0), 8.0).doubleValue();
+    }
+    return __QinJavaLangDouble.parseDouble(normalized);
+  }
+  static hasNumberTypeSuffix(value: string): any {
+    if ((__qin_binary__("==", value, null) || __QinJavaLangString.isEmpty(value))) {
+      return false;
+    }
+    let suffix: any = __QinJavaLangString.charAt(value, __qin_binary__("-", __QinJavaLangString.length(value), 1.0));
+    return (__qin_binary__("==", suffix, "l") || __qin_binary__("==", suffix, "L") || __qin_binary__("==", suffix, "f") || __qin_binary__("==", suffix, "F") || __qin_binary__("==", suffix, "d") || __qin_binary__("==", suffix, "D"));
   }
   static isIntegralNumberToken(tokenName: string): any {
-    return (() => {
-      if ((() => {
-      if ((() => {
-      if (__QinJavaLangString.equals("DECIMAL_LITERAL", tokenName)) {
-        return true;
-      }
-      return __QinJavaLangString.equals("HEX_LITERAL", tokenName);
-    })()) {
-        return true;
-      }
-      return __QinJavaLangString.equals("OCT_LITERAL", tokenName);
-    })()) {
-        return true;
-      }
-      return __QinJavaLangString.equals("BINARY_LITERAL", tokenName);
-    })();
+    return (__QinJavaLangString.equals("DECIMAL_LITERAL", tokenName) || __QinJavaLangString.equals("HEX_LITERAL", tokenName) || __QinJavaLangString.equals("OCT_LITERAL", tokenName) || __QinJavaLangString.equals("BINARY_LITERAL", tokenName));
   }
   static charLiteralText(value: string): any {
     let text: any = com_slime_java_ast_JavaCstToAst.unquoteString(value);
-    if ((() => {
-      if (__qin_binary__("==", text, null)) {
-        return true;
-      }
-      return __QinJavaLangString.isEmpty(text);
-    })()) {
-      throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Empty Java char literal: ", value));
+    if ((__qin_binary__("==", text, null) || __QinJavaLangString.isEmpty(text))) {
+      throw new __QinJavaLangIllegalArgumentException(("Empty Java char literal: " + value));
     }
     let first: any = text.codePointAt(0.0);
     if (__qin_binary__("==", __QinJavaLangCharacter.charCount(first), __QinJavaLangString.length(text))) {
       return text;
     }
-    throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Invalid Java char literal: ", value));
+    throw new __QinJavaLangIllegalArgumentException(("Invalid Java char literal: " + value));
   }
   static unquoteString(value: string): any {
-    if ((() => {
-      if (__qin_binary__("==", value, null)) {
-        return true;
-      }
-      return __qin_binary__("<", __QinJavaLangString.length(value), 2.0);
-    })()) {
+    if ((__qin_binary__("==", value, null) || __qin_binary__("<", __QinJavaLangString.length(value), 2.0))) {
       return value;
     }
     return com_slime_java_ast_JavaCstToAst.decodeJavaEscapes(__QinJavaLangString.substring(value, 1.0, __qin_binary__("-", __QinJavaLangString.length(value), 1.0)), value);
@@ -1322,70 +1218,60 @@ class com_slime_java_ast_JavaCstToAst {
         continue;
       }
       if (__qin_binary__(">=", __qin_binary__("+", index, 1.0), __QinJavaLangString.length(text))) {
-        throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Invalid Java string literal: ", literal));
+        throw new __QinJavaLangIllegalArgumentException(("Invalid Java string literal: " + literal));
       }
       let escape: any = __QinJavaLangString.charAt(text, ++index);
       switch (escape) {
-        case "b":
+        case "b": {
           out.append("\b");
-        case "t":
+        }
+        case "t": {
           out.append("\t");
-        case "n":
+        }
+        case "n": {
           out.append("\n");
-        case "f":
+        }
+        case "f": {
           out.append("\f");
-        case "r":
+        }
+        case "r": {
           out.append("\r");
-        case "\"":
+        }
+        case "\"": {
           out.append("\"");
-        case "'":
+        }
+        case "'": {
           out.append("'");
-        case "\\":
+        }
+        case "\\": {
           out.append("\\");
-        case "u":
-          while ((() => {
-      if (__qin_binary__("<", __qin_binary__("+", index, 1.0), __QinJavaLangString.length(text))) {
-        return __qin_binary__("==", __QinJavaLangString.charAt(text, __qin_binary__("+", index, 1.0)), "u");
-      }
-      return false;
-    })()) {
+        }
+        case "u": {
+          while ((__qin_binary__("<", __qin_binary__("+", index, 1.0), __QinJavaLangString.length(text)) && __qin_binary__("==", __QinJavaLangString.charAt(text, __qin_binary__("+", index, 1.0)), "u"))) {
             index++;
           }
           if (__qin_binary__(">=", __qin_binary__("+", index, 4.0), __QinJavaLangString.length(text))) {
-            throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Invalid Java unicode escape: ", literal));
+            throw new __QinJavaLangIllegalArgumentException(("Invalid Java unicode escape: " + literal));
           }
           out.append((__QinJavaLangInteger.parseInt(__QinJavaLangString.substring(text, __qin_binary__("+", index, 1.0), __qin_binary__("+", index, 5.0)), 16.0) | 0));
           index += 4.0;
-        default:
-          if ((() => {
-      if (__qin_binary__("<", escape, "0")) {
-        return true;
-      }
-      return __qin_binary__(">", escape, "7");
-    })()) {
-            throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Invalid Java escape sequence: ", literal));
+        }
+        default: {
+          if ((__qin_binary__("<", escape, "0") || __qin_binary__(">", escape, "7"))) {
+            throw new __QinJavaLangIllegalArgumentException(("Invalid Java escape sequence: " + literal));
           }
           let end: any = index;
-          let maxEnd: any = (() => {
-      if (__qin_binary__("<=", escape, "3")) {
-        return Math.min(__qin_binary__("+", index, 2.0), __qin_binary__("-", __QinJavaLangString.length(text), 1.0));
-      }
-      return Math.min(__qin_binary__("+", index, 1.0), __qin_binary__("-", __QinJavaLangString.length(text), 1.0));
-    })();
+          let maxEnd: any = (__qin_binary__("<=", escape, "3") ? Math.min(__qin_binary__("+", index, 2.0), __qin_binary__("-", __QinJavaLangString.length(text), 1.0)) : Math.min(__qin_binary__("+", index, 1.0), __qin_binary__("-", __QinJavaLangString.length(text), 1.0)));
           while (__qin_binary__("<", end, maxEnd)) {
             let digit: any = __QinJavaLangString.charAt(text, __qin_binary__("+", end, 1.0));
-            if ((() => {
-      if (__qin_binary__("<", digit, "0")) {
-        return true;
-      }
-      return __qin_binary__(">", digit, "7");
-    })()) {
+            if ((__qin_binary__("<", digit, "0") || __qin_binary__(">", digit, "7"))) {
               break;
             }
             end++;
           }
           out.append((__QinJavaLangInteger.parseInt(__QinJavaLangString.substring(text, index, __qin_binary__("+", end, 1.0)), 8.0) | 0));
           index = end;
+        }
       }
     }
     return out.toString();
@@ -1395,12 +1281,7 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("==", qualifiedName, null)) {
       qualifiedName = com_slime_java_ast_JavaCstToAst.child(node, "importQualifiedName");
     }
-    return com_slime_java_ast_JavaCstToAst.tokenText((() => {
-      if (__qin_binary__("==", qualifiedName, null)) {
-        return node;
-      }
-      return qualifiedName;
-    })());
+    return com_slime_java_ast_JavaCstToAst.tokenText((__qin_binary__("==", qualifiedName, null) ? node : qualifiedName));
   }
   static lowerAnnotations(node: com_subhuti_struct_SubhutiCst): any {
     if (__qin_binary__("==", node, null)) {
@@ -1409,32 +1290,7 @@ class com_slime_java_ast_JavaCstToAst {
     let annotations: any = new __QinJavaUtilArrayList();
     for (const child of com_slime_java_ast_JavaCstToAst.children(node)) {
       let name: any = child.getName();
-      if ((() => {
-      if ((() => {
-      if ((() => {
-      if (__QinJavaLangString.equals("classOrInterfaceModifier", name)) {
-        return false;
-      }
-      return true;
-    })()) {
-        return (() => {
-      if (__QinJavaLangString.equals("modifier", name)) {
-        return false;
-      }
-      return true;
-    })();
-      }
-      return false;
-    })()) {
-        return (() => {
-      if (__QinJavaLangString.equals("variableModifier", name)) {
-        return false;
-      }
-      return true;
-    })();
-      }
-      return false;
-    })()) {
+      if ((!__QinJavaLangString.equals("classOrInterfaceModifier", name) && !__QinJavaLangString.equals("modifier", name) && !__QinJavaLangString.equals("variableModifier", name))) {
         continue;
       }
       let annotation: any = com_slime_java_ast_JavaCstToAst.findFirst(child, "annotation");
@@ -1453,12 +1309,7 @@ class com_slime_java_ast_JavaCstToAst {
       return com_slime_java_ast_JavaCstToAst.typeName(typeType);
     }
     let voidToken: any = com_slime_java_ast_JavaCstToAst.child(node, "VOID");
-    return (() => {
-      if (__qin_binary__("==", voidToken, null)) {
-        return com_slime_java_ast_JavaCstToAst.tokenText(node);
-      }
-      return voidToken.getValue();
-    })();
+    return (__qin_binary__("==", voidToken, null) ? com_slime_java_ast_JavaCstToAst.tokenText(node) : voidToken.getValue());
   }
   static typeName(node: com_subhuti_struct_SubhutiCst): any {
     return com_slime_java_ast_JavaCstToAst.tokenText(node);
@@ -1469,12 +1320,7 @@ class com_slime_java_ast_JavaCstToAst {
       token = com_slime_java_ast_JavaCstToAst.firstLeafToken(node);
     }
     if (__qin_binary__("==", token, null)) {
-      throw new __QinJavaLangIllegalArgumentException(__qin_binary__("+", "Expected identifier token under ", (() => {
-      if (__qin_binary__("==", node, null)) {
-        return "null";
-      }
-      return node.getName();
-    })()));
+      throw new __QinJavaLangIllegalArgumentException(("Expected identifier token under " + (__qin_binary__("==", node, null) ? "null" : node.getName())));
     }
     return token.getValue();
   }
@@ -1514,12 +1360,7 @@ class com_slime_java_ast_JavaCstToAst {
     if (__qin_binary__("==", node, null)) {
       return null;
     }
-    if ((() => {
-      if (node.isToken()) {
-        return __QinJavaLangString.equals(tokenName, node.getName());
-      }
-      return false;
-    })()) {
+    if ((node.isToken() && __QinJavaLangString.equals(tokenName, node.getName()))) {
       return node;
     }
     for (const child of com_slime_java_ast_JavaCstToAst.children(node)) {
@@ -1561,20 +1402,10 @@ class com_slime_java_ast_JavaCstToAst {
     return null;
   }
   static child(node: com_subhuti_struct_SubhutiCst, name: string): any {
-    return (() => {
-      if (__qin_binary__("==", node, null)) {
-        return null;
-      }
-      return node.getChild(name);
-    })();
+    return (__qin_binary__("==", node, null) ? null : node.getChild(name));
   }
   static lastChild(node: com_subhuti_struct_SubhutiCst, name: string): any {
-    return (() => {
-      if (com_slime_java_ast_JavaCstToAst.children(node, name).isEmpty()) {
-        return null;
-      }
-      return com_slime_java_ast_JavaCstToAst.children(node, name).get(__qin_binary__("-", com_slime_java_ast_JavaCstToAst.children(node, name).size(), 1.0));
-    })();
+    return (((__qin_collection) => __qin_collection == null ? true : (Array.isArray(__qin_collection) ? __qin_collection.length === 0 : __qin_collection.isEmpty()))(com_slime_java_ast_JavaCstToAst.children(node, name)) ? null : ((__qin_collection, __qin_index) => Array.isArray(__qin_collection) ? __qin_collection[Number(__qin_index)] : __qin_collection.get(__qin_index))(com_slime_java_ast_JavaCstToAst.children(node, name), __qin_binary__("-", ((__qin_collection) => __qin_collection == null ? 0 : (Array.isArray(__qin_collection) ? __qin_collection.length : __qin_collection.size()))(com_slime_java_ast_JavaCstToAst.children(node, name)), 1.0)));
   }
   static children(...__qin_args: any[]): any {
     if (__qin_args.length === 2 && (__qin_args[0] === null || __qin_instanceof__(__qin_args[0], com_subhuti_struct_SubhutiCst)) && (__qin_args[1] === null || typeof __qin_args[1] === "string")) return this.__qin_overload_children_2_0(__qin_args[0], __qin_args[1]);
@@ -1582,40 +1413,20 @@ class com_slime_java_ast_JavaCstToAst {
     throw new Error("Unsupported Java overload: children/" + __qin_args.length);
   }
   static __qin_overload_children_2_0(node: com_subhuti_struct_SubhutiCst, name: string): any {
-    return (() => {
-      if (__qin_binary__("==", node, null)) {
-        return __QinJavaUtilList.of();
-      }
-      return node.getChildren(name);
-    })();
+    return (__qin_binary__("==", node, null) ? __QinJavaUtilList.of() : node.getChildren(name));
   }
   static __qin_overload_children_1_1(node: com_subhuti_struct_SubhutiCst): any {
-    return (() => {
-      if ((() => {
-      if (__qin_binary__("==", node, null)) {
-        return true;
-      }
-      return __qin_binary__("==", node.getChildren(), null);
-    })()) {
-        return __QinJavaUtilList.of();
-      }
-      return node.getChildren();
-    })();
+    return ((__qin_binary__("==", node, null) || __qin_binary__("==", node.getChildren(), null)) ? __QinJavaUtilList.of() : node.getChildren());
   }
   static currentTokenInfo(parser: com_slime_java_JavaParser): any {
     let token: any = parser.curToken();
     if (__qin_binary__("==", token, null)) {
       return "EOF";
     }
-    return __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", token.getTokenName(), " '"), token.getTokenValue()), "'");
+    return (token.getTokenName() + " '" + token.getTokenValue() + "'" + " at line " + token.getRowNum() + ", column " + token.getColumnStartNum() + ", offset " + token.getIndex() + ", parserFail=" + parser.isParserFail() + ", firstStaticFailure=" + parser.getFirstStaticFailureReport() + ", furthestStaticFailure=" + parser.getFurthestStaticFailureReport() + ", lastStaticNoMatch=" + parser.getLastStaticNoMatchReport());
   }
   static isAtEof(parser: com_slime_java_JavaParser): any {
-    return (() => {
-      if (__qin_binary__("==", parser.curToken(), null)) {
-        return true;
-      }
-      return parser.curToken().isEof();
-    })();
+    return (__qin_binary__("==", parser.curToken(), null) || parser.curToken().isEof());
   }
 }
 const JavaCstToAst = com_slime_java_ast_JavaCstToAst;

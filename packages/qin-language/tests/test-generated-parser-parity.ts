@@ -526,6 +526,9 @@ function runJavaParserBatchProbe(parserCases: ParserCase[]): Map<string, boolean
         continue
       }
       const fields = parseProbeFields(line)
+      if (!fields.has('success')) {
+        continue
+      }
       const caseIndex = Number(fields.get('case'))
       const success = fields.get('success')
       if (!Number.isInteger(caseIndex) || caseIndex < 0 || caseIndex >= parserCases.length) {

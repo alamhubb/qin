@@ -1,16 +1,16 @@
 import { com_slime_java_JavaTokenConsumer, com_slime_java_JavaTokenConsumer as JavaTokenConsumer } from "../JavaTokenConsumer.ts";
 import { com_slime_java_JavaTokens, com_slime_java_JavaTokens as JavaTokens } from "../JavaTokens.ts";
-import { com_subhuti_parser_SubhutiParser, com_subhuti_parser_SubhutiParser as SubhutiParser } from "../../../subhuti/parser/SubhutiParser.ts";
+import { com_subhuti_parser_SubhutiParser, com_subhuti_parser_SubhutiParser as SubhutiParser, com_subhuti_parser_SubhutiParser$StaticGrammarRuntime, com_subhuti_parser_SubhutiParser$StaticGrammarRuntime as StaticGrammarRuntime, com_subhuti_parser_SubhutiParser$StaticPrefix, com_subhuti_parser_SubhutiParser$StaticPrefix as StaticPrefix, com_subhuti_parser_SubhutiParser$StaticChoice, com_subhuti_parser_SubhutiParser$StaticChoice as StaticChoice } from "../../../subhuti/parser/SubhutiParser.ts";
 import { com_subhuti_struct_SubhutiCst, com_subhuti_struct_SubhutiCst as SubhutiCst, com_subhuti_struct_SubhutiCst$Builder } from "../../../subhuti/struct/SubhutiCst.ts";
 import { com_subhuti_struct_SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken as SubhutiMatchToken, com_subhuti_struct_SubhutiMatchToken$Builder } from "../../../subhuti/struct/SubhutiMatchToken.ts";
 import { com_subhuti_parser_SubhutiParserFinal, com_subhuti_parser_SubhutiParserFinal as SubhutiParserFinal } from "../../../subhuti/parser/SubhutiParserFinal.ts";
-import { com_subhuti_parser_SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators as SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher as StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext as AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext as AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame as ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames as CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$RecordedAlternativePrediction, com_subhuti_parser_SubhutiParserCombinators$RecordedAlternativePrediction as RecordedAlternativePrediction } from "../../../subhuti/parser/SubhutiParserCombinators.ts";
-import { com_subhuti_parser_SubhutiParserCore, com_subhuti_parser_SubhutiParserCore as SubhutiParserCore, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult as RuleExecutionResult } from "../../../subhuti/parser/SubhutiParserCore.ts";
-import { com_subhuti_parser_SubhutiParserState, com_subhuti_parser_SubhutiParserState as SubhutiParserState, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException as SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException as SubhutiFirstTokenUnknownException } from "../../../subhuti/parser/SubhutiParserState.ts";
+import { com_subhuti_parser_SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators as SubhutiParserCombinators, com_subhuti_parser_SubhutiParserCombinators$StaticSourceReturnControl, com_subhuti_parser_SubhutiParserCombinators$StaticSourceReturnControl as StaticSourceReturnControl, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$StopTokenMatcher as StopTokenMatcher, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorOrBranchContext as AllowErrorOrBranchContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$AllowErrorContext as AllowErrorContext, com_subhuti_parser_SubhutiParserCombinators$PlannedAlternativeIndexes, com_subhuti_parser_SubhutiParserCombinators$PlannedAlternativeIndexes as PlannedAlternativeIndexes, com_subhuti_parser_SubhutiParserCombinators$StaticPlannedCandidates, com_subhuti_parser_SubhutiParserCombinators$StaticPlannedCandidates as StaticPlannedCandidates, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$ManyTolerantFrame as ManyTolerantFrame, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenNames as CurrentTokenNames, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenKeys, com_subhuti_parser_SubhutiParserCombinators$CurrentTokenKeys as CurrentTokenKeys } from "../../../subhuti/parser/SubhutiParserCombinators.ts";
+import { com_subhuti_parser_SubhutiParserCore, com_subhuti_parser_SubhutiParserCore as SubhutiParserCore, com_subhuti_parser_SubhutiParserCore$StaticInvocationArguments, com_subhuti_parser_SubhutiParserCore$StaticInvocationArguments as StaticInvocationArguments, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$RuleExecutionResult as RuleExecutionResult, com_subhuti_parser_SubhutiParserCore$StaticExecutionMode, com_subhuti_parser_SubhutiParserCore$StaticExecutionMode as StaticExecutionMode, com_subhuti_parser_SubhutiParserCore$StaticDebugHooks, com_subhuti_parser_SubhutiParserCore$StaticDebugHooks as StaticDebugHooks, com_subhuti_parser_SubhutiParserCore$CacheWork, com_subhuti_parser_SubhutiParserCore$CacheWork as CacheWork, com_subhuti_parser_SubhutiParserCore$FailureWork, com_subhuti_parser_SubhutiParserCore$FailureWork as FailureWork } from "../../../subhuti/parser/SubhutiParserCore.ts";
+import { com_subhuti_parser_SubhutiParserState, com_subhuti_parser_SubhutiParserState as SubhutiParserState, com_subhuti_parser_SubhutiParserState$ActiveRuleInvocations, com_subhuti_parser_SubhutiParserState$ActiveRuleInvocations as ActiveRuleInvocations, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenRecordedException as SubhutiFirstTokenRecordedException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException, com_subhuti_parser_SubhutiParserState$SubhutiFirstTokenUnknownException as SubhutiFirstTokenUnknownException } from "../../../subhuti/parser/SubhutiParserState.ts";
 import { com_subhuti_lookahead_SubhutiTokenLookahead } from "../../../subhuti/lookahead/SubhutiTokenLookahead.ts";
 
 // Generated by Qin TypeScript backend
-import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_functional, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__, __QinJavaUtilHashSet, __QinJavaUtilUnmodifiableSet } from "@qin/java-sdk-js";
+import { __qin_builtin_constructor__, __qin_java_pattern_regexp__, __QinJavaLangString, __qin_java_class_info__, __qin_binary__, __qin_instanceof__, __qin_logical__, __qin_java_hash_key_equals__, __qin_java_string_hash_code__, __qin_java_identity_hash_code__, __qin_java_value_hash_code__, __qin_java_values_equal__, __qin_java_hash_key__, __QinJavaUtilHashSet, __QinJavaUtilUnmodifiableSet } from "@qin/java-sdk-js";
 
 function __qin_structural_object__(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -20,79 +20,42 @@ const HashSet = __QinJavaUtilHashSet;
 class com_slime_java_base_JavaParserBase extends com_subhuti_parser_SubhutiParser {
   static __qin_field_CONTEXTUAL_KEYWORDS: any = null as any;
   constructor(...__qin_args: any[]) {
-    switch (__qin_args.length) {
-      case 1: {
-        const sourceCode: any = __qin_args[0];
-        super(sourceCode, __qin_java_class_info__(com_slime_java_JavaTokenConsumer, { name: "com.slime.java.JavaTokenConsumer" }), com_slime_java_JavaTokens.getTokens());
-        this.__qin_constructor_com_slime_java_base_JavaParserBase_1(sourceCode);
-        return;
-      }
-      default: throw new Error("Unsupported Java constructor arity: JavaParserBase/" + __qin_args.length);
+    if (__qin_args.length === 1 && (__qin_args[0] === null || typeof __qin_args[0] === "string")) {
+      const sourceCode: any = __qin_args[0];
+      super(sourceCode, __qin_java_class_info__(com_slime_java_JavaTokenConsumer, { name: "com.slime.java.JavaTokenConsumer" }), com_slime_java_JavaTokens.getTokens());
+      this.__qin_constructor_com_slime_java_base_JavaParserBase_1_0(sourceCode);
+      return;
     }
+    throw new Error("Unsupported Java constructor overload: JavaParserBase/" + __qin_args.length);
   }
-  __qin_constructor_com_slime_java_base_JavaParserBase_1(sourceCode: string): void {
+  __qin_constructor_com_slime_java_base_JavaParserBase_1_0(sourceCode: string): void {
     null;
   }
   isContextual(value: string): any {
-    return (() => {
-      if ((() => {
-      if (this.match("IDENTIFIER")) {
-        return __qin_binary__("!=", this.curToken(), null);
-      }
-      return false;
-    })()) {
-        return __QinJavaLangString.equals(value, this.curToken().getTokenValue());
-      }
-      return false;
-    })();
+    return (this.match("IDENTIFIER") && __qin_binary__("!=", this.curToken(), null) && __QinJavaLangString.equals(value, this.curToken().getTokenValue()));
   }
   consumeContextual(value: string): any {
     let current: any = this.curToken();
-    if ((() => {
-      if ((() => {
-      if (__qin_binary__("!=", current, null)) {
-        return __QinJavaLangString.equals("IDENTIFIER", current.getTokenName());
-      }
-      return false;
-    })()) {
-        return __QinJavaLangString.equals(value, current.getTokenValue());
-      }
-      return false;
-    })()) {
+    if ((__qin_binary__("!=", current, null) && __QinJavaLangString.equals("IDENTIFIER", current.getTokenName()) && __QinJavaLangString.equals(value, current.getTokenValue()))) {
       return this.token("IDENTIFIER");
     }
     this.setParseFail();
     return null;
   }
   isContextualKeyword(value: string): any {
-    return com_slime_java_base_JavaParserBase.__qin_field_CONTEXTUAL_KEYWORDS.contains(value);
+    return ((__qin_collection, __qin_value) => Array.isArray(__qin_collection) ? __qin_collection.some((__qin_item) => __qin_java_hash_key_equals__(__qin_item, __qin_value)) : __qin_collection.contains(__qin_value))(com_slime_java_base_JavaParserBase.__qin_field_CONTEXTUAL_KEYWORDS, value);
   }
   token(tokenName: string): any {
     return super.token(tokenName);
   }
   match(tokenName: string): any {
-    return (() => {
-      if (__qin_binary__("!=", this.curToken(), null)) {
-        return __QinJavaLangString.equals(tokenName, this.curToken().getTokenName());
-      }
-      return false;
-    })();
+    return (__qin_binary__("!=", this.curToken(), null) && __QinJavaLangString.equals(tokenName, this.curToken().getTokenName()));
   }
   lookahead(offset: number, tokenName: string): any {
-    return (() => {
-      if (__qin_binary__("!=", this.LA(offset), null)) {
-        return __QinJavaLangString.equals(tokenName, this.LA(offset).getTokenName());
-      }
-      return false;
-    })();
+    return (__qin_binary__("!=", this.LA(offset), null) && __QinJavaLangString.equals(tokenName, this.LA(offset).getTokenName()));
   }
   lookaheadValue(offset: number, value: string): any {
-    return (() => {
-      if (__qin_binary__("!=", this.LA(offset), null)) {
-        return __QinJavaLangString.equals(value, this.LA(offset).getTokenValue());
-      }
-      return false;
-    })();
+    return (__qin_binary__("!=", this.LA(offset), null) && __QinJavaLangString.equals(value, this.LA(offset).getTokenValue()));
   }
 }
 const JavaParserBase = com_slime_java_base_JavaParserBase;

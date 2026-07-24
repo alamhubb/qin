@@ -11,6 +11,7 @@ import {
   type FoldingRange,
   type Hover,
   type LinkedEditingRanges,
+  type LocationLink,
   MarkupKind,
   type Position,
   type Range,
@@ -36,6 +37,7 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
     documentSymbolProvider: true,
     foldingRangeProvider: true,
     hoverProvider: true,
+    implementationProvider: true,
     linkedEditingRangeProvider: true,
     selectionRangeProvider: true,
     workspaceSymbolProvider: {},
@@ -76,6 +78,13 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
           return
         }
         return provideImportPolicyHover(document, sourceUri, position)
+      },
+      provideImplementation(document: TextDocument, position: Position) {
+        const sourceUri = readSourceDocumentUri(context, document.uri)
+        if (!isQinDocument(document) && sourceUri === document.uri) {
+          return []
+        }
+        return provideSourceImplementations(document, position, sourceUri)
       },
       provideFoldingRanges(document: TextDocument) {
         if (!isQinDocument(document)) {
@@ -120,6 +129,106 @@ export const QinLanguageServicePlugin: LanguageServicePlugin = {
       },
     }
   },
+}
+
+export function provideSourceImplementations(document: TextDocument, position: Position, targetUri: string): LocationLink[] {
+  const source = document.getText()
+  const sourceFile = ts.createSourceFile(document.uri, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const offset = document.offsetAt(position)
+  const interfaceName = findInterfaceNameAtOffset(sourceFile, offset)
+    ?? findInterfaceNameByText(sourceFile, readWordAtOffset(source, offset))
+  if (!interfaceName) {
+    return []
+  }
+  const links: LocationLink[] = []
+  const visit = (node: ts.Node) => {
+    if (ts.isClassDeclaration(node)
+        && node.name
+        && classImplementsInterface(node, interfaceName.text)) {
+      links.push(createLocationLink(document, targetUri, node, node.name, interfaceName))
+    }
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(sourceFile, visit)
+  return links
+}
+
+function findInterfaceNameByText(sourceFile: ts.SourceFile, name: string | undefined): ts.Identifier | undefined {
+  if (!name) {
+    return
+  }
+  let found: ts.Identifier | undefined
+  const visit = (node: ts.Node) => {
+    if (found) {
+      return
+    }
+    if (ts.isInterfaceDeclaration(node) && node.name.text === name) {
+      found = node.name
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(sourceFile, visit)
+  return found
+}
+
+function readWordAtOffset(source: string, offset: number): string | undefined {
+  if (offset < 0 || offset > source.length) {
+    return
+  }
+  let start = offset
+  while (start > 0 && /[A-Za-z0-9_$]/.test(source.charAt(start - 1))) {
+    start--
+  }
+  let end = offset
+  while (end < source.length && /[A-Za-z0-9_$]/.test(source.charAt(end))) {
+    end++
+  }
+  return end > start ? source.slice(start, end) : undefined
+}
+
+function findInterfaceNameAtOffset(sourceFile: ts.SourceFile, offset: number): ts.Identifier | undefined {
+  let found: ts.Identifier | undefined
+  const visit = (node: ts.Node) => {
+    if (found) {
+      return
+    }
+    if (ts.isInterfaceDeclaration(node)
+        && offset >= node.name.getStart(sourceFile)
+        && offset <= node.name.getEnd()) {
+      found = node.name
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(sourceFile, visit)
+  return found
+}
+
+function classImplementsInterface(node: ts.ClassDeclaration, interfaceName: string): boolean {
+  return node.heritageClauses?.some(clause =>
+    clause.token === ts.SyntaxKind.ImplementsKeyword
+    && clause.types.some(type => type.expression.getText() === interfaceName)
+  ) === true
+}
+
+function createLocationLink(
+  document: TextDocument,
+  targetUri: string,
+  targetNode: ts.Node,
+  targetName: ts.Node,
+  originName: ts.Node,
+): LocationLink {
+  const targetStart = targetNode.getStart()
+  const targetEnd = targetNode.getEnd()
+  const targetNameStart = targetName.getStart()
+  const targetNameEnd = targetName.getEnd()
+  return {
+    targetUri,
+    targetRange: createRange(document, targetStart, targetEnd),
+    targetSelectionRange: createRange(document, targetNameStart, targetNameEnd),
+    originSelectionRange: createRange(document, originName.getStart(), originName.getEnd()),
+  }
 }
 
 function isQinDocument(document: TextDocument): boolean {
@@ -587,7 +696,8 @@ function findBindingIdentifierName(cst: unknown): unknown | undefined {
     if (found) {
       return
     }
-    if (readCstName(node) === 'BindingIdentifier') {
+    const name = readCstName(node)
+    if (name === 'BindingIdentifier' || name === 'QinObjectName') {
       const token = findToken(node, item => readCstName(item) === 'IdentifierName' && readCstValue(item) !== undefined)
       if (token) {
         found = token
