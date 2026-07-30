@@ -36,39 +36,51 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
         require(parserOutput.outputFile().endsWith(Path.of("com", "slime", "parser", "SlimeParser.ts")),
                 "SlimeParser Java file maps to matching TS path");
         require(parserOutput.code().contains(
-                        "import { com_slime_parser_typescript_SlimeTSDeclarationParser } from \"./typescript/SlimeTSDeclarationParser.ts\";"),
-                "SlimeParser imports direct superclass TS module");
+                        "from \"./SlimeParserRuntimeBase.ts\";"),
+                "SlimeParser imports direct runtime base TS module");
         require(parserOutput.code().contains(
-                        "class com_slime_parser_SlimeParser extends com_slime_parser_typescript_SlimeTSDeclarationParser"),
-                "SlimeParser class declaration remains local");
+                        "class com_slime_parser_SlimeParser extends com_slime_parser_SlimeParserRuntimeBase"),
+                "SlimeParser class declaration remains local and extends runtime base");
         require(parserOutput.code().contains("constructor(...__qin_args: any[])"),
                 "TypeScript backend emits constructor type annotations");
         require(parserOutput.code().contains("__qin_subhuti_rule_cache_key([params])"),
                 "Subhuti rule cache key uses explicit TS parameter array");
         require(!parserOutput.code().contains("__qin_subhuti_rule_cache_key(arguments)"),
                 "Subhuti rule cache key avoids runtime arguments object");
+        require(parserOutput.code().contains(
+                        "import { __qin_subhuti_rule_cache_key } from \"@qin/java-sdk-js/tooling\";"),
+                "SlimeParser TS rule wrappers import the static cache-key array helper");
         String subhutiCoreCode = byBinaryName.get("com.subhuti.parser.SubhutiParserCore").code();
         String subhutiCombinatorsCode = byBinaryName.get("com.subhuti.parser.SubhutiParserCombinators").code();
         require(subhutiCoreCode.contains(
-                        "import { __qin_subhuti_rule_cache_key } from \"@qin/java-sdk-js/tooling\";"),
-                "Subhuti TS runtime imports cache key helper from tooling package");
-        require(subhutiCoreCode.contains("__qin_targetFun.call(this, ...__qin_ruleArgs)"),
-                "Subhuti TS runtime accepts external decorator rule args");
-        require(subhutiCoreCode.contains("__qin_args[3] === null || typeof __qin_args[3] === \"string\""),
-                "Subhuti cacheKey overload keeps string guard");
+                        "import { com_subhuti_parser_SubhutiRuleCacheKey"),
+                "Subhuti TS runtime imports generated local cache-key class");
+        require(subhutiCoreCode.contains(
+                        "return new com_subhuti_parser_SubhutiRuleCacheKey(ruleName, cacheKeyExtra, cursorStamp, mode, lastTokenName);"),
+                "Subhuti TS runtime builds cache keys through explicit generated class constructor");
+        require(!subhutiCoreCode.contains("__qin_subhuti_rule_cache_key(arguments)"),
+                "Subhuti TS runtime does not pass runtime arguments object into cache-key helper");
+        require(subhutiCoreCode.contains("__qin_args.length === 4")
+                        && subhutiCoreCode.contains("typeof __qin_args[3] !== \"undefined\""),
+                "Subhuti cacheKey overload keeps explicit arity and definedness guard");
         String allGeneratedCode = outputs.stream()
                 .map(QinJavaProjectJsCompiler.EsmFileOutput::code)
                 .collect(Collectors.joining("\n"));
-        require(allGeneratedCode.contains("typeof __qin_arg.alt === \"function\""),
-                "Subhuti Alternative varargs guard accepts local TS Alternative.alt");
-        require(allGeneratedCode.contains("typeof __qin_arg.run === \"function\""),
-                "Subhuti Alternative varargs guard accepts local TS Alternative.run");
-        require(subhutiCombinatorsCode.contains(
-                        "Array.from(__qin_args[0]).map((__qin_list_item) => (__qin_list_item === null || __qin_list_item.__qinSubhutiAlternative === true || typeof __qin_list_item.execute === \"function\" ? __qin_list_item : com_subhuti_parser_Alternative.of(__qin_list_item)))"),
-                "Subhuti Or List<Alternative> overload adapts Java List elements");
-        require(subhutiCombinatorsCode.contains(
-                        "alternatives = alternatives.map((__qin_arg) => __qin_java_functional(__qin_arg));"),
-                "Subhuti Runnable varargs overload adapts each Java functional element");
+        QinGeneratedTsStaticAdmissionAudit.Result staticAdmissionAudit =
+                QinGeneratedTsStaticAdmissionAudit.audit(outputs);
+        QinGeneratedTsStaticAdmissionAudit.assertRejectsUnprovenDynamicShapes();
+        require(staticAdmissionAudit.allowedDynamicWrapperCount() > 0,
+                "generated TS static admission audit classifies proven wrapper shapes");
+        require(!allGeneratedCode.contains("__qinSubhutiAlternative")
+                        && !allGeneratedCode.contains("com_subhuti_parser_Alternative.of"),
+                "Subhuti generated TS no longer depends on legacy dynamic Alternative adapter shape");
+        require(subhutiCombinatorsCode.contains("executeFiniteProgramStaticOr(")
+                        && subhutiCombinatorsCode.contains("executeAdaptiveStaticOr(")
+                        && subhutiCombinatorsCode.contains("executeStaticSharedPrefixOr("),
+                "Subhuti generated TS keeps static Or execution families");
+        require(subhutiCombinatorsCode.contains("Sequence(...rules: QinJavaSupplier[])")
+                        && subhutiCombinatorsCode.contains("__qin_functional_rules_0.add(__qin_java_functional(__qin_arg));"),
+                "Subhuti supplier varargs overload adapts each Java functional element explicitly");
         require(parserOutput.code().contains("export { com_slime_parser_SlimeParser };"),
                 "SlimeParser named ESM export");
         require(byBinaryName.containsKey("com.subhuti.struct.SubhutiCst"),
@@ -135,6 +147,8 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
 
         System.out.println("Generated ESM TS files: " + outputRoot);
         System.out.println("Generated ESM TS npm package: @qin/generated-slime-parser-ts");
+        System.out.println("Generated TS static admission wrappers: "
+                + staticAdmissionAudit.allowedDynamicWrapperCount());
         System.out.println("QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain OK");
     }
 

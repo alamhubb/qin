@@ -71,6 +71,95 @@ Unsupported means:
 
 `as any` is not itself a dynamic runtime feature because TypeScript erases it. It becomes relevant only when it hides runtime dynamic behavior such as `obj[key]` on an unknown shape, `fn.call/apply/bind`, optional dynamic method calls, prototype walking, or multi-shape adapters. If the member is a real fixed class method or field, fix the Qin type/interface model so the compiler can see it statically instead of treating the call as dynamic JavaScript.
 
+### 1.1.1 Static Admission Gate
+
+Every new Qin `.js`, `.ts`, `.qin`, generated TypeScript, npm package, or
+runtime helper shape must pass this admission gate before it belongs to the
+standard Qin path:
+
+- the receiver/base type is statically known, or is an explicit Qin-owned
+  builtin/container type
+- the field, method, constructor, or operator name is statically known, unless
+  the value is an explicit `Map`/`Dict`/indexed collection
+- arity, overload, and default-argument behavior are statically known or
+  represented by a Qin-owned overload/default lowering rule
+- lowering targets fixed `.class` fields, methods, constructors, interfaces,
+  records, explicit collection APIs, or Qin-owned builtin APIs
+- frontend JS emission and JVM `.class` emission preserve the same Qin
+  semantics instead of creating two accepted language paths
+
+If a shape fails this gate, the default action is to reject it with a clear
+diagnostic or keep it outside the MVP support surface. On the JVM `.class`
+path, do not downgrade a failed admission to a warning-only helper; emit a
+hard compile-time error at the owning backend boundary. Do not add dynamic
+runtime compatibility merely because a JavaScript engine or third-party npm
+package could execute it.
+
+For third-party packages, failing this gate is an operator decision point. Do
+not silently adapt the package, broaden Qin runtime compatibility, or introduce
+a second execution path. Report the package, exact unsupported shape, why it
+cannot be lowered statically, and the available Qin-owned choices such as
+rejecting the package, writing a facade, selecting a different package entry, or
+changing project source with approval.
+
+### 1.1.2 Generated Static Output Rule
+
+Generated TypeScript produced from Java Slime/Subhuti/Qin sources is expected
+to preserve Java's static intent. Java source being static is not enough by
+itself: the Java-to-TS backend must also emit TypeScript shapes whose receiver,
+method name, and arity are fixed enough for Qin IR and JVM `.class` lowering.
+If static Java source is emitted as dynamic JavaScript behavior, that is a
+generator/backend/lowerer defect, not an accepted compatibility feature.
+
+Allowed generated wrappers are implementation details only when they encode
+static facts. For example, a generated callback wrapper for `Class::method`
+may use an arrow function, but it must know whether the method is static or
+instance-bound and must trim callback metadata to the admitted Java arity. A
+generated `.bind`, `.call`, or `.apply` shape is not automatically accepted as
+general JavaScript dynamic support; it is accepted only when the compiler can
+prove the receiver/method/arity contract and the wrapper lowers to fixed
+`.class` behavior.
+
+If generated parser TS contains dynamic-looking code that cannot be tied to a
+static Java/Qin source fact, fix the generator/backend/lowerer to emit a
+static shape, or reject generation. Do not repair generated output by hand,
+do not add broad runtime `call/apply/bind` compatibility, and do not add a
+legacy parser or CST/AST fallback to hide the issue.
+
+Generated dynamic-looking wrappers must have executable admission coverage.
+`QinGeneratedTsStaticAdmissionAudit` is the current hard gate for generated
+Slime/Subhuti parser TS: it scans generated ESM outputs for `.call`, `.apply`,
+and `.bind`, rejects unproven shapes such as `method.call(receiver)`, and only
+allows patterns that preserve fixed Java/Qin facts, including generated static
+class methods named `call`, generated bound receivers, Java functional
+receivers emitted through `__qin_java_functional(...)`, and fixed helper
+wrappers whose receiver and arity are known. `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain`
+must keep this audit active whenever generated parser ESM files are validated.
+
+The long-term invariant is: supported Java source constructs must compile to
+generated TypeScript that remains statically admissible under this gate. Existing
+generated dynamic-looking wrappers are acceptable only while each occurrence is
+either proven static or being removed as migration debt.
+
+Generated Java/Subhuti/Slime TypeScript must preserve Java member names even
+when the name is a JavaScript keyword token such as `await`, `yield`, `class`,
+or `return`. These names are static class/object member names, not dynamic
+member lookup. The owning parser rule is the property-name/member-name position:
+`ClassElementName`/`LiteralPropertyName` should admit the standard
+`IdentifierName` token set there, while expression, top-level `await`, dynamic
+string lookup, and unknown-receiver calls remain rejected by the normal static
+admission gate. Do not escape a Java API method to `__qin_*` merely because the
+target lexer tokenizes the source spelling as a keyword.
+
+Generated Java/Subhuti/Slime TypeScript class metadata must also preserve the
+generated-local type owner. When `__qin_java_class_info__` carries metadata such
+as `com.slime.ast.AstNode` and the current generated program declares the
+flattened local owner such as `com_slime_ast_AstNode`, the JVM backend must
+resolve to that local generated class/interface before falling back to a real
+Java SDK class. Emitting the original Java class token in that case breaks
+static `instanceof`/filter contracts for generated nodes and is a backend
+resolution defect, not permission for runtime dynamic adaptation.
+
 ### 1.2 Source-Shape Preservation Rule
 
 When Qin accepts a TypeScript/JavaScript source form, the JVM `.class` path should preserve the same public source-level call and member shape wherever the semantics are static and Qin-owned.
@@ -254,6 +343,12 @@ These builtins are:
 - Qin-defined at the language/runtime level
 - Java-backed on the JVM target
 - not required to match Node/V8 edge cases exactly
+- statically owned by Qin runtime facade classes when they are JS builtins.
+  For example, source-level `Set<T>` and `new Set()` lower to
+  `com.qin.lang.runtime.JavaEsmSetObject`, with fixed `size`, `add`, `has`,
+  `delete`, `clear`, `forEach`, and `values` members. They must not be
+  rewritten to `java.util.Set`; Java SDK collection facades such as
+  `__QinJavaUtilSet` are the separate route for real JDK collection APIs.
 
 See `QIN_BUILTINS_STRATEGY.md`.
 
