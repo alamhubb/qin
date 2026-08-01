@@ -3,6 +3,7 @@ package com.qin.runtime.core;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Audits dynamic-looking generated TypeScript shapes that are allowed only
@@ -27,19 +28,39 @@ public final class QinGeneratedTsStaticAdmissionAudit {
     }
 
     public static void assertRejectsUnprovenDynamicShapes() {
+        assertRejectsGeneratedTsDynamicShape(
+                "call",
+                """
+                        export function bad(method, receiver) {
+                          return method.call(receiver);
+                        }
+                        """);
+        assertRejectsGeneratedTsDynamicShape(
+                "apply",
+                """
+                        export function bad(method, receiver, args) {
+                          return method.apply(receiver, args);
+                        }
+                        """);
+        assertRejectsGeneratedTsDynamicShape(
+                "bind",
+                """
+                        export function bad(method, receiver) {
+                          return method.bind(receiver);
+                        }
+                        """);
+    }
+
+    private static void assertRejectsGeneratedTsDynamicShape(String member, String source) {
         try {
-            scanOne(Path.of("memory-unproven-generated.ts"), """
-                    export function bad(method, receiver) {
-                      return method.call(receiver);
-                    }
-                    """).throwIfFindings();
+            scanOne(Path.of("memory-unproven-generated.ts"), source).throwIfFindings();
         } catch (IllegalStateException expected) {
-            if (!expected.getMessage().contains("QIN_GENERATED_TS_DYNAMIC_FUNCTION_CALL")) {
+            if (!expected.getMessage().contains("QIN_GENERATED_TS_DYNAMIC_FUNCTION_" + member.toUpperCase(Locale.ROOT))) {
                 throw new IllegalStateException("Unexpected generated TS audit diagnostic", expected);
             }
             return;
         }
-        throw new IllegalStateException("Expected generated TS audit to reject unproven method.call");
+        throw new IllegalStateException("Expected generated TS audit to reject unproven method." + member);
     }
 
     private static ScanResult scanOne(Path file, String source) {
