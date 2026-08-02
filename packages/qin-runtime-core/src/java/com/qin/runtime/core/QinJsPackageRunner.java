@@ -39,6 +39,12 @@ final class QinJsPackageRunner {
     private static final Pattern JSON_MODULE_FIELD = Pattern.compile("\"module\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern JSON_MAIN_FIELD = Pattern.compile("\"main\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern JSON_IMPORT_FIELD = Pattern.compile("\"import\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern JSON_EXPORTS_DOT_STRING_FIELD = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{.*?\"\\.\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
+    private static final Pattern JSON_EXPORTS_DOT_OBJECT_FIELD = Pattern.compile(
+            "\"exports\"\\s*:\\s*\\{.*?\"\\.\"\\s*:\\s*\\{.*?\"(?:import|default)\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL);
     private static final Pattern JSON_DEPENDENCIES_BLOCK = Pattern.compile(
             "\"dependencies\"\\s*:\\s*\\{([^}]*)\\}",
             Pattern.DOTALL);
@@ -1617,7 +1623,6 @@ final class QinJsPackageRunner {
                 import { com_subhuti_lookahead_SubhutiTokenConsumer as GeneratedSubhutiTokenConsumer } from "@qin/generated-qin-parser-ts/com/subhuti/lookahead/SubhutiTokenConsumer.ts";
                 import { com_subhuti_lookahead_SubhutiTokenLookahead as GeneratedSubhutiTokenLookahead } from "@qin/generated-qin-parser-ts/com/subhuti/lookahead/SubhutiTokenLookahead.ts";
                 import { com_subhuti_lexer_SubhutiLexer as GeneratedSubhutiLexer } from "@qin/generated-qin-parser-ts/com/subhuti/lexer/SubhutiLexer.ts";
-                export { Alternative } from "@qin/generated-qin-parser-ts";
 
                 export const SubhutiParser = GeneratedSubhutiParser;
                 export default GeneratedSubhutiParser;
@@ -1645,28 +1650,123 @@ final class QinJsPackageRunner {
                   return target;
                 }
 
-                function __qin_mark_subhuti_rule(method, ruleName) {
-                  if (!method) return method;
-                  Object.defineProperty(method, "__isSubhutiRule__", {
-                    value: true,
-                    writable: false,
-                    enumerable: false,
-                    configurable: true
-                  });
-                  if (ruleName && !method.__qinSubhutiRuleName) {
-                    Object.defineProperty(method, "__qinSubhutiRuleName", {
-                      value: String(ruleName),
+                function __qin_rule_name(method, ruleName) {
+                  const nestedName = method && method.method && typeof method.method === "function"
+                    ? method.method.__qinSubhutiRuleName || method.method.name || ""
+                    : "";
+                  return String(ruleName || (method && method.__qinSubhutiRuleName) || (method && method.name) || nestedName || "");
+                }
+
+                function __qin_define_rule_field(target, key, value) {
+                  try {
+                    Object.defineProperty(target, key, {
+                      value,
+                      writable: true,
+                      enumerable: true,
+                      configurable: true
+                    });
+                  } catch (error) {
+                    try {
+                      target[key] = value;
+                    } catch (ignored) {
+                    }
+                  }
+                }
+
+                function __qin_define_rule_metadata(target, key, value) {
+                  try {
+                    Object.defineProperty(target, key, {
+                      value,
                       writable: false,
                       enumerable: false,
                       configurable: true
                     });
+                  } catch (error) {
+                    try {
+                      target[key] = value;
+                    } catch (ignored) {
+                    }
+                  }
+                }
+
+                function __qin_clone_subhuti_rule(method, ruleName) {
+                  if (!method || typeof method !== "function") return method;
+                  const original = method;
+                  const cloned = function (...args) {
+                    return original.apply(this, args);
+                  };
+                  return __qin_mark_subhuti_rule_value(cloned, __qin_rule_name(original, ruleName));
+                }
+
+                function __qin_mark_subhuti_rule_value(method, ruleName) {
+                  if (!method) return method;
+                  const stableRuleName = __qin_rule_name(method, ruleName);
+                  __qin_define_rule_metadata(method, "__isSubhutiRule__", true);
+                  if (stableRuleName && !method.__qinSubhutiRuleName) {
+                    __qin_define_rule_metadata(method, "__qinSubhutiRuleName", stableRuleName);
+                    try {
+                      Object.defineProperty(method, "name", {
+                        value: stableRuleName,
+                        writable: false,
+                        enumerable: false,
+                        configurable: true
+                      });
+                    } catch (error) {
+                    }
+                  }
+                  __qin_define_rule_metadata(method, "__qinSubhutiRuleWrapped", true);
+                  return method;
+                }
+
+                function __qin_normalize_subhuti_rule_method(method, ruleName) {
+                  if (!method || typeof method !== "function") return method;
+                  return __qin_mark_subhuti_rule(method, ruleName);
+                }
+
+                function __qin_mark_subhuti_rule(method, ruleName) {
+                  if (!method) return method;
+                  const stableRuleName = __qin_rule_name(method, ruleName);
+                  let current = method;
+                  for (let depth = 0; depth < 8 && current && typeof current === "function"; depth++) {
+                    __qin_mark_subhuti_rule_value(current, stableRuleName);
+                    const nestedMethod = current.method && typeof current.method === "function"
+                      ? current.method
+                      : null;
+                    if (!nestedMethod) {
+                      break;
+                    }
+                    const normalizedNestedMethod = nestedMethod === current || nestedMethod.method === nestedMethod
+                      ? __qin_clone_subhuti_rule(nestedMethod, stableRuleName)
+                      : nestedMethod;
+                    if (normalizedNestedMethod !== nestedMethod) {
+                      __qin_define_rule_field(current, "method", normalizedNestedMethod);
+                    }
+                    current = normalizedNestedMethod;
                   }
                   return method;
                 }
 
                 function __qin_wrap_subhuti_rule(method, ruleName) {
-                  if (!method || method.__qinSubhutiRuleWrapped) return __qin_mark_subhuti_rule(method, ruleName);
+                  if (method && typeof method === "object" && typeof method.method === "function" && method.method !== method) {
+                    const stableRuleName = __qin_rule_name(method, ruleName);
+                    __qin_mark_subhuti_rule_value(method, stableRuleName);
+                    __qin_mark_subhuti_rule_value(method.method, stableRuleName);
+                    const wrappedMethod = __qin_wrap_subhuti_rule(method.method, stableRuleName);
+                    __qin_define_rule_field(method, "method", wrappedMethod);
+                    if ("value" in method) method.value = wrappedMethod;
+                    return __qin_mark_subhuti_rule(wrappedMethod, stableRuleName);
+                  }
+                  if (method && typeof method === "function" && typeof method.method === "function" && method.method !== method) {
+                    const stableRuleName = __qin_rule_name(method, ruleName);
+                    __qin_mark_subhuti_rule_value(method, stableRuleName);
+                    const wrappedMethod = __qin_wrap_subhuti_rule(method.method, stableRuleName);
+                    __qin_define_rule_field(method, "method", wrappedMethod);
+                    if ("value" in method) method.value = wrappedMethod;
+                    return __qin_mark_subhuti_rule(method, stableRuleName);
+                  }
+                  if (!method) return __qin_mark_subhuti_rule(method, ruleName);
                   const original = method;
+                  __qin_mark_subhuti_rule_value(original, __qin_rule_name(original, ruleName));
                   const wrapped = function (...args) {
                     if (this && typeof this.executeRuleWrapper === "function") {
                       return this.executeRuleWrapper(
@@ -1684,20 +1784,51 @@ final class QinJsPackageRunner {
                     enumerable: false,
                     configurable: true
                   });
+                  if (typeof original.method === "function") {
+                    const nestedSource = original.method === original ? original : original.method;
+                    const nestedMethod = nestedSource === original
+                      ? __qin_clone_subhuti_rule(original, ruleName || original.name)
+                      : __qin_mark_subhuti_rule(nestedSource, ruleName || original.name);
+                    __qin_define_rule_field(wrapped, "method", nestedMethod);
+                  }
                   return __qin_mark_subhuti_rule(wrapped, ruleName || original.name);
                 }
 
                 export function SubhutiRule(targetOrMethod, propertyKeyOrContext, descriptor) {
-                  if (typeof propertyKeyOrContext === "string") {
-                    const actualDescriptor = descriptor || Object.getOwnPropertyDescriptor(targetOrMethod, propertyKeyOrContext);
+                  const shiftedLegacyDescriptor = descriptor === undefined || descriptor === null
+                    ? propertyKeyOrContext
+                    : null;
+                  const hasShiftedLegacyDescriptor = shiftedLegacyDescriptor
+                    && typeof shiftedLegacyDescriptor === "object"
+                    && (shiftedLegacyDescriptor.value || shiftedLegacyDescriptor.method);
+                  if (descriptor !== undefined && descriptor !== null || hasShiftedLegacyDescriptor || typeof propertyKeyOrContext === "string") {
+                    const legacyKey = hasShiftedLegacyDescriptor
+                      ? String(targetOrMethod)
+                      : typeof propertyKeyOrContext === "string"
+                        ? String(propertyKeyOrContext)
+                        : propertyKeyOrContext && typeof propertyKeyOrContext === "object" && propertyKeyOrContext.name
+                          ? String(propertyKeyOrContext.name)
+                          : "";
+                    const actualDescriptor = hasShiftedLegacyDescriptor
+                      ? shiftedLegacyDescriptor
+                      : descriptor || Object.getOwnPropertyDescriptor(targetOrMethod, legacyKey);
                     if (actualDescriptor && actualDescriptor.value) {
-                      actualDescriptor.value = __qin_wrap_subhuti_rule(actualDescriptor.value, propertyKeyOrContext);
+                      actualDescriptor.value = __qin_wrap_subhuti_rule(actualDescriptor.value, legacyKey);
                       return actualDescriptor;
                     }
-                    if (targetOrMethod && targetOrMethod[propertyKeyOrContext]) {
-                      targetOrMethod[propertyKeyOrContext] = __qin_wrap_subhuti_rule(
-                        targetOrMethod[propertyKeyOrContext],
-                        propertyKeyOrContext
+                    if (actualDescriptor && actualDescriptor.method) {
+                      const wrappedMethod = __qin_wrap_subhuti_rule(actualDescriptor.method, legacyKey);
+                      actualDescriptor.method = wrappedMethod;
+                      actualDescriptor.value = wrappedMethod;
+                      if (hasShiftedLegacyDescriptor) {
+                        return wrappedMethod;
+                      }
+                      return actualDescriptor;
+                    }
+                    if (targetOrMethod && targetOrMethod[legacyKey]) {
+                      targetOrMethod[legacyKey] = __qin_wrap_subhuti_rule(
+                        targetOrMethod[legacyKey],
+                        legacyKey
                       );
                     }
                     return descriptor;
@@ -1705,6 +1836,9 @@ final class QinJsPackageRunner {
                   const ruleName = propertyKeyOrContext && propertyKeyOrContext.name
                     ? propertyKeyOrContext.name
                     : targetOrMethod && targetOrMethod.name;
+                  if (targetOrMethod && typeof targetOrMethod === "object" && targetOrMethod.method) {
+                    return __qin_wrap_subhuti_rule(targetOrMethod.method, ruleName);
+                  }
                   return __qin_wrap_subhuti_rule(targetOrMethod, ruleName);
                 }
                 """, StandardCharsets.UTF_8);
@@ -1981,6 +2115,11 @@ final class QinJsPackageRunner {
                       return generateNode(field(node, "left")) + " " + String(field(node, "operator") || "") + " " + generateNode(field(node, "right"));
                     case "UnaryExpression":
                       return String(field(node, "operator") || "") + generateNode(field(node, "argument"));
+                    case "UpdateExpression": {
+                      const operator = tokenText(field(node, "operator"));
+                      const argument = generateNode(field(node, "argument"));
+                      return field(node, "prefix") ? operator + argument : argument + operator;
+                    }
                     case "ParenthesizedExpression":
                       return "(" + generateNode(field(node, "expression")) + ")";
                     case "ConditionalExpression":
@@ -2157,6 +2296,35 @@ final class QinJsPackageRunner {
                   return SlimeGenerator.generator(ast, []).code;
                 }
 
+                export function __qin_smoke_generate_update_expression() {
+                  const ast = {
+                    type: "Program",
+                    body: [{
+                      type: "ExpressionStatement",
+                      expression: {
+                        type: "UpdateExpression",
+                        operator: { type: "Operator", value: "++" },
+                        prefix: false,
+                        argument: {
+                          type: "MemberExpression",
+                          object: { type: "Identifier", name: "count" },
+                          property: { type: "Identifier", name: "value" },
+                          computed: false
+                        }
+                      }
+                    }, {
+                      type: "ExpressionStatement",
+                      expression: {
+                        type: "UpdateExpression",
+                        operator: "--",
+                        prefix: true,
+                        argument: { type: "Identifier", name: "remaining" }
+                      }
+                    }]
+                  };
+                  return SlimeGenerator.generator(ast, []).code;
+                }
+
                 export default SlimeGenerator;
                 """, StandardCharsets.UTF_8);
         writeRuntimePackageStamp(shimDir);
@@ -2281,7 +2449,12 @@ final class QinJsPackageRunner {
             return null;
         }
         String json = Files.readString(packageJson, StandardCharsets.UTF_8);
-        for (Pattern pattern : List.of(JSON_IMPORT_FIELD, JSON_MODULE_FIELD, JSON_MAIN_FIELD)) {
+        for (Pattern pattern : List.of(
+                JSON_IMPORT_FIELD,
+                JSON_MODULE_FIELD,
+                JSON_MAIN_FIELD,
+                JSON_EXPORTS_DOT_STRING_FIELD,
+                JSON_EXPORTS_DOT_OBJECT_FIELD)) {
             Matcher matcher = pattern.matcher(json);
             if (matcher.find()) {
                 String candidate = normalizeManifestRelativePath(matcher.group(1));
@@ -2618,7 +2791,7 @@ final class QinJsPackageRunner {
 
     private Map<String, Path> indexWorkspacePackages(Path workspaceRoot) throws IOException {
         Map<String, Path> packages = new LinkedHashMap<>();
-        Files.walkFileTree(workspaceRoot, Set.of(), 6, new java.nio.file.SimpleFileVisitor<>() {
+        Files.walkFileTree(workspaceRoot, Set.of(), 8, new java.nio.file.SimpleFileVisitor<>() {
             @Override
             public java.nio.file.FileVisitResult preVisitDirectory(
                     Path dir,

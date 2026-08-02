@@ -24,7 +24,8 @@ public final class QinGeneratedTsSlimeCsstsCompilerSmokeTestMain {
         if (!result.rawCode().contains("const count = ref(0)")
                 || !result.rawCode().contains("const title =")
                 || !result.rawCode().contains("const panelStyle = cssts.merge(")
-                || !result.rawCode().contains("function increment()")) {
+                || !result.rawCode().contains("function increment()")
+                || !result.rawCode().contains("count.value++")) {
             throw new IllegalStateException("Generated TS Slime CSSTS output lost declarations:\n" + result.rawCode());
         }
         System.out.println("QinGeneratedTsSlimeCsstsCompilerSmokeTestMain OK");

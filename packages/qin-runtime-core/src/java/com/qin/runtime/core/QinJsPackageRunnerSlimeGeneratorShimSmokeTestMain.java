@@ -76,6 +76,15 @@ public final class QinJsPackageRunnerSlimeGeneratorShimSmokeTestMain {
                     "Unexpected slime-generator parenthesized conditional result: "
                             + parenthesizedConditionalResult);
         }
+        Object updateExpressionResult = new QinJsPackageRunner().invokeNamedExport(
+                projectRoot,
+                "slime-generator",
+                "__qin_smoke_generate_update_expression",
+                List.of());
+        if (!"count.value++;\n--remaining;".equals(String.valueOf(updateExpressionResult))) {
+            throw new IllegalStateException(
+                    "Unexpected slime-generator update expression result: " + updateExpressionResult);
+        }
         System.out.println("QinJsPackageRunnerSlimeGeneratorShimSmokeTestMain OK");
     }
 }

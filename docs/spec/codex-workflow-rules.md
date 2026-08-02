@@ -11,6 +11,38 @@ These rules capture durable workflow expectations for Codex work on Qin.
 - Do not split the protocol into "fetch time now, report later"; the timestamp
   must describe the update being sent.
 - Then report the command or action, the result, and the next step.
+- When a user asks for visible task progress, define three `100%` scales
+  immediately: overall progress, major-item progress, and small-item progress.
+  Overall progress is the whole project or current long-running goal; major-item
+  progress is the active phase or milestone that unlocks the next phase at
+  `100%`; small-item progress is the active concrete implementation or
+  validation item.
+- Small-item progress must also be decomposed into visible weighted checkpoints,
+  normally 3-7 steps such as reproduce, locate owner, design fix, implement,
+  focused validation, broad validation, and cleanup/report. Do not use a bare
+  `0% -> 100%` small item unless the task is genuinely atomic and finishes
+  within one short command.
+- Every update must show all three percentages, the `100%` acceptance gate for
+  each layer, the current action, the next task, and the expected percentage
+  change after the next accepted small-item checkpoint.
+- After each accepted checkpoint, report small-item progress in `before -> after`
+  form and state whether that changes major-item or overall progress. If the
+  work only gathers evidence or exposes the next blocker, keep the relevant
+  percentages unchanged and say which gate is still pending. Do not enter or
+  claim the next phase until the current major-item progress reaches a real
+  accepted `100%`.
+- If a previous ledger, milestone, route, or phase is complete, frozen,
+  superseded, or already in post-100% cleanup, do not reuse that terminal scale
+  for a new active integration goal. Define or select a fresh current-goal
+  denominator with its own `100%` acceptance gate before reporting progress.
+  Historical percentages may be cited as evidence only, not as the active
+  denominator.
+- Do not keep one small-item scale pinned at `99.9%` across multiple independent
+  blockers. When broad validation proves one blocker fixed but exposes another
+  owning-layer blocker, record the old small item as evidence and open a fresh
+  small item with its own weighted checkpoints. The major item can stay capped
+  until its gate passes, but the active small item must show honest intermediate
+  movement.
 - This applies to command execution, file edits, log reads, validation, service
   start/stop, status updates, and resumed goal turns.
 - Do not rely on chat memory for this rule; keep it in project docs and relevant
@@ -85,6 +117,13 @@ These rules capture durable workflow expectations for Codex work on Qin.
 - Manual cache deletion, forced full rebuilds, larger timeouts, or source
   rewrites may be used only as diagnostics. They are not acceptable final
   fixes for stale cache or instant compilation defects.
+- Before declaring a module-class disk cache invalidation bug, prove the active
+  wrapper/source content actually changed at the boundary being compiled:
+  compare the generated wrapper source, its content-derived wrapper identity,
+  the Java probe class on the active classpath, and whether the runner logged
+  `module-class compile start` or a cache hit. An old wrapper or stale probe
+  class can look like stale disk cache; do not change cache keys until the
+  source digest contract is disproved by same-source-path evidence.
 - Qin engineering should follow the target-aware instant compilation model in
   `docs/spec/qin-engineering-instant-compilation.md`: stable cache identities,
   layered caches, content-aware package stamps, lightweight dependency
@@ -114,10 +153,18 @@ These rules capture durable workflow expectations for Codex work on Qin.
 - Normalize durable rules to one canonical source. Keep full wording in the owning global skill, project skill reference, or project spec; other files should link or briefly point to that source instead of copying the same rule.
 - For Qin parser, syntax, compiler, runtime, generated-code, OVS/CSSTS, UI render, or dev-server failures, debug from the smallest reproducible unit outward. If one syntax form is suspect, first run a single-file focused test/probe for that exact syntax, then expand to the owning package/plugin smoke, and only then to the user-facing app/browser/server flow. This reduces compile cost without redefining final success; the original failing boundary remains the acceptance test.
 - For parser/compiler syntax failures, use a fixed five-stage pipeline probe before rerunning full apps: token stream, CST shape, AST shape, emitted ESM, then integration/runtime behavior. Bisect by layer: token/CST failure belongs to parser grammar or lexer; CST-correct/AST-wrong belongs to CST-to-AST; AST-correct/emit-wrong belongs to generator; emitted ESM-correct/runtime-wrong belongs to runtime/plugin/app integration.
+- If a focused AST probe proves a node is correct, such as
+  `UpdateExpression(operator="++", prefix=false, argument=MemberExpression)`,
+  but emitted ESM drops the semantic operator, the owning fix is the active
+  generator/emitter's abstract AST dispatch for that node type. Do not patch
+  the source sample, add parser token checks, or broaden dynamic JS runtime
+  support.
 - Pipeline probes should reuse the active artifacts produced by earlier stages. If the probe already has tokens, CST, and AST for the same source, the emitted ESM stage should generate from those artifacts instead of invoking a second full transform that repeats parser and CST-to-AST work, unless the explicit goal is to compare that full transform boundary.
 - For OVS, the canonical reusable diagnostic entry is `packages/qin-runtime-core/src/java/com/qin/runtime/core/QinOvsParserPipelineProbeMain.java`. Run it on the smallest `.ovs` source first, then run `QinOvsParserPipelineProbeSmokeTestMain`, then the owning OVS compiler smoke, and only then the browser/dev-server boundary.
 - Parser diagnostics are not compatibility behavior and not fallback logic. They must exercise the active standard parser/compiler path and expose the failing layer directly.
+- For parser/compiler probes, an apparently successful run with zero tokens, zero CST children, zero AST body items, or empty generated output is a failure in the owning layer, not a passing diagnostic. Do not let empty output count as success; tighten the probe so the empty case surfaces as an explicit parse/transform defect.
 - For Qin/OVS/CSSTS parser, compiler, runtime, and generated-code debugging, standard ESM syntax is the canonical frontend module target. If generated code is not valid browser-parseable ESM, fix the owning compiler/runtime layer instead of changing business files around it.
+- Parser and generated-wrapper fixes must be phrased in abstract grammar or dispatch facts, not sample-specific token/word checks. For Subhuti-generated TypeScript, a `@SubhutiRule` wrapper owns the raw body declared on that wrapper class; `super.Rule(...)` must execute that declaring-class raw body rather than dynamically redispatching through a subclass `this.__qin_subhuti_raw_*`. Extension syntax should enter as a static grammar/rule alternative or owning bridge, not as a growing list of first-letter, token-name, or word special cases.
 - Preserve accepted Qin-owned TS/JS source API shapes on the `.class` path. The canonical language rule is `packages/qin-runtime-core/QIN_JS_COMPATIBILITY_MODEL.md`: static source calls should keep the same Qin-visible import/export surface, member or method name, argument order, admitted arity, and default-argument meaning through generated facades, overload/default-argument lowering, typed helpers, or bridge fixes rather than forcing callers to use lower-level Java implementation signatures.
 - Qin Java/runtime diagnostics should fail early instead of hiding defects behind long hangs. Focused parser/compiler/runtime probes should use a timeout of 30 seconds or less unless a specific cold-start benchmark explicitly declares a longer budget. The Qin JS-on-JVM runtime default run timeout is 30 seconds; if it is exceeded, report the timeout and captured stack as the next debugging boundary instead of rerunning broader flows.
 - The legacy handwritten TypeScript `slime-parser` may be used as a reference oracle when diagnosing generated parser or CST-to-AST regressions. Compare grammar, CST shape, variable/export handling, call arguments, and object literal conversion against it, then apply the fix to the active generated Java/TypeScript parser or Qin runtime path.
