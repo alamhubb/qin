@@ -1,6 +1,6 @@
 # Qin Static Admission Hard Gates Ledger
 
-Last updated: **2026-08-02 16:28 +08:00**.
+Last updated: **2026-08-02 16:33 +08:00**.
 
 ## Goal
 
@@ -33,11 +33,11 @@ H4 reaches `100%` only when current evidence proves:
 
 ## Progress Scales
 
-Overall active goal: **99.0%**. H4 is weighted as the next 10 overall
+Overall active goal: **100.0%**. H4 is weighted as the next 10 overall
 percentage points. Each 10% accepted H4 major progress advances the overall
 goal by 1.0%.
 
-Active major item: **90.0%** for **H4 static admission hard gates**. Its `100%`
+Completed major item: **100.0%** for **H4 static admission hard gates**. Its `100%`
 gate is the static subset producing hard, owner-aware compiler/backend
 diagnostics for generated TS dynamic wrappers, unknown receivers/members,
 unknown index access, and non-static package shapes, with strict JVM validation
@@ -111,11 +111,16 @@ staged diff names 40%, create local commit 60%, attempt push when a safe remote
 is available 80%, record post-commit status and remaining dirty exclusions
 100%.
 
-Active small item: **0.0%** for **H4-6c split backend-jvm hard-gate remainder**.
-Its checkpoints are: list backend-jvm H4 files versus unrelated backend smokes
-20%, inspect `QinJvmDeclarationClassEmitter`/dynamic-warning diff ownership
-40%, rerun H4-3/H4-4 strict backend validations 60%, stage or explicitly block
-the backend-jvm commit boundary 80%, record final H4-6 remainder evidence 100%.
+Completed small item: **100.0%** for **H4-6c split backend-jvm hard-gate
+remainder**. Its checkpoints were: list backend-jvm H4 files versus unrelated
+backend smokes 20%, inspect `QinJvmDeclarationClassEmitter`/dynamic-warning
+diff ownership 40%, rerun H4-3/H4-4 strict backend validations 60%, stage or
+explicitly block the backend-jvm commit boundary 80%, record final H4-6
+remainder evidence 100%.
+
+Next active denominator: open a fresh H5 ledger for generated TS -> Qin IR ->
+JVM `.class` closure. H4 is now historical evidence only and must not be reused
+as the active denominator for the next phase.
 
 ## H4 Weighted Plan
 
@@ -123,11 +128,11 @@ the backend-jvm commit boundary 80%, record final H4-6 remainder evidence 100%.
 |---|---|---:|---:|---|---|
 | H4-1 | Fresh H4 denominator and first owner-aware gate slice selected | 10% | 100% | Accepted | Current audit found `QinGeneratedTsStaticAdmissionAudit` and `QinEsmRuntimeFeatureValidator` still rely on source scanning/line allowlists for some static-gate decisions; the first executable slice is the IR/JVM indexed-access hard gate. |
 | H4-2 | Generated TS dynamic wrapper admission uses AST/IR/owner facts | 25% | 100% | Accepted | Occurrence discovery uses Qin/Slime AST `CallExpression -> MemberExpression`; owner contracts are emitted from Java-to-TS/IR method-call facts; Java target-typed lambda, record accessor, enhanced-for `var`, and `Map.Entry` generic propagation now preserve owner facts. The broad generated Slime Parser TS ESM smoke passes with 1264 contract-admitted wrappers and 0 legacy admissions after the legacy allow branch was removed. |
-| H4-3 | Unknown receiver/member hard failures are covered on JVM `.class` path | 20% | 85% | Accepted validation, git capture blocked | Source-to-IR unknown member access and unknown receiver method calls now hard-fail at the JVM backend, while typed receiver/static member smokes still pass. Clean commit capture is blocked by the pre-existing emitter diff and is carried by H4-6. |
-| H4-4 | Unknown indexed access gate distinguishes Map/Dict from dynamic object lookup | 20% | 85% | Accepted validation, git capture blocked | Source-to-IR and IR/backend validation passed: `QinJvmSourceUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmStaticMapElementAccessSmokeTestMain OK`, and `QinJvmDynamicSemanticWarningSmokeTestMain passed.` The executable source/IR/JVM gate is proven locally; clean commit capture is blocked by a large pre-existing dirty `QinJvmDeclarationClassEmitter.java` diff that the current H4 slice cannot safely stage wholesale. |
+| H4-3 | Unknown receiver/member hard failures are covered on JVM `.class` path | 20% | 100% | Accepted | Source-to-IR unknown member access and unknown receiver method calls now hard-fail at the JVM backend, while typed receiver/static member smokes still pass. Backend hard-gate files were committed and pushed as `77c160a3`. |
+| H4-4 | Unknown indexed access gate distinguishes Map/Dict from dynamic object lookup | 20% | 100% | Accepted | Source-to-IR and IR/backend validation passed: `QinJvmSourceUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmStaticMapElementAccessSmokeTestMain OK`, and `QinJvmDynamicSemanticWarningSmokeTestMain passed.` Backend hard-gate files were committed and pushed as `77c160a3`. |
 | H4-5 | Third-party package static admission report path is executable | 15% | 100% | Accepted | `QinEsmStaticAdmissionReport` now attaches package name, package root, source file, unsupported shape, static-lowering reason, and approved choices to third-party `node_modules` hard dynamic feature diagnostics. `QinEsmThirdPartyStaticAdmissionReportSmokeTestMain OK` proves `new Proxy(...)` in `@vendor/dynamic-kit` reports the package decision path; `QinEsmRuntimeFeatureParserScanSmokeTestMain passed` keeps existing parser-scan behavior stable. |
-| H4-6 | Cleanup, durable capture, and git hygiene | 10% | 60% | In progress | H4-2/H4-5 core static-admission unit was committed as `34fa2c7f` and pushed to `origin/master`; backend-jvm H4-3/H4-4 remains mixed with a much larger historical dirty set and must be split separately. |
-| **H4 Total** |  | **100%** | **90.0%** | In progress | H4-1 accepted; H4-4 indexed access and H4-3 member/call hard gates are proven through source-to-IR and JVM validation; H4-2 generated dynamic-looking wrappers are fully owner-contract admitted with zero legacy allow branch; H4-5 package static-admission reports are executable; H4-6 has committed/pushed the H4-2/H4-5 core unit, with backend-jvm cleanup remaining. |
+| H4-6 | Cleanup, durable capture, and git hygiene | 10% | 100% | Accepted | H4-2/H4-5 core static-admission unit was committed as `34fa2c7f` and pushed to `origin/master`; final push evidence was recorded as `b0717360`; backend-jvm H4-3/H4-4 hard-gate unit was committed and pushed as `77c160a3`; unrelated historical dirty files remain excluded. |
+| **H4 Total** |  | **100%** | **100.0%** | Accepted | H4-1 through H4-6 accepted. Qin static admission hard gates now have executable owner-aware generated TS audit, JVM hard failures for unknown receiver/member/indexed access, third-party package static-admission reports, sequential validation evidence, and committed/pushed current-unit changes. |
 
 ## Progress History
 
@@ -145,3 +150,4 @@ the backend-jvm commit boundary 80%, record final H4-6 remainder evidence 100%.
 | 2026-08-02 16:20 +08:00 | H4-6a cleanup boundary classified | Blocked before final commit | `git diff --check` passed for the current H4-5/H4-6 paths, with only CRLF replacement warnings on existing Java files. Targeted status shows current report files plus the H4 ledger, but `QinEsmRuntimeFeatureValidator.java` and `QinEsmRuntimeFeatureParserScanSmokeTestMain.java` already contained pre-existing uncommitted changes before this step. A whole-file commit would mix current structured package-report work with earlier edits, so git hygiene is recorded as blocked until the existing H4 dirty set is reviewed/staged as one intended unit or split interactively. | H4-6a small 0.0% -> 80.0%; H4-6 accepted 0.0% -> 0.0%; H4 major remains 84.0%; overall remains 98.4% |
 | 2026-08-02 16:26 +08:00 | H4-6a cleanup boundary split into core commit unit and backend-jvm remainder | Accepted checkpoint | Full working tree still contains a large unrelated/historical dirty set, but targeted inspection found a coherent H4-2/H4-5 commit boundary: `QinJsBackend`, Java semantic/lowerer owner propagation, generated TS static admission audit/smoke, ESM static-admission report diagnostics/smoke, and this ledger. Sequential validation passed immediately before staging: `QinJavaAstIrLowererCollectorLambdaOwnerSmokeTestMain OK`, `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain OK` with `1264` contract wrappers and `0` legacy wrappers, `QinEsmThirdPartyStaticAdmissionReportSmokeTestMain OK`, and `QinEsmRuntimeFeatureParserScanSmokeTestMain passed`. H4-6 remains open because backend-jvm H4-3/H4-4 changes are still mixed with many older backend smokes and generated/runtime files. | H4-6a small 80.0% -> 100.0%; H4-6 accepted 0.0% -> 40.0%; H4 major 84.0% -> 88.0%; overall 98.4% -> 98.8% |
 | 2026-08-02 16:28 +08:00 | H4-6b core static-admission unit committed and pushed | Accepted checkpoint | Explicitly staged only the 13 H4-2/H4-5/H4-ledger files, verified the staged names, committed `34fa2c7f Harden Qin static admission gates`, confirmed those paths were clean afterward, and pushed `HEAD:master` to `origin` with command output suppressed to avoid exposing the remote URL. Remaining dirty files are intentionally excluded, including backend-jvm H4-3/H4-4 files that still need their own split plus many generated/parser/runtime historical artifacts. | H4-6b small 0.0% -> 100.0%; H4-6 accepted 40.0% -> 60.0%; H4 major 88.0% -> 90.0%; overall 98.8% -> 99.0% |
+| 2026-08-02 16:33 +08:00 | H4-6c backend-jvm hard-gate unit committed and pushed | Accepted | Targeted backend validation passed: `QinJvmSourceUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmStaticMapElementAccessSmokeTestMain OK`, `QinJvmSourceUnknownMemberAccessHardGateSmokeTestMain OK`, `QinJvmSourceUnknownMethodCallHardGateSmokeTestMain OK`, `QinJvmGeneratedTypedReceiverAbstractSlotSmokeTestMain OK`, and `QinJvmDynamicSemanticWarningSmokeTestMain passed.` `git diff --check` passed for the backend H4 candidate files. Explicitly staged the backend H4 files, committed `77c160a3 Harden JVM static semantic gates`, and pushed `HEAD:master` to `origin` with output suppressed to avoid exposing the remote URL. | H4-6c small 0.0% -> 100.0%; H4-3 accepted 85.0% -> 100.0%; H4-4 accepted 85.0% -> 100.0%; H4-6 accepted 60.0% -> 100.0%; H4 major 90.0% -> 100.0%; overall 99.0% -> 100.0% |
