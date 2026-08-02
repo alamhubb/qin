@@ -36,6 +36,24 @@ public final class QinEsmSemanticException extends IllegalArgumentException {
                     .append(diagnostic.column())
                     .append(" -> ")
                     .append(diagnostic.message());
+            QinEsmStaticAdmissionReport report = diagnostic.staticAdmissionReport();
+            if (report != null) {
+                sb.append(System.lineSeparator())
+                        .append("   static admission package: ")
+                        .append(report.packageName())
+                        .append(System.lineSeparator())
+                        .append("   package root: ")
+                        .append(report.packageRoot().toAbsolutePath())
+                        .append(System.lineSeparator())
+                        .append("   unsupported shape: ")
+                        .append(report.unsupportedShape())
+                        .append(System.lineSeparator())
+                        .append("   static lowering reason: ")
+                        .append(report.staticLoweringReason())
+                        .append(System.lineSeparator())
+                        .append("   approved choices: ")
+                        .append(String.join("; ", report.approvedChoices()));
+            }
         }
         return sb.toString();
     }

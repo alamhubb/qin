@@ -2,10 +2,12 @@ package com.qin.lang.backend.js;
 
 import com.qin.lang.ir.QinIrAssignmentExpression;
 import com.qin.lang.ir.QinIrAnnotation;
+import com.qin.lang.ir.QinIrArrayCreationExpression;
 import com.qin.lang.ir.QinIrArrayLiteral;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
 import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBreakStatement;
+import com.qin.lang.ir.QinIrBoundMethodReferenceExpression;
 import com.qin.lang.ir.QinIrCastExpression;
 import com.qin.lang.ir.QinIrCatchClause;
 import com.qin.lang.ir.QinIrClassDeclaration;
@@ -50,6 +52,7 @@ import com.qin.lang.ir.QinIrObjectProperty;
 import com.qin.lang.ir.QinIrParameter;
 import com.qin.lang.ir.QinIrProgram;
 import com.qin.lang.ir.QinIrSequenceExpression;
+import com.qin.lang.ir.QinIrShortCircuitExpression;
 import com.qin.lang.ir.QinIrSpreadArgumentExpression;
 import com.qin.lang.ir.QinIrStaticMethodCallExpression;
 import com.qin.lang.ir.QinIrStringLiteral;
@@ -65,15 +68,19 @@ import com.qin.lang.ir.QinIrThrowExpression;
 import com.qin.lang.ir.QinIrThrowStatement;
 import com.qin.lang.ir.QinIrThisExpression;
 import com.qin.lang.ir.QinIrTryStatement;
+import com.qin.lang.ir.QinIrTryResource;
 import com.qin.lang.ir.QinIrTypeKind;
 import com.qin.lang.ir.QinIrTypeRef;
+import com.qin.lang.ir.QinIrUnaryExpression;
 import com.qin.lang.ir.QinIrUpdateExpression;
 import com.qin.lang.ir.QinIrWhileExpression;
 import com.qin.lang.ir.QinIrWhileStatementNode;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -96,7 +103,9 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__QinSlf4jLogger",
             "__QinSlf4jLoggerFactory",
             "__QinJavaLangInteger",
+            "__QinJavaLangNumber",
             "__QinJavaLangDouble",
+            "__QinJavaLangLong",
             "__QinJavaMathBigInteger",
             "__QinJavaLangEnum",
             "__QinJavaLangThrowable",
@@ -104,6 +113,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__QinJavaLangRuntimeException",
             "__QinJavaLangReflectiveOperationException",
             "__QinJavaLangClassNotFoundException",
+            "__QinJavaLangClassCastException",
             "__QinJavaLangNoSuchMethodException",
             "__QinJavaLangReflectInvocationTargetException",
             "__QinJavaLangError",
@@ -116,17 +126,28 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__QinJavaLangSystem",
             "__QinJavaLangStringBuilder",
             "__QinJavaIoFile",
+            "__QinJavaIoByteArrayOutputStream",
+            "__QinJavaIoByteArrayInputStream",
+            "__QinJavaIoDataOutputStream",
+            "__QinJavaIoDataInputStream",
             "__QinJavaNioFilePath",
             "__QinJavaNioFilePaths",
             "__QinJavaNioFileFiles",
             "__QinJavaIoFileWriter",
             "__QinJavaIoBufferedWriter",
+            "__QinJavaUtilZipGZIPOutputStream",
+            "__QinJavaUtilZipGZIPInputStream",
+            "__QinJavaUtilBase64",
+            "__QinJavaSecurityMessageDigest",
+            "__QinJavaUtilHexFormat",
             "__QinJavaTimeFormatDateTimeFormatter",
             "__QinJavaTimeLocalDateTime",
             "__QinJavaUtilArrayList",
+            "__QinJavaUtilArrayDeque",
             "__QinJavaUtilUnmodifiableList",
             "__QinJavaUtilList",
             "__QinJavaUtilHashSet",
+            "__QinJavaUtilTreeSet",
             "__QinJavaUtilUnmodifiableSet",
             "__QinJavaUtilSet",
             "__qin_java_string_hash_code__",
@@ -145,6 +166,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__QinJavaUtilOptionalValue",
             "__QinJavaUtilOptional",
             "__QinJavaUtilStream",
+            "__QinJavaUtilComparator",
             "__QinJavaUtilStreamCollectors",
             "__QinJavaUtilConcurrentAtomicLong",
             "__QinCaffeineRemovalCause",
@@ -159,6 +181,16 @@ public class QinJsBackend implements QinIrCodeBackend {
             "__qin_instanceof__",
             "__qin_binary__",
             "__qin_logical__",
+            "__qin_collection_size__",
+            "__qin_collection_is_empty__",
+            "__qin_collection_get__",
+            "__qin_collection_add__",
+            "__qin_collection_contains__",
+            "__qin_collection_to_array__",
+            "__qin_java_utf8_decode__",
+            "__qin_java_time_now__",
+            "__qin_java_time_from__",
+            "__qin_java_time_format__",
             "__qin_subhuti_rule_cache_key",
             "__qin_init_enum_value");
     private Set<String> generatedClassBinaryNames = Set.of();
@@ -168,9 +200,11 @@ public class QinJsBackend implements QinIrCodeBackend {
     private Set<String> externallyBoundJavaBinaryNames = Set.of();
     private boolean externalJavaSdkRuntime;
     private Set<String> externalJavaSdkRuntimeImports = new LinkedHashSet<>();
+    private boolean javaHashRuntimeHelpersRequired;
     private Map<String, String> bindingAliases = new LinkedHashMap<>();
     private Map<String, String> currentJavaFieldAliases = Map.of();
     private QinIrClassDeclaration currentJavaClassDeclaration;
+    private int generatedOwnerReceiverCounter;
     private final QinIrCodegenOptions options;
 
     public QinJsBackend() {
@@ -232,6 +266,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         this.externallyBoundJavaBinaryNames = Set.copyOf(externallyBoundJavaBinaryNames);
         this.externalJavaSdkRuntime = externalJavaSdkRuntime;
         externalJavaSdkRuntimeImports = new LinkedHashSet<>();
+        javaHashRuntimeHelpersRequired = false;
         bindingAliases = new LinkedHashMap<>();
 
         StringBuilder js = new StringBuilder();
@@ -285,6 +320,12 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
 
         if (!externalJavaSdkRuntime) {
+            if (javaHashRuntimeHelpersRequired
+                    && js.indexOf("function __qin_java_value_hash_code__") < 0) {
+                StringBuilder helpers = new StringBuilder();
+                emitJavaHashRuntimeHelpers(helpers);
+                js.insert(externalJavaSdkImportOffset, helpers);
+            }
             return js.toString();
         }
 
@@ -308,19 +349,25 @@ public class QinJsBackend implements QinIrCodeBackend {
         backend.emitJavaLangCharacterRuntime(js);
         backend.emitSlf4jRuntime(js);
         backend.emitJavaLangIntegerRuntime(js);
+        backend.emitJavaLangNumberRuntime(js);
         backend.emitJavaLangDoubleRuntime(js);
+        backend.emitJavaLangLongRuntime(js);
         backend.emitJavaMathBigIntegerRuntime(js);
         backend.emitJavaLangEnumRuntime(js);
         backend.emitJavaLangExceptionRuntime(js);
         backend.emitJavaLangSystemRuntime(js);
         backend.emitJavaLangStringBuilderRuntime(js);
         backend.emitJavaIoFileRuntime(js);
+        backend.emitJavaIoStreamRuntime(js);
+        backend.emitJavaSecurityDigestRuntime(js);
         backend.emitJavaNioFileRuntime(js);
         backend.emitJavaIoWriterRuntime(js);
         backend.emitJavaTimeRuntime(js);
         backend.emitJavaUtilArrayListRuntime(js);
+        backend.emitJavaUtilArrayDequeRuntime(js);
         backend.emitJavaUtilListRuntime(js);
         backend.emitJavaUtilHashSetRuntime(js);
+        backend.emitJavaUtilTreeSetRuntime(js);
         backend.emitJavaUtilSetRuntime(js);
         backend.emitJavaHashRuntimeHelpers(js);
         backend.emitJavaUtilArraysRuntime(js);
@@ -476,6 +523,14 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (statement instanceof QinIrTryStatement tryStatement) {
+            for (QinIrTryResource resource : tryStatement.resources()) {
+                if (resource.initializer() != null) {
+                    emitJavaRuntimeAliasesForExpression(js, resource.initializer(), javaAliases);
+                }
+                if (resource.reference() != null) {
+                    emitJavaRuntimeAliasesForExpression(js, resource.reference(), javaAliases);
+                }
+            }
             emitJavaRuntimeAliasesForStatements(js, tryStatement.tryBody(), javaAliases);
             for (QinIrCatchClause catchClause : tryStatement.catchClauses()) {
                 emitJavaRuntimeAliasForType(js, catchClause.parameterType(), javaAliases);
@@ -530,10 +585,31 @@ public class QinJsBackend implements QinIrCodeBackend {
             emitJavaRuntimeAliasesForExpression(js, castExpression.expression(), javaAliases);
             return;
         }
+        if (expression instanceof QinIrArrayLiteral arrayLiteral) {
+            for (QinIrExpression element : arrayLiteral.elements()) {
+                emitJavaRuntimeAliasesForExpression(js, element, javaAliases);
+            }
+            return;
+        }
+        if (expression instanceof QinIrArrayCreationExpression arrayCreationExpression) {
+            for (QinIrExpression dimension : arrayCreationExpression.dimensions()) {
+                emitJavaRuntimeAliasesForExpression(js, dimension, javaAliases);
+            }
+            return;
+        }
+        if (expression instanceof QinIrUnaryExpression unaryExpression) {
+            emitJavaRuntimeAliasesForExpression(js, unaryExpression.operand(), javaAliases);
+            return;
+        }
         if (expression instanceof QinIrIfExpression ifExpression) {
             emitJavaRuntimeAliasesForExpression(js, ifExpression.test(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.consequent(), javaAliases);
             emitJavaRuntimeAliasesForExpression(js, ifExpression.alternate(), javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrShortCircuitExpression shortCircuitExpression) {
+            emitJavaRuntimeAliasesForExpression(js, shortCircuitExpression.left(), javaAliases);
+            emitJavaRuntimeAliasesForExpression(js, shortCircuitExpression.right(), javaAliases);
             return;
         }
         if (expression instanceof QinIrFunctionLiteral functionLiteral) {
@@ -627,6 +703,10 @@ public class QinJsBackend implements QinIrCodeBackend {
                     methodReferenceExpression.classLocalName(),
                     methodReferenceExpression.ownerBinaryName(),
                     javaAliases);
+            return;
+        }
+        if (expression instanceof QinIrBoundMethodReferenceExpression boundMethodReferenceExpression) {
+            emitJavaRuntimeAliasesForExpression(js, boundMethodReferenceExpression.receiver(), javaAliases);
             return;
         }
         if (expression instanceof QinIrJavaInstanceofPatternExpression instanceofPatternExpression) {
@@ -775,9 +855,19 @@ public class QinJsBackend implements QinIrCodeBackend {
                 emitJavaLangIntegerRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangInteger");
             }
+            case "java.lang.Number" -> {
+                emitJavaLangNumberRuntime(js);
+                if (!"Number".equals(aliasName)) {
+                    emitJavaAliasBinding(js, aliasName, "__QinJavaLangNumber");
+                }
+            }
             case "java.lang.Double" -> {
                 emitJavaLangDoubleRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangDouble");
+            }
+            case "java.lang.Long" -> {
+                emitJavaLangLongRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangLong");
             }
             case "java.math.BigInteger" -> {
                 emitJavaMathBigIntegerRuntime(js);
@@ -806,6 +896,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.ClassNotFoundException" -> {
                 emitJavaLangExceptionRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaLangClassNotFoundException");
+            }
+            case "java.lang.ClassCastException" -> {
+                emitJavaLangExceptionRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangClassCastException");
             }
             case "java.lang.NoSuchMethodException" -> {
                 emitJavaLangExceptionRuntime(js);
@@ -855,6 +949,22 @@ public class QinJsBackend implements QinIrCodeBackend {
                 emitJavaIoFileRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaIoFile");
             }
+            case "java.io.ByteArrayOutputStream" -> {
+                emitJavaIoStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaIoByteArrayOutputStream");
+            }
+            case "java.io.ByteArrayInputStream" -> {
+                emitJavaIoStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaIoByteArrayInputStream");
+            }
+            case "java.io.DataOutputStream" -> {
+                emitJavaIoStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaIoDataOutputStream");
+            }
+            case "java.io.DataInputStream" -> {
+                emitJavaIoStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaIoDataInputStream");
+            }
             case "java.io.FileWriter" -> {
                 emitJavaIoWriterRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaIoFileWriter");
@@ -874,6 +984,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.nio.file.Files" -> {
                 emitJavaNioFileRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaNioFileFiles");
+            }
+            case "java.nio.charset.StandardCharsets" -> {
+                emitJavaNioCharsetRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaNioCharsetStandardCharsets");
             }
             case "java.time.LocalDateTime" -> {
                 emitJavaTimeRuntime(js);
@@ -903,11 +1017,21 @@ public class QinJsBackend implements QinIrCodeBackend {
                 emitJavaUtilArrayListRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilArrayList");
             }
+            case "java.util.ArrayDeque" -> {
+                emitJavaUtilArrayDequeRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilArrayDeque");
+            }
             case "java.util.HashSet", "java.util.LinkedHashSet" -> {
                 emitJavaUtilHashSetRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHashSet");
             }
-            case "java.util.HashMap", "java.util.LinkedHashMap",
+            case "java.util.TreeSet", "java.util.SortedSet", "java.util.NavigableSet" -> {
+                emitJavaUtilTreeSetRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilTreeSet");
+            }
+            case "java.util.Map",
+                    "java.util.HashMap", "java.util.LinkedHashMap",
+                    "java.util.TreeMap", "java.util.SortedMap", "java.util.NavigableMap",
                     "java.util.concurrent.ConcurrentHashMap", "java.util.concurrent.ConcurrentMap" -> {
                 emitJavaUtilHashMapRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHashMap");
@@ -924,6 +1048,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                 emitJavaUtilOptionalRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilOptional");
             }
+            case "java.util.Comparator" -> {
+                emitJavaUtilStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilComparator");
+            }
+            case "java.util.stream.Stream" -> {
+                emitJavaUtilStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilStream");
+            }
             case "java.util.stream.Collectors" -> {
                 emitJavaUtilStreamRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilStreamCollectors");
@@ -939,6 +1071,34 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.util.concurrent.atomic.AtomicLong" -> {
                 emitJavaUtilConcurrentAtomicLongRuntime(js);
                 emitJavaAliasBinding(js, aliasName, "__QinJavaUtilConcurrentAtomicLong");
+            }
+            case "com.subhuti.parser.SubhutiCompileOnlyDsl" -> {
+                emitSubhutiCompileOnlyDslRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinSubhutiCompileOnlyDsl");
+            }
+            case "java.util.zip.GZIPOutputStream" -> {
+                emitJavaIoStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilZipGZIPOutputStream");
+            }
+            case "java.util.zip.GZIPInputStream" -> {
+                emitJavaIoStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilZipGZIPInputStream");
+            }
+            case "java.util.Base64" -> {
+                emitJavaIoStreamRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilBase64");
+            }
+            case "java.security.MessageDigest" -> {
+                emitJavaSecurityDigestRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaSecurityMessageDigest");
+            }
+            case "java.util.HexFormat" -> {
+                emitJavaSecurityDigestRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaUtilHexFormat");
+            }
+            case "java.security.NoSuchAlgorithmException" -> {
+                emitJavaLangExceptionRuntime(js);
+                emitJavaAliasBinding(js, aliasName, "__QinJavaLangException");
             }
             case "com.github.benmanes.caffeine.cache.Caffeine" -> {
                 emitCaffeineRuntime(js);
@@ -989,7 +1149,15 @@ public class QinJsBackend implements QinIrCodeBackend {
             if ("__QinJavaUtilArrayList".equals(name) || "__QinJavaUtilList".equals(name)) {
                 externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableList");
             }
+            if ("__QinJavaUtilArrayDeque".equals(name)) {
+                externalJavaSdkRuntimeImports.add("__QinJavaUtilArrayList");
+                externalJavaSdkRuntimeImports.add("__QinJavaUtilStream");
+                externalJavaSdkRuntimeImports.add("__qin_java_hash_key_equals__");
+            }
             if ("__QinJavaUtilHashSet".equals(name) || "__QinJavaUtilSet".equals(name)) {
+                externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableSet");
+            }
+            if ("__QinJavaUtilTreeSet".equals(name)) {
                 externalJavaSdkRuntimeImports.add("__QinJavaUtilUnmodifiableSet");
             }
             if ("__QinJavaUtilHashMap".equals(name)
@@ -1058,10 +1226,29 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
     }
 
+    private void emitLocalTypeAnnotation(StringBuilder js, QinIrTypeRef type) {
+        if (type == null) {
+            emitAnyTypeAnnotation(js);
+        } else {
+            emitTypeAnnotation(js, type);
+        }
+    }
+
     private void emitTypeAnnotation(StringBuilder js, QinIrTypeRef type) {
         if (emitTypeAnnotations()) {
             js.append(": ").append(tsTypeName(type));
         }
+    }
+
+    private void emitMethodReturnTypeAnnotation(StringBuilder js, QinIrTypeRef type) {
+        if (!emitTypeAnnotations()) {
+            return;
+        }
+        if (type != null && type.kind() == QinIrTypeKind.VOID) {
+            js.append(": void");
+            return;
+        }
+        emitTypeAnnotation(js, type);
     }
 
     private void emitNullableTypeAnnotation(StringBuilder js, QinIrTypeRef type) {
@@ -1101,11 +1288,56 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (String.class.getName().equals(binaryName)) {
             return "string";
         }
+        if (Class.class.getName().equals(binaryName)) {
+            return "__QinJavaLangClass";
+        }
         if (Object.class.getName().equals(binaryName)) {
             return "any";
         }
         if (Boolean.class.getName().equals(binaryName)) {
-            return "boolean";
+            return "boolean | null";
+        }
+        if (Integer.class.getName().equals(binaryName)
+                || Long.class.getName().equals(binaryName)
+                || Double.class.getName().equals(binaryName)
+                || Number.class.getName().equals(binaryName)) {
+            return "number | null";
+        }
+        String javaIterableType = javaSdkIterableTypeName(type);
+        if (javaIterableType != null) {
+            return javaIterableType;
+        }
+        String javaListType = javaSdkListTypeName(type);
+        if (javaListType != null) {
+            return javaListType;
+        }
+        String javaDequeType = javaSdkDequeTypeName(type);
+        if (javaDequeType != null) {
+            return javaDequeType;
+        }
+        String javaSetType = javaSdkSetTypeName(type);
+        if (javaSetType != null) {
+            return javaSetType;
+        }
+        String javaMapType = javaSdkMapTypeName(type);
+        if (javaMapType != null) {
+            return javaMapType;
+        }
+        String javaMapEntryType = javaSdkMapEntryTypeName(type);
+        if (javaMapEntryType != null) {
+            return javaMapEntryType;
+        }
+        String javaFunctionalInterfaceType = javaFunctionalInterfaceTypeName(binaryName);
+        if (javaFunctionalInterfaceType != null) {
+            return javaFunctionalInterfaceType;
+        }
+        String javaStreamType = javaSdkStreamTypeName(type);
+        if (javaStreamType != null) {
+            return javaStreamType;
+        }
+        String javaSdkObjectType = javaSdkObjectTypeName(binaryName);
+        if (javaSdkObjectType != null) {
+            return javaSdkObjectType;
         }
         if (Number.class.isAssignableFrom(loadClassOrObject(binaryName))) {
             return "number";
@@ -1114,6 +1346,190 @@ public class QinJsBackend implements QinIrCodeBackend {
             return jsClassReference(binaryName);
         }
         return "any";
+    }
+
+    private String javaSdkIterableTypeName(QinIrTypeRef type) {
+        if (!"java.lang.Iterable".equals(type.binaryName())) {
+            return null;
+        }
+        if (type.typeArguments() == null || type.typeArguments().isEmpty()) {
+            return "Iterable<any>";
+        }
+        String elementTypeName = tsTypeName(type.typeArguments().get(0));
+        return "any".equals(elementTypeName)
+                ? "Iterable<any>"
+                : "Iterable<" + elementTypeName + ">";
+    }
+
+    private String javaSdkListTypeName(QinIrTypeRef type) {
+        String binaryName = type.binaryName();
+        if (!"java.util.List".equals(binaryName)
+                && !"java.util.ArrayList".equals(binaryName)
+                && !"java.util.Collection".equals(binaryName)) {
+            return null;
+        }
+        String runtimeTypeName = "__QinJavaUtilList";
+        if (type.typeArguments() == null || type.typeArguments().isEmpty()) {
+            return runtimeTypeName;
+        }
+        String elementTypeName = tsTypeName(type.typeArguments().get(0));
+        return "any".equals(elementTypeName)
+                ? runtimeTypeName
+                : runtimeTypeName + "<" + elementTypeName + ">";
+    }
+
+    private String javaSdkDequeTypeName(QinIrTypeRef type) {
+        String binaryName = type.binaryName();
+        if (!"java.util.Deque".equals(binaryName)
+                && !"java.util.ArrayDeque".equals(binaryName)) {
+            return null;
+        }
+        String runtimeTypeName = "__QinJavaUtilArrayDeque";
+        if (type.typeArguments() == null || type.typeArguments().isEmpty()) {
+            return runtimeTypeName;
+        }
+        String elementTypeName = tsTypeName(type.typeArguments().get(0));
+        return "any".equals(elementTypeName)
+                ? runtimeTypeName
+                : runtimeTypeName + "<" + elementTypeName + ">";
+    }
+
+    private String javaSdkSetTypeName(QinIrTypeRef type) {
+        String binaryName = type.binaryName();
+        if (!"java.util.Set".equals(binaryName)
+                && !"java.util.HashSet".equals(binaryName)
+                && !"java.util.LinkedHashSet".equals(binaryName)) {
+            return null;
+        }
+        String runtimeTypeName = "java.util.Set".equals(binaryName)
+                ? "__QinJavaUtilSet"
+                : "__QinJavaUtilHashSet";
+        if (type.typeArguments() == null || type.typeArguments().isEmpty()) {
+            return runtimeTypeName;
+        }
+        String elementTypeName = tsTypeName(type.typeArguments().get(0));
+        return "any".equals(elementTypeName)
+                ? runtimeTypeName
+                : runtimeTypeName + "<" + elementTypeName + ">";
+    }
+
+    private String javaSdkMapTypeName(QinIrTypeRef type) {
+        String binaryName = type.binaryName();
+        if (!"java.util.Map".equals(binaryName)
+                && !"java.util.HashMap".equals(binaryName)
+                && !"java.util.LinkedHashMap".equals(binaryName)
+                && !"java.util.IdentityHashMap".equals(binaryName)
+                && !"java.util.concurrent.ConcurrentHashMap".equals(binaryName)
+                && !"java.util.concurrent.ConcurrentMap".equals(binaryName)) {
+            return null;
+        }
+        String runtimeTypeName = "__QinJavaUtilHashMap";
+        if (type.typeArguments() == null || type.typeArguments().isEmpty()) {
+            return runtimeTypeName;
+        }
+        String keyTypeName = tsTypeName(type.typeArguments().get(0));
+        if (type.typeArguments().size() < 2) {
+            return "any".equals(keyTypeName)
+                    ? runtimeTypeName
+                    : runtimeTypeName + "<" + keyTypeName + ", any>";
+        }
+        String valueTypeName = tsTypeName(type.typeArguments().get(1));
+        return "any".equals(keyTypeName) && "any".equals(valueTypeName)
+                ? runtimeTypeName
+                : runtimeTypeName + "<" + keyTypeName + ", " + valueTypeName + ">";
+    }
+
+    private String javaSdkMapEntryTypeName(QinIrTypeRef type) {
+        String binaryName = type.binaryName();
+        if (!"java.util.Map$Entry".equals(binaryName)
+                && !"java.util.Map.Entry".equals(binaryName)) {
+            return null;
+        }
+        String runtimeTypeName = "__QinJavaUtilMapEntry";
+        if (type.typeArguments() == null || type.typeArguments().isEmpty()) {
+            return runtimeTypeName;
+        }
+        String keyTypeName = tsTypeName(type.typeArguments().get(0));
+        if (type.typeArguments().size() < 2) {
+            return "any".equals(keyTypeName)
+                    ? runtimeTypeName
+                    : runtimeTypeName + "<" + keyTypeName + ", any>";
+        }
+        String valueTypeName = tsTypeName(type.typeArguments().get(1));
+        return "any".equals(keyTypeName) && "any".equals(valueTypeName)
+                ? runtimeTypeName
+                : runtimeTypeName + "<" + keyTypeName + ", " + valueTypeName + ">";
+    }
+
+    private String javaSdkStreamTypeName(QinIrTypeRef type) {
+        String binaryName = type.binaryName();
+        if (!"java.util.stream.Stream".equals(binaryName)) {
+            return null;
+        }
+        String runtimeTypeName = "__QinJavaUtilStream";
+        if (type.typeArguments() == null || type.typeArguments().isEmpty()) {
+            return runtimeTypeName;
+        }
+        String elementTypeName = tsTypeName(type.typeArguments().get(0));
+        return "any".equals(elementTypeName)
+                ? runtimeTypeName
+                : runtimeTypeName + "<" + elementTypeName + ">";
+    }
+
+    private String javaFunctionalInterfaceTypeName(String binaryName) {
+        return switch (binaryName) {
+            case "java.lang.Runnable" -> "QinJavaRunnable";
+            case "java.util.Comparator" -> "QinJavaComparator";
+            case "java.util.concurrent.Callable" -> "QinJavaCallable";
+            case "java.util.function.BiConsumer" -> "QinJavaBiConsumer";
+            case "java.util.function.BiFunction" -> "QinJavaBiFunction";
+            case "java.util.function.BiPredicate" -> "QinJavaBiPredicate";
+            case "java.util.function.Predicate" -> "QinJavaPredicate";
+            case "java.util.function.Function" -> "QinJavaFunction";
+            case "java.util.function.Consumer" -> "QinJavaConsumer";
+            case "java.util.function.Supplier" -> "QinJavaSupplier";
+            case "java.util.function.UnaryOperator" -> "QinJavaFunction";
+            default -> null;
+        };
+    }
+
+    private String javaSdkObjectTypeName(String binaryName) {
+        String runtimeOwner = switch (binaryName) {
+            case "java.lang.Throwable" -> "__QinJavaLangThrowable";
+            case "java.lang.Exception" -> "__QinJavaLangException";
+            case "java.lang.RuntimeException" -> "__QinJavaLangRuntimeException";
+            case "java.lang.ReflectiveOperationException" -> "__QinJavaLangReflectiveOperationException";
+            case "java.lang.ClassNotFoundException" -> "__QinJavaLangClassNotFoundException";
+            case "java.lang.ClassCastException" -> "__QinJavaLangClassCastException";
+            case "java.lang.NoSuchMethodException" -> "__QinJavaLangNoSuchMethodException";
+            case "java.lang.reflect.InvocationTargetException" -> "__QinJavaLangReflectInvocationTargetException";
+            case "java.lang.NumberFormatException" -> "__QinJavaLangNumberFormatException";
+            case "java.lang.UnsupportedOperationException" -> "__QinJavaLangUnsupportedOperationException";
+            case "java.lang.Error" -> "__QinJavaLangError";
+            case "java.lang.StackOverflowError" -> "__QinJavaLangStackOverflowError";
+            case "java.lang.IllegalArgumentException" -> "__QinJavaLangIllegalArgumentException";
+            case "java.lang.IllegalStateException" -> "__QinJavaLangIllegalStateException";
+            case "java.io.IOException" -> "__QinJavaIoIOException";
+            case "java.lang.StringBuilder" -> "__QinJavaLangStringBuilder";
+            case "java.io.File" -> "__QinJavaIoFile";
+            case "java.io.ByteArrayOutputStream" -> "__QinJavaIoByteArrayOutputStream";
+            case "java.io.ByteArrayInputStream" -> "__QinJavaIoByteArrayInputStream";
+            case "java.io.DataOutputStream" -> "__QinJavaIoDataOutputStream";
+            case "java.io.DataInputStream" -> "__QinJavaIoDataInputStream";
+            case "java.io.FileWriter" -> "__QinJavaIoFileWriter";
+            case "java.io.BufferedWriter" -> "__QinJavaIoBufferedWriter";
+            case "java.nio.file.Path" -> "__QinJavaNioFilePath";
+            case "java.time.LocalDateTime" -> "__QinJavaTimeLocalDateTime";
+            case "java.time.format.DateTimeFormatter" -> "__QinJavaTimeFormatDateTimeFormatter";
+            case "java.util.regex.Pattern" -> "__QinJavaUtilRegexPattern";
+            case "java.util.regex.Matcher" -> "__QinJavaUtilRegexMatcher";
+            case "java.util.concurrent.atomic.AtomicLong" -> "__QinJavaUtilConcurrentAtomicLong";
+            default -> null;
+        };
+        if (runtimeOwner != null) {
+            requireExternalJavaSdkRuntime(runtimeOwner);
+        }
+        return runtimeOwner;
     }
 
     private Class<?> loadClassOrObject(String binaryName) {
@@ -1149,10 +1565,18 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private String jsJavaMethodName(String sourceName) {
-        return jsIdentifier(sourceName);
+        return jsMemberIdentifier(sourceName);
     }
 
     private String jsIdentifier(String sourceName) {
+        return jsIdentifier(sourceName, true);
+    }
+
+    private String jsMemberIdentifier(String sourceName) {
+        return jsIdentifier(sourceName, false);
+    }
+
+    private String jsIdentifier(String sourceName, boolean escapeReservedWord) {
         String value = sourceName == null || sourceName.isBlank() ? "__qin_empty" : sourceName;
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < value.length(); i++) {
@@ -1166,7 +1590,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         String candidate = result.toString();
         if (candidate.isBlank()
                 || Character.isDigit(candidate.charAt(0))
-                || isJsReservedWord(candidate)) {
+                || (escapeReservedWord && isJsReservedWord(candidate))) {
             candidate = "__qin_" + candidate;
         }
         return candidate;
@@ -1314,6 +1738,24 @@ public class QinJsBackend implements QinIrCodeBackend {
         throw new IllegalArgumentException("Unsupported Java record static literal value: " + value.getClass().getName());
     }
 
+    private void emitSubhutiCompileOnlyDslRuntime(StringBuilder js) {
+        if (js.indexOf("const __QinSubhutiCompileOnlyDsl") >= 0) {
+            return;
+        }
+        js.append("""
+                const __QinSubhutiCompileOnlyDsl = {
+                  __fail(name) {
+                    throw new Error("SubhutiCompileOnlyDsl." + name + " is compile-time-only and cannot execute at runtime");
+                  },
+                  Or(..._args) { return this.__fail("Or"); },
+                  Option(..._args) { return this.__fail("Option"); },
+                  Many(..._args) { return this.__fail("Many"); },
+                  AtLeastOne(..._args) { return this.__fail("AtLeastOne"); },
+                  gate(..._args) { return this.__fail("gate"); }
+                };
+                """);
+    }
+
     private void emitJavaLangStringRuntime(StringBuilder js) {
         if (externalJavaSdkRuntime) {
             requireExternalJavaSdkRuntime("__QinJavaLangString");
@@ -1392,6 +1834,31 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     return this.__hashCode(value);
                   },
+                  regionMatches(value, ...args) {
+                    const ignoreCase = args.length === 5 ? args[0] === true : false;
+                    const offsetBase = args.length === 5 ? 1 : 0;
+                    const toffset = Number(args[offsetBase]);
+                    const other = String(args[offsetBase + 1]);
+                    const ooffset = Number(args[offsetBase + 2]);
+                    const length = Number(args[offsetBase + 3]);
+                    const text = String(value);
+                    if (args.length !== 4 && args.length !== 5) {
+                      return false;
+                    }
+                    if (toffset < 0 || ooffset < 0 || length < 0) {
+                      return false;
+                    }
+                    if (toffset + length > text.length || ooffset + length > other.length) {
+                      return false;
+                    }
+                    let left = text.slice(toffset, toffset + length);
+                    let right = other.slice(ooffset, ooffset + length);
+                    if (ignoreCase) {
+                      left = left.toLowerCase();
+                      right = right.toLowerCase();
+                    }
+                    return left === right;
+                  },
                   startsWith(value, prefix) {
                     return String(value).startsWith(String(prefix));
                   },
@@ -1404,9 +1871,20 @@ public class QinJsBackend implements QinIrCodeBackend {
                   substring(value, start, end) {
                     return String(value).substring(Number(start), end == null ? undefined : Number(end));
                   },
+                  getBytes(value, _charset) {
+                    const text = String(value);
+                    if (typeof TextEncoder !== "undefined") {
+                      return Array.from(new TextEncoder().encode(text));
+                    }
+                    const bufferCtor = globalThis.Buffer;
+                    if (typeof bufferCtor !== "undefined" && typeof bufferCtor.from === "function") {
+                      return Array.from(bufferCtor.from(text, "utf8"));
+                    }
+                    return Array.from(text).map((ch) => ch.charCodeAt(0) & 0xff);
+                  },
                   format(formatText, ...values) {
                     let valueIndex = 0;
-                    return ("" + formatText).replace(/%([csd])/g, (_match, kind) => {
+                    return ("" + formatText).replace(new RegExp("%([csd])", "g"), (_match, kind) => {
                       const value = values[valueIndex++];
                       if (kind === "c") {
                         if (typeof value === "number") {
@@ -1449,6 +1927,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                   },
                   parseBoolean(value) {
                     return String(value).toLowerCase() === "true";
+                  },
+                  getBoolean(name) {
+                    const key = String(name);
+                    const properties = globalThis.__qinJavaSystemProperties;
+                    const value = properties == null
+                      ? null
+                      : (typeof properties.get === "function" ? properties.get(key) : properties[key]);
+                    return __QinJavaLangBoolean.parseBoolean(value);
                   }
                 };
                 """);
@@ -1505,15 +1991,32 @@ public class QinJsBackend implements QinIrCodeBackend {
             requireExternalJavaSdkRuntime("__QinJavaLangInteger");
             return;
         }
-        if (js.indexOf("const __QinJavaLangInteger") >= 0) {
+        if (js.indexOf("const __QinJavaLangInteger = {") >= 0) {
             return;
         }
         js.append("""
+                // qin-number-runtime-v2
                 const __QinJavaLangInteger = {
-                  sum(a, b) { return (a | 0) + (b | 0); },
-                  compare(a, b) { return (a | 0) === (b | 0) ? 0 : ((a | 0) < (b | 0) ? -1 : 1); },
-                  valueOf(value) { return value | 0; },
-                  parseInt(value, radix = 10) { return Number.parseInt(String(value), radix); }
+                  isInstance(value) {
+                    return typeof value === "number" && Number.isInteger(value);
+                  },
+                  sum(a, b) { return a + b; },
+                  hashCode(value) { return Number(value) | 0; },
+                  compare(a, b) {
+                    const left = a;
+                    const right = b;
+                    if (left === right) {
+                      return 0;
+                    }
+                    if (left < right) {
+                      return -1;
+                    }
+                    return 1;
+                  },
+                  valueOf(value) { return value; },
+                  parseInt(value, radix) {
+                    return parseInt(value, radix === undefined ? 10 : radix);
+                  }
                 };
                 """);
     }
@@ -1523,14 +2026,15 @@ public class QinJsBackend implements QinIrCodeBackend {
             requireExternalJavaSdkRuntime("__QinJavaLangDouble");
             return;
         }
-        if (js.indexOf("const __QinJavaLangDouble") >= 0) {
+        if (js.indexOf("const __QinJavaLangDouble = {") >= 0) {
             return;
         }
         js.append("""
+                // qin-number-runtime-v2
                 const __QinJavaLangDouble = {
                   compare(a, b) {
-                    const left = Number(a);
-                    const right = Number(b);
+                    const left = a;
+                    const right = b;
                     if (Number.isNaN(left) && Number.isNaN(right)) {
                       return 0;
                     }
@@ -1540,10 +2044,79 @@ public class QinJsBackend implements QinIrCodeBackend {
                     if (Number.isNaN(right)) {
                       return -1;
                     }
-                    return left === right ? 0 : (left < right ? -1 : 1);
+                    if (left === right) {
+                      return 0;
+                    }
+                    if (left < right) {
+                      return -1;
+                    }
+                    return 1;
                   },
-                  parseDouble(value) { return Number.parseFloat(String(value)); },
+                  parseDouble(value) { return parseFloat(value); },
+                  valueOf(value) { return value; }
+                };
+                """);
+    }
+
+    private void emitJavaLangNumberRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangNumber");
+            return;
+        }
+        if (js.indexOf("const __QinJavaLangNumber = {") >= 0) {
+            return;
+        }
+        js.append("""
+                // qin-number-runtime-v2
+                const __QinJavaLangNumber = {
+                  isInstance(value) {
+                    return typeof value === "number";
+                  },
+                  intValue(value) { return Number(value) | 0; },
+                  longValue(value) { return Math.trunc(Number(value)); },
+                  floatValue(value) { return Number(value); },
+                  doubleValue(value) { return Number(value); },
+                  byteValue(value) { return (Number(value) << 24) >> 24; },
+                  shortValue(value) { return (Number(value) << 16) >> 16; },
                   valueOf(value) { return Number(value); }
+                };
+                """);
+    }
+
+    private void emitJavaLangLongRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaLangLong");
+            return;
+        }
+        if (js.indexOf("const __QinJavaLangLong = {") >= 0) {
+            return;
+        }
+        js.append("""
+                // qin-number-runtime-v2
+                const __QinJavaLangLong = {
+                  sum(a, b) { return a + b; },
+                  hashCode(value) {
+                    const longValue = typeof value === "bigint" ? value : BigInt(Math.trunc(Number(value)));
+                    return Number(longValue ^ (longValue >> 32n)) | 0;
+                  },
+                  compare(a, b) {
+                    const left = a;
+                    const right = b;
+                    if (left === right) {
+                      return 0;
+                    }
+                    if (left < right) {
+                      return -1;
+                    }
+                    return 1;
+                  },
+                  valueOf(value) { return value; },
+                  parseLong(value, radix) {
+                    return parseInt(value, radix === undefined ? 10 : radix);
+                  },
+                  toString(value, radix) {
+                    return value.toString(radix === undefined ? 10 : radix);
+                  }
                 };
                 """);
     }
@@ -1603,6 +2176,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     "__QinJavaLangRuntimeException",
                     "__QinJavaLangReflectiveOperationException",
                     "__QinJavaLangClassNotFoundException",
+                    "__QinJavaLangClassCastException",
                     "__QinJavaLangNoSuchMethodException",
                     "__QinJavaLangReflectInvocationTargetException",
                     "__QinJavaLangError",
@@ -1643,6 +2217,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                 class __QinJavaLangReflectiveOperationException extends __QinJavaLangException {
                 }
                 class __QinJavaLangClassNotFoundException extends __QinJavaLangException {
+                }
+                class __QinJavaLangClassCastException extends __QinJavaLangRuntimeException {
                 }
                 class __QinJavaLangNoSuchMethodException extends __QinJavaLangReflectiveOperationException {
                 }
@@ -1771,17 +2347,116 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         js.append("""
+                function __qin_java_io_file_separator() {
+                  return globalThis.__qinJavaFileSeparator == null
+                    ? "/"
+                    : String(globalThis.__qinJavaFileSeparator);
+                }
+                function __qin_java_io_file_separator_char_code() {
+                  const sep = __qin_java_io_file_separator();
+                  return sep.length === 0 ? 47 : sep.charCodeAt(0);
+                }
+                function __qin_java_io_file_is_separator_code(code) {
+                  return code === 47 || code === 92;
+                }
+                function __qin_java_io_file_drive_prefix(path) {
+                  const text = String(path == null ? "" : path);
+                  if (text.length < 2 || text.charAt(1) !== ":") {
+                    return "";
+                  }
+                  const code = text.charCodeAt(0);
+                  const isUpper = code >= 65 && code <= 90;
+                  const isLower = code >= 97 && code <= 122;
+                  return isUpper || isLower ? text.slice(0, 2) : "";
+                }
+                function __qin_java_io_file_join(parent, child) {
+                  const sep = __qin_java_io_file_separator();
+                  const left = String(parent == null ? "" : parent);
+                  const right = String(child == null ? "" : child);
+                  if (left.length === 0) {
+                    return right;
+                  }
+                  if (right.length === 0) {
+                    return left;
+                  }
+                  const lastCode = left.charCodeAt(left.length - 1);
+                  return __qin_java_io_file_is_separator_code(lastCode) ? left + right : left + sep + right;
+                }
+                function __qin_java_io_file_normalize(path) {
+                  const text = String(path == null ? "" : path);
+                  if (text.length === 0) {
+                    return text;
+                  }
+                  const sep = __qin_java_io_file_separator();
+                  const sepCode = __qin_java_io_file_separator_char_code();
+                  let normalized = "";
+                  for (let i = 0; i < text.length; i++) {
+                    const code = text.charCodeAt(i);
+                    normalized += __qin_java_io_file_is_separator_code(code)
+                      ? String.fromCharCode(sepCode)
+                      : text.charAt(i);
+                  }
+                  const prefix = __qin_java_io_file_drive_prefix(normalized);
+                  let rest = prefix.length === 0 ? normalized : normalized.slice(prefix.length);
+                  const absolute = rest.startsWith(sep);
+                  const parts = [];
+                  let part = "";
+                  for (let i = 0; i <= rest.length; i++) {
+                    const atEnd = i === rest.length;
+                    const ch = atEnd ? "" : rest.charAt(i);
+                    if (!atEnd && ch !== sep) {
+                      part += ch;
+                      continue;
+                    }
+                    if (part.length === 0 || part === ".") {
+                      part = "";
+                      continue;
+                    }
+                    if (part === "..") {
+                      if (parts.length > 0 && parts[parts.length - 1] !== "..") {
+                        parts.pop();
+                      } else if (!absolute) {
+                        parts.push(part);
+                      }
+                      part = "";
+                      continue;
+                    }
+                    parts.push(part);
+                    part = "";
+                  }
+                  const body = parts.join(sep);
+                  return prefix + (absolute ? sep : "") + body;
+                }
+                function __qin_java_io_file_configured_exists(path) {
+                  const normalized = __qin_java_io_file_normalize(path);
+                  const hook = globalThis.__qinJavaFileExists;
+                  if (typeof hook === "function") {
+                    return !!hook(normalized);
+                  }
+                  const files = globalThis.__qinJavaExistingFiles;
+                  if (files == null) {
+                    return false;
+                  }
+                  if (typeof files.has === "function") {
+                    return !!(files.has(normalized) || files.has(String(path)));
+                  }
+                  if (Array.isArray(files)) {
+                    return files.indexOf(normalized) >= 0 || files.indexOf(String(path)) >= 0;
+                  }
+                  if (typeof files === "object") {
+                    return !!(files[normalized] || files[String(path)]);
+                  }
+                  return false;
+                }
                 class __QinJavaIoFile {
                   constructor(pathOrParent, child) {
                     if (arguments.length >= 2) {
-                      const parentPath = pathOrParent instanceof __QinJavaIoFile
-                        ? pathOrParent.getPath()
-                        : String(pathOrParent == null ? "" : pathOrParent);
-                      this.__path = __QinJavaIoFile.__join(parentPath, child);
+                      const parentPath = String(pathOrParent == null ? "" : pathOrParent);
+                      this.__path = __qin_java_io_file_join(parentPath, child);
                     } else {
                       this.__path = String(pathOrParent == null ? "" : pathOrParent);
                     }
-                    this.__path = __QinJavaIoFile.__normalize(this.__path);
+                    this.__path = __qin_java_io_file_normalize(this.__path);
                   }
                   static __separator() {
                     return globalThis.__qinJavaFileSeparator == null
@@ -1789,7 +2464,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                       : String(globalThis.__qinJavaFileSeparator);
                   }
                   static __separatorCharCode() {
-                    const sep = __QinJavaIoFile.__separator();
+                    const sep = __qin_java_io_file_separator();
                     return sep.length === 0 ? 47 : sep.charCodeAt(0);
                   }
                   static __isSeparatorCode(code) {
@@ -1800,16 +2475,16 @@ public class QinJsBackend implements QinIrCodeBackend {
                     if (text.length === 0) {
                       return text;
                     }
-                    const sep = __QinJavaIoFile.__separator();
-                    const sepCode = __QinJavaIoFile.__separatorCharCode();
+                    const sep = __qin_java_io_file_separator();
+                    const sepCode = __qin_java_io_file_separator_char_code();
                     let normalized = "";
                     for (let i = 0; i < text.length; i++) {
                       const code = text.charCodeAt(i);
-                      normalized += __QinJavaIoFile.__isSeparatorCode(code)
+                      normalized += __qin_java_io_file_is_separator_code(code)
                         ? String.fromCharCode(sepCode)
                         : text.charAt(i);
                     }
-                    const prefix = __QinJavaIoFile.__drivePrefix(normalized);
+                    const prefix = __qin_java_io_file_drive_prefix(normalized);
                     let rest = prefix.length === 0 ? normalized : normalized.slice(prefix.length);
                     const absolute = rest.startsWith(sep);
                     const parts = [];
@@ -1851,7 +2526,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return isUpper || isLower ? text.slice(0, 2) : "";
                   }
                   static __join(parent, child) {
-                    const sep = __QinJavaIoFile.__separator();
+                    const sep = __qin_java_io_file_separator();
                     const left = String(parent == null ? "" : parent);
                     const right = String(child == null ? "" : child);
                     if (left.length === 0) {
@@ -1861,10 +2536,10 @@ public class QinJsBackend implements QinIrCodeBackend {
                       return left;
                     }
                     const lastCode = left.charCodeAt(left.length - 1);
-                    return __QinJavaIoFile.__isSeparatorCode(lastCode) ? left + right : left + sep + right;
+                    return __qin_java_io_file_is_separator_code(lastCode) ? left + right : left + sep + right;
                   }
                   static __configuredExists(path) {
-                    const normalized = __QinJavaIoFile.__normalize(path);
+                    const normalized = __qin_java_io_file_normalize(path);
                     const hook = globalThis.__qinJavaFileExists;
                     if (typeof hook === "function") {
                       return !!hook(normalized);
@@ -1891,19 +2566,19 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return this.__path;
                   }
                   getParentFile() {
-                    const sep = __QinJavaIoFile.__separator();
-                    const path = this.__path;
-                    if (path == null || path.length === 0) {
+                    const sep = __qin_java_io_file_separator();
+                    const currentPath = this.__path;
+                    if (currentPath == null || currentPath.length === 0) {
                       return null;
                     }
-                    let end = path.length;
-                    while (end > 1 && __QinJavaIoFile.__isSeparatorCode(path.charCodeAt(end - 1))) {
+                    let end = currentPath.length;
+                    while (end > 1 && __qin_java_io_file_is_separator_code(currentPath.charCodeAt(end - 1))) {
                       end--;
                     }
-                    const trimmed = path.slice(0, end);
+                    const trimmed = currentPath.slice(0, end);
                     let index = -1;
                     for (let i = trimmed.length - 1; i >= 0; i--) {
-                      if (__QinJavaIoFile.__isSeparatorCode(trimmed.charCodeAt(i))) {
+                      if (__qin_java_io_file_is_separator_code(trimmed.charCodeAt(i))) {
                         index = i;
                         break;
                       }
@@ -1914,22 +2589,203 @@ public class QinJsBackend implements QinIrCodeBackend {
                     if (index === 0) {
                       return new __QinJavaIoFile(trimmed.charAt(0));
                     }
-                    if (index === 2 && __QinJavaIoFile.__drivePrefix(trimmed).length > 0) {
+                    if (index === 2 && __qin_java_io_file_drive_prefix(trimmed).length > 0) {
                       return new __QinJavaIoFile(trimmed.slice(0, 3));
                     }
                     return new __QinJavaIoFile(trimmed.slice(0, index));
                   }
                   exists() {
-                    return __QinJavaIoFile.__configuredExists(this.__path);
+                    return __qin_java_io_file_configured_exists(this.__path);
                   }
                   equals(other) {
-                    return other instanceof __QinJavaIoFile && other.getPath() === this.__path;
+                    return other instanceof __QinJavaIoFile && String(other) === String(this.__path);
                   }
                   toString() {
                     return this.__path;
                   }
                 }
-                __QinJavaIoFile.separator = __QinJavaIoFile.__separator();
+                __QinJavaIoFile.separator = __qin_java_io_file_separator();
+                """);
+    }
+
+    private void emitJavaIoStreamRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaIoByteArrayOutputStream");
+            requireExternalJavaSdkRuntime("__QinJavaIoByteArrayInputStream");
+            requireExternalJavaSdkRuntime("__QinJavaIoDataOutputStream");
+            requireExternalJavaSdkRuntime("__QinJavaIoDataInputStream");
+            requireExternalJavaSdkRuntime("__QinJavaUtilZipGZIPOutputStream");
+            requireExternalJavaSdkRuntime("__QinJavaUtilZipGZIPInputStream");
+            requireExternalJavaSdkRuntime("__QinJavaUtilBase64");
+            return;
+        }
+        if (js.indexOf("class __QinJavaIoByteArrayOutputStream") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaIoOutputStream {
+                  write(_value, _offset, _length) {}
+                  close() {}
+                }
+                class __QinJavaIoInputStream {
+                  read(): number { return -1; }
+                  readBytes(_length): any[] { return []; }
+                  readAllBytes(): any[] { return []; }
+                  close() {}
+                }
+                class __QinJavaIoByteArrayOutputStream extends __QinJavaIoOutputStream {
+                  __bytes: any[] = [];
+                  constructor(_size) { this.__bytes = []; }
+                  static __qin_bytes(value): any[] {
+                    if (value == null) return [];
+                    if (Array.isArray(value)) {
+                      const result = [];
+                      for (let index = 0; index < value.length; index++) {
+                        result.push(Number(value[index]) & 0xff);
+                      }
+                      return result;
+                    }
+                    return [Number(value) & 0xff];
+                  }
+                  static __qin_concat_bytes(left, right): any[] {
+                    const result = [];
+                    for (let index = 0; index < left.length; index++) result.push(left[index]);
+                    for (let index = 0; index < right.length; index++) result.push(right[index]);
+                    return result;
+                  }
+                  static __qin_count(items): number {
+                    let count = 0;
+                    for (let index = 0; index < items.length; index++) count++;
+                    return count;
+                  }
+                  write(value, offset, length) {
+                    const bytes = __QinJavaIoByteArrayOutputStream.__qin_bytes(value);
+                    let start = 0;
+                    if (offset != null) start = Number(offset);
+                    let end = bytes.length;
+                    if (length != null) {
+                      const requestedEnd = start + Number(length);
+                      if (requestedEnd < end) end = requestedEnd;
+                    }
+                    const chunk = [];
+                    for (let index = start; index < end; index++) chunk.push(bytes[index]);
+                    this.__bytes = __QinJavaIoByteArrayOutputStream.__qin_concat_bytes(this.__bytes, chunk);
+                  }
+                  toByteArray(): any[] { return this.__bytes; }
+                  size(): number { return this.__bytes.length; }
+                  close() {}
+                }
+                class __QinJavaIoByteArrayInputStream extends __QinJavaIoInputStream {
+                  __bytes: any[] = [];
+                  __offset: number = 0;
+                  constructor(bytes) { this.__bytes = __QinJavaIoByteArrayOutputStream.__qin_bytes(bytes); this.__offset = 0; }
+                  read(): number { return this.__offset >= this.__bytes.length ? -1 : this.__bytes[this.__offset++]; }
+                  readBytes(length): any[] {
+                    const end = Math.min(this.__offset + Number(length), this.__bytes.length);
+                    const result = [];
+                    for (let index = this.__offset; index < end; index++) result.push(this.__bytes[index]);
+                    this.__offset = end;
+                    return result;
+                  }
+                  readAllBytes(): any[] { return this.readBytes(this.__bytes.length - this.__offset); }
+                  close() {}
+                }
+                class __QinJavaIoDataOutputStream {
+                  __output: __QinJavaIoOutputStream;
+                  constructor(output: __QinJavaIoOutputStream) { this.__output = output; }
+                  write(value, offset, length) { this.__output.write(value, offset, length); }
+                  writeInt(value) {
+                    const number = Number(value) | 0;
+                    this.write([number >>> 24, number >>> 16, number >>> 8, number]);
+                  }
+                  writeByte(value) { this.write([Number(value) & 0xff]); }
+                  writeBoolean(value) { this.writeByte(value ? 1 : 0); }
+                  writeUTF(value) {
+                    const bytes = __QinJavaIoByteArrayOutputStream.__qin_bytes(String(value));
+                    const byteCount = __QinJavaIoByteArrayOutputStream.__qin_count(bytes);
+                    if (byteCount > 65535) throw new Error("encoded string too long: " + byteCount);
+                    this.writeByte(byteCount >>> 8);
+                    this.writeByte(byteCount);
+                    this.write(bytes);
+                  }
+                  close() { if (this.__output && typeof this.__output.close === "function") this.__output.close(); }
+                }
+                class __QinJavaIoDataInputStream {
+                  __input: __QinJavaIoInputStream;
+                  constructor(input: __QinJavaIoInputStream) { this.__input = input; }
+                  __readUnsignedByte(): number {
+                    const value = this.__input.read();
+                    if (value < 0) throw new Error("EOFException");
+                    return value & 0xff;
+                  }
+                  readInt(): number {
+                    return ((this.__readUnsignedByte() << 24) | (this.__readUnsignedByte() << 16)
+                      | (this.__readUnsignedByte() << 8) | this.__readUnsignedByte()) | 0;
+                  }
+                  readByte(): number { const value = this.__readUnsignedByte(); return value > 127 ? value - 256 : value; }
+                  readBoolean(): boolean { return this.__readUnsignedByte() !== 0; }
+                  readUTF(): string {
+                    const length = (this.__readUnsignedByte() << 8) | this.__readUnsignedByte();
+                    return __qin_java_utf8_decode__(this.__input.readBytes(length));
+                  }
+                  read(): number { return this.__input.read(); }
+                  close() { if (this.__input && typeof this.__input.close === "function") this.__input.close(); }
+                }
+                function __qin_missing_zlib() {
+                  throw new Error("Qin internal Java GZIP stream runtime requires external @qin/java-sdk-js zlib support");
+                }
+                class __QinJavaUtilZipGZIPOutputStream extends __QinJavaIoOutputStream {
+                  __output: __QinJavaIoOutputStream;
+                  __buffer: __QinJavaIoByteArrayOutputStream;
+                  constructor(output: __QinJavaIoOutputStream) { this.__output = output; this.__buffer = new __QinJavaIoByteArrayOutputStream(); }
+                  write(value, offset, length) { this.__buffer.write(value, offset, length); }
+                  close() { __qin_missing_zlib(); }
+                }
+                class __QinJavaUtilZipGZIPInputStream extends __QinJavaIoByteArrayInputStream {
+                  constructor(input: __QinJavaIoInputStream) { __qin_missing_zlib(); super(input.readAllBytes()); }
+                }
+                const __QinJavaUtilBase64 = {
+                  getEncoder() { return { encodeToString(bytes) {
+                    if (typeof Buffer !== "undefined") return Buffer.from(__QinJavaIoByteArrayOutputStream.__qin_bytes(bytes)).toString("base64");
+                    const encoded = __QinJavaIoByteArrayOutputStream.__qin_bytes(bytes);
+                    let binary = "";
+                    for (let index = 0; index < encoded.length; index++) binary += String.fromCharCode(encoded[index]);
+                    return btoa(binary);
+                  }}; },
+                  getDecoder() { return { decode(text) {
+                    if (typeof Buffer !== "undefined") return new Uint8Array(Buffer.from(String(text), "base64"));
+                    const binary = atob(String(text)); const bytes = new Uint8Array(binary.length);
+                    for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+                    return bytes;
+                  }}; }
+                };
+                """);
+    }
+
+    private void emitJavaSecurityDigestRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaSecurityMessageDigest");
+            requireExternalJavaSdkRuntime("__QinJavaUtilHexFormat");
+            return;
+        }
+        if (js.indexOf("const __QinJavaSecurityMessageDigest") >= 0) {
+            return;
+        }
+        js.append("""
+                class __QinJavaSecurityMessageDigestRuntime {
+                  static getInstance(_algorithm) {
+                    throw new Error("Qin internal MessageDigest runtime requires external @qin/java-sdk-js crypto support");
+                  }
+                }
+                const __QinJavaSecurityMessageDigest = __QinJavaSecurityMessageDigestRuntime;
+                const __QinJavaUtilHexFormat = {
+                  of() {
+                    return { formatHex(bytes) {
+                      const data = bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes || []);
+                      return Array.from(data).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+                    }};
+                  }
+                };
                 """);
     }
 
@@ -1948,8 +2804,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                     this.__path = path == null ? "" : String(path);
                   }
                   getParent() {
-                    const parent = new __QinJavaIoFile(this.__path).getParentFile();
-                    return parent == null ? null : new __QinJavaNioFilePath(parent.getPath());
+                    const __qin_parent = new __QinJavaIoFile(this.__path).getParentFile();
+                    return __qin_parent == null ? null : new __QinJavaNioFilePath(String(__qin_parent));
                   }
                   toString() {
                     return this.__path;
@@ -1957,11 +2813,11 @@ public class QinJsBackend implements QinIrCodeBackend {
                 }
                 class __QinJavaNioFilePaths {
                   static get(first, ...more) {
-                    let path = first == null ? "" : String(first);
+                    let joinedPath = first == null ? "" : String(first);
                     for (const part of more) {
-                      path = __QinJavaIoFile.__join(path, part == null ? "" : String(part));
+                      joinedPath = __qin_java_io_file_join(joinedPath, part == null ? "" : String(part));
                     }
-                    return new __QinJavaNioFilePath(path);
+                    return new __QinJavaNioFilePath(joinedPath);
                   }
                 }
                 class __QinJavaNioFileFiles {
@@ -2032,55 +2888,40 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         js.append("""
                 class __QinJavaTimeFormatDateTimeFormatter {
+                  __pattern: string = "";
                   constructor(pattern) {
                     this.__pattern = String(pattern == null ? "" : pattern);
                   }
                   static ofPattern(pattern) {
                     return new __QinJavaTimeFormatDateTimeFormatter(pattern);
                   }
-                  format(value) {
-                    if (value != null && typeof value.format === "function") {
-                      return value.format(this);
-                    }
-                    return __QinJavaTimeLocalDateTime.__formatDate(new Date(), this.__pattern);
+                  format(value: __QinJavaTimeLocalDateTime) {
+                    return value == null
+                      ? __QinJavaTimeLocalDateTime.__formatDate(__qin_java_time_now__(), this.__pattern)
+                      : value.format(this);
                   }
                 }
                 class __QinJavaTimeLocalDateTime {
+                  __date: any = null;
                   constructor(date) {
-                    this.__date = date instanceof Date ? date : new Date(date == null ? Date.now() : date);
+                    this.__date = __qin_java_time_from__(date);
                   }
                   static now() {
-                    const fixed = globalThis.__qinJavaFixedNow;
-                    return new __QinJavaTimeLocalDateTime(fixed == null ? new Date() : new Date(fixed));
+                    return new __QinJavaTimeLocalDateTime(__qin_java_time_now__());
                   }
-                  format(formatter) {
+                  format(formatter: __QinJavaTimeFormatDateTimeFormatter) {
                     const pattern = formatter == null ? "" : formatter.__pattern;
                     return __QinJavaTimeLocalDateTime.__formatDate(this.__date, pattern);
                   }
-                  static __pad(value, width) {
+                  static __pad(value, width: number) {
                     let text = String(value);
                     while (text.length < width) {
                       text = "0" + text;
                     }
                     return text;
                   }
-                  static __formatDate(date, pattern) {
-                    const tokens = {
-                      yyyy: String(date.getFullYear()),
-                      MM: __QinJavaTimeLocalDateTime.__pad(date.getMonth() + 1, 2),
-                      dd: __QinJavaTimeLocalDateTime.__pad(date.getDate(), 2),
-                      HH: __QinJavaTimeLocalDateTime.__pad(date.getHours(), 2),
-                      mm: __QinJavaTimeLocalDateTime.__pad(date.getMinutes(), 2),
-                      ss: __QinJavaTimeLocalDateTime.__pad(date.getSeconds(), 2)
-                    };
-                    let out = String(pattern == null || pattern.length === 0 ? "yyyy-MM-ddTHH:mm:ss" : pattern);
-                    out = out.split("yyyy").join(tokens.yyyy);
-                    out = out.split("MM").join(tokens.MM);
-                    out = out.split("dd").join(tokens.dd);
-                    out = out.split("HH").join(tokens.HH);
-                    out = out.split("mm").join(tokens.mm);
-                    out = out.split("ss").join(tokens.ss);
-                    return out;
+                  static __formatDate(date: any, pattern: string) {
+                    return __qin_java_time_format__(date, pattern);
                   }
                 }
                 """);
@@ -2097,15 +2938,14 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitJavaHashRuntimeHelpers(js);
         js.append("""
                 class __QinJavaUtilArrayList {
+                  __items: any[] = [];
                   constructor(initialValues) {
                     this.__items = [];
                     if (initialValues != null) {
-                      const values = initialValues instanceof __QinJavaUtilArrayList
-                        ? initialValues.__items
-                        : initialValues;
-                      for (const item of values) {
-                        this.__items.push(item);
+                      if (typeof initialValues === "number") {
+                        return;
                       }
+                      this.__items = Array.from(initialValues);
                     }
                   }
                   add(value) {
@@ -2113,11 +2953,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return true;
                   }
                   addAll(values) {
-                    const source = values instanceof __QinJavaUtilArrayList
-                      ? values.__items
-                      : Array.from(values);
-                    for (const item of source) {
-                      this.__items.push(item);
+                    const source: any[] = Array.from(values);
+                    for (let index = 0; index < source.length; index++) {
+                      this.__items.push(source[index]);
                     }
                     return source.length > 0;
                   }
@@ -2130,7 +2968,13 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return previous;
                   }
                   remove(index) {
-                    return this.__items.splice(index, 1)[0];
+                    const previous = this.__items[index];
+                    const next: any[] = [];
+                    for (let i = 0; i < this.__items.length; i++) {
+                      if (i !== index) next.push(this.__items[i]);
+                    }
+                    this.__items = next;
+                    return previous;
                   }
                   size() {
                     return this.__items.length;
@@ -2145,7 +2989,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return this.__items.length === 0;
                   }
                   clear() {
-                    this.__items.length = 0;
+                    const next: any[] = [];
+                    this.__items = next;
                   }
                   sort(comparator) {
                     this.__items.sort(comparator);
@@ -2194,10 +3039,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                   constructor(source) {
                     this.__source = source == null ? [] : source;
                   }
-                  __values() {
-                    return this.__source instanceof __QinJavaUtilArrayList
-                      ? this.__source.__items
-                      : Array.from(this.__source);
+                  __values(): any[] {
+                    return Array.from(this.__source);
                   }
                   add() {
                     throw new TypeError("java.util.List is unmodifiable");
@@ -2295,6 +3138,152 @@ public class QinJsBackend implements QinIrCodeBackend {
                 """);
     }
 
+    private void emitJavaUtilArrayDequeRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            return;
+        }
+
+        if (js.indexOf("class __QinJavaUtilArrayDeque") >= 0) {
+            return;
+        }
+        js.append("""
+                // qin-array-deque-runtime-v3
+                class __QinJavaUtilArrayDeque {
+                  __items: any[] = [];
+                  constructor(initialValues) {
+                    this.__items = [];
+                    if (initialValues != null) {
+                      this.__items = Array.from(initialValues);
+                    }
+                  }
+                  __values() {
+                    if (!Array.isArray(this.__items)) {
+                      this.__items = [];
+                    }
+                    return this.__items;
+                  }
+                  add(value) {
+                    const items = this.__values();
+                    items.push(value);
+                    return true;
+                  }
+                  addLast(value) {
+                    const items = this.__values();
+                    items.push(value);
+                  }
+                  addFirst(value) {
+                    const items = this.__values();
+                    items.unshift(value);
+                  }
+                  offer(value) {
+                    const items = this.__values();
+                    items.push(value);
+                    return true;
+                  }
+                  push(value) {
+                    const items = this.__values();
+                    items.unshift(value);
+                  }
+                  removeFirst() {
+                    const items = this.__values();
+                    if (items.length === 0) throw new Error("java.util.NoSuchElementException");
+                    return items.shift();
+                  }
+                  removeLast() {
+                    const items = this.__values();
+                    if (items.length === 0) throw new Error("java.util.NoSuchElementException");
+                    return items.pop();
+                  }
+                  remove() {
+                    return this.removeFirst();
+                  }
+                  pop() {
+                    return this.removeFirst();
+                  }
+                  poll() {
+                    const items = this.__values();
+                    return items.length === 0 ? null : items.shift();
+                  }
+                  pollFirst() {
+                    return this.poll();
+                  }
+                  pollLast() {
+                    const items = this.__values();
+                    return items.length === 0 ? null : items.pop();
+                  }
+                  peek() {
+                    const items = this.__values();
+                    return items.length === 0 ? null : items[0];
+                  }
+                  peekFirst() {
+                    return this.peek();
+                  }
+                  peekLast() {
+                    const items = this.__values();
+                    return items.length === 0 ? null : items[items.length - 1];
+                  }
+                  getFirst() {
+                    const items = this.__values();
+                    if (items.length === 0) throw new Error("java.util.NoSuchElementException");
+                    return items[0];
+                  }
+                  getLast() {
+                    const items = this.__values();
+                    if (items.length === 0) throw new Error("java.util.NoSuchElementException");
+                    return items[items.length - 1];
+                  }
+                  size() {
+                    const items = this.__values();
+                    return items.length;
+                  }
+                  isEmpty() {
+                    const items = this.__values();
+                    return items.length === 0;
+                  }
+                  clear() {
+                    const items = this.__values();
+                    items.length = 0;
+                  }
+                  contains(value) {
+                    const items = this.__values();
+                    return items.some(item => item === value || (item !== item && value !== value));
+                  }
+                  toArray() {
+                    const items = this.__values();
+                    return items.slice();
+                  }
+                  stream() {
+                    const items = this.__values();
+                    return new __QinJavaUtilStream(items);
+                  }
+                  [Symbol.iterator]() {
+                    const items = this.__values();
+                    return items[Symbol.iterator]();
+                  }
+                }
+                """);
+    }
+
+    private void emitJavaNioCharsetRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaNioCharsetStandardCharsets");
+            return;
+        }
+        if (js.indexOf("const __QinJavaNioCharsetStandardCharsets") >= 0) {
+            return;
+        }
+        js.append("""
+                const __QinJavaNioCharsetStandardCharsets = {
+                  UTF_8: "UTF-8",
+                  UTF_16: "UTF-16",
+                  UTF_16BE: "UTF-16BE",
+                  UTF_16LE: "UTF-16LE",
+                  ISO_8859_1: "ISO-8859-1",
+                  US_ASCII: "US-ASCII"
+                };
+                """);
+    }
+
     private void emitJavaUtilHashSetRuntime(StringBuilder js) {
         if (externalJavaSdkRuntime) {
             return;
@@ -2305,6 +3294,51 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         emitJavaHashRuntimeHelpers(js);
         js.append("""
+                class __QinJavaUtilHashSetFound {
+                  bucket: any[];
+                  index: number;
+                  value: any;
+                  constructor(bucket, index, value) {
+                    this.bucket = bucket;
+                    this.index = index;
+                    this.value = value;
+                  }
+                }
+                class __QinJavaUtilMapEntry {
+                  key: any;
+                  value: any;
+                  constructor(key, value) {
+                    this.key = key;
+                    this.value = value;
+                  }
+                  static keyOf(entry: __QinJavaUtilMapEntry) {
+                    return entry.key;
+                  }
+                  static valueOf(entry: __QinJavaUtilMapEntry) {
+                    return entry.value;
+                  }
+                  getKey() {
+                    return this.key;
+                  }
+                  getValue() {
+                    return this.value;
+                  }
+                  setValue(value) {
+                    const previous = this.value;
+                    this.value = value;
+                    return previous;
+                  }
+                }
+                class __QinJavaUtilMapFound {
+                  bucket: any[];
+                  index: number;
+                  entry: __QinJavaUtilMapEntry;
+                  constructor(bucket, index, entry) {
+                    this.bucket = bucket;
+                    this.index = index;
+                    this.entry = entry;
+                  }
+                }
                 class __QinJavaUtilHashSet {
                   constructor(initialValues) {
                     const __QinJsMap = __qin_builtin_constructor__("Map");
@@ -2316,7 +3350,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                       }
                     }
                   }
-                  __bucket(value, create) {
+                  __bucket(value, create): any[] {
                     const hash = __qin_java_hash_key__(value);
                     let bucket = this.__buckets.get(hash);
                     if (bucket == null && create) {
@@ -2325,14 +3359,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     return bucket;
                   }
-                  __findEntry(value) {
+                  __findEntry(value): __QinJavaUtilHashSetFound {
                     const bucket = this.__bucket(value, false);
                     if (bucket == null) {
                       return null;
                     }
                     for (let index = 0; index < bucket.length; index++) {
                       if (__qin_java_hash_key_equals__(bucket[index], value)) {
-                        return { bucket, index, value: bucket[index] };
+                        return new __QinJavaUtilHashSetFound(bucket, index, bucket[index]);
                       }
                     }
                     return null;
@@ -2381,54 +3415,42 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                 }
                 class __QinJavaUtilUnmodifiableSet {
+                  __items: any[] = [];
                   constructor(source) {
-                    this.__source = source == null ? [] : source;
-                  }
-                  __values() {
-                    const __QinJsSet = __qin_builtin_constructor__("Set");
-                    if (this.__source instanceof __QinJsSet) {
-                      return this.__source;
+                    this.__items = [];
+                    const values: any[] = Array.from(source ?? []);
+                    for (const value of values) {
+                      if (!this.contains(value)) {
+                        this.__items.push(value);
+                      }
                     }
-                    return new __QinJsSet(this.__source);
                   }
                   add() {
                     throw new TypeError("java.util.Set is unmodifiable");
                   }
                   contains(value) {
-                    if (this.__source instanceof __QinJavaUtilHashSet) {
-                      return this.__source.contains(value);
+                    for (const item of this.__items) {
+                      if (__qin_java_hash_key_equals__(item, value)) return true;
                     }
-                    return this.__values().has(value);
+                    return false;
                   }
                   remove() {
                     throw new TypeError("java.util.Set is unmodifiable");
                   }
                   size() {
-                    if (this.__source instanceof __QinJavaUtilHashSet) {
-                      return this.__source.size();
-                    }
-                    return this.__values().size;
+                    return this.__items.length;
                   }
                   isEmpty() {
-                    if (this.__source instanceof __QinJavaUtilHashSet) {
-                      return this.__source.isEmpty();
-                    }
-                    return this.__values().size === 0;
+                    return this.__items.length === 0;
                   }
                   clear() {
                     throw new TypeError("java.util.Set is unmodifiable");
                   }
                   toArray() {
-                    if (this.__source instanceof __QinJavaUtilHashSet) {
-                      return this.__source.toArray();
-                    }
-                    return Array.from(this.__values());
+                    return this.__items.slice();
                   }
                   [Symbol.iterator]() {
-                    if (this.__source instanceof __QinJavaUtilHashSet) {
-                      return this.__source[Symbol.iterator]();
-                    }
-                    return this.__values()[Symbol.iterator]();
+                    return this.__items[Symbol.iterator]();
                   }
                 }
                 """);
@@ -2452,6 +3474,185 @@ public class QinJsBackend implements QinIrCodeBackend {
                 """);
     }
 
+    private void emitJavaUtilTreeSetRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__QinJavaUtilTreeSet");
+            return;
+        }
+
+        if (js.indexOf("class __QinJavaUtilTreeSet") >= 0) {
+            return;
+        }
+        emitJavaUtilArrayListRuntime(js);
+        emitJavaUtilStreamRuntime(js);
+        js.append("""
+                function __qin_java_tree_set_compare_values__(left, right) {
+                  if (left === right) {
+                    return 0;
+                  }
+                  if (left == null) {
+                    return -1;
+                  }
+                  if (right == null) {
+                    return 1;
+                  }
+                  if (typeof left === "number" && typeof right === "number") {
+                    return left < right ? -1 : 1;
+                  }
+                  if (typeof left === "string" && typeof right === "string") {
+                    return left < right ? -1 : 1;
+                  }
+                  if (typeof left.compareTo === "function") {
+                    return Number(left.compareTo(right));
+                  }
+                  const leftText = String(left);
+                  const rightText = String(right);
+                  if (leftText === rightText) {
+                    return 0;
+                  }
+                  return leftText < rightText ? -1 : 1;
+                }
+                function __qin_java_tree_set_compare__(comparator, left, right) {
+                  if (comparator != null) {
+                    if (typeof comparator === "function") {
+                      return Number(comparator(left, right));
+                    }
+                    if (typeof comparator.compare === "function") {
+                      return Number(comparator.compare(left, right));
+                    }
+                  }
+                  return __qin_java_tree_set_compare_values__(left, right);
+                }
+                function __qin_java_tree_set_is_comparator__(value) {
+                  return typeof value === "function"
+                    || (value != null && typeof value.compare === "function");
+                }
+                class __QinJavaUtilTreeSet {
+                  __items: any[] = [];
+                  __comparator: any = null;
+                  constructor(initialValuesOrComparator) {
+                    this.__items = [];
+                    this.__comparator = null;
+                    if (initialValuesOrComparator != null) {
+                      if (__qin_java_tree_set_is_comparator__(initialValuesOrComparator)) {
+                        this.__comparator = initialValuesOrComparator;
+                      } else {
+                        for (const value of initialValuesOrComparator) {
+                          this.add(value);
+                        }
+                      }
+                    }
+                  }
+                  __compare(left, right) {
+                    return __qin_java_tree_set_compare__(this.__comparator, left, right);
+                  }
+                  __findIndex(value) {
+                    for (let index = 0; index < this.__items.length; index++) {
+                      if (this.__compare(this.__items[index], value) === 0) {
+                        return index;
+                      }
+                    }
+                    return -1;
+                  }
+                  __insertionIndex(value) {
+                    let index = 0;
+                    while (index < this.__items.length && this.__compare(this.__items[index], value) < 0) {
+                      index++;
+                    }
+                    return index;
+                  }
+                  add(value) {
+                    if (this.__findIndex(value) >= 0) {
+                      return false;
+                    }
+                    const insertionIndex = this.__insertionIndex(value);
+                    const next: any[] = [];
+                    for (let index = 0; index < insertionIndex; index++) {
+                      next.push(this.__items[index]);
+                    }
+                    next.push(value);
+                    for (let index = insertionIndex; index < this.__items.length; index++) {
+                      next.push(this.__items[index]);
+                    }
+                    this.__items = next;
+                    return true;
+                  }
+                  addAll(values) {
+                    let changed = false;
+                    for (const value of values ?? []) {
+                      changed = this.add(value) || changed;
+                    }
+                    return changed;
+                  }
+                  retainAll(values) {
+                    const candidates: any[] = Array.from(values ?? []);
+                    const contains = (value) => {
+                      for (const candidate of candidates) {
+                        if (this.__compare(candidate, value) === 0) return true;
+                      }
+                      return false;
+                    };
+                    let changed = false;
+                    for (const value of this.toArray()) {
+                      if (!contains(value)) {
+                        this.remove(value);
+                        changed = true;
+                      }
+                    }
+                    return changed;
+                  }
+                  contains(value) {
+                    return this.__findIndex(value) >= 0;
+                  }
+                  remove(value) {
+                    const index = this.__findIndex(value);
+                    if (index < 0) {
+                      return false;
+                    }
+                    const next: any[] = [];
+                    for (let cursor = 0; cursor < this.__items.length; cursor++) {
+                      if (cursor !== index) {
+                        next.push(this.__items[cursor]);
+                      }
+                    }
+                    this.__items = next;
+                    return true;
+                  }
+                  first() {
+                    if (this.__items.length === 0) {
+                      throw new Error("java.util.NoSuchElementException");
+                    }
+                    return this.__items[0];
+                  }
+                  last() {
+                    if (this.__items.length === 0) {
+                      throw new Error("java.util.NoSuchElementException");
+                    }
+                    return this.__items[this.__items.length - 1];
+                  }
+                  size() {
+                    return this.__items.length;
+                  }
+                  isEmpty() {
+                    return this.__items.length === 0;
+                  }
+                  clear() {
+                    const next: any[] = [];
+                    this.__items = next;
+                  }
+                  toArray() {
+                    return Array.from(this.__items);
+                  }
+                  stream() {
+                    return new __QinJavaUtilStream(this.__items);
+                  }
+                  [Symbol.iterator]() {
+                    return this.__items[Symbol.iterator]();
+                  }
+                }
+                """);
+    }
+
     private void emitJavaHashRuntimeHelpers(StringBuilder js) {
         if (externalJavaSdkRuntime) {
             requireExternalJavaSdkRuntime(
@@ -2468,7 +3669,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         js.append("""
-                const __qin_java_hash_identity_ids__ = new (__qin_builtin_constructor__("WeakMap"))();
+                const __qin_java_hash_identity_ids__ = new Map();
                 let __qin_java_hash_identity_next__ = 1;
                 function __qin_java_string_hash_code__(value) {
                   let hash = 0;
@@ -2609,26 +3810,74 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         emitJavaUtilArrayListRuntime(js);
+        emitJavaUtilStreamRuntime(js);
         emitJavaHashRuntimeHelpers(js);
         js.append("""
                 const __QinJavaUtilArrays = {
                   asList(...values) {
-                    if (values.length === 1 && Array.isArray(values[0])) {
-                      return new __QinJavaUtilArrayList(values[0]);
+                    const rawValues = __qin_collection_to_array__(values);
+                    if (rawValues.length === 1 && Array.isArray(rawValues[0])) {
+                      return new __QinJavaUtilArrayList(rawValues[0]);
                     }
-                    return new __QinJavaUtilArrayList(values);
+                    return new __QinJavaUtilArrayList(rawValues);
                   },
-                  __items(value) {
+                  asListArray(value) {
+                    return new __QinJavaUtilArrayList(__qin_collection_to_array__(value));
+                  },
+                  stream(value) {
+                    return new __QinJavaUtilStream(this.__items(value) ?? []);
+                  },
+                  copyOf(value, newLength) {
+                    const items = (this.__items(value) ?? []).slice(0, Number(newLength));
+                    while (items.length < Number(newLength)) {
+                      items.push(null);
+                    }
+                    return items;
+                  },
+                  fill(value, ...args) {
+                    const items = this.__items(value);
+                    if (items == null) {
+                      return;
+                    }
+                    if (args.length === 1) {
+                      items.fill(args[0]);
+                      return;
+                    }
+                    if (args.length === 3) {
+                      items.fill(args[2], Number(args[0]), Number(args[1]));
+                      return;
+                    }
+                    throw new TypeError("java.util.Arrays.fill expects (array, value) or (array, from, to, value)");
+                  },
+                  sort(value, fromIndex, toIndex) {
+                    const items = this.__items(value);
+                    if (items == null) {
+                      return;
+                    }
+                    if (fromIndex === undefined && toIndex === undefined) {
+                      items.sort();
+                      return;
+                    }
+                    const from = Number(fromIndex);
+                    const to = Number(toIndex);
+                    const sorted = items.slice(from, to).sort();
+                    items.splice(from, sorted.length, ...sorted);
+                  },
+                  toString(value) {
+                    const items = this.__items(value);
+                    if (items == null) {
+                      return "null";
+                    }
+                    return "[" + items.map(item => String(item)).join(", ") + "]";
+                  },
+                  __items(value): any[] {
                     if (value == null) {
                       return null;
-                    }
-                    if (value instanceof __QinJavaUtilArrayList) {
-                      return value.__items;
                     }
                     if (Array.isArray(value)) {
                       return value;
                     }
-                    if (typeof value[Symbol.iterator] === "function" && typeof value !== "string") {
+                    if (typeof value !== "string") {
                       return Array.from(value);
                     }
                     return [value];
@@ -2665,16 +3914,17 @@ public class QinJsBackend implements QinIrCodeBackend {
                       if (item == null) {
                         return "null";
                       }
-                      const arrayListItems = item instanceof __QinJavaUtilArrayList ? item.__items : null;
-                      if (Array.isArray(item) || arrayListItems != null
-                          || (item != null && typeof item[Symbol.iterator] === "function"
-                          && typeof item !== "string")) {
+                      let listItems = null;
+                      if (item != null && typeof item !== "string") {
+                        listItems = Array.isArray(item) ? item : Array.from(item);
+                      }
+                      if (listItems != null) {
                         if (seen.indexOf(item) >= 0) {
                           return "[...]";
                         }
                         seen.push(item);
                         const parts = [];
-                        const iterable = arrayListItems == null ? item : arrayListItems;
+                        const iterable = listItems != null ? listItems : item;
                         for (const child of iterable) {
                           parts.push(format(child, seen));
                         }
@@ -2703,48 +3953,61 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitJavaUtilIdentityHashMapRuntime(js);
         js.append("""
                 class __QinJavaUtilUnmodifiableMap {
+                  __entries: __QinJavaUtilMapEntry[] = [];
                   constructor(source) {
-                    const __QinJsMap = __qin_builtin_constructor__("Map");
-                    this.__source = source == null ? new __QinJsMap() : source;
-                  }
-                  __values() {
-                    const __QinJsMap = __qin_builtin_constructor__("Map");
-                    if (this.__source instanceof __QinJsMap) {
-                      return this.__source;
+                    this.__entries = [];
+                    if (source instanceof __QinJavaUtilHashMap) {
+                      this.__copyEntries(source.__entryArray());
                     }
-                    const entries = new __QinJsMap();
-                    if (this.__source != null && typeof this.__source[Symbol.iterator] === "function") {
-                      for (const entry of this.__source) {
-                        entries.set(entry[0], entry[1]);
+                    if (source instanceof __QinJavaUtilIdentityHashMap) {
+                      this.__copyEntries(source.__entryArray());
+                    }
+                  }
+                  __copyEntries(entries: __QinJavaUtilMapEntry[]) {
+                    for (let index = 0; index < entries.length; index++) {
+                      const entry: __QinJavaUtilMapEntry = entries[index];
+                      this.__entries.push(new __QinJavaUtilMapEntry(
+                        __QinJavaUtilMapEntry.keyOf(entry),
+                        __QinJavaUtilMapEntry.valueOf(entry)));
+                    }
+                    return null;
+                  }
+                  __findEntry(key): __QinJavaUtilMapEntry {
+                    for (let index = 0; index < this.__entries.length; index++) {
+                      const entry: __QinJavaUtilMapEntry = this.__entries[index];
+                      if (__qin_java_hash_key_equals__(__QinJavaUtilMapEntry.keyOf(entry), key)) {
+                        return entry;
                       }
                     }
-                    return entries;
+                    return null;
                   }
                   put() {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   get(key) {
-                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
-                      return this.__source.get(key);
-                    }
-                    const entries = this.__values();
-                    return entries.has(key) ? entries.get(key) : null;
+                    const entry = this.__findEntry(key);
+                    return entry == null ? null : __QinJavaUtilMapEntry.valueOf(entry);
                   }
                   getOrDefault(key, defaultValue) {
-                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
-                      return this.__source.getOrDefault(key, defaultValue);
-                    }
-                    const entries = this.__values();
-                    return entries.has(key) ? entries.get(key) : defaultValue;
+                    const entry = this.__findEntry(key);
+                    return entry == null ? defaultValue : __QinJavaUtilMapEntry.valueOf(entry);
                   }
                   putIfAbsent() {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   values() {
-                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
-                      return new __QinJavaUtilUnmodifiableList(this.__source.values());
+                    const values: any[] = [];
+                    for (let index = 0; index < this.__entries.length; index++) {
+                      values.push(__QinJavaUtilMapEntry.valueOf(this.__entries[index]));
                     }
-                    return new __QinJavaUtilUnmodifiableList(Array.from(this.__values().values()));
+                    return new __QinJavaUtilUnmodifiableList(values);
+                  }
+                  forEach(action) {
+                    for (let index = 0; index < this.__entries.length; index++) {
+                      const entry: __QinJavaUtilMapEntry = this.__entries[index];
+                      action(__QinJavaUtilMapEntry.keyOf(entry), __QinJavaUtilMapEntry.valueOf(entry));
+                    }
+                    return null;
                   }
                   computeIfAbsent() {
                     throw new TypeError("java.util.Map is unmodifiable");
@@ -2753,25 +4016,16 @@ public class QinJsBackend implements QinIrCodeBackend {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   containsKey(key) {
-                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
-                      return this.__source.containsKey(key);
-                    }
-                    return this.__values().has(key);
+                    return this.__findEntry(key) != null;
                   }
                   remove() {
                     throw new TypeError("java.util.Map is unmodifiable");
                   }
                   size() {
-                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
-                      return this.__source.size();
-                    }
-                    return this.__values().size;
+                    return this.__entries.length;
                   }
                   isEmpty() {
-                    if (this.__source instanceof __QinJavaUtilHashMap || this.__source instanceof __QinJavaUtilIdentityHashMap) {
-                      return this.__source.isEmpty();
-                    }
-                    return this.__values().size === 0;
+                    return this.__entries.length === 0;
                   }
                   clear() {
                     throw new TypeError("java.util.Map is unmodifiable");
@@ -2809,17 +4063,50 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitJavaHashRuntimeHelpers(js);
         js.append("""
                 class __QinJavaUtilHashMap {
+                  __buckets: any = null;
+                  __size: number = 0;
+                  static copyOf(value) {
+                    return new __QinJavaUtilUnmodifiableMap(value);
+                  }
+                  static __copyHashMapInto(target: __QinJavaUtilHashMap, source: __QinJavaUtilHashMap) {
+                    const entries: __QinJavaUtilMapEntry[] = source.__entryArray();
+                    for (let index = 0; index < entries.length; index++) {
+                      const entry: __QinJavaUtilMapEntry = entries[index];
+                      target.put(__QinJavaUtilMapEntry.keyOf(entry), __QinJavaUtilMapEntry.valueOf(entry));
+                    }
+                    return null;
+                  }
+                  static __copyIdentityHashMapInto(target: __QinJavaUtilHashMap, source: __QinJavaUtilIdentityHashMap) {
+                    const entries: __QinJavaUtilMapEntry[] = source.__entryArray();
+                    for (let index = 0; index < entries.length; index++) {
+                      const entry: __QinJavaUtilMapEntry = entries[index];
+                      target.put(__QinJavaUtilMapEntry.keyOf(entry), __QinJavaUtilMapEntry.valueOf(entry));
+                    }
+                    return null;
+                  }
+                  static __appendBucketEntries(entries: __QinJavaUtilMapEntry[], bucket: any[]) {
+                    for (let index = 0; index < bucket.length; index++) {
+                      entries.push(bucket[index]);
+                    }
+                    return null;
+                  }
                   constructor(initialEntries) {
                     const __QinJsMap = __qin_builtin_constructor__("Map");
                     this.__buckets = new __QinJsMap();
                     this.__size = 0;
                     if (initialEntries != null) {
-                      for (const entry of initialEntries) {
-                        this.put(entry[0], entry[1]);
+                      if (typeof initialEntries === "number") {
+                        return;
+                      }
+                      if (initialEntries instanceof __QinJavaUtilHashMap) {
+                        __QinJavaUtilHashMap.__copyHashMapInto(this, initialEntries);
+                      }
+                      if (initialEntries instanceof __QinJavaUtilIdentityHashMap) {
+                        __QinJavaUtilHashMap.__copyIdentityHashMapInto(this, initialEntries);
                       }
                     }
                   }
-                  __bucket(key, create) {
+                  __bucket(key, create): any[] {
                     const hash = __qin_java_hash_key__(key);
                     let bucket = this.__buckets.get(hash);
                     if (bucket == null && create) {
@@ -2828,15 +4115,15 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     return bucket;
                   }
-                  __findEntry(key) {
+                  __findEntry(key): __QinJavaUtilMapFound {
                     const bucket = this.__bucket(key, false);
                     if (bucket == null) {
                       return null;
                     }
                     for (let index = 0; index < bucket.length; index++) {
                       const entry = bucket[index];
-                      if (__qin_java_hash_key_equals__(entry.key, key)) {
-                        return { bucket, index, entry };
+                      if (__qin_java_hash_key_equals__(__QinJavaUtilMapEntry.keyOf(entry), key)) {
+                        return new __QinJavaUtilMapFound(bucket, index, entry);
                       }
                     }
                     return null;
@@ -2848,7 +4135,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                       found.entry.value = value;
                       return previous;
                     }
-                    this.__bucket(key, true).push({ key, value });
+                    this.__bucket(key, true).push(new __QinJavaUtilMapEntry(key, value));
                     this.__size++;
                     return null;
                   }
@@ -2863,7 +4150,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                   putIfAbsent(key, value) {
                     const found = this.__findEntry(key);
                     if (found == null) {
-                      this.__bucket(key, true).push({ key, value });
+                      this.__bucket(key, true).push(new __QinJavaUtilMapEntry(key, value));
                       this.__size++;
                       return null;
                     }
@@ -2877,7 +4164,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     const values = [];
                     for (const bucket of this.__buckets.values()) {
                       for (const entry of bucket) {
-                        values.push(entry.value);
+                        values.push(__QinJavaUtilMapEntry.valueOf(entry));
                       }
                     }
                     return new __QinJavaUtilArrayList(values);
@@ -2886,17 +4173,39 @@ public class QinJsBackend implements QinIrCodeBackend {
                     const keys = [];
                     for (const bucket of this.__buckets.values()) {
                       for (const entry of bucket) {
-                        keys.push(entry.key);
+                        keys.push(__QinJavaUtilMapEntry.keyOf(entry));
                       }
                     }
                     return new __QinJavaUtilArrayList(keys);
+                  }
+                  keySet() {
+                    return this.keys();
+                  }
+                  entrySet() {
+                    return new __QinJavaUtilArrayList(this.__entryArray());
+                  }
+                  __entryArray(): __QinJavaUtilMapEntry[] {
+                    const entries: __QinJavaUtilMapEntry[] = [];
+                    const buckets: any[] = Array.from(this.__buckets.values());
+                    for (let bucketIndex = 0; bucketIndex < buckets.length; bucketIndex++) {
+                      __QinJavaUtilHashMap.__appendBucketEntries(entries, buckets[bucketIndex]);
+                    }
+                    return entries;
+                  }
+                  forEach(action) {
+                    for (const bucket of this.__buckets.values()) {
+                      for (const entry of bucket) {
+                        action(__QinJavaUtilMapEntry.keyOf(entry), __QinJavaUtilMapEntry.valueOf(entry));
+                      }
+                    }
+                    return null;
                   }
                   computeIfAbsent(key, mappingFunction) {
                     const found = this.__findEntry(key);
                     if (found == null || found.entry.value == null) {
                       const value = mappingFunction(key);
                       if (found == null) {
-                        this.__bucket(key, true).push({ key, value });
+                        this.__bucket(key, true).push(new __QinJavaUtilMapEntry(key, value));
                         this.__size++;
                       } else {
                         found.entry.value = value;
@@ -2908,7 +4217,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                   merge(key, value, remappingFunction) {
                     const found = this.__findEntry(key);
                     if (found == null) {
-                      this.__bucket(key, true).push({ key, value });
+                      this.__bucket(key, true).push(new __QinJavaUtilMapEntry(key, value));
                       this.__size++;
                       return value;
                     }
@@ -2964,12 +4273,34 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitJavaHashRuntimeHelpers(js);
         js.append("""
                 class __QinJavaUtilIdentityHashMap {
+                  __entries: any = null;
+                  __size: number = 0;
+                  static __copyHashMapInto(target: __QinJavaUtilIdentityHashMap, source: __QinJavaUtilHashMap) {
+                    const entries: __QinJavaUtilMapEntry[] = source.__entryArray();
+                    for (let index = 0; index < entries.length; index++) {
+                      const entry: __QinJavaUtilMapEntry = entries[index];
+                      target.put(__QinJavaUtilMapEntry.keyOf(entry), __QinJavaUtilMapEntry.valueOf(entry));
+                    }
+                    return null;
+                  }
+                  static __copyIdentityHashMapInto(target: __QinJavaUtilIdentityHashMap, source: __QinJavaUtilIdentityHashMap) {
+                    const entries: __QinJavaUtilMapEntry[] = source.__entryArray();
+                    for (let index = 0; index < entries.length; index++) {
+                      const entry: __QinJavaUtilMapEntry = entries[index];
+                      target.put(__QinJavaUtilMapEntry.keyOf(entry), __QinJavaUtilMapEntry.valueOf(entry));
+                    }
+                    return null;
+                  }
                   constructor(initialEntries) {
                     const __QinJsMap = __qin_builtin_constructor__("Map");
                     this.__entries = new __QinJsMap();
+                    this.__size = 0;
                     if (initialEntries != null) {
-                      for (const entry of initialEntries) {
-                        this.put(entry[0], entry[1]);
+                      if (initialEntries instanceof __QinJavaUtilHashMap) {
+                        __QinJavaUtilIdentityHashMap.__copyHashMapInto(this, initialEntries);
+                      }
+                      if (initialEntries instanceof __QinJavaUtilIdentityHashMap) {
+                        __QinJavaUtilIdentityHashMap.__copyIdentityHashMapInto(this, initialEntries);
                       }
                     }
                   }
@@ -2977,6 +4308,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                     const hadKey = this.__entries.has(key);
                     const previous = hadKey ? this.__entries.get(key) : null;
                     this.__entries.set(key, value);
+                    if (!hadKey) {
+                      this.__size++;
+                    }
                     return hadKey ? previous : null;
                   }
                   get(key) {
@@ -3002,10 +4336,25 @@ public class QinJsBackend implements QinIrCodeBackend {
                   keys() {
                     return new __QinJavaUtilArrayList(Array.from(this.__entries.keys()));
                   }
+                  entrySet() {
+                    return new __QinJavaUtilArrayList(this.__entryArray());
+                  }
+                  __entryArray(): __QinJavaUtilMapEntry[] {
+                    const entries: __QinJavaUtilMapEntry[] = [];
+                    const keys: any[] = Array.from(this.__entries.keys());
+                    for (const key of keys) {
+                      entries.push(new __QinJavaUtilMapEntry(key, this.__entries.get(key)));
+                    }
+                    return entries;
+                  }
                   computeIfAbsent(key, mappingFunction) {
                     if (!this.__entries.has(key) || this.__entries.get(key) == null) {
+                      const hadKey = this.__entries.has(key);
                       const value = mappingFunction(key);
                       this.__entries.set(key, value);
+                      if (!hadKey) {
+                        this.__size++;
+                      }
                       return value;
                     }
                     return this.__entries.get(key);
@@ -3013,6 +4362,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                   merge(key, value, remappingFunction) {
                     if (!this.__entries.has(key)) {
                       this.__entries.set(key, value);
+                      this.__size++;
                       return value;
                     }
                     const previous = this.__entries.get(key);
@@ -3023,6 +4373,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     const nextValue = remappingFunction(previous, value);
                     if (nextValue == null) {
                       this.__entries.delete(key);
+                      this.__size--;
                       return null;
                     }
                     this.__entries.set(key, nextValue);
@@ -3037,31 +4388,56 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     const previous = this.__entries.get(key);
                     this.__entries.delete(key);
+                    this.__size--;
                     return previous;
                   }
                   size() {
-                    return this.__entries.size;
+                    return this.__size;
                   }
                   isEmpty() {
-                    return this.__entries.size === 0;
+                    return this.__size === 0;
                   }
                   clear() {
                     this.__entries.clear();
+                    this.__size = 0;
                   }
                 }
                 class __QinJavaUtilMapBackedSet {
-                  constructor(sourceMap) {
-                    if (sourceMap == null || typeof sourceMap.put !== "function" || typeof sourceMap.containsKey !== "function") {
+                  __map: __QinJavaUtilHashMap;
+                  static __contains(map: __QinJavaUtilHashMap, value) {
+                    return map.containsKey(value);
+                  }
+                  static __put(map: __QinJavaUtilHashMap, key, value) {
+                    return map.put(key, value);
+                  }
+                  static __remove(map: __QinJavaUtilHashMap, key) {
+                    return map.remove(key);
+                  }
+                  static __size(map: __QinJavaUtilHashMap) {
+                    return map.size();
+                  }
+                  static __isEmpty(map: __QinJavaUtilHashMap) {
+                    return map.isEmpty();
+                  }
+                  static __clear(map: __QinJavaUtilHashMap) {
+                    map.clear();
+                    return null;
+                  }
+                  static __keys(map: __QinJavaUtilHashMap) {
+                    return map.keys();
+                  }
+                  constructor(sourceMap: __QinJavaUtilHashMap) {
+                    if (sourceMap == null) {
                       throw new TypeError("Collections.newSetFromMap requires a mutable map");
                     }
-                    if (typeof sourceMap.size === "function" && sourceMap.size() !== 0) {
+                    if (sourceMap.size() !== 0) {
                       throw new TypeError("Collections.newSetFromMap requires an empty map");
                     }
                     this.__map = sourceMap;
                   }
                   add(value) {
-                    const hadValue = this.__map.containsKey(value);
-                    this.__map.put(value, true);
+                    const hadValue = __QinJavaUtilMapBackedSet.__contains(this.__map, value);
+                    __QinJavaUtilMapBackedSet.__put(this.__map, value, true);
                     return !hadValue;
                   }
                   addAll(values) {
@@ -3072,14 +4448,13 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return changed;
                   }
                   retainAll(values) {
-                    const contains = values != null && typeof values.contains === "function"
-                      ? (value) => values.contains(value)
-                      : (value) => {
-                          for (const candidate of values ?? []) {
-                            if (__qin_java_hash_key_equals__(candidate, value)) return true;
-                          }
-                          return false;
-                        };
+                    const candidates: any[] = Array.from(values ?? []);
+                    const contains = (value) => {
+                      for (const candidate of candidates) {
+                        if (__qin_java_hash_key_equals__(candidate, value)) return true;
+                      }
+                      return false;
+                    };
                     let changed = false;
                     for (const value of this.toArray()) {
                       if (!contains(value)) {
@@ -3090,26 +4465,26 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return changed;
                   }
                   contains(value) {
-                    return this.__map.containsKey(value);
+                    return __QinJavaUtilMapBackedSet.__contains(this.__map, value);
                   }
                   remove(value) {
-                    if (!this.__map.containsKey(value)) {
+                    if (!__QinJavaUtilMapBackedSet.__contains(this.__map, value)) {
                       return false;
                     }
-                    this.__map.remove(value);
+                    __QinJavaUtilMapBackedSet.__remove(this.__map, value);
                     return true;
                   }
                   size() {
-                    return this.__map.size();
+                    return __QinJavaUtilMapBackedSet.__size(this.__map);
                   }
                   isEmpty() {
-                    return this.__map.isEmpty();
+                    return __QinJavaUtilMapBackedSet.__isEmpty(this.__map);
                   }
                   clear() {
-                    this.__map.clear();
+                    __QinJavaUtilMapBackedSet.__clear(this.__map);
                   }
                   toArray() {
-                    return Array.from(this.__map.keys());
+                    return Array.from(__QinJavaUtilMapBackedSet.__keys(this.__map));
                   }
                   [Symbol.iterator]() {
                     return this.toArray()[Symbol.iterator]();
@@ -3126,11 +4501,46 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (js.indexOf("const __QinJavaUtilObjects") >= 0) {
             return;
         }
+        emitJavaHashRuntimeHelpers(js);
         js.append("""
                 const __QinJavaUtilObjects = {
+                  isNull(value) {
+                    return value == null;
+                  },
+                  nonNull(value) {
+                    return value != null;
+                  },
+                  equals(left, right) {
+                    return __qin_java_values_equal__(left, right);
+                  },
+                  hash(...values) {
+                    let result = 1;
+                    for (const value of values) {
+                      result = result * 31 + __qin_java_value_hash_code__(value);
+                    }
+                    return result;
+                  },
+                  hashCode(value) {
+                    return __qin_java_value_hash_code__(value);
+                  },
+                  requireNonNull(value, message) {
+                    if (value == null) {
+                      throw new TypeError(message == null ? "null" : String(message));
+                    }
+                    return value;
+                  },
+                  requireNonNullElse(value, defaultValue) {
+                    if (value != null) {
+                      return value;
+                    }
+                    if (defaultValue == null) {
+                      throw new TypeError("defaultObj");
+                    }
+                    return defaultValue;
+                  },
                   toString(value, nullDefault) {
                     if (value == null) {
-                      return arguments.length >= 2 ? nullDefault : "null";
+                      return nullDefault === undefined ? "null" : nullDefault;
                     }
                     return String(value);
                   }
@@ -3201,7 +4611,50 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitJavaUtilArrayListRuntime(js);
         emitJavaUtilOptionalRuntime(js);
         js.append("""
+                function __qin_java_compare_values(left, right) {
+                  if (left === right) return 0;
+                  if (left == null) return -1;
+                  if (right == null) return 1;
+                  if (typeof left === "number" && typeof right === "number") return left < right ? -1 : 1;
+                  if (typeof left === "string" && typeof right === "string") return left < right ? -1 : 1;
+                  if (typeof left.compareTo === "function") return Number(left.compareTo(right));
+                  const leftText = String(left);
+                  const rightText = String(right);
+                  if (leftText === rightText) return 0;
+                  return leftText < rightText ? -1 : 1;
+                }
+                function __qin_java_comparator_compare(comparator, left, right) {
+                  if (comparator == null) return __qin_java_compare_values(left, right);
+                  if (typeof comparator === "function") return Number(comparator(left, right));
+                  if (typeof comparator.compare === "function") return Number(comparator.compare(left, right));
+                  throw new TypeError("java.util.Comparator value is not callable");
+                }
+                function __qin_java_comparator(compare) {
+                  const comparator = (left, right) => Number(compare(left, right));
+                  comparator.compare = comparator;
+                  comparator.thenComparing = (next) => __qin_java_comparator((left, right) => {
+                    const first = comparator(left, right);
+                    return first !== 0 ? first : __qin_java_comparator_compare(next, left, right);
+                  });
+                  comparator.thenComparingInt = (extractor) => comparator.thenComparing(__QinJavaUtilComparator.comparingInt(extractor));
+                  comparator.reversed = () => __qin_java_comparator((left, right) => -comparator(left, right));
+                  return comparator;
+                }
+                const __QinJavaUtilComparator = {
+                  comparing(extractor) {
+                    return __qin_java_comparator((left, right) => __qin_java_compare_values(extractor(left), extractor(right)));
+                  },
+                  comparingInt(extractor) {
+                    return __qin_java_comparator((left, right) => {
+                      const leftValue = Number(extractor(left));
+                      const rightValue = Number(extractor(right));
+                      if (leftValue === rightValue) return 0;
+                      return leftValue < rightValue ? -1 : 1;
+                    });
+                  }
+                };
                 class __QinJavaUtilStream {
+                  __items: any[] = [];
                   constructor(source) {
                     this.__items = source == null ? [] : Array.from(source);
                   }
@@ -3209,18 +4662,77 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return new __QinJavaUtilStream(this.__items.filter(item => predicate(item)));
                   }
                   map(mapper) {
-                    return new __QinJavaUtilStream(this.__items.map(item => mapper(item)));
+                    const mapped = [];
+                    for (const item of this.__items) mapped[mapped.length] = mapper(item);
+                    return new __QinJavaUtilStream(mapped);
+                  }
+                  distinct() {
+                    const result = [];
+                    for (const item of this.__items) {
+                      if (!result.some(existing => existing === item || (existing != null && typeof existing.equals === "function" && existing.equals(item)))) {
+                        result.push(item);
+                      }
+                    }
+                    return new __QinJavaUtilStream(result);
+                  }
+                  sorted(comparator) {
+                    const sorted = this.__items.slice();
+                    sorted.sort((left, right) => __qin_java_comparator_compare(comparator, left, right));
+                    return new __QinJavaUtilStream(sorted);
                   }
                   anyMatch(predicate) {
                     return this.__items.some(item => predicate(item));
+                  }
+                  allMatch(predicate) {
+                    return this.__items.every(item => predicate(item));
+                  }
+                  noneMatch(predicate) {
+                    return !this.__items.some(item => predicate(item));
+                  }
+                  count() {
+                    return this.__items.length;
+                  }
+                  forEach(consumer) {
+                    for (const item of this.__items) {
+                      consumer(item);
+                    }
+                  }
+                  flatMap(mapper) {
+                    const result = [];
+                    for (const item of this.__items) {
+                      const mapped = mapper(item);
+                      if (mapped != null) {
+                        for (const child of mapped) {
+                          result.push(child);
+                        }
+                      }
+                    }
+                    return new __QinJavaUtilStream(result);
+                  }
+                  mapToInt(mapper) {
+                    const mapped = [];
+                    for (const item of this.__items) mapped[mapped.length] = mapper(item);
+                    return new __QinJavaUtilIntStream(mapped);
+                  }
+                  flatMapToInt(mapper) {
+                    const result = [];
+                    for (const item of this.__items) {
+                      const mapped = mapper(item);
+                      if (mapped != null) {
+                        for (const child of mapped) {
+                          result.push(Number(child));
+                        }
+                      }
+                    }
+                    return new __QinJavaUtilIntStream(result);
                   }
                   findFirst() {
                     return this.__items.length === 0
                       ? __QinJavaUtilOptional.empty()
                       : __QinJavaUtilOptional.ofNullable(this.__items[0]);
                   }
-                  collect(collector) {
-                    if (collector == null || typeof collector.__collect !== "function") {
+                  collect(collector: __QinJavaUtilCollector) {
+                    if (collector == null) {
                       throw new TypeError("java.util.stream.Stream.collect requires a Qin collector");
                     }
                     return collector.__collect(this.__items);
@@ -3228,24 +4740,126 @@ public class QinJsBackend implements QinIrCodeBackend {
                   toArray() {
                     return this.__items.slice();
                   }
+                  toList() {
+                    return new __QinJavaUtilArrayList(this.__items);
+                  }
+                  static of(...items) {
+                    return new __QinJavaUtilStream(items);
+                  }
+                  static concat(left, right) {
+                    return new __QinJavaUtilStream([
+                      ...(left == null ? [] : Array.from(left)),
+                      ...(right == null ? [] : Array.from(right))
+                    ]);
+                  }
                   [Symbol.iterator]() {
                     return this.__items[Symbol.iterator]();
                   }
                 }
+                class __QinJavaUtilOptionalNumber {
+                  constructor(present, value) {
+                    this.__present = present;
+                    this.__value = value;
+                  }
+                  orElse(defaultValue) {
+                    return this.__present ? this.__value : defaultValue;
+                  }
+                  orElseThrow() {
+                    if (!this.__present) {
+                      throw new Error("No value present");
+                    }
+                    return this.__value;
+                  }
+                }
+                class __QinJavaUtilIntStream {
+                  __items: any[] = [];
+                  constructor(source) {
+                    this.__items = source == null ? [] : Array.from(source).map(item => Number(item));
+                  }
+                  filter(predicate) {
+                    return new __QinJavaUtilIntStream(this.__items.filter(item => predicate(item)));
+                  }
+                  map(mapper) {
+                    const mapped = [];
+                    for (const item of this.__items) mapped[mapped.length] = mapper(item);
+                    return new __QinJavaUtilIntStream(mapped);
+                  }
+                  sum() {
+                    return this.__items.reduce((left, right) => left + right, 0);
+                  }
+                  min() {
+                    if (this.__items.length === 0) {
+                      return new __QinJavaUtilOptionalNumber(false, 0);
+                    }
+                    return new __QinJavaUtilOptionalNumber(true, Math.min(...this.__items));
+                  }
+                  max() {
+                    if (this.__items.length === 0) {
+                      return new __QinJavaUtilOptionalNumber(false, 0);
+                    }
+                    return new __QinJavaUtilOptionalNumber(true, Math.max(...this.__items));
+                  }
+                  toArray() {
+                    return Array.from(this.__items);
+                  }
+                  forEach(consumer) {
+                    for (const item of this.__items) {
+                      consumer(item);
+                    }
+                  }
+                  [Symbol.iterator]() {
+                    return this.__items[Symbol.iterator]();
+                  }
+                }
+                class __QinJavaUtilCollector {
+                  __collect(items: any[]) {
+                    return null;
+                  }
+                }
+                class __QinJavaUtilToListCollector extends __QinJavaUtilCollector {
+                  constructor() {
+                    super();
+                  }
+                  __collect(items) {
+                    return new __QinJavaUtilArrayList(items);
+                  }
+                }
+                class __QinJavaUtilToCollectionCollector extends __QinJavaUtilCollector {
+                  constructor(supplier) {
+                    this.__supplier = supplier;
+                  }
+                  __collect(items) {
+                    const supplier = this.__supplier;
+                    if (supplier == null || typeof supplier !== "function") {
+                      throw new TypeError("Collectors.toCollection requires a supplier");
+                    }
+                    const collection: __QinJavaUtilArrayList = supplier();
+                    if (collection == null) {
+                      throw new TypeError("Collectors.toCollection supplier must return a mutable collection");
+                    }
+                    for (const item of items) {
+                      collection.add(item);
+                    }
+                    return collection;
+                  }
+                }
+                class __QinJavaUtilJoiningCollector extends __QinJavaUtilCollector {
+                  constructor(delimiter) {
+                    this.__delimiter = delimiter;
+                  }
+                  __collect(items) {
+                    return items.map(item => String(item)).join(String(this.__delimiter));
+                  }
+                }
                 const __QinJavaUtilStreamCollectors = {
                   toList() {
-                    return {
-                      __collect(items) {
-                        return new __QinJavaUtilArrayList(items);
-                      }
-                    };
+                    return new __QinJavaUtilToListCollector();
+                  },
+                  toCollection(supplier) {
+                    return new __QinJavaUtilToCollectionCollector(supplier);
                   },
                   joining(delimiter = "") {
-                    return {
-                      __collect(items) {
-                        return items.map(item => String(item)).join(String(delimiter));
-                      }
-                    };
+                    return new __QinJavaUtilJoiningCollector(delimiter);
                   }
                 };
                 """);
@@ -3309,24 +4923,73 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         emitJavaHashRuntimeHelpers(js);
         js.append("""
-                const __QinCaffeineRemovalCause = {
-                  SIZE: {
-                    wasEvicted() {
-                      return true;
-                    }
-                  },
-                  EXPLICIT: {
-                    wasEvicted() {
-                      return false;
-                    }
+                class __QinCaffeineRemovalCauseValue {
+                  __evicted: any;
+                  constructor(evicted) {
+                    this.__evicted = evicted;
                   }
-                };
+                  wasEvicted() {
+                    return this.__evicted;
+                  }
+                }
+                class __QinCaffeineRemovalCause {
+                  static SIZE: __QinCaffeineRemovalCauseValue = new __QinCaffeineRemovalCauseValue(true);
+                  static EXPLICIT: __QinCaffeineRemovalCauseValue = new __QinCaffeineRemovalCauseValue(false);
+                }
+                class __QinCaffeineEntry {
+                  key: any;
+                  value: any;
+                  constructor(key, value) {
+                    this.key = key;
+                    this.value = value;
+                  }
+                  static keyOf(entry: __QinCaffeineEntry) {
+                    return entry.key;
+                  }
+                  static valueOf(entry: __QinCaffeineEntry) {
+                    return entry.value;
+                  }
+                  setValue(value) {
+                    const previous = this.value;
+                    this.value = value;
+                    return previous;
+                  }
+                }
+                class __QinCaffeineFound {
+                  bucket: any[];
+                  index = null;
+                  entry: __QinCaffeineEntry;
+                  constructor(bucket: any[], index, entry: __QinCaffeineEntry) {
+                    this.bucket = bucket;
+                    this.index = index;
+                    this.entry = entry;
+                  }
+                }
                 class __QinCaffeineCache {
                   __maximumSize = null;
                   __removalListener = null;
                   __buckets = null;
-                  __order = null;
+                  __order: any[] = [];
                   __size = null;
+                  static __entryAt(entries: any[], index): __QinCaffeineEntry {
+                    return entries[index];
+                  }
+                  static __findEntryInBucket(bucket: any[], key): __QinCaffeineFound {
+                    for (let index = 0; index < bucket.length; index++) {
+                      const entry: __QinCaffeineEntry = __QinCaffeineCache.__entryAt(bucket, index);
+                      if (__qin_java_hash_key_equals__(__QinCaffeineEntry.keyOf(entry), key)) {
+                        return new __QinCaffeineFound(bucket, index, entry);
+                      }
+                    }
+                    return null;
+                  }
+                  static __notifyRemovalEntries(entries: any[], removalListener, cause) {
+                    for (let index = 0; index < entries.length; index++) {
+                      const entry: __QinCaffeineEntry = __QinCaffeineCache.__entryAt(entries, index);
+                      removalListener(__QinCaffeineEntry.keyOf(entry), __QinCaffeineEntry.valueOf(entry), cause);
+                    }
+                    return null;
+                  }
                   constructor(maximumSize, removalListener) {
                     this.__maximumSize = maximumSize == null ? Infinity : maximumSize;
                     this.__removalListener = removalListener;
@@ -3334,7 +4997,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     this.__order = [];
                     this.__size = 0;
                   }
-                  __bucket(key, create) {
+                  __bucket(key, create): any[] {
                     const hash = __qin_java_hash_key__(key);
                     let bucket = this.__buckets.get(hash);
                     if (bucket == null && create) {
@@ -3343,27 +5006,21 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     return bucket;
                   }
-                  __findEntry(key) {
+                  __findEntry(key): __QinCaffeineFound {
                     const bucket = this.__bucket(key, false);
                     if (bucket == null) {
                       return null;
                     }
-                    for (let index = 0; index < bucket.length; index++) {
-                      const entry = bucket[index];
-                      if (__qin_java_hash_key_equals__(entry.key, key)) {
-                        return { bucket, index, entry };
-                      }
-                    }
-                    return null;
+                    return __QinCaffeineCache.__findEntryInBucket(bucket, key);
                   }
-                  __touch(entry) {
+                  __touch(entry: __QinCaffeineEntry) {
                     const index = this.__order.indexOf(entry);
                     if (index >= 0) {
                       this.__order.splice(index, 1);
                     }
                     this.__order.push(entry);
                   }
-                  __removeEntry(bucket, index, entry, cause) {
+                  __removeEntry(bucket: any[], index, entry: __QinCaffeineEntry, cause) {
                     bucket.splice(index, 1);
                     const orderIndex = this.__order.indexOf(entry);
                     if (orderIndex >= 0) {
@@ -3371,7 +5028,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     this.__size--;
                     if (this.__removalListener != null) {
-                      this.__removalListener(entry.key, entry.value, cause);
+                      this.__removalListener(__QinCaffeineEntry.keyOf(entry), __QinCaffeineEntry.valueOf(entry), cause);
                     }
                   }
                   getIfPresent(key) {
@@ -3380,22 +5037,22 @@ public class QinJsBackend implements QinIrCodeBackend {
                       return null;
                     }
                     this.__touch(found.entry);
-                    return found.entry.value;
+                    return __QinCaffeineEntry.valueOf(found.entry);
                   }
                   put(key, value) {
                     const found = this.__findEntry(key);
                     if (found != null) {
-                      found.entry.value = value;
+                      found.entry.setValue(value);
                       this.__touch(found.entry);
                     } else {
-                      const entry = { key, value };
+                      const entry = new __QinCaffeineEntry(key, value);
                       this.__bucket(key, true).push(entry);
                       this.__order.push(entry);
                       this.__size++;
                     }
                     while (this.__size > this.__maximumSize) {
-                      const oldest = this.__order[0];
-                      const oldestFound = this.__findEntry(oldest.key);
+                      const oldest: __QinCaffeineEntry = __QinCaffeineCache.__entryAt(this.__order, 0);
+                      const oldestFound = this.__findEntry(__QinCaffeineEntry.keyOf(oldest));
                       if (oldestFound == null) {
                         this.__order.shift();
                       } else {
@@ -3411,10 +5068,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                     this.__removeEntry(found.bucket, found.index, found.entry, __QinCaffeineRemovalCause.EXPLICIT);
                   }
                   invalidateAll() {
-                    for (const entry of Array.from(this.__order)) {
-                      if (this.__removalListener != null) {
-                        this.__removalListener(entry.key, entry.value, __QinCaffeineRemovalCause.EXPLICIT);
-                      }
+                    if (this.__removalListener != null) {
+                      __QinCaffeineCache.__notifyRemovalEntries(Array.from(this.__order), this.__removalListener, __QinCaffeineRemovalCause.EXPLICIT);
                     }
                     this.__buckets.clear();
                     this.__order = [];
@@ -3495,9 +5150,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                   __jsFlags(extraFlags = "") {
                     let flags = "";
-                    if ((this.__flags & __QinJavaUtilRegexPattern.CASE_INSENSITIVE) !== 0) flags += "i";
-                    if ((this.__flags & __QinJavaUtilRegexPattern.MULTILINE) !== 0) flags += "m";
-                    if ((this.__flags & __QinJavaUtilRegexPattern.DOTALL) !== 0) flags += "s";
+                    if ((this.__flags & __QinJavaUtilRegexPattern_CASE_INSENSITIVE) !== 0) flags += "i";
+                    if ((this.__flags & __QinJavaUtilRegexPattern_MULTILINE) !== 0) flags += "m";
+                    if ((this.__flags & __QinJavaUtilRegexPattern_DOTALL) !== 0) flags += "s";
                     for (const ch of String(extraFlags)) {
                       if (flags.indexOf(ch) < 0) flags += ch;
                     }
@@ -3507,23 +5162,56 @@ public class QinJsBackend implements QinIrCodeBackend {
                     return __qin_java_pattern_regexp__(this.__source, this.__jsFlags(extraFlags));
                   }
                 }
-                __QinJavaUtilRegexPattern.UNIX_LINES = 1;
-                __QinJavaUtilRegexPattern.CASE_INSENSITIVE = 2;
-                __QinJavaUtilRegexPattern.COMMENTS = 4;
-                __QinJavaUtilRegexPattern.MULTILINE = 8;
-                __QinJavaUtilRegexPattern.LITERAL = 16;
-                __QinJavaUtilRegexPattern.DOTALL = 32;
-                __QinJavaUtilRegexPattern.UNICODE_CASE = 64;
-                __QinJavaUtilRegexPattern.CANON_EQ = 128;
-                __QinJavaUtilRegexPattern.UNICODE_CHARACTER_CLASS = 256;
+                const __QinJavaUtilRegexPattern_UNIX_LINES = 1;
+                const __QinJavaUtilRegexPattern_CASE_INSENSITIVE = 2;
+                const __QinJavaUtilRegexPattern_COMMENTS = 4;
+                const __QinJavaUtilRegexPattern_MULTILINE = 8;
+                const __QinJavaUtilRegexPattern_LITERAL = 16;
+                const __QinJavaUtilRegexPattern_DOTALL = 32;
+                const __QinJavaUtilRegexPattern_UNICODE_CASE = 64;
+                const __QinJavaUtilRegexPattern_CANON_EQ = 128;
+                const __QinJavaUtilRegexPattern_UNICODE_CHARACTER_CLASS = 256;
+                __QinJavaUtilRegexPattern.UNIX_LINES = __QinJavaUtilRegexPattern_UNIX_LINES;
+                __QinJavaUtilRegexPattern.CASE_INSENSITIVE = __QinJavaUtilRegexPattern_CASE_INSENSITIVE;
+                __QinJavaUtilRegexPattern.COMMENTS = __QinJavaUtilRegexPattern_COMMENTS;
+                __QinJavaUtilRegexPattern.MULTILINE = __QinJavaUtilRegexPattern_MULTILINE;
+                __QinJavaUtilRegexPattern.LITERAL = __QinJavaUtilRegexPattern_LITERAL;
+                __QinJavaUtilRegexPattern.DOTALL = __QinJavaUtilRegexPattern_DOTALL;
+                __QinJavaUtilRegexPattern.UNICODE_CASE = __QinJavaUtilRegexPattern_UNICODE_CASE;
+                __QinJavaUtilRegexPattern.CANON_EQ = __QinJavaUtilRegexPattern_CANON_EQ;
+                __QinJavaUtilRegexPattern.UNICODE_CHARACTER_CLASS = __QinJavaUtilRegexPattern_UNICODE_CHARACTER_CLASS;
                 class __QinJavaUtilRegexMatcher {
+                  __pattern: __QinJavaUtilRegexPattern = null as any;
+                  __input: string = "";
+                  __regionStart: number = 0;
+                  __regionEnd: number = 0;
+                  __searchIndex: number = 0;
+                  __lastGroups: any[] = null as any;
+                  __lastStart: number = 0;
+                  __lastEnd: number = 0;
+                  __appendPosition: number = 0;
+                  static __textLength(text: string) {
+                    return text.length;
+                  }
+                  static __sliceText(text: string, start, end) {
+                    return end == null ? text.slice(start) : text.slice(start, end);
+                  }
+                  static __replaceText(text: string, pattern, replacement) {
+                    return text.replace(pattern, String(replacement));
+                  }
+                  static __matchLength(match: any[]) {
+                    return match.length;
+                  }
+                  static __matchAt(match: any[], index) {
+                    return match[index];
+                  }
                   constructor(pattern, input) {
                     this.__pattern = pattern;
                     this.__input = String(input);
                     this.__regionStart = 0;
-                    this.__regionEnd = this.__input.length;
+                    this.__regionEnd = __QinJavaUtilRegexMatcher.__textLength(this.__input);
                     this.__searchIndex = 0;
-                    this.__lastMatch = null;
+                    this.__lastGroups = null;
                     this.__appendPosition = 0;
                   }
                   static quoteReplacement(text) {
@@ -3531,9 +5219,9 @@ public class QinJsBackend implements QinIrCodeBackend {
                   }
                   region(start, end) {
                     this.__regionStart = Math.max(0, start | 0);
-                    this.__regionEnd = Math.min(this.__input.length, Math.max(this.__regionStart, end | 0));
+                    this.__regionEnd = Math.min(__QinJavaUtilRegexMatcher.__textLength(this.__input), Math.max(this.__regionStart, end | 0));
                     this.__searchIndex = this.__regionStart;
-                    this.__lastMatch = null;
+                    this.__lastGroups = null;
                     return this;
                   }
                   lookingAt() {
@@ -3545,83 +5233,84 @@ public class QinJsBackend implements QinIrCodeBackend {
                   find(start) {
                     const from = arguments.length > 0 ? Math.max(this.__regionStart, start | 0) : this.__searchIndex;
                     const boundedFrom = Math.min(Math.max(from, this.__regionStart), this.__regionEnd);
-                    const re = this.__pattern.__regexp();
-                    const text = this.__input.slice(boundedFrom, this.__regionEnd);
-                    const match = re.exec(text);
-                    if (match == null) {
-                      this.__lastMatch = null;
-                      this.__searchIndex = this.__regionEnd;
-                      return false;
+                    const re = this.__pattern.__regexp("y");
+                    let candidate = boundedFrom;
+                    while (candidate <= this.__regionEnd) {
+                      const text = __QinJavaUtilRegexMatcher.__sliceText(this.__input, candidate, this.__regionEnd);
+                      const match = re.exec(text);
+                      if (match != null) {
+                        this.__storeMatch(match, candidate);
+                        this.__searchIndex = this.__lastEnd === this.__lastStart
+                          ? Math.min(this.__lastEnd + 1, this.__regionEnd)
+                          : this.__lastEnd;
+                        return true;
+                      }
+                      candidate++;
                     }
-                    this.__storeMatch(match, boundedFrom + (match.index == null ? 0 : match.index));
-                    this.__searchIndex = this.__lastMatch.end === this.__lastMatch.start
-                      ? Math.min(this.__lastMatch.end + 1, this.__regionEnd)
-                      : this.__lastMatch.end;
-                    return true;
+                    this.__lastGroups = null;
+                    this.__lastStart = 0;
+                    this.__lastEnd = 0;
+                    this.__searchIndex = this.__regionEnd;
+                    return false;
                   }
                   group(index = 0) {
-                    if (this.__lastMatch == null) {
+                    if (this.__lastGroups == null) {
                       throw new Error("No match available");
                     }
-                    const value = this.__lastMatch.groups[index | 0];
+                    const value = __QinJavaUtilRegexMatcher.__matchAt(this.__lastGroups, index | 0);
                     return value == null ? null : value;
                   }
                   groupCount() {
-                    return this.__lastMatch == null ? 0 : Math.max(0, this.__lastMatch.groups.length - 1);
+                    return this.__lastGroups == null ? 0 : Math.max(0, __QinJavaUtilRegexMatcher.__matchLength(this.__lastGroups) - 1);
                   }
                   start() {
-                    if (this.__lastMatch == null) throw new Error("No match available");
-                    return this.__lastMatch.start;
+                    if (this.__lastGroups == null) throw new Error("No match available");
+                    return this.__lastStart;
                   }
                   end() {
-                    if (this.__lastMatch == null) throw new Error("No match available");
-                    return this.__lastMatch.end;
+                    if (this.__lastGroups == null) throw new Error("No match available");
+                    return this.__lastEnd;
                   }
                   replaceAll(replacement) {
-                    return this.__input.replace(this.__pattern.__regexp("g"), String(replacement));
+                    return __QinJavaUtilRegexMatcher.__replaceText(this.__input, this.__pattern.__regexp("g"), replacement);
                   }
-                  appendReplacement(buffer, replacement) {
-                    if (this.__lastMatch == null) {
+                  appendReplacement(buffer: __QinJavaLangStringBuilder, replacement) {
+                    if (this.__lastGroups == null) {
                       throw new Error("No match available");
                     }
-                    const text = this.__input.slice(this.__appendPosition, this.__lastMatch.start) + String(replacement);
+                    const text = __QinJavaUtilRegexMatcher.__sliceText(this.__input, this.__appendPosition, this.__lastStart) + String(replacement);
                     this.__append(buffer, text);
-                    this.__appendPosition = this.__lastMatch.end;
+                    this.__appendPosition = this.__lastEnd;
                     return this;
                   }
-                  appendTail(buffer) {
-                    this.__append(buffer, this.__input.slice(this.__appendPosition));
-                    this.__appendPosition = this.__input.length;
+                  appendTail(buffer: __QinJavaLangStringBuilder) {
+                    this.__append(buffer, __QinJavaUtilRegexMatcher.__sliceText(this.__input, this.__appendPosition, null));
+                    this.__appendPosition = __QinJavaUtilRegexMatcher.__textLength(this.__input);
                     return buffer;
                   }
                   __matchAtRegionStart(requireFullRegion) {
                     const re = this.__pattern.__regexp("y");
-                    const text = this.__input.slice(this.__regionStart, this.__regionEnd);
+                    const text = __QinJavaUtilRegexMatcher.__sliceText(this.__input, this.__regionStart, this.__regionEnd);
                     const match = re.exec(text);
                     if (match == null) {
-                      this.__lastMatch = null;
+                      this.__lastGroups = null;
                       return false;
                     }
                     this.__storeMatch(match, this.__regionStart);
-                    return !requireFullRegion || this.__lastMatch.end === this.__regionEnd;
+                    return !requireFullRegion || this.__lastEnd === this.__regionEnd;
                   }
                   __storeMatch(match, absoluteStart) {
                     const groups = [];
-                    for (let index = 0; index < match.length; index++) {
-                      groups.push(match[index] == null ? null : match[index]);
+                    for (let index = 0; index < __QinJavaUtilRegexMatcher.__matchLength(match); index++) {
+                      groups.push(__QinJavaUtilRegexMatcher.__matchAt(match, index) == null ? null : __QinJavaUtilRegexMatcher.__matchAt(match, index));
                     }
-                    this.__lastMatch = {
-                      groups,
-                      start: absoluteStart,
-                      end: absoluteStart + String(match[0] == null ? "" : match[0]).length
-                    };
+                    this.__lastGroups = groups;
+                    this.__lastStart = absoluteStart;
+                    this.__lastEnd = absoluteStart + __QinJavaUtilRegexMatcher.__textLength(String(__QinJavaUtilRegexMatcher.__matchAt(match, 0) == null ? "" : __QinJavaUtilRegexMatcher.__matchAt(match, 0)));
                   }
-                  __append(buffer, text) {
-                    if (buffer != null && typeof buffer.append === "function") {
-                      buffer.append(text);
-                      return;
-                    }
-                    throw new TypeError("Matcher append target must support append(value)");
+                  __append(buffer: __QinJavaLangStringBuilder, text) {
+                    buffer.append(text);
+                    return null;
                   }
                 }
                 """);
@@ -3706,7 +5395,6 @@ public class QinJsBackend implements QinIrCodeBackend {
                     "__qin_builtin_constructor__",
                     "__qin_java_pattern_regexp__",
                     "__QinJavaLangString",
-                    "__qin_java_functional",
                     "__qin_java_class_info__",
                     "__qin_binary__",
                     "__qin_instanceof__",
@@ -3715,41 +5403,122 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         js.append("""
-                const __qin_builtin_constructor__ = globalThis.__qin_builtin_constructor__ || ((name) => {
+                function __qin_default_builtin_constructor__(name) {
                   const ctor = globalThis[name];
                   if (typeof ctor !== "function") {
                     throw new Error("Missing host constructor for Qin generated JS: " + name);
                   }
                   return ctor;
-                });
-                const __qin_java_pattern_regexp__ = globalThis.__qin_java_pattern_regexp__ || ((source, flags = "") => {
-                  const jsSource = String(source).replace(/\\\\Q([\\s\\S]*?)\\\\E/g, (_match, literal) => {
-                    return literal.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");
+                }
+                var __qin_builtin_constructor__ = globalThis.__qin_builtin_constructor__;
+                if (__qin_builtin_constructor__ == null) {
+                  __qin_builtin_constructor__ = __qin_default_builtin_constructor__;
+                }
+                function __qin_default_java_pattern_regexp__(source, flags = "") {
+                  const javaQuotePattern = new RegExp("\\\\\\\\Q([\\\\s\\\\S]*?)\\\\\\\\E", "g");
+                  const regexMetaPattern = new RegExp("[.*+?^${}()|[\\\\]\\\\\\\\]", "g");
+                  const unicodePropertyPattern = new RegExp("\\\\\\\\[pP]\\\\{");
+                  const jsSource = String(source).replace(javaQuotePattern, (_match, literal) => {
+                    return literal.replace(regexMetaPattern, "\\\\$&");
                   });
                   let jsFlags = String(flags);
-                  if (/\\\\[pP]\\{/.test(jsSource) && !jsFlags.includes("u")) {
+                  if (unicodePropertyPattern.test(jsSource) && !jsFlags.includes("u")) {
                     jsFlags += "u";
                   }
                   return new RegExp(jsSource, jsFlags);
-                });
+                }
+                var __qin_java_pattern_regexp__ = globalThis.__qin_java_pattern_regexp__;
+                if (__qin_java_pattern_regexp__ == null) {
+                  __qin_java_pattern_regexp__ = __qin_default_java_pattern_regexp__;
+                }
                 """);
-        emitJavaLangStringRuntime(js);
         emitStructuralObjectHelper(js);
         js.append("""
-                function __qin_java_functional(fn) {
-                  if (fn == null || fn.__qinJavaFunctional) return fn;
-                  Object.defineProperty(fn, "__qinJavaFunctional", { value: true });
-                  fn.get = () => fn();
-                  fn.run = () => fn();
-                  fn.execute = () => fn();
-                  fn.apply = (...args) => fn(...args);
-                  fn.accept = (...args) => {
-                    fn(...args);
-                    return null;
+                function __qin_collection_values_equal__(left, right) {
+                  if (left === right) return true;
+                  if (left == null || right == null) return false;
+                  const equals = left != null && typeof left.equals === "function" ? left.equals.bind(left) : null;
+                  return equals == null ? false : equals(right) === true;
+                }
+                function __qin_collection_size__(collection) {
+                  if (collection == null) return 0;
+                  if (Array.isArray(collection)) return collection.length;
+                  if (typeof collection.size === "function") return collection.size();
+                  if (typeof collection.size === "number") return collection.size;
+                  if (typeof collection.length === "number") return collection.length;
+                  throw new Error("Unsupported generated collection size target");
+                }
+                function __qin_collection_is_empty__(collection) {
+                  if (collection == null) return true;
+                  if (Array.isArray(collection)) return collection.length === 0;
+                  if (typeof collection.isEmpty === "function") return collection.isEmpty();
+                  if (typeof collection.size === "function") return collection.size() === 0;
+                  if (typeof collection.size === "number") return collection.size === 0;
+                  if (typeof collection.length === "number") return collection.length === 0;
+                  throw new Error("Unsupported generated collection empty target");
+                }
+                function __qin_collection_get__(collection, index) {
+                  if (collection == null) throw new Error("Generated collection get target cannot be null");
+                  if (Array.isArray(collection)) return collection[Number(index)];
+                  if (typeof collection.get === "function") return collection.get(index);
+                  return collection[Number(index)];
+                }
+                function __qin_collection_add__(collection, value) {
+                  if (collection == null) throw new Error("Generated collection add target cannot be null");
+                  if (Array.isArray(collection)) {
+                    collection.push(value);
+                    return true;
+                  }
+                  if (typeof collection.add === "function") return collection.add(value);
+                  if (typeof collection.push === "function") {
+                    collection.push(value);
+                    return true;
+                  }
+                  throw new Error("Unsupported generated collection add target");
+                }
+                function __qin_collection_contains__(collection, value) {
+                  if (collection == null) return false;
+                  if (Array.isArray(collection)) return collection.some((item) => __qin_collection_values_equal__(item, value));
+                  if (typeof collection.contains === "function") return collection.contains(value);
+                  if (typeof collection.has === "function") return collection.has(value);
+                  return false;
+                }
+                function __qin_collection_to_array__(collection) {
+                  if (collection == null) return [];
+                  if (Array.isArray(collection)) return collection.slice();
+                  if (typeof collection.toArray === "function") return collection.toArray();
+                  if (typeof collection[Symbol.iterator] === "function") return Array.from(collection);
+                  throw new Error("Unsupported generated collection toArray target");
+                }
+                function __qin_java_utf8_decode__(bytes) {
+                  const encoded = __qin_collection_to_array__(bytes);
+                  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(Uint8Array.from(encoded));
+                  let binary = "";
+                  for (let index = 0; index < encoded.length; index++) binary += String.fromCharCode(Number(encoded[index]) & 0xff);
+                  return decodeURIComponent(escape(binary));
+                }
+                function __qin_java_time_now__() {
+                  const fixed = globalThis.__qinJavaFixedNow;
+                  return fixed == null ? new Date() : new Date(fixed);
+                }
+                function __qin_java_time_from__(value) {
+                  return value instanceof Date ? value : new Date(value == null ? Date.now() : value);
+                }
+                function __qin_java_time_format__(value, pattern) {
+                  const date = __qin_java_time_from__(value);
+                  const pad = (input, width) => {
+                    let text = String(input);
+                    while (text.length < width) text = "0" + text;
+                    return text;
                   };
-                  fn.test = (...args) => !!fn(...args);
-                  fn.compare = (...args) => fn(...args);
-                  return fn;
+                  let out = String(pattern == null || pattern.length === 0 ? "yyyy-MM-ddTHH:mm:ss" : pattern);
+                  out = out.split("yyyy").join(String(date.getFullYear()));
+                  out = out.split("MM").join(pad(date.getMonth() + 1, 2));
+                  out = out.split("dd").join(pad(date.getDate(), 2));
+                  out = out.split("HH").join(pad(date.getHours(), 2));
+                  out = out.split("mm").join(pad(date.getMinutes(), 2));
+                  out = out.split("ss").join(pad(date.getSeconds(), 2));
+                  return out;
                 }
                 function __qin_java_class_info__(ctor, meta = null) {
                   if (ctor != null && typeof ctor.isInstance === "function" && typeof ctor.getName === "function") {
@@ -3780,6 +5549,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                     throw new Error("NoSuchMethod: " + className + "." + name);
                   };
                   return {
+                    __qin_ctor: ctor,
+                    __qin_meta: meta,
                     getName() { return className; },
                     getSimpleName() { return simpleName; },
                     isInstance(value) {
@@ -3792,6 +5563,24 @@ public class QinJsBackend implements QinIrCodeBackend {
                       const interfaces = ctor.__qin_java_interfaces || [];
                       for (const interfaceName of interfaces) {
                         if (__qin_java_implements(value, interfaceName)) return true;
+                      }
+                      return false;
+                    },
+                    isAssignableFrom(other) {
+                      if (other == null || typeof other.getName !== "function") return false;
+                      if (className === "java.lang.Object" || className === other.getName()) return true;
+                      const otherMeta = other.__qin_meta;
+                      if (meta && meta.interfaceName) {
+                        if (otherMeta && otherMeta.interfaceName === meta.interfaceName) return true;
+                        const otherCtor = other.__qin_ctor;
+                        const interfaces = otherCtor == null ? [] : (otherCtor.__qin_java_interfaces || []);
+                        return interfaces.includes(meta.interfaceName);
+                      }
+                      if (typeof ctor !== "function" || typeof other.__qin_ctor !== "function") return false;
+                      let prototype = other.__qin_ctor.prototype;
+                      while (prototype != null) {
+                        if (prototype.constructor === ctor) return true;
+                        prototype = Object.getPrototypeOf(prototype);
                       }
                       return false;
                     },
@@ -3832,12 +5621,6 @@ public class QinJsBackend implements QinIrCodeBackend {
                     hashCode() { return hash; },
                     toString() { return "class " + className; }
                   };
-                }
-                if (Object.prototype.getClass == null) {
-                  Object.defineProperty(Object.prototype, "getClass", {
-                    value() { return __qin_java_class_info__(this == null ? Object : this.constructor); },
-                    configurable: true
-                  });
                 }
                 function __qin_java_implements(value, interfaceName) {
                   if (value == null || interfaceName == null) return false;
@@ -3940,6 +5723,93 @@ public class QinJsBackend implements QinIrCodeBackend {
                 """);
     }
 
+    private void emitJavaFunctionalRuntime(StringBuilder js) {
+        if (externalJavaSdkRuntime) {
+            requireExternalJavaSdkRuntime("__qin_java_functional");
+            return;
+        }
+        if (js.indexOf("function __qin_java_functional") >= 0) {
+            return;
+        }
+        js.append("""
+                function __qin_java_functional(fn) {
+                  if (fn == null || fn.__qinJavaFunctional) return fn;
+                  const functional = (...args) => fn(...args);
+                  functional.__qinJavaFunctional = true;
+                  functional.get = () => fn();
+                  functional.run = () => fn();
+                  functional.execute = () => fn();
+                  functional.apply = (...args) => fn(...args);
+                  functional.accept = (...args) => {
+                    fn(...args);
+                    return null;
+                  };
+                  functional.test = (...args) => !!fn(...args);
+                  functional.compare = (...args) => fn(...args);
+                  __qin_copy_subhuti_rule_metadata(functional, fn);
+                  return functional;
+                }
+
+                function __qin_subhuti_rule_name(source, fallbackRuleName = "") {
+                  if (source == null) return String(fallbackRuleName || "");
+                  const directRuleName = source.__qinSubhutiRuleName || source.name || "";
+                  if (directRuleName) return String(directRuleName);
+                  const nestedMethod = typeof source.method === "function" ? source.method : null;
+                  if (nestedMethod) {
+                    const nestedMethodRuleName = nestedMethod.__qinSubhutiRuleName || nestedMethod.name || "";
+                    if (nestedMethodRuleName) return String(nestedMethodRuleName);
+                  }
+                  const nestedValue = typeof source.value === "function" ? source.value : null;
+                  if (nestedValue) {
+                    const nestedValueRuleName = nestedValue.__qinSubhutiRuleName || nestedValue.name || "";
+                    if (nestedValueRuleName) return String(nestedValueRuleName);
+                  }
+                  return String(fallbackRuleName || "");
+                }
+
+                function __qin_copy_subhuti_rule_metadata(target, source, fallbackRuleName = "") {
+                  if (target == null || source == null) return target;
+                  const ruleName = __qin_subhuti_rule_name(source, fallbackRuleName);
+                  if (!(source.__isSubhutiRule__ === true || source.__qinSubhutiRuleWrapped === true || ruleName || typeof source.method === "function" || typeof source.value === "function")) {
+                    return target;
+                  }
+                  target.__isSubhutiRule__ = true;
+                  target.__qinSubhutiRuleWrapped = true;
+                  if (ruleName) {
+                    target.__qinSubhutiRuleName = ruleName;
+                    try {
+                      Object.defineProperty(target, "name", {
+                        value: ruleName,
+                        writable: false,
+                        enumerable: false,
+                        configurable: true
+                      });
+                    } catch (error) {
+                    }
+                  }
+                  if (typeof source.method === "function") {
+                    const nestedSource = source.method;
+                    const nestedRuleName = nestedSource.__qinSubhutiRuleName || nestedSource.name || ruleName;
+                    const nestedTarget = nestedSource === source || nestedSource.method === nestedSource
+                      ? (...args) => nestedSource(...args)
+                      : nestedSource;
+                    __qin_copy_subhuti_rule_metadata(nestedTarget, nestedSource, nestedRuleName);
+                    target.method = nestedTarget;
+                  }
+                  if (typeof source.value === "function") {
+                    const nestedValueSource = source.value;
+                    const nestedValueRuleName = nestedValueSource.__qinSubhutiRuleName || nestedValueSource.name || ruleName;
+                    const nestedValueTarget = nestedValueSource === source || nestedValueSource.method === nestedValueSource
+                      ? (...args) => nestedValueSource(...args)
+                      : nestedValueSource;
+                    __qin_copy_subhuti_rule_metadata(nestedValueTarget, nestedValueSource, nestedValueRuleName);
+                    target.value = nestedValueTarget;
+                  }
+                  return target;
+                }
+                """);
+    }
+
     private void emitSubhutiRuleRuntimeHelpers(StringBuilder js, QinIrProgram program) {
         if (externalJavaSdkRuntime) {
             if (program == null || usesSubhutiRuleMethod(program)) {
@@ -3953,8 +5823,8 @@ public class QinJsBackend implements QinIrCodeBackend {
         emitJavaHashRuntimeHelpers(js);
         js.append("""
                 let __qin_subhuti_next_rule_cache_id = 1;
-                const __qin_subhuti_rule_cache_identity_ids = new (__qin_builtin_constructor__("WeakMap"))();
-                const __qin_subhuti_rule_cache_value_buckets = new (__qin_builtin_constructor__("Map"))();
+                const __qin_subhuti_rule_cache_identity_ids = new Map();
+                const __qin_subhuti_rule_cache_value_buckets = new Map();
                 function __qin_subhuti_identity_rule_cache_id(value) {
                   if (!__qin_subhuti_rule_cache_identity_ids.has(value)) {
                     __qin_subhuti_rule_cache_identity_ids.set(value, __qin_subhuti_next_rule_cache_id++);
@@ -4148,6 +6018,12 @@ public class QinJsBackend implements QinIrCodeBackend {
                 continue;
             }
             if (statement instanceof QinIrTryStatement tryStatement) {
+                for (QinIrTryResource resource : tryStatement.resources()) {
+                    if ((resource.initializer() != null && usesBuiltin(resource.initializer(), methodName))
+                            || (resource.reference() != null && usesBuiltin(resource.reference(), methodName))) {
+                        return true;
+                    }
+                }
                 if (usesBuiltin(tryStatement.tryBody(), methodName)
                         || usesBuiltin(tryStatement.finallyBody(), methodName)) {
                     return true;
@@ -4191,10 +6067,17 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (expression instanceof QinIrCastExpression castExpression) {
             return usesBuiltin(castExpression.expression(), methodName);
         }
+        if (expression instanceof QinIrUnaryExpression unaryExpression) {
+            return usesBuiltin(unaryExpression.operand(), methodName);
+        }
         if (expression instanceof QinIrIfExpression ifExpression) {
             return usesBuiltin(ifExpression.test(), methodName)
                     || usesBuiltin(ifExpression.consequent(), methodName)
                     || usesBuiltin(ifExpression.alternate(), methodName);
+        }
+        if (expression instanceof QinIrShortCircuitExpression shortCircuitExpression) {
+            return usesBuiltin(shortCircuitExpression.left(), methodName)
+                    || usesBuiltin(shortCircuitExpression.right(), methodName);
         }
         if (expression instanceof QinIrFunctionLiteral functionLiteral) {
             return (functionLiteral.returnExpression() != null && usesBuiltin(functionLiteral.returnExpression(), methodName))
@@ -4283,6 +6166,22 @@ public class QinJsBackend implements QinIrCodeBackend {
             for (QinIrSwitchCase switchCase : switchExpression.cases()) {
                 if (usesBuiltin(switchCase.test(), methodName)
                         || usesBuiltin(switchCase.consequent(), methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (expression instanceof QinIrArrayLiteral arrayLiteral) {
+            for (QinIrExpression element : arrayLiteral.elements()) {
+                if (usesBuiltin(element, methodName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (expression instanceof QinIrArrayCreationExpression arrayCreationExpression) {
+            for (QinIrExpression dimension : arrayCreationExpression.dimensions()) {
+                if (usesBuiltin(dimension, methodName)) {
                     return true;
                 }
             }
@@ -4396,6 +6295,32 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("]");
     }
 
+    private void emitArrayCreation(StringBuilder js, QinIrArrayCreationExpression arrayCreationExpression) {
+        emitArrayCreation(js, arrayCreationExpression, 0);
+    }
+
+    private void emitArrayCreation(
+            StringBuilder js,
+            QinIrArrayCreationExpression arrayCreationExpression,
+            int dimensionIndex) {
+        js.append("Array.from({ length: ");
+        emitExpression(js, arrayCreationExpression.dimensions().get(dimensionIndex));
+        js.append(" }, () => ");
+        if (dimensionIndex + 1 < arrayCreationExpression.dimensions().size()) {
+            emitArrayCreation(js, arrayCreationExpression, dimensionIndex + 1);
+        } else {
+            js.append(javaArrayCreationDefaultElement(arrayCreationExpression));
+        }
+        js.append(")");
+    }
+
+    private String javaArrayCreationDefaultElement(QinIrArrayCreationExpression arrayCreationExpression) {
+        if (arrayCreationExpression.trailingEmptyDimensions() > 0) {
+            return "null";
+        }
+        return javaDefaultFieldInitializer(arrayCreationExpression.componentType());
+    }
+
     private void emitJavaClassLiteral(StringBuilder js, QinIrJavaClassLiteralExpression classLiteralExpression) {
         String displayName = classLiteralExpression.binaryName() == null
                 ? classLiteralExpression.typeName()
@@ -4441,6 +6366,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             currentJavaFieldAliases = previousFieldAliases;
             currentJavaClassDeclaration = previousClassDeclaration;
             js.append("}\n");
+            emitJavaInterfaceDeclarationMetadata(js, classDeclaration);
             emitJavaInterfaceMetadata(js, classDeclaration);
             emitJavaClassSimpleNameAlias(js, classDeclaration, simpleNameCounts);
         }
@@ -4496,6 +6422,14 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("];\n");
     }
 
+    private void emitJavaInterfaceDeclarationMetadata(StringBuilder js, QinIrClassDeclaration classDeclaration) {
+        if (!classDeclaration.interfaceClass()) {
+            return;
+        }
+        js.append(jsClassReference(classDeclaration.binaryName()))
+                .append(".__qin_java_interface = true;\n");
+    }
+
     private Set<String> javaInterfaceNames(List<QinIrTypeRef> interfaceTypes) {
         Set<String> interfaceNames = new LinkedHashSet<>();
         for (QinIrTypeRef interfaceType : interfaceTypes) {
@@ -4535,8 +6469,25 @@ public class QinJsBackend implements QinIrCodeBackend {
             }
             js.append(jsCurrentJavaFieldName(field.name()));
             emitNullableTypeAnnotation(js, field.type());
-            js.append(" = null as any;\n");
+            js.append(" = ");
+            if (classDeclaration.interfaceClass() && field.staticField() && field.initializer() != null) {
+                emitExpression(js, field.initializer());
+            } else {
+                js.append(javaDefaultFieldInitializer(field.type()));
+            }
+            js.append(" as any;\n");
         }
+    }
+
+    private String javaDefaultFieldInitializer(QinIrTypeRef type) {
+        if (type == null) {
+            return "null";
+        }
+        return switch (type.kind()) {
+            case BOOLEAN -> "false";
+            case INT, DOUBLE -> "0";
+            default -> "null";
+        };
     }
 
     private Map<String, Integer> javaClassSimpleNameCounts(List<QinIrClassDeclaration> classDeclarations) {
@@ -4613,14 +6564,8 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         js.append("""
                 function __qin_init_enum_value(value, name, ordinal) {
-                  Object.defineProperty(value, "__qinEnumName", {
-                    value: "" + name,
-                    configurable: true
-                  });
-                  Object.defineProperty(value, "__qinEnumOrdinal", {
-                    value: ordinal,
-                    configurable: true
-                  });
+                  value.__qinEnumName = "" + name;
+                  value.__qinEnumOrdinal = ordinal;
                   return value;
                 }
                 """);
@@ -4635,9 +6580,10 @@ public class QinJsBackend implements QinIrCodeBackend {
         Set<String> instanceMethods = instanceMethodNames(classDeclaration);
         if (!instanceMethods.contains("equals")) {
             requireExternalJavaSdkRuntime("__qin_instanceof__");
-            js.append("  equals(other) {\n")
+            js.append("  equals(other: any): boolean {\n")
                     .append("    if (this === other) return true;\n")
                     .append("    if (!__qin_instanceof__(other, ").append(classReference).append(")) return false;\n");
+            js.append("    const __qin_record_other: ").append(classReference).append(" = other;\n");
             if (components.isEmpty()) {
                 js.append("    return true;\n");
             } else {
@@ -4649,7 +6595,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                     js.append("__qin_java_values_equal__(this.")
                             .append(jsJavaFieldName(component.name()))
-                            .append(", other.")
+                            .append(", __qin_record_other.")
                             .append(jsJavaFieldName(component.name()))
                             .append(")");
                 }
@@ -4658,7 +6604,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append("  }\n");
         }
         if (!instanceMethods.contains("hashCode")) {
-            js.append("  hashCode() {\n")
+            js.append("  hashCode(): number {\n")
                     .append("    let result = 1;\n");
             for (QinIrFieldDeclaration component : components) {
                 js.append("    result = result * 31 + __qin_java_value_hash_code__(this.")
@@ -4669,20 +6615,20 @@ public class QinJsBackend implements QinIrCodeBackend {
                     .append("  }\n");
         }
         if (!instanceMethods.contains("toString")) {
-            js.append("  toString() {\n");
+            js.append("  toString(): string {\n");
             if (components.isEmpty()) {
                 js.append("    return \"").append(escapeJs(classDeclaration.simpleName())).append("[]\";\n");
             } else {
-                js.append("    return \"").append(escapeJs(classDeclaration.simpleName())).append("[\" + ");
+                js.append("    return [\"").append(escapeJs(classDeclaration.simpleName())).append("[\"");
                 for (int i = 0; i < components.size(); i++) {
                     QinIrFieldDeclaration component = components.get(i);
                     if (i > 0) {
-                        js.append(" + \", \" + ");
+                        js.append(", \", \"");
                     }
-                    js.append("\"").append(escapeJs(component.name())).append("=\" + this.")
+                    js.append(", \"").append(escapeJs(component.name())).append("=\", this.")
                             .append(jsJavaFieldName(component.name()));
                 }
-                js.append(" + \"]\";\n");
+                js.append(", \"]\"].join(\"\");\n");
             }
             js.append("  }\n");
         }
@@ -4745,41 +6691,32 @@ public class QinJsBackend implements QinIrCodeBackend {
             List<QinIrMethodDeclaration> explicitConstructors) {
         Map<String, String> previousAliases = bindingAliases;
         bindingAliases = new LinkedHashMap<>(previousAliases);
+        installStaticFieldBindingAliases(classDeclaration);
         js.append("  constructor(...__qin_args");
         if (emitTypeAnnotations()) {
             js.append(": any[]");
         }
         js.append(") {\n");
-        QinIrMethodDeclaration selectedConstructor = explicitConstructors.isEmpty()
-                ? null
-                : explicitConstructors.get(0);
-        List<QinIrParameter> parameters = selectedConstructor == null
-                ? List.of()
-                : selectedConstructor.parameters();
-        for (QinIrParameter parameter : parameters) {
-            declareBindingName(parameter.name());
-        }
         if (!explicitConstructors.isEmpty()) {
-            js.append("    switch (__qin_args.length) {\n");
-            Set<Integer> emittedArities = new LinkedHashSet<>();
-            for (QinIrMethodDeclaration constructor : explicitConstructors) {
+            for (int constructorIndex = 0; constructorIndex < explicitConstructors.size(); constructorIndex++) {
+                QinIrMethodDeclaration constructor = explicitConstructors.get(constructorIndex);
                 int arity = constructor.parameters().size();
-                if (!emittedArities.add(arity)) {
-                    continue;
-                }
-                js.append("      case ").append(arity).append(": {\n");
+                String guard = isVarargsMethod(constructor)
+                        ? overloadVarargsGuard(constructor)
+                        : "__qin_args.length === " + arity + " && " + overloadTypeGuard(constructor);
+                js.append("    if (").append(guard).append(") {\n");
                 List<QinIrParameter> constructorParameters = constructor.parameters();
                 for (int i = 0; i < constructorParameters.size(); i++) {
-                    js.append("        const ")
+                    js.append("      const ")
                             .append(declareBindingName(constructorParameters.get(i).name()));
                     emitAnyTypeAnnotation(js);
                     js.append(" = __qin_args[")
                             .append(i)
                             .append("];\n");
                 }
-                emitSuperCall(js, classDeclaration, constructor, constructorParameters, "        ");
-                js.append("        this.")
-                        .append(constructorInitializerName(classDeclaration, arity))
+                emitSuperCall(js, classDeclaration, constructor, constructorParameters, "      ");
+                js.append("      this.")
+                        .append(constructorInitializerName(classDeclaration, arity, constructorIndex))
                         .append("(");
                 for (int i = 0; i < constructorParameters.size(); i++) {
                     js.append(jsBindingName(constructorParameters.get(i).name()));
@@ -4788,17 +6725,18 @@ public class QinJsBackend implements QinIrCodeBackend {
                     }
                 }
                 js.append(");\n");
-                js.append("        return;\n");
-                js.append("      }\n");
+                js.append("      return;\n");
+                js.append("    }\n");
             }
-            js.append("      default: throw new Error(\"Unsupported Java constructor arity: ")
+            js.append("    throw new Error(\"Unsupported Java constructor overload: ")
                     .append(escapeJs(classDeclaration.simpleName()))
                     .append("/\" + __qin_args.length);\n");
-            js.append("    }\n");
             js.append("  }\n");
             bindingAliases = previousAliases;
             return;
         }
+        QinIrMethodDeclaration selectedConstructor = null;
+        List<QinIrParameter> parameters = List.of();
         js.append("    if (__qin_args.length !== 0) {\n");
         js.append("      throw new Error(\"Unsupported Java constructor arity: ")
                 .append(escapeJs(classDeclaration.simpleName()))
@@ -4817,19 +6755,21 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (explicitConstructors.isEmpty()) {
             return;
         }
-        for (QinIrMethodDeclaration constructor : explicitConstructors) {
-            emitClassConstructorInitializer(js, classDeclaration, constructor);
+        for (int constructorIndex = 0; constructorIndex < explicitConstructors.size(); constructorIndex++) {
+            emitClassConstructorInitializer(js, classDeclaration, explicitConstructors.get(constructorIndex), constructorIndex);
         }
     }
 
     private void emitClassConstructorInitializer(
             StringBuilder js,
             QinIrClassDeclaration classDeclaration,
-            QinIrMethodDeclaration constructor) {
+            QinIrMethodDeclaration constructor,
+            int constructorIndex) {
         Map<String, String> previousAliases = bindingAliases;
         bindingAliases = new LinkedHashMap<>(previousAliases);
+        installStaticFieldBindingAliases(classDeclaration);
         List<QinIrParameter> parameters = constructor.parameters();
-        js.append("  ").append(constructorInitializerName(classDeclaration, parameters.size())).append("(");
+        js.append("  ").append(constructorInitializerName(classDeclaration, parameters.size(), constructorIndex)).append("(");
         for (int i = 0; i < parameters.size(); i++) {
             QinIrParameter parameter = parameters.get(i);
             js.append(declareBindingName(parameter.name()));
@@ -4905,6 +6845,13 @@ public class QinJsBackend implements QinIrCodeBackend {
             return usesThisConstructorDelegation(ifExpression.consequent())
                     || usesThisConstructorDelegation(ifExpression.alternate());
         }
+        if (expression instanceof QinIrUnaryExpression unaryExpression) {
+            return usesThisConstructorDelegation(unaryExpression.operand());
+        }
+        if (expression instanceof QinIrShortCircuitExpression shortCircuitExpression) {
+            return usesThisConstructorDelegation(shortCircuitExpression.left())
+                    || usesThisConstructorDelegation(shortCircuitExpression.right());
+        }
         return false;
     }
 
@@ -4915,7 +6862,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             }
             js.append("    this.").append(jsCurrentJavaFieldName(field.name())).append(" = ");
             if (field.initializer() == null) {
-                js.append("null");
+                js.append(javaDefaultFieldInitializer(field.type()));
             } else {
                 emitExpression(js, field.initializer());
             }
@@ -4925,9 +6872,15 @@ public class QinJsBackend implements QinIrCodeBackend {
 
     private void emitStaticFieldInitializers(StringBuilder js, QinIrClassDeclaration classDeclaration) {
         Map<String, String> previousFieldAliases = currentJavaFieldAliases;
+        Map<String, String> previousBindingAliases = bindingAliases;
         currentJavaFieldAliases = javaFieldAliases(classDeclaration);
+        bindingAliases = new LinkedHashMap<>(previousBindingAliases);
+        installStaticFieldBindingAliases(classDeclaration);
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
             if (!field.staticField() || isJavaEnumConstant(classDeclaration, field)) {
+                continue;
+            }
+            if (emitTypeAnnotations() && classDeclaration.interfaceClass()) {
                 continue;
             }
             js.append(jsClassReference(classDeclaration.binaryName()))
@@ -4935,13 +6888,14 @@ public class QinJsBackend implements QinIrCodeBackend {
                     .append(jsCurrentJavaFieldName(field.name()))
                     .append(" = ");
             if (field.initializer() == null) {
-                js.append("null");
+                js.append(javaDefaultFieldInitializer(field.type()));
             } else {
                 emitExpression(js, field.initializer());
             }
             js.append(";\n");
         }
         currentJavaFieldAliases = previousFieldAliases;
+        bindingAliases = previousBindingAliases;
     }
 
     private void emitStaticInitializers(StringBuilder js, QinIrClassDeclaration classDeclaration) {
@@ -4949,8 +6903,11 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         Map<String, String> previousFieldAliases = currentJavaFieldAliases;
+        Map<String, String> previousBindingAliases = bindingAliases;
         QinIrClassDeclaration previousClassDeclaration = currentJavaClassDeclaration;
         currentJavaFieldAliases = javaFieldAliases(classDeclaration);
+        bindingAliases = new LinkedHashMap<>(previousBindingAliases);
+        installStaticFieldBindingAliases(classDeclaration);
         currentJavaClassDeclaration = classDeclaration;
         for (QinIrExpression staticInitializer : classDeclaration.staticInitializers()) {
             js.append("(() => {\n");
@@ -4960,11 +6917,37 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append("})();\n");
         }
         currentJavaFieldAliases = previousFieldAliases;
+        bindingAliases = previousBindingAliases;
         currentJavaClassDeclaration = previousClassDeclaration;
     }
 
+    private void installStaticFieldBindingAliases(QinIrClassDeclaration classDeclaration) {
+        String classReference = jsClassReference(classDeclaration.binaryName());
+        for (QinIrFieldDeclaration field : classDeclaration.fields()) {
+            if (field.staticField() && !isJavaEnumConstant(classDeclaration, field)) {
+                bindingAliases.put(
+                        field.name(),
+                        classReference + "." + jsCurrentJavaFieldName(field.name()));
+            }
+        }
+    }
+
     private String constructorInitializerName(QinIrClassDeclaration classDeclaration, int arity) {
-        return "__qin_constructor_" + jsClassReference(classDeclaration.binaryName()) + "_" + arity;
+        int constructorIndex = 0;
+        for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+            if (!"constructor".equals(method.name())) {
+                continue;
+            }
+            if (method.parameters().size() == arity) {
+                return constructorInitializerName(classDeclaration, arity, constructorIndex);
+            }
+            constructorIndex++;
+        }
+        return constructorInitializerName(classDeclaration, arity, 0);
+    }
+
+    private String constructorInitializerName(QinIrClassDeclaration classDeclaration, int arity, int constructorIndex) {
+        return "__qin_constructor_" + jsClassReference(classDeclaration.binaryName()) + "_" + arity + "_" + constructorIndex;
     }
 
     public static String generatedJavaClassIdentifier(String binaryName) {
@@ -4985,6 +6968,38 @@ public class QinJsBackend implements QinIrCodeBackend {
 
     private String jsClassReference(String binaryName) {
         return generatedJavaClassIdentifier(binaryName);
+    }
+
+    private void emitGeneratedTsStaticAdmissionContract(
+            StringBuilder js,
+            String member,
+            String owner,
+            String method,
+            String receiver,
+            int arity) {
+        if (!isStaticAdmissionDynamicFunctionMember(member)) {
+            return;
+        }
+        if (owner == null || owner.isBlank()
+                || method == null || method.isBlank()
+                || receiver == null || receiver.isBlank()) {
+            return;
+        }
+        js.append("/* @qin-static-admission member=")
+                .append(member)
+                .append(" owner=")
+                .append(escapeJs(owner))
+                .append(" method=")
+                .append(escapeJs(method))
+                .append(" receiver=")
+                .append(escapeJs(receiver))
+                .append(" arity=")
+                .append(arity)
+                .append(" */ ");
+    }
+
+    private static boolean isStaticAdmissionDynamicFunctionMember(String member) {
+        return "call".equals(member) || "apply".equals(member) || "bind".equals(member);
     }
 
     private static boolean isJsIdentifierStart(char ch) {
@@ -5097,11 +7112,21 @@ public class QinJsBackend implements QinIrCodeBackend {
             String groupKey = method.name() + "\u0000" + method.staticMethod();
             methodsByName.computeIfAbsent(groupKey, ignored -> new java.util.ArrayList<>()).add(method);
         }
-        for (List<QinIrMethodDeclaration> overloads : methodsByName.values()) {
+        for (List<QinIrMethodDeclaration> declaredOverloads : methodsByName.values()) {
+            List<QinIrMethodDeclaration> concreteOverloads = declaredOverloads.stream()
+                    .filter(method -> !method.abstractMethod())
+                    .toList();
+            if (concreteOverloads.isEmpty()) {
+                continue;
+            }
+            boolean hasAbstractOverload = concreteOverloads.size() != declaredOverloads.size();
+            List<QinIrMethodDeclaration> overloads = hasAbstractOverload
+                    ? declaredOverloads
+                    : concreteOverloads;
             if (overloads.size() == 1) {
                 emitMethodDeclaration(
                         js,
-                        classDeclaration.simpleName(),
+                        classDeclaration,
                         overloads.get(0),
                         jsJavaMethodName(overloads.get(0).name()));
                 continue;
@@ -5111,7 +7136,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 QinIrMethodDeclaration overload = overloads.get(i);
                 emitMethodDeclaration(
                         js,
-                        classDeclaration.simpleName(),
+                        classDeclaration,
                         overload,
                         overloadedMethodImplementationName(overload.name(), overload.parameters().size(), i));
             }
@@ -5131,7 +7156,12 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append(": any[]");
         }
         js.append(")");
-        emitAnyTypeAnnotation(js);
+        QinIrTypeRef returnType = commonOverloadReturnType(overloads);
+        if (returnType == null) {
+            emitAnyTypeAnnotation(js);
+        } else {
+            emitMethodReturnTypeAnnotation(js, returnType);
+        }
         js.append(" {\n");
         emitSubhutiExecuteRuleWrapperExternalArgsDispatch(js, methodName, overloads);
         for (int i : overloadDispatchOrder(overloads, false)) {
@@ -5155,19 +7185,26 @@ public class QinJsBackend implements QinIrCodeBackend {
             if (!isVarargsMethod(overload)) {
                 continue;
             }
-            int arity = overload.parameters().size();
-            js.append("    if (")
-                    .append(overloadVarargsGuard(overload))
-                    .append(") return this.")
-                    .append(overloadedMethodImplementationName(methodName, arity, i))
-                    .append("(")
-                    .append(overloadDispatchArguments(overload))
-                    .append(");\n");
+            emitOverloadedVarargsDispatcher(js, methodName, overload, i);
         }
         js.append("    throw new Error(\"Unsupported Java overload: ")
                 .append(escapeJs(methodName))
                 .append("/\" + __qin_args.length);\n");
         js.append("  }\n");
+    }
+
+    private QinIrTypeRef commonOverloadReturnType(List<QinIrMethodDeclaration> overloads) {
+        QinIrTypeRef commonType = null;
+        for (QinIrMethodDeclaration overload : overloads) {
+            if (commonType == null) {
+                commonType = overload.returnType();
+                continue;
+            }
+            if (!commonType.equals(overload.returnType())) {
+                return null;
+            }
+        }
+        return commonType;
     }
 
     private List<Integer> overloadDispatchOrder(List<QinIrMethodDeclaration> overloads, boolean varargs) {
@@ -5231,17 +7268,17 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         requireExternalJavaSdkRuntime("__qin_subhuti_rule_cache_key");
+        emitJavaFunctionalRuntime(js);
         js.append("    if (__qin_args.length >= 4\n");
         js.append("        && __qin_args[0] !== null\n");
         js.append("        && typeof __qin_args[0] === \"function\"\n");
-        js.append("        && __qin_args[0].__qinJavaFunctional !== true\n");
         js.append("        && (__qin_args[1] === null || typeof __qin_args[1] === \"string\")\n");
         js.append("        && (__qin_args[2] === null || typeof __qin_args[2] === \"string\")) {\n");
         js.append("      const __qin_targetFun = __qin_args[0];\n");
         js.append("      const __qin_ruleArgs = __qin_args.slice(3);\n");
         js.append("      return this.")
                 .append(cacheKeyMethodName)
-                .append("(__qin_java_functional(() => __qin_targetFun.call(this, ...__qin_ruleArgs)), ")
+                .append("(__qin_java_functional(() => /* @qin-static-admission member=call owner=com.qin.lang.backend.js.QinJsBackend method=executeRuleWrapper receiver=this arity=rest */ __qin_targetFun.call(this, ...__qin_ruleArgs)), ")
                 .append("__qin_args[1], __qin_args[2], __qin_subhuti_rule_cache_key(__qin_ruleArgs));\n")
                 .append("    }\n");
     }
@@ -5266,11 +7303,19 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private String overloadDispatchArguments(QinIrMethodDeclaration overload) {
+        return overloadDispatchArguments(overload, null);
+    }
+
+    private String overloadDispatchArguments(QinIrMethodDeclaration overload, String varargsArrayName) {
         List<QinIrParameter> parameters = overload.parameters();
         List<String> arguments = new java.util.ArrayList<>();
         for (int i = 0; i < parameters.size(); i++) {
             QinIrParameter parameter = parameters.get(i);
             if (parameter.varargs() && i == parameters.size() - 1) {
+                if (varargsArrayName != null && !varargsArrayName.isBlank()) {
+                    arguments.add("..." + varargsArrayName);
+                    continue;
+                }
                 QinIrTypeRef elementType = varargsElementType(parameter.type());
                 arguments.add("...__qin_args.slice(" + i + ").map((__qin_arg) => "
                         + adaptOverloadArgument("__qin_arg", elementType)
@@ -5288,15 +7333,6 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         if ("java.util.List".equals(type.binaryName())) {
             requireExternalJavaSdkRuntime("__QinJavaUtilArrayList");
-            if (!type.typeArguments().isEmpty()) {
-                QinIrTypeRef elementType = type.typeArguments().get(0);
-                String adaptedElement = adaptOverloadArgument("__qin_list_item", elementType);
-                if (!"__qin_list_item".equals(adaptedElement)) {
-                    return "(" + argumentExpression + " === null ? null : new __QinJavaUtilArrayList("
-                            + "Array.from(" + argumentExpression + ").map((__qin_list_item) => "
-                            + adaptedElement + ")))";
-                }
-            }
             return "(Array.isArray(" + argumentExpression + ") ? new __QinJavaUtilArrayList("
                     + argumentExpression + ") : " + argumentExpression + ")";
         }
@@ -5331,7 +7367,69 @@ public class QinJsBackend implements QinIrCodeBackend {
                 && overload.parameters().get(3).type().kind() == QinIrTypeKind.STRING;
     }
 
-    private String overloadVarargsGuard(QinIrMethodDeclaration overload) {
+    private void emitOverloadedVarargsDispatcher(
+            StringBuilder js,
+            String methodName,
+            QinIrMethodDeclaration overload,
+            int overloadIndex) {
+        List<QinIrParameter> parameters = overload.parameters();
+        int fixedArity = parameters.size() - 1;
+        String okName = "__qin_varargs_ok_" + overloadIndex;
+        String indexName = "__qin_varargs_i_" + overloadIndex;
+        String argName = "__qin_arg_" + overloadIndex;
+        String valuesName = "__qin_varargs_values_" + overloadIndex;
+        QinIrTypeRef elementType = varargsElementType(parameters.get(parameters.size() - 1).type());
+        js.append("    if (")
+                .append(overloadVarargsFixedGuard(overload))
+                .append(") {\n");
+        js.append("      let ").append(okName).append(" = true;\n");
+        js.append("      for (let ").append(indexName).append(" = ")
+                .append(fixedArity)
+                .append("; ")
+                .append(indexName)
+                .append(" < __qin_args.length; ")
+                .append(indexName)
+                .append("++) {\n");
+        js.append("        const ").append(argName).append(" = __qin_args[")
+                .append(indexName)
+                .append("];\n");
+        js.append("        if (!(")
+                .append(overloadArgumentTypeGuard(
+                        argName,
+                        elementType))
+                .append(")) { ")
+                .append(okName)
+                .append(" = false; break; }\n");
+        js.append("      }\n");
+        js.append("      if (").append(okName).append(") {\n");
+        js.append("        const ").append(valuesName).append(" = new Array(__qin_args.length - ")
+                .append(fixedArity)
+                .append(");\n");
+        js.append("        for (let ").append(indexName).append(" = ")
+                .append(fixedArity)
+                .append("; ")
+                .append(indexName)
+                .append(" < __qin_args.length; ")
+                .append(indexName)
+                .append("++) {\n");
+        js.append("          ").append(valuesName).append("[")
+                .append(indexName)
+                .append(" - ")
+                .append(fixedArity)
+                .append("] = ")
+                .append(adaptOverloadArgument("__qin_args[" + indexName + "]", elementType))
+                .append(";\n");
+        js.append("        }\n");
+        js.append("        return this.")
+                .append(overloadedMethodImplementationName(methodName, parameters.size(), overloadIndex))
+                .append("(")
+                .append(overloadDispatchArguments(overload, valuesName))
+                .append(");\n");
+        js.append("      }\n");
+        js.append("    }\n");
+    }
+
+    private String overloadVarargsFixedGuard(QinIrMethodDeclaration overload) {
         List<QinIrParameter> parameters = overload.parameters();
         int fixedArity = parameters.size() - 1;
         List<String> checks = new java.util.ArrayList<>();
@@ -5339,10 +7437,11 @@ public class QinJsBackend implements QinIrCodeBackend {
         for (int i = 0; i < fixedArity; i++) {
             checks.add(overloadArgumentTypeGuard("__qin_args[" + i + "]", parameters.get(i).type()));
         }
-        checks.add("__qin_args.slice(" + fixedArity + ").every((__qin_arg) => "
-                + overloadArgumentTypeGuard("__qin_arg", varargsElementType(parameters.get(parameters.size() - 1).type()))
-                + ")");
         return String.join(" && ", checks);
+    }
+
+    private String overloadVarargsGuard(QinIrMethodDeclaration overload) {
+        return overloadVarargsFixedGuard(overload);
     }
 
     private QinIrTypeRef varargsElementType(QinIrTypeRef varargsType) {
@@ -5356,6 +7455,9 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "B", "S", "I", "J", "C" -> QinIrTypeRef.intType();
             case "F", "D" -> QinIrTypeRef.doubleType();
             default -> {
+                if (elementBinaryName.startsWith("[")) {
+                    yield QinIrTypeRef.classType(elementBinaryName);
+                }
                 if (elementBinaryName.startsWith("L") && elementBinaryName.endsWith(";")) {
                     String className = elementBinaryName.substring(1, elementBinaryName.length() - 1);
                     if (String.class.getName().equals(className)) {
@@ -5379,6 +7481,16 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private String overloadClassTypeGuard(String argumentExpression, String binaryName) {
+        if ("java.lang.Object".equals(binaryName)) {
+            return "(" + argumentExpression + " === null || typeof " + argumentExpression + " !== \"undefined\")";
+        }
+        if ("java.lang.Class".equals(binaryName)) {
+            return "(" + argumentExpression + " === null"
+                    + " || typeof " + argumentExpression + " === \"function\""
+                    + " || (typeof " + argumentExpression + " === \"object\""
+                    + " && typeof " + argumentExpression + ".getName === \"function\""
+                    + " && typeof " + argumentExpression + ".isAssignableFrom === \"function\"))";
+        }
         if ("java.lang.String".equals(binaryName)) {
             return "(" + argumentExpression + " === null || typeof " + argumentExpression + " === \"string\")";
         }
@@ -5386,13 +7498,13 @@ public class QinJsBackend implements QinIrCodeBackend {
             return "(" + argumentExpression + " === null || typeof " + argumentExpression + " === \"boolean\")";
         }
         if ("java.lang.Integer".equals(binaryName) || "java.lang.Double".equals(binaryName)
+                || "java.lang.Long".equals(binaryName)
                 || "java.lang.Number".equals(binaryName)) {
             return "(" + argumentExpression + " === null || typeof " + argumentExpression + " === \"number\")";
         }
         if (isJavaFunctionalInterface(binaryName)) {
             return "(" + argumentExpression + " === null"
-                    + " || typeof " + argumentExpression + " === \"function\""
-                    + " || " + argumentExpression + ".__qinJavaFunctional === true)";
+                    + " || typeof " + argumentExpression + " === \"function\")";
         }
         if ("com.subhuti.parser.Alternative".equals(binaryName)) {
             return "(" + argumentExpression + " === null || "
@@ -5403,30 +7515,53 @@ public class QinJsBackend implements QinIrCodeBackend {
                     + " || typeof " + argumentExpression + ".run === \"function\")))";
         }
         if ("java.util.Collection".equals(binaryName)) {
+            requireExternalJavaSdkRuntime(
+                    "__QinJavaUtilArrayList",
+                    "__QinJavaUtilUnmodifiableList",
+                    "__QinJavaUtilHashSet",
+                    "__QinJavaUtilTreeSet",
+                    "__QinJavaUtilUnmodifiableSet");
+            String collectionGuard = javaSdkAliasInstanceGuards(
+                    argumentExpression,
+                    "__QinJavaUtilArrayList",
+                    "__QinJavaUtilUnmodifiableList",
+                    "__QinJavaUtilHashSet",
+                    "__QinJavaUtilTreeSet",
+                    "__QinJavaUtilUnmodifiableSet");
             return "(" + argumentExpression + " === null"
                     + " || Array.isArray(" + argumentExpression + ")"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilArrayList"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableList"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilHashSet"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableSet"
-                    + " || (typeof " + argumentExpression + "[Symbol.iterator] === \"function\""
-                    + " && typeof " + argumentExpression + " !== \"string\"))";
+                    + " || " + collectionGuard + ")";
         }
         if ("java.util.List".equals(binaryName)) {
+            requireExternalJavaSdkRuntime("__QinJavaUtilArrayList", "__QinJavaUtilUnmodifiableList");
+            String listGuard = javaSdkAliasInstanceGuards(
+                    argumentExpression,
+                    "__QinJavaUtilArrayList",
+                    "__QinJavaUtilUnmodifiableList");
             return "(" + argumentExpression + " === null"
                     + " || Array.isArray(" + argumentExpression + ")"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilArrayList"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableList)";
+                    + " || " + listGuard + ")";
         }
         if ("java.util.Set".equals(binaryName)) {
+            requireExternalJavaSdkRuntime(
+                    "__QinJavaUtilHashSet",
+                    "__QinJavaUtilTreeSet",
+                    "__QinJavaUtilUnmodifiableSet");
+            String setGuard = javaSdkAliasInstanceGuards(
+                    argumentExpression,
+                    "__QinJavaUtilHashSet",
+                    "__QinJavaUtilTreeSet",
+                    "__QinJavaUtilUnmodifiableSet");
             return "(" + argumentExpression + " === null"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilHashSet"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableSet)";
+                    + " || " + setGuard + ")";
         }
         if ("java.util.Map".equals(binaryName)) {
+            String mapGuard = javaSdkAliasInstanceGuards(
+                    argumentExpression,
+                    "__QinJavaUtilHashMap",
+                    "__QinJavaUtilUnmodifiableMap");
             return "(" + argumentExpression + " === null"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilHashMap"
-                    + " || " + argumentExpression + " instanceof __QinJavaUtilUnmodifiableMap)";
+                    + " || " + mapGuard + ")";
         }
         if (isSlimeParserParamsClass(binaryName)) {
             String ownerReference = javaOwnerReference(binaryName, simpleClassName(binaryName));
@@ -5458,9 +7593,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             if (loadJavaOwner(binaryName).isRecord()) {
                 requireExternalJavaSdkRuntime("__qin_instanceof__");
                 return "(" + argumentExpression + " === null"
-                        + " || __qin_instanceof__(" + argumentExpression + ", " + ownerReference + ")"
-                        + " || " + argumentExpression + ".__qinJavaRecordClass === " + ownerReference
-                        + ".__qinJavaRecordClass)";
+                        + " || __qin_instanceof__(" + argumentExpression + ", " + ownerReference + "))";
             }
             requireExternalJavaSdkRuntime("__qin_instanceof__");
             return "(" + argumentExpression + " === null || __qin_instanceof__("
@@ -5470,6 +7603,15 @@ public class QinJsBackend implements QinIrCodeBackend {
                     + "))";
         }
         return "true";
+    }
+
+    private String javaSdkAliasInstanceGuards(String argumentExpression, String... aliasNames) {
+        requireExternalJavaSdkRuntime("__qin_instanceof__");
+        List<String> checks = new java.util.ArrayList<>();
+        for (String aliasName : aliasNames) {
+            checks.add("__qin_instanceof__(" + argumentExpression + ", " + aliasName + ")");
+        }
+        return String.join(" || ", checks);
     }
 
     private boolean isSlimeParserParamsClass(String binaryName) {
@@ -5506,17 +7648,26 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private String overloadedMethodImplementationName(String methodName, int arity, int overloadIndex) {
-        return "__qin_overload_" + jsJavaMethodName(methodName) + "_" + arity + "_" + overloadIndex;
+        return overloadedMethodImplementationPrefix(methodName, arity) + overloadIndex;
+    }
+
+    private String overloadedMethodImplementationPrefix(String methodName, int arity) {
+        return "__qin_overload_" + jsJavaMethodName(methodName) + "_" + arity + "_";
     }
 
     private String subhutiRawMethodName(String jsMethodName) {
         return "__qin_subhuti_raw_" + jsMethodName;
     }
 
+    private String functionalParameterAlias(String parameterName, int parameterIndex) {
+        return "__qin_functional_" + jsIdentifier(parameterName) + "_" + parameterIndex;
+    }
+
     private void emitFunctionalInterfaceParameterNormalization(
             StringBuilder js,
             List<QinIrParameter> parameters,
             List<String> jsParameterNames,
+            List<String> executionParameterNames,
             String indent) {
         for (int i = 0; i < parameters.size(); i++) {
             QinIrParameter parameter = parameters.get(i);
@@ -5525,31 +7676,56 @@ public class QinJsBackend implements QinIrCodeBackend {
             if (parameter.varargs() && i == parameters.size() - 1) {
                 QinIrTypeRef elementType = varargsElementType(parameterType);
                 if (elementType.binaryName() != null && isJavaFunctionalInterface(elementType.binaryName())) {
+                    emitJavaFunctionalRuntime(js);
+                    requireExternalJavaSdkRuntime("__QinJavaUtilArrayList");
+                    emitJavaUtilArrayListRuntime(js);
+                    // Normalize through a fresh alias so lowering never rewrites the original parameter symbol.
+                    String aliasName = functionalParameterAlias(parameterName, i);
                     js.append(indent)
+                            .append("const ")
+                            .append(aliasName)
+                            .append(": __QinJavaUtilArrayList<")
+                            .append(tsTypeName(elementType))
+                            .append("> = new __QinJavaUtilArrayList();\n");
+                    js.append(indent)
+                            .append("for (const __qin_arg of ")
                             .append(parameterName)
-                            .append(" = ")
-                            .append(parameterName)
-                            .append(".map((__qin_arg) => __qin_java_functional(__qin_arg));\n");
+                            .append(") {\n");
+                    js.append(indent)
+                            .append("  ")
+                            .append(aliasName)
+                            .append(".add(__qin_java_functional(__qin_arg));\n");
+                    js.append(indent)
+                            .append("}\n");
+                    executionParameterNames.set(i, aliasName);
+                    bindingAliases.put(parameter.name(), aliasName);
                 }
             } else if (parameterType != null
                     && parameterType.binaryName() != null
                     && isJavaFunctionalInterface(parameterType.binaryName())) {
+                emitJavaFunctionalRuntime(js);
+                // Normalize through a fresh alias so lowering never rewrites the original parameter symbol.
+                String aliasName = functionalParameterAlias(parameterName, i);
                 js.append(indent)
-                        .append(parameterName)
+                        .append("const ")
+                        .append(aliasName)
                         .append(" = __qin_java_functional(")
                         .append(parameterName)
                         .append(");\n");
+                executionParameterNames.set(i, aliasName);
+                bindingAliases.put(parameter.name(), aliasName);
             }
         }
     }
 
     private void emitMethodDeclaration(
             StringBuilder js,
-            String className,
+            QinIrClassDeclaration classDeclaration,
             QinIrMethodDeclaration method,
             String jsMethodName) {
         Map<String, String> previousAliases = bindingAliases;
         bindingAliases = new LinkedHashMap<>(previousAliases);
+        installStaticFieldBindingAliases(classDeclaration);
         js.append("  ");
         if (method.staticMethod()) {
             js.append("static ");
@@ -5577,7 +7753,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             }
         }
         js.append(")");
-        emitAnyTypeAnnotation(js);
+        emitMethodReturnTypeAnnotation(js, method.returnType());
         js.append(" {\n");
         if (method.abstractMethod()) {
             js.append("    throw new Error(\"Abstract Java method is not implemented: ")
@@ -5587,22 +7763,43 @@ public class QinJsBackend implements QinIrCodeBackend {
             bindingAliases = previousAliases;
             return;
         }
-        emitFunctionalInterfaceParameterNormalization(js, parameters, jsParameterNames, "    ");
+        List<String> executionParameterNames = new java.util.ArrayList<>(jsParameterNames);
+        emitFunctionalInterfaceParameterNormalization(
+                js,
+                parameters,
+                jsParameterNames,
+                executionParameterNames,
+                "    ");
         if (isSubhutiRuleMethod(method)) {
+            emitJavaFunctionalRuntime(js);
             js.append("    return this.executeRuleWrapper(__qin_java_functional(() => {\n");
-            js.append("      return this.")
+            String declaringRawReceiver = method.staticMethod()
+                    ? jsClassReference(classDeclaration.binaryName())
+                    : jsClassReference(classDeclaration.binaryName()) + ".prototype";
+            js.append("      return /* @qin-static-admission member=call owner=")
+                    .append(escapeJs(classDeclaration.binaryName()))
+                    .append(" method=")
+                    .append(escapeJs(subhutiRawMethodName(jsMethodName)))
+                    .append(" receiver=this arity=")
+                    .append(executionParameterNames.size())
+                    .append(" */ ")
+                    .append(declaringRawReceiver)
+                    .append(".")
                     .append(subhutiRawMethodName(jsMethodName))
-                    .append("(")
-                    .append(String.join(", ", jsParameterNames))
+                    .append(".call(this")
+                    .append(executionParameterNames.isEmpty() ? "" : ", ")
+                    .append(String.join(", ", executionParameterNames))
                     .append(");\n");
             js.append("    }), \"")
                     .append(escapeJs(subhutiRuleName(method)))
                     .append("\", \"")
-                    .append(escapeJs(className))
+                    .append(escapeJs(classDeclaration.simpleName()))
                     .append("\", __qin_subhuti_rule_cache_key(")
-                    .append(subhutiRuleCacheKeyArguments(jsParameterNames, parameters))
+                    .append(subhutiRuleCacheKeyArguments(executionParameterNames, parameters))
                     .append("));\n");
             js.append("  }\n");
+            bindingAliases = new LinkedHashMap<>(previousAliases);
+            installStaticFieldBindingAliases(classDeclaration);
             js.append("  ");
             if (method.staticMethod()) {
                 js.append("static ");
@@ -5612,7 +7809,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 if (parameters.get(i).varargs() && i == parameters.size() - 1) {
                     js.append("...");
                 }
-                js.append(jsParameterNames.get(i));
+                js.append(declareBindingName(parameters.get(i).name()));
                 if (parameters.get(i).varargs() && i == parameters.size() - 1) {
                     if (emitTypeAnnotations()) {
                         js.append(": ").append(tsTypeName(varargsElementType(parameters.get(i).type()))).append("[]");
@@ -5625,9 +7822,8 @@ public class QinJsBackend implements QinIrCodeBackend {
                 }
             }
             js.append(")");
-            emitAnyTypeAnnotation(js);
+            emitMethodReturnTypeAnnotation(js, method.returnType());
             js.append(" {\n");
-            emitFunctionalInterfaceParameterNormalization(js, parameters, jsParameterNames, "    ");
             emitPatternVariableDeclarations(js, method.bodyStatements(), method.returnExpression(), "    ");
             if (!method.bodyStatements().isEmpty()) {
                 emitStatements(js, method.bodyStatements(), "    ");
@@ -5669,23 +7865,46 @@ public class QinJsBackend implements QinIrCodeBackend {
             List<QinIrStatement> statements,
             QinIrExpression returnExpression,
             String indent) {
-        Set<String> patternVariables = new LinkedHashSet<>();
+        Map<String, QinIrTypeRef> patternVariables = new LinkedHashMap<>();
         collectPatternVariablesFromStatements(statements, patternVariables);
         collectPatternVariables(returnExpression, patternVariables);
-        for (String variableName : patternVariables) {
+        for (Map.Entry<String, QinIrTypeRef> patternVariable : patternVariables.entrySet()) {
+            String variableName = patternVariable.getKey();
             js.append(indent).append("let ").append(declareBindingName(variableName));
-            emitAnyTypeAnnotation(js);
-            js.append(" = null;\n");
+            QinIrTypeRef type = patternVariable.getValue();
+            String javaPatternTypeName = javaPatternVariableTypeName(type);
+            if (javaPatternTypeName != null) {
+                js.append(": ").append(javaPatternTypeName).append(" = null as any;\n");
+            } else if (type == null || Object.class.getName().equals(type.binaryName())) {
+                emitAnyTypeAnnotation(js);
+                js.append(" = null;\n");
+            } else {
+                emitTypeAnnotation(js, type);
+                js.append(" = null as any;\n");
+            }
         }
     }
 
-    private void collectPatternVariablesFromStatements(List<QinIrStatement> statements, Set<String> patternVariables) {
+    private String javaPatternVariableTypeName(QinIrTypeRef type) {
+        if (type == null || type.kind() != QinIrTypeKind.CLASS || type.binaryName() == null) {
+            return null;
+        }
+        return switch (type.binaryName()) {
+            case "java.lang.Number", "java.lang.Integer", "java.lang.Double", "java.lang.Long" ->
+                    javaOwnerReference(type.binaryName(), null);
+            default -> null;
+        };
+    }
+
+    private void collectPatternVariablesFromStatements(
+            List<QinIrStatement> statements,
+            Map<String, QinIrTypeRef> patternVariables) {
         for (QinIrStatement statement : statements) {
             collectPatternVariables(statement, patternVariables);
         }
     }
 
-    private void collectPatternVariables(QinIrStatement statement, Set<String> patternVariables) {
+    private void collectPatternVariables(QinIrStatement statement, Map<String, QinIrTypeRef> patternVariables) {
         if (statement instanceof QinIrReturnStatement returnStatement) {
             collectPatternVariables(returnStatement.value(), patternVariables);
         } else if (statement instanceof QinIrThrowStatement throwStatement) {
@@ -5714,6 +7933,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             collectPatternVariablesFromStatements(doWhileStatement.body(), patternVariables);
             collectPatternVariables(doWhileStatement.test(), patternVariables);
         } else if (statement instanceof QinIrTryStatement tryStatement) {
+            for (QinIrTryResource resource : tryStatement.resources()) {
+                collectPatternVariables(resource.initializer(), patternVariables);
+                collectPatternVariables(resource.reference(), patternVariables);
+            }
             collectPatternVariablesFromStatements(tryStatement.tryBody(), patternVariables);
             for (QinIrCatchClause catchClause : tryStatement.catchClauses()) {
                 collectPatternVariablesFromStatements(catchClause.body(), patternVariables);
@@ -5730,18 +7953,67 @@ public class QinJsBackend implements QinIrCodeBackend {
 
     private void collectPatternVariablesFromLocalDeclarations(
             List<QinIrLocalVariableDeclaration> declarations,
-            Set<String> patternVariables) {
+            Map<String, QinIrTypeRef> patternVariables) {
         for (QinIrLocalVariableDeclaration declaration : declarations) {
             collectPatternVariables(declaration.initializer(), patternVariables);
         }
     }
 
-    private void collectPatternVariables(QinIrExpression expression, Set<String> patternVariables) {
+    private void emitPositivePatternVariableShadows(
+            StringBuilder js,
+            QinIrExpression test,
+            String indent) {
+        Map<String, QinIrTypeRef> branchPatterns = new LinkedHashMap<>();
+        collectBranchTruePatternVariables(test, branchPatterns);
+        for (Map.Entry<String, QinIrTypeRef> entry : branchPatterns.entrySet()) {
+            QinIrTypeRef type = entry.getValue();
+            if (type == null || type.kind() != QinIrTypeKind.CLASS
+                    || Object.class.getName().equals(type.binaryName())) {
+                continue;
+            }
+            String bindingName = declareBindingName(entry.getKey());
+            String tempName = "__qin_pattern_" + bindingName;
+            js.append(indent).append("const ").append(tempName).append(" = ").append(bindingName).append(";\n");
+            js.append(indent).append("let ").append(bindingName);
+            String javaPatternTypeName = javaPatternVariableTypeName(type);
+            if (javaPatternTypeName != null) {
+                js.append(": ").append(javaPatternTypeName);
+            } else {
+                emitTypeAnnotation(js, type);
+            }
+            js.append(" = ").append(tempName).append(" as any;\n");
+        }
+    }
+
+    private void collectBranchTruePatternVariables(
+            QinIrExpression expression,
+            Map<String, QinIrTypeRef> patternVariables) {
         if (expression == null) {
             return;
         }
         if (expression instanceof QinIrJavaInstanceofPatternExpression instanceofPatternExpression) {
-            patternVariables.add(instanceofPatternExpression.variableName());
+            patternVariables.put(
+                    instanceofPatternExpression.variableName(),
+                    QinIrTypeRef.classType(instanceofPatternExpression.ownerBinaryName()));
+            return;
+        }
+        if (expression instanceof QinIrShortCircuitExpression shortCircuitExpression
+                && "&&".equals(shortCircuitExpression.operator())) {
+            collectBranchTruePatternVariables(shortCircuitExpression.left(), patternVariables);
+            collectBranchTruePatternVariables(shortCircuitExpression.right(), patternVariables);
+            return;
+        }
+        if (expression instanceof QinIrSequenceExpression sequenceExpression) {
+            collectBranchTruePatternVariables(sequenceExpression.resultExpression(), patternVariables);
+        }
+    }
+
+    private void collectPatternVariables(QinIrExpression expression, Map<String, QinIrTypeRef> patternVariables) {
+        if (expression == null) {
+            return;
+        }
+        if (expression instanceof QinIrJavaInstanceofPatternExpression instanceofPatternExpression) {
+            collectPatternVariable(patternVariables, instanceofPatternExpression);
             collectPatternVariables(instanceofPatternExpression.value(), patternVariables);
         } else if (expression instanceof QinIrJavaInstanceofExpression instanceofExpression) {
             collectPatternVariables(instanceofExpression.value(), patternVariables);
@@ -5750,10 +8022,14 @@ public class QinJsBackend implements QinIrCodeBackend {
             collectPatternVariables(assignmentExpression.value(), patternVariables);
         } else if (expression instanceof QinIrArrayLiteral arrayLiteral) {
             collectPatternVariablesFromExpressions(arrayLiteral.elements(), patternVariables);
+        } else if (expression instanceof QinIrArrayCreationExpression arrayCreationExpression) {
+            collectPatternVariablesFromExpressions(arrayCreationExpression.dimensions(), patternVariables);
         } else if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
             collectPatternVariablesFromExpressions(builtinCallExpression.arguments(), patternVariables);
         } else if (expression instanceof QinIrCastExpression castExpression) {
             collectPatternVariables(castExpression.expression(), patternVariables);
+        } else if (expression instanceof QinIrUnaryExpression unaryExpression) {
+            collectPatternVariables(unaryExpression.operand(), patternVariables);
         } else if (expression instanceof QinIrElementAccessExpression elementAccessExpression) {
             collectPatternVariables(elementAccessExpression.receiver(), patternVariables);
             collectPatternVariables(elementAccessExpression.index(), patternVariables);
@@ -5772,6 +8048,9 @@ public class QinJsBackend implements QinIrCodeBackend {
             collectPatternVariables(ifExpression.test(), patternVariables);
             collectPatternVariables(ifExpression.consequent(), patternVariables);
             collectPatternVariables(ifExpression.alternate(), patternVariables);
+        } else if (expression instanceof QinIrShortCircuitExpression shortCircuitExpression) {
+            collectPatternVariables(shortCircuitExpression.left(), patternVariables);
+            collectPatternVariables(shortCircuitExpression.right(), patternVariables);
         } else if (expression instanceof QinIrInstanceMethodCallExpression methodCallExpression) {
             collectPatternVariables(methodCallExpression.receiver(), patternVariables);
             collectPatternVariablesFromExpressions(methodCallExpression.arguments(), patternVariables);
@@ -5811,7 +8090,21 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
     }
 
-    private void collectPatternVariablesFromExpressions(List<QinIrExpression> expressions, Set<String> patternVariables) {
+    private void collectPatternVariable(
+            Map<String, QinIrTypeRef> patternVariables,
+            QinIrJavaInstanceofPatternExpression expression) {
+        QinIrTypeRef type = QinIrTypeRef.classType(expression.ownerBinaryName());
+        patternVariables.merge(
+                expression.variableName(),
+                type,
+                (existing, replacement) -> Objects.equals(existing, replacement)
+                        ? existing
+                        : QinIrTypeRef.classType(Object.class.getName()));
+    }
+
+    private void collectPatternVariablesFromExpressions(
+            List<QinIrExpression> expressions,
+            Map<String, QinIrTypeRef> patternVariables) {
         for (QinIrExpression expression : expressions) {
             collectPatternVariables(expression, patternVariables);
         }
@@ -5857,6 +8150,20 @@ public class QinJsBackend implements QinIrCodeBackend {
                 .append("}\n");
     }
 
+    private void emitCatchTypeCondition(StringBuilder js, QinIrCatchClause catchClause, String errorName) {
+        String catchType = javaCatchTypeReference(catchClause.parameterType());
+        if (catchType == null || "__QinJavaLangThrowable".equals(catchType)) {
+            js.append("true");
+            return;
+        }
+        js.append(errorName)
+                .append(" instanceof ")
+                .append(catchType);
+        if ("__QinJavaLangStackOverflowError".equals(catchType)) {
+            js.append(" || ").append(errorName).append(" instanceof RangeError");
+        }
+    }
+
     private String javaCatchTypeReference(QinIrTypeRef type) {
         if (type == null || type.binaryName() == null) {
             return null;
@@ -5872,13 +8179,18 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append(indent)
                     .append("let ")
                     .append(declareBindingName(localDeclarationStatement.name()));
-            emitAnyTypeAnnotation(js);
+            emitLocalTypeAnnotation(js, localDeclarationStatement.declaredType());
             js.append(" = ");
             emitExpression(js, localDeclarationStatement.initializer());
             js.append(";\n");
             return;
         }
         if (statement instanceof QinIrStatementExpression statementExpression) {
+            if (statementExpression.expression() instanceof QinIrInstanceMethodCallExpression instanceMethodCall
+                    && shouldEmitInstanceReceiverTypeAscription(instanceMethodCall)) {
+                emitGeneratedOwnerInstanceStatement(js, instanceMethodCall, indent);
+                return;
+            }
             js.append(indent);
             emitExpression(js, statementExpression.expression());
             js.append(";\n");
@@ -5916,6 +8228,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append(indent).append("if (");
             emitExpression(js, ifStatement.test());
             js.append(") {\n");
+            emitPositivePatternVariableShadows(js, ifStatement.test(), indent + "  ");
             emitStatements(js, ifStatement.consequent(), indent + "  ");
             if (ifStatement.alternate().isEmpty()) {
                 js.append(indent).append("}\n");
@@ -5943,26 +8256,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (statement instanceof QinIrTryStatement tryStatement) {
-            js.append(indent).append("try {\n");
-            emitStatements(js, tryStatement.tryBody(), indent + "  ");
-            js.append(indent).append("}");
-            if (tryStatement.catchClauses().isEmpty()) {
-                js.append("\n");
-            } else {
-                QinIrCatchClause catchClause = tryStatement.catchClauses().get(0);
-                js.append(" catch (")
-                        .append(declareBindingName(catchClause.parameterName()))
-                        .append(") {\n");
-                emitCatchTypeGuard(js, catchClause, indent + "  ");
-                emitStatements(js, catchClause.body(), indent + "  ");
-                js.append(indent).append("}\n");
-            }
-            if (!tryStatement.finallyBody().isEmpty()) {
-                js.setLength(js.length() - 1);
-                js.append(" finally {\n");
-                emitStatements(js, tryStatement.finallyBody(), indent + "  ");
-                js.append(indent).append("}\n");
-            }
+            emitTryStatement(js, tryStatement, indent);
             return;
         }
         if (statement instanceof QinIrForStatement forStatement) {
@@ -5971,6 +8265,8 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append("; ");
             if (forStatement.test() != null) {
                 emitExpression(js, forStatement.test());
+            } else {
+                js.append("true");
             }
             js.append("; ");
             emitCommaSeparatedExpressions(js, forStatement.updateExpressions());
@@ -5997,39 +8293,244 @@ public class QinJsBackend implements QinIrCodeBackend {
         throw new IllegalArgumentException("Unsupported statement: " + statement.getClass().getSimpleName());
     }
 
+    private void emitTryStatement(StringBuilder js, QinIrTryStatement tryStatement, String indent) {
+        if (tryStatement.resources().isEmpty()) {
+            emitTryCore(js, tryStatement.tryBody(), tryStatement.catchClauses(), tryStatement.finallyBody(), indent);
+            return;
+        }
+        js.append(indent).append("{\n");
+        String innerIndent = indent + "  ";
+        for (QinIrTryResource resource : tryStatement.resources()) {
+            if (resource.declaration()) {
+                js.append(innerIndent)
+                        .append("let ")
+                        .append(declareBindingName(resource.name()));
+                emitNullableTypeAnnotation(js, resource.type());
+                js.append(" = null;\n");
+            }
+        }
+        if (tryStatement.catchClauses().isEmpty() && tryStatement.finallyBody().isEmpty()) {
+            emitTryWithResourcesBody(js, tryStatement, innerIndent);
+        } else {
+            js.append(innerIndent).append("try {\n");
+            emitTryWithResourcesBody(js, tryStatement, innerIndent + "  ");
+            js.append(innerIndent).append("}");
+            emitCatchAndFinally(js, tryStatement.catchClauses(), tryStatement.finallyBody(), innerIndent);
+        }
+        js.append(indent).append("}\n");
+    }
+
+    private void emitTryWithResourcesBody(StringBuilder js, QinIrTryStatement tryStatement, String indent) {
+        js.append(indent).append("try {\n");
+        for (QinIrTryResource resource : tryStatement.resources()) {
+            if (resource.declaration()) {
+                js.append(indent)
+                        .append("  ")
+                        .append(declareBindingName(resource.name()))
+                        .append(" = ");
+                emitExpression(js, resource.initializer());
+                js.append(";\n");
+            }
+        }
+        emitStatements(js, tryStatement.tryBody(), indent + "  ");
+        js.append(indent).append("} finally {\n");
+        for (int i = tryStatement.resources().size() - 1; i >= 0; i--) {
+            QinIrTryResource resource = tryStatement.resources().get(i);
+            QinIrExpression reference = resource.declaration()
+                    ? new QinIrIdentifierReference(resource.name())
+                    : resource.reference();
+            js.append(indent).append("  if (");
+            emitExpression(js, reference);
+            js.append(" != null) ");
+            emitExpression(js, reference);
+            js.append(".").append(jsJavaMethodName("close")).append("();\n");
+        }
+        js.append(indent).append("}\n");
+    }
+
+    private void emitTryCore(
+            StringBuilder js,
+            List<QinIrStatement> tryBody,
+            List<QinIrCatchClause> catchClauses,
+            List<QinIrStatement> finallyBody,
+            String indent) {
+        js.append(indent).append("try {\n");
+        emitStatements(js, tryBody, indent + "  ");
+        js.append(indent).append("}");
+        emitCatchAndFinally(js, catchClauses, finallyBody, indent);
+    }
+
+    private void emitCatchAndFinally(
+            StringBuilder js,
+            List<QinIrCatchClause> catchClauses,
+            List<QinIrStatement> finallyBody,
+            String indent) {
+        if (catchClauses.isEmpty()) {
+            js.append("\n");
+        } else if (catchClauses.size() == 1) {
+            QinIrCatchClause catchClause = catchClauses.get(0);
+            js.append(" catch (")
+                    .append(declareBindingName(catchClause.parameterName()))
+                    .append(") {\n");
+            emitCatchTypeGuard(js, catchClause, indent + "  ");
+            emitStatements(js, catchClause.body(), indent + "  ");
+            js.append(indent).append("}\n");
+        } else {
+            String caughtName = "__qin_caught";
+            js.append(" catch (")
+                    .append(caughtName)
+                    .append(") {\n");
+            for (int i = 0; i < catchClauses.size(); i++) {
+                QinIrCatchClause catchClause = catchClauses.get(i);
+                if (i == 0) {
+                    js.append(indent).append("  if (");
+                } else {
+                    js.append(indent).append("  } else if (");
+                }
+                emitCatchTypeCondition(js, catchClause, caughtName);
+                js.append(") {\n")
+                        .append(indent)
+                        .append("    let ")
+                        .append(declareBindingName(catchClause.parameterName()))
+                        .append(" = ")
+                        .append(caughtName)
+                        .append(";\n");
+                emitStatements(js, catchClause.body(), indent + "    ");
+            }
+            js.append(indent)
+                    .append("  } else {\n")
+                    .append(indent)
+                    .append("    throw ")
+                    .append(caughtName)
+                    .append(";\n")
+                    .append(indent)
+                    .append("  }\n")
+                    .append(indent)
+                    .append("}\n");
+        }
+        if (!finallyBody.isEmpty()) {
+            js.setLength(js.length() - 1);
+            js.append(" finally {\n");
+            emitStatements(js, finallyBody, indent + "  ");
+            js.append(indent).append("}\n");
+        }
+    }
+
     private void emitSwitchStatement(StringBuilder js, QinIrSwitchStatement switchStatement, String indent) {
+        if (hasPatternSwitchCase(switchStatement.cases())) {
+            emitPatternSwitchStatement(js, switchStatement, indent);
+            return;
+        }
         js.append(indent).append("switch (");
         emitExpression(js, switchStatement.discriminant());
         js.append(") {\n");
         for (QinIrSwitchCase switchCase : switchStatement.cases()) {
             if (switchCase.isDefault()) {
-                js.append(indent).append("  default:\n");
+                js.append(indent).append("  default: {\n");
             } else {
                 js.append(indent).append("  case ");
                 emitExpression(js, switchCase.test());
-                js.append(":\n");
+                js.append(": {\n");
             }
             emitStatements(js, switchCase.consequent(), indent + "    ");
+            js.append(indent).append("  }\n");
         }
         js.append(indent).append("}\n");
     }
 
     private void emitSwitchExpression(StringBuilder js, QinIrSwitchExpression switchExpression) {
+        if (hasPatternSwitchCase(switchExpression.cases())) {
+            emitPatternSwitchExpression(js, switchExpression);
+            return;
+        }
         js.append("(() => {\n");
         js.append("      switch (");
         emitExpression(js, switchExpression.discriminant());
         js.append(") {\n");
         for (QinIrSwitchCase switchCase : switchExpression.cases()) {
             if (switchCase.isDefault()) {
-                js.append("        default:\n");
+                js.append("        default: {\n");
             } else {
                 js.append("        case ");
                 emitExpression(js, switchCase.test());
-                js.append(":\n");
+                js.append(": {\n");
             }
             emitStatements(js, switchCase.consequent(), "          ");
+            js.append("        }\n");
         }
         js.append("      }\n");
+        js.append("      return null;\n");
+        js.append("    })()");
+    }
+
+    private boolean hasPatternSwitchCase(List<QinIrSwitchCase> cases) {
+        for (QinIrSwitchCase switchCase : cases) {
+            if (!switchCase.isDefault() && switchCase.test() instanceof QinIrJavaInstanceofPatternExpression) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void emitPatternSwitchStatement(StringBuilder js, QinIrSwitchStatement switchStatement, String indent) {
+        js.append(indent).append("{\n");
+        js.append(indent).append("  const __switch_discriminant = ");
+        emitExpression(js, switchStatement.discriminant());
+        js.append(";\n");
+        boolean emittedConditional = false;
+        for (QinIrSwitchCase switchCase : switchStatement.cases()) {
+            if (switchCase.isDefault()) {
+                js.append(indent).append("  ");
+                if (emittedConditional) {
+                    js.append("else ");
+                }
+                js.append("{\n");
+                emitStatements(js, switchCase.consequent(), indent + "    ");
+                js.append(indent).append("  }\n");
+                continue;
+            }
+            js.append(indent).append("  ");
+            if (emittedConditional) {
+                js.append("else ");
+            }
+            js.append("if (");
+            emitExpression(js, switchCase.test());
+            js.append(") {\n");
+            emitStatements(js, switchCase.consequent(), indent + "    ");
+            js.append(indent).append("  }\n");
+            emittedConditional = true;
+        }
+        js.append(indent).append("}\n");
+    }
+
+    private void emitPatternSwitchExpression(StringBuilder js, QinIrSwitchExpression switchExpression) {
+        js.append("(() => {\n");
+        js.append("      const __switch_discriminant = ");
+        emitExpression(js, switchExpression.discriminant());
+        js.append(";\n");
+        boolean emittedConditional = false;
+        for (QinIrSwitchCase switchCase : switchExpression.cases()) {
+            if (switchCase.isDefault()) {
+                js.append("      ");
+                if (emittedConditional) {
+                    js.append("else ");
+                }
+                js.append("{\n");
+                emitStatements(js, switchCase.consequent(), "        ");
+                js.append("      }\n");
+                continue;
+            }
+            js.append("      ");
+            if (emittedConditional) {
+                js.append("else ");
+            }
+            js.append("if (");
+            emitExpression(js, switchCase.test());
+            js.append(") {\n");
+            emitStatements(js, switchCase.consequent(), "        ");
+            js.append("      }\n");
+            emittedConditional = true;
+        }
         js.append("      return null;\n");
         js.append("    })()");
     }
@@ -6050,7 +8551,7 @@ public class QinJsBackend implements QinIrCodeBackend {
                 }
                 QinIrLocalVariableDeclaration declaration = forStatement.initializerDeclarations().get(i);
                 js.append(declareBindingName(declaration.name()));
-                emitAnyTypeAnnotation(js);
+                emitLocalTypeAnnotation(js, declaration.declaredType());
                 js.append(" = ");
                 emitExpression(js, declaration.initializer());
             }
@@ -6067,6 +8568,15 @@ public class QinJsBackend implements QinIrCodeBackend {
     private boolean isSubhutiRuleMethod(QinIrMethodDeclaration method) {
         for (QinIrAnnotation annotation : method.annotations()) {
             if ("com.subhuti.parser.SubhutiRule".equals(annotation.ownerBinaryName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSubhutiStaticGrammarOnlyMethod(QinIrMethodDeclaration method) {
+        for (QinIrAnnotation annotation : method.annotations()) {
+            if ("com.subhuti.parser.SubhutiStaticGrammarOnly".equals(annotation.ownerBinaryName())) {
                 return true;
             }
         }
@@ -6307,7 +8817,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (expression instanceof QinIrLocalDeclarationExpression localDeclarationExpression) {
             js.append("let ")
                     .append(declareBindingName(localDeclarationExpression.name()));
-            emitAnyTypeAnnotation(js);
+            emitLocalTypeAnnotation(js, localDeclarationExpression.declaredType());
             js.append(" = ");
             emitExpression(js, localDeclarationExpression.initializer());
             return;
@@ -6322,8 +8832,16 @@ public class QinJsBackend implements QinIrCodeBackend {
             emitCastExpression(js, castExpression);
             return;
         }
+        if (expression instanceof QinIrUnaryExpression unaryExpression) {
+            emitUnaryExpression(js, unaryExpression);
+            return;
+        }
         if (expression instanceof QinIrIfExpression ifExpression) {
             emitIfExpression(js, ifExpression);
+            return;
+        }
+        if (expression instanceof QinIrShortCircuitExpression shortCircuitExpression) {
+            emitShortCircuitExpression(js, shortCircuitExpression);
             return;
         }
         if (expression instanceof QinIrForExpression forExpression) {
@@ -6362,6 +8880,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             emitArrayLiteral(js, arrayLiteral);
             return;
         }
+        if (expression instanceof QinIrArrayCreationExpression arrayCreationExpression) {
+            emitArrayCreation(js, arrayCreationExpression);
+            return;
+        }
         if (expression instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
             emitJavaClassLiteral(js, classLiteralExpression);
             return;
@@ -6371,9 +8893,25 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrInstanceMethodCallExpression instanceMethodCallExpression) {
+            if ("java.lang.Number".equals(instanceMethodCallExpression.ownerBinaryName())
+                    && emitJavaLangNumberInstanceMethodCall(js, instanceMethodCallExpression)) {
+                return;
+            }
+            if ("regionMatches".equals(instanceMethodCallExpression.methodName())
+                    && emitJavaLangStringInstanceMethodCall(js, instanceMethodCallExpression)) {
+                return;
+            }
             if ((isKnownJavaLangStringReceiver(instanceMethodCallExpression.receiver())
                     || "java.lang.String".equals(instanceMethodCallExpression.ownerBinaryName()))
                     && emitJavaLangStringInstanceMethodCall(js, instanceMethodCallExpression)) {
+                return;
+            }
+            if ("java.lang.Object".equals(instanceMethodCallExpression.ownerBinaryName())
+                    && emitJavaLangObjectInstanceMethodCall(js, instanceMethodCallExpression)) {
+                return;
+            }
+            if (isJavaUtilCollectionLikeOwner(instanceMethodCallExpression.ownerBinaryName())
+                    && emitJavaUtilCollectionLikeInstanceMethodCall(js, instanceMethodCallExpression)) {
                 return;
             }
             String superSubhutiRawMethodName = isSuperReference(instanceMethodCallExpression.receiver())
@@ -6381,25 +8919,37 @@ public class QinJsBackend implements QinIrCodeBackend {
                             instanceMethodCallExpression.methodName(),
                             instanceMethodCallExpression.arguments().size())
                     : null;
-            if (isSuperReference(instanceMethodCallExpression.receiver())) {
-                js.append("super.");
-            } else {
-                emitExpression(js, instanceMethodCallExpression.receiver());
-                js.append(".");
-            }
             if ("constructor".equals(instanceMethodCallExpression.methodName())
                     && instanceMethodCallExpression.receiver() instanceof QinIrThisExpression) {
                 if (currentJavaClassDeclaration == null) {
                     throw new IllegalStateException("Java constructor delegation requires current class context");
                 }
-                js.append(constructorInitializerName(
-                        currentJavaClassDeclaration,
-                        instanceMethodCallExpression.arguments().size()));
-            } else {
-                js.append(superSubhutiRawMethodName == null
-                        ? jsJavaMethodName(instanceMethodCallExpression.methodName())
-                        : superSubhutiRawMethodName);
+                emitThisConstructorDelegationCall(js, currentJavaClassDeclaration, instanceMethodCallExpression);
+                return;
             }
+            if (isSuperReference(instanceMethodCallExpression.receiver())) {
+                emitGeneratedTsStaticAdmissionContract(
+                        js,
+                        jsJavaMethodName(instanceMethodCallExpression.methodName()),
+                        instanceMethodCallExpression.ownerBinaryName(),
+                        instanceMethodCallExpression.methodName(),
+                        "super",
+                        instanceMethodCallExpression.arguments().size());
+                js.append("super.");
+            } else {
+                emitGeneratedTsStaticAdmissionContract(
+                        js,
+                        jsJavaMethodName(instanceMethodCallExpression.methodName()),
+                        instanceMethodCallExpression.ownerBinaryName(),
+                        instanceMethodCallExpression.methodName(),
+                        "receiver",
+                        instanceMethodCallExpression.arguments().size());
+                emitExpression(js, instanceMethodCallExpression.receiver());
+                js.append(".");
+            }
+            js.append(superSubhutiRawMethodName == null
+                    ? jsJavaMethodName(instanceMethodCallExpression.methodName())
+                    : superSubhutiRawMethodName);
             js.append("(");
             emitArguments(js, instanceMethodCallExpression.arguments());
             js.append(")");
@@ -6407,9 +8957,23 @@ public class QinJsBackend implements QinIrCodeBackend {
         }
         if (expression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
             ensureSupportedJavaOwner(staticMethodCallExpression.ownerBinaryName());
-            js.append(javaOwnerReference(
-                            staticMethodCallExpression.ownerBinaryName(),
-                            staticMethodCallExpression.classLocalName()))
+            if (emitJavaLangPrimitiveStaticHashCode(js, staticMethodCallExpression)) {
+                return;
+            }
+            if (emitJavaUtilArraysStaticMethodCall(js, staticMethodCallExpression)) {
+                return;
+            }
+            String ownerReference = javaOwnerReference(
+                    staticMethodCallExpression.ownerBinaryName(),
+                    staticMethodCallExpression.classLocalName());
+            emitGeneratedTsStaticAdmissionContract(
+                    js,
+                    jsJavaMethodName(staticMethodCallExpression.methodName()),
+                    staticMethodCallExpression.ownerBinaryName(),
+                    staticMethodCallExpression.methodName(),
+                    ownerReference,
+                    staticMethodCallExpression.arguments().size());
+            js.append(ownerReference)
                     .append(".")
                     .append(jsJavaMethodName(staticMethodCallExpression.methodName()))
                     .append("(");
@@ -6433,12 +8997,64 @@ public class QinJsBackend implements QinIrCodeBackend {
             String ownerReference = javaOwnerReference(
                     methodReferenceExpression.ownerBinaryName(),
                     methodReferenceExpression.classLocalName());
-            js.append(ownerReference)
+            MethodReferenceInvocationShape invocationShape = methodReferenceInvocationShape(
+                    methodReferenceExpression.ownerBinaryName(),
+                    methodReferenceExpression.methodName());
+            if ("new".equals(methodReferenceExpression.methodName())) {
+                js.append("((...__qin_args) => new ")
+                        .append(ownerReference)
+                        .append("(...__qin_args))");
+                return;
+            }
+            if (ownerReference == null || "null".equals(ownerReference)) {
+                js.append("((__qin_receiver, ...__qin_args) => __qin_receiver.")
+                        .append(methodReferenceExpression.methodName())
+                        .append("(...__qin_args))");
+                return;
+            }
+            if (invocationShape != null) {
+                if (invocationShape.staticMethod()) {
+                    js.append("((...__qin_args) => ")
+                            .append(ownerReference)
+                            .append(".")
+                            .append(methodReferenceExpression.methodName())
+                            .append("(...__qin_args.slice(0, ")
+                            .append(invocationShape.parameterCount())
+                            .append(")))");
+                    return;
+                }
+                js.append("((...__qin_args) => { const __qin_receiver = __qin_args[0]; return __qin_receiver.")
+                        .append(methodReferenceExpression.methodName())
+                        .append("(...__qin_args.slice(1, ")
+                        .append(invocationShape.parameterCount() + 1)
+                        .append(")); })");
+                return;
+            }
+            js.append("((...__qin_args) => { const __qin_method = ")
+                    .append(ownerReference)
                     .append(".")
                     .append(methodReferenceExpression.methodName())
-                    .append(".bind(")
+                    .append("; if (typeof __qin_method === \"function\") { return /* @qin-static-admission member=apply owner=")
+                    .append(escapeJs(methodReferenceExpression.ownerBinaryName()))
+                    .append(" method=")
+                    .append(escapeJs(methodReferenceExpression.methodName()))
+                    .append(" receiver=")
+                    .append(escapeJs(ownerReference))
+                    .append(" arity=spread */ __qin_method.apply(")
                     .append(ownerReference)
-                    .append(")");
+                    .append(", __qin_args); } const __qin_receiver = __qin_args[0]; return __qin_receiver.")
+                    .append(methodReferenceExpression.methodName())
+                    .append("(...__qin_args.slice(1)); })");
+            return;
+        }
+        if (expression instanceof QinIrBoundMethodReferenceExpression boundMethodReferenceExpression) {
+            js.append("(() => { const __qin_bound_receiver = ");
+            emitExpression(js, boundMethodReferenceExpression.receiver());
+            js.append("; return /* @qin-static-admission member=bind owner=com.qin.lang.backend.js.QinJsBackend method=")
+                    .append(escapeJs(boundMethodReferenceExpression.methodName()))
+                    .append(" receiver=__qin_bound_receiver arity=bound */ __qin_bound_receiver.")
+                    .append(jsJavaMethodName(boundMethodReferenceExpression.methodName()))
+                    .append(".bind(__qin_bound_receiver); })()");
             return;
         }
         if (expression instanceof QinIrJavaInstanceofPatternExpression instanceofPatternExpression) {
@@ -6450,6 +9066,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrFunctionLiteral functionLiteral) {
+            emitJavaFunctionalRuntime(js);
             Map<String, String> previousAliases = bindingAliases;
             bindingAliases = new LinkedHashMap<>(previousAliases);
             js.append("__qin_java_functional((");
@@ -6479,6 +9096,10 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
+            if (isStringConcatExpression(builtinCallExpression)) {
+                emitStringConcatExpression(js, builtinCallExpression);
+                return;
+            }
             if ("Global".equals(builtinCallExpression.receiverName())) {
                 js.append(builtinCallExpression.methodName()).append("(");
             } else {
@@ -6509,6 +9130,242 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         throw new IllegalArgumentException("Unsupported expression: " + expression.getClass().getSimpleName());
+    }
+
+    private boolean shouldEmitInstanceReceiverTypeAscription(QinIrInstanceMethodCallExpression expression) {
+        return emitTypeAnnotations()
+                && expression.ownerBinaryName() != null
+                && !expression.ownerBinaryName().isBlank()
+                && isGeneratedClassOwner(expression.ownerBinaryName());
+    }
+
+    private void emitGeneratedOwnerInstanceStatement(
+            StringBuilder js,
+            QinIrInstanceMethodCallExpression call,
+            String indent) {
+        if ("constructor".equals(call.methodName()) && call.receiver() instanceof QinIrThisExpression) {
+            if (currentJavaClassDeclaration == null) {
+                throw new IllegalStateException("Java constructor delegation requires current class context");
+            }
+            js.append(indent);
+            emitThisConstructorDelegationCall(js, currentJavaClassDeclaration, call);
+            js.append(";\n");
+            return;
+        }
+        String receiverName = "__qin_typed_receiver_" + (++generatedOwnerReceiverCounter);
+        js.append(indent).append("{\n");
+        js.append(indent).append("  const ")
+                .append(receiverName)
+                .append(": ")
+                .append(tsTypeName(QinIrTypeRef.classType(call.ownerBinaryName())))
+                .append(" = ");
+        emitExpression(js, call.receiver());
+        js.append(";\n");
+        js.append(indent).append("  ")
+                .append(receiverName)
+                .append(".")
+                .append(jsJavaMethodName(call.methodName()))
+                .append("(");
+        emitArguments(js, call.arguments());
+        js.append(");\n");
+        js.append(indent).append("}\n");
+    }
+
+    private boolean emitJavaUtilArraysStaticMethodCall(
+            StringBuilder js,
+            QinIrStaticMethodCallExpression call) {
+        if (!"java.util.Arrays".equals(call.ownerBinaryName())) {
+            return false;
+        }
+        if ("asList".equals(call.methodName()) && call.arguments().size() == 1) {
+            requireExternalJavaSdkRuntime("__QinJavaUtilArrays");
+            emitJavaUtilArraysRuntime(js);
+            js.append("__QinJavaUtilArrays.asListArray(");
+            emitExpression(js, call.arguments().get(0));
+            js.append(")");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean emitJavaLangPrimitiveStaticHashCode(
+            StringBuilder js,
+            QinIrStaticMethodCallExpression call) {
+        if (!"hashCode".equals(call.methodName()) || call.arguments().size() != 1) {
+            return false;
+        }
+        switch (call.ownerBinaryName()) {
+            case "java.lang.Boolean" -> {
+                js.append("(");
+                emitExpression(js, call.arguments().get(0));
+                js.append(" ? 1231 : 1237)");
+                return true;
+            }
+            case "java.lang.Integer" -> {
+                js.append("(Number(");
+                emitExpression(js, call.arguments().get(0));
+                js.append(") | 0)");
+                return true;
+            }
+            case "java.lang.Long" -> {
+                js.append("((__qin_long_hash_input) => { const __qin_long_hash_number = Number(__qin_long_hash_input); ");
+                js.append("return (__qin_long_hash_number ^ Math.trunc(__qin_long_hash_number / 4294967296)) | 0; })(");
+                emitExpression(js, call.arguments().get(0));
+                js.append(")");
+                return true;
+            }
+            default -> {
+                return false;
+            }
+        }
+    }
+
+    private boolean emitJavaLangObjectInstanceMethodCall(
+            StringBuilder js,
+            QinIrInstanceMethodCallExpression call) {
+        String methodName = call.methodName();
+        int arity = call.arguments().size();
+        if ("hashCode".equals(methodName) && arity == 0) {
+            requireExternalJavaSdkRuntime("__qin_java_value_hash_code__");
+            javaHashRuntimeHelpersRequired = true;
+            js.append("__qin_java_value_hash_code__(");
+            emitExpression(js, call.receiver());
+            js.append(")");
+            return true;
+        }
+        if ("equals".equals(methodName) && arity == 1) {
+            requireExternalJavaSdkRuntime("__qin_java_values_equal__");
+            javaHashRuntimeHelpersRequired = true;
+            js.append("__qin_java_values_equal__(");
+            emitExpression(js, call.receiver());
+            js.append(", ");
+            emitExpression(js, call.arguments().get(0));
+            js.append(")");
+            return true;
+        }
+        if ("toString".equals(methodName) && arity == 0) {
+            js.append("String(");
+            emitExpression(js, call.receiver());
+            js.append(")");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isJavaUtilCollectionLikeOwner(String ownerBinaryName) {
+        return switch (ownerBinaryName == null ? "" : ownerBinaryName) {
+            case "java.util.Collection",
+                    "java.util.List",
+                    "java.util.ArrayList",
+                    "java.util.Set",
+                    "java.util.HashSet",
+                    "java.util.TreeSet" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean emitJavaUtilCollectionLikeInstanceMethodCall(
+            StringBuilder js,
+            QinIrInstanceMethodCallExpression call) {
+        String methodName = call.methodName();
+        int arity = call.arguments().size();
+        if ("isEmpty".equals(methodName) && arity == 0) {
+            requireExternalJavaSdkRuntime("__qin_collection_is_empty__");
+            js.append("__qin_collection_is_empty__(");
+            emitExpression(js, call.receiver());
+            js.append(")");
+            return true;
+        }
+        if ("size".equals(methodName) && arity == 0) {
+            requireExternalJavaSdkRuntime("__qin_collection_size__");
+            js.append("__qin_collection_size__(");
+            emitExpression(js, call.receiver());
+            js.append(")");
+            return true;
+        }
+        if ("get".equals(methodName) && arity == 1) {
+            requireExternalJavaSdkRuntime("__qin_collection_get__");
+            js.append("__qin_collection_get__(");
+            emitExpression(js, call.receiver());
+            js.append(", ");
+            emitExpression(js, call.arguments().get(0));
+            js.append(")");
+            return true;
+        }
+        if ("toArray".equals(methodName) && (arity == 0 || arity == 1)) {
+            requireExternalJavaSdkRuntime("__qin_collection_to_array__");
+            js.append("__qin_collection_to_array__(");
+            emitExpression(js, call.receiver());
+            js.append(")");
+            return true;
+        }
+        if ("stream".equals(methodName) && arity == 0) {
+            requireExternalJavaSdkRuntime("__QinJavaUtilArrays");
+            emitJavaUtilArraysRuntime(js);
+            js.append("__QinJavaUtilArrays.stream(");
+            emitExpression(js, call.receiver());
+            js.append(")");
+            return true;
+        }
+        if ("contains".equals(methodName) && arity == 1) {
+            requireExternalJavaSdkRuntime("__qin_collection_contains__");
+            emitJavaHashRuntimeHelpers(js);
+            js.append("__qin_collection_contains__(");
+            emitExpression(js, call.receiver());
+            js.append(", ");
+            emitExpression(js, call.arguments().get(0));
+            js.append(")");
+            return true;
+        }
+        if ("subList".equals(methodName) && arity == 2) {
+            requireExternalJavaSdkRuntime("__QinJavaUtilArrayList");
+            emitJavaUtilArrayListRuntime(js);
+            requireExternalJavaSdkRuntime("__qin_collection_to_array__");
+            js.append("new __QinJavaUtilArrayList(__qin_collection_to_array__(");
+            emitExpression(js, call.receiver());
+            js.append(").slice(Number(");
+            emitExpression(js, call.arguments().get(0));
+            js.append("), Number(");
+            emitExpression(js, call.arguments().get(1));
+            js.append(")))");
+            return true;
+        }
+        return false;
+    }
+
+    private void emitThisConstructorDelegationCall(
+            StringBuilder js,
+            QinIrClassDeclaration classDeclaration,
+            QinIrInstanceMethodCallExpression call) {
+        int arity = call.arguments().size();
+        List<QinIrMethodDeclaration> constructors = explicitConstructors(classDeclaration);
+        js.append("((...__qin_delegate_args) => {");
+        int constructorIndex = 0;
+        for (QinIrMethodDeclaration constructor : constructors) {
+            if (!"constructor".equals(constructor.name())) {
+                continue;
+            }
+            if (constructor.parameters().size() == arity) {
+                String guard = isVarargsMethod(constructor)
+                        ? overloadVarargsGuard(constructor)
+                        : "__qin_args.length === " + arity + " && " + overloadTypeGuard(constructor);
+                guard = guard.replace("__qin_args", "__qin_delegate_args");
+                js.append(" if (").append(guard).append(") { return this.")
+                        .append(constructorInitializerName(classDeclaration, arity, constructorIndex))
+                        .append("(...__qin_delegate_args); }");
+            }
+            constructorIndex++;
+        }
+        js.append(" throw new Error(\"Unsupported Java constructor delegation: ")
+                .append(escapeJs(classDeclaration.simpleName()))
+                .append("/\" + __qin_delegate_args.length); })(");
+        for (int i = 0; i < call.arguments().size(); i++) {
+            emitExpression(js, call.arguments().get(i));
+            if (i < call.arguments().size() - 1) {
+                js.append(", ");
+            }
+        }
+        js.append(")");
     }
 
     private void emitCastExpression(StringBuilder js, QinIrCastExpression castExpression) {
@@ -6545,6 +9402,16 @@ public class QinJsBackend implements QinIrCodeBackend {
             StringBuilder js,
             QinIrJavaInstanceofPatternExpression expression) {
         ensureSupportedJavaOwner(expression.ownerBinaryName());
+        if (isSideEffectFreePatternValue(expression.value())) {
+            js.append("(");
+            emitJavaInstanceofTest(js, expression.value(), expression.ownerBinaryName(), expression.classLocalName());
+            js.append(" && (")
+                    .append(declareBindingName(expression.variableName()))
+                    .append(" = ");
+            emitExpression(js, expression.value());
+            js.append(", true))");
+            return;
+        }
         js.append("(() => { const __qin_pattern_value = ");
         emitExpression(js, expression.value());
         js.append("; return ");
@@ -6553,6 +9420,27 @@ public class QinJsBackend implements QinIrCodeBackend {
                 .append(declareBindingName(expression.variableName()))
                 .append(" = __qin_pattern_value, true)");
         js.append("; })()");
+    }
+
+    private boolean isSideEffectFreePatternValue(QinIrExpression expression) {
+        return expression instanceof QinIrIdentifierReference
+                || expression instanceof QinIrThisExpression
+                || expression instanceof QinIrMemberAccessExpression
+                || expression instanceof QinIrPropertyAccessExpression;
+    }
+
+    private void emitJavaInstanceofTest(
+            StringBuilder js,
+            QinIrExpression valueExpression,
+            String ownerBinaryName,
+            String classLocalName) {
+        emitJavaInstanceofTest(js, expressionToInlineJs(valueExpression), ownerBinaryName, classLocalName);
+    }
+
+    private String expressionToInlineJs(QinIrExpression expression) {
+        StringBuilder inline = new StringBuilder();
+        emitExpression(inline, expression);
+        return inline.toString();
     }
 
     private void emitJavaInstanceofExpression(
@@ -6598,7 +9486,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("(() => {\n");
         for (QinIrLocalVariableDeclaration declaration : letExpression.localDeclarations()) {
             js.append("      let ").append(declareBindingName(declaration.name()));
-            emitAnyTypeAnnotation(js);
+            emitLocalTypeAnnotation(js, declaration.declaredType());
             js.append(" = ");
             emitExpression(js, declaration.initializer());
             js.append(";\n");
@@ -6616,18 +9504,110 @@ public class QinJsBackend implements QinIrCodeBackend {
     }
 
     private void emitIfExpression(StringBuilder js, QinIrIfExpression ifExpression) {
-        js.append("(() => {\n");
-        js.append("      if (");
+        js.append("(");
         emitExpression(js, ifExpression.test());
-        js.append(") {\n");
-        js.append("        return ");
+        js.append(" ? ");
         emitExpression(js, ifExpression.consequent());
-        js.append(";\n");
-        js.append("      }\n");
-        js.append("      return ");
+        js.append(" : ");
         emitExpression(js, ifExpression.alternate());
-        js.append(";\n");
-        js.append("    })()");
+        js.append(")");
+    }
+
+    private void emitShortCircuitExpression(StringBuilder js, QinIrShortCircuitExpression expression) {
+        js.append("(");
+        List<QinIrExpression> operands = new ArrayList<>();
+        collectShortCircuitOperands(expression, expression.operator(), operands);
+        for (int i = 0; i < operands.size(); i++) {
+            if (i > 0) {
+                js.append(" ").append(expression.operator()).append(" ");
+            }
+            QinIrExpression operand = operands.get(i);
+            if (operand instanceof QinIrShortCircuitExpression nested
+                    && !expression.operator().equals(nested.operator())) {
+                emitShortCircuitExpression(js, nested);
+            } else if (operand instanceof QinIrUnaryExpression unary
+                    && "!".equals(unary.operator())) {
+                js.append("!");
+                emitExpression(js, unary.operand());
+            } else {
+                emitExpression(js, operand);
+            }
+        }
+        js.append(")");
+    }
+
+    private void collectShortCircuitOperands(
+            QinIrExpression expression,
+            String operator,
+            List<QinIrExpression> operands) {
+        if (expression instanceof QinIrShortCircuitExpression shortCircuitExpression
+                && operator.equals(shortCircuitExpression.operator())) {
+            collectShortCircuitOperands(shortCircuitExpression.left(), operator, operands);
+            collectShortCircuitOperands(shortCircuitExpression.right(), operator, operands);
+            return;
+        }
+        operands.add(expression);
+    }
+
+    private boolean isStringConcatExpression(QinIrBuiltinCallExpression expression) {
+        if (!isBinaryBuiltin(expression, "+")) {
+            return false;
+        }
+        return containsStringConcatOperand(expression.arguments().get(1))
+                || containsStringConcatOperand(expression.arguments().get(2));
+    }
+
+    private boolean containsStringConcatOperand(QinIrExpression expression) {
+        if (expression instanceof QinIrStringLiteral) {
+            return true;
+        }
+        if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression
+                && isBinaryBuiltin(builtinCallExpression, "+")) {
+            return containsStringConcatOperand(builtinCallExpression.arguments().get(1))
+                    || containsStringConcatOperand(builtinCallExpression.arguments().get(2));
+        }
+        return false;
+    }
+
+    private boolean isBinaryBuiltin(QinIrBuiltinCallExpression expression, String operator) {
+        return "Global".equals(expression.receiverName())
+                && "__qin_binary__".equals(expression.methodName())
+                && expression.arguments().size() == 3
+                && expression.arguments().get(0) instanceof QinIrStringLiteral operatorLiteral
+                && operator.equals(operatorLiteral.value());
+    }
+
+    private void emitStringConcatExpression(StringBuilder js, QinIrBuiltinCallExpression expression) {
+        js.append("(");
+        List<QinIrExpression> operands = new ArrayList<>();
+        collectStringConcatOperands(expression, operands);
+        for (int i = 0; i < operands.size(); i++) {
+            if (i > 0) {
+                js.append(" + ");
+            }
+            emitExpression(js, operands.get(i));
+        }
+        js.append(")");
+    }
+
+    private void collectStringConcatOperands(QinIrExpression expression, List<QinIrExpression> operands) {
+        if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression
+                && isBinaryBuiltin(builtinCallExpression, "+")
+                && isStringConcatExpression(builtinCallExpression)) {
+            collectStringConcatOperands(builtinCallExpression.arguments().get(1), operands);
+            collectStringConcatOperands(builtinCallExpression.arguments().get(2), operands);
+            return;
+        }
+        operands.add(expression);
+    }
+
+    private void emitUnaryExpression(StringBuilder js, QinIrUnaryExpression expression) {
+        if (!"!".equals(expression.operator())) {
+            throw new IllegalArgumentException("Unsupported unary operator: " + expression.operator());
+        }
+        js.append("(!");
+        emitExpression(js, expression.operand());
+        js.append(")");
     }
 
     private void emitWhileExpression(StringBuilder js, QinIrWhileExpression whileExpression) {
@@ -6639,7 +9619,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append(") {\n");
         for (QinIrLocalVariableDeclaration declaration : whileExpression.localDeclarations()) {
             js.append("        let ").append(declareBindingName(declaration.name()));
-            emitAnyTypeAnnotation(js);
+            emitLocalTypeAnnotation(js, declaration.declaredType());
             js.append(" = ");
             emitExpression(js, declaration.initializer());
             js.append(";\n");
@@ -6662,7 +9642,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append("      do {\n");
         for (QinIrLocalVariableDeclaration declaration : doWhileExpression.localDeclarations()) {
             js.append("        let ").append(declareBindingName(declaration.name()));
-            emitAnyTypeAnnotation(js);
+            emitLocalTypeAnnotation(js, declaration.declaredType());
             js.append(" = ");
             emitExpression(js, declaration.initializer());
             js.append(";\n");
@@ -6695,7 +9675,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append(") {\n");
         for (QinIrLocalVariableDeclaration declaration : forExpression.bodyLocalDeclarations()) {
             js.append("        let ").append(declareBindingName(declaration.name()));
-            emitAnyTypeAnnotation(js);
+            emitLocalTypeAnnotation(js, declaration.declaredType());
             js.append(" = ");
             emitExpression(js, declaration.initializer());
             js.append(";\n");
@@ -6722,7 +9702,7 @@ public class QinJsBackend implements QinIrCodeBackend {
         js.append(") {\n");
         for (QinIrLocalVariableDeclaration declaration : forEachExpression.bodyLocalDeclarations()) {
             js.append("        let ").append(declareBindingName(declaration.name()));
-            emitAnyTypeAnnotation(js);
+            emitLocalTypeAnnotation(js, declaration.declaredType());
             js.append(" = ");
             emitExpression(js, declaration.initializer());
             js.append(";\n");
@@ -6796,6 +9776,7 @@ public class QinJsBackend implements QinIrCodeBackend {
             return;
         }
         if ("java.util.ArrayList".equals(ownerBinaryName)
+                || "java.util.ArrayDeque".equals(ownerBinaryName)
                 || "java.util.List".equals(ownerBinaryName)
                 || "java.util.Set".equals(ownerBinaryName)
                 || "java.util.Arrays".equals(ownerBinaryName)
@@ -6805,23 +9786,31 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.util.HashMap".equals(ownerBinaryName)
                 || "java.util.IdentityHashMap".equals(ownerBinaryName)
                 || "java.util.LinkedHashMap".equals(ownerBinaryName)
+                || "java.util.TreeMap".equals(ownerBinaryName)
+                || "java.util.SortedMap".equals(ownerBinaryName)
+                || "java.util.NavigableMap".equals(ownerBinaryName)
                 || "java.util.concurrent.ConcurrentHashMap".equals(ownerBinaryName)
                 || "java.util.concurrent.ConcurrentMap".equals(ownerBinaryName)
                 || "java.util.Objects".equals(ownerBinaryName)
                 || "java.util.Optional".equals(ownerBinaryName)
+                || "java.util.Comparator".equals(ownerBinaryName)
+                || "java.util.stream.Stream".equals(ownerBinaryName)
                 || "java.util.stream.Collectors".equals(ownerBinaryName)
                 || "java.lang.String".equals(ownerBinaryName)
                 || "java.lang.Class".equals(ownerBinaryName)
                 || "java.lang.Boolean".equals(ownerBinaryName)
                 || "java.lang.StringBuilder".equals(ownerBinaryName)
                 || "java.lang.Integer".equals(ownerBinaryName)
+                || "java.lang.Number".equals(ownerBinaryName)
                 || "java.lang.Double".equals(ownerBinaryName)
+                || "java.lang.Long".equals(ownerBinaryName)
                 || "java.math.BigInteger".equals(ownerBinaryName)
                 || "java.lang.Throwable".equals(ownerBinaryName)
                 || "java.lang.Exception".equals(ownerBinaryName)
                 || "java.lang.RuntimeException".equals(ownerBinaryName)
                 || "java.lang.ReflectiveOperationException".equals(ownerBinaryName)
                 || "java.lang.ClassNotFoundException".equals(ownerBinaryName)
+                || "java.lang.ClassCastException".equals(ownerBinaryName)
                 || "java.lang.NoSuchMethodException".equals(ownerBinaryName)
                 || "java.lang.reflect.InvocationTargetException".equals(ownerBinaryName)
                 || "java.lang.NumberFormatException".equals(ownerBinaryName)
@@ -6835,19 +9824,34 @@ public class QinJsBackend implements QinIrCodeBackend {
                 || "java.io.IOException".equals(ownerBinaryName)
                 || "java.lang.Math".equals(ownerBinaryName)
                 || "java.io.File".equals(ownerBinaryName)
+                || "java.io.ByteArrayOutputStream".equals(ownerBinaryName)
+                || "java.io.ByteArrayInputStream".equals(ownerBinaryName)
+                || "java.io.DataOutputStream".equals(ownerBinaryName)
+                || "java.io.DataInputStream".equals(ownerBinaryName)
                 || "java.io.FileWriter".equals(ownerBinaryName)
                 || "java.io.BufferedWriter".equals(ownerBinaryName)
                 || "java.nio.file.Path".equals(ownerBinaryName)
                 || "java.nio.file.Paths".equals(ownerBinaryName)
                 || "java.nio.file.Files".equals(ownerBinaryName)
+                || "java.nio.charset.StandardCharsets".equals(ownerBinaryName)
                 || "java.time.LocalDateTime".equals(ownerBinaryName)
                 || "java.time.format.DateTimeFormatter".equals(ownerBinaryName)
                 || "java.util.regex.Pattern".equals(ownerBinaryName)
                 || "java.util.regex.Matcher".equals(ownerBinaryName)
+                || "java.util.TreeSet".equals(ownerBinaryName)
+                || "java.util.SortedSet".equals(ownerBinaryName)
+                || "java.util.NavigableSet".equals(ownerBinaryName)
+                || "java.util.Base64".equals(ownerBinaryName)
+                || "java.util.zip.GZIPOutputStream".equals(ownerBinaryName)
+                || "java.util.zip.GZIPInputStream".equals(ownerBinaryName)
+                || "java.security.MessageDigest".equals(ownerBinaryName)
+                || "java.security.NoSuchAlgorithmException".equals(ownerBinaryName)
+                || "java.util.HexFormat".equals(ownerBinaryName)
                 || "java.util.concurrent.atomic.AtomicLong".equals(ownerBinaryName)
                 || "com.github.benmanes.caffeine.cache.Caffeine".equals(ownerBinaryName)
                 || "com.github.benmanes.caffeine.cache.Cache".equals(ownerBinaryName)
                 || "com.github.benmanes.caffeine.cache.RemovalCause".equals(ownerBinaryName)
+                || "com.subhuti.parser.SubhutiCompileOnlyDsl".equals(ownerBinaryName)
                 || "org.slf4j.LoggerFactory".equals(ownerBinaryName)
                 || "org.slf4j.Logger".equals(ownerBinaryName)) {
             return;
@@ -6880,6 +9884,12 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (classDeclaration == null) {
             return false;
         }
+        if (hasGeneratedImplementor(ownerBinaryName)) {
+            return true;
+        }
+        if (isJavaEnumClass(classDeclaration)) {
+            return false;
+        }
         for (QinIrFieldDeclaration field : classDeclaration.fields()) {
             if (!field.staticField()) {
                 return false;
@@ -6896,6 +9906,17 @@ public class QinJsBackend implements QinIrCodeBackend {
         return true;
     }
 
+    private boolean hasGeneratedImplementor(String ownerBinaryName) {
+        for (QinIrClassDeclaration classDeclaration : generatedClassesByBinaryName.values()) {
+            for (QinIrTypeRef implementedType : classDeclaration.implementsTypes()) {
+                if (ownerBinaryName.equals(implementedType.binaryName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private String javaOwnerReference(String ownerBinaryName, String classLocalName) {
         if (isGeneratedClassOwner(ownerBinaryName)) {
             return jsClassReference(ownerBinaryName);
@@ -6909,13 +9930,16 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.Boolean" -> "__QinJavaLangBoolean";
             case "java.lang.StringBuilder" -> "__QinJavaLangStringBuilder";
             case "java.lang.Integer" -> "__QinJavaLangInteger";
+            case "java.lang.Number" -> "__QinJavaLangNumber";
             case "java.lang.Double" -> "__QinJavaLangDouble";
+            case "java.lang.Long" -> "__QinJavaLangLong";
             case "java.math.BigInteger" -> "__QinJavaMathBigInteger";
             case "java.lang.Throwable" -> "__QinJavaLangThrowable";
             case "java.lang.Exception" -> "__QinJavaLangException";
             case "java.lang.RuntimeException" -> "__QinJavaLangRuntimeException";
             case "java.lang.ReflectiveOperationException" -> "__QinJavaLangReflectiveOperationException";
             case "java.lang.ClassNotFoundException" -> "__QinJavaLangClassNotFoundException";
+            case "java.lang.ClassCastException" -> "__QinJavaLangClassCastException";
             case "java.lang.NoSuchMethodException" -> "__QinJavaLangNoSuchMethodException";
             case "java.lang.reflect.InvocationTargetException" -> "__QinJavaLangReflectInvocationTargetException";
             case "java.lang.NumberFormatException" -> "__QinJavaLangNumberFormatException";
@@ -6928,11 +9952,16 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.lang.Character" -> "__QinJavaLangCharacter";
             case "java.io.IOException" -> "__QinJavaIoIOException";
             case "java.io.File" -> "__QinJavaIoFile";
+            case "java.io.ByteArrayOutputStream" -> "__QinJavaIoByteArrayOutputStream";
+            case "java.io.ByteArrayInputStream" -> "__QinJavaIoByteArrayInputStream";
+            case "java.io.DataOutputStream" -> "__QinJavaIoDataOutputStream";
+            case "java.io.DataInputStream" -> "__QinJavaIoDataInputStream";
             case "java.io.FileWriter" -> "__QinJavaIoFileWriter";
             case "java.io.BufferedWriter" -> "__QinJavaIoBufferedWriter";
             case "java.nio.file.Path" -> "__QinJavaNioFilePath";
             case "java.nio.file.Paths" -> "__QinJavaNioFilePaths";
             case "java.nio.file.Files" -> "__QinJavaNioFileFiles";
+            case "java.nio.charset.StandardCharsets" -> "__QinJavaNioCharsetStandardCharsets";
             case "java.time.LocalDateTime" -> "__QinJavaTimeLocalDateTime";
             case "java.time.format.DateTimeFormatter" -> "__QinJavaTimeFormatDateTimeFormatter";
             case "java.util.List" -> "__QinJavaUtilList";
@@ -6940,16 +9969,28 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "java.util.Arrays" -> "__QinJavaUtilArrays";
             case "java.util.Collections" -> "__QinJavaUtilCollections";
             case "java.util.ArrayList" -> "__QinJavaUtilArrayList";
+            case "java.util.ArrayDeque" -> "__QinJavaUtilArrayDeque";
             case "java.util.HashSet", "java.util.LinkedHashSet" -> "__QinJavaUtilHashSet";
-            case "java.util.HashMap", "java.util.LinkedHashMap",
+            case "java.util.TreeSet", "java.util.SortedSet", "java.util.NavigableSet" -> "__QinJavaUtilTreeSet";
+            case "java.util.Map",
+                    "java.util.HashMap", "java.util.LinkedHashMap", "java.util.TreeMap",
+                    "java.util.SortedMap", "java.util.NavigableMap",
                     "java.util.concurrent.ConcurrentHashMap", "java.util.concurrent.ConcurrentMap" ->
                     "__QinJavaUtilHashMap";
             case "java.util.IdentityHashMap" -> "__QinJavaUtilIdentityHashMap";
             case "java.util.Objects" -> "__QinJavaUtilObjects";
             case "java.util.Optional" -> "__QinJavaUtilOptional";
+            case "java.util.Comparator" -> "__QinJavaUtilComparator";
+            case "java.util.stream.Stream" -> "__QinJavaUtilStream";
             case "java.util.stream.Collectors" -> "__QinJavaUtilStreamCollectors";
             case "java.util.regex.Pattern" -> "__QinJavaUtilRegexPattern";
             case "java.util.regex.Matcher" -> "__QinJavaUtilRegexMatcher";
+            case "java.util.Base64" -> "__QinJavaUtilBase64";
+            case "java.util.zip.GZIPOutputStream" -> "__QinJavaUtilZipGZIPOutputStream";
+            case "java.util.zip.GZIPInputStream" -> "__QinJavaUtilZipGZIPInputStream";
+            case "java.security.MessageDigest" -> "__QinJavaSecurityMessageDigest";
+            case "java.security.NoSuchAlgorithmException" -> "__QinJavaLangException";
+            case "java.util.HexFormat" -> "__QinJavaUtilHexFormat";
             case "java.util.concurrent.atomic.AtomicLong" -> "__QinJavaUtilConcurrentAtomicLong";
             case "com.github.benmanes.caffeine.cache.Caffeine" -> "__QinCaffeine";
             case "com.github.benmanes.caffeine.cache.Cache" -> "__QinCaffeineCache";
@@ -7054,11 +10095,15 @@ public class QinJsBackend implements QinIrCodeBackend {
             case "isEmpty" -> methodCallExpression.arguments().isEmpty() ? "isEmpty" : null;
             case "isBlank" -> methodCallExpression.arguments().isEmpty() ? "isBlank" : null;
             case "hashCode" -> methodCallExpression.arguments().isEmpty() ? "hashCode" : null;
+            case "regionMatches" -> methodCallExpression.arguments().size() == 4
+                    || methodCallExpression.arguments().size() == 5 ? "regionMatches" : null;
             case "startsWith" -> methodCallExpression.arguments().size() == 1 ? "startsWith" : null;
             case "endsWith" -> methodCallExpression.arguments().size() == 1 ? "endsWith" : null;
             case "charAt" -> methodCallExpression.arguments().size() == 1 ? "charAt" : null;
             case "substring" -> methodCallExpression.arguments().size() == 1
                     || methodCallExpression.arguments().size() == 2 ? "substring" : null;
+            case "getBytes" -> methodCallExpression.arguments().isEmpty()
+                    || methodCallExpression.arguments().size() == 1 ? "getBytes" : null;
             default -> null;
         };
         if (sdkMethod == null) {
@@ -7070,6 +10115,28 @@ public class QinJsBackend implements QinIrCodeBackend {
             js.append(", ");
             emitArguments(js, methodCallExpression.arguments());
         }
+        js.append(")");
+        return true;
+    }
+
+    private boolean emitJavaLangNumberInstanceMethodCall(
+            StringBuilder js,
+            QinIrInstanceMethodCallExpression methodCallExpression) {
+        String sdkMethod = switch (methodCallExpression.methodName()) {
+            case "intValue" -> methodCallExpression.arguments().isEmpty() ? "intValue" : null;
+            case "longValue" -> methodCallExpression.arguments().isEmpty() ? "longValue" : null;
+            case "floatValue" -> methodCallExpression.arguments().isEmpty() ? "floatValue" : null;
+            case "doubleValue" -> methodCallExpression.arguments().isEmpty() ? "doubleValue" : null;
+            case "byteValue" -> methodCallExpression.arguments().isEmpty() ? "byteValue" : null;
+            case "shortValue" -> methodCallExpression.arguments().isEmpty() ? "shortValue" : null;
+            default -> null;
+        };
+        if (sdkMethod == null) {
+            return false;
+        }
+        emitJavaLangNumberRuntime(js);
+        js.append("__QinJavaLangNumber.").append(sdkMethod).append("(");
+        emitExpression(js, methodCallExpression.receiver());
         js.append(")");
         return true;
     }
@@ -7110,6 +10177,27 @@ public class QinJsBackend implements QinIrCodeBackend {
         if (classDeclaration == null) {
             return null;
         }
+        String directStaticGrammarOnlyRawName = directStaticGrammarOnlySubhutiRawMethodName(
+                classDeclaration,
+                methodName,
+                arity);
+        if (directStaticGrammarOnlyRawName != null) {
+            return directStaticGrammarOnlyRawName;
+        }
+        String overloadBridgeRawName = superSubhutiRawOverloadBridgeMethodNameInHierarchy(
+                classDeclaration,
+                methodName,
+                arity);
+        if (overloadBridgeRawName != null) {
+            return overloadBridgeRawName;
+        }
+        String sourceOverloadRawName = superSubhutiRawSourceOverloadMethodNameInHierarchy(
+                classDeclaration,
+                methodName,
+                arity);
+        if (sourceOverloadRawName != null) {
+            return sourceOverloadRawName;
+        }
         List<QinIrMethodDeclaration> overloads = new java.util.ArrayList<>();
         for (QinIrMethodDeclaration method : classDeclaration.methods()) {
             if (!method.staticMethod() && method.name().equals(methodName) && !"constructor".equals(method.name())) {
@@ -7135,6 +10223,172 @@ public class QinJsBackend implements QinIrCodeBackend {
                 generatedClassesByBinaryName.get(classDeclaration.superType().binaryName()),
                 methodName,
                 arity);
+    }
+
+    private String directStaticGrammarOnlySubhutiRawMethodName(
+            QinIrClassDeclaration classDeclaration,
+            String methodName,
+            int arity) {
+        List<QinIrMethodDeclaration> overloads = new java.util.ArrayList<>();
+        for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+            if (!method.staticMethod() && method.name().equals(methodName) && !"constructor".equals(method.name())) {
+                overloads.add(method);
+            }
+        }
+        String rawName = null;
+        for (int i = 0; i < overloads.size(); i++) {
+            QinIrMethodDeclaration overload = overloads.get(i);
+            if (overload.parameters().size() == arity
+                    && isSubhutiRuleMethod(overload)
+                    && isSubhutiStaticGrammarOnlyMethod(overload)) {
+                if (rawName != null) {
+                    return null;
+                }
+                String jsMethodName = overloads.size() == 1
+                        ? overload.name()
+                        : overloadedMethodImplementationName(overload.name(), arity, i);
+                rawName = subhutiRawMethodName(jsMethodName);
+            }
+        }
+        return rawName;
+    }
+
+    private String superSubhutiRawOverloadBridgeMethodNameInHierarchy(
+            QinIrClassDeclaration classDeclaration,
+            String methodName,
+            int arity) {
+        String rawName = null;
+        QinIrClassDeclaration current = classDeclaration;
+        while (current != null) {
+            String candidate = superSubhutiRawOverloadBridgeMethodName(current, methodName, arity);
+            if (candidate != null) {
+                if (rawName != null) {
+                    return null;
+                }
+                rawName = candidate;
+            }
+            if (current.superType() == null) {
+                break;
+            }
+            current = generatedClassesByBinaryName.get(current.superType().binaryName());
+        }
+        return rawName;
+    }
+
+    private String superSubhutiRawSourceOverloadMethodNameInHierarchy(
+            QinIrClassDeclaration classDeclaration,
+            String methodName,
+            int arity) {
+        String rawName = null;
+        QinIrClassDeclaration current = classDeclaration;
+        while (current != null) {
+            List<QinIrMethodDeclaration> overloads = new java.util.ArrayList<>();
+            for (QinIrMethodDeclaration method : current.methods()) {
+                if (!method.staticMethod()
+                        && method.name().equals(methodName)
+                        && !"constructor".equals(method.name())) {
+                    overloads.add(method);
+                }
+            }
+            if (overloads.size() > 1) {
+                for (int i = 0; i < overloads.size(); i++) {
+                    QinIrMethodDeclaration overload = overloads.get(i);
+                    if (overload.parameters().size() == arity && isSubhutiRuleMethod(overload)) {
+                        if (rawName != null) {
+                            return null;
+                        }
+                        rawName = subhutiRawMethodName(overloadedMethodImplementationName(overload.name(), arity, i));
+                    }
+                }
+            }
+            if (current.superType() == null) {
+                break;
+            }
+            current = generatedClassesByBinaryName.get(current.superType().binaryName());
+        }
+        return rawName;
+    }
+
+    private String superSubhutiRawOverloadBridgeMethodName(
+            QinIrClassDeclaration classDeclaration,
+            String methodName,
+            int arity) {
+        String prefix = overloadedMethodImplementationPrefix(methodName, arity);
+        String rawName = null;
+        for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+            if (method.staticMethod()
+                    || "constructor".equals(method.name())
+                    || !method.name().startsWith(prefix)
+                    || !isSubhutiRuleMethod(method)) {
+                continue;
+            }
+            if (rawName != null) {
+                return null;
+            }
+            rawName = subhutiRawMethodName(method.name());
+        }
+        return rawName;
+    }
+
+    private MethodReferenceInvocationShape methodReferenceInvocationShape(String ownerBinaryName, String methodName) {
+        MethodReferenceInvocationShape generatedShape =
+                generatedMethodReferenceInvocationShape(ownerBinaryName, methodName);
+        if (generatedShape != null) {
+            return generatedShape;
+        }
+        if (ownerBinaryName == null
+                || generatedClassesByBinaryName.containsKey(ownerBinaryName)
+                || externallyBoundJavaBinaryNames.contains(ownerBinaryName)) {
+            return null;
+        }
+        try {
+            Class<?> owner = loadJavaOwner(ownerBinaryName);
+            MethodReferenceInvocationShape shape = null;
+            for (Method method : owner.getMethods()) {
+                if (!method.getName().equals(methodName)) {
+                    continue;
+                }
+                MethodReferenceInvocationShape candidate = new MethodReferenceInvocationShape(
+                        Modifier.isStatic(method.getModifiers()),
+                        method.getParameterCount());
+                if (shape != null && !shape.equals(candidate)) {
+                    return null;
+                }
+                shape = candidate;
+            }
+            return shape;
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private MethodReferenceInvocationShape generatedMethodReferenceInvocationShape(
+            String ownerBinaryName,
+            String methodName) {
+        QinIrClassDeclaration classDeclaration = generatedClassesByBinaryName.get(ownerBinaryName);
+        MethodReferenceInvocationShape shape = null;
+        while (classDeclaration != null) {
+            for (QinIrMethodDeclaration method : classDeclaration.methods()) {
+                if ("constructor".equals(method.name()) || !method.name().equals(methodName)) {
+                    continue;
+                }
+                MethodReferenceInvocationShape candidate = new MethodReferenceInvocationShape(
+                        method.staticMethod(),
+                        method.parameters().size());
+                if (shape != null && !shape.equals(candidate)) {
+                    return null;
+                }
+                shape = candidate;
+            }
+            if (classDeclaration.superType() == null) {
+                break;
+            }
+            classDeclaration = generatedClassesByBinaryName.get(classDeclaration.superType().binaryName());
+        }
+        return shape;
+    }
+
+    private record MethodReferenceInvocationShape(boolean staticMethod, int parameterCount) {
     }
 
     private String escapeJs(String value) {

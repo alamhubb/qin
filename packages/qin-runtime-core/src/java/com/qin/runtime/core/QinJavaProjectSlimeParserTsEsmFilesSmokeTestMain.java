@@ -31,8 +31,11 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
 
         Map<String, QinJavaProjectJsCompiler.EsmFileOutput> byBinaryName = outputs.stream()
                 .collect(Collectors.toMap(QinJavaProjectJsCompiler.EsmFileOutput::binaryName, output -> output));
-        QinJavaProjectJsCompiler.EsmFileOutput parserOutput = byBinaryName.get("com.slime.parser.SlimeParser");
-        require(parserOutput != null, "SlimeParser TS ESM output");
+        QinJavaProjectJsCompiler.EsmFileOutput parserOutput = findOutput(
+                outputs,
+                byBinaryName,
+                "com.slime.parser.SlimeParser",
+                Path.of("com", "slime", "parser", "SlimeParser.ts"));
         require(parserOutput.outputFile().endsWith(Path.of("com", "slime", "parser", "SlimeParser.ts")),
                 "SlimeParser Java file maps to matching TS path");
         require(parserOutput.code().contains(
@@ -71,6 +74,8 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
         QinGeneratedTsStaticAdmissionAudit.assertRejectsUnprovenDynamicShapes();
         require(staticAdmissionAudit.allowedDynamicWrapperCount() > 0,
                 "generated TS static admission audit classifies proven wrapper shapes");
+        require(staticAdmissionAudit.legacyAllowedDynamicWrapperCount() == 0,
+                "generated TS static admission audit has no legacy dynamic wrapper admissions");
         require(!allGeneratedCode.contains("__qinSubhutiAlternative")
                         && !allGeneratedCode.contains("com_subhuti_parser_Alternative.of"),
                 "Subhuti generated TS no longer depends on legacy dynamic Alternative adapter shape");
@@ -149,7 +154,29 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
         System.out.println("Generated ESM TS npm package: @qin/generated-slime-parser-ts");
         System.out.println("Generated TS static admission wrappers: "
                 + staticAdmissionAudit.allowedDynamicWrapperCount());
+        System.out.println("Generated TS static admission contract wrappers: "
+                + staticAdmissionAudit.contractAllowedDynamicWrapperCount());
+        System.out.println("Generated TS static admission legacy wrappers: "
+                + staticAdmissionAudit.legacyAllowedDynamicWrapperCount());
+        System.out.println("Generated TS static admission legacy reasons: "
+                + staticAdmissionAudit.legacyAllowedDynamicWrapperReasons());
         System.out.println("QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain OK");
+    }
+
+    private static QinJavaProjectJsCompiler.EsmFileOutput findOutput(
+            List<QinJavaProjectJsCompiler.EsmFileOutput> outputs,
+            Map<String, QinJavaProjectJsCompiler.EsmFileOutput> byBinaryName,
+            String binaryName,
+            Path outputSuffix) {
+        QinJavaProjectJsCompiler.EsmFileOutput byName = byBinaryName.get(binaryName);
+        if (byName != null) {
+            return byName;
+        }
+        return outputs.stream()
+                .filter(output -> output.outputFile().endsWith(outputSuffix))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Expected output for " + binaryName + " or path suffix " + outputSuffix));
     }
 
     private static Path findQinRoot() {

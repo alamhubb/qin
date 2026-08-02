@@ -1,9 +1,11 @@
 package com.qin.lang.frontend.adapter;
 
+import com.qin.lang.ir.QinJavaSdkAliasSupport;
 import com.qin.lang.ir.QinIrTypeKind;
 import com.qin.lang.ir.QinIrTypeRef;
 import com.slime.java.ast.JavaAstAssignmentExpression;
 import com.slime.java.ast.JavaAstArrayAccessExpression;
+import com.slime.java.ast.JavaAstArrayCreationExpression;
 import com.slime.java.ast.JavaAstArrayLiteralExpression;
 import com.slime.java.ast.JavaAstBinaryExpression;
 import com.slime.java.ast.JavaAstBooleanLiteral;
@@ -66,6 +68,9 @@ public final class QinJavaSemanticAnalyzer {
     private static final String NULL_BINARY_NAME = "__qin.java.Null";
     private Map<String, JavaAstClassDeclaration> sourceClassesByBinaryName = Map.of();
     private Map<String, Map<String, String>> sourceImportedTypesByBinaryName = Map.of();
+    private Map<String, String> sourceOuterClassByBinaryName = Map.of();
+    private final Map<String, Class<?>> loadableClassCache = new LinkedHashMap<>();
+    private final Set<String> unloadableClassCache = new HashSet<>();
 
     public QinJavaSemanticModel analyzeSource(String source) {
         return analyzeProgram(JavaCstToAst.parse(source));
@@ -76,13 +81,26 @@ public final class QinJavaSemanticAnalyzer {
     }
 
     public QinJavaSemanticModel analyzePrograms(List<JavaAstProgram> programs) {
+        long profileStarted = System.nanoTime();
+        long profileLast = profileStarted;
+        if (profileEnabled()) {
+            System.out.println("[QinProfile] java-semantic-analyzer start :: programs=" + programs.size());
+        }
         Map<String, JavaAstClassDeclaration> sourceClasses = new LinkedHashMap<>();
+        Map<String, String> sourceOuterClasses = new LinkedHashMap<>();
         for (JavaAstProgram program : programs) {
             for (JavaAstClassDeclaration classDeclaration : program.classes()) {
-                collectSourceClasses(program.packageName(), null, classDeclaration, sourceClasses);
+                collectSourceClasses(program.packageName(), null, null, classDeclaration, sourceClasses, sourceOuterClasses);
             }
         }
+        profileLast = profileCheckpoint(
+                profileStarted,
+                profileLast,
+                "java-semantic-analyzer",
+                "collect source classes",
+                "classes=" + sourceClasses.size());
         sourceClassesByBinaryName = sourceClasses;
+        sourceOuterClassByBinaryName = sourceOuterClasses;
         Map<String, Map<String, String>> importedTypesByClass = new LinkedHashMap<>();
         sourceImportedTypesByBinaryName = importedTypesByClass;
         for (JavaAstProgram program : programs) {
@@ -91,22 +109,70 @@ public final class QinJavaSemanticAnalyzer {
                 collectSemanticClassScopes(program.packageName(), importedTypes, null, classDeclaration, importedTypesByClass);
             }
         }
+        profileLast = profileCheckpoint(
+                profileStarted,
+                profileLast,
+                "java-semantic-analyzer",
+                "collect class scopes",
+                "classes=" + importedTypesByClass.size());
         List<QinJavaSemanticClass> classes = new ArrayList<>();
+        int analyzedProgramCount = 0;
         for (JavaAstProgram program : programs) {
             for (JavaAstClassDeclaration classDeclaration : program.classes()) {
                 collectSemanticClasses(program.packageName(), null, classDeclaration, classes);
             }
+            analyzedProgramCount++;
+            if (profileEnabled() && (analyzedProgramCount % 25 == 0 || analyzedProgramCount == programs.size())) {
+                profileLast = profileCheckpoint(
+                        profileStarted,
+                        profileLast,
+                        "java-semantic-analyzer",
+                        "analyze class batch",
+                        "programs=" + analyzedProgramCount + ", classes=" + classes.size());
+            }
         }
+        profileCheckpoint(
+                profileStarted,
+                profileLast,
+                "java-semantic-analyzer",
+                "done",
+                "classes=" + classes.size());
         return new QinJavaSemanticModel(classes);
+    }
+
+    private static boolean profileEnabled() {
+        return Boolean.getBoolean("qin.profile")
+                || "1".equals(System.getenv("QIN_PROFILE"))
+                || "true".equalsIgnoreCase(System.getenv("QIN_PROFILE"));
+    }
+
+    private static long profileCheckpoint(
+            long startedNanos,
+            long lastNanos,
+            String scope,
+            String phase,
+            String detail) {
+        if (!profileEnabled()) {
+            return lastNanos;
+        }
+        long now = System.nanoTime();
+        long phaseMs = (now - lastNanos) / 1_000_000L;
+        long totalMs = (now - startedNanos) / 1_000_000L;
+        String suffix = detail == null || detail.isBlank() ? "" : " :: " + detail;
+        System.out.println("[QinProfile] " + scope + " " + phase
+                + " +" + phaseMs + "ms total=" + totalMs + "ms" + suffix);
+        return now;
     }
 
     public QinJavaSemanticModel analyzeProgramLegacy(JavaAstProgram program) {
         Map<String, String> importedTypes = importedTypes(program.imports());
         Map<String, JavaAstClassDeclaration> sourceClasses = new LinkedHashMap<>();
+        Map<String, String> sourceOuterClasses = new LinkedHashMap<>();
         for (JavaAstClassDeclaration classDeclaration : program.classes()) {
-            collectSourceClasses(program.packageName(), null, classDeclaration, sourceClasses);
+            collectSourceClasses(program.packageName(), null, null, classDeclaration, sourceClasses, sourceOuterClasses);
         }
         sourceClassesByBinaryName = sourceClasses;
+        sourceOuterClassByBinaryName = sourceOuterClasses;
         Map<String, Map<String, String>> importedTypesByClass = new LinkedHashMap<>();
         sourceImportedTypesByBinaryName = importedTypesByClass;
         for (JavaAstClassDeclaration classDeclaration : program.classes()) {
@@ -122,8 +188,10 @@ public final class QinJavaSemanticAnalyzer {
     private void collectSourceClasses(
             String packageName,
             String ownerSimpleName,
+            String ownerBinaryName,
             JavaAstClassDeclaration classDeclaration,
-            Map<String, JavaAstClassDeclaration> classes) {
+            Map<String, JavaAstClassDeclaration> classes,
+            Map<String, String> outerClasses) {
         String simpleName = ownerSimpleName == null
                 ? classDeclaration.name()
                 : ownerSimpleName + "$" + classDeclaration.name();
@@ -131,8 +199,11 @@ public final class QinJavaSemanticAnalyzer {
                 ? simpleName
                 : packageName + "." + simpleName;
         classes.put(binaryName, classDeclaration);
+        if (ownerBinaryName != null) {
+            outerClasses.put(binaryName, ownerBinaryName);
+        }
         for (JavaAstClassDeclaration nestedClass : classDeclaration.nestedClasses()) {
-            collectSourceClasses(packageName, simpleName, nestedClass, classes);
+            collectSourceClasses(packageName, simpleName, binaryName, nestedClass, classes, outerClasses);
         }
     }
 
@@ -177,9 +248,22 @@ public final class QinJavaSemanticAnalyzer {
                 ? simpleName
                 : packageName + "." + simpleName;
         Map<String, String> importedTypes = sourceImportedTypesByBinaryName.getOrDefault(binaryName, Map.of());
+        long startedNanos = System.nanoTime();
         classes.add(analyzeClass(packageName, importedTypes, simpleName, classDeclaration));
+        profileSlowClass("java-semantic-analyzer", "analyze class", binaryName, startedNanos);
         for (JavaAstClassDeclaration nestedClass : classDeclaration.nestedClasses()) {
             collectSemanticClasses(packageName, simpleName, nestedClass, classes);
+        }
+    }
+
+    private static void profileSlowClass(String scope, String phase, String binaryName, long startedNanos) {
+        if (!profileEnabled()) {
+            return;
+        }
+        long elapsedMs = (System.nanoTime() - startedNanos) / 1_000_000L;
+        if (elapsedMs >= 250L) {
+            System.out.println("[QinProfile] " + scope + " " + phase
+                    + " slow=" + elapsedMs + "ms :: " + binaryName);
         }
     }
 
@@ -406,6 +490,24 @@ public final class QinJavaSemanticAnalyzer {
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
+                Boolean constantTest = constantBooleanValue(ifStatement.test());
+                if (Boolean.TRUE.equals(constantTest)) {
+                    Map<String, QinIrTypeRef> consequentLocals = new LinkedHashMap<>(locals);
+                    addPositiveInstanceofPatternLocals(
+                            ifStatement.test(),
+                            packageName,
+                            importedTypes,
+                            consequentLocals);
+                    analyzeStatements(packageName, importedTypes, consequentLocals, fieldTypes, methodReturnTypes,
+                            classBinaryName, ifStatement.consequentStatements());
+                    locals.putAll(consequentLocals);
+                    continue;
+                }
+                if (Boolean.FALSE.equals(constantTest)) {
+                    analyzeStatements(packageName, importedTypes, new LinkedHashMap<>(locals), fieldTypes,
+                            methodReturnTypes, classBinaryName, ifStatement.alternateStatements());
+                    continue;
+                }
                 Map<String, QinIrTypeRef> consequentLocals = new LinkedHashMap<>(locals);
                 Map<String, QinIrTypeRef> alternateLocals = new LinkedHashMap<>(locals);
                 addInstanceofPatternLocals(
@@ -473,6 +575,12 @@ public final class QinJavaSemanticAnalyzer {
         }
         if (expression instanceof JavaAstIdentifierExpression identifier) {
             QinIrTypeRef type = locals.get(identifier.name());
+            if (type == null) {
+                type = fieldTypes.get(identifier.name());
+            }
+            if (type == null) {
+                type = visibleSourceFieldType(classBinaryName, identifier.name());
+            }
             if (type == null) {
                 QinIrTypeRef ownerType = staticOwnerType(identifier, packageName, importedTypes, locals);
                 if (ownerType != null) {
@@ -559,6 +667,15 @@ public final class QinJavaSemanticAnalyzer {
             }
             return resolveType(arrayLiteral.typeName(), packageName, importedTypes);
         }
+        if (expression instanceof JavaAstArrayCreationExpression arrayCreation) {
+            for (JavaAstExpression dimension : arrayCreation.dimensions()) {
+                expressionType(dimension, packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
+            }
+            return resolveType(arrayCreation.typeName() + "[]".repeat(
+                    arrayCreation.dimensions().size() + arrayCreation.trailingEmptyDimensions()),
+                    packageName,
+                    importedTypes);
+        }
         if (expression instanceof JavaAstNewExpression newExpression) {
             for (JavaAstExpression argument : newExpression.arguments()) {
                 expressionType(argument, packageName, importedTypes, locals, fieldTypes, methodReturnTypes, classBinaryName);
@@ -635,6 +752,20 @@ public final class QinJavaSemanticAnalyzer {
                 if (returnType != null) {
                     return returnType;
                 }
+                QinIrTypeRef enclosingStaticReturnType = resolveEnclosingSourceStaticMethodReturnType(
+                        classBinaryName,
+                        methodCall.methodName(),
+                        argumentTypes);
+                if (enclosingStaticReturnType != null) {
+                    return enclosingStaticReturnType;
+                }
+                QinIrTypeRef staticImportedReturnType = resolveStaticImportedMethodReturnType(
+                        methodCall.methodName(),
+                        argumentTypes,
+                        importedTypes);
+                if (staticImportedReturnType != null) {
+                    return staticImportedReturnType;
+                }
                 return resolveInstanceMethodReturnType(
                         QinIrTypeRef.classType(classBinaryName),
                         methodCall.methodName(),
@@ -648,7 +779,31 @@ public final class QinJavaSemanticAnalyzer {
             if (!(methodCall.receiver() instanceof JavaAstIdentifierExpression receiverIdentifier
                     && "super".equals(receiverIdentifier.name()))) {
                 QinIrTypeRef ownerType = staticOwnerType(methodCall.receiver(), packageName, importedTypes, locals);
-                if (ownerType != null) {
+                if (ownerType != null && isStaticCallableOwner(methodCall.receiver(), ownerType, packageName, importedTypes)) {
+                    QinIrTypeRef staticComparatorReturnType = staticComparatorReturnType(
+                            ownerType,
+                            methodCall,
+                            packageName,
+                            importedTypes,
+                            locals,
+                            fieldTypes,
+                            methodReturnTypes,
+                            classBinaryName);
+                    if (staticComparatorReturnType != null) {
+                        return staticComparatorReturnType;
+                    }
+                    QinIrTypeRef staticCollectorsReturnType = staticCollectorsReturnType(
+                            ownerType,
+                            methodCall,
+                            packageName,
+                            importedTypes,
+                            locals,
+                            fieldTypes,
+                            methodReturnTypes,
+                            classBinaryName);
+                    if (staticCollectorsReturnType != null) {
+                        return staticCollectorsReturnType;
+                    }
                     List<QinIrTypeRef> argumentTypes = expressionTypes(
                             methodCall.arguments(),
                             packageName,
@@ -706,6 +861,27 @@ public final class QinJavaSemanticAnalyzer {
                     fieldTypes,
                     methodReturnTypes,
                     classBinaryName);
+            if ("collect".equals(methodCall.methodName()) && methodCall.arguments().size() == 1) {
+                QinIrTypeRef collectorReturnType = collectorReturnTypeFromStream(
+                        receiverType,
+                        methodCall.arguments().get(0),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                if (collectorReturnType != null) {
+                    return collectorReturnType;
+                }
+            }
+            List<QinIrTypeRef> targetParameterTypes = targetParameterTypes(
+                    receiverType,
+                    methodCall.methodName(),
+                    methodCall.arguments().size(),
+                    methodCall.typeArgumentNames(),
+                    packageName,
+                    importedTypes);
             List<QinIrTypeRef> argumentTypes = expressionTypes(
                     methodCall.arguments(),
                     packageName,
@@ -714,7 +890,20 @@ public final class QinJavaSemanticAnalyzer {
                     fieldTypes,
                     methodReturnTypes,
                     classBinaryName,
-                    targetParameterTypes(receiverType, methodCall.methodName(), methodCall.arguments().size(), methodCall.typeArgumentNames(), packageName, importedTypes));
+                    targetParameterTypes);
+            QinIrTypeRef streamMapReturnType = streamMapReturnTypeFromLambdaBody(
+                    receiverType,
+                    methodCall,
+                    targetParameterTypes,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+            if (streamMapReturnType != null) {
+                return streamMapReturnType;
+            }
             try {
                 return resolveInstanceMethodReturnType(
                         receiverType,
@@ -730,7 +919,8 @@ public final class QinJavaSemanticAnalyzer {
                         "Could not resolve Java instance call: "
                                 + receiverType.binaryName() + "." + methodCall.methodName()
                                 + "/" + argumentTypes.size()
-                                + " in " + classBinaryName,
+                                + " in " + classBinaryName
+                                + " receiver=" + shortExpressionDiagnostic(methodCall.receiver()),
                         e);
             }
         }
@@ -746,6 +936,27 @@ public final class QinJavaSemanticAnalyzer {
                         classBinaryName);
                 Map<String, QinIrTypeRef> rightLocals = new LinkedHashMap<>(locals);
                 addPositiveInstanceofPatternLocals(binary.left(), packageName, importedTypes, rightLocals);
+                QinIrTypeRef rightType = expressionType(
+                        binary.right(),
+                        packageName,
+                        importedTypes,
+                        rightLocals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                return binaryExpressionType(binary.operator(), leftType, rightType);
+            }
+            if ("||".equals(binary.operator())) {
+                QinIrTypeRef leftType = expressionType(
+                        binary.left(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                Map<String, QinIrTypeRef> rightLocals = new LinkedHashMap<>(locals);
+                addNegativeInstanceofPatternLocals(binary.left(), packageName, importedTypes, rightLocals);
                 QinIrTypeRef rightType = expressionType(
                         binary.right(),
                         packageName,
@@ -797,6 +1008,15 @@ public final class QinJavaSemanticAnalyzer {
                             classBinaryName));
         }
         throw new IllegalArgumentException("Unsupported Java expression for semantics: " + expression);
+    }
+
+    private String shortExpressionDiagnostic(JavaAstExpression expression) {
+        String text = String.valueOf(expression);
+        int limit = 360;
+        if (text.length() <= limit) {
+            return text;
+        }
+        return text.substring(0, limit) + "...";
     }
 
     private QinIrTypeRef switchExpressionType(
@@ -851,6 +1071,10 @@ public final class QinJavaSemanticAnalyzer {
         if (test == null) {
             return QinIrTypeRef.voidType();
         }
+        if (test instanceof JavaAstInstanceofPatternExpression pattern) {
+            resolveType(pattern.typeName(), packageName, importedTypes);
+            return discriminantType;
+        }
         if (test instanceof JavaAstIdentifierExpression && isEnumType(discriminantType)) {
             return discriminantType;
         }
@@ -880,7 +1104,7 @@ public final class QinJavaSemanticAnalyzer {
                     || "Enum".equals(sourceClass.superTypeName());
         }
         try {
-            return Class.forName(type.binaryName()).isEnum();
+            return loadClass(type.binaryName()).isEnum();
         } catch (ClassNotFoundException e) {
             return false;
         }
@@ -895,13 +1119,34 @@ public final class QinJavaSemanticAnalyzer {
             Map<String, QinIrTypeRef> methodReturnTypes,
             String classBinaryName) {
         QinIrTypeRef resultType = QinIrTypeRef.voidType();
+        Map<String, QinIrTypeRef> caseLocals = new LinkedHashMap<>(locals);
+        if (switchCase.test() instanceof JavaAstInstanceofPatternExpression pattern) {
+            caseLocals.put(pattern.variableName(), resolveType(pattern.typeName(), packageName, importedTypes));
+        }
         for (JavaAstStatement statement : switchCase.statements()) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrTypeRef initializerType = localVariable.initializer() == null
+                        ? null
+                        : expressionType(
+                                localVariable.initializer(),
+                                packageName,
+                                importedTypes,
+                                caseLocals,
+                                fieldTypes,
+                                methodReturnTypes,
+                                classBinaryName);
+                QinIrTypeRef localType = "var".equals(localVariable.typeName())
+                        ? initializerType
+                        : resolveType(localVariable.typeName(), packageName, importedTypes);
+                caseLocals.put(localVariable.name(), localType);
+                continue;
+            }
             if (statement instanceof JavaAstYieldStatement yieldStatement) {
                 resultType = expressionType(
                         yieldStatement.expression(),
                         packageName,
                         importedTypes,
-                        locals,
+                        caseLocals,
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
@@ -912,7 +1157,7 @@ public final class QinJavaSemanticAnalyzer {
                         returnStatement.expression(),
                         packageName,
                         importedTypes,
-                        locals,
+                        caseLocals,
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
@@ -923,7 +1168,7 @@ public final class QinJavaSemanticAnalyzer {
                         expressionStatement.expression(),
                         packageName,
                         importedTypes,
-                        locals,
+                        caseLocals,
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
@@ -934,7 +1179,7 @@ public final class QinJavaSemanticAnalyzer {
                         throwStatement.expression(),
                         packageName,
                         importedTypes,
-                        locals,
+                        caseLocals,
                         fieldTypes,
                         methodReturnTypes,
                         classBinaryName);
@@ -944,7 +1189,7 @@ public final class QinJavaSemanticAnalyzer {
             analyzeStatements(
                     packageName,
                     importedTypes,
-                    new LinkedHashMap<>(locals),
+                    caseLocals,
                     fieldTypes,
                     methodReturnTypes,
                     classBinaryName,
@@ -969,6 +1214,56 @@ public final class QinJavaSemanticAnalyzer {
         }
         QinIrTypeRef ownerType = resolveType(qualifiedName, packageName, importedTypes);
         return isStaticOwnerType(ownerType) || sourceClassesByBinaryName.containsKey(ownerType.binaryName()) ? ownerType : null;
+    }
+
+    private boolean isStaticCallableOwner(
+            JavaAstExpression expression,
+            QinIrTypeRef ownerType,
+            String packageName,
+            Map<String, String> importedTypes) {
+        if (expression instanceof JavaAstMemberAccessExpression memberAccess
+                && staticOwnerType(memberAccess.receiver(), packageName, importedTypes, Map.of()) != null
+                && sourceStaticFieldType(ownerType.binaryName(), memberAccess.propertyName()) != null) {
+            return false;
+        }
+        return true;
+    }
+
+    private QinIrTypeRef sourceStaticFieldType(String ownerBinaryName, String fieldName) {
+        return sourceFieldType(ownerBinaryName, fieldName, true);
+    }
+
+    private QinIrTypeRef visibleSourceFieldType(String ownerBinaryName, String fieldName) {
+        QinIrTypeRef fieldType = sourceFieldType(ownerBinaryName, fieldName, false);
+        if (fieldType != null) {
+            return fieldType;
+        }
+        String current = ownerBinaryName;
+        while (current != null) {
+            current = sourceOuterClassByBinaryName.get(current);
+            if (current == null) {
+                return null;
+            }
+            fieldType = sourceFieldType(current, fieldName, false);
+            if (fieldType != null) {
+                return fieldType;
+            }
+        }
+        return null;
+    }
+
+    private QinIrTypeRef sourceFieldType(String ownerBinaryName, String fieldName, boolean requireStatic) {
+        JavaAstClassDeclaration sourceClass = sourceClassesByBinaryName.get(ownerBinaryName);
+        if (sourceClass == null) {
+            return null;
+        }
+        Map<String, String> importedTypes = sourceImportedTypesByBinaryName.getOrDefault(ownerBinaryName, Map.of());
+        for (JavaAstFieldDeclaration field : sourceClass.fields()) {
+            if ((!requireStatic || field.staticField()) && field.name().equals(fieldName)) {
+                return resolveType(field.typeName(), packageName(ownerBinaryName), importedTypes);
+            }
+        }
+        return null;
     }
 
     String qualifiedName(JavaAstExpression expression) {
@@ -1020,7 +1315,11 @@ public final class QinJavaSemanticAnalyzer {
             QinIrTypeRef targetParameterType) {
         if (expression instanceof JavaAstLambdaExpression lambdaExpression) {
             Map<String, QinIrTypeRef> lambdaLocals = new LinkedHashMap<>(locals);
-            List<QinIrTypeRef> lambdaParameterTypes = lambdaParameterTypes(targetParameterType, lambdaExpression.parameterNames().size());
+            List<QinIrTypeRef> lambdaParameterTypes = lambdaParameterTypes(
+                    lambdaExpression,
+                    targetParameterType,
+                    packageName,
+                    importedTypes);
             for (int i = 0; i < lambdaExpression.parameterNames().size(); i++) {
                 QinIrTypeRef parameterType = i < lambdaParameterTypes.size()
                         ? lambdaParameterTypes.get(i)
@@ -1056,6 +1355,20 @@ public final class QinJavaSemanticAnalyzer {
             resolveType(methodReference.ownerName(), packageName, importedTypes);
             return targetParameterType == null ? QinIrTypeRef.classType(LAMBDA_BINARY_NAME) : targetParameterType;
         }
+        if (expression instanceof JavaAstMethodCallExpression methodCall) {
+            QinIrTypeRef comparatorType = staticComparatorReturnTypeWithTarget(
+                    methodCall,
+                    targetParameterType,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+            if (comparatorType != null) {
+                return comparatorType;
+            }
+        }
         return expressionType(
                 expression,
                 packageName,
@@ -1064,6 +1377,752 @@ public final class QinJavaSemanticAnalyzer {
                 fieldTypes,
                 methodReturnTypes,
                 classBinaryName);
+    }
+
+    private QinIrTypeRef lambdaBodyExpressionType(
+            JavaAstExpression expression,
+            QinIrTypeRef targetParameterType,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (!(expression instanceof JavaAstLambdaExpression lambdaExpression)
+                || (lambdaExpression.bodyExpression() == null && lambdaExpression.bodyStatements().isEmpty())) {
+            return null;
+        }
+        Map<String, QinIrTypeRef> lambdaLocals = new LinkedHashMap<>(locals);
+        List<QinIrTypeRef> lambdaParameterTypes = lambdaParameterTypes(
+                lambdaExpression,
+                targetParameterType,
+                packageName,
+                importedTypes);
+        for (int i = 0; i < lambdaExpression.parameterNames().size(); i++) {
+            QinIrTypeRef parameterType = i < lambdaParameterTypes.size()
+                    ? lambdaParameterTypes.get(i)
+                    : QinIrTypeRef.classType(Object.class.getName());
+            lambdaLocals.put(lambdaExpression.parameterNames().get(i), parameterType);
+        }
+        if (lambdaExpression.bodyExpression() == null) {
+            return blockResultExpressionType(
+                    lambdaExpression.bodyStatements(),
+                    packageName,
+                    importedTypes,
+                    lambdaLocals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        return expressionType(
+                lambdaExpression.bodyExpression(),
+                packageName,
+                importedTypes,
+                lambdaLocals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+    }
+
+    private QinIrTypeRef blockResultExpressionType(
+            List<JavaAstStatement> statements,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> inheritedLocals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        Map<String, QinIrTypeRef> locals = new LinkedHashMap<>(inheritedLocals);
+        QinIrTypeRef result = null;
+        for (JavaAstStatement statement : statements) {
+            if (statement instanceof JavaAstLocalVariableDeclaration localVariable) {
+                QinIrTypeRef initializerType = localVariable.initializer() == null
+                        ? null
+                        : expressionType(
+                                localVariable.initializer(),
+                                packageName,
+                                importedTypes,
+                                locals,
+                                fieldTypes,
+                                methodReturnTypes,
+                                classBinaryName);
+                QinIrTypeRef localType = "var".equals(localVariable.typeName())
+                        ? initializerType
+                        : resolveType(localVariable.typeName(), packageName, importedTypes);
+                locals.put(localVariable.name(), localType);
+                continue;
+            }
+            if (statement instanceof JavaAstReturnStatement returnStatement) {
+                result = expressionType(
+                        returnStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstYieldStatement yieldStatement) {
+                result = expressionType(
+                        yieldStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                continue;
+            }
+            if (statement instanceof JavaAstExpressionStatement expressionStatement) {
+                result = expressionType(
+                        expressionStatement.expression(),
+                        packageName,
+                        importedTypes,
+                        locals,
+                        fieldTypes,
+                        methodReturnTypes,
+                        classBinaryName);
+                continue;
+            }
+            analyzeStatements(
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName,
+                    List.of(statement));
+        }
+        return result;
+    }
+
+    private QinIrTypeRef streamMapReturnTypeFromLambdaBody(
+            QinIrTypeRef receiverType,
+            JavaAstMethodCallExpression methodCall,
+            List<QinIrTypeRef> targetParameterTypes,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (!("map".equals(methodCall.methodName()) || "flatMap".equals(methodCall.methodName()))
+                || methodCall.arguments().size() != 1
+                || !"java.util.stream.Stream".equals(receiverType.binaryName())
+                || !methodCall.typeArgumentNames().isEmpty()
+                || targetParameterTypes.isEmpty()) {
+            return null;
+        }
+        QinIrTypeRef mappedType = lambdaBodyExpressionType(
+                methodCall.arguments().get(0),
+                targetParameterTypes.get(0),
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (mappedType == null) {
+            mappedType = methodReferenceReturnType(
+                    methodCall.arguments().get(0),
+                    targetParameterTypes.get(0),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (mappedType == null) {
+            return null;
+        }
+        if ("flatMap".equals(methodCall.methodName())) {
+            if (!"java.util.stream.Stream".equals(mappedType.binaryName())
+                    || mappedType.typeArguments().isEmpty()) {
+                return null;
+            }
+            return QinIrTypeRef.classType("java.util.stream.Stream", List.of(mappedType.typeArguments().get(0)));
+        }
+        return QinIrTypeRef.classType("java.util.stream.Stream", List.of(mappedType));
+    }
+
+    private QinIrTypeRef methodReferenceReturnType(
+            JavaAstExpression expression,
+            QinIrTypeRef targetParameterType,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (!(expression instanceof JavaAstMethodReferenceExpression methodReference)
+                || targetParameterType == null) {
+            return null;
+        }
+        if ("java.util.function.Function".equals(targetParameterType.binaryName())
+                && targetParameterType.typeArguments().size() >= 1) {
+            return functionMethodReferenceReturnType(
+                    methodReference,
+                    targetParameterType.typeArguments().get(0),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if ("java.util.function.Predicate".equals(targetParameterType.binaryName())) {
+            return QinIrTypeRef.booleanType();
+        }
+        return null;
+    }
+
+    private QinIrTypeRef functionMethodReferenceReturnType(
+            JavaAstMethodReferenceExpression methodReference,
+            QinIrTypeRef inputType,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if ("new".equals(methodReference.methodName())) {
+            return resolveType(methodReference.ownerName(), packageName, importedTypes);
+        }
+        QinIrTypeRef ownerType = locals.get(methodReference.ownerName());
+        if (ownerType == null) {
+            ownerType = fieldTypes.get(methodReference.ownerName());
+        }
+        if (ownerType == null && "this".equals(methodReference.ownerName())) {
+            ownerType = QinIrTypeRef.classType(classBinaryName);
+        }
+        if (ownerType == null) {
+            ownerType = methodReferenceOwnerExpressionType(
+                    methodReference.ownerName(),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (ownerType != null) {
+            return resolveInstanceMethodReturnType(
+                    ownerType,
+                    methodReference.methodName(),
+                    List.of(inputType),
+                    List.of(),
+                    packageName,
+                    importedTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        ownerType = resolveType(methodReference.ownerName(), packageName, importedTypes);
+        QinIrTypeRef staticReturnType = staticMethodReferenceReturnType(
+                ownerType,
+                methodReference.methodName(),
+                List.of(inputType));
+        if (staticReturnType != null) {
+            return staticReturnType;
+        }
+        return resolveInstanceMethodReturnType(
+                ownerType,
+                methodReference.methodName(),
+                List.of(),
+                List.of(),
+                packageName,
+                importedTypes,
+                methodReturnTypes,
+                classBinaryName);
+    }
+
+    private QinIrTypeRef staticMethodReferenceReturnType(
+            QinIrTypeRef ownerType,
+            String methodName,
+            List<QinIrTypeRef> argumentTypes) {
+        if (ownerType == null || ownerType.binaryName() == null) {
+            return null;
+        }
+        try {
+            return resolveStaticMethodReturnType(ownerType.binaryName(), methodName, argumentTypes);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private QinIrTypeRef staticComparatorReturnType(
+            QinIrTypeRef ownerType,
+            JavaAstMethodCallExpression methodCall,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (ownerType == null
+                || !"java.util.Comparator".equals(ownerType.binaryName())
+                || methodCall.arguments().size() != 1
+                || !("comparing".equals(methodCall.methodName())
+                || "comparingInt".equals(methodCall.methodName()))) {
+            return null;
+        }
+        JavaAstExpression keyExtractor = methodCall.arguments().get(0);
+        QinIrTypeRef comparedType = methodReferenceOwnerComparedType(
+                keyExtractor,
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (comparedType == null) {
+            comparedType = explicitLambdaComparedType(
+                    keyExtractor,
+                    packageName,
+                    importedTypes);
+        }
+        return comparedType == null
+                ? null
+                : QinIrTypeRef.classType("java.util.Comparator", List.of(comparedType));
+    }
+
+    private QinIrTypeRef explicitLambdaComparedType(
+            JavaAstExpression expression,
+            String packageName,
+            Map<String, String> importedTypes) {
+        if (!(expression instanceof JavaAstLambdaExpression lambdaExpression)
+                || lambdaExpression.parameterTypeNames().isEmpty()) {
+            return null;
+        }
+        return resolveType(lambdaExpression.parameterTypeNames().get(0), packageName, importedTypes);
+    }
+
+    private QinIrTypeRef staticComparatorReturnTypeWithTarget(
+            JavaAstMethodCallExpression methodCall,
+            QinIrTypeRef targetParameterType,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (targetParameterType == null
+                || !"java.util.Comparator".equals(targetParameterType.binaryName())
+                || targetParameterType.typeArguments().isEmpty()
+                || methodCall.arguments().size() != 1
+                || !("comparing".equals(methodCall.methodName())
+                || "comparingInt".equals(methodCall.methodName()))) {
+            return null;
+        }
+        QinIrTypeRef ownerType = staticOwnerType(methodCall.receiver(), packageName, importedTypes, locals);
+        if (ownerType == null
+                || !"java.util.Comparator".equals(ownerType.binaryName())
+                || !isStaticCallableOwner(methodCall.receiver(), ownerType, packageName, importedTypes)) {
+            return null;
+        }
+        QinIrTypeRef comparedType = targetParameterType.typeArguments().get(0);
+        QinIrTypeRef keyExtractorTarget = "comparingInt".equals(methodCall.methodName())
+                ? functionalTargetType("java.util.function.ToIntFunction", List.of(comparedType))
+                : functionalTargetType(
+                        "java.util.function.Function",
+                        List.of(comparedType, QinIrTypeRef.classType(Object.class.getName())));
+        expressionTypeWithTarget(
+                methodCall.arguments().get(0),
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName,
+                keyExtractorTarget);
+        return targetParameterType;
+    }
+
+    private QinIrTypeRef staticCollectorsReturnType(
+            QinIrTypeRef ownerType,
+            JavaAstMethodCallExpression methodCall,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (ownerType == null
+                || !"java.util.stream.Collectors".equals(ownerType.binaryName())) {
+            return null;
+        }
+        if ("collectingAndThen".equals(methodCall.methodName()) && methodCall.arguments().size() == 2) {
+            return collectorsCollectingAndThenReturnType(
+                    methodCall,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (!"toMap".equals(methodCall.methodName()) || methodCall.arguments().size() < 2) {
+            return null;
+        }
+        return QinIrTypeRef.classType("java.util.stream.Collector", List.of(
+                QinIrTypeRef.classType(Object.class.getName()),
+                QinIrTypeRef.classType(Object.class.getName()),
+                QinIrTypeRef.classType("java.util.Map", List.of(
+                        QinIrTypeRef.classType(Object.class.getName()),
+                        QinIrTypeRef.classType(Object.class.getName())))));
+    }
+
+    private QinIrTypeRef collectorsCollectingAndThenReturnType(
+            JavaAstMethodCallExpression methodCall,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        QinIrTypeRef downstreamType = expressionType(
+                methodCall.arguments().get(0),
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (!"java.util.stream.Collector".equals(downstreamType.binaryName())
+                || downstreamType.typeArguments().size() < 3) {
+            return null;
+        }
+        QinIrTypeRef downstreamReturnType = downstreamType.typeArguments().get(2);
+        QinIrTypeRef finisherTarget = functionalTargetType(
+                "java.util.function.Function",
+                List.of(downstreamReturnType, QinIrTypeRef.classType(Object.class.getName())));
+        QinIrTypeRef finisherReturnType = lambdaBodyExpressionType(
+                methodCall.arguments().get(1),
+                finisherTarget,
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (finisherReturnType == null) {
+            finisherReturnType = methodReferenceReturnType(
+                    methodCall.arguments().get(1),
+                    finisherTarget,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (finisherReturnType == null) {
+            finisherReturnType = QinIrTypeRef.classType(Object.class.getName());
+        }
+        return QinIrTypeRef.classType("java.util.stream.Collector", List.of(
+                downstreamType.typeArguments().get(0),
+                downstreamType.typeArguments().get(1),
+                finisherReturnType));
+    }
+
+    private QinIrTypeRef collectorReturnTypeFromStream(
+            QinIrTypeRef streamType,
+            JavaAstExpression collectorExpression,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (!"java.util.stream.Stream".equals(streamType.binaryName())
+                || streamType.typeArguments().isEmpty()
+                || !(collectorExpression instanceof JavaAstMethodCallExpression methodCall)) {
+            return null;
+        }
+        QinIrTypeRef ownerType = staticOwnerType(methodCall.receiver(), packageName, importedTypes, locals);
+        if (ownerType == null || !"java.util.stream.Collectors".equals(ownerType.binaryName())) {
+            return null;
+        }
+        if ("toMap".equals(methodCall.methodName()) && methodCall.arguments().size() >= 2) {
+            return collectorsToMapReturnTypeFromStream(
+                    streamType,
+                    methodCall,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if ("groupingBy".equals(methodCall.methodName()) && !methodCall.arguments().isEmpty()) {
+            return collectorsGroupingByReturnTypeFromStream(
+                    streamType,
+                    methodCall,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        return null;
+    }
+
+    private QinIrTypeRef collectorsToMapReturnTypeFromStream(
+            QinIrTypeRef streamType,
+            JavaAstMethodCallExpression methodCall,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        QinIrTypeRef elementType = streamType.typeArguments().get(0);
+        QinIrTypeRef keyExtractorTarget = functionalTargetType(
+                "java.util.function.Function",
+                List.of(elementType, QinIrTypeRef.classType(Object.class.getName())));
+        QinIrTypeRef valueExtractorTarget = functionalTargetType(
+                "java.util.function.Function",
+                List.of(elementType, QinIrTypeRef.classType(Object.class.getName())));
+        QinIrTypeRef keyType = lambdaBodyExpressionType(
+                methodCall.arguments().get(0),
+                keyExtractorTarget,
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        QinIrTypeRef valueType = lambdaBodyExpressionType(
+                methodCall.arguments().get(1),
+                valueExtractorTarget,
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (keyType == null) {
+            keyType = methodReferenceReturnType(
+                    methodCall.arguments().get(0),
+                    keyExtractorTarget,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (valueType == null) {
+            valueType = methodReferenceReturnType(
+                    methodCall.arguments().get(1),
+                    valueExtractorTarget,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (valueType == null) {
+            valueType = functionIdentityReturnType(
+                    methodCall.arguments().get(1),
+                    elementType,
+                    packageName,
+                    importedTypes,
+                    locals);
+        }
+        if (keyType == null) {
+            keyType = QinIrTypeRef.classType(Object.class.getName());
+        }
+        if (valueType == null) {
+            valueType = QinIrTypeRef.classType(Object.class.getName());
+        }
+        return QinIrTypeRef.classType("java.util.Map", List.of(keyType, valueType));
+    }
+
+    private QinIrTypeRef collectorsGroupingByReturnTypeFromStream(
+            QinIrTypeRef streamType,
+            JavaAstMethodCallExpression methodCall,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        QinIrTypeRef elementType = streamType.typeArguments().get(0);
+        QinIrTypeRef classifierTarget = functionalTargetType(
+                "java.util.function.Function",
+                List.of(elementType, QinIrTypeRef.classType(Object.class.getName())));
+        QinIrTypeRef keyType = lambdaBodyExpressionType(
+                methodCall.arguments().get(0),
+                classifierTarget,
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (keyType == null) {
+            keyType = methodReferenceReturnType(
+                    methodCall.arguments().get(0),
+                    classifierTarget,
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (keyType == null) {
+            keyType = QinIrTypeRef.classType(Object.class.getName());
+        }
+        return QinIrTypeRef.classType("java.util.Map", List.of(
+                keyType,
+                QinIrTypeRef.classType("java.util.List", List.of(elementType))));
+    }
+
+    private QinIrTypeRef functionIdentityReturnType(
+            JavaAstExpression expression,
+            QinIrTypeRef elementType,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals) {
+        if (!(expression instanceof JavaAstMethodCallExpression methodCall)
+                || !"identity".equals(methodCall.methodName())
+                || !methodCall.arguments().isEmpty()) {
+            return null;
+        }
+        QinIrTypeRef ownerType = staticOwnerType(methodCall.receiver(), packageName, importedTypes, locals);
+        if (ownerType == null || !"java.util.function.Function".equals(ownerType.binaryName())) {
+            return null;
+        }
+        return elementType;
+    }
+
+    private QinIrTypeRef methodReferenceOwnerComparedType(
+            JavaAstExpression expression,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        if (!(expression instanceof JavaAstMethodReferenceExpression methodReference)) {
+            return null;
+        }
+        QinIrTypeRef ownerType = locals.get(methodReference.ownerName());
+        if (ownerType == null) {
+            ownerType = fieldTypes.get(methodReference.ownerName());
+        }
+        if (ownerType == null && "this".equals(methodReference.ownerName())) {
+            ownerType = QinIrTypeRef.classType(classBinaryName);
+        }
+        if (ownerType == null) {
+            ownerType = methodReferenceOwnerExpressionType(
+                    methodReference.ownerName(),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+        }
+        if (ownerType != null) {
+            return null;
+        }
+        return resolveType(methodReference.ownerName(), packageName, importedTypes);
+    }
+
+    private QinIrTypeRef methodReferenceOwnerExpressionType(
+            String ownerName,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        String trimmed = ownerName == null ? "" : ownerName.trim();
+        if (!trimmed.endsWith("()")) {
+            return null;
+        }
+        String callText = trimmed.substring(0, trimmed.length() - 2);
+        int dot = callText.lastIndexOf('.');
+        if (dot <= 0 || dot == callText.length() - 1) {
+            return null;
+        }
+        QinIrTypeRef receiverType = methodReferenceSimpleOwnerType(
+                callText.substring(0, dot),
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (receiverType == null) {
+            return null;
+        }
+        return resolveInstanceMethodReturnType(
+                receiverType,
+                callText.substring(dot + 1),
+                List.of(),
+                List.of(),
+                packageName,
+                importedTypes,
+                methodReturnTypes,
+                classBinaryName);
+    }
+
+    private QinIrTypeRef methodReferenceSimpleOwnerType(
+            String ownerText,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals,
+            Map<String, QinIrTypeRef> fieldTypes,
+            Map<String, QinIrTypeRef> methodReturnTypes,
+            String classBinaryName) {
+        String trimmed = ownerText == null ? "" : ownerText.trim();
+        if (trimmed.isBlank()) {
+            return null;
+        }
+        if ("this".equals(trimmed)) {
+            return QinIrTypeRef.classType(classBinaryName);
+        }
+        QinIrTypeRef localType = locals.get(trimmed);
+        if (localType != null) {
+            return localType;
+        }
+        QinIrTypeRef fieldType = fieldTypes.get(trimmed);
+        if (fieldType != null) {
+            return fieldType;
+        }
+        QinIrTypeRef callType = methodReferenceOwnerExpressionType(
+                trimmed,
+                packageName,
+                importedTypes,
+                locals,
+                fieldTypes,
+                methodReturnTypes,
+                classBinaryName);
+        if (callType != null) {
+            return callType;
+        }
+        int dot = trimmed.lastIndexOf('.');
+        if (dot > 0 && dot < trimmed.length() - 1) {
+            QinIrTypeRef receiverType = methodReferenceSimpleOwnerType(
+                    trimmed.substring(0, dot),
+                    packageName,
+                    importedTypes,
+                    locals,
+                    fieldTypes,
+                    methodReturnTypes,
+                    classBinaryName);
+            if (receiverType != null) {
+                return resolveInstanceFieldType(receiverType, trimmed.substring(dot + 1), classBinaryName, importedTypes);
+            }
+        }
+        return null;
     }
 
     private void analyzeStatements(
@@ -1127,6 +2186,20 @@ public final class QinJavaSemanticAnalyzer {
             if (statement instanceof JavaAstIfStatement ifStatement) {
                 expressionType(ifStatement.test(), packageName, importedTypes, locals, fieldTypes, methodReturnTypes,
                         classBinaryName);
+                Boolean constantTest = constantBooleanValue(ifStatement.test());
+                if (Boolean.TRUE.equals(constantTest)) {
+                    Map<String, QinIrTypeRef> consequentLocals = new LinkedHashMap<>(locals);
+                    addPositiveInstanceofPatternLocals(ifStatement.test(), packageName, importedTypes, consequentLocals);
+                    analyzeStatements(packageName, importedTypes, consequentLocals, fieldTypes, methodReturnTypes,
+                            classBinaryName, ifStatement.consequentStatements());
+                    locals.putAll(consequentLocals);
+                    continue;
+                }
+                if (Boolean.FALSE.equals(constantTest)) {
+                    analyzeStatements(packageName, importedTypes, new LinkedHashMap<>(locals), fieldTypes, methodReturnTypes,
+                            classBinaryName, ifStatement.alternateStatements());
+                    continue;
+                }
                 Map<String, QinIrTypeRef> consequentLocals = new LinkedHashMap<>(locals);
                 Map<String, QinIrTypeRef> alternateLocals = new LinkedHashMap<>(locals);
                 addInstanceofPatternLocals(
@@ -1151,6 +2224,25 @@ public final class QinJavaSemanticAnalyzer {
                         whileStatement.bodyStatements());
             }
         }
+    }
+
+    private Boolean constantBooleanValue(JavaAstExpression expression) {
+        if (expression instanceof JavaAstBooleanLiteral booleanLiteral) {
+            return booleanLiteral.value();
+        }
+        if (expression instanceof JavaAstIdentifierExpression identifierExpression) {
+            if ("true".equals(identifierExpression.name())) {
+                return true;
+            }
+            if ("false".equals(identifierExpression.name())) {
+                return false;
+            }
+        }
+        if (expression instanceof JavaAstUnaryExpression unaryExpression && "!".equals(unaryExpression.operator())) {
+            Boolean operandValue = constantBooleanValue(unaryExpression.operand());
+            return operandValue == null ? null : !operandValue;
+        }
+        return null;
     }
 
     private void addInstanceofPatternLocals(
@@ -1220,6 +2312,19 @@ public final class QinJavaSemanticAnalyzer {
             addPositiveInstanceofPatternLocals(binaryExpression.left(), packageName, importedTypes, locals);
             addPositiveInstanceofPatternLocals(binaryExpression.right(), packageName, importedTypes, locals);
         }
+    }
+
+    private void addNegativeInstanceofPatternLocals(
+            JavaAstExpression test,
+            String packageName,
+            Map<String, String> importedTypes,
+            Map<String, QinIrTypeRef> locals) {
+        addInstanceofPatternLocals(
+                test,
+                packageName,
+                importedTypes,
+                new LinkedHashMap<>(locals),
+                locals);
     }
 
     private boolean isGuardReturn(JavaAstIfStatement ifStatement) {
@@ -1410,6 +2515,29 @@ public final class QinJavaSemanticAnalyzer {
                             QinIrTypeRef.classType(Object.class.getName()),
                             QinIrTypeRef.classType(Object.class.getName())));
         }
+        if ("java.util.List".equals(ownerBinaryName)
+                && "copyOf".equals(methodName)
+                && argumentTypes.size() == 1) {
+            QinIrTypeRef argumentType = argumentTypes.get(0);
+            QinIrTypeRef elementType = argumentType.typeArguments().isEmpty()
+                    ? QinIrTypeRef.classType(Object.class.getName())
+                    : argumentType.typeArguments().get(0);
+            return QinIrTypeRef.classType("java.util.List", List.of(elementType));
+        }
+        if ("java.util.Set".equals(ownerBinaryName)
+                && "copyOf".equals(methodName)
+                && argumentTypes.size() == 1) {
+            QinIrTypeRef argumentType = argumentTypes.get(0);
+            QinIrTypeRef elementType = argumentType.typeArguments().isEmpty()
+                    ? QinIrTypeRef.classType(Object.class.getName())
+                    : argumentType.typeArguments().get(0);
+            return QinIrTypeRef.classType("java.util.Set", List.of(elementType));
+        }
+        if ("java.util.stream.IntStream".equals(ownerBinaryName)
+                && "of".equals(methodName)
+                && !argumentTypes.isEmpty()) {
+            return QinIrTypeRef.classType("java.util.stream.IntStream");
+        }
         JavaAstClassDeclaration sourceClass = sourceClassesByBinaryName.get(ownerBinaryName);
         if (sourceClass != null) {
             Map<String, String> importedTypes = sourceImportedTypesByBinaryName.getOrDefault(ownerBinaryName, Map.of());
@@ -1420,7 +2548,7 @@ public final class QinJavaSemanticAnalyzer {
             }
         }
         try {
-            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Class<?> ownerClass = loadClass(ownerBinaryName);
             Method matched = null;
             int matchedScore = Integer.MAX_VALUE;
             for (Method method : ownerClass.getMethods()) {
@@ -1456,7 +2584,10 @@ public final class QinJavaSemanticAnalyzer {
                 throw new IllegalArgumentException("Unknown Java static method: "
                         + ownerBinaryName + "." + methodName + "/" + argumentTypes.size());
             }
-            return typeRefFromClass(matched.getReturnType());
+            return typeRefFromType(
+                    matched.getGenericReturnType(),
+                    methodTypeBindings(matched, argumentTypes),
+                    new HashSet<>());
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unknown Java static method owner: " + ownerBinaryName, e);
         }
@@ -1566,7 +2697,7 @@ public final class QinJavaSemanticAnalyzer {
             return parameterType == Object.class ? 10 : -1;
         }
         try {
-            Class<?> argumentClass = Class.forName(argumentBinaryName);
+            Class<?> argumentClass = loadClass(argumentBinaryName);
             if (parameterType.equals(argumentClass)) {
                 return 0;
             }
@@ -1649,9 +2780,69 @@ public final class QinJavaSemanticAnalyzer {
         }
     }
 
+    private QinIrTypeRef resolveEnclosingSourceStaticMethodReturnType(
+            String classBinaryName,
+            String methodName,
+            List<QinIrTypeRef> argumentTypes) {
+        String ownerBinaryName = sourceOuterClassByBinaryName.get(classBinaryName);
+        while (ownerBinaryName != null) {
+            JavaAstClassDeclaration ownerClass = sourceClassesByBinaryName.get(ownerBinaryName);
+            if (ownerClass != null) {
+                Map<String, String> importedTypes = sourceImportedTypesByBinaryName.getOrDefault(ownerBinaryName, Map.of());
+                for (JavaAstMethodDeclaration method : ownerClass.methods()) {
+                    if (method.staticMethod()
+                            && sourceMethodMatches(method, methodName, argumentTypes.size())) {
+                        return resolveType(method.returnTypeName(), packageName(ownerBinaryName), importedTypes);
+                    }
+                }
+            }
+            ownerBinaryName = sourceOuterClassByBinaryName.get(ownerBinaryName);
+        }
+        return null;
+    }
+
+    private QinIrTypeRef resolveStaticImportedMethodReturnType(
+            String methodName,
+            List<QinIrTypeRef> argumentTypes,
+            Map<String, String> importedTypes) {
+        String imported = importedTypes.get(methodName);
+        if (imported != null && imported.endsWith("." + methodName)) {
+            String ownerBinaryName = imported.substring(0, imported.length() - methodName.length() - 1);
+            QinIrTypeRef returnType = tryResolveStaticMethodReturnType(ownerBinaryName, methodName, argumentTypes);
+            if (returnType != null) {
+                return returnType;
+            }
+        }
+        for (Map.Entry<String, String> entry : importedTypes.entrySet()) {
+            if (!entry.getKey().startsWith("*")) {
+                continue;
+            }
+            String ownerBinaryName = entry.getValue();
+            if (!sourceClassesByBinaryName.containsKey(ownerBinaryName) && !isLoadableClass(ownerBinaryName)) {
+                continue;
+            }
+            QinIrTypeRef returnType = tryResolveStaticMethodReturnType(ownerBinaryName, methodName, argumentTypes);
+            if (returnType != null) {
+                return returnType;
+            }
+        }
+        return null;
+    }
+
+    private QinIrTypeRef tryResolveStaticMethodReturnType(
+            String ownerBinaryName,
+            String methodName,
+            List<QinIrTypeRef> argumentTypes) {
+        try {
+            return resolveStaticMethodReturnType(ownerBinaryName, methodName, argumentTypes);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     private QinIrTypeRef resolveStaticFieldType(String ownerBinaryName, String fieldName) {
         try {
-            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Class<?> ownerClass = loadClass(ownerBinaryName);
             Field field = ownerClass.getField(fieldName);
             if (!Modifier.isStatic(field.getModifiers())) {
                 throw new IllegalArgumentException("Java field is not static: " + ownerBinaryName + "." + fieldName);
@@ -1713,7 +2904,7 @@ public final class QinJavaSemanticAnalyzer {
 
     private QinIrTypeRef resolveReflectiveInstanceFieldType(String ownerBinaryName, String fieldName) {
         try {
-            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Class<?> ownerClass = loadClass(ownerBinaryName);
             Field field = ownerClass.getDeclaredField(fieldName);
             if (Modifier.isStatic(field.getModifiers())) {
                 throw new IllegalArgumentException("Java field is static: " + ownerBinaryName + "." + fieldName);
@@ -1732,14 +2923,31 @@ public final class QinJavaSemanticAnalyzer {
     }
 
     boolean isLoadableClass(String binaryName) {
-        if (binaryName == null || binaryName.isBlank()) {
-            return false;
-        }
         try {
-            Class.forName(binaryName);
-            return true;
+            return loadClass(binaryName) != null;
         } catch (ClassNotFoundException | LinkageError e) {
             return false;
+        }
+    }
+
+    private Class<?> loadClass(String binaryName) throws ClassNotFoundException {
+        if (binaryName == null || binaryName.isBlank()) {
+            throw new ClassNotFoundException(String.valueOf(binaryName));
+        }
+        Class<?> cached = loadableClassCache.get(binaryName);
+        if (cached != null) {
+            return cached;
+        }
+        if (unloadableClassCache.contains(binaryName)) {
+            throw new ClassNotFoundException(binaryName);
+        }
+        try {
+            Class<?> loaded = Class.forName(binaryName);
+            loadableClassCache.put(binaryName, loaded);
+            return loaded;
+        } catch (ClassNotFoundException e) {
+            unloadableClassCache.add(binaryName);
+            throw e;
         }
     }
 
@@ -1795,7 +3003,7 @@ public final class QinJavaSemanticAnalyzer {
             return fields;
         }
         try {
-            Class<?> owner = Class.forName(superType.binaryName());
+            Class<?> owner = loadClass(superType.binaryName());
             Map<TypeVariable<?>, Type> typeBindings = new LinkedHashMap<>();
             String accessingPackage = packageName == null ? "" : packageName;
             while (owner != null && owner != Object.class) {
@@ -1860,7 +3068,7 @@ public final class QinJavaSemanticAnalyzer {
             return methods;
         }
         try {
-            Class<?> owner = Class.forName(superType.binaryName());
+            Class<?> owner = loadClass(superType.binaryName());
             Map<TypeVariable<?>, Type> typeBindings = new LinkedHashMap<>();
             String accessingPackage = packageName == null ? "" : packageName;
             while (owner != null && owner != Object.class) {
@@ -1901,7 +3109,7 @@ public final class QinJavaSemanticAnalyzer {
             return resolved;
         }
         try {
-            Class<?> owner = Class.forName(superType.binaryName());
+            Class<?> owner = loadClass(superType.binaryName());
             String accessingPackage = packageName == null ? "" : packageName;
             while (owner != null && owner != Object.class) {
                 String ownerPackage = owner.getPackageName() == null ? "" : owner.getPackageName();
@@ -1949,6 +3157,19 @@ public final class QinJavaSemanticAnalyzer {
             Map<TypeVariable<?>, Type> typeBindings,
             Set<Type> visiting) {
         Type resolved = resolveBoundType(type, typeBindings);
+        if (resolved instanceof TypeVariable<?> variable && typeBindings.containsKey(variable)) {
+            return typeRefFromType(typeBindings.get(variable), typeBindings, visiting);
+        }
+        if (resolved instanceof WildcardType wildcardType) {
+            Type[] lowerBounds = wildcardType.getLowerBounds();
+            if (lowerBounds.length > 0) {
+                return typeRefFromType(lowerBounds[0], typeBindings, visiting);
+            }
+            Type[] upperBounds = wildcardType.getUpperBounds();
+            if (upperBounds.length > 0) {
+                return typeRefFromType(upperBounds[0], typeBindings, visiting);
+            }
+        }
         if (!visiting.add(resolved)) {
             return QinIrTypeRef.classType(Object.class.getName());
         }
@@ -1977,12 +3198,6 @@ public final class QinJavaSemanticAnalyzer {
         if (resolved instanceof TypeVariable<?> variable && variable.getBounds().length > 0) {
             return typeRefFromType(variable.getBounds()[0], typeBindings, visiting);
         }
-        if (resolved instanceof WildcardType wildcardType) {
-            Type[] upperBounds = wildcardType.getUpperBounds();
-            if (upperBounds.length > 0) {
-                return typeRefFromType(upperBounds[0], typeBindings, visiting);
-            }
-        }
         return QinIrTypeRef.classType(Object.class.getName());
     }
 
@@ -2009,6 +3224,14 @@ public final class QinJavaSemanticAnalyzer {
                     String.class.getName(),
                     methodName,
                     argumentTypes);
+        }
+        if (receiverType.kind() == QinIrTypeKind.INT
+                || receiverType.kind() == QinIrTypeKind.DOUBLE
+                || receiverType.kind() == QinIrTypeKind.BOOLEAN) {
+            QinIrTypeRef primitiveObjectMethodReturnType = objectMethodReturnType(methodName, argumentTypes);
+            if (primitiveObjectMethodReturnType != null) {
+                return primitiveObjectMethodReturnType;
+            }
         }
         if (receiverType.kind() == QinIrTypeKind.BOOLEAN && "equals".equals(methodName) && argumentTypes.size() == 1) {
             return QinIrTypeRef.booleanType();
@@ -2069,7 +3292,7 @@ public final class QinJavaSemanticAnalyzer {
         Map<String, String> importedTypes = sourceImportedTypesByBinaryName.getOrDefault(receiverBinaryName, Map.of());
         String receiverPackageName = packageName(receiverBinaryName);
         for (JavaAstMethodDeclaration method : sourceClass.methods()) {
-            if (method.name().equals(methodName) && method.parameters().size() == argumentTypes.size()) {
+            if (sourceMethodMatches(method, methodName, argumentTypes.size())) {
                 return resolveType(method.returnTypeName(), receiverPackageName, importedTypes);
             }
         }
@@ -2112,6 +3335,21 @@ public final class QinJavaSemanticAnalyzer {
                     argumentTypes);
         }
         return null;
+    }
+
+    private boolean sourceMethodMatches(JavaAstMethodDeclaration method, String methodName, int argumentCount) {
+        if (!method.name().equals(methodName)) {
+            return false;
+        }
+        int parameterCount = method.parameters().size();
+        if (parameterCount == argumentCount) {
+            return true;
+        }
+        if (parameterCount == 0) {
+            return false;
+        }
+        JavaAstParameter lastParameter = method.parameters().get(parameterCount - 1);
+        return lastParameter.varargs() && argumentCount >= parameterCount - 1;
     }
 
     private QinIrTypeRef resolveSourceInheritedInstanceMethodReturnType(
@@ -2160,8 +3398,12 @@ public final class QinJavaSemanticAnalyzer {
         if ("getClass".equals(methodName) && argumentTypes.isEmpty()) {
             return QinIrTypeRef.classType(Class.class.getName());
         }
+        QinIrTypeRef objectMethodReturnType = objectMethodReturnType(methodName, argumentTypes);
+        if (objectMethodReturnType != null) {
+            return objectMethodReturnType;
+        }
         try {
-            Class<?> ownerClass = Class.forName(ownerBinaryName);
+            Class<?> ownerClass = loadClass(ownerBinaryName);
             Method matched = null;
             int matchedScore = Integer.MAX_VALUE;
             for (Method method : ownerClass.getMethods()) {
@@ -2207,6 +3449,19 @@ public final class QinJavaSemanticAnalyzer {
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unknown Java instance method owner: " + ownerBinaryName, e);
         }
+    }
+
+    private QinIrTypeRef objectMethodReturnType(String methodName, List<QinIrTypeRef> argumentTypes) {
+        if ("toString".equals(methodName) && argumentTypes.isEmpty()) {
+            return QinIrTypeRef.stringType();
+        }
+        if ("hashCode".equals(methodName) && argumentTypes.isEmpty()) {
+            return QinIrTypeRef.intType();
+        }
+        if ("equals".equals(methodName) && argumentTypes.size() == 1) {
+            return QinIrTypeRef.booleanType();
+        }
+        return null;
     }
 
     private Map<TypeVariable<?>, Type> methodTypeBindings(Method method, List<QinIrTypeRef> argumentTypes) {
@@ -2282,10 +3537,35 @@ public final class QinJavaSemanticAnalyzer {
                 case DOUBLE -> double.class;
                 case STRING -> String.class;
                 case VOID -> void.class;
-                case CLASS -> Class.forName(typeRef.binaryName());
+                case CLASS -> {
+                    Class<?> rawClass = loadClass(typeRef.binaryName());
+                    if (typeRef.typeArguments().isEmpty()) {
+                        yield rawClass;
+                    }
+                    yield new SimpleParameterizedType(
+                            rawClass,
+                            typeRef.typeArguments().stream().map(this::typeFromTypeRef).toArray(Type[]::new));
+                }
             };
         } catch (ClassNotFoundException e) {
             return Object.class;
+        }
+    }
+
+    private record SimpleParameterizedType(Class<?> rawType, Type[] actualTypeArguments) implements ParameterizedType {
+        @Override
+        public Type[] getActualTypeArguments() {
+            return actualTypeArguments.clone();
+        }
+
+        @Override
+        public Type getRawType() {
+            return rawType;
+        }
+
+        @Override
+        public Type getOwnerType() {
+            return rawType.getDeclaringClass();
         }
     }
 
@@ -2314,8 +3594,11 @@ public final class QinJavaSemanticAnalyzer {
         if (type == void.class || type == Void.class) {
             return QinIrTypeRef.voidType();
         }
-        if (type == boolean.class || type == Boolean.class) {
+        if (type == boolean.class) {
             return QinIrTypeRef.booleanType();
+        }
+        if (type == Boolean.class) {
+            return QinIrTypeRef.classType(Boolean.class.getName());
         }
         if (type == byte.class
                 || type == short.class
@@ -2342,7 +3625,16 @@ public final class QinJavaSemanticAnalyzer {
         String rawTypeName = rawTypeName(typeName);
         String imported = importedTypes.get(rawTypeName);
         if (imported != null) {
-            return imported;
+            String importedNested = knownNestedBinaryName(imported);
+            return importedNested == null ? imported : importedNested;
+        }
+        String aliasCanonicalName = QinJavaSdkAliasSupport.canonicalBinaryName(rawTypeName);
+        if (!aliasCanonicalName.equals(rawTypeName)) {
+            return aliasCanonicalName;
+        }
+        String generatedBinaryName = generatedBinaryNameOrNull(rawTypeName);
+        if (generatedBinaryName != null) {
+            return generatedBinaryName;
         }
         if ("String".equals(rawTypeName)) {
             return String.class.getName();
@@ -2371,6 +3663,49 @@ public final class QinJavaSemanticAnalyzer {
             return packageName + "." + rawTypeName;
         }
         return rawTypeName;
+    }
+
+    private String generatedBinaryNameOrNull(String generatedIdentifier) {
+        if (generatedIdentifier == null || generatedIdentifier.isBlank()) {
+            return null;
+        }
+        String matchedBinaryName = null;
+        for (String binaryName : sourceClassesByBinaryName.keySet()) {
+            if (!generatedJavaClassIdentifier(binaryName).equals(generatedIdentifier)) {
+                continue;
+            }
+            if (matchedBinaryName != null && !matchedBinaryName.equals(binaryName)) {
+                throw new IllegalArgumentException("Ambiguous generated Java class identifier: " + generatedIdentifier);
+            }
+            matchedBinaryName = binaryName;
+        }
+        return matchedBinaryName;
+    }
+
+    private static String generatedJavaClassIdentifier(String binaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            throw new IllegalArgumentException("Missing Java class binary name");
+        }
+        StringBuilder identifier = new StringBuilder(binaryName.length());
+        for (int i = 0; i < binaryName.length(); i++) {
+            char ch = binaryName.charAt(i);
+            if (i == 0) {
+                identifier.append(isJavaIdentifierStart(ch) ? ch : '_');
+            } else {
+                identifier.append(isJavaIdentifierPart(ch) ? ch : '_');
+            }
+        }
+        return identifier.toString();
+    }
+
+    private static boolean isJavaIdentifierStart(char ch) {
+        return ch == '_' || ch == '$'
+                || (ch >= 'A' && ch <= 'Z')
+                || (ch >= 'a' && ch <= 'z');
+    }
+
+    private static boolean isJavaIdentifierPart(char ch) {
+        return isJavaIdentifierStart(ch) || (ch >= '0' && ch <= '9');
     }
 
     private String resolveSourceNestedClassName(String rawTypeName, String packageName) {
@@ -2402,8 +3737,8 @@ public final class QinJavaSemanticAnalyzer {
         if (isLoadableClass(rawTypeName)) {
             return rawTypeName;
         }
-        String nestedCandidate = nestedBinaryName(rawTypeName);
-        if (isLoadableClass(nestedCandidate)) {
+        String nestedCandidate = knownNestedBinaryName(rawTypeName);
+        if (nestedCandidate != null) {
             return nestedCandidate;
         }
         int firstDot = rawTypeName.indexOf('.');
@@ -2437,17 +3772,17 @@ public final class QinJavaSemanticAnalyzer {
         return rawTypeName;
     }
 
-    private String nestedBinaryName(String rawTypeName) {
+    private String knownNestedBinaryName(String rawTypeName) {
         String candidate = rawTypeName;
         int dot = candidate.lastIndexOf('.');
         while (dot > 0) {
             candidate = candidate.substring(0, dot) + "$" + candidate.substring(dot + 1);
-            if (isLoadableClass(candidate)) {
+            if (isLoadableClass(candidate) || sourceClassesByBinaryName.containsKey(candidate)) {
                 return candidate;
             }
             dot = candidate.lastIndexOf('.', dot - 1);
         }
-        return candidate;
+        return null;
     }
 
     private static String normalizeTypeName(String typeName) {
@@ -2587,29 +3922,59 @@ public final class QinJavaSemanticAnalyzer {
         if (receiverType.typeArguments().isEmpty()) {
             return null;
         }
+        if (argumentTypes.isEmpty()
+                && ("java.util.Deque".equals(receiverType.binaryName())
+                || "java.util.ArrayDeque".equals(receiverType.binaryName()))
+                && ("removeFirst".equals(methodName)
+                || "removeLast".equals(methodName)
+                || "pollFirst".equals(methodName)
+                || "pollLast".equals(methodName)
+                || "getFirst".equals(methodName)
+                || "getLast".equals(methodName)
+                || "peekFirst".equals(methodName)
+                || "peekLast".equals(methodName)
+                || "pop".equals(methodName)
+                || "poll".equals(methodName)
+                || "peek".equals(methodName)
+                || "remove".equals(methodName)
+                || "element".equals(methodName))) {
+            return receiverType.typeArguments().get(0);
+        }
         if ("get".equals(methodName)) {
             if (argumentTypes.size() != 1) {
                 return null;
             }
             return switch (receiverType.binaryName()) {
                 case "java.util.List", "java.util.ArrayList" -> receiverType.typeArguments().get(0);
-                case "java.util.Map", "java.util.HashMap", "java.util.LinkedHashMap" ->
+                case "java.util.Map", "java.util.HashMap", "java.util.LinkedHashMap", "java.util.IdentityHashMap" ->
                     receiverType.typeArguments().size() > 1 ? receiverType.typeArguments().get(1) : null;
                 default -> null;
             };
+        }
+        if (argumentTypes.isEmpty()
+                && ("java.util.Map$Entry".equals(receiverType.binaryName())
+                || "java.util.Map.Entry".equals(receiverType.binaryName()))) {
+            if ("getKey".equals(methodName)) {
+                return receiverType.typeArguments().get(0);
+            }
+            if ("getValue".equals(methodName) && receiverType.typeArguments().size() > 1) {
+                return receiverType.typeArguments().get(1);
+            }
         }
         if ("remove".equals(methodName)
                 && argumentTypes.size() == 1
                 && ("java.util.Map".equals(receiverType.binaryName())
                 || "java.util.HashMap".equals(receiverType.binaryName())
-                || "java.util.LinkedHashMap".equals(receiverType.binaryName()))) {
+                || "java.util.LinkedHashMap".equals(receiverType.binaryName())
+                || "java.util.IdentityHashMap".equals(receiverType.binaryName()))) {
             return receiverType.typeArguments().size() > 1 ? receiverType.typeArguments().get(1) : null;
         }
         if ("put".equals(methodName)
                 && argumentTypes.size() == 2
                 && ("java.util.Map".equals(receiverType.binaryName())
                 || "java.util.HashMap".equals(receiverType.binaryName())
-                || "java.util.LinkedHashMap".equals(receiverType.binaryName()))) {
+                || "java.util.LinkedHashMap".equals(receiverType.binaryName())
+                || "java.util.IdentityHashMap".equals(receiverType.binaryName()))) {
             return receiverType.typeArguments().size() > 1 ? receiverType.typeArguments().get(1) : null;
         }
         if ("remove".equals(methodName) && argumentTypes.get(0).kind() == QinIrTypeKind.INT) {
@@ -2622,24 +3987,44 @@ public final class QinJavaSemanticAnalyzer {
                 && argumentTypes.size() == 2
                 && ("java.util.Map".equals(receiverType.binaryName())
                 || "java.util.HashMap".equals(receiverType.binaryName())
-                || "java.util.LinkedHashMap".equals(receiverType.binaryName()))) {
+                || "java.util.LinkedHashMap".equals(receiverType.binaryName())
+                || "java.util.IdentityHashMap".equals(receiverType.binaryName()))) {
             return receiverType.typeArguments().size() > 1 ? receiverType.typeArguments().get(1) : null;
         }
         if ("merge".equals(methodName)
                 && argumentTypes.size() == 3
                 && ("java.util.Map".equals(receiverType.binaryName())
                 || "java.util.HashMap".equals(receiverType.binaryName())
-                || "java.util.LinkedHashMap".equals(receiverType.binaryName()))) {
+                || "java.util.LinkedHashMap".equals(receiverType.binaryName())
+                || "java.util.IdentityHashMap".equals(receiverType.binaryName()))) {
             return receiverType.typeArguments().size() > 1 ? receiverType.typeArguments().get(1) : null;
         }
         if ("stream".equals(methodName)
                 && argumentTypes.isEmpty()
                 && ("java.util.Collection".equals(receiverType.binaryName())
                 || "java.util.List".equals(receiverType.binaryName())
-                || "java.util.ArrayList".equals(receiverType.binaryName()))) {
+                || "java.util.ArrayList".equals(receiverType.binaryName())
+                || "java.util.Set".equals(receiverType.binaryName())
+                || "java.util.HashSet".equals(receiverType.binaryName())
+                || "java.util.LinkedHashSet".equals(receiverType.binaryName()))) {
             return QinIrTypeRef.classType("java.util.stream.Stream", List.of(receiverType.typeArguments().get(0)));
         }
-        if ("anyMatch".equals(methodName)
+        if ("entrySet".equals(methodName)
+                && argumentTypes.isEmpty()
+                && ("java.util.Map".equals(receiverType.binaryName())
+                || "java.util.HashMap".equals(receiverType.binaryName())
+                || "java.util.LinkedHashMap".equals(receiverType.binaryName())
+                || "java.util.IdentityHashMap".equals(receiverType.binaryName()))) {
+            QinIrTypeRef keyType = receiverType.typeArguments().isEmpty()
+                    ? QinIrTypeRef.classType(Object.class.getName())
+                    : receiverType.typeArguments().get(0);
+            QinIrTypeRef valueType = receiverType.typeArguments().size() > 1
+                    ? receiverType.typeArguments().get(1)
+                    : QinIrTypeRef.classType(Object.class.getName());
+            return QinIrTypeRef.classType("java.util.Set", List.of(
+                    QinIrTypeRef.classType("java.util.Map$Entry", List.of(keyType, valueType))));
+        }
+        if (("anyMatch".equals(methodName) || "allMatch".equals(methodName) || "noneMatch".equals(methodName))
                 && argumentTypes.size() == 1
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
             return QinIrTypeRef.booleanType();
@@ -2649,7 +4034,33 @@ public final class QinJavaSemanticAnalyzer {
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
             return receiverType;
         }
+        if ("sorted".equals(methodName)
+                && argumentTypes.size() == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            return receiverType;
+        }
+        if (("thenComparing".equals(methodName) || "thenComparingInt".equals(methodName))
+                && argumentTypes.size() == 1
+                && "java.util.Comparator".equals(receiverType.binaryName())) {
+            return receiverType;
+        }
         if ("map".equals(methodName)
+                && argumentTypes.size() == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            QinIrTypeRef mappedType = streamMapReturnElementType(argumentTypes.get(0), methodTypeArgumentNames, packageName, importedTypes);
+            return QinIrTypeRef.classType("java.util.stream.Stream", List.of(mappedType));
+        }
+        if ("mapToInt".equals(methodName)
+                && argumentTypes.size() == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            return QinIrTypeRef.classType("java.util.stream.IntStream");
+        }
+        if ("flatMapToInt".equals(methodName)
+                && argumentTypes.size() == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            return QinIrTypeRef.classType("java.util.stream.IntStream");
+        }
+        if ("flatMap".equals(methodName)
                 && argumentTypes.size() == 1
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
             QinIrTypeRef mappedType = streamMapReturnElementType(argumentTypes.get(0), methodTypeArgumentNames, packageName, importedTypes);
@@ -2657,6 +4068,16 @@ public final class QinJavaSemanticAnalyzer {
         }
         if ("collect".equals(methodName)
                 && argumentTypes.size() == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            QinIrTypeRef collectorType = argumentTypes.get(0);
+            if ("java.util.stream.Collector".equals(collectorType.binaryName())
+                    && collectorType.typeArguments().size() > 2) {
+                return collectReturnType(receiverType, collectorType);
+            }
+            return QinIrTypeRef.classType("java.util.List", List.of(receiverType.typeArguments().get(0)));
+        }
+        if ("toList".equals(methodName)
+                && argumentTypes.isEmpty()
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
             return QinIrTypeRef.classType("java.util.List", List.of(receiverType.typeArguments().get(0)));
         }
@@ -2686,6 +4107,27 @@ public final class QinJavaSemanticAnalyzer {
             return functionType.typeArguments().get(1);
         }
         return QinIrTypeRef.classType(Object.class.getName());
+    }
+
+    private QinIrTypeRef collectReturnType(QinIrTypeRef streamType, QinIrTypeRef collectorType) {
+        QinIrTypeRef returnType = collectorType.typeArguments().get(2);
+        if (streamType.typeArguments().isEmpty()) {
+            return returnType;
+        }
+        QinIrTypeRef streamElementType = streamType.typeArguments().get(0);
+        if ("java.util.List".equals(returnType.binaryName())
+                && returnType.typeArguments().size() == 1
+                && isObjectType(returnType.typeArguments().get(0))
+                && !isObjectType(streamElementType)) {
+            return QinIrTypeRef.classType("java.util.List", List.of(streamElementType));
+        }
+        return returnType;
+    }
+
+    private boolean isObjectType(QinIrTypeRef type) {
+        return type != null
+                && type.kind() == QinIrTypeKind.CLASS
+                && Object.class.getName().equals(type.binaryName());
     }
 
     private List<QinIrTypeRef> targetParameterTypes(
@@ -2718,7 +4160,8 @@ public final class QinJavaSemanticAnalyzer {
                 && argumentCount == 2
                 && ("java.util.Map".equals(receiverType.binaryName())
                 || "java.util.HashMap".equals(receiverType.binaryName())
-                || "java.util.LinkedHashMap".equals(receiverType.binaryName()))) {
+                || "java.util.LinkedHashMap".equals(receiverType.binaryName())
+                || "java.util.IdentityHashMap".equals(receiverType.binaryName()))) {
             return List.of(QinIrTypeRef.classType(Object.class.getName()), functionalTargetType(
                     "java.util.function.Function",
                     List.of(receiverType.typeArguments().get(0), QinIrTypeRef.classType(Object.class.getName()))));
@@ -2744,7 +4187,7 @@ public final class QinJavaSemanticAnalyzer {
             QinIrTypeRef elementType = receiverType.typeArguments().get(0);
             return List.of(functionalTargetType("java.util.Comparator", List.of(elementType, elementType)));
         }
-        if ("anyMatch".equals(methodName)
+        if (("anyMatch".equals(methodName) || "allMatch".equals(methodName) || "noneMatch".equals(methodName))
                 && argumentCount == 1
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
             return List.of(functionalTargetType(
@@ -2758,6 +4201,52 @@ public final class QinJavaSemanticAnalyzer {
                     "java.util.function.Predicate",
                     List.of(receiverType.typeArguments().get(0))));
         }
+        if ("forEach".equals(methodName)
+                && argumentCount == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            return List.of(functionalTargetType(
+                    "java.util.function.Consumer",
+                    List.of(receiverType.typeArguments().get(0))));
+        }
+        if ("forEach".equals(methodName)
+                && argumentCount == 1
+                && ("java.util.Map".equals(receiverType.binaryName())
+                || "java.util.HashMap".equals(receiverType.binaryName())
+                || "java.util.LinkedHashMap".equals(receiverType.binaryName()))) {
+            QinIrTypeRef keyType = receiverType.typeArguments().isEmpty()
+                    ? QinIrTypeRef.classType(Object.class.getName())
+                    : receiverType.typeArguments().get(0);
+            QinIrTypeRef valueType = receiverType.typeArguments().size() > 1
+                    ? receiverType.typeArguments().get(1)
+                    : QinIrTypeRef.classType(Object.class.getName());
+            return List.of(functionalTargetType(
+                    "java.util.function.BiConsumer",
+                    List.of(keyType, valueType)));
+        }
+        if ("sorted".equals(methodName)
+                && argumentCount == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            QinIrTypeRef elementType = receiverType.typeArguments().isEmpty()
+                    ? QinIrTypeRef.classType(Object.class.getName())
+                    : receiverType.typeArguments().get(0);
+            return List.of(functionalTargetType("java.util.Comparator", List.of(elementType, elementType)));
+        }
+        if ("thenComparing".equals(methodName)
+                && argumentCount == 1
+                && "java.util.Comparator".equals(receiverType.binaryName())
+                && !receiverType.typeArguments().isEmpty()) {
+            return List.of(functionalTargetType(
+                    "java.util.function.Function",
+                    List.of(receiverType.typeArguments().get(0), QinIrTypeRef.classType(Object.class.getName()))));
+        }
+        if ("thenComparingInt".equals(methodName)
+                && argumentCount == 1
+                && "java.util.Comparator".equals(receiverType.binaryName())
+                && !receiverType.typeArguments().isEmpty()) {
+            return List.of(functionalTargetType(
+                    "java.util.function.ToIntFunction",
+                    List.of(receiverType.typeArguments().get(0))));
+        }
         if ("map".equals(methodName)
                 && argumentCount == 1
                 && "java.util.stream.Stream".equals(receiverType.binaryName())) {
@@ -2768,11 +4257,54 @@ public final class QinJavaSemanticAnalyzer {
                     "java.util.function.Function",
                     List.of(receiverType.typeArguments().get(0), mappedType)));
         }
+        if ("mapToInt".equals(methodName)
+                && argumentCount == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            return List.of(functionalTargetType(
+                    "java.util.function.ToIntFunction",
+                    List.of(receiverType.typeArguments().get(0))));
+        }
+        if ("flatMapToInt".equals(methodName)
+                && argumentCount == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            return List.of(functionalTargetType(
+                    "java.util.function.Function",
+                    List.of(
+                            receiverType.typeArguments().get(0),
+                            QinIrTypeRef.classType("java.util.stream.IntStream"))));
+        }
+        if ("flatMap".equals(methodName)
+                && argumentCount == 1
+                && "java.util.stream.Stream".equals(receiverType.binaryName())) {
+            QinIrTypeRef mappedType = methodTypeArgumentNames.isEmpty()
+                    ? QinIrTypeRef.classType(Object.class.getName())
+                    : resolveType(methodTypeArgumentNames.get(0), packageName, importedTypes);
+            return List.of(functionalTargetType(
+                    "java.util.function.Function",
+                    List.of(
+                            receiverType.typeArguments().get(0),
+                            QinIrTypeRef.classType("java.util.stream.Stream", List.of(mappedType)))));
+        }
         return List.of();
     }
 
     private QinIrTypeRef functionalTargetType(String binaryName, List<QinIrTypeRef> parameterTypes) {
         return QinIrTypeRef.classType(binaryName, parameterTypes);
+    }
+
+    private List<QinIrTypeRef> lambdaParameterTypes(
+            JavaAstLambdaExpression lambdaExpression,
+            QinIrTypeRef targetParameterType,
+            String packageName,
+            Map<String, String> importedTypes) {
+        if (!lambdaExpression.parameterTypeNames().isEmpty()) {
+            List<QinIrTypeRef> explicitTypes = new ArrayList<>();
+            for (String typeName : lambdaExpression.parameterTypeNames()) {
+                explicitTypes.add(resolveType(typeName, packageName, importedTypes));
+            }
+            return explicitTypes;
+        }
+        return lambdaParameterTypes(targetParameterType, lambdaExpression.parameterNames().size());
     }
 
     private List<QinIrTypeRef> lambdaParameterTypes(QinIrTypeRef targetParameterType, int parameterCount) {
@@ -2785,10 +4317,19 @@ public final class QinJavaSemanticAnalyzer {
         if ("java.util.function.BiFunction".equals(targetParameterType.binaryName()) && parameterCount == 2) {
             return List.of(targetParameterType.typeArguments().get(0), targetParameterType.typeArguments().get(1));
         }
+        if ("java.util.function.BiConsumer".equals(targetParameterType.binaryName()) && parameterCount == 2) {
+            return List.of(targetParameterType.typeArguments().get(0), targetParameterType.typeArguments().get(1));
+        }
         if ("java.util.Comparator".equals(targetParameterType.binaryName()) && parameterCount == 2) {
             return List.of(targetParameterType.typeArguments().get(0), targetParameterType.typeArguments().get(1));
         }
         if ("java.util.function.Predicate".equals(targetParameterType.binaryName()) && parameterCount == 1) {
+            return List.of(targetParameterType.typeArguments().get(0));
+        }
+        if ("java.util.function.ToIntFunction".equals(targetParameterType.binaryName()) && parameterCount == 1) {
+            return List.of(targetParameterType.typeArguments().get(0));
+        }
+        if ("java.util.function.Consumer".equals(targetParameterType.binaryName()) && parameterCount == 1) {
             return List.of(targetParameterType.typeArguments().get(0));
         }
         if ("com.github.benmanes.caffeine.cache.RemovalListener".equals(targetParameterType.binaryName())
@@ -2807,6 +4348,25 @@ public final class QinJavaSemanticAnalyzer {
             String methodName,
             int argumentCount) {
         if (!"get".equals(methodName) || argumentCount != 1 || receiverType.typeArguments().isEmpty()) {
+            if (argumentCount == 0
+                    && !receiverType.typeArguments().isEmpty()
+                    && ("java.util.Deque".equals(receiverType.binaryName())
+                    || "java.util.ArrayDeque".equals(receiverType.binaryName()))
+                    && ("removeFirst".equals(methodName)
+                    || "removeLast".equals(methodName)
+                    || "pollFirst".equals(methodName)
+                    || "pollLast".equals(methodName)
+                    || "getFirst".equals(methodName)
+                    || "getLast".equals(methodName)
+                    || "peekFirst".equals(methodName)
+                    || "peekLast".equals(methodName)
+                    || "pop".equals(methodName)
+                    || "poll".equals(methodName)
+                    || "peek".equals(methodName)
+                    || "remove".equals(methodName)
+                    || "element".equals(methodName))) {
+                return receiverType.typeArguments().get(0);
+            }
             return null;
         }
         return switch (receiverType.binaryName()) {

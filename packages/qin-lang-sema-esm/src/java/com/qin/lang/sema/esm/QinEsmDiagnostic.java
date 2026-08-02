@@ -11,7 +11,17 @@ public record QinEsmDiagnostic(
         String message,
         Path sourceFile,
         int line,
-        int column) {
+        int column,
+        QinEsmStaticAdmissionReport staticAdmissionReport) {
+    public QinEsmDiagnostic(
+            String code,
+            String message,
+            Path sourceFile,
+            int line,
+            int column) {
+        this(code, message, sourceFile, line, column, null);
+    }
+
     public QinEsmDiagnostic {
         Objects.requireNonNull(code, "code cannot be null");
         Objects.requireNonNull(message, "message cannot be null");

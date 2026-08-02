@@ -33,6 +33,28 @@ public final class QinEsmRuntimeFeatureParserScanSmokeTestMain {
                 export const supported = Box[Symbol.hasInstance];
                 """);
         expectNoDiagnostic("""
+                class GeneratedRecordShape {
+                    arguments(): any {
+                        return [];
+                    }
+                    await(): any {
+                        return false;
+                    }
+                }
+                """);
+        expectDiagnostic(
+                "QIN_JS_UNSUPPORTED_ARGUMENTS_OBJECT",
+                """
+                function dynamicArgs() {
+                    return arguments.length;
+                }
+                """);
+        expectDiagnostic(
+                "QIN_JS_UNSUPPORTED_TOP_LEVEL_AWAIT",
+                """
+                await start();
+                """);
+        expectNoDiagnostic("""
                 export class PluginCompiler {
                     transform(source) {
                         return /import\\(not-code\\)/.test(source)

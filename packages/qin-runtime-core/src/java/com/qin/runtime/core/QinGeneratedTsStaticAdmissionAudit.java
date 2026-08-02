@@ -1,30 +1,59 @@
 package com.qin.runtime.core;
 
+import com.qin.parser.QinParserFacade;
+import com.slime.ast.AstNode;
+import com.slime.ast.Position;
+import com.slime.ast.SourceLocation;
+import com.slime.ast.nodes.expressions.CallExpression;
+import com.slime.ast.nodes.expressions.Identifier;
+import com.slime.ast.nodes.expressions.MemberExpression;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.RecordComponent;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Audits dynamic-looking generated TypeScript shapes that are allowed only
  * when the Java-to-TS compiler emitted a proven static wrapper contract.
  */
 public final class QinGeneratedTsStaticAdmissionAudit {
+    private static final Pattern STATIC_ADMISSION_CONTRACT_PATTERN = Pattern.compile(
+            "/\\*\\s*@qin-static-admission\\s+([^*]+?)\\s*\\*/",
+            Pattern.DOTALL);
+
     private QinGeneratedTsStaticAdmissionAudit() {
     }
 
     public static Result audit(List<QinJavaProjectJsCompiler.EsmFileOutput> outputs) {
         List<Finding> findings = new ArrayList<>();
         int allowed = 0;
+        int contractAllowed = 0;
+        int legacyAllowed = 0;
+        Map<String, Integer> legacyReasons = new TreeMap<>();
         for (QinJavaProjectJsCompiler.EsmFileOutput output : outputs) {
             ScanResult result = scanOne(output.outputFile(), output.code());
             allowed += result.allowed();
+            contractAllowed += result.contractAllowed();
+            legacyAllowed += result.legacyAllowed();
+            for (Map.Entry<String, Integer> entry : result.legacyReasons().entrySet()) {
+                legacyReasons.merge(entry.getKey(), entry.getValue(), Integer::sum);
+            }
             findings.addAll(result.findings());
         }
         if (!findings.isEmpty()) {
             throw new IllegalStateException("Generated TS static admission failed: " + findings);
         }
-        return new Result(allowed);
+        return new Result(allowed, contractAllowed, legacyAllowed, Map.copyOf(legacyReasons));
     }
 
     public static void assertRejectsUnprovenDynamicShapes() {
@@ -49,6 +78,13 @@ public final class QinGeneratedTsStaticAdmissionAudit {
                           return method.bind(receiver);
                         }
                         """);
+        assertAllowsGeneratedTsContract(
+                "call",
+                """
+                        export function generated(method, receiver) {
+                          return /* @qin-static-admission member=call owner=com.example.Generated method=rule receiver=receiver arity=0 */ method.call(receiver);
+                        }
+                        """);
     }
 
     private static void assertRejectsGeneratedTsDynamicShape(String member, String source) {
@@ -65,218 +101,180 @@ public final class QinGeneratedTsStaticAdmissionAudit {
 
     private static ScanResult scanOne(Path file, String source) {
         String code = source == null ? "" : source;
-        boolean[] mask = codeMask(code);
         List<Finding> findings = new ArrayList<>();
+        GeneratedAdmissionContracts contracts = GeneratedAdmissionContracts.parse(code);
         int allowed = 0;
-        for (int i = 0; i < code.length(); i++) {
-            if (!isCode(mask, i) || code.charAt(i) != '.') {
-                continue;
-            }
-            String member = dynamicMemberAt(code, i + 1);
-            if (member == null) {
-                continue;
-            }
-            int openParen = nextCodeNonWhitespace(code, mask, i + 1 + member.length());
-            if (openParen < 0 || code.charAt(openParen) != '(') {
-                continue;
-            }
-            String line = sourceLine(code, i);
-            if (isAllowedStaticGeneratedWrapper(member, line, code, i)) {
+        int contractAllowed = 0;
+        for (DynamicFunctionCall occurrence : dynamicFunctionCallsFromAst(file, code)) {
+            if (contracts.admit(occurrence)) {
                 allowed++;
+                contractAllowed++;
                 continue;
             }
-            int[] lineCol = lineCol(code, i);
             findings.add(new Finding(
                     file,
-                    lineCol[0],
-                    lineCol[1],
-                    "QIN_GENERATED_TS_DYNAMIC_FUNCTION_" + member.toUpperCase(),
-                    line.trim()));
+                    occurrence.line(),
+                    occurrence.column(),
+                    "QIN_GENERATED_TS_DYNAMIC_FUNCTION_" + occurrence.member().toUpperCase(Locale.ROOT),
+                    occurrence.sourceLine().trim()));
         }
-        return new ScanResult(allowed, List.copyOf(findings));
+        return new ScanResult(
+                allowed,
+                contractAllowed,
+                0,
+                Map.of(),
+                List.copyOf(findings));
     }
 
-    private static String dynamicMemberAt(String source, int start) {
-        if (source.startsWith("call", start) && isBoundary(source, start + 4)) {
-            return "call";
+    private static void assertAllowsGeneratedTsContract(String member, String source) {
+        ScanResult result = scanOne(Path.of("memory-proven-generated.ts"), source);
+        result.throwIfFindings();
+        if (result.allowed() != 1) {
+            throw new IllegalStateException(
+                    "Expected generated TS contract to admit one method."
+                            + member
+                            + ", got "
+                            + result.allowed());
         }
-        if (source.startsWith("apply", start) && isBoundary(source, start + 5)) {
-            return "apply";
+        if (result.contractAllowed() != 1 || result.legacyAllowed() != 0) {
+            throw new IllegalStateException(
+                    "Expected generated TS contract admission to avoid legacy predicates for method."
+                            + member
+                            + ", got contract="
+                            + result.contractAllowed()
+                            + ", legacy="
+                            + result.legacyAllowed());
         }
-        if (source.startsWith("bind", start) && isBoundary(source, start + 4)) {
-            return "bind";
-        }
-        return null;
     }
 
-    private static boolean isAllowedStaticGeneratedWrapper(
-            String member,
-            String line,
+    private static List<DynamicFunctionCall> dynamicFunctionCallsFromAst(Path file, String source) {
+        AstNode program = new QinParserFacade().parseSource(source).requireProgram();
+        List<DynamicFunctionCall> calls = new ArrayList<>();
+        collectDynamicFunctionCalls(file, source, program, calls, newIdentitySet());
+        return List.copyOf(calls);
+    }
+
+    private static void collectDynamicFunctionCalls(
+            Path file,
             String source,
-            int dotIndex) {
-        String trimmed = line.trim();
-        if ("apply".equals(member) && trimmed.equals("let computed: any = computer.apply(key);")) {
-            return source.contains("computer = __qin_java_functional(computer);");
+            Object node,
+            List<DynamicFunctionCall> calls,
+            Set<Object> seen) {
+        if (node == null || isScalar(node) || !seen.add(node)) {
+            return;
         }
-        if ("apply".equals(member) && isReceiverDeclaredAsJavaFunctional(source, dotIndex)) {
-            return true;
+        if (node instanceof CallExpression callExpression
+                && callExpression.callee() instanceof MemberExpression memberExpression
+                && !memberExpression.computed()
+                && memberExpression.property() instanceof Identifier propertyIdentifier) {
+            String member = propertyIdentifier.name();
+            if (isDynamicFunctionMember(member)) {
+                calls.add(dynamicFunctionCall(file, source, memberExpression, propertyIdentifier, member));
+            }
         }
-        if ("apply".equals(member)
-                && trimmed.contains("const __qin_method = ")
-                && trimmed.contains("if (typeof __qin_method === \"function\")")
-                && trimmed.contains("__qin_method.apply(")) {
-            return true;
+        if (node instanceof Collection<?> collection) {
+            for (Object item : collection) {
+                collectDynamicFunctionCalls(file, source, item, calls, seen);
+            }
+            return;
         }
-        if ("bind".equals(member)
-                && trimmed.equals("stats.__qin_field_nodeTypes.merge(node.getName(), 1.0, __QinJavaLangInteger.sum.bind(__QinJavaLangInteger));")) {
-            return true;
+        if (node instanceof Map<?, ?> map) {
+            for (Object value : map.values()) {
+                collectDynamicFunctionCalls(file, source, value, calls, seen);
+            }
+            return;
         }
-        if ("bind".equals(member)
-                && trimmed.contains("const __qin_bound_receiver = ")
-                && trimmed.contains(".bind(__qin_bound_receiver)")) {
-            return true;
+        Class<?> type = node.getClass();
+        if (type.isArray()) {
+            int length = Array.getLength(node);
+            for (int i = 0; i < length; i++) {
+                collectDynamicFunctionCalls(file, source, Array.get(node, i), calls, seen);
+            }
+            return;
         }
-        if ("call".equals(member)
-                && trimmed.contains("__qin_java_functional(() => __qin_targetFun.call(this, ...__qin_ruleArgs))")) {
-            return source.contains("const __qin_targetFun = __qin_args[0];")
-                    && source.contains("const __qin_ruleArgs = __qin_args.slice(3);");
+        if (!type.isRecord()) {
+            return;
         }
-        if ("call".equals(member) && isZeroArgumentInvocation(source, dotIndex, member)) {
-            return true;
+        for (RecordComponent component : type.getRecordComponents()) {
+            try {
+                collectDynamicFunctionCalls(file, source, component.getAccessor().invoke(node), calls, seen);
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalStateException(
+                        "Cannot inspect generated TS AST component "
+                                + type.getName()
+                                + "."
+                                + component.getName()
+                                + " while auditing "
+                                + file,
+                        error);
+            }
         }
-        if ("call".equals(member)
-                && isGeneratedStaticClassReceiver(receiverBeforeDot(source, dotIndex))) {
-            return true;
-        }
-        if ("call".equals(member) && isReceiverDeclaredWithGeneratedType(source, dotIndex)) {
-            return true;
-        }
-        return false;
     }
 
-    private static boolean isReceiverDeclaredAsJavaFunctional(String source, int dotIndex) {
-        int receiverEnd = dotIndex;
-        int receiverStart = receiverEnd - 1;
-        while (receiverStart >= 0 && isIdentifierPart(source.charAt(receiverStart))) {
-            receiverStart--;
+    private static DynamicFunctionCall dynamicFunctionCall(
+            Path file,
+            String source,
+            MemberExpression memberExpression,
+            Identifier propertyIdentifier,
+            String member) {
+        int propertyIndex = sourceIndex(propertyIdentifier.location());
+        int dotIndex = dotIndexBefore(source, propertyIndex, member);
+        int[] lineCol = lineCol(source, dotIndex >= 0 ? dotIndex : Math.max(0, propertyIndex));
+        return new DynamicFunctionCall(
+                file,
+                member,
+                dotIndex,
+                lineCol[0],
+                lineCol[1],
+                sourceLine(source, dotIndex >= 0 ? dotIndex : Math.max(0, propertyIndex)),
+                memberExpression);
+    }
+
+    private static int sourceIndex(SourceLocation location) {
+        if (location == null || location.start() == null) {
+            return -1;
         }
-        String receiver = source.substring(receiverStart + 1, receiverEnd);
-        return !receiver.isBlank()
-                && (source.contains(receiver + " = __qin_java_functional(" + receiver + ");")
-                        || source.contains("const " + receiver + " = __qin_java_functional(")
-                        || source.contains(receiver + ": QinJavaFunction = __qin_java_functional(")
-                        || source.contains(receiver + ": QinJavaBiFunction = __qin_java_functional(")
-                        || source.contains(receiver + ": QinJavaSupplier = __qin_java_functional(")
-                        || source.contains(receiver + ": QinJavaRunnable = __qin_java_functional("));
+        Position start = location.start();
+        return start.index();
     }
 
-    private static boolean isZeroArgumentInvocation(String source, int dotIndex, String member) {
-        boolean[] mask = codeMask(source);
-        int openParen = nextCodeNonWhitespace(source, mask, dotIndex + 1 + member.length());
-        if (openParen < 0 || source.charAt(openParen) != '(') {
-            return false;
+    private static int dotIndexBefore(String source, int propertyIndex, String member) {
+        if (source == null || source.isEmpty()) {
+            return -1;
         }
-        int next = nextCodeNonWhitespace(source, mask, openParen + 1);
-        return next >= 0 && source.charAt(next) == ')';
-    }
-
-    private static String receiverBeforeDot(String source, int dotIndex) {
-        int end = dotIndex;
-        int start = end - 1;
-        while (start >= 0 && isIdentifierPart(source.charAt(start))) {
-            start--;
+        int start = propertyIndex >= 0 && propertyIndex < source.length()
+                ? propertyIndex
+                : source.indexOf("." + member);
+        if (start < 0) {
+            return -1;
         }
-        return source.substring(start + 1, end);
-    }
-
-    private static boolean isGeneratedStaticClassReceiver(String receiver) {
-        return receiver.startsWith("com_") || receiver.startsWith("__Qin");
-    }
-
-    private static boolean isReceiverDeclaredWithGeneratedType(String source, int dotIndex) {
-        String receiver = receiverBeforeDot(source, dotIndex);
-        return !receiver.isBlank()
-                && (source.contains(receiver + ": com_")
-                        || source.contains(receiver + ": __Qin"));
-    }
-
-    private static int nextCodeNonWhitespace(String source, boolean[] mask, int start) {
-        for (int i = Math.max(0, start); i < source.length(); i++) {
-            if (isCode(mask, i) && !Character.isWhitespace(source.charAt(i))) {
+        for (int i = start; i >= 0; i--) {
+            char ch = source.charAt(i);
+            if (ch == '.') {
                 return i;
             }
-        }
-        return -1;
-    }
-
-    private static boolean[] codeMask(String source) {
-        boolean[] code = new boolean[source.length()];
-        boolean single = false;
-        boolean dbl = false;
-        boolean template = false;
-        boolean lineComment = false;
-        boolean blockComment = false;
-        for (int i = 0; i < source.length(); i++) {
-            char ch = source.charAt(i);
-            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
-            char previous = i > 0 ? source.charAt(i - 1) : '\0';
-            if (lineComment) {
-                if (ch == '\n') {
-                    lineComment = false;
-                    code[i] = true;
-                }
-                continue;
-            }
-            if (blockComment) {
-                if (ch == '*' && next == '/') {
-                    blockComment = false;
-                    i++;
-                }
-                continue;
-            }
-            if (single) {
-                if (ch == '\'' && previous != '\\') {
-                    single = false;
-                }
-                continue;
-            }
-            if (dbl) {
-                if (ch == '"' && previous != '\\') {
-                    dbl = false;
-                }
-                continue;
-            }
-            if (template) {
-                if (ch == '`' && previous != '\\') {
-                    template = false;
-                }
-                continue;
-            }
-            if (ch == '/' && next == '/') {
-                lineComment = true;
-                i++;
-            } else if (ch == '/' && next == '*') {
-                blockComment = true;
-                i++;
-            } else if (ch == '\'') {
-                single = true;
-            } else if (ch == '"') {
-                dbl = true;
-            } else if (ch == '`') {
-                template = true;
-            } else {
-                code[i] = true;
+            if (!Character.isWhitespace(ch) && i < start && !isIdentifierPart(ch)) {
+                break;
             }
         }
-        return code;
+        int fallback = source.indexOf("." + member, Math.max(0, start - 120));
+        return fallback >= 0 ? fallback : -1;
     }
 
-    private static boolean isCode(boolean[] mask, int index) {
-        return index >= 0 && index < mask.length && mask[index];
+    private static boolean isDynamicFunctionMember(String member) {
+        return "call".equals(member) || "apply".equals(member) || "bind".equals(member);
     }
 
-    private static boolean isBoundary(String source, int index) {
-        return index >= source.length() || !isIdentifierPart(source.charAt(index));
+    private static <T> Set<T> newIdentitySet() {
+        return java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+    }
+
+    private static boolean isScalar(Object value) {
+        return value instanceof String
+                || value instanceof Number
+                || value instanceof Boolean
+                || value instanceof Character
+                || value instanceof Enum<?>;
     }
 
     private static boolean isIdentifierPart(char ch) {
@@ -309,10 +307,111 @@ public final class QinGeneratedTsStaticAdmissionAudit {
         return new int[] {line, col};
     }
 
-    public record Result(int allowedDynamicWrapperCount) {
+    public record Result(
+            int allowedDynamicWrapperCount,
+            int contractAllowedDynamicWrapperCount,
+            int legacyAllowedDynamicWrapperCount,
+            Map<String, Integer> legacyAllowedDynamicWrapperReasons) {
     }
 
-    private record ScanResult(int allowed, List<Finding> findings) {
+    private record DynamicFunctionCall(
+            Path file,
+            String member,
+            int dotIndex,
+            int line,
+            int column,
+            String sourceLine,
+            MemberExpression memberExpression) {
+    }
+
+    private static final class GeneratedAdmissionContracts {
+        private final List<GeneratedAdmissionContract> contracts;
+        private final Set<GeneratedAdmissionContract> consumed = newIdentitySet();
+
+        private GeneratedAdmissionContracts(List<GeneratedAdmissionContract> contracts) {
+            this.contracts = contracts;
+        }
+
+        private static GeneratedAdmissionContracts parse(String source) {
+            List<GeneratedAdmissionContract> parsed = new ArrayList<>();
+            Matcher matcher = STATIC_ADMISSION_CONTRACT_PATTERN.matcher(source == null ? "" : source);
+            while (matcher.find()) {
+                Map<String, String> attributes = parseAttributes(matcher.group(1));
+                parsed.add(new GeneratedAdmissionContract(
+                        matcher.start(),
+                        matcher.end(),
+                        attributes.get("member"),
+                        attributes.get("owner"),
+                        attributes.get("method"),
+                        attributes.get("receiver"),
+                        attributes.get("arity")));
+            }
+            return new GeneratedAdmissionContracts(List.copyOf(parsed));
+        }
+
+        private boolean admit(DynamicFunctionCall occurrence) {
+            for (GeneratedAdmissionContract contract : contracts) {
+                if (consumed.contains(contract)
+                        || !contract.matches(occurrence)
+                        || !contract.isNear(occurrence)) {
+                    continue;
+                }
+                consumed.add(contract);
+                return true;
+            }
+            return false;
+        }
+
+        private static Map<String, String> parseAttributes(String raw) {
+            Map<String, String> attributes = new java.util.LinkedHashMap<>();
+            if (raw == null || raw.isBlank()) {
+                return attributes;
+            }
+            String[] parts = raw.trim().split("\\s+");
+            for (String part : parts) {
+                int equals = part.indexOf('=');
+                if (equals <= 0 || equals == part.length() - 1) {
+                    continue;
+                }
+                attributes.put(part.substring(0, equals), part.substring(equals + 1));
+            }
+            return Map.copyOf(attributes);
+        }
+    }
+
+    private record GeneratedAdmissionContract(
+            int start,
+            int end,
+            String member,
+            String owner,
+            String method,
+            String receiver,
+            String arity) {
+        private boolean matches(DynamicFunctionCall occurrence) {
+            return member != null
+                    && !member.isBlank()
+                    && member.equals(occurrence.member())
+                    && owner != null
+                    && !owner.isBlank()
+                    && method != null
+                    && !method.isBlank()
+                    && receiver != null
+                    && !receiver.isBlank()
+                    && arity != null
+                    && !arity.isBlank();
+        }
+
+        private boolean isNear(DynamicFunctionCall occurrence) {
+            return occurrence.dotIndex() >= end && occurrence.dotIndex() - end <= 320;
+        }
+    }
+
+    private record ScanResult(
+            int allowed,
+            int contractAllowed,
+            int legacyAllowed,
+            Map<String, Integer> legacyReasons,
+            List<Finding> findings) {
         private void throwIfFindings() {
             if (!findings.isEmpty()) {
                 throw new IllegalStateException("Generated TS static admission failed: " + findings);
