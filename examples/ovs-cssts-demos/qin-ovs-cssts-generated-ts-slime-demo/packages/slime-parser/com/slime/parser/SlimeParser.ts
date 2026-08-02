@@ -352,11 +352,15 @@ class com_slime_parser_SlimeParser extends com_slime_parser_typescript_SlimeTSDe
     }), "PrimaryExpression", "SlimeParser", __qin_subhuti_rule_cache_key([params]));
   }
   __qin_subhuti_raw_PrimaryExpression(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
-    this.Or(__qin_java_functional(() => {
-      return this.TSTypeAssertion(params);
-    }), __qin_java_functional(() => {
-      return super.__qin_subhuti_raw___qin_overload_PrimaryExpression_1_0(params);
-    }));
+    if (false) {
+      this.Or(__qin_java_functional(() => {
+        return this.TSTypeAssertion(params);
+      }), __qin_java_functional(() => {
+        return this.StandardPrimaryExpression(params);
+      }));
+      return null;
+    }
+    this.__qin_subhuti_raw_StandardPrimaryExpression(params);
     return null;
   }
   TSTypeAssertion(params: com_slime_parser_base_SlimeJavascriptParserBase$ExpressionParams): any {
