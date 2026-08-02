@@ -4,7 +4,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Emits compile-time diagnostics when JVM .class generation falls back to the
+ * Emits compile-time diagnostics when JVM .class generation reaches the
  * dynamic JavaEsmGlobal runtime surface.
  */
 final class QinJvmDynamicSemanticWarnings {
@@ -14,6 +14,13 @@ final class QinJvmDynamicSemanticWarnings {
     }
 
     static void warnJavaEsmGlobalCall(String backend, String methodName) {
+        String message = backend + " would emit JavaEsmGlobal." + methodName
+                + " while compiling to JVM .class. The source or lowering path used dynamic JS semantics: "
+                + reason(methodName)
+                + " Prefer fixed class fields/methods, explicit interfaces, Map/List operations, or Qin-owned static builtins.";
+        if (hardFailure(methodName) || strictDynamicFailureMode()) {
+            throw new IllegalStateException("[QinDynamicSemanticError] " + message);
+        }
         if (!warningsEnabled()) {
             return;
         }
@@ -21,11 +28,7 @@ final class QinJvmDynamicSemanticWarnings {
         if (!WARNED_KEYS.add(key)) {
             return;
         }
-        System.err.println("[QinDynamicSemanticWarning] " + backend
-                + " emits JavaEsmGlobal." + methodName
-                + " while compiling to JVM .class. This means the source or lowering path used dynamic JS semantics: "
-                + reason(methodName)
-                + " Prefer fixed class fields/methods, explicit interfaces, Map/List operations, or Qin-owned static builtins.");
+        System.err.println("[QinDynamicSemanticWarning] " + message);
     }
 
     static void resetForTest() {
@@ -33,8 +36,33 @@ final class QinJvmDynamicSemanticWarnings {
     }
 
     private static boolean warningsEnabled() {
+        if ("off".equalsIgnoreCase(dynamicSemanticMode())) {
+            return false;
+        }
         String value = System.getProperty("qin.dynamicSemanticWarnings");
         return value == null || !"false".equalsIgnoreCase(value);
+    }
+
+    private static boolean strictDynamicFailureMode() {
+        String hardFailures = System.getProperty("qin.dynamicSemanticHardFailures");
+        if ("true".equalsIgnoreCase(hardFailures)) {
+            return true;
+        }
+        String mode = dynamicSemanticMode();
+        return "error".equalsIgnoreCase(mode)
+                || "hard".equalsIgnoreCase(mode)
+                || "strict".equalsIgnoreCase(mode);
+    }
+
+    private static String dynamicSemanticMode() {
+        return System.getProperty("qin.dynamicSemanticMode", "warn");
+    }
+
+    private static boolean hardFailure(String methodName) {
+        return switch (methodName) {
+            case "__qin_member_get__", "__qin_member_set__" -> true;
+            default -> false;
+        };
     }
 
     private static String reason(String methodName) {

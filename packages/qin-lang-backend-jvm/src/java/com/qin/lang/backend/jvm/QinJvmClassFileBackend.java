@@ -12,6 +12,7 @@ import com.qin.lang.ir.QinIrConsoleLogValue;
 import com.qin.lang.ir.QinIrExpression;
 import com.qin.lang.ir.QinIrExpressionStatement;
 import com.qin.lang.ir.QinIrIdentifierReference;
+import com.qin.lang.ir.QinIrJavaClassLiteralExpression;
 import com.qin.lang.ir.QinIrJavaImport;
 import com.qin.lang.ir.QinIrJavaInstanceMethodCall;
 import com.qin.lang.ir.QinIrJavaNewExpression;
@@ -206,12 +207,9 @@ public final class QinJvmClassFileBackend {
     }
 
     private void syncGlobalBindingsToLocals(CodeBuilder code, Map<String, DeclarationBinding> bindings) {
-        for (Map.Entry<String, DeclarationBinding> entry : bindings.entrySet()) {
-            code.ldc(entry.getKey());
-            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmClassFileBackend", "__qin_global__");
-            code.invokestatic(JS_SDK_GLOBAL_DESC, "__qin_global__", GLOBAL_GET_SIGNATURE);
-            code.astore(entry.getValue().slot());
-        }
+        // Static JVM modules keep declaration bindings in local slots. Pulling
+        // every binding back from JavaEsmGlobal would reintroduce dynamic JS
+        // global-object semantics after otherwise static expressions.
     }
 
     private void emitDeclarationInitializer(
@@ -225,6 +223,11 @@ public final class QinJvmClassFileBackend {
         }
         if (initializer instanceof QinIrJavaNewExpression javaNewExpression) {
             emitJavaNewInitializer(code, javaNewExpression, slot);
+            return;
+        }
+        if (initializer instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
+            code.ldc(ClassDesc.of(classLiteralExpression.binaryName()));
+            code.astore(slot);
             return;
         }
         emitExpressionAsObject(code, bindings, initializer);
@@ -398,6 +401,10 @@ public final class QinJvmClassFileBackend {
         }
         if (expression instanceof QinIrJavaNewExpression javaNewExpression) {
             emitJavaNewAsObject(code, javaNewExpression);
+            return;
+        }
+        if (expression instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
+            code.ldc(ClassDesc.of(classLiteralExpression.binaryName()));
             return;
         }
         if (expression instanceof QinIrMemberAccessExpression memberAccessExpression) {

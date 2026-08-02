@@ -19,15 +19,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Smoke test for compile-time warnings when JVM .class emission uses JavaEsmGlobal.
+ * Smoke test for hard failures when JVM .class emission would use JavaEsmGlobal.
  */
 public final class QinJvmDynamicSemanticWarningSmokeTestMain {
     private QinJvmDynamicSemanticWarningSmokeTestMain() {
     }
 
     public static void main(String[] args) throws Exception {
-        String dynamicWarning = captureErr(() -> {
+        System.clearProperty("qin.dynamicSemanticMode");
+        System.clearProperty("qin.dynamicSemanticHardFailures");
+        System.clearProperty("qin.dynamicSemanticWarnings");
+        String dynamicFailure = captureFailure(() -> {
             QinJvmDynamicSemanticWarnings.resetForTest();
+            System.setProperty("qin.dynamicSemanticWarnings", "false");
             QinIrProgram program = new QinIrProgram(
                     List.of(new QinIrConstDeclaration(
                             "payload",
@@ -44,12 +48,14 @@ public final class QinJvmDynamicSemanticWarningSmokeTestMain {
                     List.of());
             new QinJvmClassFileBackend().compileProgram(program, "QinDynamicWarningProbe");
         });
-        if (!dynamicWarning.contains("[QinDynamicSemanticWarning]")
-                || !dynamicWarning.contains("__qin_member_get__")) {
-            throw new IllegalStateException("Expected dynamic member warning, got: " + dynamicWarning);
+        System.clearProperty("qin.dynamicSemanticWarnings");
+        if (!dynamicFailure.contains("[QinDynamicSemanticError]")
+                || !(dynamicFailure.contains("__qin_member_get__")
+                || dynamicFailure.contains("__qin_member_set__"))) {
+            throw new IllegalStateException("Expected dynamic member hard failure, got: " + dynamicFailure);
         }
 
-        String staticWarning = captureErr(() -> {
+        String staticFailure = captureErr(() -> {
             QinJvmDynamicSemanticWarnings.resetForTest();
             QinIrClassDeclaration payload = new QinIrClassDeclaration(
                     null,
@@ -91,11 +97,42 @@ public final class QinJvmDynamicSemanticWarningSmokeTestMain {
                     List.of(payload, controller));
             new QinJvmDeclarationClassEmitter().compileAllClasses(program);
         });
-        if (staticWarning.contains("[QinDynamicSemanticWarning]")) {
-            throw new IllegalStateException("Static member access should not warn, got: " + staticWarning);
+        if (!staticFailure.isBlank()) {
+            throw new IllegalStateException("Static member access should not fail, got: " + staticFailure);
+        }
+
+        String strictFailure = captureFailure(() -> {
+            QinJvmDynamicSemanticWarnings.resetForTest();
+            System.setProperty("qin.dynamicSemanticMode", "error");
+            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmDynamicSemanticWarningSmokeTestMain", "__qin_binary__");
+        });
+        System.clearProperty("qin.dynamicSemanticMode");
+        if (!strictFailure.contains("[QinDynamicSemanticError]")
+                || !strictFailure.contains("__qin_binary__")) {
+            throw new IllegalStateException("Strict mode should hard-fail dynamic helpers, got: " + strictFailure);
+        }
+
+        String hardPropertyFailure = captureFailure(() -> {
+            QinJvmDynamicSemanticWarnings.resetForTest();
+            System.setProperty("qin.dynamicSemanticHardFailures", "true");
+            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmDynamicSemanticWarningSmokeTestMain", "__qin_truthy__");
+        });
+        System.clearProperty("qin.dynamicSemanticHardFailures");
+        if (!hardPropertyFailure.contains("[QinDynamicSemanticError]")
+                || !hardPropertyFailure.contains("__qin_truthy__")) {
+            throw new IllegalStateException("Hard-failure property should hard-fail dynamic helpers, got: " + hardPropertyFailure);
         }
 
         System.out.println("QinJvmDynamicSemanticWarningSmokeTestMain passed.");
+    }
+
+    private static String captureFailure(ThrowingRunnable runnable) throws Exception {
+        try {
+            runnable.run();
+            return "no failure";
+        } catch (Exception error) {
+            return error.getMessage() == null ? String.valueOf(error) : error.getMessage();
+        }
     }
 
     private static String captureErr(ThrowingRunnable runnable) throws Exception {
