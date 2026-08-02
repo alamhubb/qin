@@ -1,6 +1,6 @@
 # Qin Generated Parser Transform Hot Path Closure Ledger
 
-Last updated: **2026-08-02 14:37 +08:00**.
+Last updated: **2026-08-02 14:41 +08:00**.
 
 ## Goal
 
@@ -32,7 +32,7 @@ This stage reaches `100%` only when current evidence proves:
 
 ## Progress Scales
 
-Overall active goal: **88.5%**. The full Qin Kotlin-like static JVM/fullstack
+Overall active goal: **90.0%**. The full Qin Kotlin-like static JVM/fullstack
 goal continues beyond this stage. H3 is weighted as the next 10 overall
 percentage points, so each 10% accepted H3 major progress advances the overall
 goal by 1.0%.
@@ -42,7 +42,7 @@ production prewarm, public request, and hot-refresh closure**. Its `100%` gate
 was the six-smoke closeout group passing sequentially under strict dynamic
 semantic mode within the 30s hot-validation budget.
 
-Active major item: **85.0%** for **H3 generated TypeScript strict JVM/static
+Completed major item: **100.0%** for **H3 generated TypeScript strict JVM/static
 closure revalidation**. Its `100%` gate is the generated TS strict boundary
 group passing sequentially under `-Dqin.dynamicSemanticMode=error`, with focused
 generation smokes inside the 30s budget and no fallback to legacy handwritten TS
@@ -71,10 +71,10 @@ emitter boundary for `UpdateExpression` 45%, implement the owning abstract
 generator case 70%, focused generator/probe rerun 85%, full strict smoke plus
 ledger evidence 100%.
 
-Active small item: **0.0%** for **H3-5 cleanup, durable capture, and git
-hygiene**. Its checkpoints are: classify current-unit files 25%, confirm
+Completed small item: **100.0%** for **H3-5 cleanup, durable capture, and git
+hygiene**. Its checkpoints were: classify current-unit files 25%, confirm
 intended probe/test/doc set 45%, rerun closeout smokes 65%, stage/commit only
-intended paths when practical 85%, push or record blocked git state 100%.
+intended paths 85%, push or record blocked git state 100%.
 
 ## H3 Weighted Plan
 
@@ -84,8 +84,8 @@ intended paths when practical 85%, push or record blocked git state 100%.
 | H3-2 | Small generated-Java TS ESM boundary smokes pass | 20% | 100% | Accepted | `QinJavaProjectStringInstanceMethodEsmSmokeTestMain` passed in 1.36s, `QinJavaProjectEsmInstanceofDependencySmokeTestMain` in 6.51s, and `QinJavaProjectNestedImportDependencySmokeTestMain` in 15.40s under strict dynamic semantic mode. |
 | H3-3 | JVM export slot, type alias, and class literal boundaries pass | 25% | 100% | Accepted | `QinJvmClassFileBackend` no longer performs unconditional legacy global-binding sync after static expression steps; `QinJvmJavaClassLiteralAliasSmokeTestMain` passed in 0.99s, `QinJvmStaticExportSlotMemberSmokeTestMain` in 0.21s, and `QinJvmModuleExportSlotTypeAliasSmokeTestMain` in 0.75s. |
 | H3-4 | Generated TS Slime/CSSTS compiler integration stays strict | 20% | 100% | Accepted | `QinGeneratedTsSlimeCsstsCompilerSmokeTestMain` passed under `-Dqin.dynamicSemanticMode=error`; the smoke now asserts declaration preservation, `cssts.merge(...)`, and `count.value++`. Focused generator/probe evidence also proved `UpdateExpression` emits prefix/postfix forms instead of dropping the operator. |
-| H3-5 | Cleanup, durable capture, and git hygiene | 15% | 0% | Pending | Commit/push intended code/docs only when practical; keep unrelated dirty files excluded. |
-| **H3 Total** |  | **100%** | **85%** | In progress | H3-1 through H3-4 accepted; H3-5 cleanup/git hygiene is the active small item. |
+| H3-5 | Cleanup, durable capture, and git hygiene | 15% | 100% | Accepted | Intended code/docs/probe paths were committed as `300a11fe` and pushed; unrelated dirty files were left excluded. |
+| **H3 Total** |  | **100%** | **100%** | Accepted | H3-1 through H3-5 accepted. |
 
 ## Weighted Plan
 
@@ -96,8 +96,8 @@ intended paths when practical 85%, push or record blocked git state 100%.
 | H3 | OVS batch-wrapper hot session proven | 25% | 100% | Accepted | `QinOvsCompilerStableBatchWrapperHotSessionSmokeTestMain OK` passed in 16.26s with `module-class disk cache hit`; batch wrapper returns per-input results. |
 | H4 | Generated OVS/CSSTS transform path proven | 25% | 100% | Accepted | H2 closeout proved real transform output, production batch prewarm, public request isolation, and hot-refresh reuse under strict dynamic semantic mode. |
 | H5 | Generated TS static admission stays green | 15% | 100% | Accepted | `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain` now passes; parser output is found by stable file path fallback when the binary-name index is absent. |
-| H6 | Git hygiene and durable capture | 10% | 0% | Pending | Commit/push intended code/docs only; leave unrelated dirty files excluded. |
-| **Total** |  | **100%** | **90%** | In progress | H1-H5 acceptance evidence is counted; H6 git hygiene remains pending because the worktree contains existing unrelated/historical dirty files that must stay excluded. |
+| H6 | Git hygiene and durable capture | 10% | 100% | Accepted | Intended current-unit paths committed as `300a11fe` and pushed; unrelated dirty files were intentionally excluded. |
+| **Total** |  | **100%** | **100%** | Accepted | H1-H6 acceptance evidence is counted; the generated parser transform hot-path closure stage is complete. |
 
 ## Progress History
 
@@ -112,3 +112,4 @@ intended paths when practical 85%, push or record blocked git state 100%.
 | 2026-08-01 23:36 +08:00 | H3-2 generated TS strict boundary group passed | Accepted checkpoint | Sequential strict-mode smoke group passed: `QinJavaProjectStringInstanceMethodEsmSmokeTestMain` 1.36s, `QinJavaProjectEsmInstanceofDependencySmokeTestMain` 6.51s, and `QinJavaProjectNestedImportDependencySmokeTestMain` 15.40s. | H3 small 0.0% -> 100.0%; H3 major 20.0% -> 40.0%; overall 82.0% -> 84.0% |
 | 2026-08-01 23:40 +08:00 | H3-3 JVM static boundary group passed | Accepted checkpoint | `QinJvmJavaClassLiteralAliasSmokeTestMain` exposed an unconditional `JavaEsmGlobal.__qin_global__` sync in `QinJvmClassFileBackend` after static expression steps. Removing that legacy sync kept declaration bindings in JVM local slots and preserved strict `.class` semantics. Sequential rerun passed: class literal alias 0.99s, static export slot member 0.21s, module export-slot type alias 0.75s. | H3 small 45.0% -> 100.0%; H3 major 40.0% -> 65.0%; overall 84.0% -> 86.5% |
 | 2026-08-02 14:37 +08:00 | H3-4 generated TS Slime/CSSTS compiler integration strict smoke passed | Accepted checkpoint | Added abstract `UpdateExpression` emission in the active slime-generator shim and focused coverage for postfix/prefix update forms. Sequential validation passed for `QinJsPackageRunnerSlimeGeneratorShimSmokeTestMain OK`, `QinGeneratedTsSlimeCsstsTransformProbeMain functionDirect`, `QinGeneratedTsSlimeCsstsTransformProbeMain fullDirect`, `QinModuleClassGeneratedSlimeBinaryRuntimeInterfaceSmokeTestMain OK`, and `QinGeneratedTsSlimeCsstsCompilerSmokeTestMain OK` under `-Dqin.dynamicSemanticMode=error`; the compiler smoke now directly asserts `count.value++` is preserved along with declarations and `cssts.merge(...)`. | H3 small 85.0% -> 100.0%; H3 major 65.0% -> 85.0%; overall 86.5% -> 88.5% |
+| 2026-08-02 14:41 +08:00 | H3-5 cleanup and git hygiene completed | Accepted checkpoint | Current-unit files were classified and staged without unrelated dirty files. `git diff --cached --check` passed. Commit `300a11fe` captured the generated CSSTS `UpdateExpression` fix, focused smoke/probe coverage, durable workflow rules, and this stage ledger; the commit was pushed to the configured upstream. | H3 small 65.0% -> 100.0%; H3 major 85.0% -> 100.0%; overall 88.5% -> 90.0% |
