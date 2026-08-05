@@ -144,6 +144,9 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
                 "generated package index exports SlimeParser wrapper as default");
         require(indexText.contains("export const SlimeTokensObj = Object.fromEntries"),
                 "generated package index exposes slime token object");
+        require(indexText.contains("export const SlimeTokenType = {")
+                        && indexText.contains("RBrace: \"RBrace\""),
+                "generated package index exposes static slime token type string map");
         require(indexText.contains("export const SlimeJavascriptTokensObj = SlimeTokensObj;"),
                 "generated package index exposes Slime JavaScript token compatibility alias");
         require(Files.readString(es2025SlimeParserTs, StandardCharsets.UTF_8)
@@ -183,6 +186,7 @@ public final class QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain {
         Path search = Path.of("").toAbsolutePath().normalize();
         while (search != null) {
             if (Files.isDirectory(search.resolve("packages").resolve("qin-runtime-core"))
+                    && Files.isDirectory(search.resolve("packages").resolve("qin-parser"))
                     && Files.isRegularFile(search.resolve("qin.config.js"))) {
                 return search;
             }

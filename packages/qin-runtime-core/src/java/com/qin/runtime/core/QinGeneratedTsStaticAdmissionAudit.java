@@ -30,6 +30,14 @@ public final class QinGeneratedTsStaticAdmissionAudit {
     private static final Pattern STATIC_ADMISSION_CONTRACT_PATTERN = Pattern.compile(
             "/\\*\\s*@qin-static-admission\\s+([^*]+?)\\s*\\*/",
             Pattern.DOTALL);
+    private static final Pattern CONTRACT_OWNER_PATTERN = Pattern.compile(
+            "[A-Za-z_$][A-Za-z0-9_$]*(?:[.$_][A-Za-z_$][A-Za-z0-9_$]*)*");
+    private static final Pattern CONTRACT_METHOD_PATTERN = Pattern.compile(
+            "[A-Za-z_$][A-Za-z0-9_$]*");
+    private static final Pattern CONTRACT_RECEIVER_PATTERN = Pattern.compile(
+            "(?:this|super|[A-Za-z_$][A-Za-z0-9_$]*(?:[.$_][A-Za-z_$][A-Za-z0-9_$]*)*)");
+    private static final Pattern CONTRACT_ARITY_PATTERN = Pattern.compile(
+            "(?:0|[1-9][0-9]*|bound|spread)");
 
     private QinGeneratedTsStaticAdmissionAudit() {
     }
@@ -83,6 +91,34 @@ public final class QinGeneratedTsStaticAdmissionAudit {
                 """
                         export function generated(method, receiver) {
                           return /* @qin-static-admission member=call owner=com.example.Generated method=rule receiver=receiver arity=0 */ method.call(receiver);
+                        }
+                        """);
+        assertAllowsGeneratedTsContract(
+                "call",
+                """
+                        export function generatedStaticCall(owner, first, second) {
+                          return /* @qin-static-admission member=call owner=com.example.Generated method=call receiver=owner arity=2 */ owner.call(first, second);
+                        }
+                        """);
+        assertRejectsGeneratedTsDynamicShape(
+                "call",
+                """
+                        export function bad(method, receiver) {
+                          return /* @qin-static-admission member=call owner=com.example.Generated method=rule receiver=receiver arity=2 */ method.call(receiver);
+                        }
+                        """);
+        assertRejectsGeneratedTsDynamicShape(
+                "bind",
+                """
+                        export function bad(method, receiver) {
+                          return /* @qin-static-admission member=bind owner=com.example.Generated method=rule receiver=receiver arity=maybe */ method.bind(receiver);
+                        }
+                        """);
+        assertRejectsGeneratedTsDynamicShape(
+                "apply",
+                """
+                        export function bad(method, receiver, args) {
+                          return /* @qin-static-admission member=apply owner=com.example.Generated method=rule receiver=receiver-name arity=1 */ method.apply(receiver, args);
                         }
                         """);
     }
@@ -169,7 +205,7 @@ public final class QinGeneratedTsStaticAdmissionAudit {
                 && memberExpression.property() instanceof Identifier propertyIdentifier) {
             String member = propertyIdentifier.name();
             if (isDynamicFunctionMember(member)) {
-                calls.add(dynamicFunctionCall(file, source, memberExpression, propertyIdentifier, member));
+                calls.add(dynamicFunctionCall(file, source, callExpression, memberExpression, propertyIdentifier, member));
             }
         }
         if (node instanceof Collection<?> collection) {
@@ -214,6 +250,7 @@ public final class QinGeneratedTsStaticAdmissionAudit {
     private static DynamicFunctionCall dynamicFunctionCall(
             Path file,
             String source,
+            CallExpression callExpression,
             MemberExpression memberExpression,
             Identifier propertyIdentifier,
             String member) {
@@ -227,6 +264,7 @@ public final class QinGeneratedTsStaticAdmissionAudit {
                 lineCol[0],
                 lineCol[1],
                 sourceLine(source, dotIndex >= 0 ? dotIndex : Math.max(0, propertyIndex)),
+                callExpression.arguments().size(),
                 memberExpression);
     }
 
@@ -321,6 +359,7 @@ public final class QinGeneratedTsStaticAdmissionAudit {
             int line,
             int column,
             String sourceLine,
+            int argumentCount,
             MemberExpression memberExpression) {
     }
 
@@ -391,18 +430,47 @@ public final class QinGeneratedTsStaticAdmissionAudit {
             return member != null
                     && !member.isBlank()
                     && member.equals(occurrence.member())
-                    && owner != null
-                    && !owner.isBlank()
-                    && method != null
-                    && !method.isBlank()
-                    && receiver != null
-                    && !receiver.isBlank()
-                    && arity != null
-                    && !arity.isBlank();
+                    && isValidOwner(owner)
+                    && isValidMethod(method)
+                    && isValidReceiver(receiver)
+                    && isValidArity(arity)
+                    && isApplicableArity(occurrence);
         }
 
         private boolean isNear(DynamicFunctionCall occurrence) {
             return occurrence.dotIndex() >= end && occurrence.dotIndex() - end <= 320;
+        }
+
+        private boolean isApplicableArity(DynamicFunctionCall occurrence) {
+            if (!"call".equals(member) || "bound".equals(arity) || "spread".equals(arity)) {
+                return true;
+            }
+            int declaredArity;
+            try {
+                declaredArity = Integer.parseInt(arity);
+            } catch (NumberFormatException error) {
+                return false;
+            }
+            if ("call".equals(method)) {
+                return occurrence.argumentCount() == declaredArity;
+            }
+            return Math.max(0, occurrence.argumentCount() - 1) == declaredArity;
+        }
+
+        private static boolean isValidOwner(String value) {
+            return value != null && CONTRACT_OWNER_PATTERN.matcher(value).matches();
+        }
+
+        private static boolean isValidMethod(String value) {
+            return value != null && CONTRACT_METHOD_PATTERN.matcher(value).matches();
+        }
+
+        private static boolean isValidReceiver(String value) {
+            return value != null && CONTRACT_RECEIVER_PATTERN.matcher(value).matches();
+        }
+
+        private static boolean isValidArity(String value) {
+            return value != null && CONTRACT_ARITY_PATTERN.matcher(value).matches();
         }
     }
 
