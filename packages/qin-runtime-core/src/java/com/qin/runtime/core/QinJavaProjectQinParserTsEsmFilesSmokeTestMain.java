@@ -18,6 +18,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 qinRoot.resolve("packages").resolve("qin-parser").resolve("src").resolve("java"),
                 workspaceRoot.resolve("slime").resolve("java-slime").resolve("slime-parser")
                         .resolve("src").resolve("main").resolve("java"),
+                workspaceRoot.resolve("slime").resolve("java-slime").resolve("slime-ast")
+                        .resolve("src").resolve("main").resolve("java"),
                 workspaceRoot.resolve("slime").resolve("java-slime").resolve("slime-token")
                         .resolve("src").resolve("main").resolve("java"),
                 workspaceRoot.resolve("slime").resolve("java-slime").resolve("slime-java")
@@ -38,6 +40,13 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                                 "com.slime.parser.cstToAst.SlimeAstCreateUtils",
                                 "com.slime.java.ast.JavaCstToAst"),
                         outputRoot);
+        QinGeneratedTsStaticAdmissionAudit.Result staticAdmissionAudit =
+                QinGeneratedTsStaticAdmissionAudit.audit(outputs);
+        QinGeneratedTsStaticAdmissionAudit.assertRejectsUnprovenDynamicShapes();
+        require(staticAdmissionAudit.allowedDynamicWrapperCount() > 0,
+                "generated Qin parser TS static admission audit classifies proven wrapper shapes");
+        require(staticAdmissionAudit.legacyAllowedDynamicWrapperCount() == 0,
+                "generated Qin parser TS static admission audit has no legacy dynamic wrapper admissions");
 
         Map<String, QinJavaProjectJsCompiler.EsmFileOutput> byBinaryName = outputs.stream()
                 .collect(Collectors.toMap(QinJavaProjectJsCompiler.EsmFileOutput::binaryName, output -> output));
@@ -72,6 +81,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated qin.config.js points to TS package entry");
         require(indexText.contains("export default com_qin_parser_QinParser"),
                 "generated package index exports raw QinParser class as default");
+        require(!indexText.contains("com_subhuti_parser_Alternative as Alternative"),
+                "generated package index does not root-export legacy Subhuti Alternative");
         require(!indexText.contains("SlimeCstToAstUtils"),
                 "generated package index does not eager-export SlimeCstToAstUtils");
         require(!indexText.contains("SlimeAstCreateUtils"),
@@ -86,6 +97,8 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 "generated package subpath-exports JavaCstToAst");
         require(packageJsonText.contains("\"./SlimeCstToAstBridge\""),
                 "generated package subpath-exports SlimeCstToAstBridge");
+        require(packageJsonText.contains("\"./SubhutiCst\""),
+                "generated package subpath-exports SubhutiCst");
         require(packageJsonText.contains("\"./SubhutiSourceLocation\""),
                 "generated package subpath-exports SubhutiSourceLocation");
         require(packageJsonText.contains("\"./SubhutiPosition\""),
@@ -96,6 +109,17 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
         require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("parser")
                         .resolve("cstToAst").resolve("SlimeAstCreateUtils.ts")),
                 "generated SlimeAstCreateUtils TS output");
+        String slimeAstCreateUtilsText = Files.readString(outputRoot.resolve("com").resolve("slime").resolve("parser")
+                        .resolve("cstToAst").resolve("SlimeAstCreateUtils.ts"),
+                StandardCharsets.UTF_8);
+        require(slimeAstCreateUtilsText.contains(
+                        "static resolveSourceLocation(cst: com_subhuti_struct_SubhutiCst): com_slime_ast_SourceLocation"),
+                "generated SlimeAstCreateUtils preserves SourceLocation return type");
+        require(slimeAstCreateUtilsText.contains(
+                        "let location: com_slime_ast_SourceLocation = com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst);"),
+                "generated SlimeAstCreateUtils preserves SourceLocation local type");
+        require(!slimeAstCreateUtilsText.contains("let location: any = com_slime_parser_cstToAst_SlimeAstCreateUtils.resolveSourceLocation(cst);"),
+                "generated SlimeAstCreateUtils does not widen SourceLocation local to any");
         require(Files.isRegularFile(outputRoot.resolve("com").resolve("slime").resolve("java")
                         .resolve("ast").resolve("JavaCstToAst.ts")),
                 "generated JavaCstToAst TS output");
@@ -126,6 +150,7 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                 import { com_slime_parser_cstToAst_SlimeCstToAstUtils as SlimeCstToAstUtils } from "@qin/generated-qin-parser-ts/SlimeCstToAstUtils";
                 import { com_slime_parser_cstToAst_SlimeAstCreateUtils as SlimeAstCreateUtils } from "@qin/generated-qin-parser-ts/SlimeAstCreateUtils";
                 import { com_slime_java_ast_JavaCstToAst as JavaCstToAst } from "@qin/generated-qin-parser-ts/JavaCstToAst";
+                import { com_subhuti_struct_SubhutiCst as SubhutiCst } from "@qin/generated-qin-parser-ts/SubhutiCst";
                 import { com_subhuti_struct_SubhutiSourceLocation as SubhutiSourceLocation } from "@qin/generated-qin-parser-ts/SubhutiSourceLocation";
                 import {
                   SlimeCstToAst,
@@ -145,17 +170,16 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                   return names;
                 }
                 class CustomCstToAst extends SlimeCstToAst {
-                  createPrimaryExpressionAst(cst) {
+                  createPrimaryExpressionAst(cst: SubhutiCst) {
                     return { type: "CustomPrimaryExpression", name: cst.getName() };
                   }
                 }
                 const custom = new CustomCstToAst();
                 registerSlimeCstToAstUtil(custom);
-                const bridgeAst = SlimeCstToAstBridgeUtils.createPrimaryExpressionAst({
-                  getName() { return "BridgeSmokePrimaryExpression"; }
-                });
+                const bridgeSmokeCst = SubhutiCst.builder().name("BridgeSmokePrimaryExpression").build();
+                const bridgeAst = SlimeCstToAstBridgeUtils.createPrimaryExpressionAst(bridgeSmokeCst);
                 const javaProgram = JavaCstToAst.parse("package demo; public class Greeter { public static String DEFAULT_NAME = \\\"Qin\\\"; public static String greet(String name) { return name; } }");
-                const javaClass = javaProgram.getClasses().get(0);
+                const javaClass = javaProgram.classes().get(0);
                 const names = collectNames(cst, []);
                 ({
                   cstName: cst ? cst.getName() : null,
@@ -164,9 +188,9 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
                   hasSlimeCstToAstUtilsExport: typeof SlimeCstToAstUtils === "function",
                   hasSlimeAstCreateUtilsExport: typeof SlimeAstCreateUtils === "function",
                   hasJavaCstToAstExport: typeof JavaCstToAst === "function",
-                  javaClassName: javaClass.getName(),
-                  javaStaticFieldName: javaClass.getFields().get(0).getName(),
-                  javaStaticMethodName: javaClass.getMethods().get(0).getName(),
+                  javaClassName: javaClass.name(),
+                  javaStaticFieldName: javaClass.fields().get(0).name(),
+                  javaStaticMethodName: javaClass.methods().get(0).name(),
                   hasSubhutiSourceLocationExport: typeof SubhutiSourceLocation === "function",
                   hasSlimeCstToAstBridgeExport: typeof SlimeCstToAst === "function"
                     && typeof registerSlimeCstToAstUtil === "function",
@@ -206,6 +230,14 @@ public final class QinJavaProjectQinParserTsEsmFilesSmokeTestMain {
 
         System.out.println("Generated ESM TS files: " + outputRoot);
         System.out.println("Generated ESM TS npm package: @qin/generated-qin-parser-ts");
+        System.out.println("Generated Qin parser TS static admission wrappers: "
+                + staticAdmissionAudit.allowedDynamicWrapperCount());
+        System.out.println("Generated Qin parser TS static admission contract wrappers: "
+                + staticAdmissionAudit.contractAllowedDynamicWrapperCount());
+        System.out.println("Generated Qin parser TS static admission legacy wrappers: "
+                + staticAdmissionAudit.legacyAllowedDynamicWrapperCount());
+        System.out.println("Generated Qin parser TS static admission legacy reasons: "
+                + staticAdmissionAudit.legacyAllowedDynamicWrapperReasons());
         System.out.println("QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK");
     }
 
