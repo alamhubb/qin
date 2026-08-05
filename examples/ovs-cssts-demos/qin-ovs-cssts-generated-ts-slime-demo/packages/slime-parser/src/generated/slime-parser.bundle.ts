@@ -1348,7 +1348,9 @@ class __QinJavaUtilStream {
     return new __QinJavaUtilStream(this.__items.filter(item => predicate(item)));
   }
   map(mapper) {
-    return new __QinJavaUtilStream(this.__items.map(item => mapper(item)));
+    const mapped = [];
+    for (const item of this.__items) mapped[mapped.length] = mapper(item);
+    return new __QinJavaUtilStream(mapped);
   }
   anyMatch(predicate) {
     return this.__items.some(item => predicate(item));
@@ -8001,7 +8003,9 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
       return false;
     })()), ", index="), this.__qin_field_currentIndex));
       this.setParseFail();
+      return null;
     }
+    this.setParseSuccess();
     return null;
   }
   canAutoInsertSemicolon(): any {
@@ -9347,11 +9351,14 @@ class com_slime_parser_module_SlimeModuleParser extends com_slime_parser_class__
     }), "ModuleItemList", "SlimeModuleParser", __qin_subhuti_rule_cache_key([]));
   }
   __qin_subhuti_raw_ModuleItemList(): any {
-    this.ModuleItem();
-    this.Many(__qin_java_functional(() => {
+    while (!this.isEof()) {
+      let before: any = this.currentTokenIndex();
       this.ModuleItem();
-      return null;
-    }));
+      if (__qin_binary__("==", this.currentTokenIndex(), before)) {
+        this.setParseFail();
+        return null;
+      }
+    }
     return null;
   }
   ModuleItem(): any {
@@ -13261,13 +13268,7 @@ class com_subhuti_debug_SubhutiTraceDebuggerCore extends com_subhuti_debug_Subhu
   }
   onOrEnter(parentRuleName: string, tokenIndex: number): any {
     this.__qin_field_orCounter = __qin_binary__("+", this.__qin_field_orCounter, 1.0);
-    let orItem: any = new com_subhuti_debug_RuleStackItem();
-    orItem.__qin_field_ruleName = __qin_binary__("+", parentRuleName, "(Or)");
-    orItem.__qin_field_tokenIndex = tokenIndex;
-    orItem.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
-    orItem.__qin_field_orBranchInfo.__qin_field_orIndex = this.__qin_field_orCounter;
-    orItem.__qin_field_orBranchInfo.__qin_field_isOrEntry = true;
-    orItem.__qin_field_childs = new __QinJavaUtilArrayList();
+    let orItem: any = com_subhuti_debug_RuleStackItem.forOrEntry(parentRuleName, tokenIndex, this.__qin_field_orCounter);
     this.__qin_field_ruleStack.add(orItem);
     this.printOrEnter(orItem);
     return null;
@@ -13289,14 +13290,7 @@ class com_subhuti_debug_SubhutiTraceDebuggerCore extends com_subhuti_debug_Subhu
     return null;
   }
   onOrBranch(branchIndex: number, totalBranches: number, parentRuleName: string): any {
-    let branchItem: any = new com_subhuti_debug_RuleStackItem();
-    branchItem.__qin_field_ruleName = __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[Branch #", branchIndex), "]("), parentRuleName), ")");
-    branchItem.__qin_field_tokenIndex = this.getCurrentTokenIndex();
-    branchItem.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
-    branchItem.__qin_field_orBranchInfo.__qin_field_branchIndex = branchIndex;
-    branchItem.__qin_field_orBranchInfo.__qin_field_totalBranches = totalBranches;
-    branchItem.__qin_field_orBranchInfo.__qin_field_isOrBranch = true;
-    branchItem.__qin_field_childs = new __QinJavaUtilArrayList();
+    let branchItem: any = com_subhuti_debug_RuleStackItem.forOrBranch(branchIndex, totalBranches, parentRuleName, this.getCurrentTokenIndex(), this.__qin_field_orCounter);
     this.__qin_field_ruleStack.add(branchItem);
     this.printOrBranch(branchItem);
     return null;
@@ -13327,7 +13321,8 @@ class com_subhuti_debug_SubhutiTraceDebuggerCore extends com_subhuti_debug_Subhu
   }
   getCurrentDisplayDepth(): any {
     let depth: any = 0.0;
-    for (const item of this.__qin_field_ruleStack) {
+    for (let i: any = 0.0; __qin_binary__("<", i, this.__qin_field_ruleStack.size()); i = __qin_binary__("+", i, 1.0)) {
+      let item: com_subhuti_debug_RuleStackItem = this.__qin_field_ruleStack.get(i);
       if (item.__qin_field_shouldBreakLine) {
         depth = __qin_binary__("+", depth, 1.0);
       }
@@ -16499,8 +16494,8 @@ class com_subhuti_debug_FileLogWriter {
   }
   initializeFile(): any {
     try {
-      let path: any = __QinJavaNioFilePaths.get(this.__qin_field_filePath);
-      let parentDir: any = path.getParent();
+      let path: __QinJavaNioFilePath = __QinJavaNioFilePaths.get(this.__qin_field_filePath);
+      let parentDir: __QinJavaNioFilePath = path.getParent();
       if ((() => {
       if (__qin_binary__("!=", parentDir, null)) {
         return (() => {
@@ -16647,6 +16642,28 @@ class com_subhuti_debug_RuleStackItem {
     item.__qin_field_tokenExpectName = expectName;
     item.__qin_field_tokenSuccess = success;
     item.__qin_field_shouldBreakLine = true;
+    return item;
+  }
+  static forOrEntry(parentRuleName: string, tokenIndex: number, orIndex: number): any {
+    let item: any = new com_subhuti_debug_RuleStackItem();
+    item.__qin_field_ruleName = __qin_binary__("+", parentRuleName, "(Or)");
+    item.__qin_field_tokenIndex = tokenIndex;
+    item.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
+    item.__qin_field_orBranchInfo.__qin_field_orIndex = orIndex;
+    item.__qin_field_orBranchInfo.__qin_field_isOrEntry = true;
+    item.__qin_field_childs = new __QinJavaUtilArrayList();
+    return item;
+  }
+  static forOrBranch(branchIndex: number, totalBranches: number, parentRuleName: string, tokenIndex: number, orIndex: number): any {
+    let item: any = new com_subhuti_debug_RuleStackItem();
+    item.__qin_field_ruleName = __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", __qin_binary__("+", "[Branch #", branchIndex), "]("), parentRuleName), ")");
+    item.__qin_field_tokenIndex = tokenIndex;
+    item.__qin_field_orBranchInfo = new com_subhuti_debug_RuleStackItem$OrBranchInfo();
+    item.__qin_field_orBranchInfo.__qin_field_orIndex = orIndex;
+    item.__qin_field_orBranchInfo.__qin_field_branchIndex = branchIndex;
+    item.__qin_field_orBranchInfo.__qin_field_totalBranches = totalBranches;
+    item.__qin_field_orBranchInfo.__qin_field_isOrBranch = true;
+    item.__qin_field_childs = new __QinJavaUtilArrayList();
     return item;
   }
   deepClone(): any {

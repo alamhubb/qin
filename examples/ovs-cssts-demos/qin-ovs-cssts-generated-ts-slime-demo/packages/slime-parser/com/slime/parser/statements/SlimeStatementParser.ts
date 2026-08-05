@@ -767,7 +767,9 @@ class com_slime_parser_statements_SlimeStatementParser extends com_slime_parser_
       return false;
     })()), ", index="), this.__qin_field_currentIndex));
       this.setParseFail();
+      return null;
     }
+    this.setParseSuccess();
     return null;
   }
   canAutoInsertSemicolon(): any {
