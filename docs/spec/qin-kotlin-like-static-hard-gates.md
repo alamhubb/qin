@@ -1,6 +1,6 @@
 # Qin Kotlin-Like Static Hard Gates Ledger
 
-Last updated: **2026-08-06 03:00 +08:00**.
+Last updated: **2026-08-06 03:09 +08:00**.
 
 ## Goal
 
@@ -56,19 +56,19 @@ H6 reaches `100.0%` only when current evidence proves all of these:
 
 ## Three-Layer Progress Scales
 
-Overall active goal: **75.0%** for **H6 Kotlin-like static hard gates**. Its
+Overall active goal: **90.0%** for **H6 Kotlin-like static hard gates**. Its
 `100.0%` gate is all H6 acceptance conditions passing and the current-unit git
 hygiene gate closed.
 
-Active major item: **100.0%** for **H6-3 third-party static package admission
-reports**. Its `100.0%` gate is current validation proving unsupported
-third-party package shapes stop with structured package-root diagnostics and
-approved operator choices.
+Active major item: **100.0%** for **H6-4 sequential standard-path regression
+suite**. Its `100.0%` gate is generated Slime parser TS, generated Qin parser
+TS, CSSTS/OVS transform, and representative fullstack strict validation passing
+sequentially.
 
-Active small item: **100.0%** for **H6-3a third-party report validation**. Its
-checkpoints are: inspect owning validator/report smoke 40%, run third-party
-report smoke 70%, run parser-scan/runtime-feature companion smoke 95%, and
-ledger/git hygiene 100%.
+Active small item: **100.0%** for **H6-4a strict standard-path suite**. Its
+checkpoints are: select the current standard suite 20%, run Slime/Qin generated
+TS broad gates 55%, run CSSTS/OVS strict transform gates 80%, run representative
+fullstack strict smoke 95%, and ledger/git hygiene 100%.
 
 ## Weighted Plan
 
@@ -77,9 +77,9 @@ ledger/git hygiene 100%.
 | H6-1 | Generated TS static-admission audit hardening | 25% | 100% | Accepted | `QinGeneratedTsStaticAdmissionAuditContractSmokeTestMain OK`, `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain OK`, and `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK` prove malformed contracts are rejected while generated Slime/Qin parser TS packages keep contract wrappers and zero legacy dynamic admissions. |
 | H6-2 | Compiler/lowerer/backend strict dynamic helper hard gates | 35% | 100% | Accepted | `QinJvmDynamicSemanticWarningSmokeTestMain`, `QinJvmUnknownElementAccessHardGateSmokeTestMain`, `QinJvmSourceUnknownElementAccessHardGateSmokeTestMain`, `QinJvmSourceUnknownMemberAccessHardGateSmokeTestMain`, and `QinJvmSourceUnknownMethodCallHardGateSmokeTestMain` prove strict hard failures for dynamic global/call/member helpers, unknown member get/set, unknown receiver method calls, and unknown computed access. |
 | H6-3 | Third-party static package admission reports | 15% | 100% | Accepted | `QinEsmThirdPartyStaticAdmissionReportSmokeTestMain OK` proves scoped third-party packages report package name, package root, source file, unsupported shape, static-lowering reason, and approved choices; `QinEsmRuntimeFeatureParserScanSmokeTestMain passed` keeps the runtime-feature scanner boundary stable. |
-| H6-4 | Sequential standard-path regression suite | 15% | 0% | Pending | Needs generated Slime parser TS, generated Qin parser TS, CSSTS/OVS transform, and representative fullstack smoke under strict JVM mode after H6 hardening. |
+| H6-4 | Sequential standard-path regression suite | 15% | 100% | Accepted | Sequential strict validation passed: `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain OK`, `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK`, `QinGeneratedTsSlimeCsstsCompilerSmokeTestMain`, `QinGeneratedTsSlimeOvsTransformSmokeTestMain`, and `QinFullstackJavaBackendSmokeTestMain OK`. |
 | H6-5 | Durable capture and git hygiene | 10% | 0% | Pending | Current-unit docs/skills/code must be staged, committed, and pushed with unrelated dirty files excluded. |
-| **H6 Total** |  | **100%** | **75.0%** | In progress | H6-1 through H6-3 are accepted. H6-4 and H6-5 remain pending. |
+| **H6 Total** |  | **100%** | **90.0%** | In progress | H6-1 through H6-4 are accepted. H6-5 remains pending. |
 
 ## Progress History
 
@@ -89,3 +89,4 @@ ledger/git hygiene 100%.
 | 2026-08-06 02:47 +08:00 | H6-1a generated TS contract hardening accepted | Accepted | A focused broad rerun exposed that Java methods whose real source name is `call` must not be treated as JS `Function.prototype.call(receiver, ...)`; the static contract now treats `method=call` as a fixed Java method and validates arity against the actual argument count. The Slime broad smoke also exposed that `findQinRoot()` could misidentify nested package roots when launched from `packages/qin-runtime-core`; the smoke now requires the real Qin repo marker `packages/qin-parser`. Sequential validation passed: `..\..\qin.bat build`, `QinGeneratedTsStaticAdmissionAuditContractSmokeTestMain OK`, `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain OK` with 1264 contract wrappers and 0 legacy wrappers, and `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK` with 1526 contract wrappers, 0 legacy wrappers, and 377 module-class outputs. | H6-1a small 75.0% -> 100.0%; H6-1 major 30.0% -> 100.0%; H6 overall 7.5% -> 25.0% |
 | 2026-08-06 02:57 +08:00 | H6-2a strict JVM dynamic helper matrix accepted | Accepted | Existing strict-mode hard gates were inventoried and run, then two gaps were closed: the helper-policy smoke now checks `__qin_global__`, `__qin_call__`, `__qin_call_method_array__`, `__qin_member_get__`, and `__qin_member_set__` individually under `qin.dynamicSemanticMode=error`; the source unknown-member smoke now also lowers `this.payload.missing = "qin"` and proves `__qin_member_set__` fails at declaration-class compile time. Sequential validation passed: `..\..\qin.bat build`, `QinJvmDynamicSemanticWarningSmokeTestMain passed`, `QinJvmUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmSourceUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmSourceUnknownMemberAccessHardGateSmokeTestMain OK`, and `QinJvmSourceUnknownMethodCallHardGateSmokeTestMain OK`. | H6-2a small 0.0% -> 100.0%; H6-2 major 0.0% -> 100.0%; H6 overall 25.0% -> 60.0% |
 | 2026-08-06 03:00 +08:00 | H6-3a third-party static package report accepted | Accepted | The owning report validator and smoke were inspected. Sequential validation passed: `QinEsmThirdPartyStaticAdmissionReportSmokeTestMain OK` for `@vendor/dynamic-kit` under `node_modules`, proving package name, package root, source file, unsupported shape `new Proxy(...)`, static lowering reason, and approved choices; `QinEsmRuntimeFeatureParserScanSmokeTestMain passed` keeps dynamic import/import.meta/arguments/top-level await parser-scan behavior stable without widening runtime compatibility. | H6-3a small 0.0% -> 100.0%; H6-3 major 0.0% -> 100.0%; H6 overall 60.0% -> 75.0% |
+| 2026-08-06 03:09 +08:00 | H6-4a strict standard-path regression suite accepted | Accepted | The selected suite ran sequentially under `-Dqin.dynamicSemanticMode=error`. Generated Slime parser TS passed with 1264 contract wrappers and 0 legacy wrappers. Generated Qin parser TS passed with 1526 contract wrappers, 0 legacy wrappers, and 377 module dependency session. CSSTS compiler strict smoke and OVS transform strict smoke both exited 0. Representative fullstack validation `QinFullstackJavaBackendSmokeTestMain OK` generated `demo/Main.class` and frontend `app.js` in build-only mode. | H6-4a small 0.0% -> 100.0%; H6-4 major 0.0% -> 100.0%; H6 overall 75.0% -> 90.0% |
