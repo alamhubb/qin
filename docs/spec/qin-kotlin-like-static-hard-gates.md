@@ -1,6 +1,6 @@
 # Qin Kotlin-Like Static Hard Gates Ledger
 
-Last updated: **2026-08-06 03:09 +08:00**.
+Last updated: **2026-08-06 03:11 +08:00**.
 
 ## Goal
 
@@ -56,19 +56,19 @@ H6 reaches `100.0%` only when current evidence proves all of these:
 
 ## Three-Layer Progress Scales
 
-Overall active goal: **90.0%** for **H6 Kotlin-like static hard gates**. Its
+Overall active goal: **100.0%** for **H6 Kotlin-like static hard gates**. Its
 `100.0%` gate is all H6 acceptance conditions passing and the current-unit git
 hygiene gate closed.
 
-Active major item: **100.0%** for **H6-4 sequential standard-path regression
-suite**. Its `100.0%` gate is generated Slime parser TS, generated Qin parser
-TS, CSSTS/OVS transform, and representative fullstack strict validation passing
-sequentially.
+Active major item: **100.0%** for **H6-5 durable capture and git hygiene**. Its
+`100.0%` gate is H6 evidence captured in this ledger and the relevant Qin skill,
+with current-unit repo changes committed and pushed while unrelated dirty files
+remain excluded.
 
-Active small item: **100.0%** for **H6-4a strict standard-path suite**. Its
-checkpoints are: select the current standard suite 20%, run Slime/Qin generated
-TS broad gates 55%, run CSSTS/OVS strict transform gates 80%, run representative
-fullstack strict smoke 95%, and ledger/git hygiene 100%.
+Active small item: **100.0%** for **H6-5a closeout hygiene**. Its checkpoints
+are: commit/push H6-1 through H6-4 units 60%, verify targeted touched paths are
+clean 80%, record unrelated dirty count/exclusion 90%, and final ledger commit
+100%.
 
 ## Weighted Plan
 
@@ -78,8 +78,8 @@ fullstack strict smoke 95%, and ledger/git hygiene 100%.
 | H6-2 | Compiler/lowerer/backend strict dynamic helper hard gates | 35% | 100% | Accepted | `QinJvmDynamicSemanticWarningSmokeTestMain`, `QinJvmUnknownElementAccessHardGateSmokeTestMain`, `QinJvmSourceUnknownElementAccessHardGateSmokeTestMain`, `QinJvmSourceUnknownMemberAccessHardGateSmokeTestMain`, and `QinJvmSourceUnknownMethodCallHardGateSmokeTestMain` prove strict hard failures for dynamic global/call/member helpers, unknown member get/set, unknown receiver method calls, and unknown computed access. |
 | H6-3 | Third-party static package admission reports | 15% | 100% | Accepted | `QinEsmThirdPartyStaticAdmissionReportSmokeTestMain OK` proves scoped third-party packages report package name, package root, source file, unsupported shape, static-lowering reason, and approved choices; `QinEsmRuntimeFeatureParserScanSmokeTestMain passed` keeps the runtime-feature scanner boundary stable. |
 | H6-4 | Sequential standard-path regression suite | 15% | 100% | Accepted | Sequential strict validation passed: `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain OK`, `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK`, `QinGeneratedTsSlimeCsstsCompilerSmokeTestMain`, `QinGeneratedTsSlimeOvsTransformSmokeTestMain`, and `QinFullstackJavaBackendSmokeTestMain OK`. |
-| H6-5 | Durable capture and git hygiene | 10% | 0% | Pending | Current-unit docs/skills/code must be staged, committed, and pushed with unrelated dirty files excluded. |
-| **H6 Total** |  | **100%** | **90.0%** | In progress | H6-1 through H6-4 are accepted. H6-5 remains pending. |
+| H6-5 | Durable capture and git hygiene | 10% | 100% | Accepted | H6 changes were split into focused commits `f8c4c973`, `8125c933`, `41e4a85b`, and `c075e5ae`, pushed to `master`, and this final ledger closeout records targeted touched paths clean with 2182 unrelated dirty entries intentionally excluded. The Qin runtime skill was updated outside the repo. |
+| **H6 Total** |  | **100%** | **100.0%** | Accepted | H6-1 through H6-5 are accepted. |
 
 ## Progress History
 
@@ -90,3 +90,4 @@ fullstack strict smoke 95%, and ledger/git hygiene 100%.
 | 2026-08-06 02:57 +08:00 | H6-2a strict JVM dynamic helper matrix accepted | Accepted | Existing strict-mode hard gates were inventoried and run, then two gaps were closed: the helper-policy smoke now checks `__qin_global__`, `__qin_call__`, `__qin_call_method_array__`, `__qin_member_get__`, and `__qin_member_set__` individually under `qin.dynamicSemanticMode=error`; the source unknown-member smoke now also lowers `this.payload.missing = "qin"` and proves `__qin_member_set__` fails at declaration-class compile time. Sequential validation passed: `..\..\qin.bat build`, `QinJvmDynamicSemanticWarningSmokeTestMain passed`, `QinJvmUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmSourceUnknownElementAccessHardGateSmokeTestMain OK`, `QinJvmSourceUnknownMemberAccessHardGateSmokeTestMain OK`, and `QinJvmSourceUnknownMethodCallHardGateSmokeTestMain OK`. | H6-2a small 0.0% -> 100.0%; H6-2 major 0.0% -> 100.0%; H6 overall 25.0% -> 60.0% |
 | 2026-08-06 03:00 +08:00 | H6-3a third-party static package report accepted | Accepted | The owning report validator and smoke were inspected. Sequential validation passed: `QinEsmThirdPartyStaticAdmissionReportSmokeTestMain OK` for `@vendor/dynamic-kit` under `node_modules`, proving package name, package root, source file, unsupported shape `new Proxy(...)`, static lowering reason, and approved choices; `QinEsmRuntimeFeatureParserScanSmokeTestMain passed` keeps dynamic import/import.meta/arguments/top-level await parser-scan behavior stable without widening runtime compatibility. | H6-3a small 0.0% -> 100.0%; H6-3 major 0.0% -> 100.0%; H6 overall 60.0% -> 75.0% |
 | 2026-08-06 03:09 +08:00 | H6-4a strict standard-path regression suite accepted | Accepted | The selected suite ran sequentially under `-Dqin.dynamicSemanticMode=error`. Generated Slime parser TS passed with 1264 contract wrappers and 0 legacy wrappers. Generated Qin parser TS passed with 1526 contract wrappers, 0 legacy wrappers, and 377 module dependency session. CSSTS compiler strict smoke and OVS transform strict smoke both exited 0. Representative fullstack validation `QinFullstackJavaBackendSmokeTestMain OK` generated `demo/Main.class` and frontend `app.js` in build-only mode. | H6-4a small 0.0% -> 100.0%; H6-4 major 0.0% -> 100.0%; H6 overall 75.0% -> 90.0% |
+| 2026-08-06 03:11 +08:00 | H6-5a durable capture and git hygiene accepted | Accepted | H6-1 through H6-4 were each committed and pushed as focused current-unit commits: `f8c4c973 harden generated ts static admission contracts`, `8125c933 prove strict dynamic helper hard gates`, `41e4a85b record third party static admission gate`, and `c075e5ae record strict standard path h6 suite`. Targeted status for all H6 touched repo paths was clean. Whole-repo status still has 2182 dirty entries from historical/user/generated work, intentionally excluded. `C:\Users\qinky\.codex\skills\qin-runtime-direct-fixes\SKILL.md` was updated with the H6 static contract, repo-root, and strict helper matrix lessons outside the Qin repo. | H6-5a small 0.0% -> 100.0%; H6-5 major 0.0% -> 100.0%; H6 overall 90.0% -> 100.0% |
