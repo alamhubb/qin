@@ -52,10 +52,11 @@ public final class QinGeneratedTsSlimeOvsTransformSmokeTestMain {
 
                 function parserState(parser) {
                   const curToken = valueOfProperty(parser, "curToken");
+                  const parsedTokens = typeof parser.getParsedTokens === "function" ? parser.getParsedTokens() : parser.parsedTokens;
                   return {
                     consumedTokens: valueOfProperty(parser, "currentTokenIndex"),
                     currentIndex: valueOfProperty(parser, "currentIndex"),
-                    parsedTokens: parser.parsedTokens ? parser.parsedTokens.length : -1,
+                    parsedTokens: parsedTokens ? parsedTokens.length : -1,
                     currentTokenName: curToken ? (typeof curToken.tokenName === "function" ? curToken.tokenName() : curToken.tokenName) : "EOF",
                     currentTokenValue: curToken ? (typeof curToken.value === "function" ? curToken.value() : curToken.tokenValue || curToken.value) : "",
                     programMarked: !!(parser.Program && parser.Program.__isSubhutiRule__),
@@ -67,13 +68,15 @@ public final class QinGeneratedTsSlimeOvsTransformSmokeTestMain {
                 }
 
                 function capture(name, fn) {
+                  const started = Date.now();
                   try {
-                    return { name, ok: true, value: fn() };
+                    return { name, ok: true, elapsedMs: Date.now() - started, value: fn() };
                   } catch (error) {
                     const cause = error && error.cause ? error.cause : null;
                     return {
                       name,
                       ok: false,
+                      elapsedMs: Date.now() - started,
                       error: error && error.message ? error.message : String(error),
                       cause: cause && cause.message ? cause.message : cause ? String(cause) : null,
                       stack: error && error.stack ? String(error.stack).slice(0, 600) : null
@@ -89,9 +92,10 @@ public final class QinGeneratedTsSlimeOvsTransformSmokeTestMain {
                 function localTransformBase(code) {
                   const localParser = new OvsParser(code);
                   const localCst = localParser.Program();
+                  const localTokens = typeof localParser.getParsedTokens === "function" ? localParser.getParsedTokens() : localParser.parsedTokens;
                   return {
                     cst: localCst,
-                    tokens: localParser.parsedTokens,
+                    tokens: localTokens,
                     parserState: parserState(localParser)
                   };
                 }
@@ -119,6 +123,7 @@ public final class QinGeneratedTsSlimeOvsTransformSmokeTestMain {
                   stages: [cstStage, localStage, baseStage, fileStage, generatorSmokeStage, generatorStage, pluginStage].map(stage => ({
                     name: stage.name,
                     ok: stage.ok,
+                    elapsedMs: stage.elapsedMs,
                     error: stage.error || null,
                     cause: stage.cause || null,
                     stack: stage.stack || null

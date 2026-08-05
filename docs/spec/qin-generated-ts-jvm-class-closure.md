@@ -1,6 +1,6 @@
 # Qin Generated TS JVM Class Closure Ledger
 
-Last updated: **2026-08-05 08:02 +08:00**.
+Last updated: **2026-08-06 00:22 +08:00**.
 
 ## Goal
 
@@ -32,6 +32,20 @@ The active route is abstract grammar/AST/IR/compiler facts. Do not implement
 language support with first-letter checks, word checks, source-text allowlists,
 sample-specific scanners, fallback parsers, legacy handwritten parser
 execution, dynamic runtime compatibility, or caller-side rewrites.
+
+Generated AST/CST normalization adapters are part of the static compiler
+boundary. They must be idempotent and driven by static node/field facts. Do not
+normalize generated nodes by repeatedly blind-scanning every possible public
+field on every visit; repeated normalization must return the already-normalized
+node, and child traversal should use a fixed AST field table for the node kind.
+If a required generated field is missing from the table, add that field to the
+static table or generated accessor contract instead of falling back to dynamic
+property enumeration in the hot path.
+The adapter shape should be table-driven: field reads belong in a fixed
+field-reader registry whose entries use direct generated-field accessors, and
+node traversal belongs in a fixed node-type child-field table. Do not grow a
+long per-token/per-word/per-field if-else chain or route generated class
+instances through string-selected bracket reads.
 
 The 2026-08-04 H5-2bt broad validation corrected one wrong diagnostic route:
 the generated `SubhutiLookaheadPlan.NO_MATCH` interface constant was not null.
@@ -71,7 +85,7 @@ H5 reaches `100.0%` only when current evidence proves all of these:
 
 ## Three-Layer Progress Scales
 
-Overall active goal: **63.0%** for **H5 generated TS -> Qin IR -> JVM class
+Overall active goal: **78.0%** for **H5 generated TS -> Qin IR -> JVM class
 closure**. Its `100.0%` gate is all H5 acceptance conditions passing and the
 current-unit git hygiene gate closed.
 
@@ -447,14 +461,15 @@ generated-local enum owner rule 75%, focused
 `QinJvmGeneratedEnumLocalAliasValuesSmokeTestMain OK` 95%, and strict backend
 smoke group success plus durable capture 100%.
 
-Active major item: **25.0%** for **H5-5 OVS/CSSTS generated-parser transform
+Completed major item: **100.0%** for **H5-5 OVS/CSSTS generated-parser transform
 execution under strict static mode**. Its `100.0%` gate is focused transform
 probes and the broader generated TS Slime CSSTS compiler smoke passing through
 the standard path under `-Dqin.dynamicSemanticMode=error`.
-Its checkpoints are: H5-5a strict transform baseline and ASI closure 25%,
-H5-5b broad strict generated TS Slime CSSTS compiler smoke or first blocker
-55%, H5-5c next owning-layer fix and focused validation 85%, and final broad
-strict transform acceptance plus capture 100%.
+Its checkpoints were: H5-5a strict transform baseline and ASI closure 25%,
+H5-5b broad strict generated TS Slime CSSTS compiler smoke and Java SDK alias
+closure 55%, H5-5e no-arg varargs bridge owner closure 65%, H5-5f relative
+ESM named helper import/export slot closure 72%, H5-5g generated AST
+normalization/runtime budget closure 95%, and ledger/skill capture 100%.
 
 Completed small item: **100.0%** for **H5-5a strict OVS/CSSTS transform
 baseline**. Its checkpoints were: run the focused strict probe 20%, locate the
@@ -463,11 +478,47 @@ focused fix 70%, rerun `twoConstDirect` and `importTwoConstDirect` focused
 validation 85%, run the broader generated TS Slime CSSTS transform smoke 95%,
 and update ledger/skill/git hygiene 100%.
 
-Active small item: **0.0%** for **H5-5b broad strict generated TS Slime CSSTS
-compiler smoke**. Its checkpoints are: select the standard broad smoke 20%,
-run it under `-Dqin.dynamicSemanticMode=error` 45%, classify the first blocker
-or pass result 60%, implement the owning-layer fix if needed 80%, rerun the
-broad smoke 95%, and update ledger/git hygiene 100%.
+Completed small item: **100.0%** for **H5-5b generated TS Boolean/Token method
+static closure**. Its checkpoints were: reproduce the generated Boolean/token
+method divergence 20%, locate the owning lowerer/backend layer 40%, design the
+Java SDK alias static-facade rule 55%, implement the lowerer fix 70%, focused
+Boolean/token validation 85%, broad transform/compiler validation 95%, and
+ledger/skill/git hygiene 100%.
+
+Completed small item: **100.0%** for **H5-5e generated no-arg varargs bridge
+selection**. Its checkpoints were: reproduce the no-arg generated parser call
+failure 20%, locate reflection candidate ordering 40%, prove synthetic bridge
+methods were selected ahead of the real source method 55%, implement source
+method priority 75%, focused and adjacent smokes 95%, and durable capture 100%.
+
+Completed small item: **100.0%** for **H5-5f relative ESM named helper import
+slot resolution**. Its checkpoints were: reproduce unresolved helper access
+20%, locate declaration lowering/module binding ownership 40%, preserve static
+export slot gets for imported named helpers 70%, focused relative import smoke
+95%, and durable capture 100%.
+
+Completed small item: **100.0%** for **H5-5g generated AST normalization
+runtime budget closure**. Its checkpoints were: reproduce default 30 second
+timeout 20%, locate the hot runtime boundary 40%, identify repeated
+`normalizeGeneratedAstChildren -> readGeneratedField` as the owner 55%,
+implement idempotent normalization and a static node field table 80%, rerun the
+strict broad smoke under the default 30 second budget 95%, and ledger/skill
+capture 100%.
+
+Active major item: **60.0%** for **H5-6 git hygiene, durable capture, and
+handoff readiness**. Its `100.0%` gate is the current coherent unit staged,
+committed, and pushed when practical, with unrelated dirty files left excluded
+and validation evidence recorded.
+Its checkpoints are: classify dirty paths 20%, verify intended diffs and
+abstract static-table shape 35%, rerun focused build and default strict smoke
+45%, durable ledger/skill capture 60%, stage intended files only 75%, commit
+the coherent unit 90%, and push/report or record the exact push blocker 100%.
+
+Active small item: **85.0%** for **H5-6a current-unit validation and git
+hygiene**. Its checkpoints are: classify dirty paths 20%, verify intended diffs
+40%, refactor generated AST/CST normalization to table-driven field/node rules
+55%, rerun package build and default strict OVS smoke 75%, update ledger/skills
+85%, stage intended files 90%, commit 95%, and push/report 100%.
 
 ## H5 Weighted Plan
 
@@ -477,9 +528,9 @@ broad smoke 95%, and update ledger/git hygiene 100%.
 | H5-2 | Generated TS ESM packages parse/lower with owner-contract admission | 20% | 40% | In progress | Generated Qin Parser TS ESM smoke now runs the same static-admission audit and advances into real JVM module/declaration class compilation. Earlier generated static backend/type blockers through H5-2bt are closed by focused smokes, including `QinJvmStaticCallEffectiveArgumentTypeSmokeTestMain OK`, `SlimeNestedSwitchCaseBlockAstSmokeTestMain OK`, `QinJvmInheritedOverrideParameterStaticSmokeTestMain OK`, `QinJvmObjectArrayPrimitiveSemanticArgumentSmokeTestMain OK`, `QinJvmGeneratedConstructorNumericObjectArgumentSmokeTestMain OK`, `QinJvmJavaStreamToArrayIntFunctionArrayFactorySmokeTestMain OK`, `QinJsBackendJavaPrimitiveLocalDefaultSmokeTestMain OK`, `QinCfaGeneratedStaticObjectSlotArgumentCastSmokeTestMain OK`, `QinJsBackendJavaArrayConstructorMethodReferenceSourceSmokeTestMain OK`, `QinCfaGeneratedLocalOwnerReferenceSmokeTestMain OK`, `QinJvmInterfaceConstantPrimitiveLocalSelectionSmokeTestMain OK`, and `QinJsClassTypeofFunctionSmokeTestMain OK`. Sequential strict broad `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK` now reports generated Qin parser TS static admission wrappers `1526`, contract wrappers `1526`, legacy wrappers `0`. |
 | H5-3 | Generated-parser-adjacent module/declaration class graph compiles | 25% | 100% | Accepted | Sequential `QinModuleDeclarationClassCompileProbeMain` against the CSSTS parser entry now passes under `-Dqin.dynamicSemanticMode=error`: `OK modules=174 declarations=742`. Evidence includes project package override precedence, Qin-owned static `subhuti` facade, Java SDK static-shape cleanup, fixed module/export const object literal property lowering, and module 171 `CssTsTokenConsumer.ts` compiling after the former `CssTsContextualKeywordTypes.Css` dynamic member-get blocker. |
 | H5-4 | JVM export slots, aliases, class literals, and generated-local metadata execute | 20% | 100% | Accepted | Sequential strict backend smoke group passed: `QinJvmStaticExportSlotMemberSmokeTestMain OK`, `QinJvmModuleExportSlotTypeAliasSmokeTestMain OK`, `QinJvmJavaClassLiteralAliasSmokeTestMain passed`, `QinJvmClassLiteralSimpleNameStaticMethodSmokeTestMain OK`, `QinJvmJavaClassInfoGeneratedLocalInterfaceSmokeTestMain OK`, `QinJvmGeneratedInterfaceMetadataSmokeTestMain passed`, `QinJvmGeneratedEnumMetadataStaticSmokeTestMain OK`, `QinJvmGeneratedEnumLocalAliasValuesSmokeTestMain OK`, and `QinJvmGeneratedEnumValueOfSmokeTestMain passed`. Generated-local enum owners now keep `values()/valueOf()` on Qin's static generated enum helper path instead of falling through to native Java enum reflection. |
-| H5-5 | OVS/CSSTS generated-parser transform executes under strict static mode | 15% | 25% | In progress | H5-5a accepted the strict transform baseline and adjacent top-level declaration ASI closure. `QinGeneratedTsSlimeCsstsTransformProbeMain twoConstDirect` and `importTwoConstDirect` now pass after the `SemicolonASI` owner fix. Next gate is the broad strict generated TS Slime CSSTS compiler smoke or first owning-layer blocker under `-Dqin.dynamicSemanticMode=error`. |
-| H5-6 | Git hygiene, durable capture, and handoff readiness | 10% | 0% | Pending | Needs current-unit paths staged/committed/pushed when practical, with unrelated dirty files left excluded. |
-| **H5 Total** |  | **100%** | **66.8%** | In progress | H5-1, H5-3, and H5-4 are accepted; H5-2 has accepted 40% of its 20% weight; H5-5 has accepted 25% of its 15% weight through H5-5a ASI closure. Next active gate is H5-5b broad strict generated TS Slime CSSTS compiler smoke. |
+| H5-5 | OVS/CSSTS generated-parser transform executes under strict static mode | 15% | 100% | Accepted | H5-5a accepted the strict transform baseline and adjacent top-level declaration ASI closure. H5-5b accepted the generated Java SDK alias static-facade closure. H5-5e/H5-5f accepted no-arg varargs bridge ordering and relative ESM named helper slot resolution. H5-5g accepted the OVS generated AST normalization budget fix: default strict `QinGeneratedTsSlimeOvsTransformSmokeTestMain OK` now runs with module-class disk cache hit, dependency session ready at `+4088ms`, run batch done at `+7814ms`, and wrapper complete at `+9289ms`. |
+| H5-6 | Git hygiene, durable capture, and handoff readiness | 10% | 60% | In progress | Dirty paths were classified across `qin` and `ovsjs`; the current H5-5g/H5-6a intended diff was narrowed to the generated runtime adapter, strict OVS smoke diagnostic harness, and ledger/skill updates. The adapter was further refactored to table-driven field-reader and node-child-field registries, then revalidated with `qin-runtime-core` build and default strict `QinGeneratedTsSlimeOvsTransformSmokeTestMain OK` with module-class disk cache hit and run batch done at `+9213ms`. Staging, commit, push/report remain. |
+| **H5 Total** |  | **100%** | **84.0%** | In progress | H5-1, H5-3, H5-4, and H5-5 are accepted; H5-2 has accepted 40% of its 20% weight; H5-6 has accepted 60% of its 10% hygiene/capture gate. |
 
 ## Progress History
 
@@ -514,3 +565,9 @@ broad smoke 95%, and update ledger/git hygiene 100%.
 | 2026-08-05 07:51 +08:00 | H5-5a ASI owner implemented, validation pending | Accepted focused implementation checkpoint | Strict `QinGeneratedTsSlimeCsstsTransformProbeMain importTwoConstDirect` still failed semantically, but focused evidence narrowed the owner: single `constDirect` parses and emits `const count = ref(0);`, while existing `twoConstDirect` diagnostics show `ModuleItemList`, `ModuleItem`, `StatementListItem`, `Declaration`, and `LexicalDeclaration` stop at the second `Const` after consuming the first declaration. The owner is `SemicolonASI` for newline ASI between adjacent top-level declarations, not the `ref(0)` call expression or a token-name special case. The demo `SlimeStatementParser.ts` and generated bundle now mirror the accepted generated parser shape by returning after hard ASI failure and calling `setParseSuccess()` when `canAutoInsertSemicolon()` succeeds without consuming a real semicolon. | H5-5a small 0.0% -> 70.0%; H5-5 major remains 0.0%; H5 overall remains 63.0% |
 | 2026-08-05 07:57 +08:00 | H5-5a ASI validation advanced through focused and broad probes | Accepted validation checkpoint | `QinGeneratedTsSlimeCsstsTransformProbeMain twoConstDirect` and `importTwoConstDirect` both now finish `OK` after the `SemicolonASI` owner change. The two focused cases confirm the second top-level declaration is no longer blocked by newline ASI, and the broad transform probe now reaches the end of the same generated TS Slime CSSTS path without the old adjacent-declaration failure. Ledger evidence is updated; skill/git hygiene remains the final checkpoint. | H5-5a small 70.0% -> 95.0%; H5-5 major remains 0.0%; H5 overall remains 63.0% |
 | 2026-08-05 08:01 +08:00 | H5-5a ledger, skill, and git hygiene completed | Accepted checkpoint | The `SemicolonASI` rule note was captured in `C:\Users\qinky\.codex\skills\qin-runtime-direct-fixes\SKILL.md`, the ledger was updated to reflect the passing `twoConstDirect` / `importTwoConstDirect` probes, and the current-unit repo files were committed locally as `fix generated ts ASI closure`. Unrelated dirty files remain excluded. | H5-5a small 95.0% -> 100.0%; H5-5 major 0.0% -> 25.0%; H5 overall 63.0% -> 66.8%; opened H5-5b small 0.0% |
+| 2026-08-05 09:05 +08:00 | H5-5b broad strict smoke replay reproduced Map-backed Slime node type blocker | Progress-neutral blocker reproduction | `QinGeneratedTsSlimeCsstsTransformProbeMain importTwoConstDirect` reran under `-Dqin.dynamicSemanticMode=error`, reached full module-class lower/emit for 356 modules, and then failed in `QinJvmDeclarationClassEmitter.inferDeclarationExpressionType(...)` with `Unknown declaration instance method type: java.util.Map.type`. The owning source was corrected in `CssTsCstToAstUtils.ts` by replacing remaining `stmt.type().name()`, `actualSpec.type().name()`, `initExpression.type().name()`, `calleeExpression.type().name()`, and `expr.type().name()` checks with a single map-aware Slime node type helper. No acceptance gate moved yet; H5-5b remains the active small item. | H5-5b small 0.0% -> 0.0%; H5-5 major remains 25.0%; H5 overall remains 66.8% |
+| 2026-08-05 10:38 +08:00 | H5-5b Slime node type helper boundary narrowed to fixed property normalization | Progress-neutral implementation checkpoint | `CssTsCstToAstUtils.ts` no longer models Slime nodes with a `{ type(): any }` structural method shape that the JVM backend lowers as `java.util.Map.type`. The helper now imports `normalizeGeneratedAst`, keeps Map wrappers on the explicit `get('type')` path, and normalizes other nodes before reading the fixed `type` property. This is still a diagnosis/implementation checkpoint only; the next strict probe must prove whether `java.util.Map.type` is gone or expose the next owning blocker. | H5-5b small 0.0% -> 0.0%; H5-5 major remains 25.0%; H5 overall remains 66.8% |
+| 2026-08-05 21:22 +08:00 | H5-5b Java SDK alias static-facade closure accepted | Accepted checkpoint | The generated token failure was narrowed to declaration lowering: `SubhutiMatchToken.hasLineBreakBefore()` compiled `__QinJavaLangBoolean.TRUE.equals(this.__qin_field_hasLineBreakBefore)` through the imported Java SDK object literal, so `TRUE` became an object-freeze wrapper and the `.equals` call was emitted with dynamic/static-mismatched semantics. `QinDeclarationIrLowerer.fixedObjectPropertyAccessOrNull(...)` now gives every known `QinJavaSdkAliasSupport` alias priority over fixed object-literal export expansion, preserving `__QinJavaLangBoolean.TRUE` as `java.lang.Boolean.TRUE`. Validation passed sequentially: package builds for `qin-lang-frontend-adapter` and `qin-runtime-core`; `QinGeneratedTsBooleanTokenMethodSmokeTestMain OK`; `QinGeneratedTsSlimeCsstsTransformProbeMain twoConstParseOnly`, `twoConstDirect`, `importTwoConstParseOnly`, `importTwoConstDirect`, and `importCssConst` all exit 0; and `QinGeneratedTsSlimeCsstsCompilerSmokeTestMain OK` under `-Dqin.dynamicSemanticMode=error`. A prior chat progress line incorrectly reported H5-5 as 35.0% / overall 67.8%; the ledger correction is H5-5b's accepted gate at 55.0%, making H5 overall 71.3%. | H5-5b small 0.0% -> 100.0%; H5-5 major 25.0% -> 55.0%; H5 overall 66.8% -> 71.3%; opened H5-5c small 0.0% |
+| 2026-08-05 23:33 +08:00 | H5-5e/H5-5f strict OVS transform blockers removed | Accepted blocker removals | H5-5e fixed generated parser `Program()` no-arg invocation by prioritizing real source methods over synthetic/bridge methods in `JavaEsmGlobal` reflection candidate ordering; focused `QinModuleClassSyntheticBridgeNoArgVarargsSmokeTestMain OK` and adjacent `QinModuleClassGeneratedJsNoArgVarargsSmokeTestMain OK` passed. H5-5f fixed relative ESM named helper imports by preserving static export slot gets in `QinDeclarationIrLowerer.moduleBindingReferenceExpression(...)`; focused `QinModuleClassRelativeNamedFunctionImportSmokeTestMain OK` passed. A long diagnostic strict OVS run with `-Dqin.runtime.jsRunTimeoutMs=120000` then passed semantically, proving the remaining blocker was default runtime budget rather than transform correctness. | H5-5e small 0.0% -> 100.0%; H5-5f small 0.0% -> 100.0%; H5-5 major 55.0% -> 72.0%; H5 overall 71.3% -> 73.8%; opened H5-5g small 0.0% |
+| 2026-08-06 00:08 +08:00 | H5-5g generated AST normalization runtime budget accepted | Accepted major gate | The default strict OVS transform smoke initially exceeded the 30 second Qin JS-on-JVM run budget even after semantic success. `-Dqin.runtime.interpretedCallCountLimit=10000` localized the hot path to `ovsTransformBase -> normalizeGeneratedAst -> normalizeGeneratedAstChildren -> readGeneratedField -> readStaticMemberValue`. `generated-runtime-adapter.ts` now makes AST normalization idempotent and uses a static node-kind child-field table instead of repeatedly blind-scanning every possible AST field. The default strict rerun passed without raising the timeout: `module-class disk cache hit`, dependency session ready at `+4088ms`, run batch done at `+7814ms`, wrapper complete at `+9289ms`, and `QinGeneratedTsSlimeOvsTransformSmokeTestMain OK` with `tokenCount=25`, `hasAst=true`, `codeLength=680`, `hasBalancePanel=true`, `hasLoadingLine=true`. | H5-5g small 0.0% -> 100.0%; H5-5 major 72.0% -> 100.0%; H5 overall 73.8% -> 78.0%; opened H5-6 major 0.0% |
+| 2026-08-06 00:22 +08:00 | H5-6a abstraction audit and default strict smoke validation | Accepted checkpoint | Current-unit dirty paths were classified before widening. The generated AST/CST adapter no longer expresses the static field contract as a long `fieldName === ...` chain or a `switch (nodeType)` block; it uses `generatedFieldReaders` with direct field/accessor reads and `generatedAstChildFieldTable` for node-kind child traversal. `rg` found no remaining `fieldName ===`, `switch (nodeType)`, `node[key]`, or `value[fieldName]` shapes in the adapter. Validation passed sequentially: `.\..\..\qin.bat build` reported `BUILD SUCCESS`; after one cold module-class rebuild caused by the source hash change, the cache-hit default strict `QinGeneratedTsSlimeOvsTransformSmokeTestMain` exited 0 in 12.1s with module-class disk cache hit and run batch done at `+9213ms`. | H5-6a small 0.0% -> 85.0%; H5-6 major 0.0% -> 60.0%; H5 overall 78.0% -> 84.0% |
