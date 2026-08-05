@@ -111,6 +111,28 @@ public final class QinJvmDynamicSemanticWarningSmokeTestMain {
                 || !strictFailure.contains("__qin_binary__")) {
             throw new IllegalStateException("Strict mode should hard-fail dynamic helpers, got: " + strictFailure);
         }
+        for (String helper : List.of(
+                "__qin_global__",
+                "__qin_call__",
+                "__qin_call_method_array__",
+                "__qin_member_get__",
+                "__qin_member_set__")) {
+            String helperFailure = captureFailure(() -> {
+                QinJvmDynamicSemanticWarnings.resetForTest();
+                System.setProperty("qin.dynamicSemanticMode", "error");
+                QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall(
+                        "QinJvmDynamicSemanticWarningSmokeTestMain",
+                        helper);
+            });
+            if (!helperFailure.contains("[QinDynamicSemanticError]")
+                    || !helperFailure.contains(helper)) {
+                throw new IllegalStateException("Strict mode should hard-fail helper "
+                        + helper
+                        + ", got: "
+                        + helperFailure);
+            }
+        }
+        System.clearProperty("qin.dynamicSemanticMode");
 
         String hardPropertyFailure = captureFailure(() -> {
             QinJvmDynamicSemanticWarnings.resetForTest();
