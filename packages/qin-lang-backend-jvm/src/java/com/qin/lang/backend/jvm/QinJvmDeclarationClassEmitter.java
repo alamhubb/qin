@@ -8,6 +8,7 @@ import com.qin.lang.ir.QinIrBreakStatement;
 import com.qin.lang.ir.QinIrBooleanLiteral;
 import com.qin.lang.ir.QinIrBoundMethodReferenceExpression;
 import com.qin.lang.ir.QinIrBuiltinCallExpression;
+import com.qin.lang.ir.QinIrCastExpression;
 import com.qin.lang.ir.QinIrClassDeclaration;
 import com.qin.lang.ir.QinIrConstDeclaration;
 import com.qin.lang.ir.QinIrContinueStatement;
@@ -100,6 +101,8 @@ public final class QinJvmDeclarationClassEmitter {
     private static final ClassDesc BOOLEAN_DESC = ClassDesc.of("java.lang.Boolean");
     private static final ClassDesc STRING_DESC = ClassDesc.of("java.lang.String");
     private static final ClassDesc CLASS_DESC = ClassDesc.of("java.lang.Class");
+    private static final ClassDesc CLASS_ARRAY_DESC = ClassDesc.ofDescriptor("[Ljava/lang/Class;");
+    private static final ClassDesc REFLECT_METHOD_DESC = ClassDesc.of("java.lang.reflect.Method");
     private static final ClassDesc MESSAGE_DIGEST_DESC = ClassDesc.of("java.security.MessageDigest");
     private static final ClassDesc HEX_FORMAT_DESC = ClassDesc.of("java.util.HexFormat");
     private static final ClassDesc RUNTIME_EXCEPTION_DESC = ClassDesc.of("java.lang.RuntimeException");
@@ -126,7 +129,14 @@ public final class QinJvmDeclarationClassEmitter {
     private String syntheticThisMethodOwnerBinaryName;
     private boolean syntheticThisMethodCollectThisReceivers = true;
     private Map<String, Map<String, SyntheticThisMethodCall>> syntheticOwnedReceiverMethodCalls;
+
+    private enum FunctionValueShape {
+        VALUE_COMPATIBLE,
+        VOID_COMPATIBLE,
+        UNKNOWN
+    }
     private Map<String, QinIrExpression> activeModuleConstantInitializers = Map.of();
+    private Map<String, QinIrClassDeclaration> activeDeclarationIndex = Map.of();
 
     public byte[] compileSingleClass(QinIrProgram program, String fallbackBinaryName) {
         Objects.requireNonNull(program, "program cannot be null");
@@ -163,6 +173,12 @@ public final class QinJvmDeclarationClassEmitter {
             List<QinIrClassDeclaration> classDeclarations = completeSyntheticAbstractThisMethods(
                     program.classDeclarations(),
                     externalDeclarationIndex);
+            Map<String, QinIrClassDeclaration> initialDeclarationIndex = buildDeclarationIndex(
+                    classDeclarations,
+                    externalDeclarationIndex);
+            classDeclarations = completeInheritedOverrideParameterTypes(
+                    classDeclarations,
+                    initialDeclarationIndex);
             Map<String, QinIrClassDeclaration> declarationIndex = buildDeclarationIndex(
                     classDeclarations,
                     externalDeclarationIndex);
@@ -226,6 +242,116 @@ public final class QinJvmDeclarationClassEmitter {
         return completedOwnedReceiverMethods == completedThisMethods
                 ? completedThisMethods
                 : completedOwnedReceiverMethods;
+    }
+
+    private List<QinIrClassDeclaration> completeInheritedOverrideParameterTypes(
+            List<QinIrClassDeclaration> declarations,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (declarations == null || declarations.isEmpty() || declarationIndex == null || declarationIndex.isEmpty()) {
+            return declarations == null ? List.of() : declarations;
+        }
+        List<QinIrClassDeclaration> completed = new ArrayList<>();
+        boolean changed = false;
+        for (QinIrClassDeclaration declaration : declarations) {
+            QinIrClassDeclaration completedDeclaration =
+                    completeInheritedOverrideParameterTypes(declaration, declarationIndex);
+            completed.add(completedDeclaration);
+            changed |= completedDeclaration != declaration;
+        }
+        return changed ? List.copyOf(completed) : declarations;
+    }
+
+    private QinIrClassDeclaration completeInheritedOverrideParameterTypes(
+            QinIrClassDeclaration declaration,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (declaration == null
+                || declaration.superType() == null
+                || declaration.superType().binaryName() == null
+                || declaration.methods().isEmpty()) {
+            return declaration;
+        }
+        QinIrClassDeclaration superDeclaration =
+                resolveIndexedDeclaration(declarationIndex, declaration.superType().binaryName());
+        if (superDeclaration == null) {
+            return declaration;
+        }
+        List<QinIrMethodDeclaration> methods = new ArrayList<>();
+        boolean changed = false;
+        for (QinIrMethodDeclaration method : declaration.methods()) {
+            QinIrMethodDeclaration completedMethod =
+                    completeInheritedOverrideParameterTypes(method, superDeclaration, declarationIndex);
+            methods.add(completedMethod);
+            changed |= completedMethod != method;
+        }
+        if (!changed) {
+            return declaration;
+        }
+        return new QinIrClassDeclaration(
+                declaration.packageName(),
+                declaration.simpleName(),
+                declaration.superType(),
+                declaration.implementsTypes(),
+                declaration.annotations(),
+                declaration.fields(),
+                methods,
+                declaration.staticInitializers(),
+                declaration.recordClass(),
+                declaration.interfaceClass());
+    }
+
+    private QinIrMethodDeclaration completeInheritedOverrideParameterTypes(
+            QinIrMethodDeclaration method,
+            QinIrClassDeclaration superDeclaration,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (method == null
+                || method.staticMethod()
+                || method.abstractMethod()
+                || isConstructorMethod(method)
+                || method.parameters().isEmpty()) {
+            return method;
+        }
+        QinIrMethodDeclaration inherited = findInheritedDeclarationMethod(
+                superDeclaration,
+                declarationIndex,
+                method.name(),
+                method.parameters().size(),
+                new LinkedHashSet<>());
+        if (inherited == null || inherited.parameters().size() != method.parameters().size()) {
+            return method;
+        }
+        List<QinIrParameter> parameters = new ArrayList<>(method.parameters());
+        boolean changed = false;
+        for (int i = 0; i < parameters.size(); i++) {
+            QinIrParameter parameter = parameters.get(i);
+            QinIrParameter inheritedParameter = inherited.parameters().get(i);
+            if (parameter == null
+                    || inheritedParameter == null
+                    || !isJavaLangObjectType(parameter.type())
+                    || isJavaLangObjectType(inheritedParameter.type())) {
+                continue;
+            }
+            parameters.set(i, new QinIrParameter(
+                    parameter.name(),
+                    inheritedParameter.type(),
+                    parameter.annotations(),
+                    parameter.varargs()));
+            changed = true;
+        }
+        if (!changed) {
+            return method;
+        }
+        return new QinIrMethodDeclaration(
+                method.name(),
+                method.returnType(),
+                List.copyOf(parameters),
+                method.annotations(),
+                method.returnExpression(),
+                method.bodyStatements(),
+                method.superArguments(),
+                method.explicitSuperConstructorCall(),
+                method.runtimeFunctionDefinition(),
+                method.staticMethod(),
+                method.abstractMethod());
     }
 
     private List<QinIrClassDeclaration> completeSyntheticAbstractOwnedReceiverMethods(
@@ -704,10 +830,10 @@ public final class QinJvmDeclarationClassEmitter {
         for (QinIrClassDeclaration declaration : declarations) {
             String binaryName = declaration.binaryName();
             if (binaryName != null && !binaryName.isBlank()) {
-                putDeclarationIndexValue(index, binaryName, declaration);
-                putDeclarationIndexValue(index, flattenedBinaryAlias(binaryName), declaration);
+                putLocalDeclarationIndexValue(index, binaryName, declaration);
+                putLocalDeclarationIndexValue(index, flattenedBinaryAlias(binaryName), declaration);
                 if (declaration.simpleName() != null && !declaration.simpleName().isBlank()) {
-                    putDeclarationIndexValue(index, declaration.simpleName(), declaration);
+                    putLocalDeclarationIndexValue(index, declaration.simpleName(), declaration);
                 }
             }
         }
@@ -725,6 +851,26 @@ public final class QinJvmDeclarationClassEmitter {
         if (selected != null) {
             index.put(key, selected);
         }
+    }
+
+        private void putLocalDeclarationIndexValue(
+            Map<String, QinIrClassDeclaration> index,
+            String key,
+            QinIrClassDeclaration declaration) {
+        if (index == null || key == null || key.isBlank() || declaration == null) {
+            return;
+        }
+        QinIrClassDeclaration existing = index.get(key);
+        if (existing != null
+                && declaration.binaryName() != null
+                && !declaration.binaryName().isBlank()
+                && !Objects.equals(existing.binaryName(), declaration.binaryName())
+                && (key.equals(declaration.binaryName())
+                        || key.equals(flattenedBinaryAlias(declaration.binaryName())))) {
+            index.put(key, declaration);
+            return;
+        }
+        putDeclarationIndexValue(index, key, declaration);
     }
 
         private QinIrClassDeclaration chooseDeclarationIndexValue(
@@ -782,6 +928,25 @@ public final class QinJvmDeclarationClassEmitter {
 
     private String flattenedBinaryAlias(String binaryName) {
         return binaryName == null ? null : binaryName.replace('.', '_');
+    }
+
+    private String canonicalQinHostRuntimeBinaryName(String binaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            return binaryName;
+        }
+        if (binaryName.startsWith("com.qin.lang.runtime.")) {
+            return binaryName;
+        }
+        String flattenedPrefix = "com_qin_lang_runtime_";
+        if (binaryName.startsWith(flattenedPrefix)) {
+            return "com.qin.lang.runtime." + binaryName.substring(flattenedPrefix.length());
+        }
+        return binaryName;
+    }
+
+    private boolean isQinHostRuntimeBinaryName(String binaryName) {
+        return !Objects.equals(canonicalQinHostRuntimeBinaryName(binaryName), binaryName)
+                || (binaryName != null && binaryName.startsWith("com.qin.lang.runtime."));
     }
 
     private ClassHierarchyResolver localClassHierarchyResolver(
@@ -873,12 +1038,14 @@ public final class QinJvmDeclarationClassEmitter {
         Map<QinIrObjectLiteral, String> previousFunctionDefinitionHelpers =
                 activeFunctionDefinitionHelpers;
         String previousBinaryClassName = activeBinaryClassName;
+        Map<String, QinIrClassDeclaration> previousDeclarationIndex = activeDeclarationIndex;
         Map<QinIrObjectLiteral, String> helperNames = new LinkedHashMap<>();
         for (FunctionDefinitionHelper helper : functionDefinitionHelpers) {
             helperNames.put(helper.definition(), helper.name());
         }
         activeFunctionDefinitionHelpers = Map.copyOf(helperNames);
         activeBinaryClassName = binaryClassName;
+        activeDeclarationIndex = declarationIndex;
 
         ClassFile classFile = ClassFile.of(
                 ClassFile.ClassHierarchyResolverOption.of(localClassHierarchyResolver(declarationIndex)));
@@ -981,6 +1148,20 @@ public final class QinJvmDeclarationClassEmitter {
                                     constructor,
                                     declarationIndex));
                         });
+                if (acceptsZeroArgumentsThroughRestParameter(constructor)
+                        && emittedConstructorDescriptors.add(VOID_INIT.descriptorString())) {
+                    MethodTypeDesc restConstructorDescriptor = constructorDescriptor;
+                    builder.withMethodBody("<init>", VOID_INIT, ClassFile.ACC_PUBLIC, code -> {
+                        code.aload(0);
+                        code.iconst_0();
+                        code.anewarray(OBJECT_DESC);
+                        code.invokespecial(
+                                ClassDesc.of(binaryClassName),
+                                "<init>",
+                                restConstructorDescriptor);
+                        code.return_();
+                    });
+                }
             }
 
             if (!interfaceClass
@@ -1137,6 +1318,7 @@ public final class QinJvmDeclarationClassEmitter {
         } finally {
             activeFunctionDefinitionHelpers = previousFunctionDefinitionHelpers;
             activeBinaryClassName = previousBinaryClassName;
+            activeDeclarationIndex = previousDeclarationIndex;
         }
     }
 
@@ -1383,6 +1565,14 @@ public final class QinJvmDeclarationClassEmitter {
                 && method.name().startsWith("__qin_constructor_");
     }
 
+    private boolean acceptsZeroArgumentsThroughRestParameter(QinIrMethodDeclaration constructor) {
+        if (constructor == null || constructor.parameters().isEmpty()) {
+            return false;
+        }
+        return constructor.parameters().size() == 1
+                && constructor.parameters().get(0).varargs();
+    }
+
     private ClassDesc resolveSuperclass(QinIrTypeRef superType) {
         if (superType == null || superType.binaryName() == null || superType.binaryName().isBlank()) {
             return OBJECT_DESC;
@@ -1413,13 +1603,25 @@ public final class QinJvmDeclarationClassEmitter {
     private String effectiveLocalReferenceBinaryName(
             String binaryName,
             Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (isQinHostRuntimeBinaryName(binaryName)) {
+            return canonicalQinHostRuntimeBinaryName(binaryName);
+        }
         if (binaryName == null || binaryName.isBlank()
                 || declarationIndex == null || declarationIndex.isEmpty()) {
             return binaryName;
         }
+        String flattenedAlias = flattenedBinaryAlias(binaryName);
+        QinIrClassDeclaration flattenedLocal = declarationIndex.get(flattenedAlias);
+        if (flattenedLocal != null
+                && flattenedLocal.binaryName() != null
+                && !flattenedLocal.binaryName().isBlank()
+                && !Objects.equals(flattenedLocal.binaryName(), binaryName)
+                && Objects.equals(flattenedLocal.binaryName(), flattenedAlias)) {
+            return flattenedLocal.binaryName();
+        }
         QinIrClassDeclaration local = declarationIndex.get(binaryName);
         if (local == null) {
-            local = declarationIndex.get(flattenedBinaryAlias(binaryName));
+            local = flattenedLocal;
         }
         if (local == null
                 || local.binaryName() == null
@@ -1586,6 +1788,9 @@ public final class QinJvmDeclarationClassEmitter {
                 List<QinIrTypeRef> parameterTypes = new ArrayList<>();
                 for (QinIrParameter parameter : constructor.parameters()) {
                     parameterTypes.add(parameter.type());
+                }
+                if (acceptsZeroArgumentsThroughRestParameter(constructor)) {
+                    constructors.add(List.of());
                 }
                 constructors.add(List.copyOf(parameterTypes));
             }
@@ -2078,6 +2283,7 @@ public final class QinJvmDeclarationClassEmitter {
         if (binaryName == null || binaryName.isBlank()) {
             return OBJECT_DESC;
         }
+        binaryName = effectiveLocalReferenceBinaryName(binaryName, activeDeclarationIndex);
         if (binaryName.endsWith("[]")) {
             return ClassDesc.ofDescriptor(arrayDescriptor(binaryName, '/'));
         }
@@ -2944,6 +3150,9 @@ public final class QinJvmDeclarationClassEmitter {
                     declarationIndex,
                     caseFrame.child(),
                     switchStatement.cases().get(i).consequent());
+            if (!switchStatement.cases().get(i).fallthroughAllowed()) {
+                code.goto_(doneLabel);
+            }
         }
         code.labelBinding(doneLabel);
     }
@@ -3634,6 +3843,14 @@ public final class QinJvmDeclarationClassEmitter {
         for (int i = 0; i < count; i++) {
             code.dup();
             code.loadConstant(i);
+            if (emitNullLiteralForReferenceParameter(
+                    code,
+                    expressions.get(startIndex + i),
+                    componentType,
+                    reflectedComponentType)) {
+                code.aastore();
+                continue;
+            }
             QinIrTypeRef actualType = emitDeclarationExpression(
                     code,
                     ownerDeclaration,
@@ -3670,6 +3887,18 @@ public final class QinJvmDeclarationClassEmitter {
             Map<String, QinIrClassDeclaration> declarationIndex,
             LocalFrame localFrame,
             QinIrExpression expression) {
+        if (expression instanceof QinIrCastExpression castExpression) {
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    castExpression.expression());
+            QinIrTypeRef targetType = castTypeRef(castExpression.typeName());
+            coerceValueForTargetType(code, actualType, targetType);
+            return targetType;
+        }
         if (expression instanceof QinIrStringLiteral stringLiteral) {
             code.ldc(stringLiteral.value());
             return QinIrTypeRef.stringType();
@@ -4308,6 +4537,15 @@ public final class QinJvmDeclarationClassEmitter {
                 return staticGetterAccess.returnType();
             }
         }
+        ResolvedFieldAccess javaStaticFieldAccess = resolveJavaStaticFieldAccess(
+                ownerDeclaration,
+                declarationIndex,
+                receiverExpression,
+                propertyName);
+        if (javaStaticFieldAccess != null) {
+            emitResolvedFieldGet(code, javaStaticFieldAccess);
+            return javaStaticFieldAccess.field().type();
+        }
         String staticExportSlotName = staticExportSlotName(receiverExpression);
         if (staticExportSlotName != null) {
             code.ldc(staticExportSlotName);
@@ -4317,15 +4555,6 @@ public final class QinJvmDeclarationClassEmitter {
                     "__qin_static_export_member_get__",
                     MethodTypeDesc.ofDescriptor("(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;"));
             return QinIrTypeRef.classType("java.lang.Object");
-        }
-        ResolvedFieldAccess javaStaticFieldAccess = resolveJavaStaticFieldAccess(
-                ownerDeclaration,
-                declarationIndex,
-                receiverExpression,
-                propertyName);
-        if (javaStaticFieldAccess != null) {
-            emitResolvedFieldGet(code, javaStaticFieldAccess);
-            return javaStaticFieldAccess.field().type();
         }
         QinIrTypeRef receiverType = emitDeclarationExpression(
                 code,
@@ -4541,6 +4770,31 @@ public final class QinJvmDeclarationClassEmitter {
                     localFrame,
                     staticArrayFromFactory);
         }
+        if (method.staticMethod() && methodCallExpression.receiver() instanceof QinIrThisExpression) {
+            List<QinIrTypeRef> argumentTypes = inferDeclarationArgumentTypes(
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    methodCallExpression.arguments());
+            ResolvedStaticMethodCall staticThisMethod = resolveStaticMethodCall(
+                    ownerDeclaration.binaryName(),
+                    methodCallExpression.methodName(),
+                    argumentTypes,
+                    declarationIndex);
+            if (staticThisMethod != null) {
+                emitStaticMethodArguments(
+                        code,
+                        ownerDeclaration,
+                        method,
+                        declarationIndex,
+                        localFrame,
+                        methodCallExpression.arguments(),
+                        staticThisMethod);
+                invokeStaticMethod(code, staticThisMethod);
+                return staticThisMethod.returnType();
+            }
+        }
         QinIrTypeRef receiverType = emitDeclarationExpression(
                 code,
                 ownerDeclaration,
@@ -4548,6 +4802,16 @@ public final class QinJvmDeclarationClassEmitter {
                 declarationIndex,
                 localFrame,
                 methodCallExpression.receiver());
+        QinIrTypeRef ascribedReceiverType =
+                ascribedInstanceMethodReceiverType(methodCallExpression, receiverType, declarationIndex);
+        if (ascribedReceiverType != null && !sameIrType(receiverType, ascribedReceiverType)) {
+            coerceValueForTargetType(code, receiverType, ascribedReceiverType);
+            receiverType = ascribedReceiverType;
+        }
+        if (isJavaObjectGetClassCall(receiverType, methodCallExpression)) {
+            code.invokevirtual(OBJECT_DESC, "getClass", MethodTypeDesc.of(CLASS_DESC));
+            return QinIrTypeRef.classType("java.lang.Class");
+        }
         QinIrTypeRef generatedEnumMetadataReturnType =
                 generatedEnumMetadataMethodReturnType(methodCallExpression);
         if (generatedEnumMetadataReturnType != null
@@ -4624,6 +4888,15 @@ public final class QinJvmDeclarationClassEmitter {
         if (isJavaClassToStringCall(receiverType, methodCallExpression)) {
             code.invokevirtual(CLASS_DESC, "toString", MethodTypeDesc.of(STRING_DESC));
             return QinIrTypeRef.stringType();
+        }
+        if (isJavaClassReflectMethodLookupCall(receiverType, methodCallExpression)) {
+            return emitJavaClassReflectMethodLookupCall(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    methodCallExpression);
         }
         if (isJavaLangLongRuntimeToStringCall(ownerDeclaration, method, methodCallExpression)) {
             coerceValueForJavaParameterType(code, receiverType, long.class);
@@ -4897,6 +5170,7 @@ public final class QinJvmDeclarationClassEmitter {
                 receiverType,
                 methodCallExpression.methodName(),
                 argumentTypes,
+                methodCallExpression.arguments(),
                 declarationIndex);
         if (resolvedMethod == null) {
             if (isCurrentDeclarationReceiver(ownerDeclaration, receiverType)) {
@@ -4907,7 +5181,8 @@ public final class QinJvmDeclarationClassEmitter {
                     resolvedMethod = resolveLocalDeclarationInstanceMethodCall(
                             ownerDeclaration,
                             methodCallExpression.methodName(),
-                            methodCallExpression.arguments().size());
+                            methodCallExpression.arguments().size(),
+                            declarationIndex);
                 }
                 if (resolvedMethod != null) {
                     emitInstanceMethodArguments(
@@ -4943,8 +5218,12 @@ public final class QinJvmDeclarationClassEmitter {
                 }
             }
             if (methodCallExpression.receiver() instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
+                String classLiteralBinaryName = resolveJavaClassLiteralBinaryName(
+                        ownerDeclaration,
+                        declarationIndex,
+                        classLiteralExpression);
                 ResolvedStaticMethodCall staticMethod = resolveStaticMethodCall(
-                        classLiteralExpression.binaryName(),
+                        classLiteralBinaryName,
                         methodCallExpression.methodName(),
                         argumentTypes,
                         declarationIndex);
@@ -4954,14 +5233,14 @@ public final class QinJvmDeclarationClassEmitter {
                             + " method=" + methodCallExpression.methodName()
                             + " args=" + methodCallExpression.arguments().size()
                             + " direct=" + (staticMethod == null ? "<null>" : staticMethod.ownerBinaryName())
-                            + " indexHit=" + declarationIndex.get(classLiteralExpression.binaryName())
-                            + " keys=" + nearbyDeclarationIndexKeys(declarationIndex, classLiteralExpression.binaryName()));
+                            + " indexHit=" + declarationIndex.get(classLiteralBinaryName)
+                            + " keys=" + nearbyDeclarationIndexKeys(declarationIndex, classLiteralBinaryName));
                 }
                 if (staticMethod == null) {
                     QinIrClassDeclaration declaredClassReference = resolveDeclaredClassReference(
                             ownerDeclaration,
                             declarationIndex,
-                            classLiteralExpression.binaryName());
+                            classLiteralBinaryName);
                     if (Boolean.getBoolean("qin.declarationClass.trace")) {
                         System.err.println("[QinJvmDeclarationClassEmitter] class-literal declared reference"
                                 + " literal=" + classLiteralExpression
@@ -4987,6 +5266,25 @@ public final class QinJvmDeclarationClassEmitter {
                             staticMethod);
                     invokeStaticMethod(code, staticMethod);
                     return staticMethod.returnType();
+                }
+                QinIrClassDeclaration generatedEnumReference = declarationIndex.get(classLiteralBinaryName);
+                if (generatedEnumReference != null
+                        && isGeneratedEnumLikeType(
+                                QinIrTypeRef.classType(generatedEnumReference.binaryName()),
+                                declarationIndex)) {
+                    if (isGeneratedEnumValueOfCall(methodCallExpression)) {
+                        return emitGeneratedEnumValueOfCall(
+                                code,
+                                ownerDeclaration,
+                                method,
+                                declarationIndex,
+                                localFrame,
+                                generatedEnumReference,
+                                methodCallExpression);
+                    }
+                    if (isGeneratedEnumValuesCall(methodCallExpression)) {
+                        return emitGeneratedEnumValuesCall(code);
+                    }
                 }
             }
             if (methodCallExpression.receiver() instanceof QinIrIdentifierReference identifierReference) {
@@ -5049,7 +5347,16 @@ public final class QinJvmDeclarationClassEmitter {
             if (canUseDynamicEnclosingStaticMethod(receiverType)) {
                 discardExpressionResult(code, receiverType);
                 code.ldc(enclosingBinaryName(receiverType.binaryName()));
-                QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall("QinJvmDeclarationClassEmitter", "__qin_global__");
+                QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall(
+                        "QinJvmDeclarationClassEmitter"
+                                + " owner=" + ownerDeclaration.binaryName()
+                                + " method=" + method.name()
+                                + " receiverShape=" + methodCallExpression.receiver().getClass().getSimpleName()
+                                + " receiverType=" + receiverType
+                                + " call=" + methodCallExpression.methodName()
+                                + "/" + methodCallExpression.arguments().size()
+                                + " enclosing=" + enclosingBinaryName(receiverType.binaryName()),
+                        "__qin_global__");
                 code.invokestatic(
                         ESM_GLOBAL_DESC,
                         "__qin_global__",
@@ -5197,11 +5504,12 @@ public final class QinJvmDeclarationClassEmitter {
                         methodCallExpression);
             }
             if (isCurrentOrLocalDeclarationReceiver(receiverType, declarationIndex)) {
-                QinIrClassDeclaration localDeclaration = declarationIndex.get(receiverType.binaryName());
+                QinIrClassDeclaration localDeclaration = resolveIndexedDeclaration(declarationIndex, receiverType.binaryName());
                 ResolvedInstanceMethodCall localResolvedMethod = resolveLocalDeclarationInstanceMethodCall(
                         localDeclaration,
                         methodCallExpression.methodName(),
-                        methodCallExpression.arguments().size());
+                        methodCallExpression.arguments().size(),
+                        declarationIndex);
                 if (localResolvedMethod != null) {
                     emitInstanceMethodArguments(
                             code,
@@ -5296,6 +5604,33 @@ public final class QinJvmDeclarationClassEmitter {
             return genericJavaStreamReturnType;
         }
         return resolvedMethod.returnType();
+    }
+
+    private QinIrTypeRef ascribedInstanceMethodReceiverType(
+            QinIrInstanceMethodCallExpression methodCallExpression,
+            QinIrTypeRef receiverType,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (methodCallExpression == null
+                || methodCallExpression.ownerBinaryName() == null
+                || methodCallExpression.ownerBinaryName().isBlank()) {
+            return null;
+        }
+        String ownerBinaryName = canonicalJavaSdkAliasBinaryName(methodCallExpression.ownerBinaryName());
+        if (ownerBinaryName == null
+                || ownerBinaryName.isBlank()
+                || "java.lang.Object".equals(ownerBinaryName)) {
+            return null;
+        }
+        if (receiverType != null
+                && receiverType.kind() == QinIrTypeKind.CLASS
+                && ownerBinaryName.equals(canonicalJavaSdkAliasBinaryName(receiverType.binaryName()))) {
+            return receiverType;
+        }
+        QinIrClassDeclaration localDeclaration = resolveIndexedDeclaration(declarationIndex, ownerBinaryName);
+        if (localDeclaration != null) {
+            return QinIrTypeRef.classType(localDeclaration.binaryName());
+        }
+        return QinIrTypeRef.classType(ownerBinaryName);
     }
 
     private boolean isJavaUtilArraysStreamFacadeCall(QinIrInstanceMethodCallExpression methodCallExpression) {
@@ -5541,9 +5876,11 @@ public final class QinJvmDeclarationClassEmitter {
         if (receiverType == null
                 || receiverType.kind() != QinIrTypeKind.CLASS
                 || receiverType.binaryName() == null
-                || methodCallExpression == null
-                || !"java.util.stream.Stream".equals(receiverType.binaryName())) {
+                || methodCallExpression == null) {
             return null;
+        }
+        if (!"java.util.stream.Stream".equals(receiverType.binaryName())) {
+            return primitiveJavaStreamMethodReturnType(receiverType, methodCallExpression);
         }
         QinIrTypeRef elementType = receiverType.typeArguments().isEmpty()
                 ? QinIrTypeRef.classType("java.lang.Object")
@@ -5558,6 +5895,9 @@ public final class QinJvmDeclarationClassEmitter {
                     : null;
             case "map", "flatMap" -> argumentCount == 1
                     ? QinIrTypeRef.classType("java.util.stream.Stream", List.of(QinIrTypeRef.classType("java.lang.Object")))
+                    : null;
+            case "anyMatch", "allMatch", "noneMatch" -> argumentCount == 1
+                    ? QinIrTypeRef.booleanType()
                     : null;
             case "mapToInt" -> argumentCount == 1
                     ? QinIrTypeRef.classType("java.util.stream.IntStream")
@@ -5752,6 +6092,103 @@ public final class QinJvmDeclarationClassEmitter {
                 && "java.lang.Class".equals(receiverType.binaryName())
                 && methodCallExpression != null
                 && "toString".equals(methodCallExpression.methodName())
+                && methodCallExpression.arguments().isEmpty();
+    }
+
+    private boolean isJavaClassReflectMethodLookupCall(
+            QinIrTypeRef receiverType,
+            QinIrInstanceMethodCallExpression methodCallExpression) {
+        return receiverType != null
+                && "java.lang.Class".equals(receiverType.binaryName())
+                && methodCallExpression != null
+                && ("getDeclaredMethod".equals(methodCallExpression.methodName())
+                        || "getMethod".equals(methodCallExpression.methodName()))
+                && !methodCallExpression.arguments().isEmpty();
+    }
+
+    private QinIrTypeRef emitJavaClassReflectMethodLookupCall(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrInstanceMethodCallExpression methodCallExpression) {
+        QinIrTypeRef nameType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                methodCallExpression.arguments().get(0));
+        coerceValueForJavaParameterType(code, nameType, String.class);
+        emitJavaClassArrayVarargs(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                methodCallExpression.arguments().subList(1, methodCallExpression.arguments().size()));
+        code.invokevirtual(
+                CLASS_DESC,
+                methodCallExpression.methodName(),
+                MethodTypeDesc.of(REFLECT_METHOD_DESC, STRING_DESC, CLASS_ARRAY_DESC));
+        return QinIrTypeRef.classType("java.lang.reflect.Method");
+    }
+
+    private void emitJavaClassArrayVarargs(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            List<QinIrExpression> arguments) {
+        if (arguments.isEmpty()) {
+            code.loadConstant(0);
+            code.anewarray(CLASS_DESC);
+            return;
+        }
+        if (arguments.size() == 1 && arguments.get(0) instanceof QinIrSpreadArgumentExpression spreadArgumentExpression) {
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    spreadArgumentExpression.expression());
+            coerceValueForJavaParameterType(code, actualType, Class[].class);
+            return;
+        }
+        code.loadConstant(arguments.size());
+        code.anewarray(CLASS_DESC);
+        for (int i = 0; i < arguments.size(); i++) {
+            code.dup();
+            code.loadConstant(i);
+            if (emitNullLiteralForReferenceParameter(
+                    code,
+                    arguments.get(i),
+                    QinIrTypeRef.classType("java.lang.Class"),
+                    Class.class)) {
+                code.aastore();
+                continue;
+            }
+            QinIrTypeRef actualType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    arguments.get(i));
+            coerceValueForJavaParameterType(code, actualType, Class.class);
+            code.aastore();
+        }
+    }
+
+    private boolean isJavaObjectGetClassCall(
+            QinIrTypeRef receiverType,
+            QinIrInstanceMethodCallExpression methodCallExpression) {
+        return isReferenceLike(receiverType)
+                && methodCallExpression != null
+                && "getClass".equals(methodCallExpression.methodName())
                 && methodCallExpression.arguments().isEmpty();
     }
 
@@ -6339,6 +6776,13 @@ public final class QinJvmDeclarationClassEmitter {
                 reflectedTargetType)) {
             return;
         }
+        if (emitNullLiteralForReferenceParameter(
+                code,
+                argumentExpression,
+                targetType,
+                reflectedTargetType)) {
+            return;
+        }
         QinIrTypeRef actualType = emitDeclarationExpression(
                 code,
                 ownerDeclaration,
@@ -6346,7 +6790,43 @@ public final class QinJvmDeclarationClassEmitter {
                 declarationIndex,
                 localFrame,
                 argumentExpression);
-        coerceInstanceMethodArgumentValue(code, declarationIndex, actualType, targetType, reflectedTargetType);
+        try {
+            coerceInstanceMethodArgumentValue(code, declarationIndex, actualType, targetType, reflectedTargetType);
+        } catch (IllegalArgumentException error) {
+            throw new IllegalArgumentException(
+                    "Failed to coerce declaration instance method argument"
+                            + " owner=" + ownerDeclaration.binaryName()
+                            + " method=" + method.name()
+                            + " argument=" + argumentExpression
+                            + " actualType=" + actualType
+                            + " targetType=" + targetType
+                            + " reflectedTargetType=" + (reflectedTargetType == null
+                                    ? "<none>"
+                            : reflectedTargetType.getName()),
+                    error);
+        }
+    }
+
+    private boolean emitNullLiteralForReferenceParameter(
+            java.lang.classfile.CodeBuilder code,
+            QinIrExpression argumentExpression,
+            QinIrTypeRef targetType,
+            Class<?> reflectedTargetType) {
+        if (!(argumentExpression instanceof QinIrNullLiteral)) {
+            return false;
+        }
+        if (reflectedTargetType != null) {
+            if (reflectedTargetType.isPrimitive()) {
+                return false;
+            }
+            code.aconst_null();
+            return true;
+        }
+        if (!isReferenceLikeParameter(targetType)) {
+            return false;
+        }
+        code.aconst_null();
+        return true;
     }
 
     private boolean emitExpressionAsJavaFunctionalInterfaceParameter(
@@ -6424,6 +6904,28 @@ public final class QinJvmDeclarationClassEmitter {
             return unwrapped == null ? inner : unwrapped;
         }
         return null;
+    }
+
+    private String declarationExpressionSummary(QinIrExpression expression) {
+        if (expression == null) {
+            return "<null>";
+        }
+        if (expression instanceof QinIrBuiltinCallExpression builtinCallExpression) {
+            return "BuiltinCall("
+                    + builtinCallExpression.receiverName()
+                    + "."
+                    + builtinCallExpression.methodName()
+                    + "/"
+                    + builtinCallExpression.arguments().size()
+                    + ")";
+        }
+        if (expression instanceof QinIrObjectLiteral objectLiteral) {
+            return "ObjectLiteral(properties=" + objectLiteral.properties().size() + ")";
+        }
+        if (expression instanceof QinIrIdentifierReference identifierReference) {
+            return "Identifier(" + identifierReference.name() + ")";
+        }
+        return expression.getClass().getSimpleName();
     }
 
     private void emitFixedAritySpreadInstanceMethodArguments(
@@ -6790,10 +7292,10 @@ public final class QinJvmDeclarationClassEmitter {
             case "values" -> argumentCount == 0
                     ? QinIrTypeRef.classType("java.util.Collection", List.of(javaMapValueType(receiverType)))
                     : null;
-            case "keySet" -> argumentCount == 0
+            case "keys", "keySet" -> argumentCount == 0
                     ? QinIrTypeRef.classType("java.util.Set", List.of(javaMapKeyType(receiverType)))
                     : null;
-            case "entrySet" -> argumentCount == 0
+            case "entries", "entrySet" -> argumentCount == 0
                     ? QinIrTypeRef.classType("java.util.Set", List.of(QinIrTypeRef.classType(
                             "java.util.Map$Entry",
                             List.of(javaMapKeyType(receiverType), javaMapValueType(receiverType)))))
@@ -6976,7 +7478,9 @@ public final class QinJvmDeclarationClassEmitter {
                         methodCallExpression.arguments().get(1),
                         QinIrTypeRef.classType("java.util.function.Function"),
                         java.util.function.Function.class)) {
-                    throw new IllegalArgumentException("Map.computeIfAbsent requires a static Java functional argument");
+                    throw new IllegalArgumentException(
+                            "Map.computeIfAbsent requires a static Java functional argument: "
+                                    + declarationExpressionSummary(methodCallExpression.arguments().get(1)));
                 }
                 code.invokeinterface(
                         MAP_DESC,
@@ -7012,11 +7516,11 @@ public final class QinJvmDeclarationClassEmitter {
                 code.invokeinterface(MAP_DESC, "values", MethodTypeDesc.of(COLLECTION_DESC));
                 return returnType;
             }
-            case "keySet" -> {
+            case "keys", "keySet" -> {
                 code.invokeinterface(MAP_DESC, "keySet", MethodTypeDesc.of(ClassDesc.of("java.util.Set")));
                 return returnType;
             }
-            case "entrySet" -> {
+            case "entries", "entrySet" -> {
                 code.invokeinterface(MAP_DESC, "entrySet", MethodTypeDesc.of(ClassDesc.of("java.util.Set")));
                 return returnType;
             }
@@ -7213,6 +7717,21 @@ public final class QinJvmDeclarationClassEmitter {
             return arrayType.typeArguments().get(0);
         }
         return varargsElementType(arrayType);
+    }
+
+    private QinIrTypeRef staticArrayParameterElementType(QinIrTypeRef arrayType) {
+        return isAnyArrayType(arrayType) ? staticArrayElementType(arrayType) : null;
+    }
+
+    private QinIrTypeRef staticArrayStorageElementType(
+            QinIrTypeRef arrayType,
+            QinIrTypeRef semanticElementType) {
+        if (arrayType != null
+                && arrayType.kind() == QinIrTypeKind.CLASS
+                && isJavaLangObjectArrayBinaryName(arrayType.binaryName())) {
+            return QinIrTypeRef.classType("java.lang.Object");
+        }
+        return semanticElementType;
     }
 
     private boolean isObjectArrayCloneCall(
@@ -7516,7 +8035,7 @@ public final class QinJvmDeclarationClassEmitter {
                 || (type != null
                         && type.kind() == QinIrTypeKind.CLASS
                         && type.binaryName() != null
-                        && type.binaryName().startsWith("["));
+                        && (type.binaryName().startsWith("[") || type.binaryName().endsWith("[]")));
     }
 
     private QinIrTypeRef emitStaticMethodCall(
@@ -7776,21 +8295,55 @@ public final class QinJvmDeclarationClassEmitter {
             boxValueForObjectTarget(code, pathType);
             return QinIrTypeRef.classType("java.lang.Object");
         }
-        ResolvedStaticMethodCall resolvedMethod = resolveStaticMethodCall(
+        String effectiveOwnerBinaryName = effectiveLocalReferenceBinaryName(
                 methodCallExpression.ownerBinaryName(),
-                methodCallExpression.methodName(),
-                inferDeclarationArgumentTypes(
+                declarationIndex);
+        QinIrClassDeclaration generatedEnumReference = declarationIndex.get(effectiveOwnerBinaryName);
+        if (generatedEnumReference != null
+                && isGeneratedEnumLikeType(
+                        QinIrTypeRef.classType(generatedEnumReference.binaryName()),
+                        declarationIndex)) {
+            if (isGeneratedEnumValueOfCall(methodCallExpression)) {
+                emitClassObject(code, generatedEnumReference.binaryName());
+                return emitGeneratedEnumValueOfCall(
+                        code,
                         ownerDeclaration,
                         method,
                         declarationIndex,
                         localFrame,
-                        methodCallExpression.arguments()),
+                        generatedEnumReference,
+                        methodCallExpression.arguments());
+            }
+            if (isGeneratedEnumValuesCall(methodCallExpression)) {
+                emitClassObject(code, generatedEnumReference.binaryName());
+                return emitGeneratedEnumValuesCall(code);
+            }
+        }
+        List<QinIrTypeRef> argumentTypes = inferDeclarationArgumentTypes(
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                methodCallExpression.arguments());
+        ResolvedStaticMethodCall resolvedMethod = resolveStaticMethodCall(
+                methodCallExpression.ownerBinaryName(),
+                methodCallExpression.methodName(),
+                argumentTypes,
+                methodCallExpression.arguments(),
                 declarationIndex);
         if (resolvedMethod == null) {
             throw new IllegalArgumentException(
                     "Unknown declaration static method: "
-                            + methodCallExpression.ownerBinaryName() + "." + methodCallExpression.methodName());
+                            + methodCallExpression.ownerBinaryName() + "." + methodCallExpression.methodName()
+                            + "; " + staticMethodResolutionDiagnostic(
+                                    methodCallExpression.ownerBinaryName(),
+                                    methodCallExpression.methodName(),
+                                    argumentTypes,
+                                    declarationIndex));
         }
+        resolvedMethod = effectiveGeneratedLocalStaticMethodCall(
+                methodCallExpression,
+                resolvedMethod);
 
         emitStaticMethodArguments(
                 code,
@@ -7833,6 +8386,50 @@ public final class QinJvmDeclarationClassEmitter {
                 && methodCallExpression.arguments().size() == argumentCount;
     }
 
+    private ResolvedStaticMethodCall effectiveGeneratedLocalStaticMethodCall(
+            QinIrStaticMethodCallExpression methodCallExpression,
+            ResolvedStaticMethodCall resolvedMethod) {
+        if (methodCallExpression == null || resolvedMethod == null) {
+            return resolvedMethod;
+        }
+        String ownerBinaryName = resolvedMethod.ownerBinaryName();
+        if (ownerBinaryName == null
+                || ownerBinaryName.isBlank()
+                || isQinHostRuntimeBinaryName(ownerBinaryName)
+                || !ownerBinaryName.contains(".")
+                || isJavaPlatformBinaryName(ownerBinaryName)) {
+            return resolvedMethod;
+        }
+        String localOwnerBinaryName = flattenedBinaryAlias(ownerBinaryName);
+        if (!isGeneratedLocalBinaryName(localOwnerBinaryName)) {
+            return resolvedMethod;
+        }
+        List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+        for (QinIrTypeRef parameterType : resolvedMethod.parameterTypes()) {
+            parameterTypes.add(effectiveGeneratedLocalReflectedType(localOwnerBinaryName, parameterType));
+        }
+        return new ResolvedStaticMethodCall(
+                localOwnerBinaryName,
+                resolvedMethod.methodName(),
+                List.copyOf(parameterTypes),
+                effectiveGeneratedLocalReflectedType(localOwnerBinaryName, resolvedMethod.returnType()),
+                resolvedMethod.ownerInterface(),
+                null,
+                List.of(),
+                resolvedMethod.varargs());
+    }
+
+    private QinIrTypeRef effectiveGeneratedLocalReflectedType(String localOwnerBinaryName, QinIrTypeRef type) {
+        if (type == null || type.kind() != QinIrTypeKind.CLASS || isJavaPlatformBinaryName(type.binaryName())) {
+            return type;
+        }
+        String flattenedBinaryName = flattenedBinaryAlias(type.binaryName());
+        if (isGeneratedLocalBinaryName(localOwnerBinaryName) && isGeneratedLocalBinaryName(flattenedBinaryName)) {
+            return QinIrTypeRef.classType(flattenedBinaryName, type.typeArguments());
+        }
+        return type;
+    }
+
     private void emitStaticMethodArguments(
             java.lang.classfile.CodeBuilder code,
             QinIrClassDeclaration ownerDeclaration,
@@ -7866,6 +8463,16 @@ public final class QinJvmDeclarationClassEmitter {
                         targetType)) {
                     continue;
                 }
+                if (emitExpressionAsStaticArrayParameter(
+                        code,
+                        ownerDeclaration,
+                        method,
+                        declarationIndex,
+                        localFrame,
+                        arguments.get(i),
+                        targetType)) {
+                    continue;
+                }
                 if (emitExpressionAsJavaArrayParameter(
                         code,
                         ownerDeclaration,
@@ -7873,6 +8480,13 @@ public final class QinJvmDeclarationClassEmitter {
                         declarationIndex,
                         localFrame,
                         arguments.get(i),
+                        reflectedTargetType)) {
+                    continue;
+                }
+                if (emitNullLiteralForReferenceParameter(
+                        code,
+                        arguments.get(i),
+                        targetType,
                         reflectedTargetType)) {
                     continue;
                 }
@@ -7939,6 +8553,16 @@ public final class QinJvmDeclarationClassEmitter {
                     targetType)) {
                 continue;
             }
+            if (emitExpressionAsStaticArrayParameter(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    arguments.get(i),
+                    targetType)) {
+                continue;
+            }
             if (emitExpressionAsJavaArrayParameter(
                     code,
                     ownerDeclaration,
@@ -7946,6 +8570,13 @@ public final class QinJvmDeclarationClassEmitter {
                     declarationIndex,
                     localFrame,
                     arguments.get(i),
+                        reflectedTargetType)) {
+                continue;
+            }
+            if (emitNullLiteralForReferenceParameter(
+                    code,
+                    arguments.get(i),
+                    targetType,
                     reflectedTargetType)) {
                 continue;
             }
@@ -8338,6 +8969,13 @@ public final class QinJvmDeclarationClassEmitter {
                         reflectedTargetType)) {
                     continue;
                 }
+                if (emitNullLiteralForReferenceParameter(
+                        code,
+                        arguments.get(i),
+                        resolvedConstructor.parameterTypes().get(i),
+                        reflectedTargetType)) {
+                    continue;
+                }
                 QinIrTypeRef actualType = emitDeclarationExpression(
                         code,
                         ownerDeclaration,
@@ -8381,6 +9019,13 @@ public final class QinJvmDeclarationClassEmitter {
                     declarationIndex,
                     localFrame,
                     arguments.get(i),
+                        reflectedTargetType)) {
+                continue;
+            }
+            if (emitNullLiteralForReferenceParameter(
+                    code,
+                    arguments.get(i),
+                    resolvedConstructor.parameterTypes().get(i),
                     reflectedTargetType)) {
                 continue;
             }
@@ -8454,13 +9099,6 @@ public final class QinJvmDeclarationClassEmitter {
                     ClassDesc.of(activeBinaryClassName),
                     functionDefinitionHelper,
                     MethodTypeDesc.of(OBJECT_DESC));
-            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall(
-                    "QinJvmDeclarationClassEmitter",
-                    "__qin_make_function__"
-                            + " owner=" + (ownerDeclaration == null ? "<null>" : ownerDeclaration.binaryName())
-                            + " method=" + (method == null ? "<null>" : method.name())
-                            + " helper=" + functionDefinitionHelper
-                            + " closure=" + functionClosureKeys(functionDefinition));
             if (method != null && !method.staticMethod()) {
                 code.aload(0);
                 code.invokestatic(
@@ -8544,14 +9182,13 @@ public final class QinJvmDeclarationClassEmitter {
         if ("Global".equals(builtinCallExpression.receiverName())
                 && "__qin_init_enum_value".equals(builtinCallExpression.methodName())
                 && builtinCallExpression.arguments().size() == 3) {
-            return emitGlobalBuiltinObjectCall(
+            return emitStaticInitEnumValueCall(
                     code,
                     ownerDeclaration,
                     method,
                     declarationIndex,
                     localFrame,
-                    builtinCallExpression,
-                    "__qin_init_enum_value");
+                    builtinCallExpression);
         }
         if ("Global".equals(builtinCallExpression.receiverName())
                 && "__qin_java_class_info__".equals(builtinCallExpression.methodName())
@@ -8639,6 +9276,17 @@ public final class QinJvmDeclarationClassEmitter {
                     localFrame,
                     builtinCallExpression);
         }
+        if ("Global".equals(builtinCallExpression.receiverName())
+                && "__qin_module_ref_get__".equals(builtinCallExpression.methodName())
+                && builtinCallExpression.arguments().size() == 1) {
+            return emitModuleRefGetBuiltin(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    builtinCallExpression);
+        }
         QinIrTypeRef javaLangParseRuntimeCall = emitJavaLangParseRuntimeCall(
                 code,
                 ownerDeclaration,
@@ -8664,13 +9312,6 @@ public final class QinJvmDeclarationClassEmitter {
                     functionDefinition);
             boxValueForObjectTarget(code, definitionType);
             code.aload(0);
-            QinJvmDynamicSemanticWarnings.warnJavaEsmGlobalCall(
-                    "QinJvmDeclarationClassEmitter",
-                    "__qin_make_function__"
-                            + " owner=" + (ownerDeclaration == null ? "<null>" : ownerDeclaration.binaryName())
-                            + " method=" + (method == null ? "<null>" : method.name())
-                            + " builtin=" + builtinCallExpression.receiverName() + "." + builtinCallExpression.methodName()
-                            + " closure=" + functionClosureKeys(functionDefinition));
             code.invokestatic(
                     ESM_GLOBAL_DESC,
                     "__qin_make_function_with_lexical_this__",
@@ -8694,6 +9335,28 @@ public final class QinJvmDeclarationClassEmitter {
         throw new IllegalArgumentException(
                 "Unsupported declaration builtin call: "
                         + builtinCallExpression.receiverName() + "." + builtinCallExpression.methodName());
+    }
+
+    private QinIrTypeRef emitModuleRefGetBuiltin(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrBuiltinCallExpression builtinCallExpression) {
+        QinIrTypeRef nameType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                builtinCallExpression.arguments().get(0));
+        boxValueForObjectTarget(code, nameType);
+        code.invokestatic(
+                ESM_GLOBAL_DESC,
+                "__qin_module_ref_get__",
+                MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)Ljava/lang/Object;"));
+        return QinIrTypeRef.classType("java.lang.Object");
     }
 
     private QinIrTypeRef emitCollectionGetBuiltin(
@@ -9945,6 +10608,10 @@ public final class QinJvmDeclarationClassEmitter {
             Map<String, QinIrClassDeclaration> declarationIndex,
             QinIrJavaClassLiteralExpression classLiteralExpression) {
         String binaryName = classLiteralExpression.binaryName();
+        String localBinaryName = effectiveLocalReferenceBinaryName(binaryName, declarationIndex);
+        if (!Objects.equals(localBinaryName, binaryName)) {
+            return localBinaryName;
+        }
         QinIrClassDeclaration declaredClassReference = resolveDeclaredClassReference(
                 ownerDeclaration,
                 declarationIndex,
@@ -10385,7 +11052,11 @@ public final class QinJvmDeclarationClassEmitter {
                 declarationIndex,
                 localFrame,
                 builtinCallExpression.arguments().get(1));
-        coerceValueForTargetType(code, consequentType, resultType);
+        coerceConditionalBranchForTarget(
+                code,
+                builtinCallExpression.arguments().get(1),
+                consequentType,
+                resultType);
         code.goto_(doneLabel);
 
         code.labelBinding(alternateLabel);
@@ -10396,9 +11067,24 @@ public final class QinJvmDeclarationClassEmitter {
                 declarationIndex,
                 localFrame,
                 builtinCallExpression.arguments().get(2));
-        coerceValueForTargetType(code, alternateType, resultType);
+        coerceConditionalBranchForTarget(
+                code,
+                builtinCallExpression.arguments().get(2),
+                alternateType,
+                resultType);
         code.labelBinding(doneLabel);
         return resultType;
+    }
+
+    private void coerceConditionalBranchForTarget(
+            java.lang.classfile.CodeBuilder code,
+            QinIrExpression branchExpression,
+            QinIrTypeRef actualType,
+            QinIrTypeRef resultType) {
+        if (isNullOrUndefinedLiteral(branchExpression) && isReferenceStorageType(resultType)) {
+            return;
+        }
+        coerceValueForTargetType(code, actualType, resultType);
     }
 
     private void emitBooleanExpression(
@@ -10556,6 +11242,40 @@ public final class QinJvmDeclarationClassEmitter {
         return resultType;
     }
 
+    private QinIrTypeRef emitStaticInitEnumValueCall(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrBuiltinCallExpression builtinCallExpression) {
+        QinIrExpression valueExpression = builtinCallExpression.arguments().get(0);
+        QinIrTypeRef valueType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                valueExpression);
+        boxValueForObjectTarget(code, valueType);
+        for (int i = 1; i < builtinCallExpression.arguments().size(); i++) {
+            QinIrTypeRef argumentType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    builtinCallExpression.arguments().get(i));
+            boxValueForObjectTarget(code, argumentType);
+        }
+        code.invokestatic(
+                ESM_GLOBAL_DESC,
+                "__qin_init_enum_value",
+                MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
+        coerceObjectResultForType(code, valueType);
+        return valueType;
+    }
+
     private String binaryBuiltinFallbackDiagnostic(
             QinIrClassDeclaration ownerDeclaration,
             QinIrMethodDeclaration method,
@@ -10695,6 +11415,12 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrTypeRef actualType;
             if (assignmentValue instanceof QinIrNullLiteral && isPrimitiveFieldType(fieldAccess.field().type())) {
                 emitPrimitiveDefaultValue(code, fieldAccess.field().type());
+                actualType = fieldAccess.field().type();
+            } else if (emitNullLiteralForReferenceParameter(
+                    code,
+                    assignmentValue,
+                    fieldAccess.field().type(),
+                    null)) {
                 actualType = fieldAccess.field().type();
             } else {
                 actualType = emitDeclarationExpression(
@@ -10861,6 +11587,11 @@ public final class QinJvmDeclarationClassEmitter {
                         localFrame,
                         assignmentValue);
                 coerceValueForTargetType(code, actualType, elementType);
+                if (elementType.kind() == QinIrTypeKind.DOUBLE) {
+                    code.dup2_x2();
+                } else {
+                    code.dup_x2();
+                }
                 code.arrayStore(primitiveArrayKind);
                 return elementType;
             }
@@ -10984,10 +11715,19 @@ public final class QinJvmDeclarationClassEmitter {
                 || declarationIndex == null) {
             return false;
         }
-        QinIrClassDeclaration declaration = declarationIndex.get(type.binaryName());
+        QinIrClassDeclaration declaration = resolveIndexedDeclaration(declarationIndex, type.binaryName());
+        return isGeneratedEnumLikeDeclaration(declaration);
+    }
+
+    private boolean isGeneratedEnumLikeDeclaration(QinIrClassDeclaration declaration) {
         return declaration != null
                 && declaration.superType() != null
                 && "java.lang.Enum".equals(declaration.superType().binaryName());
+    }
+
+    private boolean isGeneratedEnumSyntheticStaticCall(String methodName, int argumentCount) {
+        return ("values".equals(methodName) && argumentCount == 0)
+                || ("valueOf".equals(methodName) && argumentCount == 1);
     }
 
     private boolean isGeneratedEnumValueOfCall(QinIrInstanceMethodCallExpression methodCallExpression) {
@@ -11000,6 +11740,18 @@ public final class QinJvmDeclarationClassEmitter {
                 && methodCallExpression.arguments().isEmpty();
     }
 
+    private boolean isGeneratedEnumValueOfCall(QinIrStaticMethodCallExpression methodCallExpression) {
+        return methodCallExpression != null
+                && "valueOf".equals(methodCallExpression.methodName())
+                && methodCallExpression.arguments().size() == 1;
+    }
+
+    private boolean isGeneratedEnumValuesCall(QinIrStaticMethodCallExpression methodCallExpression) {
+        return methodCallExpression != null
+                && "values".equals(methodCallExpression.methodName())
+                && methodCallExpression.arguments().isEmpty();
+    }
+
     private QinIrTypeRef emitGeneratedEnumValueOfCall(
             java.lang.classfile.CodeBuilder code,
             QinIrClassDeclaration ownerDeclaration,
@@ -11008,13 +11760,31 @@ public final class QinJvmDeclarationClassEmitter {
             LocalFrame localFrame,
             QinIrClassDeclaration enumDeclaration,
             QinIrInstanceMethodCallExpression methodCallExpression) {
+        return emitGeneratedEnumValueOfCall(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                enumDeclaration,
+                methodCallExpression.arguments());
+    }
+
+    private QinIrTypeRef emitGeneratedEnumValueOfCall(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrClassDeclaration enumDeclaration,
+            List<QinIrExpression> arguments) {
         QinIrTypeRef argumentType = emitDeclarationExpression(
                 code,
                 ownerDeclaration,
                 method,
                 declarationIndex,
                 localFrame,
-                methodCallExpression.arguments().get(0));
+                arguments.get(0));
         boxValueForObjectTarget(code, argumentType);
         code.invokestatic(
                 ESM_GLOBAL_DESC,
@@ -12013,6 +12783,48 @@ public final class QinJvmDeclarationClassEmitter {
         return false;
     }
 
+    private boolean emitExpressionAsStaticArrayParameter(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrExpression expression,
+            QinIrTypeRef targetType) {
+        QinIrTypeRef componentType = staticArrayParameterElementType(targetType);
+        if (componentType == null) {
+            return false;
+        }
+        QinIrTypeRef storageComponentType = staticArrayStorageElementType(targetType, componentType);
+        if (expression instanceof QinIrArrayLiteral arrayLiteral) {
+            emitArrayLiteralAsTypedArray(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    arrayLiteral,
+                    storageComponentType,
+                    componentType);
+            return true;
+        }
+        if (expression instanceof QinIrInstanceMethodCallExpression methodCallExpression) {
+            StaticArrayFromFactory factory = staticArrayFromFactory(methodCallExpression);
+            if (canEmitStaticArrayFromFactoryAsTypedArray(factory, componentType)) {
+                emitStaticArrayFromFactoryAsTypedArray(
+                        code,
+                        ownerDeclaration,
+                        method,
+                        declarationIndex,
+                        localFrame,
+                        factory,
+                        storageComponentType);
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void emitArrayLiteralAsJavaArray(
             java.lang.classfile.CodeBuilder code,
             QinIrClassDeclaration ownerDeclaration,
@@ -12053,6 +12865,100 @@ public final class QinJvmDeclarationClassEmitter {
                 code.arrayStore(primitiveArrayKind);
             }
         }
+    }
+
+    private void emitArrayLiteralAsTypedArray(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            QinIrArrayLiteral arrayLiteral,
+            QinIrTypeRef storageComponentType,
+            QinIrTypeRef semanticComponentType) {
+        TypeKind primitiveArrayKind = primitiveArrayKind(storageComponentType);
+        code.loadConstant(arrayLiteral.elements().size());
+        emitNewArray(code, storageComponentType);
+        for (int i = 0; i < arrayLiteral.elements().size(); i++) {
+            QinIrExpression element = arrayLiteral.elements().get(i);
+            if (element instanceof QinIrSpreadArgumentExpression) {
+                throw new IllegalStateException(
+                        "[QinDynamicSemanticError] QinJvmDeclarationClassEmitter cannot statically emit array spread "
+                                + "inside a typed JVM array parameter literal yet: " + arrayLiteral);
+            }
+            code.dup();
+            code.loadConstant(i);
+            QinIrTypeRef actualElementType = emitDeclarationExpression(
+                    code,
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    element);
+            QinIrTypeRef targetElementType = primitiveArrayKind == null ? storageComponentType : semanticComponentType;
+            coerceValueForTargetType(code, actualElementType, targetElementType);
+            if (primitiveArrayKind == null) {
+                code.aastore();
+            } else {
+                code.arrayStore(primitiveArrayKind);
+            }
+        }
+    }
+
+    private boolean canEmitStaticArrayFromFactoryAsTypedArray(
+            StaticArrayFromFactory factory,
+            QinIrTypeRef componentType) {
+        if (factory == null || componentType == null) {
+            return false;
+        }
+        Integer length = staticArrayFactoryLength(factory);
+        if (length != null && length == 0) {
+            return true;
+        }
+        return isDefaultArrayValueExpression(factory.valueExpression(), componentType);
+    }
+
+    private Integer staticArrayFactoryLength(StaticArrayFromFactory factory) {
+        if (factory == null || !(factory.lengthExpression() instanceof QinIrNumberLiteral numberLiteral)) {
+            return null;
+        }
+        double value = numberLiteral.value();
+        if (value < 0 || value != Math.rint(value) || value > Integer.MAX_VALUE) {
+            return null;
+        }
+        return (int) value;
+    }
+
+    private boolean isDefaultArrayValueExpression(QinIrExpression expression, QinIrTypeRef componentType) {
+        if (expression instanceof QinIrNullLiteral) {
+            return componentType != null
+                    && (componentType.kind() == QinIrTypeKind.CLASS || componentType.kind() == QinIrTypeKind.STRING);
+        }
+        if (expression instanceof QinIrNumberLiteral numberLiteral
+                && componentType != null
+                && (componentType.kind() == QinIrTypeKind.INT || componentType.kind() == QinIrTypeKind.DOUBLE)) {
+            return numberLiteral.value() == 0.0d;
+        }
+        return false;
+    }
+
+    private void emitStaticArrayFromFactoryAsTypedArray(
+            java.lang.classfile.CodeBuilder code,
+            QinIrClassDeclaration ownerDeclaration,
+            QinIrMethodDeclaration method,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            LocalFrame localFrame,
+            StaticArrayFromFactory factory,
+            QinIrTypeRef storageComponentType) {
+        QinIrTypeRef lengthType = emitDeclarationExpression(
+                code,
+                ownerDeclaration,
+                method,
+                declarationIndex,
+                localFrame,
+                factory.lengthExpression());
+        coerceValueForTargetType(code, lengthType, QinIrTypeRef.intType());
+        emitNewArray(code, storageComponentType);
     }
 
     private void emitNewArray(java.lang.classfile.CodeBuilder code, QinIrTypeRef componentType) {
@@ -12190,6 +13096,9 @@ public final class QinJvmDeclarationClassEmitter {
         }
         if (expression instanceof QinIrBoundMethodReferenceExpression) {
             return QinIrTypeRef.classType("java.lang.Object");
+        }
+        if (expression instanceof QinIrCastExpression castExpression) {
+            return castTypeRef(castExpression.typeName());
         }
         if (expression instanceof QinIrSequenceExpression sequenceExpression) {
             return inferDeclarationExpressionType(
@@ -12498,6 +13407,11 @@ public final class QinJvmDeclarationClassEmitter {
                     declarationIndex,
                     localFrame,
                     methodCallExpression.receiver());
+            QinIrTypeRef ascribedReceiverType =
+                    ascribedInstanceMethodReceiverType(methodCallExpression, receiverType, declarationIndex);
+            if (ascribedReceiverType != null) {
+                receiverType = ascribedReceiverType;
+            }
             if (isObjectArraySortCall(receiverType, methodCallExpression)) {
                 return QinIrTypeRef.classType("java.lang.Object[]");
             }
@@ -12526,6 +13440,7 @@ public final class QinJvmDeclarationClassEmitter {
                     receiverType,
                     methodCallExpression.methodName(),
                     argumentTypes,
+                    methodCallExpression.arguments(),
                     declarationIndex);
             if (resolvedMethod == null) {
                 if (methodCallExpression.receiver() instanceof QinIrThisExpression) {
@@ -12539,13 +13454,29 @@ public final class QinJvmDeclarationClassEmitter {
                     }
                 }
                 if (methodCallExpression.receiver() instanceof QinIrJavaClassLiteralExpression classLiteralExpression) {
+                    String classLiteralBinaryName = resolveJavaClassLiteralBinaryName(
+                            ownerDeclaration,
+                            declarationIndex,
+                            classLiteralExpression);
                     ResolvedStaticMethodCall staticMethod = resolveStaticMethodCall(
-                            classLiteralExpression.binaryName(),
+                            classLiteralBinaryName,
                             methodCallExpression.methodName(),
                             argumentTypes,
                             declarationIndex);
                     if (staticMethod != null) {
                         return staticMethod.returnType();
+                    }
+                    QinIrClassDeclaration generatedEnumReference = declarationIndex.get(classLiteralBinaryName);
+                    if (generatedEnumReference != null
+                            && isGeneratedEnumLikeType(
+                                    QinIrTypeRef.classType(generatedEnumReference.binaryName()),
+                                    declarationIndex)) {
+                        if (isGeneratedEnumValueOfCall(methodCallExpression)) {
+                            return QinIrTypeRef.classType(generatedEnumReference.binaryName());
+                        }
+                        if (isGeneratedEnumValuesCall(methodCallExpression)) {
+                            return QinIrTypeRef.classType("java.lang.Object[]");
+                        }
                     }
                 }
                 if (methodCallExpression.receiver() instanceof QinIrIdentifierReference identifierReference) {
@@ -12641,6 +13572,9 @@ public final class QinJvmDeclarationClassEmitter {
                 if (isJavaClassToStringCall(receiverType, methodCallExpression)) {
                     return QinIrTypeRef.stringType();
                 }
+                if (isJavaClassReflectMethodLookupCall(receiverType, methodCallExpression)) {
+                    return QinIrTypeRef.classType("java.lang.reflect.Method");
+                }
                 QinIrTypeRef generatedEnumMetadataReturnType =
                         generatedEnumMetadataMethodReturnType(methodCallExpression);
                 if (generatedEnumMetadataReturnType != null
@@ -12678,7 +13612,20 @@ public final class QinJvmDeclarationClassEmitter {
                 }
                 throw new IllegalArgumentException(
                         "Unknown declaration instance method type: "
-                                + receiverType.binaryName() + "." + methodCallExpression.methodName());
+                                + receiverType.binaryName() + "." + methodCallExpression.methodName()
+                                + "; owner=" + ownerDeclaration.binaryName()
+                                + "; method=" + method.name()
+                                + "; receiverExpression=" + methodCallExpression.receiver()
+                                + "; expression=" + methodCallExpression
+                                + "; argumentCount=" + methodCallExpression.arguments().size()
+                                + "; currentReceiver=" + isCurrentDeclarationReceiver(ownerDeclaration, receiverType)
+                                + "; receiverKind=" + receiverType.kind()
+                                + "; receiverBinaryName=" + receiverType.binaryName()
+                                + "; ownerMethods=" + ownerDeclaration.methods().stream()
+                                        .map(candidate -> candidate.name()
+                                                + ":static=" + candidate.staticMethod()
+                                                + ":params=" + candidate.parameters().size())
+                                        .toList());
             }
             QinIrTypeRef javaStreamMethodReturnType = javaStreamMethodReturnType(receiverType, methodCallExpression);
             if (javaStreamMethodReturnType != null) {
@@ -12742,6 +13689,21 @@ public final class QinJvmDeclarationClassEmitter {
                         staticMethodCallExpression.arguments().get(1));
                 return QinIrTypeRef.classType("java.util.List", List.of(boxForObjectStorage(valueType)));
             }
+            String effectiveOwnerBinaryName = effectiveLocalReferenceBinaryName(
+                    staticMethodCallExpression.ownerBinaryName(),
+                    declarationIndex);
+            QinIrClassDeclaration generatedEnumReference = declarationIndex.get(effectiveOwnerBinaryName);
+            if (generatedEnumReference != null
+                    && isGeneratedEnumLikeType(
+                            QinIrTypeRef.classType(generatedEnumReference.binaryName()),
+                            declarationIndex)) {
+                if (isGeneratedEnumValueOfCall(staticMethodCallExpression)) {
+                    return QinIrTypeRef.classType(generatedEnumReference.binaryName());
+                }
+                if (isGeneratedEnumValuesCall(staticMethodCallExpression)) {
+                    return QinIrTypeRef.classType("java.lang.Object[]");
+                }
+            }
             ResolvedStaticMethodCall resolvedMethod = resolveStaticMethodCall(
                     staticMethodCallExpression.ownerBinaryName(),
                     staticMethodCallExpression.methodName(),
@@ -12751,12 +13713,23 @@ public final class QinJvmDeclarationClassEmitter {
                             declarationIndex,
                             localFrame,
                             staticMethodCallExpression.arguments()),
+                    staticMethodCallExpression.arguments(),
                     declarationIndex);
             if (resolvedMethod == null) {
                 throw new IllegalArgumentException(
                         "Unknown declaration static method type: "
                                 + staticMethodCallExpression.ownerBinaryName()
-                                + "." + staticMethodCallExpression.methodName());
+                                + "." + staticMethodCallExpression.methodName()
+                                + "; " + staticMethodResolutionDiagnostic(
+                                        staticMethodCallExpression.ownerBinaryName(),
+                                        staticMethodCallExpression.methodName(),
+                                        inferDeclarationArgumentTypes(
+                                                ownerDeclaration,
+                                                method,
+                                                declarationIndex,
+                                                localFrame,
+                                                staticMethodCallExpression.arguments()),
+                                        declarationIndex));
             }
             return resolvedMethod.returnType();
         }
@@ -12929,20 +13902,20 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrExpression consequent = builtinCallExpression.arguments().get(1);
             QinIrExpression alternate = builtinCallExpression.arguments().get(2);
             if (isNullOrUndefinedLiteral(consequent)) {
-                return inferDeclarationExpressionType(
+                return nullableConditionalBranchType(inferDeclarationExpressionType(
                         ownerDeclaration,
                         method,
                         declarationIndex,
                         localFrame,
-                        alternate);
+                        alternate));
             }
             if (isNullOrUndefinedLiteral(alternate)) {
-                return inferDeclarationExpressionType(
+                return nullableConditionalBranchType(inferDeclarationExpressionType(
                         ownerDeclaration,
                         method,
                         declarationIndex,
                         localFrame,
-                        consequent);
+                        consequent));
             }
             QinIrTypeRef consequentType = inferDeclarationExpressionType(
                     ownerDeclaration,
@@ -12965,6 +13938,10 @@ public final class QinJvmDeclarationClassEmitter {
         if ("__qin_number__".equals(builtinCallExpression.methodName())
                 && builtinCallExpression.arguments().size() <= 1) {
             return QinIrTypeRef.doubleType();
+        }
+        if ("__qin_java_new_array__".equals(builtinCallExpression.methodName())
+                && builtinCallExpression.arguments().size() == 2) {
+            return inferQinJavaNewArrayType(builtinCallExpression);
         }
         if ("__qin_call__".equals(builtinCallExpression.methodName())
                 && !builtinCallExpression.arguments().isEmpty()) {
@@ -12989,6 +13966,19 @@ public final class QinJvmDeclarationClassEmitter {
                     builtinCallExpression.arguments().get(0));
             return staticCollectionElementType(collectionType);
         }
+        if ("__qin_collection_to_array__".equals(builtinCallExpression.methodName())
+                && builtinCallExpression.arguments().size() == 1) {
+            QinIrTypeRef collectionType = inferDeclarationExpressionType(
+                    ownerDeclaration,
+                    method,
+                    declarationIndex,
+                    localFrame,
+                    builtinCallExpression.arguments().get(0));
+            QinIrTypeRef elementType = staticCollectionElementType(collectionType);
+            return isJavaLangObjectType(elementType)
+                    ? QinIrTypeRef.classType("java.lang.Object[]")
+                    : QinIrTypeRef.classType("java.lang.Object[]", List.of(elementType));
+        }
         QinIrTypeRef semanticType = inferBuiltinSemanticReturnType(
                 builtinCallExpression.receiverName(),
                 builtinCallExpression.methodName());
@@ -13001,6 +13991,28 @@ public final class QinJvmDeclarationClassEmitter {
                 builtinCallExpression.arguments().size()).orElse(null);
         if (builtinMethod != null) {
             return inferBuiltinMethodReturnType(builtinMethod);
+        }
+        return QinIrTypeRef.classType("java.lang.Object");
+    }
+
+    private QinIrTypeRef inferQinJavaNewArrayType(QinIrBuiltinCallExpression builtinCallExpression) {
+        QinIrExpression typeExpression = builtinCallExpression.arguments().get(0);
+        if (!(typeExpression instanceof QinIrStringLiteral typeLiteral)) {
+            return QinIrTypeRef.classType("java.lang.Object");
+        }
+        return staticArrayTypeFromName(typeLiteral.value());
+    }
+
+    private QinIrTypeRef staticArrayTypeFromName(String rawName) {
+        if (rawName == null || rawName.isBlank()) {
+            return QinIrTypeRef.classType("java.lang.Object");
+        }
+        String name = rawName.trim();
+        if (name.startsWith("[")) {
+            return QinIrTypeRef.classType(name.replace('/', '.'));
+        }
+        if (name.endsWith("[]")) {
+            return QinIrTypeRef.classType(name);
         }
         return QinIrTypeRef.classType("java.lang.Object");
     }
@@ -13150,6 +14162,25 @@ public final class QinJvmDeclarationClassEmitter {
             return genericBranchType;
         }
         return QinIrTypeRef.classType("java.lang.Object");
+    }
+
+    private QinIrTypeRef nullableConditionalBranchType(QinIrTypeRef nonNullType) {
+        if (nonNullType == null) {
+            return QinIrTypeRef.classType("java.lang.Object");
+        }
+        return switch (nonNullType.kind()) {
+            case BOOLEAN -> QinIrTypeRef.classType("java.lang.Boolean");
+            case INT -> QinIrTypeRef.classType("java.lang.Integer");
+            case DOUBLE -> QinIrTypeRef.classType("java.lang.Double");
+            case VOID -> QinIrTypeRef.classType("java.lang.Object");
+            default -> nonNullType;
+        };
+    }
+
+    private boolean isReferenceStorageType(QinIrTypeRef type) {
+        return type != null
+                && (type.kind() == QinIrTypeKind.CLASS
+                || type.kind() == QinIrTypeKind.STRING);
     }
 
     private QinIrTypeRef mergeGenericErasedBranchType(QinIrTypeRef leftType, QinIrTypeRef rightType) {
@@ -13380,6 +14411,7 @@ public final class QinJvmDeclarationClassEmitter {
                 methodName,
                 argumentCount,
                 null,
+                null,
                 declarationIndex,
                 new java.util.LinkedHashSet<>());
     }
@@ -13394,6 +14426,23 @@ public final class QinJvmDeclarationClassEmitter {
                 methodName,
                 argumentTypes == null ? 0 : argumentTypes.size(),
                 argumentTypes,
+                null,
+                declarationIndex,
+                new java.util.LinkedHashSet<>());
+    }
+
+    private ResolvedInstanceMethodCall resolveInstanceMethodCall(
+            QinIrTypeRef ownerType,
+            String methodName,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        return resolveInstanceMethodCall(
+                ownerType,
+                methodName,
+                argumentTypes == null ? 0 : argumentTypes.size(),
+                argumentTypes,
+                argumentExpressions,
                 declarationIndex,
                 new java.util.LinkedHashSet<>());
     }
@@ -13403,6 +14452,7 @@ public final class QinJvmDeclarationClassEmitter {
             String methodName,
             int argumentCount,
             List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
             Map<String, QinIrClassDeclaration> declarationIndex,
             java.util.Set<String> visitedLocalTypes) {
         if (ownerType.kind() != QinIrTypeKind.CLASS && ownerType.kind() != QinIrTypeKind.STRING) {
@@ -13437,6 +14487,7 @@ public final class QinJvmDeclarationClassEmitter {
                         + " localOwner=" + localOwnerBinaryName
                         + " method=" + methodName
                         + "/" + argumentCount
+                        + " args=" + argumentTypes
                         + " declarations=" + localDeclaration.methods().size()
                         + " super=" + localDeclaration.superType());
             }
@@ -13446,7 +14497,44 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrMethodDeclaration generatedOverload = hasExactLocalInstanceMethod(
                     localDeclaration,
                     methodName,
-                    argumentCount)
+                    argumentCount,
+                    argumentTypes,
+                    declarationIndex)
+                            ? null
+                            : resolveGeneratedOverloadImplementation(
+                                    localDeclaration,
+                                    methodName,
+                                    argumentCount,
+                                    argumentTypes,
+                                    argumentExpressions,
+                                    declarationIndex,
+                                    false);
+            if (generatedOverload != null) {
+                List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+                for (var parameter : generatedOverload.parameters()) {
+                    parameterTypes.add(parameter.type());
+                }
+                if (traceInstanceMethodResolution) {
+                    System.err.println("[QinJvmDeclarationClassEmitter] local generated overload result="
+                            + localOwnerBinaryName + "." + generatedOverload.name()
+                            + "/" + generatedOverload.parameters().size());
+                }
+                return new ResolvedInstanceMethodCall(
+                        localOwnerBinaryName,
+                        generatedOverload.name(),
+                        List.copyOf(parameterTypes),
+                        generatedOverload.returnType(),
+                        localDeclaration.interfaceClass(),
+                        null,
+                        List.of(),
+                        hasVarargsParameter(generatedOverload));
+            }
+            generatedOverload = hasExactLocalInstanceMethod(
+                    localDeclaration,
+                    methodName,
+                    argumentCount,
+                    argumentTypes,
+                    declarationIndex)
                             ? null
                             : resolveGeneratedOverloadImplementation(
                                     localDeclaration,
@@ -13476,28 +14564,63 @@ public final class QinJvmDeclarationClassEmitter {
             }
             QinIrMethodDeclaration matched = null;
             QinIrMethodDeclaration paddedMatch = null;
+            int matchedScore = Integer.MIN_VALUE;
+            int paddedMatchScore = Integer.MIN_VALUE;
             for (QinIrMethodDeclaration candidate : localDeclaration.methods()) {
                 if (candidate.staticMethod()
                         || !candidate.name().equals(methodName)
                         || !isLocalMethodCountApplicable(candidate.parameters(), argumentCount)) {
                     continue;
                 }
+                int matchScore = argumentTypes == null
+                        ? 0
+                        : localMethodMatchScore(
+                                candidate.parameters(),
+                                argumentTypes,
+                                argumentExpressions,
+                                declarationIndex);
+                if (matchScore < 0) {
+                    continue;
+                }
                 if (candidate.parameters().size() == argumentCount) {
-                    if (matched != null) {
+                    if (matched != null && matchScore == matchedScore) {
                         throw new IllegalArgumentException(
                                 "Ambiguous declaration method overload: " + ownerType.binaryName() + "." + methodName);
                     }
+                    if (matched != null && matchScore < matchedScore) {
+                        continue;
+                    }
                     matched = candidate;
+                    matchedScore = matchScore;
                     continue;
                 }
-                if (paddedMatch != null) {
+                if (paddedMatch != null && matchScore == paddedMatchScore) {
                     throw new IllegalArgumentException(
                             "Ambiguous declaration method overload: " + ownerType.binaryName() + "." + methodName);
                 }
+                if (paddedMatch != null && matchScore < paddedMatchScore) {
+                    continue;
+                }
                 paddedMatch = candidate;
+                paddedMatchScore = matchScore;
             }
             if (matched == null) {
                 matched = paddedMatch;
+            }
+            if (matched == null) {
+                matched = resolveGeneratedOverloadImplementation(
+                        localDeclaration,
+                        methodName,
+                        argumentCount,
+                        argumentTypes,
+                        false);
+            }
+            if (matched == null) {
+                matched = resolveExactGeneratedOverloadImplementation(
+                        localDeclaration,
+                        methodName,
+                        argumentCount,
+                        false);
             }
             if (matched != null) {
                 List<QinIrTypeRef> parameterTypes = new ArrayList<>();
@@ -13546,6 +14669,7 @@ public final class QinJvmDeclarationClassEmitter {
                             methodName,
                             argumentCount,
                             argumentTypes,
+                            argumentExpressions,
                             declarationIndex,
                             visitedLocalTypes);
         }
@@ -13792,6 +14916,7 @@ public final class QinJvmDeclarationClassEmitter {
         }
         return switch (ownerType.binaryName()) {
             case "com.qin.lang.runtime.JavaEsmMapObject" -> resolveJavaEsmMapObjectInstanceMethodCall(
+                    ownerType,
                     methodName,
                     argumentCount);
             case "com.qin.lang.runtime.JavaEsmSetObject" -> resolveJavaEsmSetObjectInstanceMethodCall(
@@ -13802,6 +14927,7 @@ public final class QinJvmDeclarationClassEmitter {
     }
 
     private ResolvedInstanceMethodCall resolveJavaEsmMapObjectInstanceMethodCall(
+            QinIrTypeRef ownerType,
             String methodName,
             int argumentCount) {
         return switch (methodName) {
@@ -13849,12 +14975,39 @@ public final class QinJvmDeclarationClassEmitter {
                     ? runtimeInstanceMethodCall(
                             "com.qin.lang.runtime.JavaEsmMapObject",
                             methodName,
-                            QinIrTypeRef.classType("java.util.List"),
+                            javaEsmMapObjectIterationReturnType(ownerType, methodName),
                             List.of(),
                             List.of())
                     : null;
             default -> null;
         };
+    }
+
+    private QinIrTypeRef javaEsmMapObjectIterationReturnType(QinIrTypeRef ownerType, String methodName) {
+        QinIrTypeRef keyType = javaEsmMapObjectKeyType(ownerType);
+        QinIrTypeRef valueType = javaEsmMapObjectValueType(ownerType);
+        return switch (methodName) {
+            case "keys" -> QinIrTypeRef.classType("java.util.List", List.of(keyType));
+            case "values" -> QinIrTypeRef.classType("java.util.List", List.of(valueType));
+            case "entries" -> QinIrTypeRef.classType(
+                    "java.util.List",
+                    List.of(QinIrTypeRef.classType("java.lang.Object[]", List.of(keyType, valueType))));
+            default -> QinIrTypeRef.classType("java.util.List");
+        };
+    }
+
+    private QinIrTypeRef javaEsmMapObjectKeyType(QinIrTypeRef ownerType) {
+        if (ownerType != null && ownerType.typeArguments() != null && !ownerType.typeArguments().isEmpty()) {
+            return boxForObjectStorage(ownerType.typeArguments().get(0));
+        }
+        return QinIrTypeRef.classType("java.lang.Object");
+    }
+
+    private QinIrTypeRef javaEsmMapObjectValueType(QinIrTypeRef ownerType) {
+        if (ownerType != null && ownerType.typeArguments() != null && ownerType.typeArguments().size() >= 2) {
+            return boxForObjectStorage(ownerType.typeArguments().get(1));
+        }
+        return QinIrTypeRef.classType("java.lang.Object");
     }
 
     private QinIrTypeRef javaLangStringBuilderFacadeReturnType(
@@ -13955,6 +15108,39 @@ public final class QinJvmDeclarationClassEmitter {
             QinIrClassDeclaration declaration,
             String methodName,
             int argumentCount) {
+        return resolveLocalDeclarationInstanceMethodCall(
+                declaration,
+                methodName,
+                argumentCount,
+                null,
+                new java.util.LinkedHashSet<>());
+    }
+
+    private ResolvedInstanceMethodCall resolveLocalDeclarationInstanceMethodCall(
+            QinIrClassDeclaration declaration,
+            String methodName,
+            int argumentCount,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        return resolveLocalDeclarationInstanceMethodCall(
+                declaration,
+                methodName,
+                argumentCount,
+                declarationIndex,
+                new java.util.LinkedHashSet<>());
+    }
+
+    private ResolvedInstanceMethodCall resolveLocalDeclarationInstanceMethodCall(
+            QinIrClassDeclaration declaration,
+            String methodName,
+            int argumentCount,
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            Set<String> visitedBinaryNames) {
+        if (declaration == null) {
+            return null;
+        }
+        if (visitedBinaryNames != null && !visitedBinaryNames.add(declaration.binaryName())) {
+            return null;
+        }
         QinIrMethodDeclaration matched = null;
         QinIrMethodDeclaration paddedMatch = null;
         for (QinIrMethodDeclaration candidate : declaration.methods()) {
@@ -14000,7 +15186,17 @@ public final class QinJvmDeclarationClassEmitter {
             matched = uniqueNameMatch;
         }
         if (matched == null) {
-            return null;
+            QinIrClassDeclaration superDeclaration = declaration.superType() == null
+                    ? null
+                    : resolveIndexedDeclaration(declarationIndex, declaration.superType().binaryName());
+            return superDeclaration == null
+                    ? null
+                    : resolveLocalDeclarationInstanceMethodCall(
+                            superDeclaration,
+                            methodName,
+                            argumentCount,
+                            declarationIndex,
+                            visitedBinaryNames);
         }
         List<QinIrTypeRef> parameterTypes = new ArrayList<>();
         for (QinIrParameter parameter : matched.parameters()) {
@@ -14020,14 +15216,18 @@ public final class QinJvmDeclarationClassEmitter {
     private boolean hasExactLocalInstanceMethod(
             QinIrClassDeclaration declaration,
             String methodName,
-            int argumentCount) {
+            int argumentCount,
+            List<QinIrTypeRef> argumentTypes,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
         if (declaration == null || methodName == null) {
             return false;
         }
         for (QinIrMethodDeclaration candidate : declaration.methods()) {
             if (!candidate.staticMethod()
                     && candidate.name().equals(methodName)
-                    && candidate.parameters().size() == argumentCount) {
+                    && candidate.parameters().size() == argumentCount
+                    && (argumentTypes == null
+                            || localMethodMatchScore(candidate.parameters(), argumentTypes, null, declarationIndex) >= 0)) {
                 return true;
             }
         }
@@ -14039,6 +15239,24 @@ public final class QinJvmDeclarationClassEmitter {
             String methodName,
             int argumentCount,
             List<QinIrTypeRef> argumentTypes,
+            boolean staticMethod) {
+        return resolveGeneratedOverloadImplementation(
+                declaration,
+                methodName,
+                argumentCount,
+                argumentTypes,
+                null,
+                null,
+                staticMethod);
+    }
+
+    private QinIrMethodDeclaration resolveGeneratedOverloadImplementation(
+            QinIrClassDeclaration declaration,
+            String methodName,
+            int argumentCount,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
+            Map<String, QinIrClassDeclaration> declarationIndex,
             boolean staticMethod) {
         if (declaration == null || methodName == null || methodName.isBlank()) {
             return null;
@@ -14059,18 +15277,35 @@ public final class QinJvmDeclarationClassEmitter {
                 arityMatch = candidate;
             }
             if (argumentTypes != null) {
-                int matchScore = localMethodMatchScore(candidate.parameters(), argumentTypes);
+                int matchScore = localMethodMatchScore(
+                        candidate.parameters(),
+                        argumentTypes,
+                        argumentExpressions,
+                        declarationIndex);
                 if (matchScore < 0) {
                     continue;
                 }
                 if (typedMatch != null && matchScore == typedMatchScore) {
-                    throw new IllegalArgumentException(
-                            "Ambiguous generated overload implementation: "
-                                    + declaration.binaryName()
-                                    + "."
-                                    + methodName
-                                    + "/"
-                                    + argumentCount);
+                    int tieBreak = generatedOverloadTieBreak(
+                            candidate,
+                            typedMatch,
+                            argumentTypes,
+                            argumentExpressions,
+                            declarationIndex);
+                    if (tieBreak > 0) {
+                        typedMatch = candidate;
+                        typedMatchScore = matchScore;
+                    } else if (tieBreak == 0 && generatedOverloadNullTieKeepsIncumbent(
+                            candidate,
+                            typedMatch,
+                            argumentExpressions)) {
+                        // Generated TS overload dispatchers test guards in source order; null may satisfy
+                        // unrelated reference overload guards, so keep the earlier generated overload.
+                    } else if (tieBreak == 0) {
+                        // Generated overload dispatcher guards are ordered. If static evidence cannot
+                        // distinguish same-score overloads, preserve that generated source order.
+                    }
+                    continue;
                 }
                 if (typedMatch == null || matchScore > typedMatchScore) {
                     typedMatch = candidate;
@@ -14082,6 +15317,199 @@ public final class QinJvmDeclarationClassEmitter {
             return typedMatch;
         }
         return arityMatch;
+    }
+
+    private boolean generatedOverloadNullTieKeepsIncumbent(
+            QinIrMethodDeclaration candidate,
+            QinIrMethodDeclaration incumbent,
+            List<QinIrExpression> argumentExpressions) {
+        if (candidate == null
+                || incumbent == null
+                || candidate.parameters() == null
+                || incumbent.parameters() == null
+                || candidate.parameters().size() != incumbent.parameters().size()
+                || argumentExpressions == null) {
+            return false;
+        }
+        boolean differingReferenceSlot = false;
+        for (int i = 0; i < candidate.parameters().size(); i++) {
+            QinIrTypeRef candidateType = candidate.parameters().get(i).type();
+            QinIrTypeRef incumbentType = incumbent.parameters().get(i).type();
+            if (sameIrType(candidateType, incumbentType)) {
+                continue;
+            }
+            differingReferenceSlot = true;
+            QinIrExpression argumentExpression = localArgumentExpression(argumentExpressions, i);
+            if (!(argumentExpression instanceof QinIrNullLiteral)
+                    || !isReferenceLikeParameter(candidateType)
+                    || !isReferenceLikeParameter(incumbentType)) {
+                return false;
+            }
+        }
+        return differingReferenceSlot;
+    }
+
+    private int generatedOverloadTieBreak(
+            QinIrMethodDeclaration candidate,
+            QinIrMethodDeclaration incumbent,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        int candidateScore = generatedOverloadSpecificityScore(
+                candidate,
+                argumentTypes,
+                argumentExpressions,
+                declarationIndex);
+        int incumbentScore = generatedOverloadSpecificityScore(
+                incumbent,
+                argumentTypes,
+                argumentExpressions,
+                declarationIndex);
+        return Integer.compare(candidateScore, incumbentScore);
+    }
+
+    private int generatedOverloadSpecificityScore(
+            QinIrMethodDeclaration overload,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (overload == null || overload.parameters() == null) {
+            return 0;
+        }
+        int score = 0;
+        for (int i = 0; i < overload.parameters().size(); i++) {
+            QinIrTypeRef parameterType = overload.parameters().get(i).type();
+            QinIrTypeRef argumentType = argumentTypes == null || i >= argumentTypes.size()
+                    ? null
+                    : argumentTypes.get(i);
+            QinIrExpression argumentExpression = localArgumentExpression(argumentExpressions, i);
+            QinIrTypeRef effectiveArgumentType = generatedOverloadEffectiveArgumentType(
+                    argumentType,
+                    argumentExpression,
+                    declarationIndex);
+            if (sameIrType(parameterType, effectiveArgumentType)
+                    && !sameIrType(argumentType, effectiveArgumentType)) {
+                score += 100;
+                continue;
+            }
+            if (sameIrType(parameterType, argumentType)) {
+                score += 50;
+                continue;
+            }
+            if (isMoreSpecificLocalType(parameterType, argumentType, declarationIndex)) {
+                score += 10;
+            }
+        }
+        return score;
+    }
+
+    private QinIrTypeRef generatedOverloadEffectiveArgumentType(
+            QinIrTypeRef argumentType,
+            QinIrExpression argumentExpression,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (argumentExpression instanceof QinIrCastExpression castExpression) {
+            return castTypeRef(castExpression.typeName());
+        }
+        if (argumentExpression instanceof QinIrStaticMethodCallExpression staticMethodCallExpression) {
+            ResolvedStaticMethodCall staticMethod = resolveStaticMethodCall(
+                    staticMethodCallExpression.ownerBinaryName(),
+                    staticMethodCallExpression.methodName(),
+                    staticMethodCallExpression.arguments().size(),
+                    null,
+                    declarationIndex);
+            if (staticMethod != null) {
+                return staticMethod.returnType();
+            }
+        }
+        if (argumentExpression instanceof QinIrInstanceMethodCallExpression methodCallExpression) {
+            ResolvedInstanceMethodCall instanceMethod = methodCallExpression.ownerBinaryName() == null
+                    ? null
+                    : resolveInstanceMethodCall(
+                            QinIrTypeRef.classType(methodCallExpression.ownerBinaryName()),
+                            methodCallExpression.methodName(),
+                            methodCallExpression.arguments().size(),
+                            null,
+                            null,
+                            declarationIndex,
+                            new java.util.LinkedHashSet<>());
+            if (instanceMethod != null) {
+                return instanceMethod.returnType();
+            }
+            if (methodCallExpression.receiver() instanceof QinIrIdentifierReference identifierReference) {
+                QinIrClassDeclaration receiverDeclaration = resolveIndexedDeclaration(
+                        declarationIndex,
+                        identifierReference.name());
+                String ownerBinaryName = receiverDeclaration == null
+                        ? identifierReference.name()
+                        : receiverDeclaration.binaryName();
+                ResolvedStaticMethodCall staticMethod = resolveStaticMethodCall(
+                        ownerBinaryName,
+                        methodCallExpression.methodName(),
+                        methodCallExpression.arguments().size(),
+                        null,
+                        declarationIndex);
+                if (staticMethod != null) {
+                    return staticMethod.returnType();
+                }
+            }
+        }
+        return argumentType;
+    }
+
+    private boolean sameIrType(QinIrTypeRef left, QinIrTypeRef right) {
+        if (left == null || right == null || left.kind() != right.kind()) {
+            return false;
+        }
+        if (left.kind() != QinIrTypeKind.CLASS && left.kind() != QinIrTypeKind.STRING) {
+            return left.equals(right);
+        }
+        return Objects.equals(left.binaryName(), right.binaryName())
+                || Objects.equals(flattenedBinaryAlias(left.binaryName()), flattenedBinaryAlias(right.binaryName()));
+    }
+
+    private boolean isMoreSpecificLocalType(
+            QinIrTypeRef candidateType,
+            QinIrTypeRef argumentType,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (candidateType == null
+                || argumentType == null
+                || candidateType.kind() != QinIrTypeKind.CLASS
+                || argumentType.kind() != QinIrTypeKind.CLASS
+                || sameIrType(candidateType, argumentType)) {
+            return false;
+        }
+        return isLocalClassAssignableTo(argumentType.binaryName(), candidateType.binaryName(), declarationIndex);
+    }
+
+    private QinIrMethodDeclaration resolveExactGeneratedOverloadImplementation(
+            QinIrClassDeclaration declaration,
+            String methodName,
+            int argumentCount,
+            boolean staticMethod) {
+        if (declaration == null
+                || methodName == null
+                || !methodName.startsWith("__qin_overload_")) {
+            return null;
+        }
+        QinIrMethodDeclaration matched = null;
+        for (QinIrMethodDeclaration candidate : declaration.methods()) {
+            if (candidate.staticMethod() != staticMethod
+                    || !candidate.name().equals(methodName)
+                    || candidate.parameters().size() != argumentCount) {
+                continue;
+            }
+            if (matched != null) {
+                throw new IllegalArgumentException(
+                        "Ambiguous exact generated overload implementation: "
+                                + declaration.binaryName()
+                                + "."
+                                + methodName
+                                + "/"
+                                + argumentCount);
+            }
+            matched = candidate;
+        }
+        return matched;
     }
 
     private boolean sameLocalMethodName(String candidateName, String requestedName) {
@@ -14307,13 +15735,39 @@ public final class QinJvmDeclarationClassEmitter {
             Class<?> ownerClass,
             String methodName,
             List<QinIrTypeRef> argumentTypes) {
-        if (!java.util.stream.Stream.class.isAssignableFrom(ownerClass)
-                || argumentTypes == null
+        if (argumentTypes == null
                 || argumentTypes.size() != 1
                 || !isJavaFunctionalObjectType(argumentTypes.get(0))) {
             return null;
         }
         try {
+            if (ownerClass == java.util.stream.IntStream.class) {
+                return switch (methodName) {
+                    case "mapToObj" -> java.util.stream.IntStream.class.getMethod(
+                            "mapToObj",
+                            java.util.function.IntFunction.class);
+                    default -> null;
+                };
+            }
+            if (ownerClass == java.util.stream.LongStream.class) {
+                return switch (methodName) {
+                    case "mapToObj" -> java.util.stream.LongStream.class.getMethod(
+                            "mapToObj",
+                            java.util.function.LongFunction.class);
+                    default -> null;
+                };
+            }
+            if (ownerClass == java.util.stream.DoubleStream.class) {
+                return switch (methodName) {
+                    case "mapToObj" -> java.util.stream.DoubleStream.class.getMethod(
+                            "mapToObj",
+                            java.util.function.DoubleFunction.class);
+                    default -> null;
+                };
+            }
+            if (!java.util.stream.Stream.class.isAssignableFrom(ownerClass)) {
+                return null;
+            }
             return switch (methodName) {
                 case "filter" -> java.util.stream.Stream.class.getMethod(
                         "filter",
@@ -14502,11 +15956,21 @@ public final class QinJvmDeclarationClassEmitter {
             String methodName,
             List<QinIrTypeRef> argumentTypes,
             Map<String, QinIrClassDeclaration> declarationIndex) {
+        return resolveStaticMethodCall(ownerBinaryName, methodName, argumentTypes, null, declarationIndex);
+    }
+
+    private ResolvedStaticMethodCall resolveStaticMethodCall(
+            String ownerBinaryName,
+            String methodName,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
         return resolveStaticMethodCall(
                 ownerBinaryName,
                 methodName,
                 argumentTypes == null ? 0 : argumentTypes.size(),
                 argumentTypes,
+                argumentExpressions,
                 declarationIndex);
     }
 
@@ -14516,38 +15980,110 @@ public final class QinJvmDeclarationClassEmitter {
             int argumentCount,
             List<QinIrTypeRef> argumentTypes,
             Map<String, QinIrClassDeclaration> declarationIndex) {
-        QinIrClassDeclaration localDeclaration = declarationIndex.get(ownerBinaryName);
+        return resolveStaticMethodCall(ownerBinaryName, methodName, argumentCount, argumentTypes, null, declarationIndex);
+    }
+
+    private ResolvedStaticMethodCall resolveStaticMethodCall(
+            String ownerBinaryName,
+            String methodName,
+            int argumentCount,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
+        Map<String, QinIrClassDeclaration> declarationIndex) {
+        ownerBinaryName = canonicalQinHostRuntimeBinaryName(ownerBinaryName);
+        QinIrClassDeclaration localDeclaration = resolveIndexedDeclaration(declarationIndex, ownerBinaryName);
         if (localDeclaration != null) {
+            QinIrMethodDeclaration generatedOverload = resolveGeneratedOverloadImplementation(
+                    localDeclaration,
+                    methodName,
+                    argumentCount,
+                    argumentTypes,
+                    argumentExpressions,
+                    declarationIndex,
+                    true);
+            if (generatedOverload != null) {
+                List<QinIrTypeRef> parameterTypes = effectiveLocalStaticParameterTypes(
+                        localDeclaration.binaryName(),
+                        generatedOverload.parameters(),
+                        argumentTypes,
+                        declarationIndex);
+                return new ResolvedStaticMethodCall(
+                        localDeclaration.binaryName(),
+                        generatedOverload.name(),
+                        List.copyOf(parameterTypes),
+                        generatedOverload.returnType(),
+                        localDeclaration.interfaceClass(),
+                        null,
+                        List.of(),
+                        !generatedOverload.parameters().isEmpty()
+                                && generatedOverload.parameters().get(generatedOverload.parameters().size() - 1).varargs());
+            }
             QinIrMethodDeclaration matched = null;
             QinIrMethodDeclaration paddedMatch = null;
+            int matchedScore = Integer.MIN_VALUE;
+            int paddedMatchScore = Integer.MIN_VALUE;
             for (QinIrMethodDeclaration candidate : localDeclaration.methods()) {
                 if (!candidate.staticMethod()
                         || !candidate.name().equals(methodName)
                         || !isLocalMethodCountApplicable(candidate.parameters(), argumentCount)) {
                     continue;
                 }
+                int matchScore = argumentTypes == null
+                        ? 0
+                        : localMethodMatchScore(
+                                candidate.parameters(),
+                                argumentTypes,
+                                argumentExpressions,
+                                declarationIndex);
+                if (matchScore < 0) {
+                    continue;
+                }
                 if (candidate.parameters().size() == argumentCount) {
-                    if (matched != null) {
+                    if (matched != null && matchScore == matchedScore) {
                         throw new IllegalArgumentException(
                                 "Ambiguous declaration static method overload: " + ownerBinaryName + "." + methodName);
                     }
+                    if (matched != null && matchScore < matchedScore) {
+                        continue;
+                    }
                     matched = candidate;
+                    matchedScore = matchScore;
                     continue;
                 }
-                if (paddedMatch != null) {
+                if (paddedMatch != null && matchScore == paddedMatchScore) {
                     throw new IllegalArgumentException(
                             "Ambiguous declaration static method overload: " + ownerBinaryName + "." + methodName);
                 }
+                if (paddedMatch != null && matchScore < paddedMatchScore) {
+                    continue;
+                }
                 paddedMatch = candidate;
+                paddedMatchScore = matchScore;
             }
             if (matched == null) {
                 matched = paddedMatch;
             }
+            if (matched == null) {
+                matched = resolveGeneratedOverloadImplementation(
+                        localDeclaration,
+                        methodName,
+                        argumentCount,
+                        argumentTypes,
+                        true);
+            }
+            if (matched == null) {
+                matched = resolveExactGeneratedOverloadImplementation(
+                        localDeclaration,
+                        methodName,
+                        argumentCount,
+                        true);
+            }
             if (matched != null) {
-                List<QinIrTypeRef> parameterTypes = new ArrayList<>();
-                for (var parameter : matched.parameters()) {
-                    parameterTypes.add(parameter.type());
-                }
+                List<QinIrTypeRef> parameterTypes = effectiveLocalStaticParameterTypes(
+                        localDeclaration.binaryName(),
+                        matched.parameters(),
+                        argumentTypes,
+                        declarationIndex);
                 return new ResolvedStaticMethodCall(
                         localDeclaration.binaryName(),
                         matched.name(),
@@ -14559,6 +16095,10 @@ public final class QinJvmDeclarationClassEmitter {
                         !matched.parameters().isEmpty()
                                 && matched.parameters().get(matched.parameters().size() - 1).varargs());
             }
+        }
+        if (isGeneratedEnumLikeDeclaration(localDeclaration)
+                && isGeneratedEnumSyntheticStaticCall(methodName, argumentCount)) {
+            return null;
         }
         try {
             ownerBinaryName = reflectedStaticMethodOwnerBinaryName(ownerBinaryName, methodName);
@@ -14608,6 +16148,131 @@ public final class QinJvmDeclarationClassEmitter {
         } catch (ClassNotFoundException e) {
             return null;
         }
+    }
+
+    private List<QinIrTypeRef> effectiveLocalStaticParameterTypes(
+            String localOwnerBinaryName,
+            List<QinIrParameter> parameters,
+            List<QinIrTypeRef> argumentTypes,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        List<QinIrTypeRef> parameterTypes = new ArrayList<>();
+        for (int i = 0; i < parameters.size(); i++) {
+            QinIrTypeRef argumentType = argumentTypes == null || i >= argumentTypes.size() ? null : argumentTypes.get(i);
+            parameterTypes.add(effectiveLocalStaticParameterType(
+                    localOwnerBinaryName,
+                    parameters.get(i).type(),
+                    argumentType,
+                    declarationIndex));
+        }
+        return List.copyOf(parameterTypes);
+    }
+
+    private QinIrTypeRef effectiveLocalStaticParameterType(
+            String localOwnerBinaryName,
+            QinIrTypeRef parameterType,
+            QinIrTypeRef argumentType,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (parameterType == null || parameterType.kind() != QinIrTypeKind.CLASS) {
+            return parameterType;
+        }
+        String parameterBinaryName = parameterType.binaryName();
+        String effectiveParameterBinaryName = effectiveLocalReferenceBinaryName(parameterBinaryName, declarationIndex);
+        if (argumentType != null && argumentType.kind() == QinIrTypeKind.CLASS) {
+            String argumentBinaryName = argumentType.binaryName();
+            String effectiveArgumentBinaryName = effectiveLocalReferenceBinaryName(argumentBinaryName, declarationIndex);
+            if (Objects.equals(effectiveParameterBinaryName, effectiveArgumentBinaryName)
+                    || Objects.equals(flattenedBinaryAlias(parameterBinaryName), effectiveArgumentBinaryName)
+                    || Objects.equals(flattenedBinaryAlias(parameterBinaryName), argumentBinaryName)) {
+                return QinIrTypeRef.classType(effectiveArgumentBinaryName, argumentType.typeArguments());
+            }
+        }
+        if (!Objects.equals(parameterBinaryName, effectiveParameterBinaryName)) {
+            return QinIrTypeRef.classType(effectiveParameterBinaryName, parameterType.typeArguments());
+        }
+        String flattenedParameterBinaryName = flattenedBinaryAlias(parameterBinaryName);
+        if (isGeneratedLocalBinaryName(localOwnerBinaryName)
+                && flattenedParameterBinaryName != null
+                && !isJavaPlatformBinaryName(parameterBinaryName)
+                && isGeneratedLocalBinaryName(flattenedParameterBinaryName)) {
+            return QinIrTypeRef.classType(flattenedParameterBinaryName, parameterType.typeArguments());
+        }
+        return parameterType;
+    }
+
+    private boolean isJavaPlatformBinaryName(String binaryName) {
+        return binaryName != null
+                && (binaryName.startsWith("java.")
+                        || binaryName.startsWith("javax.")
+                        || binaryName.startsWith("jdk.")
+                        || binaryName.startsWith("sun."));
+    }
+
+    private boolean isGeneratedLocalBinaryName(String binaryName) {
+        return binaryName != null
+                && !binaryName.isBlank()
+                && !binaryName.contains(".")
+                && binaryName.contains("_");
+    }
+
+    private String staticMethodResolutionDiagnostic(
+            String ownerBinaryName,
+            String methodName,
+            List<QinIrTypeRef> argumentTypes,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        QinIrClassDeclaration localDeclaration = resolveIndexedDeclaration(declarationIndex, ownerBinaryName);
+        StringBuilder diagnostic = new StringBuilder();
+        diagnostic.append("argumentTypes=").append(typeListShape(argumentTypes));
+        if (localDeclaration == null) {
+            diagnostic.append("; localDeclaration=<none>");
+            return diagnostic.toString();
+        }
+        diagnostic.append("; localDeclaration=").append(localDeclaration.binaryName());
+        List<String> candidateShapes = new ArrayList<>();
+        for (QinIrMethodDeclaration candidate : localDeclaration.methods()) {
+            if (candidate.staticMethod() && candidate.name().equals(methodName)) {
+                candidateShapes.add(methodShape(candidate));
+            }
+        }
+        diagnostic.append("; candidateCount=").append(candidateShapes.size());
+        if (!candidateShapes.isEmpty()) {
+            diagnostic.append("; candidates=").append(candidateShapes);
+        }
+        return diagnostic.toString();
+    }
+
+    private String methodShape(QinIrMethodDeclaration method) {
+        List<String> parameterShapes = new ArrayList<>();
+        for (QinIrParameter parameter : method.parameters()) {
+            parameterShapes.add(parameter.name()
+                    + ":"
+                    + typeShape(parameter.type())
+                    + (parameter.varargs() ? "..." : ""));
+        }
+        return method.name() + "(" + String.join(",", parameterShapes) + "):" + typeShape(method.returnType());
+    }
+
+    private String typeListShape(List<QinIrTypeRef> types) {
+        if (types == null) {
+            return "<none>";
+        }
+        List<String> shapes = new ArrayList<>();
+        for (QinIrTypeRef type : types) {
+            shapes.add(typeShape(type));
+        }
+        return shapes.toString();
+    }
+
+    private String typeShape(QinIrTypeRef type) {
+        if (type == null) {
+            return "<null>";
+        }
+        if (type.kind() != QinIrTypeKind.CLASS) {
+            return type.kind().name();
+        }
+        if (type.typeArguments().isEmpty()) {
+            return type.binaryName();
+        }
+        return type.binaryName() + "<" + typeListShape(type.typeArguments()) + ">";
     }
 
     private Method findReflectedStaticMethod(
@@ -14898,6 +16563,7 @@ public final class QinJvmDeclarationClassEmitter {
             }
         }
         if (localDeclaration != null) {
+            String localOwnerBinaryName = localDeclaration.binaryName();
             if (Boolean.getBoolean("qin.declarationConstructor.trace")) {
                 System.err.println("[QinJvmDeclarationClassEmitter] local constructor owner="
                         + ownerBinaryName
@@ -14906,7 +16572,7 @@ public final class QinJvmDeclarationClassEmitter {
                         + " constructors=" + constructorTraceShape(localDeclaration));
             }
             ResolvedConstructorCall localConstructor =
-                    resolveLocalConstructorCall(ownerBinaryName, localDeclaration, declarationIndex, argumentTypes);
+                    resolveLocalConstructorCall(localOwnerBinaryName, localDeclaration, declarationIndex, argumentTypes);
             if (localConstructor != null) {
                 return localConstructor;
             }
@@ -15309,10 +16975,23 @@ public final class QinJvmDeclarationClassEmitter {
     private QinIrClassDeclaration resolveIndexedDeclaration(
             Map<String, QinIrClassDeclaration> declarationIndex,
             String ownerBinaryName) {
+        if (isQinHostRuntimeBinaryName(ownerBinaryName)) {
+            return null;
+        }
         if (declarationIndex == null || ownerBinaryName == null || ownerBinaryName.isBlank()) {
             return null;
         }
         QinIrClassDeclaration declaration = declarationIndex.get(ownerBinaryName);
+        if (declaration != null) {
+            QinIrClassDeclaration generatedLocalDeclaration =
+                    generatedLocalDeclarationForOriginalOwner(declarationIndex, declaration);
+            if (generatedLocalDeclaration == null) {
+                generatedLocalDeclaration =
+                        uniqueGeneratedLocalDeclarationForSimpleOriginalOwner(declarationIndex, ownerBinaryName);
+            }
+            return generatedLocalDeclaration == null ? declaration : generatedLocalDeclaration;
+        }
+        declaration = uniqueGeneratedLocalDeclarationForSimpleOriginalOwner(declarationIndex, ownerBinaryName);
         if (declaration != null) {
             return declaration;
         }
@@ -15322,6 +17001,78 @@ public final class QinJvmDeclarationClassEmitter {
             return declaration;
         }
         return null;
+    }
+
+    private QinIrClassDeclaration generatedLocalDeclarationForOriginalOwner(
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            QinIrClassDeclaration declaration) {
+        if (declarationIndex == null
+                || declaration == null
+                || declaration.binaryName() == null
+                || declaration.binaryName().isBlank()
+                || !declaration.binaryName().contains(".")) {
+            return null;
+        }
+        String flattenedOwner = flattenedBinaryAlias(declaration.binaryName());
+        QinIrClassDeclaration localDeclaration = declarationIndex.get(flattenedOwner);
+        if (localDeclaration == null
+                || localDeclaration.binaryName() == null
+                || localDeclaration.binaryName().isBlank()
+                || Objects.equals(localDeclaration.binaryName(), declaration.binaryName())
+                || !Objects.equals(localDeclaration.binaryName(), flattenedOwner)) {
+            return null;
+        }
+        return localDeclaration;
+    }
+
+    private QinIrClassDeclaration uniqueGeneratedLocalDeclarationForSimpleOriginalOwner(
+            Map<String, QinIrClassDeclaration> declarationIndex,
+            String ownerBinaryName) {
+        if (declarationIndex == null
+                || declarationIndex.isEmpty()
+                || ownerBinaryName == null
+                || ownerBinaryName.isBlank()
+                || ownerBinaryName.contains(".")
+                || ownerBinaryName.contains("_")) {
+            return null;
+        }
+        QinIrClassDeclaration matched = null;
+        for (QinIrClassDeclaration candidate : declarationIndex.values()) {
+            String candidateBinaryName = candidate == null ? null : candidate.binaryName();
+            if (candidateBinaryName == null
+                    || candidateBinaryName.isBlank()
+                    || candidateBinaryName.contains(".")
+                    || !candidateBinaryName.contains("_")) {
+                continue;
+            }
+            String originalBinaryName = inferredOriginalJavaBinaryName(candidateBinaryName);
+            if (originalBinaryName == null
+                    || !candidateBinaryName.equals(flattenedBinaryAlias(originalBinaryName))
+                    || !ownerBinaryName.equals(simpleBinaryName(originalBinaryName))) {
+                continue;
+            }
+            if (matched != null && !matched.binaryName().equals(candidateBinaryName)) {
+                return null;
+            }
+            matched = candidate;
+        }
+        return matched;
+    }
+
+    private String inferredOriginalJavaBinaryName(String generatedBinaryName) {
+        if (generatedBinaryName == null || generatedBinaryName.isBlank() || !generatedBinaryName.contains("_")) {
+            return null;
+        }
+        String candidate = generatedBinaryName.replace('_', '.');
+        return candidate.equals(generatedBinaryName) || candidate.contains("..") ? null : candidate;
+    }
+
+    private String simpleBinaryName(String binaryName) {
+        if (binaryName == null || binaryName.isBlank()) {
+            return binaryName;
+        }
+        int split = Math.max(binaryName.lastIndexOf('.'), binaryName.lastIndexOf('$'));
+        return split < 0 || split + 1 >= binaryName.length() ? binaryName : binaryName.substring(split + 1);
     }
 
     private boolean isLocalConstructorApplicable(
@@ -15365,6 +17116,21 @@ public final class QinJvmDeclarationClassEmitter {
     private int localMethodMatchScore(
             List<QinIrParameter> parameters,
             List<QinIrTypeRef> argumentTypes) {
+        return localMethodMatchScore(parameters, argumentTypes, null);
+    }
+
+    private int localMethodMatchScore(
+            List<QinIrParameter> parameters,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions) {
+        return localMethodMatchScore(parameters, argumentTypes, argumentExpressions, null);
+    }
+
+    private int localMethodMatchScore(
+            List<QinIrParameter> parameters,
+            List<QinIrTypeRef> argumentTypes,
+            List<QinIrExpression> argumentExpressions,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
         if (parameters == null || argumentTypes == null) {
             return -1;
         }
@@ -15382,7 +17148,11 @@ public final class QinJvmDeclarationClassEmitter {
         int score = 0;
         int checkedParameterCount = varargs ? fixedParameterCount : argumentTypes.size();
         for (int i = 0; i < checkedParameterCount; i++) {
-            int parameterScore = localIrArgumentMatchScore(parameters.get(i).type(), argumentTypes.get(i));
+            int parameterScore = localIrArgumentMatchScore(
+                    parameters.get(i).type(),
+                    argumentTypes.get(i),
+                    localArgumentExpression(argumentExpressions, i),
+                    declarationIndex);
             if (parameterScore < 0) {
                 return -1;
             }
@@ -15393,20 +17163,34 @@ public final class QinJvmDeclarationClassEmitter {
         }
         QinIrTypeRef varargsArrayType = parameters.get(parameters.size() - 1).type();
         if (argumentTypes.size() == parameters.size()) {
-            int packedScore = localIrArgumentMatchScore(varargsArrayType, argumentTypes.get(fixedParameterCount));
+            int packedScore = localIrArgumentMatchScore(
+                    varargsArrayType,
+                    argumentTypes.get(fixedParameterCount),
+                    localArgumentExpression(argumentExpressions, fixedParameterCount),
+                    declarationIndex);
             if (packedScore >= 0) {
                 return score + packedScore;
             }
         }
         QinIrTypeRef varargsElementType = localVarargsElementType(varargsArrayType);
         for (int i = fixedParameterCount; i < argumentTypes.size(); i++) {
-            int parameterScore = localIrArgumentMatchScore(varargsElementType, argumentTypes.get(i));
+            int parameterScore = localIrArgumentMatchScore(
+                    varargsElementType,
+                    argumentTypes.get(i),
+                    localArgumentExpression(argumentExpressions, i),
+                    declarationIndex);
             if (parameterScore < 0) {
                 return -1;
             }
             score += parameterScore;
         }
         return score - 1;
+    }
+
+    private QinIrExpression localArgumentExpression(List<QinIrExpression> argumentExpressions, int index) {
+        return argumentExpressions == null || index < 0 || index >= argumentExpressions.size()
+                ? null
+                : argumentExpressions.get(index);
     }
 
     private QinIrTypeRef localVarargsElementType(QinIrTypeRef arrayType) {
@@ -15545,9 +17329,40 @@ public final class QinJvmDeclarationClassEmitter {
         if (parameterType.kind() == QinIrTypeKind.INT && isNumericLike(argumentType)) {
             return true;
         }
+        if (parameterType.kind() == QinIrTypeKind.BOOLEAN && isBooleanLike(argumentType)) {
+            return true;
+        }
+        if (parameterType.kind() == QinIrTypeKind.CLASS
+                && isBoxedNumericBinaryName(parameterType.binaryName())
+                && isNumericLike(argumentType)) {
+            return true;
+        }
+        if (parameterType.kind() == QinIrTypeKind.CLASS
+                && "java.lang.Boolean".equals(parameterType.binaryName())
+                && isBooleanLike(argumentType)) {
+            return true;
+        }
+        if (parameterType.kind() == QinIrTypeKind.CLASS
+                && argumentType.kind() == QinIrTypeKind.CLASS
+                && isReflectedClassAssignableTo(argumentType.binaryName(), parameterType.binaryName())) {
+            return true;
+        }
         return parameterType.kind() == QinIrTypeKind.CLASS
                 && argumentType.kind() == QinIrTypeKind.CLASS
                 && Objects.equals(parameterType.binaryName(), argumentType.binaryName());
+    }
+
+    private boolean isReflectedClassAssignableTo(String argumentBinaryName, String parameterBinaryName) {
+        if (argumentBinaryName == null || parameterBinaryName == null) {
+            return false;
+        }
+        try {
+            Class<?> argumentClass = Class.forName(QinJavaSdkAliasSupport.canonicalBinaryName(argumentBinaryName));
+            Class<?> parameterClass = Class.forName(QinJavaSdkAliasSupport.canonicalBinaryName(parameterBinaryName));
+            return parameterClass.isAssignableFrom(argumentClass);
+        } catch (ClassNotFoundException | LinkageError ignored) {
+            return false;
+        }
     }
 
     private boolean isLocalIrArgumentApplicable(QinIrTypeRef parameterType, QinIrTypeRef argumentType) {
@@ -15562,7 +17377,86 @@ public final class QinJvmDeclarationClassEmitter {
     }
 
     private int localIrArgumentMatchScore(QinIrTypeRef parameterType, QinIrTypeRef argumentType) {
-        return localIrArgumentMatchScore(parameterType, argumentType, null);
+        return localIrArgumentMatchScore(parameterType, argumentType, (Map<String, QinIrClassDeclaration>) null);
+    }
+
+    private int localIrArgumentMatchScore(
+            QinIrTypeRef parameterType,
+            QinIrTypeRef argumentType,
+            QinIrExpression argumentExpression) {
+        return localIrArgumentMatchScore(parameterType, argumentType, argumentExpression, null);
+    }
+
+    private int localIrArgumentMatchScore(
+            QinIrTypeRef parameterType,
+            QinIrTypeRef argumentType,
+            QinIrExpression argumentExpression,
+            Map<String, QinIrClassDeclaration> declarationIndex) {
+        if (parameterType != null
+                && parameterType.kind() == QinIrTypeKind.CLASS
+                && isJavaFunctionalObjectType(argumentType)
+                && isJavaFunctionalInterfaceType(parameterType)) {
+            return localJavaFunctionalArgumentMatchScore(parameterType, argumentExpression);
+        }
+        QinIrTypeRef effectiveArgumentType = generatedOverloadEffectiveArgumentType(
+                argumentType,
+                argumentExpression,
+                declarationIndex);
+        if (effectiveArgumentType != null && !sameIrType(argumentType, effectiveArgumentType)) {
+            int effectiveScore = localIrArgumentMatchScore(parameterType, effectiveArgumentType, declarationIndex);
+            if (effectiveScore >= 0) {
+                return effectiveScore + 10;
+            }
+        }
+        int score = localIrArgumentMatchScore(parameterType, argumentType, declarationIndex);
+        if (score >= 0) {
+            return score;
+        }
+        if (isStaticArrayArgumentExpressionForTarget(parameterType, argumentExpression)) {
+            return 3;
+        }
+        if (argumentExpression instanceof QinIrNullLiteral && isReferenceLikeParameter(parameterType)) {
+            return 3;
+        }
+        if (isCollectionGetBuiltinCall(argumentExpression) && isReferenceLikeParameter(parameterType)) {
+            return 2;
+        }
+        if (isJavaLangStringCharAtCall(argumentExpression)
+                && parameterType != null
+                && (parameterType.kind() == QinIrTypeKind.INT || parameterType.kind() == QinIrTypeKind.DOUBLE)) {
+            return 3;
+        }
+        return -1;
+    }
+
+    private boolean isStaticArrayArgumentExpressionForTarget(
+            QinIrTypeRef parameterType,
+            QinIrExpression argumentExpression) {
+        QinIrTypeRef componentType = staticArrayParameterElementType(parameterType);
+        if (componentType == null || argumentExpression == null) {
+            return false;
+        }
+        if (argumentExpression instanceof QinIrArrayLiteral) {
+            return true;
+        }
+        if (argumentExpression instanceof QinIrInstanceMethodCallExpression methodCallExpression) {
+            return canEmitStaticArrayFromFactoryAsTypedArray(
+                    staticArrayFromFactory(methodCallExpression),
+                    componentType);
+        }
+        return false;
+    }
+
+    private boolean isReferenceLikeParameter(QinIrTypeRef parameterType) {
+        return parameterType != null
+                && (parameterType.kind() == QinIrTypeKind.CLASS || parameterType.kind() == QinIrTypeKind.STRING);
+    }
+
+    private boolean isCollectionGetBuiltinCall(QinIrExpression expression) {
+        return expression instanceof QinIrBuiltinCallExpression builtinCallExpression
+                && "Global".equals(builtinCallExpression.receiverName())
+                && "__qin_collection_get__".equals(builtinCallExpression.methodName())
+                && builtinCallExpression.arguments().size() == 2;
     }
 
     private int localIrArgumentMatchScore(
@@ -15580,6 +17474,22 @@ public final class QinJvmDeclarationClassEmitter {
         }
         if (parameterType.kind() == QinIrTypeKind.INT && isNumericLike(argumentType)) {
             return 3;
+        }
+        if (parameterType.kind() == QinIrTypeKind.BOOLEAN && isBooleanLike(argumentType)) {
+            return 3;
+        }
+        if (parameterType.kind() == QinIrTypeKind.CLASS) {
+            if (isJavaFunctionalObjectType(argumentType) && isJavaFunctionalInterfaceType(parameterType)) {
+                return 2;
+            }
+            int boxedNumericScore = boxedNumericArgumentMatchScore(parameterType.binaryName(), argumentType);
+            if (boxedNumericScore >= 0) {
+                return boxedNumericScore;
+            }
+            int boxedBooleanScore = boxedBooleanArgumentMatchScore(parameterType.binaryName(), argumentType);
+            if (boxedBooleanScore >= 0) {
+                return boxedBooleanScore;
+            }
         }
         if (isJavaLangObjectType(parameterType)) {
             return 1;
@@ -15600,12 +17510,234 @@ public final class QinJvmDeclarationClassEmitter {
         return isIrArgumentApplicable(parameterType, argumentType) ? 1 : -1;
     }
 
+    private int localJavaFunctionalArgumentMatchScore(
+            QinIrTypeRef parameterType,
+            QinIrExpression argumentExpression) {
+        Class<?> returnType = javaFunctionalInterfaceReturnType(parameterType);
+        if (returnType == null) {
+            return 2;
+        }
+        FunctionValueShape valueShape = javaFunctionalArgumentValueShape(argumentExpression);
+        if (returnType == void.class) {
+            return switch (valueShape) {
+                case VOID_COMPATIBLE -> 7;
+                case UNKNOWN -> 2;
+                case VALUE_COMPATIBLE -> -1;
+            };
+        }
+        return switch (valueShape) {
+            case VALUE_COMPATIBLE -> 7;
+            case UNKNOWN -> 2;
+            case VOID_COMPATIBLE -> -1;
+        };
+    }
+
+    private QinIrTypeRef primitiveJavaStreamMethodReturnType(
+            QinIrTypeRef receiverType,
+            QinIrInstanceMethodCallExpression methodCallExpression) {
+        if (receiverType == null
+                || methodCallExpression == null
+                || methodCallExpression.arguments().size() != 1
+                || !"mapToObj".equals(methodCallExpression.methodName())) {
+            return null;
+        }
+        return switch (receiverType.binaryName()) {
+            case "java.util.stream.IntStream",
+                    "java.util.stream.LongStream",
+                    "java.util.stream.DoubleStream" ->
+                    QinIrTypeRef.classType("java.util.stream.Stream", List.of(QinIrTypeRef.classType("java.lang.Object")));
+            default -> null;
+        };
+    }
+
+    private Class<?> javaFunctionalInterfaceReturnType(QinIrTypeRef targetType) {
+        if (targetType == null
+                || targetType.kind() != QinIrTypeKind.CLASS
+                || targetType.binaryName() == null
+                || targetType.binaryName().isBlank()) {
+            return null;
+        }
+        try {
+            Method method = javaFunctionalInterfaceMethod(resolveClass(targetType.binaryName()));
+            return method == null ? null : method.getReturnType();
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private Method javaFunctionalInterfaceMethod(Class<?> targetClass) {
+        if (targetClass == null || !targetClass.isInterface()) {
+            return null;
+        }
+        Method matched = null;
+        for (Method candidate : targetClass.getMethods()) {
+            if (candidate.getDeclaringClass() == Object.class || isObjectMethodSignature(candidate)) {
+                continue;
+            }
+            int modifiers = candidate.getModifiers();
+            if (!Modifier.isAbstract(modifiers) || Modifier.isStatic(modifiers)) {
+                continue;
+            }
+            if (matched != null) {
+                return null;
+            }
+            matched = candidate;
+        }
+        return matched;
+    }
+
+    private FunctionValueShape javaFunctionalArgumentValueShape(QinIrExpression argumentExpression) {
+        QinIrExpression callableExpression = javaFunctionalCallableExpression(argumentExpression);
+        if (!(callableExpression instanceof QinIrObjectLiteral functionDefinition)) {
+            return FunctionValueShape.UNKNOWN;
+        }
+        QinIrExpression valueShape = objectProperty(functionDefinition, "__qin_function_value_shape");
+        if (valueShape instanceof QinIrStringLiteral literal) {
+            if ("value".equals(literal.value())) {
+                return FunctionValueShape.VALUE_COMPATIBLE;
+            }
+            if ("void".equals(literal.value())) {
+                return FunctionValueShape.VOID_COMPATIBLE;
+            }
+        }
+        QinIrExpression ast = objectProperty(functionDefinition, "ast");
+        if (ast == null) {
+            return FunctionValueShape.UNKNOWN;
+        }
+        return functionAstValueShape(ast);
+    }
+
+    private FunctionValueShape functionAstValueShape(QinIrExpression ast) {
+        if (!(ast instanceof QinIrObjectLiteral objectLiteral)) {
+            return FunctionValueShape.UNKNOWN;
+        }
+        String type = encodedAstType(objectLiteral);
+        if ("ArrowFunctionExpression".equals(type)) {
+            QinIrExpression expression = objectProperty(objectLiteral, "expression");
+            if (expression instanceof QinIrBooleanLiteral literal && literal.value()) {
+                return FunctionValueShape.VALUE_COMPATIBLE;
+            }
+            return functionBodyValueShape(objectProperty(objectLiteral, "body"));
+        }
+        if ("FunctionExpression".equals(type) || "FunctionDeclaration".equals(type)) {
+            return functionBodyValueShape(objectProperty(objectLiteral, "body"));
+        }
+        return functionBodyValueShape(ast);
+    }
+
+    private FunctionValueShape functionBodyValueShape(QinIrExpression body) {
+        if (body == null) {
+            return FunctionValueShape.UNKNOWN;
+        }
+        if (!(body instanceof QinIrObjectLiteral objectLiteral)) {
+            return FunctionValueShape.VALUE_COMPATIBLE;
+        }
+        if (!"BlockStatement".equals(encodedAstType(objectLiteral))) {
+            return FunctionValueShape.VALUE_COMPATIBLE;
+        }
+        return encodedAstContainsValueReturn(objectProperty(objectLiteral, "body"), 0)
+                ? FunctionValueShape.VALUE_COMPATIBLE
+                : FunctionValueShape.VOID_COMPATIBLE;
+    }
+
+    private boolean encodedAstContainsValueReturn(QinIrExpression expression, int depth) {
+        if (expression == null || depth > 100) {
+            return false;
+        }
+        if (expression instanceof QinIrArrayLiteral arrayLiteral) {
+            for (QinIrExpression element : arrayLiteral.elements()) {
+                if (encodedAstContainsValueReturn(element, depth + 1)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (!(expression instanceof QinIrObjectLiteral objectLiteral)) {
+            return false;
+        }
+        String type = encodedAstType(objectLiteral);
+        if ("FunctionExpression".equals(type)
+                || "FunctionDeclaration".equals(type)
+                || "ArrowFunctionExpression".equals(type)) {
+            return false;
+        }
+        if ("ReturnStatement".equals(type)) {
+            QinIrExpression argument = objectProperty(objectLiteral, "argument");
+            return argument != null && !(argument instanceof QinIrNullLiteral);
+        }
+        for (QinIrObjectProperty property : objectLiteral.properties()) {
+            if (encodedAstContainsValueReturn(property.value(), depth + 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private QinIrExpression objectProperty(QinIrObjectLiteral objectLiteral, String key) {
+        if (objectLiteral == null || key == null) {
+            return null;
+        }
+        for (QinIrObjectProperty property : objectLiteral.properties()) {
+            if (key.equals(property.key())) {
+                return property.value();
+            }
+        }
+        return null;
+    }
+
+    private String encodedAstType(QinIrObjectLiteral objectLiteral) {
+        QinIrExpression type = objectProperty(objectLiteral, "type");
+        return type instanceof QinIrStringLiteral literal ? literal.value() : null;
+    }
+
+    private QinIrTypeRef castTypeRef(String typeName) {
+        if (typeName == null || typeName.isBlank()) {
+            return QinIrTypeRef.classType("java.lang.Object");
+        }
+        return switch (typeName) {
+            case "boolean" -> QinIrTypeRef.booleanType();
+            case "byte", "short", "int", "char" -> QinIrTypeRef.intType();
+            case "float", "double" -> QinIrTypeRef.doubleType();
+            case "String", "java.lang.String" -> QinIrTypeRef.stringType();
+            default -> QinIrTypeRef.classType(QinJavaSdkAliasSupport.canonicalBinaryName(typeName));
+        };
+    }
+
+    private int boxedNumericArgumentMatchScore(String parameterBinaryName, QinIrTypeRef argumentType) {
+        if (!isBoxedNumericBinaryName(parameterBinaryName) || !isNumericLike(argumentType)) {
+            return -1;
+        }
+        if (argumentType.kind() == QinIrTypeKind.INT) {
+            return "java.lang.Integer".equals(parameterBinaryName) ? 4 : 2;
+        }
+        if (argumentType.kind() == QinIrTypeKind.DOUBLE) {
+            return "java.lang.Double".equals(parameterBinaryName) ? 4 : 2;
+        }
+        if (argumentType.kind() == QinIrTypeKind.CLASS
+                && Objects.equals(parameterBinaryName, argumentType.binaryName())) {
+            return 4;
+        }
+        return "java.lang.Number".equals(parameterBinaryName) ? 2 : 1;
+    }
+
+    private int boxedBooleanArgumentMatchScore(String parameterBinaryName, QinIrTypeRef argumentType) {
+        if (!"java.lang.Boolean".equals(parameterBinaryName) || !isBooleanLike(argumentType)) {
+            return -1;
+        }
+        return argumentType.kind() == QinIrTypeKind.CLASS ? 4 : 3;
+    }
+
     private int localArrayArgumentMatchScore(
             QinIrTypeRef parameterType,
             QinIrTypeRef argumentType,
             Map<String, QinIrClassDeclaration> declarationIndex) {
         QinIrTypeRef parameterElementType = staticArrayElementType(parameterType);
         QinIrTypeRef argumentElementType = staticArrayElementType(argumentType);
+        if (isObjectArrayType(parameterType)
+                && "java.lang.Object[]".equals(argumentType.binaryName())
+                && (argumentType.typeArguments() == null || argumentType.typeArguments().isEmpty())) {
+            return 2;
+        }
         if (isJavaLangObjectType(parameterElementType)) {
             return 2;
         }
@@ -15632,7 +17764,7 @@ public final class QinJvmDeclarationClassEmitter {
                     argumentArguments.get(i),
                     declarationIndex);
             if (argumentScore < 0) {
-                return -1;
+                return 0;
             }
             score += argumentScore;
         }
@@ -15686,6 +17818,10 @@ public final class QinJvmDeclarationClassEmitter {
     }
 
     private String canonicalJavaSdkAliasBinaryName(String ownerBinaryName) {
+        String canonicalHostRuntime = canonicalQinHostRuntimeBinaryName(ownerBinaryName);
+        if (!Objects.equals(canonicalHostRuntime, ownerBinaryName)) {
+            return canonicalHostRuntime;
+        }
         String canonical = QinJavaSdkAliasSupport.canonicalBinaryName(ownerBinaryName);
         if (!Objects.equals(canonical, ownerBinaryName)) {
             return canonical;
@@ -16892,23 +19028,17 @@ public final class QinJvmDeclarationClassEmitter {
         }
 
         if (targetType.kind() == QinIrTypeKind.CLASS) {
+            String targetBinaryName = targetType.binaryName();
             if (actualType.kind() == QinIrTypeKind.BOOLEAN) {
                 code.invokestatic(
                         ClassDesc.of("java.lang.Boolean"),
                         "valueOf",
                         MethodTypeDesc.ofDescriptor("(Z)Ljava/lang/Boolean;"));
             } else if (actualType.kind() == QinIrTypeKind.INT) {
-                code.invokestatic(
-                        ClassDesc.of("java.lang.Integer"),
-                        "valueOf",
-                        MethodTypeDesc.ofDescriptor("(I)Ljava/lang/Integer;"));
+                boxPrimitiveNumericValueForTarget(code, actualType, targetBinaryName);
             } else if (actualType.kind() == QinIrTypeKind.DOUBLE) {
-                code.invokestatic(
-                        ClassDesc.of("java.lang.Double"),
-                        "valueOf",
-                        MethodTypeDesc.ofDescriptor("(D)Ljava/lang/Double;"));
+                boxPrimitiveNumericValueForTarget(code, actualType, targetBinaryName);
             } else if (actualType.kind() == QinIrTypeKind.CLASS || actualType.kind() == QinIrTypeKind.STRING) {
-                String targetBinaryName = targetType.binaryName();
                 String actualBinaryName = actualType.kind() == QinIrTypeKind.STRING
                         ? "java.lang.String"
                         : actualType.binaryName();
@@ -16942,6 +19072,10 @@ public final class QinJvmDeclarationClassEmitter {
                 }
                 if (isBoxedNumericBinaryName(actualBinaryName) && isBoxedNumericBinaryName(targetBinaryName)
                         && !targetBinaryName.equals(actualBinaryName)) {
+                    coerceBoxedNumericValueForTarget(code, targetBinaryName);
+                    return;
+                }
+                if ("java.lang.Object".equals(actualBinaryName) && isBoxedNumericBinaryName(targetBinaryName)) {
                     coerceBoxedNumericValueForTarget(code, targetBinaryName);
                     return;
                 }
@@ -17103,6 +19237,10 @@ public final class QinJvmDeclarationClassEmitter {
                             MethodTypeDesc.ofDescriptor("(Ljava/lang/Object;)[Ljava/lang/Object;"));
                     return;
                 }
+                if (isBoxedNumericBinaryName(resultType.binaryName())) {
+                    coerceBoxedNumericValueForTarget(code, resultType.binaryName());
+                    return;
+                }
                 if (!"java.lang.Object".equals(resultType.binaryName())) {
                     if (requiresRuntimeJavaValueCoercion(resultType.binaryName())) {
                         emitRuntimeJavaValueCoercion(code, resultType.binaryName());
@@ -17129,6 +19267,80 @@ public final class QinJvmDeclarationClassEmitter {
                 || "java.lang.Integer".equals(binaryName)
                 || "java.lang.Short".equals(binaryName)
                 || "java.lang.Byte".equals(binaryName);
+    }
+
+    private void boxPrimitiveNumericValueForTarget(
+            java.lang.classfile.CodeBuilder code,
+            QinIrTypeRef actualType,
+            String targetBinaryName) {
+        if (!isBoxedNumericBinaryName(targetBinaryName)) {
+            boxValueForObjectTarget(code, actualType);
+            return;
+        }
+        switch (targetBinaryName) {
+            case "java.lang.Number" -> boxValueForObjectTarget(code, actualType);
+            case "java.lang.Double" -> {
+                if (actualType.kind() == QinIrTypeKind.INT) {
+                    code.i2d();
+                }
+                code.invokestatic(
+                        ClassDesc.of("java.lang.Double"),
+                        "valueOf",
+                        MethodTypeDesc.ofDescriptor("(D)Ljava/lang/Double;"));
+            }
+            case "java.lang.Float" -> {
+                if (actualType.kind() == QinIrTypeKind.INT) {
+                    code.i2f();
+                } else {
+                    code.d2f();
+                }
+                code.invokestatic(
+                        ClassDesc.of("java.lang.Float"),
+                        "valueOf",
+                        MethodTypeDesc.ofDescriptor("(F)Ljava/lang/Float;"));
+            }
+            case "java.lang.Long" -> {
+                if (actualType.kind() == QinIrTypeKind.INT) {
+                    code.i2l();
+                } else {
+                    code.d2l();
+                }
+                code.invokestatic(
+                        ClassDesc.of("java.lang.Long"),
+                        "valueOf",
+                        MethodTypeDesc.ofDescriptor("(J)Ljava/lang/Long;"));
+            }
+            case "java.lang.Integer" -> {
+                if (actualType.kind() == QinIrTypeKind.DOUBLE) {
+                    code.d2i();
+                }
+                code.invokestatic(
+                        ClassDesc.of("java.lang.Integer"),
+                        "valueOf",
+                        MethodTypeDesc.ofDescriptor("(I)Ljava/lang/Integer;"));
+            }
+            case "java.lang.Short" -> {
+                if (actualType.kind() == QinIrTypeKind.DOUBLE) {
+                    code.d2i();
+                }
+                code.i2s();
+                code.invokestatic(
+                        ClassDesc.of("java.lang.Short"),
+                        "valueOf",
+                        MethodTypeDesc.ofDescriptor("(S)Ljava/lang/Short;"));
+            }
+            case "java.lang.Byte" -> {
+                if (actualType.kind() == QinIrTypeKind.DOUBLE) {
+                    code.d2i();
+                }
+                code.i2b();
+                code.invokestatic(
+                        ClassDesc.of("java.lang.Byte"),
+                        "valueOf",
+                        MethodTypeDesc.ofDescriptor("(B)Ljava/lang/Byte;"));
+            }
+            default -> throw new IllegalArgumentException("Unsupported boxed numeric target: " + targetBinaryName);
+        }
     }
 
     private void coerceBoxedNumericValueForTarget(java.lang.classfile.CodeBuilder code, String targetBinaryName) {

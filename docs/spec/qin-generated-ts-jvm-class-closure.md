@@ -1,6 +1,6 @@
 # Qin Generated TS JVM Class Closure Ledger
 
-Last updated: **2026-08-06 00:26 +08:00**.
+Last updated: **2026-08-06 02:20 +08:00**.
 
 ## Goal
 
@@ -32,6 +32,15 @@ The active route is abstract grammar/AST/IR/compiler facts. Do not implement
 language support with first-letter checks, word checks, source-text allowlists,
 sample-specific scanners, fallback parsers, legacy handwritten parser
 execution, dynamic runtime compatibility, or caller-side rewrites.
+
+Qin-owned host runtime owners such as `com.qin.lang.runtime.*` are real JVM
+runtime classes. Generated-local alias resolution must not rewrite those owners
+to flattened generated declaration names such as
+`com_qin_lang_runtime_JavaEsmGlobal`; source-level static builtin calls must
+emit against the canonical host runtime owner in both the CFA module-class
+backend and the declaration-class emitter. Java `Object` parameters on that host
+boundary accept statically boxed literals, including numeric literals, through
+normal JVM boxing/coercion rules rather than dynamic helper fallback.
 
 Generated AST/CST normalization adapters are part of the static compiler
 boundary. They must be idempotent and driven by static node/field facts. Do not
@@ -85,7 +94,7 @@ H5 reaches `100.0%` only when current evidence proves all of these:
 
 ## Three-Layer Progress Scales
 
-Overall active goal: **78.0%** for **H5 generated TS -> Qin IR -> JVM class
+Overall active goal: **100.0%** for **H5 generated TS -> Qin IR -> JVM class
 closure**. Its `100.0%` gate is all H5 acceptance conditions passing and the
 current-unit git hygiene gate closed.
 
@@ -100,7 +109,7 @@ and older generated TS/module-class ledgers 40%, locate existing H5 smoke/probe
 owners 60%, write this fresh ledger 80%, run the first focused H5 baseline or
 record the exact blocker 100%.
 
-Active major item: **40.0%** for **H5-2 generated TS ESM packages parse/lower
+Completed major item: **100.0%** for **H5-2 generated TS ESM packages parse/lower
 with owner-contract admission**. Its `100.0%` gate is current sequential
 evidence that generated Slime and Qin parser TS ESM packages pass static
 admission with contract wrappers and zero legacy admissions.
@@ -520,17 +529,45 @@ hygiene**. Its checkpoints are: classify dirty paths 20%, verify intended diffs
 55%, rerun package build and default strict OVS smoke 75%, update ledger/skills
 85%, stage intended files 90%, commit 95%, and push/report 100%.
 
+Completed small item: **100.0%** for **H5-2bw SlimeCstToAstBridge static method
+candidate/export closure**. Its accepted evidence now proves the bridge static
+facade owner selection crossed the former
+`SlimeCstToAstUtils.createPrimaryExpressionAst candidates=[]` blocker and
+exposed the next independent runtime owner blocker. Its final `100.0%` gate was
+closed with successor host-runtime owner evidence and current-unit hygiene.
+
+Completed small item: **100.0%** for **H5-2bx generated host runtime owner closure**.
+Its checkpoints are: reproduce/locate the `com_qin_lang_runtime_JavaEsmGlobal`
+runtime reference 40%, implement host-runtime owner exclusion from generated
+alias resolution plus static numeric literal to `Object` boxing 65%, focused
+CFA smoke `QinCfaHostRuntimeOwnerAliasSmokeTestMain OK` 80%, focused generated
+package runtime smoke
+`QinGeneratedQinParserSubhutiLexerKeywordBoundarySmokeTestMain OK` 95%, and
+full broad `QinJavaProjectQinParserTsEsmFilesSmokeTestMain` plus
+ledger/skill/git hygiene 100%.
+
+Completed small item: **100.0%** for **H5-2by declaration-class host runtime
+owner closure**. Its checkpoints are: reproduce that the broad regenerated host
+runtime failure still resolves `com_qin_lang_runtime_JavaEsmGlobal` inside the
+declaration-class path 25%, locate the owner in
+`QinJvmDeclarationClassEmitter` generated-local/static owner resolution 45%,
+implement canonical `com.qin.lang.runtime.*` host owner handling before local
+declaration lookup and reflected static-call emission 70%, focused declaration
+smoke `QinJvmDeclarationHostRuntimeOwnerAliasSmokeTestMain OK` 85%, full broad
+`QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK` with 377 regenerated module
+classes and zero legacy admissions 100%.
+
 ## H5 Weighted Plan
 
 | ID | Gate | Weight | Accepted | State | Evidence |
 |---|---|---:|---:|---|---|
 | H5-1 | Fresh H5 denominator and baseline sequence selected | 10% | 100% | Accepted | Required skills were read; H3/H4 and older generated TS/module-class ledgers were inspected; existing smoke owners include `QinJavaProjectSlimeParserTsEsmFilesSmokeTestMain`, `QinJavaProjectQinParserTsEsmFilesSmokeTestMain`, `QinModuleDeclarationClassCompileProbeMain`, `QinGeneratedTsSlimeCsstsCompilerSmokeTestMain`, and JVM export/class-literal smokes. First sequential baseline passed: generated Slime Parser TS ESM static admission reports 1264 contract wrappers and 0 legacy wrappers. |
-| H5-2 | Generated TS ESM packages parse/lower with owner-contract admission | 20% | 40% | In progress | Generated Qin Parser TS ESM smoke now runs the same static-admission audit and advances into real JVM module/declaration class compilation. Earlier generated static backend/type blockers through H5-2bt are closed by focused smokes, including `QinJvmStaticCallEffectiveArgumentTypeSmokeTestMain OK`, `SlimeNestedSwitchCaseBlockAstSmokeTestMain OK`, `QinJvmInheritedOverrideParameterStaticSmokeTestMain OK`, `QinJvmObjectArrayPrimitiveSemanticArgumentSmokeTestMain OK`, `QinJvmGeneratedConstructorNumericObjectArgumentSmokeTestMain OK`, `QinJvmJavaStreamToArrayIntFunctionArrayFactorySmokeTestMain OK`, `QinJsBackendJavaPrimitiveLocalDefaultSmokeTestMain OK`, `QinCfaGeneratedStaticObjectSlotArgumentCastSmokeTestMain OK`, `QinJsBackendJavaArrayConstructorMethodReferenceSourceSmokeTestMain OK`, `QinCfaGeneratedLocalOwnerReferenceSmokeTestMain OK`, `QinJvmInterfaceConstantPrimitiveLocalSelectionSmokeTestMain OK`, and `QinJsClassTypeofFunctionSmokeTestMain OK`. Sequential strict broad `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK` now reports generated Qin parser TS static admission wrappers `1526`, contract wrappers `1526`, legacy wrappers `0`. |
+| H5-2 | Generated TS ESM packages parse/lower with owner-contract admission | 20% | 100% | Accepted | Generated Slime and Qin Parser TS ESM packages now pass the same static-admission audit through real JVM module/declaration class compilation. Earlier generated static backend/type blockers through H5-2bt are closed by focused smokes, including `QinJvmStaticCallEffectiveArgumentTypeSmokeTestMain OK`, `SlimeNestedSwitchCaseBlockAstSmokeTestMain OK`, `QinJvmInheritedOverrideParameterStaticSmokeTestMain OK`, `QinJvmObjectArrayPrimitiveSemanticArgumentSmokeTestMain OK`, `QinJvmGeneratedConstructorNumericObjectArgumentSmokeTestMain OK`, `QinJvmJavaStreamToArrayIntFunctionArrayFactorySmokeTestMain OK`, `QinJsBackendJavaPrimitiveLocalDefaultSmokeTestMain OK`, `QinCfaGeneratedStaticObjectSlotArgumentCastSmokeTestMain OK`, `QinJsBackendJavaArrayConstructorMethodReferenceSourceSmokeTestMain OK`, `QinCfaGeneratedLocalOwnerReferenceSmokeTestMain OK`, `QinJvmInterfaceConstantPrimitiveLocalSelectionSmokeTestMain OK`, and `QinJsClassTypeofFunctionSmokeTestMain OK`. The final owner blockers are crossed by `QinCfaHostRuntimeOwnerAliasSmokeTestMain OK`, `QinGeneratedQinParserSubhutiLexerKeywordBoundarySmokeTestMain OK`, `QinJvmDeclarationHostRuntimeOwnerAliasSmokeTestMain OK`, and sequential strict `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK`, which rebuilt 377 module classes, reported static admission wrappers `1526`, contract wrappers `1526`, legacy wrappers `0`, and legacy reasons `{}`. |
 | H5-3 | Generated-parser-adjacent module/declaration class graph compiles | 25% | 100% | Accepted | Sequential `QinModuleDeclarationClassCompileProbeMain` against the CSSTS parser entry now passes under `-Dqin.dynamicSemanticMode=error`: `OK modules=174 declarations=742`. Evidence includes project package override precedence, Qin-owned static `subhuti` facade, Java SDK static-shape cleanup, fixed module/export const object literal property lowering, and module 171 `CssTsTokenConsumer.ts` compiling after the former `CssTsContextualKeywordTypes.Css` dynamic member-get blocker. |
 | H5-4 | JVM export slots, aliases, class literals, and generated-local metadata execute | 20% | 100% | Accepted | Sequential strict backend smoke group passed: `QinJvmStaticExportSlotMemberSmokeTestMain OK`, `QinJvmModuleExportSlotTypeAliasSmokeTestMain OK`, `QinJvmJavaClassLiteralAliasSmokeTestMain passed`, `QinJvmClassLiteralSimpleNameStaticMethodSmokeTestMain OK`, `QinJvmJavaClassInfoGeneratedLocalInterfaceSmokeTestMain OK`, `QinJvmGeneratedInterfaceMetadataSmokeTestMain passed`, `QinJvmGeneratedEnumMetadataStaticSmokeTestMain OK`, `QinJvmGeneratedEnumLocalAliasValuesSmokeTestMain OK`, and `QinJvmGeneratedEnumValueOfSmokeTestMain passed`. Generated-local enum owners now keep `values()/valueOf()` on Qin's static generated enum helper path instead of falling through to native Java enum reflection. |
 | H5-5 | OVS/CSSTS generated-parser transform executes under strict static mode | 15% | 100% | Accepted | H5-5a accepted the strict transform baseline and adjacent top-level declaration ASI closure. H5-5b accepted the generated Java SDK alias static-facade closure. H5-5e/H5-5f accepted no-arg varargs bridge ordering and relative ESM named helper slot resolution. H5-5g accepted the OVS generated AST normalization budget fix: default strict `QinGeneratedTsSlimeOvsTransformSmokeTestMain OK` now runs with module-class disk cache hit, dependency session ready at `+4088ms`, run batch done at `+7814ms`, and wrapper complete at `+9289ms`. |
 | H5-6 | Git hygiene, durable capture, and handoff readiness | 10% | 100% | Accepted | Dirty paths were classified across `qin` and `ovsjs`; the current H5-5g/H5-6a intended diff was narrowed to the generated runtime adapter, strict OVS smoke diagnostic harness, and ledger/skill updates. The adapter was further refactored to table-driven field-reader and node-child-field registries, then revalidated with `qin-runtime-core` build and default strict `QinGeneratedTsSlimeOvsTransformSmokeTestMain OK` with module-class disk cache hit and run batch done at `+9213ms`. The coherent repo unit was committed as `003d5904 fix ovs generated ast normalization budget` and pushed; unrelated dirty files remain excluded. |
-| **H5 Total** |  | **100%** | **88.0%** | In progress | H5-1, H5-3, H5-4, H5-5, and H5-6 are accepted; H5-2 remains the active unfinished major item at 40% of its 20% weight. |
+| **H5 Total** |  | **100%** | **100.0%** | Accepted | H5-1 through H5-6 are accepted. The generated Java/Slime/Subhuti TS -> Qin IR -> JVM `.class` closure is proven under strict static admission, with current-unit ledger/skill/code hygiene included in this coherent unit. |
 
 ## Progress History
 
@@ -572,3 +609,5 @@ hygiene**. Its checkpoints are: classify dirty paths 20%, verify intended diffs
 | 2026-08-06 00:08 +08:00 | H5-5g generated AST normalization runtime budget accepted | Accepted major gate | The default strict OVS transform smoke initially exceeded the 30 second Qin JS-on-JVM run budget even after semantic success. `-Dqin.runtime.interpretedCallCountLimit=10000` localized the hot path to `ovsTransformBase -> normalizeGeneratedAst -> normalizeGeneratedAstChildren -> readGeneratedField -> readStaticMemberValue`. `generated-runtime-adapter.ts` now makes AST normalization idempotent and uses a static node-kind child-field table instead of repeatedly blind-scanning every possible AST field. The default strict rerun passed without raising the timeout: `module-class disk cache hit`, dependency session ready at `+4088ms`, run batch done at `+7814ms`, wrapper complete at `+9289ms`, and `QinGeneratedTsSlimeOvsTransformSmokeTestMain OK` with `tokenCount=25`, `hasAst=true`, `codeLength=680`, `hasBalancePanel=true`, `hasLoadingLine=true`. | H5-5g small 0.0% -> 100.0%; H5-5 major 72.0% -> 100.0%; H5 overall 73.8% -> 78.0%; opened H5-6 major 0.0% |
 | 2026-08-06 00:22 +08:00 | H5-6a abstraction audit and default strict smoke validation | Accepted checkpoint | Current-unit dirty paths were classified before widening. The generated AST/CST adapter no longer expresses the static field contract as a long `fieldName === ...` chain or a `switch (nodeType)` block; it uses `generatedFieldReaders` with direct field/accessor reads and `generatedAstChildFieldTable` for node-kind child traversal. `rg` found no remaining `fieldName ===`, `switch (nodeType)`, `node[key]`, or `value[fieldName]` shapes in the adapter. Validation passed sequentially: `.\..\..\qin.bat build` reported `BUILD SUCCESS`; after one cold module-class rebuild caused by the source hash change, the cache-hit default strict `QinGeneratedTsSlimeOvsTransformSmokeTestMain` exited 0 in 12.1s with module-class disk cache hit and run batch done at `+9213ms`. | H5-6a small 0.0% -> 85.0%; H5-6 major 0.0% -> 60.0%; H5 overall 78.0% -> 84.0% |
 | 2026-08-06 00:26 +08:00 | H5-6a current-unit git hygiene closed | Accepted major gate | Staged only `docs/spec/qin-generated-ts-jvm-class-closure.md`, `examples/ovs-cssts-demos/qin-ovs-cssts-generated-ts-slime-demo/packages/cssts-compiler/src/parser/generated-runtime-adapter.ts`, and `packages/qin-runtime-core/src/java/com/qin/runtime/core/QinGeneratedTsSlimeOvsTransformSmokeTestMain.java`. The staged diff contained 3 files, 391 insertions, and 81 deletions. Local commit `003d5904 fix ovs generated ast normalization budget` was pushed successfully together with the pre-existing ahead commit; unrelated dirty files in `qin` and `ovsjs`, plus untracked validation logs/caches, were intentionally excluded. | H5-6a small 85.0% -> 100.0%; H5-6 major 60.0% -> 100.0%; H5 overall 84.0% -> 88.0%; active unfinished major returns to H5-2 |
+| 2026-08-06 01:42 +08:00 | H5-2bw bridge owner crossed; H5-2bx host runtime owner focused closure | Focused checkpoint accepted; broad gate pending | The prior broad smoke crossed `SlimeCstToAstUtils.createPrimaryExpressionAst candidates=[]` after generated static owner selection was changed to score source-level owner aliases across candidate declarations. The next independent runtime blocker was `NoClassDefFoundError: com_qin_lang_runtime_JavaEsmGlobal` from `SubhutiLexer.isIdentifierPart`. `QinCfaJvmClassFileBackend` now treats `com.qin.lang.runtime.*` as real host runtime owners that cannot be rewritten through generated-local alias lookup, and it admits numeric literals to Java `Object` parameters through static boxing/coercion. Focused validations passed: `QinCfaHostRuntimeOwnerAliasSmokeTestMain OK` and `QinGeneratedQinParserSubhutiLexerKeywordBoundarySmokeTestMain OK`, the latter running the current `.qin/generated/qin-parser/ts-esm` package through the module-class runtime and exercising the `"ifx"` keyword-boundary path that reaches `isIdentifierPart`. A full `QinJavaProjectQinParserTsEsmFilesSmokeTestMain` rerun with a manually assembled classpath was interrupted without stdout/stderr evidence, so it is not counted as pass/fail. | H5-2bw small 80.0% -> 95.0%; H5-2bx small 0.0% -> 95.0%; H5-2 local major remains 60.0%; H5 overall remains 88.0%; full broad gate and git hygiene pending |
+| 2026-08-06 02:20 +08:00 | H5-2by declaration-class host runtime owner closure accepted; H5 complete | Accepted final gate | The reliable broad rerun disproved the assumption that the CFA module wrapper fix alone owned the flattened host runtime failure: the remaining owner was `QinJvmDeclarationClassEmitter`, where generated-local/static resolution and reflected static calls could still rewrite `com.qin.lang.runtime.*` to `com_qin_lang_runtime_*`. The emitter now canonicalizes Qin host runtime owners before local declaration lookup, rejects host runtime owners in `resolveIndexedDeclaration(...)`, preserves them through Java SDK alias canonicalization, and prevents reflected host runtime static calls from being rewritten to generated-local owners. Focused `QinJvmDeclarationHostRuntimeOwnerAliasSmokeTestMain OK` proves a shadow local `com_qin_lang_runtime_JavaEsmGlobal` cannot steal a static `JavaEsmGlobal.__qin_binary__` call. Sequential strict broad `java @build/codex-runs/h5-2by-broad-qin-parser-20260806-020439.args` rebuilt 377 module classes, completed dependency session at `+35691ms`, reported static admission wrappers `1526`, contract wrappers `1526`, legacy wrappers `0`, legacy reasons `{}`, and ended with `QinJavaProjectQinParserTsEsmFilesSmokeTestMain OK`. | H5-2by small 88.0% -> 100.0%; H5-2bx small 95.0% -> 100.0%; H5-2bw small 95.0% -> 100.0%; H5-2 major 60.0% -> 100.0%; H5 overall 88.0% -> 100.0% |
