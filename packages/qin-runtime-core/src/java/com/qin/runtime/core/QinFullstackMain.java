@@ -245,7 +245,8 @@ public final class QinFullstackMain {
                 root,
                 classOutputDir,
                 options.className + "FullstackAdapter",
-                options.className);
+                options.className,
+                hasQinWebAppDefinition(backendSource));
         BackendBuild adapterBuild = compileJavaBackend(root, adapterSource, classOutputDir);
         return new BackendBuild(adapterBuild.classFile(), adapterBuild.runMethod(), adapterBuild.httpAppMethod());
     }
@@ -797,10 +798,21 @@ public final class QinFullstackMain {
             Path root,
             Path classOutputDir,
             String adapterClassName,
-            String qinModuleClassName) throws IOException {
+            String qinModuleClassName,
+            boolean hasQinWebAppDefinition) throws IOException {
         int lastDot = adapterClassName.lastIndexOf('.');
         String packageName = lastDot < 0 ? "" : adapterClassName.substring(0, lastDot);
         String simpleName = lastDot < 0 ? adapterClassName : adapterClassName.substring(lastDot + 1);
+        String appObjectFallback = hasQinWebAppDefinition
+                ? """
+                                try {
+                                    Object appObject = com.qin.lang.runtime.JavaEsmGlobal.__qin_module_ref_get__("App");
+                                    return new com.qin.web.QinWebApplicationAssembler().assemble(appObject);
+                                } catch (IllegalStateException ignored) {
+                                    return null;
+                                }
+                        """
+                : "                        return null;\n";
         String source = """
                 %s
                 public final class %s {
@@ -827,8 +839,7 @@ public final class QinFullstackMain {
                         if (app instanceof com.qin.runtime.core.QinHttpApp qinHttpApp) {
                             return qinHttpApp;
                         }
-                        Object appObject = com.qin.lang.runtime.JavaEsmGlobal.__qin_module_ref_get__("App");
-                        return new com.qin.web.QinWebApplicationAssembler().assemble(appObject);
+%s
                     }
 
                     private static synchronized Object ensureInitialized() throws Exception {
@@ -843,6 +854,7 @@ public final class QinFullstackMain {
                 packageName.isBlank() ? "" : "package " + packageName + ";" + System.lineSeparator(),
                 simpleName,
                 simpleName,
+                appObjectFallback,
                 qinModuleClassName);
         Path sourceFile = classOutputDir
                 .resolve("__qin_fullstack_adapter_sources")
@@ -851,6 +863,14 @@ public final class QinFullstackMain {
         Files.createDirectories(sourceFile.getParent());
         Files.writeString(sourceFile, source, StandardCharsets.UTF_8);
         return sourceFile;
+    }
+
+    private static boolean hasQinWebAppDefinition(Path backendSource) throws IOException {
+        if (backendSource == null || !Files.isRegularFile(backendSource)) {
+            return false;
+        }
+        String source = Files.readString(backendSource, StandardCharsets.UTF_8);
+        return APP_OBJECT_START_PATTERN.matcher(source).find();
     }
 
     private static boolean isJavaSource(Path sourceFile) {
@@ -896,8 +916,6 @@ public final class QinFullstackMain {
                 layout.root().resolve("shared/shared.js"),
                 layout.root().resolve("shared/shared.mjs"),
                 layout.root().resolve("shared/shared.ts"),
-                layout.root().resolve("app/main.qin"),
-                layout.root().resolve("app/main.js"),
                 layout.root().resolve("src/Main.java"));
         for (Path candidate : candidates) {
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {

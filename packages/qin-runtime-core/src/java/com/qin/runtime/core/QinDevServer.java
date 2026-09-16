@@ -208,6 +208,9 @@ final class QinDevServer {
     private static QinHttpResponse invokeHttpApp(Method appMethod, QinHttpRequest request) throws IOException {
         try {
             Object app = appMethod.invoke(null);
+            if (app == null) {
+                return null;
+            }
             if (!(app instanceof QinHttpApp qinHttpApp)) {
                 throw new IllegalStateException("Backend app() must return QinHttpApp");
             }
